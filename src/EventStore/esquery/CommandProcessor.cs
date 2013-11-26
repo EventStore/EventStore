@@ -65,9 +65,9 @@ namespace esquery
                         return new InvalidCommandResult(command);
                 }
             }
-            catch
+            catch(Exception ex)
             {
-                return new InvalidCommandResult(command);
+                return new ExceptionResult(command, ex);
             }
         }
 
@@ -174,7 +174,7 @@ namespace esquery
             var request = (HttpWebRequest) WebRequest.Create(new Uri(uri.AbsoluteUri + "?embed=body"));
             request.Credentials = credential;
             request.Accept = "application/vnd.eventstore.atom+json";
-            request.Headers.Add("ES-LongPoll", "30"); //add long polling
+            request.Headers.Add("ES-LongPoll", "1"); //add long polling
             using (var response = request.GetResponse())
             {
                 var json = JObject.Parse(new StreamReader(response.GetResponseStream()).ReadToEnd());
@@ -330,6 +330,23 @@ namespace esquery
             {
                 return "Query Completed";
             }
+        }
+    }
+
+    class ExceptionResult
+    {
+        private readonly string _command;
+        private readonly Exception _exception;
+
+        public ExceptionResult(string command, Exception exception)
+        {
+            _command = command;
+            _exception = exception;
+        }
+
+        public override string ToString()
+        {
+            return "Command " + _command + " failed \n" + _exception.ToString();
         }
     }
 
