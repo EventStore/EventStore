@@ -50,6 +50,10 @@ namespace EventStore.ClientAPI
     /// </remarks>
     public interface IEventStoreConnection : IDisposable
     {
+        /// <summary>
+        /// Gets the name of this connection. A connection name can be used for disambiguation
+        /// in log files.
+        /// </summary>
         string ConnectionName { get; }
 
         /// <summary>
@@ -427,5 +431,38 @@ namespace EventStore.ClientAPI
         void SetSystemSettings(SystemSettings settings, UserCredentials userCredentials = null);
         
         Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null);
+
+        /// <summary>
+        /// Fired when an <see cref="IEventStoreConnection"/> connects to an Event Store server.
+        /// </summary>
+        event EventHandler<ClientConnectionEventArgs> Connected;
+
+        /// <summary>
+        /// Fired when an <see cref="IEventStoreConnection"/> is disconnected from an Event Store server
+        /// by some means other than by calling the <see cref="Close"/> method.
+        /// </summary>
+        event EventHandler<ClientConnectionEventArgs> Disconnected;
+
+        /// <summary>
+        /// Fired when an <see cref="IEventStoreConnection"/> is attempting to reconnect to an Event Store
+        /// server following a disconnection.
+        /// </summary>
+        event EventHandler<ClientReconnectingEventArgs> Reconnecting;
+
+        /// <summary>
+        /// Fired when an <see cref="IEventStoreConnection"/> is closed either using the <see cref="Close"/>
+        /// method, or when reconnection limits are reached without a successful connection being established.
+        /// </summary>
+        event EventHandler<ClientClosedEventArgs> Closed;
+
+        /// <summary>
+        /// Fired when an error is thrown on an <see cref="IEventStoreConnection"/>.
+        /// </summary>
+        event EventHandler<ClientErrorEventArgs> ErrorOccurred;
+
+        /// <summary>
+        /// Fired when a client fails to authenticate to an Event Store server.
+        /// </summary>
+        event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed;
     }
 }

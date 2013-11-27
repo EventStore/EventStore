@@ -74,7 +74,6 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .LimitReconnectionsTo(0)
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                             .OnClosed((x, r) => closed.Set())
                                              .FailOnNoServerResponse();
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
@@ -85,6 +84,8 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
                 {
+                    connection.Closed += (s, e) => closed.Set();
+
                     connection.Connect();
 
                     if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
@@ -111,11 +112,6 @@ namespace EventStore.Core.Tests.ClientAPI
                                   .UseCustomLogger(ClientApiLoggerBridge.Default)
                                   .LimitReconnectionsTo(1)
                                   .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                  .OnClosed((x, r) => closed.Set())
-                                  .OnConnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", x.ConnectionName, ep))
-                                  .OnReconnecting(x => Console.WriteLine("EventStoreConnection '{0}': reconnecting...", x.ConnectionName))
-                                  .OnDisconnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", x.ConnectionName, ep))
-                                  .OnErrorOccurred((x, exc) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", x.ConnectionName, exc))
                                   .FailOnNoServerResponse();
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
@@ -126,6 +122,12 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
                 {
+                    connection.Closed += (s, e) => closed.Set();
+                    connection.Connected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);
+                    connection.Reconnecting += (s, e) => Console.WriteLine("EventStoreConnection '{0}': reconnecting...", e.Connection.ConnectionName);
+                    connection.Disconnected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);
+                    connection.ErrorOccurred += (s, e) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", e.Connection.ConnectionName, e.Exception); 
+
                     connection.Connect();
 
                     if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
@@ -160,20 +162,21 @@ namespace EventStore.Core.Tests.ClientAPI
                                   .UseCustomLogger(ClientApiLoggerBridge.Default)
                                   .LimitReconnectionsTo(0)
                                   .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
-                                  .OnClosed((x, r) => closed.Set())
-                                  .OnConnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", x.ConnectionName, ep))
-                                  .OnReconnecting(x => Console.WriteLine("EventStoreConnection '{0}': reconnecting...", x.ConnectionName))
-                                  .OnDisconnected((x, ep) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", x.ConnectionName, ep))
-                                  .OnErrorOccurred((x, exc) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", x.ConnectionName, exc))
                                   .FailOnNoServerResponse()
                                   .WithConnectionTimeoutOf(TimeSpan.FromMilliseconds(1000));
+
             if (_tcpType == TcpType.Ssl)
                 settings.UseSslConnection("ES", false);
 
             var ip = new IPAddress(new byte[] {8, 8, 8, 8}); //NOTE: This relies on Google DNS server being configured to swallow nonsense traffic
-            int port = 4567;
+            const int port = 4567;
             using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
             {
+                connection.Closed += (s, e) => closed.Set();
+                connection.Connected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);
+                connection.Reconnecting += (s, e) => Console.WriteLine("EventStoreConnection '{0}': reconnecting...", e.Connection.ConnectionName);
+                connection.Disconnected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);
+                connection.ErrorOccurred += (s, e) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", e.Connection.ConnectionName, e.Exception);
                 connection.Connect();
 
                 if (!closed.Wait(TimeSpan.FromSeconds(5)))

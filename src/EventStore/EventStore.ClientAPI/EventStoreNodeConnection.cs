@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using System.Collections.Generic;
@@ -494,6 +493,77 @@ namespace EventStore.ClientAPI
         {
             return AppendToStreamAsync(SystemStreams.SettingsStream, ExpectedVersion.Any, userCredentials,
                                        new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
+        }
+
+        public event EventHandler<ClientConnectionEventArgs> Connected
+        {
+            add
+            {
+                _handler.Connected += value;
+            }
+            remove
+            {
+                _handler.Connected -= value;
+            }
+        }
+
+        public event EventHandler<ClientConnectionEventArgs> Disconnected
+        {
+            add
+            {
+                _handler.Disconnected += value;
+            }
+            remove
+            {
+                _handler.Disconnected -= value;
+            }
+        }
+
+        public event EventHandler<ClientReconnectingEventArgs> Reconnecting
+        {
+            add
+            {
+                _handler.Reconnecting += value;
+            }
+            remove
+            {
+                _handler.Reconnecting -= value;
+            }
+        }
+
+        public event EventHandler<ClientClosedEventArgs> Closed
+        {
+            add
+            {
+                _handler.Closed += value;
+            }
+            remove
+            {
+                _handler.Closed -= value;
+            }
+        }
+
+        public event EventHandler<ClientErrorEventArgs> ErrorOccurred
+        {
+            add
+            {
+                _handler.ErrorOccurred += value;
+            }
+            remove
+            {
+                _handler.ErrorOccurred -= value;
+            }
+        }
+        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed
+        {
+            add
+            {
+                _handler.AuthenticationFailed += value;
+            }
+            remove
+            {
+                _handler.AuthenticationFailed -= value;
+            }
         }
     }
 }

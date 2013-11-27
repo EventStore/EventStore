@@ -90,15 +90,12 @@ namespace EventStore.TestClient.Commands
                 var rnd = new Random();
 
                 var settings = ConnectionSettings.Create()
-                    .DisableVerboseLogging()
                     .UseConsoleLogger()
                     .PerformOnAnyNode()
                     .LimitReconnectionsTo(10)
                     .LimitRetriesForOperationTo(10)
                     .LimitOperationsQueueTo(10000)
                     .LimitConcurrentOperationsTo(context.Client.Options.WriteWindow/clientsCnt)
-                    .OnClosed((conn, reason) => { })
-                    .OnErrorOccurred((conn, exc) => context.Fail(exc, "Error on connection."))
                     .FailOnNoServerResponse();
 
                 var client = EventStoreConnection.Create(settings, context.Client.TcpEndpoint);
@@ -106,6 +103,7 @@ namespace EventStore.TestClient.Commands
 
                 threads.Add(new Thread(_ =>
                 {
+                    client.ErrorOccurred += (s, e) => context.Fail(e.Exception, "Error on connection");
                     client.Connect();
 
                     for (int j = 0; j < count; ++j)
