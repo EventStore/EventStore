@@ -2,7 +2,7 @@
 #------------ Start of configuration -------------
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-V8_TAG="3.22.6"
+V8_REVISION="17915" #Tag 3.22.6
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
@@ -20,7 +20,7 @@ fi
 
 function usage() {
     echo ""
-    echo "Usage: $0 action <version=0.0.0.0> <platform=x64> <configuration=release>"
+    echo "Usage: $0 action <version=0.0.0.0> <platform=x64> <configuration=release> [no-werror]"
     echo ""
     echo "Valid actions are:"
     echo "  quick - assumes libjs1.so and libv8.so are available and"
@@ -41,19 +41,22 @@ function usage() {
     echo "  debug"
     echo "  release"
     echo ""
+    echo "Pass no-werror to pass werror=no to V8 make (for newer GCC builds)"
     exit 1
 }
 
 ACTION="quick"
 PLATFORM="x64"
 CONFIGURATION="Release"
+WERRORSTRING=""
 
 function checkParams() {
     action=$1
     version=$2
     platform=$3
     configuration=$4
-    
+    nowerror=$5
+
     [[ $# -gt 4 ]] && usage
 
     if [[ "$action" = "" ]]; then
@@ -102,6 +105,10 @@ function checkParams() {
         VERSIONSTRING=$version
         echo "Version set to: $VERSIONSTRING"
     fi
+
+	if [[ "$nowerror" == "no-werror" ]] ; then
+		WERRORSTRING="werror=no"
+	fi
 }
 
 function revertVersionFiles() {
@@ -121,28 +128,25 @@ function err() {
 }
 
 function getV8() {
-    tag=$1
+    revision=$1
 
-    if [[ -d v8 ]] ; then
+    if [[ -d v8/.svn ]] ; then
         pushd v8 > /dev/null || err
-        gittag=`git describe --contains HEAD`
+		svnrevision=`svn info | sed -ne 's/^Revision: //p'`        
 
-        if [[ "$gittag" != "$tag" ]] ; then
-            echo "Pulling V8 repository..."
-            git fetch || err
-            echo "Checking out $tag..."
-            git checkout $tag || err
-        else
-            echo "V8 repository already at $gittag"
+        if [[ "$svnrevision" != "$revision" ]] ; then
+            echo "Updating V8 repository to revision $revision..."
+            svn update --quiet -r$revision
+		else
+            echo "V8 repository already at revision $revision"
         fi
         popd > /dev/null || err
     else
-        echo "Cloning V8 repository..."
-        git clone git://github.com/v8/v8.git v8 || err
-        pushd v8 > /dev/null || err
-        echo "Checking out $tag..."
-        git checkout $tag
-        popd > /dev/null || err
+		if [[ -d v8 ]] ; then
+			echo
+		fi
+		echo "Checking out V8 repository..."
+		svn checkout --quiet -r$revision http://v8.googlecode.com/svn/trunk v8
     fi
 }
 
@@ -173,7 +177,10 @@ function buildV8() {
         echo "Unsupported platform $PLATFORM."
         exit 1
     fi
-    $make $makecall library=shared || err
+
+
+
+    $make $makecall $WERRORSTRING library=shared || err
 
     pushd out/$makecall/lib.target > /dev/null
     cp libv8.so ../../../../src/EventStore/libs || err
@@ -262,15 +269,6 @@ function cleanAll {
     rm -rf bin/
     rm -f src/EventStore/libs/libv8.so
     rm -f src/EventStore/libs/libjs1.so
-    pushd v8 > /dev/null
-    git clean --quiet -e gyp -fdx -- build
-    git clean --quiet -dfx -- src
-    git clean --quiet -dfx -- test
-    git clean --quiet -dfx -- tools
-    git clean --quiet -dfx -- preparser
-    git clean --quiet -dfx -- samples
-    git reset --quiet --hard
-    popd > /dev/null
     pushd src/EventStore/EventStore.Projections.v8Integration > /dev/null
     git clean --quiet -dfx -- .
     popd > /dev/null
@@ -281,7 +279,7 @@ function exitWithError {
     exit 1
 }
 
-checkParams $1 $2 $3 $4
+checkParams $1 $2 $3 $4 $5
 
 echo "Running from base directory: $BASE_DIR"
 
@@ -294,7 +292,7 @@ if [[ "$ACTION" == "js1" ]] ; then
 else
 
     if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
-        getV8 $V8_TAG
+        getV8 $V8_REVISION
         getDependencies
 
         buildV8
