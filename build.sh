@@ -57,7 +57,7 @@ function checkParams() {
     configuration=$4
     nowerror=$5
 
-    [[ $# -gt 4 ]] && usage
+    [[ $# -gt 5 ]] && usage
 
     if [[ "$action" = "" ]]; then
         ACTION="quick"
