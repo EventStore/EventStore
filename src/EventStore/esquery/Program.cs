@@ -80,7 +80,10 @@ namespace esquery
                 Console.Write("password:");
                 var password = ReadPassword();
                 
-                var cred = new NetworkCredential(username, password);
+                var cred = new NetworkCredential();
+		//Can't use the constructor that takes these as not implemented in Mono
+		cred.UserName = username;
+		cred.SecurePassword = password;
                 if(TryValidatePassword(baseuri, cred))
                 {
                     return cred;
