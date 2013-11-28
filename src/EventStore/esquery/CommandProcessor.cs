@@ -304,7 +304,7 @@ namespace esquery
         private static AppendResult Append(Uri baseUri, string stream, string eventType, string data)
         {
             var message = "[{'eventType':'" + eventType + "', 'eventId' :'" + Guid.NewGuid() + "', 'data' : " + data +"}]";
-            var request = WebRequest.Create(baseUri.AbsoluteUri + stream);
+            var request = WebRequest.Create(baseUri.AbsoluteUri + "streams/" + stream);
             request.Method = "POST";
             request.ContentType = "application/json";
             request.ContentLength = message.Length;
