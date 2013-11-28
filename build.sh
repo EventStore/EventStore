@@ -107,7 +107,8 @@ function checkParams() {
     fi
 
 	if [[ "$nowerror" == "no-werror" ]] ; then
-		WERRORSTRING="werror=no"
+		WERRORSTRING="-werror=no"
+		echo "Setting -werror=no for V build"
 	fi
 }
 
