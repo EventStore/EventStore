@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define TESTING
+
+using System;
 using System.Net;
 using System.Security;
 using System.Text;
@@ -79,11 +81,9 @@ namespace esquery
                 var username = Console.ReadLine();
                 Console.Write("password:");
                 var password = ReadPassword();
-                
-                var cred = new NetworkCredential();
-		//Can't use the constructor that takes these as not implemented in Mono
-		cred.UserName = username;
-		cred.SecurePassword = password;
+
+                var cred = new NetworkCredential(username, password);
+
                 if(TryValidatePassword(baseuri, cred))
                 {
                     return cred;
@@ -118,6 +118,37 @@ namespace esquery
             }
         }
 
+
+#if TESTING
+        //mono apparently doesnt work with secure strings.
+        //TODO delete me when its no longer broken
+        private static string ReadPassword()
+        {
+            var ret = "";
+            while (true)
+            {
+                var info = Console.ReadKey(true);
+                if (info.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    return ret;
+                }
+                if (info.Key == ConsoleKey.Backspace)
+                {
+                    if (ret.Length > 0)
+                    {
+                        ret = ret.Substring(0, ret.Length - 1);
+                    }
+                }
+                else
+                {
+                    ret += info.KeyChar;
+                }
+            }
+            return ret;
+        }
+#else
         private static SecureString ReadPassword()
         {
             var ret = new SecureString();
@@ -144,6 +175,7 @@ namespace esquery
             }
             return ret;
         }
+#endif
 
         static void Main(string[] args)
         {
