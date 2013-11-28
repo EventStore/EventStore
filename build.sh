@@ -107,8 +107,8 @@ function checkParams() {
     fi
 
 	if [[ "$nowerror" == "no-werror" ]] ; then
-		WERRORSTRING="-werror=no"
-		echo "Setting -werror=no for V build"
+		WERRORSTRING="werror=no"
+		echo "Setting werror=no for V8 build"
 	fi
 }
 
@@ -178,8 +178,6 @@ function buildV8() {
         echo "Unsupported platform $PLATFORM."
         exit 1
     fi
-
-
 
     $make $makecall $WERRORSTRING library=shared || err
 
