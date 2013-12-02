@@ -67,7 +67,7 @@ namespace EventStore.TestClient
 
             _helper.RegisterRef(() => Ip, "i|ip=", null, null, IPAddress.Loopback, "IP address of server.");
             _helper.Register(() => TcpPort, "t|tcp-port=", null, null, 1113, "TCP port on server.");
-            _helper.Register(() => HttpPort, "h|http-port=", null, null, 2113, "HTPP port on server.");
+            _helper.Register(() => HttpPort, "h|http-port=", null, null, 2113, "HTTP port on server.");
             _helper.Register(() => Timeout, "timeout=", null, null, -1, "Timeout for command execution in seconds, -1 for infinity.");
             _helper.Register(() => ReadWindow, "r|read-window=", null, null, 2000, "The difference between sent/received read commands.");
             _helper.Register(() => WriteWindow, "w|write-window=", null, null, 2000, "The difference between sent/received write commands.");
