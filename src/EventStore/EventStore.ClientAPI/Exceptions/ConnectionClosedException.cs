@@ -24,27 +24,42 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
+    /// <summary>
+    /// Exception thrown by ongoing operations which are terminated
+    /// by an <see cref="IEventStoreConnection"/> closing.
+    /// </summary>
     public class ConnectionClosedException : EventStoreConnectionException
     {
+        /// <summary>
+        /// Constructs a new <see cref="ConnectionClosedException" />.
+        /// </summary>
         public ConnectionClosedException()
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="ConnectionClosedException" />.
+        /// </summary>
         public ConnectionClosedException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="ConnectionClosedException" />.
+        /// </summary>
         public ConnectionClosedException(string message, Exception innerException) : base(message, innerException)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="ConnectionClosedException" />.
+        /// </summary>
         protected ConnectionClosedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

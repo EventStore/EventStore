@@ -24,28 +24,42 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
+    /// <summary>
+    /// Exception thrown if a projection command fails.
+    /// </summary>
     public class ProjectionCommandFailedException : EventStoreConnectionException
     {
+        /// <summary>
+        /// Constructs a new <see cref="ProjectionCommandFailedException"/>.
+        /// </summary>
         public ProjectionCommandFailedException()
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="ProjectionCommandFailedException"/>.
+        /// </summary>
         public ProjectionCommandFailedException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="ProjectionCommandFailedException"/>.
+        /// </summary>
         public ProjectionCommandFailedException(string message,
                  Exception innerException) : base(message, innerException)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="ProjectionCommandFailedException"/>.
+        /// </summary>
         protected ProjectionCommandFailedException(SerializationInfo info,
                     StreamingContext context) : base(info, context)
         {

@@ -24,27 +24,42 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
+    /// <summary>
+    /// Exception thrown if an operation requires authentication but
+    /// the client is not authenticated.
+    /// </summary>
     public class NotAuthenticatedException : EventStoreConnectionException
     {
+        /// <summary>
+        /// Constructs a new <see cref="NotAuthenticatedException"/>.
+        /// </summary>
         public NotAuthenticatedException(): base("Authentication error")
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="NotAuthenticatedException"/>.
+        /// </summary>
         public NotAuthenticatedException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="NotAuthenticatedException"/>.
+        /// </summary>
         public NotAuthenticatedException(string message, Exception innerException) : base(message, innerException)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="NotAuthenticatedException"/>.
+        /// </summary>
         protected NotAuthenticatedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

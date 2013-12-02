@@ -24,27 +24,42 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
+    /// <summary>
+    /// Exception thrown if there is an attempt to operate inside a
+    /// transaction which does not exist.
+    /// </summary>
     public class InvalidTransactionException : EventStoreConnectionException
     {
+        /// <summary>
+        /// Constructs a new <see cref="InvalidTransactionException"/>.
+        /// </summary>
         public InvalidTransactionException()
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="InvalidTransactionException"/>.
+        /// </summary>
         public InvalidTransactionException(string message) : base(message)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="InvalidTransactionException"/>.
+        /// </summary>
         public InvalidTransactionException(string message, Exception innerException) : base(message, innerException)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="InvalidTransactionException"/>.
+        /// </summary>
         protected InvalidTransactionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

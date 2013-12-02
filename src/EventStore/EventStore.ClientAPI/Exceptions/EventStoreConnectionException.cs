@@ -24,27 +24,42 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
+    /// <summary>
+    /// Base type for exceptions thrown by an <see cref="IEventStoreConnection"/>,
+    /// thrown in circumstances which don't have a specific derived exception.
+    /// </summary>
     public class EventStoreConnectionException : Exception
     {
+        /// <summary>
+        /// Constructs a new <see cref="EventStoreConnectionException"/>.
+        /// </summary>
         public EventStoreConnectionException()
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="EventStoreConnectionException"/>.
+        /// </summary>
         public EventStoreConnectionException(string message): base(message)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="EventStoreConnectionException"/>.
+        /// </summary>
         public EventStoreConnectionException(string message, Exception innerException): base(message, innerException)
         {
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="EventStoreConnectionException"/>.
+        /// </summary>
         protected EventStoreConnectionException(SerializationInfo info, StreamingContext context): base(info, context)
         {
         }
