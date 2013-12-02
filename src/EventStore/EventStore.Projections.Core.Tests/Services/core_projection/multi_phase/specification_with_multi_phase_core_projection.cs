@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
 
 using System;
 using System.Collections.Generic;
@@ -35,7 +34,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 {
@@ -64,12 +62,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             protected override IQuerySources GetSourceDefinition()
             {
-                return new QuerySourcesDefinition()
-                {
+                return new QuerySourcesDefinition {
                     AllStreams = true,
                     AllEvents = true,
                     ByStreams = true,
-                    Options = new QuerySourcesDefinitionOptions { }
+                    Options = new QuerySourcesDefinitionOptions()
                 };
             }
 
@@ -108,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 ITimeProvider timeProvider, IODispatcher ioDispatcher,
                 CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             {
-                return new[] {_phase1, _phase2};
+                return new IProjectionProcessingPhase[] {_phase1, _phase2};
             }
 
             public override SlaveProjectionDefinitions GetSlaveProjections()
@@ -128,8 +125,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             private CheckpointTag _initializedFromCheckpointAt;
             private PhaseState _state;
             private Guid _subscriptionId;
-            private bool _unsubscribed;
-            private int _processEventInvoked;
             private int _subscribeInvoked;
 
             public FakeProjectionProcessingPhase(int phase, specification_with_multi_phase_core_projection specification,
@@ -230,14 +225,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
             public bool Unsubscribed_
             {
-                get { return _unsubscribed; }
+                get { return false; }
             }
 
-            public int ProcessEventInvoked
-            {
-                get { return _processEventInvoked; }
-                set { _processEventInvoked = value; }
-            }
+            public int ProcessEventInvoked { get; set; }
 
             public int SubscribeInvoked
             {

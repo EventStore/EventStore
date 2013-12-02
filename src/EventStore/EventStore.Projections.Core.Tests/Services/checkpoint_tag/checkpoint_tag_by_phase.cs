@@ -20,6 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         [Test]
         public void equal_equals()
         {
+            // ReSharper disable EqualExpressionComparison
             Assert.IsTrue(_p0.Equals(_p0));
             Assert.IsTrue(_p1a.Equals(_p1a));
             Assert.IsTrue(_p1b.Equals(_p1b));
@@ -27,11 +28,13 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_p2.Equals(_p2));
             Assert.IsTrue(_p3.Equals(_p3));
             Assert.IsFalse(_p2.Equals(_p3));
+            // ReSharper enable EqualExpressionComparison
         }
 
         [Test]
         public void equal_operator()
         {
+            // ReSharper disable once EqualExpressionComparison
             Assert.IsTrue(_p1a == _p1a);
             Assert.IsTrue(_p1a != _p1b);
         }
@@ -50,6 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         {
             Assert.IsTrue(_p1b <= _p2);
             Assert.IsTrue(_p2 <= _p4);
+            // ReSharper disable once EqualExpressionComparison
             Assert.IsTrue(_p3 <= _p3);
         }
 
@@ -64,10 +68,12 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         public void greater_or_equal_operator()
         {
             Assert.IsFalse(_p1a >= _p1b);
+            // ReSharper disable once EqualExpressionComparison
             Assert.IsTrue(_p1a >= _p1a);
             Assert.IsTrue(_p1a >= _p0);
             Assert.IsTrue(_p4 >= _p3);
             Assert.IsTrue(_p3 >= _p1a);
+            // ReSharper disable once EqualExpressionComparison
             Assert.IsTrue(_p2 >= _p2);
         }
     }
