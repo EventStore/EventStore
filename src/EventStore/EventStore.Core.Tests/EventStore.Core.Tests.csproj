@@ -442,6 +442,8 @@
     <Compile Include="TransactionLog\when_opening_tfchunk_from_non_existing_file.cs" />
     <Compile Include="TransactionLog\when_reading_from_a_cached_tfchunk.cs" />
     <Compile Include="TransactionLog\when_uncaching_a_tfchunk.cs" />
+    <Compile Include="TransactionLog\when_writing_a_file_checkpoint_to_a_writethroughfile.cs" />
+    <Compile Include="TransactionLog\when_writing_a_memorymappedpoint_to_a_file.cs" />
     <Compile Include="TransactionLog\when_writing_multiple_records_to_a_tfchunk.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeTestScenario.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\TFChunkDbCreationHelper.cs" />
@@ -470,8 +472,6 @@
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer.cs" />
     <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk.cs" />
     <Compile Include="TransactionLog\when_writing_a_file_checksum_to_a_file.cs" />
-    <Compile Include="TransactionLog\when_writing_a_file_checksum_to_a_writethroughfile.cs" />
-    <Compile Include="TransactionLog\when_writing_a_memorymappedchecksum_to_a_file.cs" />
     <Compile Include="TransactionLog\when_writing_a_new_chunked_transaction_file.cs" />
     <Compile Include="TransactionLog\when_writing_commit_record_to_file.cs" />
     <Compile Include="TransactionLog\when_writing_prepare_record_to_file.cs" />
