@@ -36,6 +36,7 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 namespace EventStore.Projections.Core.Tests.Services.core_projection.query_by_stream
 {
     [TestFixture]
+    [Ignore("This isn't implemented yet")]
     public class when_handling_multiple_non_empty_streams : specification_with_from_catalog_query
     {
         protected override void When()
