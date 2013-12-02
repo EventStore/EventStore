@@ -24,7 +24,7 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+
 using System;
 using System.Threading;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -33,7 +33,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_writing_a_memorymappedchecksum_to_a_file : SpecificationWithFile
+    public class when_writing_a_memorymappedpoint_to_a_file : SpecificationWithFile
     {
         [Test]
         public void a_null_file_throws_argumentnullexception()

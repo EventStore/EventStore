@@ -32,8 +32,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
-    [TestFixture, Platform("WIN")]
-    public class when_writing_a_file_checksum_to_a_writethroughfile : SpecificationWithFile
+    [TestFixture] 
+    public class when_writing_a_file_checkpoint_to_a_writethroughfile : SpecificationWithFile
     {
         [Test]
         public void a_null_file_throws_argumentnullexception()
