@@ -137,7 +137,6 @@ namespace esquery
 
         private static Uri GetNamedLink(JObject feed, string name)
         {
-            JToken token;
             var links = feed["links"];
             if (links == null) return null;
             return (from item in links

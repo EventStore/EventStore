@@ -589,8 +589,6 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            private readonly string _faultedReason;
-
             public SlaveProjectionReaderAssigned(Guid projectionId, Guid subscriptionId, Guid readerId)
                 : base(projectionId)
             {

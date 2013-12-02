@@ -119,7 +119,7 @@ namespace esquery
         }
 
 
-#if TESTING
+#if __MonoCS__
         //mono apparently doesnt work with secure strings.
         //TODO delete me when its no longer broken
         private static string ReadPassword()
@@ -146,7 +146,6 @@ namespace esquery
                     ret += info.KeyChar;
                 }
             }
-            return ret;
         }
 #else
         private static SecureString ReadPassword()
@@ -173,7 +172,6 @@ namespace esquery
                     ret.AppendChar(info.KeyChar);
                 }
             }
-            return ret;
         }
 #endif
 
@@ -208,7 +206,6 @@ namespace esquery
     }
     class ConsoleHelper
     {
-
         public static bool IsPiped()
         {
             try
@@ -216,7 +213,7 @@ namespace esquery
                 var nothing = Console.KeyAvailable;
                 return false;
             }
-            catch (InvalidOperationException expected)
+            catch (InvalidOperationException)
             {
                 return true;
             }

@@ -247,7 +247,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class ReaderAssignedReader : EventReaderSubscriptionMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly Guid _readerId;

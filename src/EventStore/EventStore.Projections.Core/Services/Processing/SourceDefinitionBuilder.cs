@@ -35,16 +35,16 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public sealed class SourceDefinitionBuilder: IQuerySources // name it!!
     {
-        protected readonly QuerySourceOptions _options = new QuerySourceOptions();
-        protected bool _allStreams;
-        protected List<string> _categories;
-        protected List<string> _streams;
-        protected string _catalogStream;
-        protected bool _allEvents;
-        protected List<string> _events;
-        protected bool _byStream;
-        protected bool _byCustomPartitions;
-        protected long? _limitingCommitPosotion;
+        private readonly QuerySourceOptions _options = new QuerySourceOptions();
+        private bool _allStreams;
+        private List<string> _categories;
+        private List<string> _streams;
+        private string _catalogStream;
+        private bool _allEvents;
+        private List<string> _events;
+        private bool _byStream;
+        private bool _byCustomPartitions;
+        private long? _limitingCommitPosotion;
 
         public SourceDefinitionBuilder()
         {

@@ -33,15 +33,13 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryProcessingStrategy : EventReaderBasedProjectionProcessingStrategy
     {
-        private readonly Func<IProjectionStateHandler> _handlerFactory;
-        private readonly ProjectionConfig _projectionConfig;
-        private readonly IQueryDefinition _sourceDefinition;
+        private new readonly ProjectionConfig _projectionConfig;
+        private new readonly IQueryDefinition _sourceDefinition;
         private readonly ProjectionNamesBuilder _namesBuilder;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
@@ -53,7 +51,6 @@ namespace EventStore.Projections.Core.Services.Processing
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {
-            _handlerFactory = handlerFactory;
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
             _namesBuilder = namesBuilder;

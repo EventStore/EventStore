@@ -183,7 +183,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     CheckCatalogCompatibility(left, right);
                     return left.CatalogPosition > right.CatalogPosition
                            || (left.CatalogPosition == right.CatalogPosition && left.DataPosition > right.DataPosition);
-                    break;
                 case Mode.Phase:
                     return left.Position > right.Position;
                 case Mode.Position:
@@ -246,7 +245,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     CheckCatalogCompatibility(left, right);
                     return left.CatalogPosition > right.CatalogPosition
                            || (left.CatalogPosition == right.CatalogPosition && left.DataPosition >= right.DataPosition);
-                    break;
                 case Mode.Phase:
                     return left.Position >= right.Position;
                 case Mode.Position:
@@ -309,7 +307,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     return CatalogStream == other.CatalogStream && CatalogPosition == other.CatalogPosition
                            && DataStream == other.DataStream && DataPosition == other.DataPosition
                            && CommitPosition == other.CommitPosition;
-                    break;
                 case Mode.Phase:
                     return Position == other.Position;
                 case Mode.EventTypeIndex: 
