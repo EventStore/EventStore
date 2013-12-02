@@ -37,51 +37,41 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.ClientAPI
 {
-    public struct RawStreamMetadataResult
-    {
-        public readonly string Stream;
-        public readonly bool IsStreamDeleted;
-        public readonly int MetastreamVersion;
-        public readonly byte[] StreamMetadata;
-
-        public RawStreamMetadataResult(string stream, bool isStreamDeleted, int metastreamVersion, byte[] streamMetadata)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-
-            Stream = stream;
-            IsStreamDeleted = isStreamDeleted;
-            MetastreamVersion = metastreamVersion;
-            StreamMetadata = streamMetadata ?? Empty.ByteArray;
-        }
-    }
-
-    public struct StreamMetadataResult
-    {
-        public readonly string Stream;
-        public readonly bool IsStreamDeleted;
-        public readonly int MetastreamVersion;
-        public readonly StreamMetadata StreamMetadata;
-
-        public StreamMetadataResult(string stream, bool isStreamDeleted, int metastreamVersion, StreamMetadata streamMetadata)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-
-            Stream = stream;
-            IsStreamDeleted = isStreamDeleted;
-            MetastreamVersion = metastreamVersion;
-            StreamMetadata = streamMetadata;
-        }
-    }
-
+    /// <summary>
+    /// A class representing stream metadata with strongly typed properties
+    /// for system values and a dictionary-like interface for custom values.
+    /// </summary>
     public class StreamMetadata
     {
+        /// <summary>
+        /// The maximum number of events allowed in the stream.
+        /// </summary>
         public readonly int? MaxCount;
+        /// <summary>
+        /// The maximum age of events allowed in the stream.
+        /// </summary>
         public readonly TimeSpan? MaxAge;
+        /// <summary>
+        /// The event number from which previous events can be scavenged.
+        /// This is used to implement soft-deletion of streams.
+        /// </summary>
         public readonly int? TruncateBefore;
+        /// <summary>
+        /// The amount of time for which the stream head is cachable.
+        /// </summary>
         public readonly TimeSpan? CacheControl;
+        /// <summary>
+        /// The access control list for the stream.
+        /// </summary>
         public readonly StreamAcl Acl;
 
+        /// <summary>
+        /// An enumerable of the keys in the user-provided metadata.
+        /// </summary>
         public IEnumerable<string> CustomKeys { get { return _customMetadata.Keys; } }
+        /// <summary>
+        /// An enumerable of key-value pairs of keys to JSON text for user-provider metadata.
+        /// </summary>
         public IEnumerable<KeyValuePair<string, string>> CustomMetadataAsRawJsons
         {
             get { return _customMetadata.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString())); }
@@ -110,24 +100,54 @@ namespace EventStore.ClientAPI
             _customMetadata = customMetadata ?? Empty.CustomStreamMetadata;  
         }
 
+        /// <summary>
+        /// Creates a <see cref="StreamMetadata" /> with the specified parameters.
+        /// </summary>
+        /// <param name="maxCount">The maximum number of events allowed in the stream.</param>
+        /// <param name="maxAge">The maximum age of events allowed in the stream.</param>
+        /// <param name="truncateBefore">The event number from which previous events can be scavenged.</param>
+        /// <param name="cacheControl">The amount of time for which the stream head is cachable.</param>
+        /// <param name="acl">The access control list for the stream.</param>
+        /// <returns></returns>
         public static StreamMetadata Create(int? maxCount = null, TimeSpan? maxAge = null, int? truncateBefore = null, TimeSpan? cacheControl = null, StreamAcl acl = null)
         {
             return new StreamMetadata(maxCount, maxAge, truncateBefore, cacheControl, acl);
         }
 
+        /// <summary>
+        /// Builds a <see cref="StreamMetadata"/> from a <see cref="StreamMetadataBuilder" />.
+        /// </summary>
+        /// <returns>An instance of <see cref="StreamMetadata"/>.</returns>
         public static StreamMetadataBuilder Build()
         {
             return new StreamMetadataBuilder();
         }
 
+        /// <summary>
+        /// Get a value of type T for the given key from the custom metadata.
+        /// This method will throw an <see cref="ArgumentException"/> if the
+        /// key is not found.
+        /// </summary>
+        /// <typeparam name="T">The type of the value.</typeparam>
+        /// <param name="key">A key.</param>
+        /// <returns>Value of type T for the key.</returns>
         public T GetValue<T>(string key)
         {
             T res;
             if (!TryGetValue(key, out res))
-                throw new ArgumentException(string.Format("No key '{0}' found in custom metadata.", key));
+                throw new ArgumentException(string.Format("Key '{0}' not found in custom metadata.", key));
             return res;
         }
 
+        /// <summary>
+        /// Tries to get a value of type T for the given key from the custom
+        /// metadata, and if it exists returns true from the method and gives
+        /// the value as an out parameter.
+        /// </summary>
+        /// <param name="key">A key.</param>
+        /// <param name="value">Output variable for the value of type T for the key.</param>
+        /// <typeparam name="T">The type of the value.</typeparam>
+        /// <returns>True if the key exists, false otherwise.</returns>
         public bool TryGetValue<T>(string key, out T value)
         {
             Ensure.NotNull(key, "key");
@@ -143,6 +163,12 @@ namespace EventStore.ClientAPI
             return true;
         }
 
+        /// <summary>
+        /// Gets a string containing raw JSON value for the given key.
+        /// </summary>
+        /// <param name="key">A key.</param>
+        /// <returns>String containing raw JSON value for the key.</returns>
+        /// <exception cref="ArgumentException">If the key does not exist.</exception>
         public string GetValueAsRawJsonString(string key)
         {
             string res;
@@ -151,6 +177,12 @@ namespace EventStore.ClientAPI
             return res;
         }
 
+        /// <summary>
+        /// Tries to get a string containing raw JSON value for the given key.
+        /// </summary>
+        /// <param name="key">A key.</param>
+        /// <param name="value">Output variable for the value for the key.</param>
+        /// <returns>True if the key exists, false otherwise.</returns>
         public bool TryGetValueAsRawJsonString(string key, out string value)
         {
             Ensure.NotNull(key, "key");
@@ -166,6 +198,11 @@ namespace EventStore.ClientAPI
             return true;
         }
 
+        /// <summary>
+        /// Returns a byte array representing the stream metadata
+        /// as JSON encoded as UTF8 with no byte order mark.
+        /// </summary>
+        /// <returns>Byte array representing the stream metadata.</returns>
         public byte[] AsJsonBytes()
         {
             using (var memoryStream = new MemoryStream())
@@ -178,6 +215,10 @@ namespace EventStore.ClientAPI
             }
         }
 
+        /// <summary>
+        /// Returns a JSON string representing the stream metadata.
+        /// </summary>
+        /// <returns>A string representing the stream metadata.</returns>
         public string AsJsonString()
         {
             using (var stringWriter = new StringWriter())
@@ -254,6 +295,12 @@ namespace EventStore.ClientAPI
             }
         }
 
+        /// <summary>
+        /// Builds a <see cref="StreamMetadata" /> object from a byte array
+        /// containing stream metadata.
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
         public static StreamMetadata FromJsonBytes(byte[] json)
         {
             using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json))))
@@ -388,209 +435,6 @@ namespace EventStore.ClientAPI
         {
             if (!read)
                 throw new Exception("Invalid JSON");
-        }
-    }
-
-    public class StreamMetadataBuilder
-    {
-        private int? _maxCount;
-        private TimeSpan? _maxAge;
-        private int? _truncateBefore;
-        private TimeSpan? _cacheControl;
-        private string[] _aclRead;
-        private string[] _aclWrite;
-        private string[] _aclDelete;
-        private string[] _aclMetaRead;
-        private string[] _aclMetaWrite;
-
-        private readonly IDictionary<string, JToken> _customMetadata = new Dictionary<string, JToken>();
-
-        internal StreamMetadataBuilder()
-        {
-        }
-
-        public static implicit operator StreamMetadata(StreamMetadataBuilder builder)
-        {
-            var acl = builder._aclRead == null
-                      && builder._aclWrite == null 
-                      && builder._aclDelete == null 
-                      && builder._aclMetaRead == null
-                      && builder._aclMetaWrite == null
-                              ? null
-                              : new StreamAcl(builder._aclRead, builder._aclWrite, builder._aclDelete, builder._aclMetaRead, builder._aclMetaWrite);
-            return new StreamMetadata(builder._maxCount, builder._maxAge, builder._truncateBefore, builder._cacheControl, acl, builder._customMetadata);
-        }
-
-        public StreamMetadataBuilder SetMaxCount(int maxCount)
-        {
-            Ensure.Positive(maxCount, "maxCount");
-            _maxCount = maxCount;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetMaxAge(TimeSpan maxAge)
-        {
-            Ensure.Positive(maxAge.Ticks, "maxAge");
-            _maxAge = maxAge;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetTruncateBefore(int truncateBefore)
-        {
-            Ensure.Nonnegative(truncateBefore, "truncateBefore");
-            _truncateBefore = truncateBefore;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCacheControl(TimeSpan cacheControl)
-        {
-            Ensure.Positive(cacheControl.Ticks, "cacheControl");
-            _cacheControl = cacheControl;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetReadRole(string role)
-        {
-            _aclRead = role == null ? null : new[] { role };
-            return this;
-        }
-
-        public StreamMetadataBuilder SetReadRoles(string[] roles)
-        {
-            _aclRead = roles;
-            return this;
-        }
-        
-        public StreamMetadataBuilder SetWriteRole(string role)
-        {
-            _aclWrite = role == null ? null : new[] { role };
-            return this;
-        }
-
-        public StreamMetadataBuilder SetWriteRoles(string[] roles)
-        {
-            _aclWrite = roles;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetDeleteRole(string role)
-        {
-            _aclDelete = role == null ? null : new[] { role };
-            return this;
-        }
-
-        public StreamMetadataBuilder SetDeleteRoles(string[] roles)
-        {
-            _aclDelete = roles;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetMetadataReadRole(string role)
-        {
-            _aclMetaRead = role == null ? null : new[] { role };
-            return this;
-        }
-
-        public StreamMetadataBuilder SetMetadataReadRoles(string[] roles)
-        {
-            _aclMetaRead = roles;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetMetadataWriteRole(string role)
-        {
-            _aclMetaWrite = role == null ? null : new[] { role };
-            return this;
-        }
-
-        public StreamMetadataBuilder SetMetadataWriteRoles(string[] roles)
-        {
-            _aclMetaWrite = roles;
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, string value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, int value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, int? value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, long value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, long? value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, float value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, float? value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, double value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, double? value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, decimal value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, decimal? value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, bool value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomProperty(string key, bool? value)
-        {
-            _customMetadata.Add(key, value);
-            return this;
-        }
-
-        public StreamMetadataBuilder SetCustomPropertyWithValueAsRawJsonString(string key, string rawJson)
-        {
-            _customMetadata.Add(key, JToken.Parse(rawJson));
-            return this;
         }
     }
 }

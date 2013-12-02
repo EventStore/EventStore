@@ -110,6 +110,9 @@
     <Compile Include="ClusterSettings.cs" />
     <Compile Include="ClusterSettingsBuilder.cs" />
     <Compile Include="ClientConnectionEventArgs.cs" />
+    <Compile Include="RawStreamMetadataResult.cs" />
+    <Compile Include="StreamMetadataBuilder.cs" />
+    <Compile Include="StreamMetadataResult.cs" />
     <Compile Include="WriteResult.cs" />
     <Compile Include="SystemSettings.cs" />
     <Compile Include="EventReadResult.cs" />
