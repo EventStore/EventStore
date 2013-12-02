@@ -32,7 +32,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
-    [TestFixture] 
+    [TestFixture, Platform("WIN")] 
     public class when_writing_a_file_checkpoint_to_a_writethroughfile : SpecificationWithFile
     {
         [Test]
