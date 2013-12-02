@@ -79,6 +79,12 @@ namespace EventStore.ClientAPI.Common.Utils
             return result;
         }
 
+        public static object ParseJson(this byte[] json, Type type)
+        {
+            var result = JsonConvert.DeserializeObject(Helper.UTF8NoBom.GetString(json), type, JsonSettings);
+            return result;
+        }
+
         public static object DeserializeObject(JObject value, Type type, JsonSerializerSettings settings)
         {
             JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
