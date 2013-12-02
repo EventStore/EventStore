@@ -477,7 +477,7 @@ namespace EventStore.ClientAPI.Core
             {
                 string message = Helper.EatException(() => Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                 var exc = new EventStoreConnectionException(
-                        string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
+                        string.Format("Bad request received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
                 CloseConnection("Connection-wide BadRequest received. Too dangerous to continue.", exc);
                 return;
             }
