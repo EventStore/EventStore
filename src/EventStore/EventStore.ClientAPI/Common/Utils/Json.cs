@@ -36,7 +36,7 @@ using Formatting = Newtonsoft.Json.Formatting;
 
 namespace EventStore.ClientAPI.Common.Utils
 {
-    public static class Json
+    static class Json
     {
         public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
