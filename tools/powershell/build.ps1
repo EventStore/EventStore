@@ -1,7 +1,7 @@
 [CmdletBinding()]
 Param(
     [Parameter(Position=0, HelpMessage="Build Type (quick, full)")]
-    [ValidateSet('quick', 'clean-all', 'full')]
+    [ValidateSet('quick', 'clean-all', 'full', 'v8', 'js1')]
     [string]$Target = "quick",
     [Parameter(HelpMessage="Configuration (debug, release)")]
     [string]$Configuration = "release",
@@ -200,7 +200,7 @@ Write-Info "Additional Defines: $Defines"
 Write-Host ""
 Write-Host ""
 
-if ($Target -eq "full") {
+if (($Target -eq "full") -or ($Target -eq "v8") -or ($Target -eq "js1")) {
     #Get dependencies if necessary
     if ($ForceNetwork -or (Test-ShouldTryNetworkAccess))
     {
@@ -249,7 +249,7 @@ try {
         $branchName = Get-GitBranchOrTag
 
         #Build V8
-        if ($Target -eq "full") {
+        if ($Target -ne "quick") {
             #Build V8 and JS1
             Push-Location $v8Directory
 
@@ -319,6 +319,10 @@ try {
             }
             Pop-Location
 
+	    if ($Target -eq "v8") {
+	    	exit
+	    }
+
             #Build JS1 (Patch version resource, Build, Revert version resource)
             try {
                 Write-Verbose "Patching $js1VersionResource with product information."
@@ -330,6 +334,10 @@ try {
                 Write-Verbose "Reverting $js1VersionResource to original state."
                 & { git checkout --quiet $js1VersionResource }
             }
+
+	    if ($Target -eq "js1") {
+	    	exit
+	    }
         }
 
         #Build Event Store (Patch AssemblyInfo, Build, Revert AssemblyInfo)
