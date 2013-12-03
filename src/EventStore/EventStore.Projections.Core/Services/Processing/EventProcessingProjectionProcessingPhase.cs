@@ -222,20 +222,25 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_handlerPartition == partition)
                 return;
+
             var newState = _partitionStateCache.GetLockedPartitionState(partition);
             _handlerPartition = partition;
             if (newState != null && !String.IsNullOrEmpty(newState.State))
                 _projectionStateHandler.Load(newState.State);
             else
+            {
                 _projectionStateHandler.Initialize();
+            }
+
             if (!_sharedStateSet && _isBiState)
             {
                 var newSharedState = _partitionStateCache.GetLockedPartitionState("");
-                _projectionStateHandler.LoadShared(newSharedState.State);
-                _sharedStateSet = true;
+                if (newSharedState != null && !String.IsNullOrEmpty(newSharedState.State))
+                    _projectionStateHandler.LoadShared(newSharedState.State);
+                else
+                    _projectionStateHandler.InitializeShared();
             }
         }
-
 
         public override void NewCheckpointStarted(CheckpointTag at)
         {

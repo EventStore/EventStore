@@ -65,7 +65,13 @@ var $projections = {
             version: 4
         };
 
-        var initStateHandler = function () { return {}; };
+        var initStateHandler = function () {
+            return {};
+        };
+
+        var initSharedStateHandler = function () {
+            return {};
+        };
 
         var projectionState = null;
         var projectionSharedState = null;
@@ -77,12 +83,13 @@ var $projections = {
 
             initialize: function () {
                 var initialState = initStateHandler();
-                if (!sources.options.biState)
-                    projectionState = initialState;
-                else {
-                    projectionState = initialState[0];
-                    projectionSharedState = initialState[1];
-                }
+                projectionState = initialState;
+                return "OK";
+            },
+
+            initialize_shared: function () {
+                var initialState = initSharedStateHandler();
+                projectionSharedState = initialState;
                 return "OK";
             },
 
@@ -153,6 +160,11 @@ var $projections = {
 
         function on_init_state(initHandler) {
             initStateHandler = initHandler;
+            sources.options.definesFold = true;
+        }
+
+        function on_init_shared_state(initHandler) {
+            initSharedStateHandler = initHandler;
             sources.options.definesFold = true;
         }
 

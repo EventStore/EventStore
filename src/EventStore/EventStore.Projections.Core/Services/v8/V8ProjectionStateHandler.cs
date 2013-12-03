@@ -140,6 +140,12 @@ namespace EventStore.Projections.Core.Services.v8
             _query.Initialize();
         }
 
+        public void InitializeShared()
+        {
+            CheckDisposed();
+            _query.InitializeShared();
+        }
+
         public string GetStatePartition(
             CheckpointTag eventPosition, string category, ResolvedEvent @event)
         {
@@ -177,7 +183,7 @@ namespace EventStore.Projections.Core.Services.v8
                     });
             newState = newStates.Item1;
             newSharedState = newStates.Item2;
-            try
+/*            try
             {
                 if (!string.IsNullOrEmpty(newState))
                 {
@@ -185,10 +191,14 @@ namespace EventStore.Projections.Core.Services.v8
                 }
 
             }
-            catch (JsonException)
+            catch (InvalidCastException)
             {
                 Console.Error.WriteLine(newState);
             }
+            catch (JsonException)
+            {
+                Console.Error.WriteLine(newState);
+            }*/
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }

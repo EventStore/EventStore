@@ -74,6 +74,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _state = "";
         }
 
+        public void InitializeShared()
+        {
+            _logger("InitializeShared");
+            throw new NotImplementedException();
+        }
+
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             _logger("GetStatePartition(" + "..." + ")");

@@ -45,6 +45,7 @@ namespace EventStore.Projections.Core.Services
         void Load(string state);
         void LoadShared(string state);
         void Initialize();
+        void InitializeShared();
 
         /// <summary>
         /// Get state partition from the event

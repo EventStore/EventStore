@@ -64,6 +64,10 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
+        public void InitializeShared()
+        {
+        }
+
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             throw new NotImplementedException();

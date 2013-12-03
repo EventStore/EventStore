@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.v8
         private Action<string> _setState;
         private Action<string> _setSharedState;
         private Action _initialize;
+        private Action _initialize_shared;
         private Func<string> _getSources;
 
         // the following two delegates must be kept alive while used by unmanaged code
@@ -116,6 +117,9 @@ namespace EventStore.Projections.Core.v8
             {
                 case "initialize":
                     _initialize = () => ExecuteHandler(handlerHandle, "");
+                    break;
+                case "initialize_shared":
+                    _initialize_shared = () => ExecuteHandler(handlerHandle, "");
                     break;
                 case "get_state_partition":
                     _getStatePartition = (json, other) => ExecuteHandler(handlerHandle, json, other);
@@ -219,10 +223,21 @@ namespace EventStore.Projections.Core.v8
             InitializeScript();
         }
 
+        public void InitializeShared()
+        {
+            InitializeScriptShared();
+        }
+
         private void InitializeScript()
         {
             if (_initialize != null)
                 _initialize();
+        }
+
+        private void InitializeScriptShared()
+        {
+            if (_initialize_shared != null)
+                _initialize_shared();
         }
 
         public string GetPartition(string json, string[] other)

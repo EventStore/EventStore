@@ -37,6 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public class FakeProjectionStateHandler : IProjectionStateHandler
     {
         public int _initializeCalled = 0;
+        public int _initializeSharedCalled = 0;
         public int _loadCalled = 0;
         public int _eventsProcessed = 0;
         public string _loadedState = null;
@@ -111,6 +112,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _initializeCalled++;
             _loadedState = "";
         }
+        public void InitializeShared()
+        {
+            if (_failOnInitialize)
+                throw new Exception("INITIALIZE_SHARED_FAILED");
+            _initializeSharedCalled++;
+            _loadedState = "";
+        }
+
 
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {

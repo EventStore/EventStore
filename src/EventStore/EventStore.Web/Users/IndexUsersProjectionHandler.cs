@@ -69,6 +69,10 @@ namespace EventStore.Web.Users
         {
         }
 
+        public void InitializeShared()
+        {
+        }
+
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
             throw new NotImplementedException();
