@@ -69,7 +69,7 @@ function scope($on, $notify) {
             if (name == 0 || name === "$init") {
                 eventProcessor.on_init_state(handlers[name]);
             }
-            else if (name === "$init_shared") {
+            else if (name === "$initShared") {
                 eventProcessor.on_init_shared_state(handlers[name]);
             }
             else if (name === "$any") {
