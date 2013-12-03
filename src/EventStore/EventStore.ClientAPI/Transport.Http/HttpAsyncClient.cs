@@ -162,7 +162,7 @@ namespace EventStore.ClientAPI.Transport.Http
         private void AddAuthenticationHeader(HttpWebRequest request, UserCredentials userCredentials)
         {
             Ensure.NotNull(userCredentials, "userCredentials");
-            var httpAuthentication = string.Format("{0}:{1}", userCredentials.Login, userCredentials.Password);
+            var httpAuthentication = string.Format("{0}:{1}", userCredentials.Username, userCredentials.Password);
             var encodedCredentials = Convert.ToBase64String(Helper.UTF8NoBom.GetBytes(httpAuthentication));
             request.Headers.Add("Authorization", string.Format("Basic {0}", encodedCredentials));
         }

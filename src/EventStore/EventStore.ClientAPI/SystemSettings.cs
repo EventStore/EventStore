@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using System.IO;
@@ -35,22 +34,49 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// Represents global settings for an Event Store server.
+    /// </summary>
     public class SystemSettings
     {
+        /// <summary>
+        /// Default access control list for new user streams.
+        /// </summary>
         public readonly StreamAcl UserStreamAcl;
+        /// <summary>
+        /// Default access control list for new system streams.
+        /// </summary>
         public readonly StreamAcl SystemStreamAcl;
 
+        /// <summary>
+        /// Constructs a new <see cref="SystemSettings"/>.
+        /// </summary>
+        /// <param name="userStreamAcl"></param>
+        /// <param name="systemStreamAcl"></param>
         public SystemSettings(StreamAcl userStreamAcl, StreamAcl systemStreamAcl)
         {
             UserStreamAcl = userStreamAcl;
             SystemStreamAcl = systemStreamAcl;
         }
 
+        /// <summary>
+        /// Returns a string that represents the current object.
+        /// </summary>
+        /// <returns>
+        /// A string that represents the current object.
+        /// </returns>
+        /// <filterpriority>2</filterpriority>
         public override string ToString()
         {
             return string.Format("UserStreamAcl: ({0}), SystemStreamAcl: ({1})", UserStreamAcl, SystemStreamAcl);
         }
 
+        /// <summary>
+        /// Creates a <see cref="SystemSettings"/> object from a JSON string
+        /// in a byte array.
+        /// </summary>
+        /// <param name="json">Byte array containing a JSON string.</param>
+        /// <returns>A <see cref="SystemSettings"/> object.</returns>
         public static SystemSettings FromJsonBytes(byte[] json)
         {
             using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json))))
@@ -97,6 +123,11 @@ namespace EventStore.ClientAPI
                 throw new Exception("Invalid JSON");
         }
 
+        /// <summary>
+        /// Creates a byte array containing a UTF-8 string with no byte order
+        /// mark representing this <see cref="SystemSettings"/> object.
+        /// </summary>
+        /// <returns>A byte array containing a UTF-8 string with no byte order mark.</returns>
         public byte[] ToJsonBytes()
         {
             using (var memoryStream = new MemoryStream())
@@ -109,6 +140,11 @@ namespace EventStore.ClientAPI
             }
         }
 
+        /// <summary>
+        /// Creates a string containing representing this <see cref="SystemSettings"/>
+        /// object.
+        /// </summary>
+        /// <returns>A string representing this <see cref="SystemSettings"/>.</returns>
         public string ToJsonString()
         {
             using (var stringWriter = new StringWriter())

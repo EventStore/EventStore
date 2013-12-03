@@ -31,14 +31,6 @@ using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
-    public enum EventReadStatus
-    {
-        Success = 0,
-        NotFound = 1,
-        NoStream = 2,
-        StreamDeleted = 3,
-    }
-
     /// <summary>
     /// A Event Read Result is the result of a single event read operation to the event store.
     /// </summary>

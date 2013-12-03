@@ -99,7 +99,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return new TcpPackage(TcpCommand.SubscribeToStream,
                                   _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   _correlationId,
-                                  _userCredentials != null ? _userCredentials.Login : null,
+                                  _userCredentials != null ? _userCredentials.Username : null,
                                   _userCredentials != null ? _userCredentials.Password : null,
                                   dto.Serialize());
         }

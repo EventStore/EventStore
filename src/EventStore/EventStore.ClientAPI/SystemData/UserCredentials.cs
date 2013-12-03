@@ -30,17 +30,32 @@ using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.SystemData
 {
-    public class UserCredentials
+    /// <summary>
+    /// A username/password pair used for authentication and
+    /// authorization to perform operations over an <see cref="IEventStoreConnection"/>.
+    /// </summary>
+    public struct UserCredentials
     {
-        public readonly string Login;
+        /// <summary>
+        /// The username
+        /// </summary>
+        public readonly string Username;
+        /// <summary>
+        /// The password
+        /// </summary>
         public readonly string Password;
 
-        public UserCredentials(string login, string password)
+        /// <summary>
+        /// Constructs a new <see cref="UserCredentials"/>.
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        public UserCredentials(string username, string password)
         {
-            Ensure.NotNull(login, "login");
+            Ensure.NotNull(username, "username");
             Ensure.NotNull(password, "password");
 
-            Login = login;
+            Username = username;
             Password = password;
         }
     }

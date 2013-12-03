@@ -281,7 +281,7 @@ namespace EventStore.ClientAPI.Core
                 _connection.EnqueueSend(new TcpPackage(TcpCommand.Authenticate,
                                                        TcpFlags.Authenticated,
                                                        _authInfo.CorrelationId,
-                                                       _settings.DefaultUserCredentials.Login,
+                                                       _settings.DefaultUserCredentials.Username,
                                                        _settings.DefaultUserCredentials.Password, 
                                                        null));
             }
