@@ -108,7 +108,6 @@ var $projections = {
                     stateJson = JSON.stringify(projectionState);
                     var sharedStateJson = JSON.stringify(projectionSharedState);
                     finalResult = [stateJson, sharedStateJson];
-                    _log(JSON.stringify(finalResult));
                     return finalResult;
                 }
             },
