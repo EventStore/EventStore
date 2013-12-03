@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using EventStore.ClientAPI.ClientOperations;
@@ -33,13 +32,28 @@ using EventStore.ClientAPI.Common.Utils;
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// Represents a subscription to some particular stream or to all possible streams within the Event Store
+    /// Represents a subscription to a single stream or to the stream
+    /// of all events in the Event Store.
     /// </summary>
     public class EventStoreSubscription : IDisposable
     {
+        /// <summary>
+        /// True if this subscription is to all streams.
+        /// </summary>
         public bool IsSubscribedToAll { get { return _streamId == string.Empty; } }
+        /// <summary>
+        /// The name of the stream to which the subscription is subscribed.
+        /// </summary>
         public string StreamId { get { return _streamId; } }
+        /// <summary>
+        /// The last commit position seen on the subscription (if this is
+        /// a subscription to all events).
+        /// </summary>
         public readonly long LastCommitPosition;
+        /// <summary>
+        /// The last event number seen on the subscription (if this is a
+        /// subscription to a single stream).
+        /// </summary>
         public readonly int? LastEventNumber;
 
         private readonly SubscriptionOperation _subscriptionOperation;
@@ -55,16 +69,25 @@ namespace EventStore.ClientAPI
             LastEventNumber = lastEventNumber;
         }
 
+        /// <summary>
+        /// Unsubscribes from the stream.
+        /// </summary>
         public void Dispose()
         {
             Unsubscribe();
         }
 
+        /// <summary>
+        /// Unsubscribes from the stream.
+        /// </summary>
         public void Close()
         {
             Unsubscribe();
         }
 
+        /// <summary>
+        /// Unsubscribes from the stream.
+        /// </summary>
         public void Unsubscribe()
         {
             _subscriptionOperation.Unsubscribe();

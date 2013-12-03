@@ -126,6 +126,9 @@ namespace EventStore.ClientAPI
         public readonly TimeSpan HeartbeatTimeout;
 
 
+        /// <summary>
+        /// The interval after which a client will time out during connection.
+        /// </summary>
         public readonly TimeSpan ClientConnectionTimeout;
 
         internal ConnectionSettings(ILogger log,

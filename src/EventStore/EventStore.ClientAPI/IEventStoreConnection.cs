@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 using System.Collections.Generic;
@@ -362,11 +361,21 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="position">The position to start reading from</param>
         /// <param name="maxCount">The maximum count to read</param>
-        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null);
 
+        /// <summary>
+        /// Subscribes to a single event stream. New events written to the stream
+        /// while the subscription is active will be pushed to the client.
+        /// </summary>
+        /// <param name="stream">The stream to subscribe to</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
+        /// <param name="eventAppeared">An action invoked when a new event is received over the subscription</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStoreSubscription SubscribeToStream(
                 string stream,
                 bool resolveLinkTos,
@@ -374,6 +383,17 @@ namespace EventStore.ClientAPI
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
+        /// <summary>
+        /// Asynchronously subscribes to a single event stream. New events 
+        /// written to the stream while the subscription is active will be
+        /// pushed to the client.
+        /// </summary>
+        /// <param name="stream">The stream to subscribe to</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
+        /// <param name="eventAppeared">An action invoked when a new event is received over the subscription</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         Task<EventStoreSubscription> SubscribeToStreamAsync(
                 string stream,
                 bool resolveLinkTos,
@@ -381,6 +401,31 @@ namespace EventStore.ClientAPI
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
+        /// <summary>
+        /// Subscribes to a single event stream. Existing events from
+        /// fromEventNumberExclusive onwards are read from the stream
+        /// and presented to the user of <see cref="EventStoreCatchUpSubscription"/>
+        /// as if they had been pushed.
+        /// 
+        /// Once the end of the stream is read the subscription is
+        /// transparently (to the user) switched to push new events as
+        /// they are written.
+        /// 
+        /// The action liveProcessingStarted is called when the
+        /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
+        /// phase to the live subscription phase.
+        /// </summary>
+        /// <param name="stream">The stream to subscribe to</param>
+        /// <param name="fromEventNumberExclusive">The event number from which to start.
+        /// Use <see cref="StreamPosition.Start" /> to get events from the start of the stream,
+        /// and null to receive new events only.</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
+        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <param name="readBatchSize">The batch size to use during the read phase</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
                 string stream,
                 int? fromEventNumberExclusive,
@@ -391,18 +436,61 @@ namespace EventStore.ClientAPI
                 UserCredentials userCredentials = null,
                 int readBatchSize = 500);
 
+        /// <summary>
+        /// Subscribes to all events in the Event Store. New
+        /// events written to the stream while the subscription is active
+        /// will be pushed to the client.
+        /// </summary>
+        /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
+        /// <param name="eventAppeared">An action invoked when a new event is received over the subscription</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStoreSubscription SubscribeToAll(
                 bool resolveLinkTos, 
                 Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
+        /// <summary>
+        /// Asynchronously subscribes to all events in the Event Store. New
+        /// events written to the stream while the subscription is active
+        /// will be pushed to the client.
+        /// </summary>
+        /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
+        /// <param name="eventAppeared">An action invoked when a new event is received over the subscription</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         Task<EventStoreSubscription> SubscribeToAllAsync(
                 bool resolveLinkTos,
                 Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
-
+        
+        /// <summary>
+        /// Subscribes to a all events. Existing events from fromPositionExclusive
+        /// onwards are read from the Event Store and presented to the user of
+        /// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
+        /// 
+        /// Once the end of the stream is read the subscription is
+        /// transparently (to the user) switched to push new events as
+        /// they are written.
+        /// 
+        /// The action liveProcessingStarted is called when the
+        /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
+        /// phase to the live subscription phase.
+        /// </summary>
+        /// <param name="fromPositionExclusive">The event number from which to start.
+        /// Use <see cref="Position.Start" /> to get events from the start of the log,
+        /// and null to receive new events only.</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
+        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <param name="readBatchSize">The batch size to use during the read phase</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStoreAllCatchUpSubscription SubscribeToAllFrom(
                 Position? fromPositionExclusive,
                 bool resolveLinkTos,
@@ -412,24 +500,92 @@ namespace EventStore.ClientAPI
                 UserCredentials userCredentials = null,
                 int readBatchSize = 500);
 
+        /// <summary>
+        /// Sets the metadata for a stream.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to set metadata.</param>
+        /// <param name="expectedMetastreamVersion">The expected version for the write to the metadata stream.</param>
+        /// <param name="metadata">A <see cref="StreamMetadata"/> representing the new metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <returns>A <see cref="WriteResult"/>.</returns>
         WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
 
+        /// <summary>
+        /// Asynchronously sets the metadata for a stream.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to set metadata.</param>
+        /// <param name="expectedMetastreamVersion">The expected version for the write to the metadata stream.</param>
+        /// <param name="metadata">A <see cref="StreamMetadata"/> representing the new metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <returns>A <see cref="WriteResult"/>.</returns>
         Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
 
+        /// <summary>
+        /// Sets the metadata for a stream.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to set metadata.</param>
+        /// <param name="expectedMetastreamVersion">The expected version for the write to the metadata stream.</param>
+        /// <param name="metadata">A byte array representing the new metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <returns>A <see cref="WriteResult"/>.</returns>
         WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
-        
+
+        /// <summary>
+        /// Asynchronously sets the metadata for a stream.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to set metadata.</param>
+        /// <param name="expectedMetastreamVersion">The expected version for the write to the metadata stream.</param>
+        /// <param name="metadata">A byte array representing the new metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
+        /// <returns>A <see cref="WriteResult"/>.</returns>
         Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
         
+        /// <summary>
+        /// Reads the metadata for a stream and converts the metadata into a <see cref="StreamMetadata"/>.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to read metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
+        /// <returns>A <see cref="StreamMetadataResult"/> representing the result of the operation.</returns>
         StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null);
-        
+
+        /// <summary>
+        /// Asynchronously reads the metadata for a stream and converts the metadata into a <see cref="StreamMetadata"/>.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to read metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
+        /// <returns>A <see cref="StreamMetadataResult"/> representing the result of the operation.</returns>
         Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null);
-        
+
+        /// <summary>
+        /// Reads the metadata for a stream as a byte array.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to read metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
+        /// <returns>A <see cref="StreamMetadataResult"/> representing the result of the operation.</returns>
         RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream, UserCredentials userCredentials = null);
-        
+
+        /// <summary>
+        /// Asynchronously reads the metadata for a stream as a byte array.
+        /// </summary>
+        /// <param name="stream">The name of the stream for which to read metadata.</param>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
+        /// <returns>A <see cref="StreamMetadataResult"/> representing the result of the operation.</returns>
         Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
 
+        /// <summary>
+        /// Sets the global settings for the server or cluster to which the <see cref="IEventStoreConnection"/>
+        /// is connected.
+        /// </summary>
+        /// <param name="settings">The <see cref="SystemSettings"/> to apply.</param>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
         void SetSystemSettings(SystemSettings settings, UserCredentials userCredentials = null);
-        
+
+        /// <summary>
+        /// Sets the global settings for the server or cluster to which the <see cref="IEventStoreConnection"/>
+        /// is connected.
+        /// </summary>
+        /// <param name="settings">The <see cref="SystemSettings"/> to apply.</param>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
         Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null);
 
         /// <summary>

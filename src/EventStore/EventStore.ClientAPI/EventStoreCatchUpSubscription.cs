@@ -35,15 +35,29 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// Base class representing catch-up subscriptions.
+    /// </summary>
     public abstract class EventStoreCatchUpSubscription
     {
         private const int DefaultReadBatchSize = 500;
         private const int DefaultMaxPushQueueSize = 10000;
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
 
+        /// <summary>
+        /// Indicates whether the subscription is to all events or to
+        /// a specific stream.
+        /// </summary>
         public bool IsSubscribedToAll { get { return _streamId == string.Empty; } }
+        /// <summary>
+        /// The name of the stream to which the subscription is subscribed
+        /// (empty if subscribed to all).
+        /// </summary>
         public string StreamId { get { return _streamId; } }
 
+        /// <summary>
+        /// The <see cref="ILogger"/> to use for the subscription.
+        /// </summary>
         protected readonly ILogger Log;
 
         private readonly IEventStoreConnection _connection;
@@ -51,12 +65,24 @@ namespace EventStore.ClientAPI
         private readonly UserCredentials _userCredentials;
         private readonly string _streamId;
         
+        /// <summary>
+        /// The batch size to use during the read phase of the subscription.
+        /// </summary>
         protected readonly int ReadBatchSize;
+        /// <summary>
+        /// The maximum number of events to buffer before the subscription drops.
+        /// </summary>
         protected readonly int MaxPushQueueSize;
 
+        /// <summary>
+        /// Action invoked when a new event appears on the subscription.
+        /// </summary>
         protected readonly Action<EventStoreCatchUpSubscription, ResolvedEvent> EventAppeared;
         private readonly Action<EventStoreCatchUpSubscription> _liveProcessingStarted;
         private readonly Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
+        /// <summary>
+        /// Whether or not to use verbose logging (useful during debugging).
+        /// </summary>
         protected readonly bool Verbose;
 
         private readonly ConcurrentQueue<ResolvedEvent> _liveQueue = new ConcurrentQueue<ResolvedEvent>();
@@ -69,13 +95,39 @@ namespace EventStore.ClientAPI
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
+        /// <summary>
+        /// Read events until the given position or event number.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events.</param>
+        /// <param name="userCredentials">User credentials for the operation.</param>
+        /// <param name="lastCommitPosition">The commit position to read until.</param>
+        /// <param name="lastEventNumber">The event number to read until.</param>
         protected abstract void ReadEventsTill(IEventStoreConnection connection,
                                                bool resolveLinkTos,
                                                UserCredentials userCredentials,
                                                long? lastCommitPosition,
                                                int? lastEventNumber);
+        /// <summary>
+        /// Try to process a single <see cref="ResolvedEvent"/>.
+        /// </summary>
+        /// <param name="e">The <see cref="ResolvedEvent"/> to process.</param>
         protected abstract void TryProcess(ResolvedEvent e);
 
+        /// <summary>
+        /// Constructs state for EventStoreCatchUpSubscription.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="log">The <see cref="ILogger"/> to use.</param>
+        /// <param name="streamId">The stream name.</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events.</param>
+        /// <param name="userCredentials">User credentials for the operations.</param>
+        /// <param name="eventAppeared">Action invoked when events are received.</param>
+        /// <param name="liveProcessingStarted">Action invoked when the read phase finishes.</param>
+        /// <param name="subscriptionDropped">Action invoked if the subscription drops.</param>
+        /// <param name="verboseLogging">Whether to use verbose logging.</param>
+        /// <param name="readBatchSize">Batch size for use in the reading phase.</param>
+        /// <param name="maxPushQueueSize">The maximum number of events to buffer before dropping the subscription.</param>
         protected EventStoreCatchUpSubscription(IEventStoreConnection connection, 
                                                 ILogger log,
                                                 string streamId,
@@ -150,6 +202,11 @@ namespace EventStore.ClientAPI
             });
         }
 
+        /// <summary>
+        /// Attempts to stop the subscription.
+        /// </summary>
+        /// <param name="timeout">The timeout within which the subscription should stop.</param>
+        /// <exception cref="TimeoutException">Thrown if the subscription fails to stop within the timeout.</exception>
         public void Stop(TimeSpan timeout)
         {
             if (Verbose) Log.Debug("Catch-up Subscription to {0}: requesting stop...", IsSubscribedToAll ? "<all>" : StreamId);
@@ -259,8 +316,14 @@ namespace EventStore.ClientAPI
         }
     }
 
+    /// <summary>
+    /// A catch-up subscription to all events in the Event Store.
+    /// </summary>
     public class EventStoreAllCatchUpSubscription: EventStoreCatchUpSubscription
     {
+        /// <summary>
+        /// The last position processed on the subscription.
+        /// </summary>
         public Position LastProcessedPosition
         {
             get
@@ -295,6 +358,14 @@ namespace EventStore.ClientAPI
             _nextReadPosition = fromPositionExclusive ?? Position.Start;
         }
 
+        /// <summary>
+        /// Read events until the given position.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events.</param>
+        /// <param name="userCredentials">User credentials for the operation.</param>
+        /// <param name="lastCommitPosition">The commit position to read until.</param>
+        /// <param name="lastEventNumber">The event number to read until.</param>
         protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
                                                UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
@@ -322,6 +393,10 @@ namespace EventStore.ClientAPI
                           IsSubscribedToAll ? "<all>" : StreamId, _nextReadPosition);
         }
 
+        /// <summary>
+        /// Try to process a single <see cref="ResolvedEvent"/>.
+        /// </summary>
+        /// <param name="e">The <see cref="ResolvedEvent"/> to process.</param>
         protected override void TryProcess(ResolvedEvent e)
         {
             bool processed = false;
@@ -338,8 +413,14 @@ namespace EventStore.ClientAPI
         }
     }
 
+    /// <summary>
+    /// A catch-up subscription to a single stream in the Event Store.
+    /// </summary>
     public class EventStoreStreamCatchUpSubscription : EventStoreCatchUpSubscription
     {
+        /// <summary>
+        /// The last event number processed on the subscription.
+        /// </summary>
         public int LastProcessedEventNumber { get { return _lastProcessedEventNumber; } }
 
         private int _nextReadEventNumber;
@@ -365,6 +446,14 @@ namespace EventStore.ClientAPI
             _nextReadEventNumber = fromEventNumberExclusive ?? 0;
         }
 
+        /// <summary>
+        /// Read events until the given event number.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="resolveLinkTos">Whether to resolve Link events.</param>
+        /// <param name="userCredentials">User credentials for the operation.</param>
+        /// <param name="lastCommitPosition">The commit position to read until.</param>
+        /// <param name="lastEventNumber">The event number to read until.</param>
         protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
                                                UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
@@ -406,6 +495,10 @@ namespace EventStore.ClientAPI
                           IsSubscribedToAll ? "<all>" : StreamId, _nextReadEventNumber);
         }
 
+        /// <summary>
+        /// Try to process a single <see cref="ResolvedEvent"/>.
+        /// </summary>
+        /// <param name="e">The <see cref="ResolvedEvent"/> to process.</param>
         protected override void TryProcess(ResolvedEvent e)
         {
             bool processed = false;

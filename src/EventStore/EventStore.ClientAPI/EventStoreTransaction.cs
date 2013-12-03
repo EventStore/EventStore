@@ -39,6 +39,10 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class EventStoreTransaction : IDisposable
     {
+        /// <summary>
+        /// The ID of the transaction. This can be used to recover
+        /// a transaction later.
+        /// </summary>
         public readonly long TransactionId;
 
         private readonly UserCredentials _userCredentials;
