@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI.SystemData
     /// A username/password pair used for authentication and
     /// authorization to perform operations over an <see cref="IEventStoreConnection"/>.
     /// </summary>
-    public struct UserCredentials
+    public class UserCredentials
     {
         /// <summary>
         /// The username
