@@ -100,13 +100,16 @@ var $projections = {
             process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
                 processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition);
                 var stateJson;
+                var finalResult;
                 if (!sources.options.biState) {
                     stateJson = JSON.stringify(projectionState);
                     return stateJson;
                 } else {
                     stateJson = JSON.stringify(projectionState);
                     var sharedStateJson = JSON.stringify(projectionSharedState);
-                    return [stateJson, sharedStateJson];
+                    finalResult = [stateJson, sharedStateJson];
+                    _log(JSON.stringify(finalResult));
+                    return finalResult;
                 }
             },
 
@@ -357,6 +360,7 @@ var $projections = {
         return {
             on_event: on_event,
             on_init_state: on_init_state,
+            on_init_shared_state: on_init_shared_state,
             on_any: on_any,
             on_raw: on_raw,
 
