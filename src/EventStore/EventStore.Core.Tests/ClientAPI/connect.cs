@@ -73,6 +73,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                              .EnableVerboseLogging()
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .LimitReconnectionsTo(0)
+                                             .WithConnectionTimeoutOf(TimeSpan.FromSeconds(10))
                                              .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                              .FailOnNoServerResponse();
             if (_tcpType == TcpType.Ssl)
@@ -111,6 +112,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                   .EnableVerboseLogging()
                                   .UseCustomLogger(ClientApiLoggerBridge.Default)
                                   .LimitReconnectionsTo(1)
+                                  .WithConnectionTimeoutOf(TimeSpan.FromSeconds(10))
                                   .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
                                   .FailOnNoServerResponse();
             if (_tcpType == TcpType.Ssl)
@@ -179,7 +181,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 connection.ErrorOccurred += (s, e) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", e.Connection.ConnectionName, e.Exception);
                 connection.Connect();
 
-                if (!closed.Wait(TimeSpan.FromSeconds(5)))
+                if (!closed.Wait(TimeSpan.FromSeconds(15)))
                     Assert.Fail("Connection timeout took too long.");
             }
 
