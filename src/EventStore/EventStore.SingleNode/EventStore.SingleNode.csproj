@@ -92,7 +92,7 @@
       <Link>NLog.config</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="singlenode-config.json">
+    <None Include="singlenode-config.dist.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

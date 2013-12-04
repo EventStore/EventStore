@@ -86,7 +86,7 @@
       <Link>NLog.config</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="clusternode-config.json">
+    <None Include="clusternode-config.dist.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
