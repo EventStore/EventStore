@@ -45,18 +45,31 @@ if [[ ! -d $MONO_PREFIX ]] ; then
   mkdir $MONO_PREFIX || err
 fi
 
-
-apt-get install -y git-core || err
-apt-get install -y libtool || err
-apt-get install -y autoconf || err
-apt-get install -y automake || err
-apt-get install -y gcc || err
-apt-get install -y build-essential || err
-apt-get install -y gettext || err
-apt-get install -y mono-runtime || err
-apt-get install -y mono-gmcs || err
-
-
+if hash apt-get 2>/dev/null ; then
+  apt-get install -y git-core || err
+  apt-get install -y libtool || err
+  apt-get install -y autoconf || err
+  apt-get install -y automake || err
+  apt-get install -y gcc || err
+  apt-get install -y build-essential || err
+  apt-get install -y gettext || err
+  apt-get install -y mono-runtime || err
+  apt-get install -y mono-gmcs || err
+elif hash pacman 2>/dev/null ; then
+  if [[ ! $(pacman -Q gcc 2>/dev/null) ]]; then
+    pacman -Sq base-devel || err
+  fi
+  if [[ ! $(pacman -Q git 2>/dev/null) ]]; then
+    pacman -Sq git || err
+  fi
+  if [[ ! $(pacman -Q mono 2>/dev/null) ]]; then
+    pacman -Sq mono || err
+  fi
+else
+  echo "Cannot find a package manager."
+  echo "Assuming the following dependencies are installed: "
+  echo "git-core libtool autoconf automake gcc build-essential gettext mono-runtime mono-gmcs"
+fi
 
 if [[ -d mono ]] ; then
   pushd mono || err
