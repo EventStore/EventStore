@@ -89,6 +89,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!string.IsNullOrEmpty(sources.CatalogStream) && !sources.ByStreams)
                 throw new InvalidOperationException("catalogStream is only supported in the byStream mode");
 
+            if (!string.IsNullOrEmpty(sources.CatalogStream) && !stopOnEof)
+                throw new InvalidOperationException("catalogStream is not supported in the projections mode");
+
             if (sources.ReorderEventsOption)
             {
                 if (!string.IsNullOrEmpty(sources.CatalogStream))
