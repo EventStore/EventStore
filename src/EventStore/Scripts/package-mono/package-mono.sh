@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+version=$1
+configuration=$2
+
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+function usage {
+	echo "Usage:"
+	echo "  $0 version configuration"
+	echo ""
+	echo "Note: configuration only specifies which directory the Event Store binaries"
+	echo "      are stored in, and have no effect on the build/link of mono."
+	exit
+}
+
+function writeLog {
+	message=$1
+	echo "[package-mono.sh] - $message"
+}
+
+if [[ "$version" == "" ]] ; then
+	VERSIONSTRING="0.0.0.0"
+	writeLog "Version defaulted to: 0.0.0.0"
+else
+	VERSIONSTRING=$version
+	writeLog "Version set to: $VERSIONSTRING"
+fi
+
+if [[ "$configuration" == "" ]]; then
+	CONFIGURATION="release"
+	writeLog "Configuration defaulted to: $CONFIGURATION"
+else
+	if [[ "$configuration" == "release" || "$configuration" == "debug" ]]; then
+		CONFIGURATION=$configuration
+		writeLog "Configuration set to: $CONFIGURATION"
+	else
+		writeLog "Invalid configuration: $configuration"
+		usage
+	fi
+fi
+
+MKBUNDLEPATH=`which mkbundle`
+if [[ $? != 0 ]] ; then
+	writeLog "Cannot find mkbundle"
+	exit 1
+else
+	writeLog "Using mkbundle: $MKBUNDLEPATH"
+fi
+
+GCCPATH=`which gcc`
+if [[ $? != 0 ]] ; then
+	writeLog "Cannot find gcc"
+	exit 1
+else
+	writeLog "Using gcc: $GCCPATH"
+fi
+
+pushd $DIR../../../../bin/eventstore/$CONFIGURATION/anycpu
+
+mkbundle -c -o main.c -oo eventstore.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --machine-config /opt/mono/etc/mono/4.0/machine.config
+
+cc -o clusternode -Wall `pkg-config --cflags monosgen-2` main.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` eventstore.a
+
+PACKAGEDIRECTORY="EventStore-Mono-v$VERSIONSTRING"
+if [[ -d $PACKAGEDIRECTORY ]] ; then
+	rm -rf $PACKAGEDIRECTORY
+fi
+
+mkdir $PACKAGEDIRECTORY
+
+cp -r clusternode-web $PACKAGEDIRECTORY/
+cp -r es-common-web $PACKAGEDIRECTORY/
+cp EventStore.Common.dll $PACKAGEDIRECTORY/	#For now the version comes from here
+cp libjs1.so $PACKAGEDIRECTORY/
+cp libv8.so $PACKAGEDIRECTORY/
+cp clusternode $PACKAGEDIRECTORY/
+cp NLog.config $PACKAGEDIRECTORY/
+cp $SCRIPTDIR/System.dll.config $PACKAGEDIRECTORY/System.dll.config
+cp $SCRIPTDIR/clusternode.sh $PACKAGEDIRECTORY/clusternode.sh
+
+tar -zcvf $PACKAGEDIRECTORY.tar.gz $PACKAGEDIRECTORY
+
+popd
