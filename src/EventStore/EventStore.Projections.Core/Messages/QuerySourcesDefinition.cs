@@ -66,6 +66,11 @@ namespace EventStore.Projections.Core.Messages
             get { return Options != null && Options.DefinesStateTransform; }
         }
 
+        bool IQuerySources.DefinesCatalogTransform
+        {
+            get { return Options != null && Options.DefinesCatalogTransform; }
+        }
+
         bool IQuerySources.ProducesResults
         {
             get { return Options != null && Options.ProducesResults; }
@@ -134,6 +139,7 @@ namespace EventStore.Projections.Core.Messages
                     new QuerySourcesDefinitionOptions
                     {
                         DefinesStateTransform = sources.DefinesStateTransform,
+                        DefinesCatalogTransform = sources.DefinesCatalogTransform,
                         ProducesResults = sources.ProducesResults,
                         DefinesFold = sources.DefinesFold,
                         ForceProjectionName = sources.ForceProjectionNameOption,

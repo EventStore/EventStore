@@ -128,6 +128,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             return "region-a";
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
             out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)

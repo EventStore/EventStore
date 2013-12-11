@@ -38,6 +38,7 @@ var $projections = {
         var getStatePartitionHandler = function () {
             throw "GetStatePartition is not defined";
         };
+        var catalogEventTransformer = null;
 
         var sources = {
             /* TODO: comment out default falses to reduce message size */
@@ -52,6 +53,7 @@ var $projections = {
 
             options: {
                 definesStateTransform: false,
+                definesCatalogTransform: false,
                 producesResults: false,
                 definesFold: false,
                 resultStreamName: null,
@@ -95,6 +97,20 @@ var $projections = {
 
             get_state_partition: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata) {
                 return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata);
+            },
+
+            transform_catalog_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
+                if (!catalogEventTransformer)
+                    throw "catalogEventTransformer is not set";
+                var eventEnvelope = new envelope(null, event, eventType, streamId, sequenceNumber, metadata, partition);
+
+                if (isJson) {
+                    tryDeserializeBody(eventEnvelope);
+                }
+
+                var result = catalogEventTransformer(eventEnvelope);
+
+                return result;
             },
 
             process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
@@ -312,8 +328,10 @@ var $projections = {
             sources.categories.push(sourceCategory);
         }
 
-        function fromStreamCatalog(streamCatalog) {
+        function fromStreamCatalog(streamCatalog, transformer) {
             sources.catalogStream = streamCatalog;
+            sources.options.definesCatalogTransform = transformer != null;
+            catalogEventTransformer = transformer;
         }
 
         function byStream() {

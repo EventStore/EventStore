@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.Helpers
         private bool _readAllEnabled;
         private bool _noOtherStreams;
 
-        protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
+        protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData, bool isJson = false)
         {
             List<EventRecord> list;
             if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
@@ -121,8 +121,9 @@ namespace EventStore.Core.Tests.Helpers
                 list.Count,
                 new PrepareLogRecord(
                     _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
-                    _timeProvider.Now, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
-                    Helper.UTF8NoBom.GetBytes(eventData),
+                    _timeProvider.Now,
+                    PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
+                    eventType, Helper.UTF8NoBom.GetBytes(eventData),
                     eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)));
             list.Add(eventRecord);
             var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);

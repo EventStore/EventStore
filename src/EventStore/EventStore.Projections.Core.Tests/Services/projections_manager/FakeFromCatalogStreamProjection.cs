@@ -86,6 +86,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             return @data.EventStreamId;
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data, out string newState,
             out string newSharedState, out EmittedEventEnvelope[] emittedEvents)

@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.v8
         private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();
 
         private Func<string, string[], string> _getStatePartition;
+        private Func<string, string[], string> _transformCatalogEvent;
         private Func<string, string[], Tuple<string, string>> _processEvent;
         private Func<string> _transformStateToResult;
         private Action<string> _setState;
@@ -129,6 +130,9 @@ namespace EventStore.Projections.Core.v8
                     _processEvent =
                         (json, other) =>
                             Tuple.Create(ExecuteHandler(handlerHandle, json, other, out newSharedState), newSharedState);
+                    break;
+                case "transform_catalog_event":
+                    _transformCatalogEvent = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
                 case "transform_state_to_result":
                     _transformStateToResult = () => ExecuteHandler(handlerHandle, "");
@@ -246,6 +250,14 @@ namespace EventStore.Projections.Core.v8
                 throw new InvalidOperationException("'get_state_partition' command handler has not been registered");
 
             return _getStatePartition(json, other);
+        }
+
+        public string TransformCatalogEvent(string json, string[] other)
+        {
+            if (_transformCatalogEvent == null)
+                throw new InvalidOperationException("'transform_catalog_event' command handler has not been registered");
+
+            return _transformCatalogEvent(json, other);
         }
 
         public Tuple<string, string> Push(string json, string[] other)

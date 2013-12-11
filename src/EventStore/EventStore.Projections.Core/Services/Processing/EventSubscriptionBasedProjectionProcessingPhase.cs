@@ -221,6 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
             try
             {
+                //TODO: handle
             }
             catch (Exception ex)
             {

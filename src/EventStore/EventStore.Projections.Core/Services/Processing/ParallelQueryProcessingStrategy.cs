@@ -38,6 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryProcessingStrategy : EventReaderBasedProjectionProcessingStrategy
     {
+        private readonly IProjectionStateHandler _stateHandler;
         private new readonly ProjectionConfig _projectionConfig;
         private new readonly IQueryDefinition _sourceDefinition;
         private readonly ProjectionNamesBuilder _namesBuilder;
@@ -45,12 +46,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         public ParallelQueryProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, Func<IProjectionStateHandler> handlerFactory,
-            ProjectionConfig projectionConfig, IQueryDefinition sourceDefinition, ProjectionNamesBuilder namesBuilder,
-            ILogger logger, SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
+            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
+            Func<IProjectionStateHandler> handlerFactory, ProjectionConfig projectionConfig,
+            IQueryDefinition sourceDefinition, ProjectionNamesBuilder namesBuilder, ILogger logger,
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {
+            _stateHandler = stateHandler;
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
             _namesBuilder = namesBuilder;
@@ -89,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
             IReaderStrategy readerStrategy, IResultWriter resultWriter)
         {
             return new ParallelQueryMasterProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
+                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics, _stateHandler,
                 partitionStateCache, _name, _logger, zeroCheckpointTag, checkpointManager, subscriptionDispatcher,
                 readerStrategy, resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof(),
                 _spoolProcessingResponseDispatcher);

@@ -203,6 +203,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.DefinesStateTransform; }
         }
 
+        public bool DefinesCatalogTransform
+        {
+            get { return _options.DefinesCatalogTransform; }
+        }
+
         public bool ProducesResults
         {
             get { return _options.ProducesResults; }
@@ -292,6 +297,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public bool DefinesStateTransform { get; set; }
+
+        [DataMember]
+        public bool DefinesCatalogTransform { get; set; }
 
         [DataMember]
         public bool ProducesResults { get; set; }

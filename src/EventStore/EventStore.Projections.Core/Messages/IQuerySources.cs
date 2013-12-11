@@ -48,6 +48,8 @@ namespace EventStore.Projections.Core.Messages
 
         bool DefinesStateTransform { get; }
 
+        bool DefinesCatalogTransform { get; }
+
         bool DefinesFold { get; }
 
         bool ProducesResults { get; }

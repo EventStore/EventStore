@@ -78,6 +78,11 @@ namespace EventStore.Web.Users
             throw new NotImplementedException();
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
             out string newSharedState, out EmittedEventEnvelope[] emittedEvents)

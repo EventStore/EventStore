@@ -219,6 +219,24 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_from_stream_catalog_with_transform : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreamCatalog('catalog1', function(e) {return e.bodyRaw;})
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.DefinesCatalogTransform);
+            }
+        }
+
+        [TestFixture]
         public class with_from_stream_catalog_by_stream : TestFixtureWithJsProjection
         {
             protected override void Given()

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
@@ -34,22 +35,25 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
-        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>
+        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>, ISpoolStreamWorkItemContainer
 
     {
         //TODO: make it configurable
         public const int _maxScheduledSizePerWorker = 10000;
         public const int _maxUnmeasuredTasksPerWorker = 30;
 
+        private readonly IProjectionStateHandler _stateHandler;
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
+        private readonly Dictionary<Guid, SpoolStreamProcessingWorkItem> _spoolProcessingWorkItems;
+
         private ParallelProcessingLoadBalancer _loadBalancer;
 
         private SlaveProjectionCommunicationChannels _slaves;
 
         public ParallelQueryMasterProjectionProcessingPhase(
             CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
-            ProjectionConfig projectionConfig, Action updateStatistics, PartitionStateCache partitionStateCache,
-            string name, ILogger logger, CheckpointTag zeroCheckpointTag,
+            ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler stateHandler,
+            PartitionStateCache partitionStateCache, string name, ILogger logger, CheckpointTag zeroCheckpointTag,
             ICoreProjectionCheckpointManager checkpointManager, ReaderSubscriptionDispatcher subscriptionDispatcher,
             IReaderStrategy readerStrategy, IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof,
             SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher)
@@ -58,7 +62,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher,
                 readerStrategy, checkpointsEnabled, stopOnEof, orderedPartitionProcessing: true, isBiState: false)
         {
+            _stateHandler = stateHandler;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
+            _spoolProcessingWorkItems = new Dictionary<Guid, SpoolStreamProcessingWorkItem>();
         }
 
 
@@ -93,9 +99,12 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var eventTag = message.CheckpointTag;
+                var correlationId = Guid.NewGuid();
                 var committedEventWorkItem = new SpoolStreamProcessingWorkItem(
-                    _resultWriter, _loadBalancer, message, _slaves, _spoolProcessingResponseDispatcher,
-                    _subscriptionStartedAtLastCommitPosition, _currentSubscriptionId);
+                    this, _resultWriter, _loadBalancer, message, _slaves, _spoolProcessingResponseDispatcher,
+                    _subscriptionStartedAtLastCommitPosition, _currentSubscriptionId, correlationId,
+                    _stateHandler.GetSourceDefinition().DefinesCatalogTransform);
+                _spoolProcessingWorkItems.Add(correlationId, committedEventWorkItem);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 if (_state == PhaseState.Running) // prevent processing mostly one projection
                     EnsureTickPending();
@@ -107,5 +116,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         }
 
+        public string TransformCatalogEvent(CheckpointTag position, ResolvedEvent @event)
+        {
+            return _stateHandler.TransformCatalogEvent(position, @event);
+        }
+
+        public void CompleteSpoolProcessingWorkItem(Guid correlationId)
+        {
+            _spoolProcessingWorkItems.Remove(correlationId);
+        }
     }
 }

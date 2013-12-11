@@ -111,6 +111,21 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
+        public string TransformCatalogEvent(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            switch (_state)
+            {
+                case PhaseState.Running:
+                    var result = InternalTransformCatalogEvent(message);
+                    return result;
+                case PhaseState.Stopped:
+                    _logger.Error("Ignoring committed catalog event in stopped state");
+                    return null;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         public EventProcessedResult ProcessCommittedEvent(
             EventReaderSubscriptionMessage.CommittedEventReceived message, string partition)
         {
@@ -150,6 +165,13 @@ namespace EventStore.Projections.Core.Services.Processing
             return null;
         }
 
+        private string InternalTransformCatalogEvent(
+            EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            var result = SafeTransformCatalogEventByHandler(message);
+            return result;
+        }
+
         private bool SafeProcessEventByHandler(
             string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState,
             out string newSharedState, out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
@@ -177,6 +199,26 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             newState = newState ?? "";
             return hasBeenProcessed;
+        }
+
+        private string SafeTransformCatalogEventByHandler(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            string result;
+            try
+            {
+                result = TransformCatalogEventByHandler(message);
+            }
+            catch (Exception ex)
+            {
+                // update progress to reflect exact fault position
+                _checkpointManager.Progress(message.Progress);
+                SetFaulting(
+                    String.Format(
+                        "The {0} projection failed to transform a catalog event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
+                        _projectionName, GetHandlerTypeName(), message.CheckpointTag, ex.Message), ex);
+                result = null;
+            }
+            return result;
         }
 
         private string GetHandlerTypeName()
@@ -214,6 +256,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     projectionResult = oldState.Result;
                 }
             }
+            _stopwatch.Stop();
+            return result;
+        }
+
+        private string TransformCatalogEventByHandler(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            _stopwatch.Start();
+            var result = _projectionStateHandler.TransformCatalogEvent(message.CheckpointTag, message.Data);
             _stopwatch.Stop();
             return result;
         }

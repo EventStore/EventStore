@@ -195,8 +195,8 @@ function scope($on, $notify) {
         };
     }
 
-    function fromStreamCatalog(streamCatalog) {
-        eventProcessor.fromStreamCatalog(streamCatalog);
+    function fromStreamCatalog(streamCatalog, transformer) {
+        eventProcessor.fromStreamCatalog(streamCatalog, transformer ? transformer : null);
         return {
             foreachStream: foreachStream,
         };
