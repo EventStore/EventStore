@@ -75,9 +75,13 @@ mkdir $PACKAGEDIRECTORY
 
 cp -r clusternode-web $PACKAGEDIRECTORY/
 cp -r es-common-web $PACKAGEDIRECTORY/
+cp -r singlenode-web $PACKAGEDIRECTORY/
+cp -r Prelude $PACKAGEDIRECTORY/
 cp EventStore.Common.dll $PACKAGEDIRECTORY/	#For now the version comes from here
 cp libjs1.so $PACKAGEDIRECTORY/
 cp libv8.so $PACKAGEDIRECTORY/
+cp libicui18n.so $PACKAGEDIRECTORY/
+cp libicuui.so $PACKAGEDIRECTORY/
 cp clusternode $PACKAGEDIRECTORY/
 cp singlenode $PACKAGEDIRECTORY/
 cp NLog.config $PACKAGEDIRECTORY/
