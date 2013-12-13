@@ -58,9 +58,13 @@ fi
 
 pushd $DIR../../../../bin/eventstore/$CONFIGURATION/anycpu
 
-mkbundle -c -o main.c -oo eventstore.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --machine-config /opt/mono/etc/mono/4.0/machine.config
+mkbundle -c -o cluster.c -oo eventstorecluster.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --machine-config /opt/mono/etc/mono/4.0/machine.config
 
-cc -o clusternode -Wall `pkg-config --cflags monosgen-2` main.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` eventstore.a
+mkbundle -c -o singlenode.c -oo eventstoresingle.a EventStore.SingleNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --machine-config /opt/mono/etc/mono/4.0/machine.config
+
+cc -o clusternode -Wall `pkg-config --cflags monosgen-2` cluster.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` eventstorecluster.a
+
+cc -o singlenode -Wall `pkg-config --cflags monosgen-2` singlenode.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` eventstoresingle.a
 
 PACKAGEDIRECTORY="EventStore-Mono-v$VERSIONSTRING"
 if [[ -d $PACKAGEDIRECTORY ]] ; then
@@ -75,6 +79,7 @@ cp EventStore.Common.dll $PACKAGEDIRECTORY/	#For now the version comes from here
 cp libjs1.so $PACKAGEDIRECTORY/
 cp libv8.so $PACKAGEDIRECTORY/
 cp clusternode $PACKAGEDIRECTORY/
+cp singlenode $PACKAGEDIRECTORY/
 cp NLog.config $PACKAGEDIRECTORY/
 cp $SCRIPTDIR/System.dll.config $PACKAGEDIRECTORY/System.dll.config
 cp $SCRIPTDIR/clusternode.sh $PACKAGEDIRECTORY/clusternode.sh
