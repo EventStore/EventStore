@@ -130,10 +130,11 @@ namespace EventStore.ClientAPI.Core
             IPEndPoint[] endpoints;
             if(_gossipSeeds != null && _gossipSeeds.Length > 0)
             {
-                endpoints = ResolveDns(_clusterDns).Select(x => new IPEndPoint(x, _managerExternalHttpPort)).ToArray();
-            } else
-            {
                 endpoints = _gossipSeeds;
+            } 
+            else
+            {
+                endpoints = ResolveDns(_clusterDns).Select(x => new IPEndPoint(x, _managerExternalHttpPort)).ToArray();
             }
             
             RandomShuffle(endpoints, 0, endpoints.Length-1);
