@@ -267,6 +267,18 @@ Function Get-GitCommitHashAndTimestamp
     return $lastCommitLog
 }
 
+Function Get-GitCommitHash
+{
+    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    return $lastCommitLog
+}
+
+Function Get-GitTimestamp
+{
+    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    return $lastCommitLog
+}
+
 Function Get-GitBranchOrTag
 {
     $revParse = Exec { git rev-parse --abbrev-ref HEAD } "Cannot execute git rev-parse. Ensure that the current directory is a git repository and that git is available on PATH."
@@ -386,5 +398,45 @@ Function Patch-AssemblyInfo {
         }
 
         Set-Content -Path $assemblyInfoFilePath -Value $edited
+    }
+}
+
+Function Patch-VersionInfo {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$versionInfoFilePath,
+        [Parameter(Mandatory=$true)]
+        [string]$version,
+        [Parameter(Mandatory=$true)]
+        [string]$branch,
+        [Parameter(Mandatory=$true)]
+        [string]$commitHash,
+        [Parameter(Mandatory=$true)]
+        [string]$timestamp
+
+    )
+    Process {
+        $newVersion = 'public static readonly string Version = "' + $version + '";'
+        $newBranch = 'public static readonly string Branch = "' + $branch + '";'
+        $newCommitHash = 'public static readonly string Hashtag = "' + $commitHash + '";'
+        $newTimestamp = 'public static readonly string Timestamp = "' + $timestamp + '";'
+
+        $versionPattern = 'public static readonly string Version = ".*";'
+        $branchPattern = 'public static readonly string Branch = ".*";'
+        $commitHashPattern = 'public static readonly string Hashtag = ".*";'
+        $timestampPattern = 'public static readonly string Timestamp = ".*";'
+        
+        $edited = (Get-Content $versionInfoFilePath) | ForEach-Object {
+            % {$_ -replace "\/\*+.*\*+\/", "" } |
+            % {$_ -replace "\/\/+.*$", "" } |
+            % {$_ -replace "\/\*+.*$", "" } |
+            % {$_ -replace "^.*\*+\/\b*$", "" } |
+            % {$_ -replace $versionPattern, $newVersion} |
+            % {$_ -replace $branchPattern, $newBranch} |
+            % {$_ -replace $commitHashPattern, $newCommitHash } |
+            % {$_ -replace $timestampPattern, $newTimestamp}
+        }
+
+        Set-Content -Path $versionInfoFilePath -Value $edited
     }
 }

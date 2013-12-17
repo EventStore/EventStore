@@ -246,6 +246,8 @@ try {
         Import-VisualStudioVars -VisualStudioVersion $visualStudioVersion
 
         $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
+        $commitHash = Get-GitCommitHash
+        $timestamp = Get-GitTimestamp
         $branchName = Get-GitBranchOrTag
 
         #Build V8
@@ -342,12 +344,16 @@ try {
 
         #Build Event Store (Patch AssemblyInfo, Build, Revert AssemblyInfo)
         $assemblyInfos = Get-ChildItem -Recurse -Filter AssemblyInfo.cs
+        $versionInfoFile = Resolve-Path (Join-Path $srcDirectory (Join-Path "EventStore.Common" (Join-Path "Utils" "VersionInfo.cs"))) -Relative
         try {
             foreach ($assemblyInfo in $assemblyInfos) {
                 $path = Resolve-Path $assemblyInfo.FullName -Relative
                 Write-Verbose "Patching $path with product information."
                 Patch-AssemblyInfo $path $Version $Version $branchName $commitHashAndTimestamp $productName $companyName $copyright
             }
+            
+            Write-Verbose "Patching $versionInfoFile with product information."
+            Patch-VersionInfo -versionInfoFilePath $versionInfoFile -version $Version -commitHash $commitHash -timestamp $timestamp -branch $branchName
 
             Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform=$eventStorePlatform $definesCommandLine }
         } finally {
@@ -356,6 +362,9 @@ try {
                 Write-Verbose "Reverting $path to original state."
                 & { git checkout --quiet $path }
             }
+            
+            Write-Verbose "Reverting $versionInfoFile to original state."
+            & { git checkout --quiet $versionInfoFile }
         }
 } finally {
     Pop-Environment

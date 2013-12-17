@@ -95,7 +95,7 @@
     <Compile Include="Utils\IPEndpointExtensions.cs" />
     <Compile Include="Utils\Ensure.cs" />
     <Compile Include="Utils\Runtime.cs" />
-    <Compile Include="Utils\Version.cs" />
+    <Compile Include="Utils\VersionInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Log\NLog.config" />
