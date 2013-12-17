@@ -257,6 +257,31 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 Assert.AreEqual(true, _source.ByStreams);
             }
         }
+
+        [TestFixture]
+        public class with_from_streams_matching: TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreamsMatching(function(sm){return true;})
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+
+                Assert.AreEqual("$all", _source.CatalogStream);
+                Assert.AreEqual(true, _source.DefinesCatalogTransform);
+                Assert.AreEqual(true, _source.ByStreams);
+            }
+        }
+
         [TestFixture]
         public class with_from_all_by_custom_partitions : TestFixtureWithJsProjection
         {

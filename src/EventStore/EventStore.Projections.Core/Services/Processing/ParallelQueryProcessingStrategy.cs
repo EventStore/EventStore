@@ -75,7 +75,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
-            if (_sourceDefinition.HasCategories())
+            if (_sourceDefinition.CatalogStream == "$all")
+            {
+                return new ParallelQueryAllStreamsMasterReaderStrategy(
+                    0, SystemAccount.Principal, timeProvider);
+            }
+            else if (_sourceDefinition.HasCategories())
             {
                 return new ParallelQueryMasterReaderStrategy(
                     0, SystemAccount.Principal, timeProvider,

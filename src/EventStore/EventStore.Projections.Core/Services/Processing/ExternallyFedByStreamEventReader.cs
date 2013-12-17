@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public ExternallyFedByStreamEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, IODispatcher ioDispatcher,
             long? limitingCommitPosition, ITimeProvider timeProvider, bool resolveLinkTos)
-            : base(publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents: null)
+            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents: null)
         {
             _ioDispatcher = ioDispatcher;
             _limitingCommitPosition = limitingCommitPosition;

@@ -32,6 +32,7 @@ using System.Linq;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -59,8 +60,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, bool> _eofs;
         private int _deliveredEvents;
 
-        public MultiStreamEventReader(IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase, string[] streams, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+        public MultiStreamEventReader(
+            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
+            string[] streams, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
+            bool stopOnEof = false, int? stopAfterNEvents = null)
+            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");

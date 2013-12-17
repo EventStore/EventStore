@@ -84,8 +84,8 @@ namespace EventStore.Projections.Core.Services.Processing
             bool stopOnEof, int? stopAfterNEvents)
         {
             return new StreamEventReader(
-                publisher, eventReaderId, _runAs, _catalogStream, checkpointTag.CatalogPosition + 1, _timeProvider,
-                resolveLinkTos: true, stopOnEof: stopOnEof, stopAfterNEvents: stopAfterNEvents);
+                ioDispatcher, publisher, eventReaderId, _runAs, _catalogStream, checkpointTag.CatalogPosition + 1,
+                _timeProvider, resolveLinkTos: true, stopOnEof: stopOnEof, stopAfterNEvents: stopAfterNEvents);
         }
     }
 }

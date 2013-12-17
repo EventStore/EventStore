@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing
             string catalogCatalogStreamName, int catalogNextSequenceNumber, string dataStreamName,
             int dataNextSequenceNumber, long? limitingCommitPosition, ITimeProvider timeProvider, bool resolveLinkTos,
             int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents)
+            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents)
         {
 
             _ioDispatcher = ioDispatcher;

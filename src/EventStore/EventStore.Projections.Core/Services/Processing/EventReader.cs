@@ -30,6 +30,7 @@ using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 
@@ -50,8 +51,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _startingSent;
 
         protected EventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, bool stopOnEof,
-            int? stopAfterNEvents)
+            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
+            bool stopOnEof, int? stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (eventReaderCorrelationId == Guid.Empty)
@@ -158,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 RequestEvents(delay);
         }
 
-        protected void SendStarting(long startingLastCommitPosition)
+        private void SendStarting(long startingLastCommitPosition)
         {
             _publisher.Publish(
                 new ReaderSubscriptionMessage.EventReaderStarting(EventReaderCorrelationId, startingLastCommitPosition));

@@ -182,6 +182,7 @@
     <Compile Include="Services\Management\ManagedProjectionState.cs" />
     <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
     <Compile Include="Services\Management\TimeoutScheduler.cs" />
+    <Compile Include="Services\Processing\AllStreamsCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\BypassingEventFilter.cs" />
     <Compile Include="Services\Processing\ByStreamCatalogEventReader.cs" />
@@ -236,6 +237,7 @@
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
     <Compile Include="Services\Processing\ParallelProcessingLoadBalancer.cs" />
+    <Compile Include="Services\Processing\ParallelQueryAllStreamsMasterReaderStrategy.cs" />
     <Compile Include="Services\Processing\ParallelQueryMasterProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\ParallelQueryMasterReaderStrategy.cs" />
     <Compile Include="Services\Processing\ParallelQueryProcessingStrategy.cs" />

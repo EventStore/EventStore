@@ -334,6 +334,13 @@ var $projections = {
             catalogEventTransformer = transformer;
         }
 
+        function fromStreamsMatching(filter) {
+            sources.catalogStream = "$all";
+            sources.options.definesCatalogTransform = true;
+            catalogEventTransformer = filter;
+            byStream();
+        }
+
         function byStream() {
             sources.byStreams = true;
         }
@@ -385,6 +392,7 @@ var $projections = {
             fromCategory: fromCategory,
             fromStream: fromStream,
             fromStreamCatalog: fromStreamCatalog,
+            fromStreamsMatching: fromStreamsMatching,
 
             byStream: byStream,
             partitionBy: partitionBy,

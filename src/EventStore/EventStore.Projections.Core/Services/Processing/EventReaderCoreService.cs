@@ -260,7 +260,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = false;
             var distributionPointCorrelationId = Guid.NewGuid();
             var transactionFileReader = new TransactionFileEventReader(
-                _publisher, distributionPointCorrelationId, SystemAccount.Principal,
+                _ioDispatcher, _publisher, distributionPointCorrelationId, SystemAccount.Principal,
                 new TFPos(_writerCheckpoint.Read(), -1), new RealTimeProvider(), deliverEndOfTFPosition: false);
             _eventReaders.Add(distributionPointCorrelationId, transactionFileReader);
             if (_runHeadingReader)
