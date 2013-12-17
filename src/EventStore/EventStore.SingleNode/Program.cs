@@ -37,7 +37,6 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
 using System.Linq;
-using EventStore.Web.Playground;
 using EventStore.Web.Users;
 
 namespace EventStore.SingleNode
@@ -155,8 +154,6 @@ namespace EventStore.SingleNode
         protected override void Start()
         {
             _node.Start();
-            
-            _node.HttpService.SetupController(new TestController(_node.MainQueue/*, _node.NetworkSendService*/));
         }
 
         public override void Stop()
