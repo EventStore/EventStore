@@ -77,17 +77,24 @@ cp -r clusternode-web $PACKAGEDIRECTORY/
 cp -r es-common-web $PACKAGEDIRECTORY/
 cp -r singlenode-web $PACKAGEDIRECTORY/
 cp -r Prelude $PACKAGEDIRECTORY/
+cp -r web-resources $PACKAGEDIRECTORY/
+cp -r Users $PACKAGEDIRECTORY/
+cp singlenode-config.dist.json $PACKAGEDIRECTORY/
+cp clusternode-config.dist.json $PACKAGEDIRECTORY/
 cp EventStore.Common.dll $PACKAGEDIRECTORY/	#For now the version comes from here
 cp libjs1.so $PACKAGEDIRECTORY/
 cp libv8.so $PACKAGEDIRECTORY/
 cp libicui18n.so $PACKAGEDIRECTORY/
-cp libicuui.so $PACKAGEDIRECTORY/
+cp libicuuc.so $PACKAGEDIRECTORY/
 cp clusternode $PACKAGEDIRECTORY/
 cp singlenode $PACKAGEDIRECTORY/
 cp NLog.config $PACKAGEDIRECTORY/
 cp $SCRIPTDIR/System.dll.config $PACKAGEDIRECTORY/System.dll.config
-cp $SCRIPTDIR/clusternode.sh $PACKAGEDIRECTORY/clusternode.sh
+cp $SCRIPTDIR/clusternode.sh $PACKAGEDIRECTORY/run-clusternode.sh
+cp $SCRIPTDIR/singlenode.sh $PACKAGEDIRECTORY/run-singlenode.sh
 
 tar -zcvf $PACKAGEDIRECTORY.tar.gz $PACKAGEDIRECTORY
+
+rm -rf $PACKAGEDIRECTORY
 
 popd
