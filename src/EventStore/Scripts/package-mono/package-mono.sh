@@ -88,7 +88,6 @@ cp libicuuc.so $PACKAGEDIRECTORY/
 cp clusternode $PACKAGEDIRECTORY/
 cp singlenode $PACKAGEDIRECTORY/
 cp NLog.config $PACKAGEDIRECTORY/
-cp $SCRIPTDIR/System.dll.config $PACKAGEDIRECTORY/System.dll.config
 cp $SCRIPTDIR/clusternode.sh $PACKAGEDIRECTORY/run-clusternode.sh
 cp $SCRIPTDIR/singlenode.sh $PACKAGEDIRECTORY/run-singlenode.sh
 
