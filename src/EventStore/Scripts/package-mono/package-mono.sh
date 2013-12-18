@@ -81,7 +81,6 @@ cp -r web-resources $PACKAGEDIRECTORY/
 cp -r Users $PACKAGEDIRECTORY/
 cp singlenode-config.dist.json $PACKAGEDIRECTORY/
 cp clusternode-config.dist.json $PACKAGEDIRECTORY/
-cp EventStore.Common.dll $PACKAGEDIRECTORY/	#For now the version comes from here
 cp libjs1.so $PACKAGEDIRECTORY/
 cp libv8.so $PACKAGEDIRECTORY/
 cp libicui18n.so $PACKAGEDIRECTORY/
