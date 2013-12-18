@@ -165,6 +165,7 @@
     <Compile Include="Services\core_projection\when_receiving_committed_events_the_projection_without_when.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_checkpoint_is_stopped.cs" />
+    <Compile Include="Services\event_reader\all_streams_catalog_event_reader\when_reading_catalog.cs" />
     <Compile Include="Services\event_reader\by_stream_catalog_event_reader\when_reading_catalog.cs" />
     <Compile Include="Services\event_reader\externally_fed_by_stream_event_reader\when_fed_with_streams.cs" />
     <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\index_checkpoint.cs" />

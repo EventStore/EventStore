@@ -62,7 +62,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (committedEvent.Data.PositionStreamId != _catalogStream)
                 throw new InvalidOperationException(
                     string.Format(
-                        "Invalid catalog stream '{0}'.  Expected catalog stream is '{1}'", committedEvent.Data.EventStreamId, _catalogStream));
+                        "Invalid catalog stream '{0}'.  Expected catalog stream is '{1}'",
+                        committedEvent.Data.EventStreamId, _catalogStream));
 
             return CheckpointTag.FromByStreamPosition(
                 previous.Phase, "", committedEvent.Data.PositionSequenceNumber, null,

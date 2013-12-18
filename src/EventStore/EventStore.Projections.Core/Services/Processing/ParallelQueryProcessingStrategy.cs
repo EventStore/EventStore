@@ -30,6 +30,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
@@ -75,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
-            if (_sourceDefinition.CatalogStream == "$all")
+            if (_sourceDefinition.CatalogStream == SystemStreams.AllStream)
             {
                 return new ParallelQueryAllStreamsMasterReaderStrategy(
                     0, SystemAccount.Principal, timeProvider);
