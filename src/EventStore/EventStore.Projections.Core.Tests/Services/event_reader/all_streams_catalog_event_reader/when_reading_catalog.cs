@@ -76,6 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
                 ExistingEvent("$streams", "$>", null, "0@test-stream2");
                 ExistingEvent("$streams", "$>", null, "0@test-stream3");
                 ExistingEvent("$streams", "$>", null, "0@test-stream4");
+                NoOtherStreams();
 
                 _subscriptionId = Guid.NewGuid();
                 _sourceDefinition = new QuerySourcesDefinition
@@ -93,16 +94,35 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
             }
 
             [Test]
-            public void returns_all_events()
+            public void returns_all_catalog_events()
             {
                 var receivedEvents =
                     _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
 
-                Assert.AreEqual(6, receivedEvents.Length);
+                Assert.AreEqual(4, receivedEvents.Length);
             }
 
             [Test]
-            public void returns_events_in_catalog_order()
+            public void events_are_correct()
+            {
+                var receivedEvents =
+                    _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
+                var first = receivedEvents[0];
+                var second = receivedEvents[1];
+                var third = receivedEvents[2];
+                var fourth = receivedEvents[3];
+
+                Assert.AreEqual(true, first.Data.ResolvedLinkTo);
+                Assert.AreEqual("{Meta: 1}", first.Data.Metadata);
+                Assert.AreEqual(true, second.Data.ResolvedLinkTo);
+                Assert.AreEqual("{Meta: 2}", second.Data.Metadata);
+                Assert.AreEqual(true, third.Data.ResolvedLinkTo);
+                Assert.AreEqual("{Meta: 3}", third.Data.Metadata);
+                Assert.AreEqual(false, fourth.Data.ResolvedLinkTo);
+            }
+
+            [Test]
+            public void returns_catalog_events_in_catalog_order()
             {
                 var receivedEvents =
                     _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
@@ -113,23 +133,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
                     "Incorrect event order received");
             }
 
-            [Test]
-            public void publishes_partition_eof_on_each_stream_eof()
-            {
-                var messages =
-                    HandledMessages.Where(
-                        v =>
-                            v is EventReaderSubscriptionMessage.CommittedEventReceived
-                            || v is EventReaderSubscriptionMessage.PartitionEofReached).ToList();
-
-                Assert.AreEqual(9, messages.Count);
-                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(messages[2]);
-                Assert.AreEqual("test-stream", ((EventReaderSubscriptionMessage.PartitionEofReached)messages[2]).Partition);
-                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(messages[5]);
-                Assert.AreEqual("test-stream2", ((EventReaderSubscriptionMessage.PartitionEofReached)messages[5]).Partition);
-                Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(messages[8]);
-                Assert.AreEqual("test-stream3", ((EventReaderSubscriptionMessage.PartitionEofReached)messages[8]).Partition);
-            }
         }
 
         [TestFixture]
@@ -144,34 +147,5 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
             }
         }
 
-        [TestFixture]
-        class when_new_events_appear_after_subscribing : with_all_streams_catelog_event_reader
-        {
-            protected override IEnumerable<WhenStep> When()
-            {
-                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 100000);
-                yield return
-                    new WhenStep(
-                        new ReaderSubscriptionManagement.Subscribe(
-                            _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions),
-                        CreateWriteEvent("test-stream2", "type1", "{Data: 8}"),
-                        CreateWriteEvent("catalog", "$>", "2@test-stream2"));
-            }
-        }
-
-        [TestFixture]
-        class when_new_streams_appear_after_subscribing : with_all_streams_catelog_event_reader
-        {
-            protected override IEnumerable<WhenStep> When()
-            {
-                var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 100000);
-                yield return
-                    new WhenStep(
-                        new ReaderSubscriptionManagement.Subscribe(
-                            _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions),
-                        CreateWriteEvent("test-stream4", "type1", "{Data: 8}"),
-                        CreateWriteEvent("catalog", "$>", "0@test-stream4"));
-            }
-        }
     }
 }
