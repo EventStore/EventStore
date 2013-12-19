@@ -174,7 +174,7 @@ namespace EventStore.Projections.Core.Services.v8
                     {
                         data.IsJson ? "1" : "",
                         data.EventStreamId, data.EventType ?? "", "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        data.Metadata ?? "", data.EventStreamId
+                        data.Metadata ?? "", data.EventStreamId, data.StreamMetadata ?? ""
                     });
         }
 
@@ -193,7 +193,7 @@ namespace EventStore.Projections.Core.Services.v8
                     {
                         data.IsJson ? "1" : "",
                         data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        data.Metadata, partition
+                        data.Metadata, partition, ""
                     });
             newState = newStates.Item1;
             newSharedState = newStates.Item2;

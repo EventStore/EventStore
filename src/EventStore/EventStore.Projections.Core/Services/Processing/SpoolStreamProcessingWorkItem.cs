@@ -82,16 +82,25 @@ namespace EventStore.Projections.Core.Services.Processing
             var position = _message.CheckpointTag;
 
             var streamId = TransformCatalogEvent(position, resolvedEvent);
-            _loadBalancer.ScheduleTask(
-                streamId, (streamId_, workerIndex) =>
-                {
-                    var channel = channelGroup[workerIndex];
-                    _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
-                        channel.PublishEnvelope,
-                        new ReaderSubscriptionManagement.SpoolStreamReading(
-                            channel.SubscriptionId, _correlationId, streamId_, resolvedEvent.PositionSequenceNumber,
-                            _limitingCommitPosition), this);
-                });
+            if (string.IsNullOrEmpty(streamId))
+                CompleteProcessing();
+            else
+                _loadBalancer.ScheduleTask(
+                    streamId, (streamId_, workerIndex) =>
+                    {
+                        var channel = channelGroup[workerIndex];
+                        _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
+                            channel.PublishEnvelope,
+                            new ReaderSubscriptionManagement.SpoolStreamReading(
+                                channel.SubscriptionId, _correlationId, streamId_, resolvedEvent.PositionSequenceNumber,
+                                _limitingCommitPosition), this);
+                    });
+        }
+
+        private void CompleteProcessing()
+        {
+            _container.CompleteSpoolProcessingWorkItem(_correlationId);
+            NextStage();
         }
 
         private string TransformCatalogEvent(CheckpointTag position, ResolvedEvent resolvedEvent)
@@ -104,8 +113,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void WriteOutput()
         {
-            _resultWriter.WriteEofResult(_subscriptionId, 
-                _resultMessage.Partition, _resultMessage.Result, _resultMessage.Position, Guid.Empty, null);
+            if (_resultMessage != null)
+            {
+                _resultWriter.WriteEofResult(
+                    _subscriptionId, _resultMessage.Partition, _resultMessage.Result, _resultMessage.Position,
+                    Guid.Empty, null);
+            }
             NextStage();
         }
 
@@ -114,8 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _loadBalancer.AccountCompleted(message.Partition);
             _spoolProcessingResponseDispatcher.Cancel(_spoolRequestId);
             _resultMessage = message;
-            _container.CompleteSpoolProcessingWorkItem(_correlationId);
-            NextStage();
+            CompleteProcessing();
         }
     }
 

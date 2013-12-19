@@ -547,6 +547,14 @@ namespace EventStore.Core.Tests.Helpers
         {
             throw new NotImplementedException();
         }
+
+        public void AssertEmptyOrNoStream(string streamId)
+        {
+            List<EventRecord> events;
+            Assert.That(
+                !_lastMessageReplies.TryGetValue(streamId, out events) || events.Count == 0,
+                string.Format("The stream {0} should not exist.", streamId));
+        }
     }
 }
 

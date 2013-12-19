@@ -99,10 +99,10 @@ var $projections = {
                 return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata);
             },
 
-            transform_catalog_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
+            transform_catalog_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition, streamMetadataRaw) {
                 if (!catalogEventTransformer)
                     throw "catalogEventTransformer is not set";
-                var eventEnvelope = new envelope(null, event, eventType, streamId, sequenceNumber, metadata, partition);
+                var eventEnvelope = new envelope(null, event, eventType, streamId, sequenceNumber, metadata, partition, streamMetadataRaw);
 
                 if (isJson) {
                     tryDeserializeBody(eventEnvelope);
@@ -231,7 +231,7 @@ var $projections = {
             }
         }
 
-        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition) {
+        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition, streamMetadataRaw) {
             this.isJson = false;
             this.data = body;
             this.body = body;
@@ -240,6 +240,7 @@ var $projections = {
             this.streamId = streamId;
             this.sequenceNumber = sequenceNumber;
             this.metadataRaw = metadataRaw;
+            this.streamMetadataRaw = streamMetadataRaw;
             this.partition = partition;
             this.metadata_ = null;
         }
@@ -253,11 +254,24 @@ var $projections = {
             }
         });
 
+        Object.defineProperty(envelope.prototype, "streamMetadata", {
+            get: function () {
+                if (!this.streamMetadata_) {
+                    if (this.streamMetadataRaw) {
+                        this.streamMetadata_ = JSON.parse(this.streamMetadataRaw);
+                    } else {
+                        this.streamMetadata_ = {};
+                    }
+                }
+                return this.streamMetadata_;
+            }
+        });
+
         function getStatePartition(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw) {
 
             var eventHandler = getStatePartitionHandler;
 
-            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null);
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null, null);
 
             if (isJson)
                 tryDeserializeBody(eventEnvelope);
@@ -278,7 +292,7 @@ var $projections = {
             return envelope.isJson ? envelope.body : { $e: envelope.bodyRaw };
         }
 
-        function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {
+        function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, partition, streamMetadataRaw) {
 
             var eventName = eventType;
 
@@ -287,7 +301,7 @@ var $projections = {
 
             var index;
 
-            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, partition);
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, partition, streamMetadataRaw);
             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {
                 eventHandler = rawEventHandlers[index];
@@ -331,13 +345,17 @@ var $projections = {
         function fromStreamCatalog(streamCatalog, transformer) {
             sources.catalogStream = streamCatalog;
             sources.options.definesCatalogTransform = transformer != null;
-            catalogEventTransformer = transformer;
+            catalogEventTransformer = function(streamId, ev) {
+                return transformer(ev);
+            };
         }
 
         function fromStreamsMatching(filter) {
             sources.catalogStream = "$all";
             sources.options.definesCatalogTransform = true;
-            catalogEventTransformer = filter;
+            catalogEventTransformer = function(streamId, ev) {
+                return filter(streamId, ev) ? streamId : null;
+            };
             byStream();
         }
 
