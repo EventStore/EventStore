@@ -168,12 +168,13 @@ namespace EventStore.Projections.Core.Services.v8
         {
             CheckDisposed();
             if (data == null) throw new ArgumentNullException("data");
-            return _query.TransformCatalogEvent(data.Data.Trim(), // trimming data passed to a JS 
+
+            return _query.TransformCatalogEvent((data.Data ?? "").Trim(), // trimming data passed to a JS 
                 new[]
                     {
                         data.IsJson ? "1" : "",
-                        data.EventStreamId, data.EventType, "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        data.Metadata, ""
+                        data.EventStreamId, data.EventType ?? "", "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
+                        data.Metadata ?? "", data.EventStreamId
                     });
         }
 

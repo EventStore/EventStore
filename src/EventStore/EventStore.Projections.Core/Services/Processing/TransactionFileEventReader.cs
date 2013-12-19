@@ -207,7 +207,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         @event.Event.EventNumber, @event.Link != null, receivedPosition,
                         originalPosition, @event.Event.EventId, @event.Event.EventType,
                         (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata,
-                        @event.Link == null ? null : @event.Link.Metadata, positionEvent.TimeStamp),
+                        @event.Link == null ? null : @event.Link.Metadata, null, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
                     100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
         }

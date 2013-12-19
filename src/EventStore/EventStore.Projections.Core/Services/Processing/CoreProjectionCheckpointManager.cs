@@ -360,7 +360,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     position.EventStreamId, position.EventNumber, pair.Event.EventStreamId, pair.Event.EventNumber,
                     pair.Link != null, new TFPos(-1, position.LogPosition), new TFPos(-1, pair.Event.LogPosition),
                     pair.Event.EventId, pair.Event.EventType, (pair.Event.Flags & PrepareFlags.IsJson) != 0,
-                    pair.Event.Data, pair.Event.Metadata, pair.Link == null ? null : pair.Link.Metadata,
+                    pair.Event.Data, pair.Event.Metadata, pair.Link == null ? null : pair.Link.Metadata, null,
                     pair.Event.TimeStamp), null, -1, source: this.GetType());
             _publisher.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(

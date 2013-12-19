@@ -67,9 +67,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
                 ExistingEvent("test-stream3", "type1", "{}", "{Data: 6}");
                 ExistingEvent("test-stream4", "type1", "{}", "{Data: 7}");
 
-                ExistingEvent("$$test-stream", "$metadata", "{Meta: 1}", "");
-                ExistingEvent("$$test-stream2", "$metadata", "{Meta: 2}", "");
-                ExistingEvent("$$test-stream3", "$metadata", "{Meta: 3}", "");
+                ExistingEvent("$$test-stream", "$metadata", "", "{Meta: 1}");
+                ExistingEvent("$$test-stream2", "$metadata", "", "{Meta: 2}");
+                ExistingEvent("$$test-stream3", "$metadata", "", "{Meta: 3}");
 
 
                 ExistingEvent("$streams", "$>", null, "0@test-stream");
@@ -113,12 +113,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
                 var fourth = receivedEvents[3];
 
                 Assert.AreEqual(true, first.Data.ResolvedLinkTo);
-                Assert.AreEqual("{Meta: 1}", first.Data.Metadata);
+                Assert.AreEqual("{Meta: 1}", first.Data.StreamMetadata);
                 Assert.AreEqual(true, second.Data.ResolvedLinkTo);
-                Assert.AreEqual("{Meta: 2}", second.Data.Metadata);
+                Assert.AreEqual("{Meta: 2}", second.Data.StreamMetadata);
                 Assert.AreEqual(true, third.Data.ResolvedLinkTo);
-                Assert.AreEqual("{Meta: 3}", third.Data.Metadata);
-                Assert.AreEqual(false, fourth.Data.ResolvedLinkTo);
+                Assert.AreEqual("{Meta: 3}", third.Data.StreamMetadata);
+                Assert.AreEqual(true, fourth.Data.ResolvedLinkTo);
             }
 
             [Test]

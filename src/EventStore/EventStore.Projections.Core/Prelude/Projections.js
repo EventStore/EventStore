@@ -108,7 +108,7 @@ var $projections = {
                     tryDeserializeBody(eventEnvelope);
                 }
 
-                var result = catalogEventTransformer(eventEnvelope);
+                var result = catalogEventTransformer(partition, eventEnvelope);
 
                 return result;
             },

@@ -304,7 +304,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
                         new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition), @event.EventId,
                         @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata,
-                        @event == positionEvent ? null : positionEvent.Metadata, positionEvent.TimeStamp),
+                        @event == positionEvent ? null : positionEvent.Metadata, null, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
         }
 

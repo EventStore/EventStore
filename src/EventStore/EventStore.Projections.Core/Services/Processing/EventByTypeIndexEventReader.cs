@@ -482,7 +482,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var resolvedEvent = new ResolvedEvent(
                     positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
                     true, new TFPos(-1, positionEvent.LogPosition), position, @event.EventId, @event.EventType,
-                    (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata, positionEvent.Metadata,
+                    (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata, positionEvent.Metadata, null,
                     positionEvent.TimeStamp);
                 DeliverEvent(progress, resolvedEvent, position);
             }
@@ -648,7 +648,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var resolvedEvent = new ResolvedEvent(
                     @event.EventStreamId, @event.EventNumber, @event.EventStreamId, @event.EventNumber, false, position,
                     position, @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                    @event.Metadata, null, @event.TimeStamp);
+                    @event.Metadata, null, null, @event.TimeStamp);
 
                 DeliverEvent(progress, resolvedEvent, position);
             }

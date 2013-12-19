@@ -64,19 +64,17 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             private readonly IODispatcher _ioDispatcher;
             private readonly EventRecord _event;
-            private readonly EventRecord _link;
             private readonly float _progress;
             private bool _ready;
             private EventRecord _metadata;
+            private string _streamId;
 
             public DeliverEventOutItem(
-                IODispatcher ioDispatcher, AllStreamsCatalogEventReader reader, EventRecord @event, EventRecord link,
-                float progress)
+                IODispatcher ioDispatcher, AllStreamsCatalogEventReader reader, EventRecord @event, float progress)
                 : base(reader)
             {
                 _ioDispatcher = ioDispatcher;
                 _event = @event;
-                _link = link;
                 _progress = progress;
             }
 
@@ -88,17 +86,14 @@ namespace EventStore.Projections.Core.Services.Processing
             public override void Complete()
             {
                 Reader._maxReadCount--;
-                if (_metadata != null)
-                    Reader.DeliverEvent(_metadata, _event, _progress);
-                else
-                    Reader.DeliverEvent(_event, _link, _progress);
+                Reader.DeliverEvent(_streamId, _event, _metadata, _progress);
             }
 
             public void BeginRead()
             {
-                var streamId = SystemEventTypes.StreamReferenceEventToStreamId(_event.EventType, _event.Data);
+                _streamId = SystemEventTypes.StreamReferenceEventToStreamId(_event.EventType, _event.Data);
                 var requestId = _ioDispatcher.ReadBackward(
-                    SystemStreams.MetastreamOf(streamId), -1, 1, false, Reader.ReadAs, ReadCompleted);
+                    SystemStreams.MetastreamOf(_streamId), -1, 1, false, Reader.ReadAs, ReadCompleted);
                 if (requestId != Guid.Empty)
                     Reader._activeReads.Add(requestId);
             }
@@ -404,8 +399,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnqueueDeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
         {
+            if (link != null) throw new Exception();
             _enqueuedEventDeliveries++;
-            EventRecord positionEvent = (link ?? @event);
+            var positionEvent = @event;
             if (positionEvent.EventNumber != sequenceNumber)
                 throw new InvalidOperationException(
                     string.Format(
@@ -413,7 +409,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         sequenceNumber, SystemStreams.StreamsStream, positionEvent.EventNumber));
             sequenceNumber = positionEvent.EventNumber + 1;
 
-            var item = new DeliverEventOutItem(_ioDispatcher, this, @event, @link, @progress);
+            var item = new DeliverEventOutItem(_ioDispatcher, this, @event, @progress);
             EnqueueReadMetaStreamItem(item);
             Enqueue(item);
         }
@@ -423,22 +419,24 @@ namespace EventStore.Projections.Core.Services.Processing
             _readMetaStreamItemsQueue.Enqueue(item);
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord link, float progress)
+        private void DeliverEvent(string streamId, EventRecord link, EventRecord streamMetadata, float progress)
         {
 
-            EventRecord positionEvent = (link ?? @event);
-            var resolvedLinkTo = positionEvent.EventStreamId != @event.EventStreamId
-                                 || positionEvent.EventNumber != @event.EventNumber;
+            var resolvedLinkTo = true;
+            byte[] streamMetadataData = streamMetadata != null ? streamMetadata.Data : null;
+
+            byte[] positionMetadataData = link.Metadata;
+
+            var data = new ResolvedEvent(
+                link.EventStreamId, link.EventNumber, streamId, -1, resolvedLinkTo, new TFPos(-1, -1),
+                new TFPos(-1, link.LogPosition), Guid.Empty, "", true, null, null, positionMetadataData,
+                streamMetadataData, link.TimeStamp);
+
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId,
-                    new ResolvedEvent(
-                        positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
-                        resolvedLinkTo, new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition),
-                        @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                        @event.Metadata, link == null ? null : link.Metadata, positionEvent.TimeStamp),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: GetType()));
+                    EventReaderCorrelationId, data, _stopOnEof ? (long?) null : link.LogPosition, progress,
+                    source: GetType()));
         }
     }
 }
