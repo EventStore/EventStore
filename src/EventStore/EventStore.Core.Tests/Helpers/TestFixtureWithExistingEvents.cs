@@ -248,9 +248,9 @@ namespace EventStore.Core.Tests.Helpers
                                 ? (EnumerableExtensions.IsEmpty(list) ? -1 : list.Last().EventNumber)
                                 : message.FromEventNumber, message.MaxCount, ReadStreamResult.Success, records, null, false,
                             string.Empty,
-                            nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
+                            nextEventNumber: records.Length > 0 ? records.Last().OriginalEvent.EventNumber - 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
-                            isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == 0,
+                            isEndOfStream: records.Length == 0 || records.Last().OriginalEvent.EventNumber == 0,
                             tfLastCommitPosition: _fakePosition));
                 }
                 else
@@ -310,9 +310,9 @@ namespace EventStore.Core.Tests.Helpers
                             message.CorrelationId, message.EventStreamId,
                             message.FromEventNumber, message.MaxCount, ReadStreamResult.Success, records, null, false,
                             string.Empty,
-                            nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : lastEventNumber + 1,
+                            nextEventNumber: records.Length > 0 ? records.Last().OriginalEvent.EventNumber + 1 : lastEventNumber + 1,
                             lastEventNumber: lastEventNumber,
-                            isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == list.Last().EventNumber,
+                            isEndOfStream: records.Length == 0 || records.Last().OriginalEvent.EventNumber == list.Last().EventNumber,
                             tfLastCommitPosition: _fakePosition));
                 }
                 else
@@ -528,11 +528,12 @@ namespace EventStore.Core.Tests.Helpers
             return _all.Last(v => v.Value.EventStreamId == streamId && v.Value.EventNumber == eventNumber).Key;
         }
 
-        public void AssertLastEvent(string streamId, string data, string message = null)
+        public void AssertLastEvent(string streamId, string data, string message = null, int skip = 0)
         {
             message = message ?? string.Format("Invalid last event in the '{0}' stream. ", streamId);
             List<EventRecord> events;
             Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            events = events.Take(events.Count - skip).ToList();
             Assert.IsNotEmpty(events, message + "The stream is empty.");
             var last = events[events.Count - 1];
             Assert.AreEqual(data,Encoding.UTF8.GetString(last.Data));

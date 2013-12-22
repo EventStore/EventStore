@@ -133,6 +133,7 @@ function scope($on, $notify) {
             transformBy: transformBy,
             filterBy: filterBy,
             outputTo: outputTo,
+            outputState: outputState,
         };
     }
 

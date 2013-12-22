@@ -157,7 +157,7 @@ namespace EventStore.Projections.Core.Services.v8
                 {
                     @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
                     @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
-                    @event.PositionMetadata
+                    @event.PositionMetadata ?? ""
                 });
             if (partition == "")
                 return null;
@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Services.v8
                 {
                     data.IsJson ? "1" : "", data.EventStreamId, data.EventType ?? "", "",
                     data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
-                    data.PositionMetadata, data.EventStreamId, data.StreamMetadata ?? ""
+                    data.PositionMetadata ?? "", data.EventStreamId, data.StreamMetadata ?? ""
                 });
         }
 
@@ -194,8 +194,8 @@ namespace EventStore.Projections.Core.Services.v8
                 new[]
                 {
                     data.IsJson ? "1" : "", data.EventStreamId, data.EventType, category ?? "",
-                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata,
-                    data.PositionMetadata, partition, ""
+                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
+                    data.PositionMetadata ?? "", partition, ""
                 });
             newState = newStates.Item1;
             newSharedState = newStates.Item2;

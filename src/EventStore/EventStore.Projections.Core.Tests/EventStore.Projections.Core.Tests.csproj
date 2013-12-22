@@ -184,7 +184,7 @@
     <Compile Include="Services\event_reader\TestFixtureWithEventReaderService.cs" />
     <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
     <Compile Include="Services\integration\parallel_query\when_running_from_streams_matching_query.cs" />
-    <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query.cs" />
+    <Compile Include="Services\integration\link_metadata\when_running_from_catalog_stream_query.cs" />
     <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query_twice.cs" />
     <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query_with_transform.cs" />
     <Compile Include="Services\integration\specification_with_a_v8_query_posted.cs" />
