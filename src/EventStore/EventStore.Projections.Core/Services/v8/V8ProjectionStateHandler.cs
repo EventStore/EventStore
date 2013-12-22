@@ -156,7 +156,8 @@ namespace EventStore.Projections.Core.Services.v8
                 new string[]
                 {
                     @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
-                    @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? ""
+                    @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+                    @event.PositionMetadata
                 });
             if (partition == "")
                 return null;
@@ -169,13 +170,14 @@ namespace EventStore.Projections.Core.Services.v8
             CheckDisposed();
             if (data == null) throw new ArgumentNullException("data");
 
-            return _query.TransformCatalogEvent((data.Data ?? "").Trim(), // trimming data passed to a JS 
+            return _query.TransformCatalogEvent(
+                (data.Data ?? "").Trim(), // trimming data passed to a JS 
                 new[]
-                    {
-                        data.IsJson ? "1" : "",
-                        data.EventStreamId, data.EventType ?? "", "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        data.Metadata ?? "", data.EventStreamId, data.StreamMetadata ?? ""
-                    });
+                {
+                    data.IsJson ? "1" : "", data.EventStreamId, data.EventType ?? "", "",
+                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
+                    data.PositionMetadata, data.EventStreamId, data.StreamMetadata ?? ""
+                });
         }
 
         public bool ProcessEvent(
@@ -190,11 +192,11 @@ namespace EventStore.Projections.Core.Services.v8
             var newStates = _query.Push(
                 data.Data.Trim(), // trimming data passed to a JS 
                 new[]
-                    {
-                        data.IsJson ? "1" : "",
-                        data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        data.Metadata, partition, ""
-                    });
+                {
+                    data.IsJson ? "1" : "", data.EventStreamId, data.EventType, category ?? "",
+                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata,
+                    data.PositionMetadata, partition, ""
+                });
             newState = newStates.Item1;
             newSharedState = newStates.Item2;
 /*            try

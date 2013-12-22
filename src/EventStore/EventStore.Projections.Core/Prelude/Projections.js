@@ -95,14 +95,14 @@ var $projections = {
                 return "OK";
             },
 
-            get_state_partition: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata) {
-                return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata);
+            get_state_partition: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata) {
+                return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata, linkMetadata);
             },
 
-            transform_catalog_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition, streamMetadataRaw) {
+            transform_catalog_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition, streamMetadataRaw) {
                 if (!catalogEventTransformer)
                     throw "catalogEventTransformer is not set";
-                var eventEnvelope = new envelope(null, event, eventType, streamId, sequenceNumber, metadata, partition, streamMetadataRaw);
+                var eventEnvelope = new envelope(null, event, eventType, streamId, sequenceNumber, metadata, linkMetadata, partition, streamMetadataRaw);
 
                 if (isJson) {
                     tryDeserializeBody(eventEnvelope);
@@ -113,8 +113,8 @@ var $projections = {
                 return result;
             },
 
-            process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
-                processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition);
+            process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition) {
+                processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition);
                 var stateJson;
                 var finalResult;
                 if (!sources.options.biState) {
@@ -231,7 +231,8 @@ var $projections = {
             }
         }
 
-        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition, streamMetadataRaw) {
+        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, linkMetadataRaw,
+            partition, streamMetadataRaw) {
             this.isJson = false;
             this.data = body;
             this.body = body;
@@ -241,6 +242,7 @@ var $projections = {
             this.sequenceNumber = sequenceNumber;
             this.metadataRaw = metadataRaw;
             this.streamMetadataRaw = streamMetadataRaw;
+            this.linkMetadataRaw = linkMetadataRaw;
             this.partition = partition;
             this.metadata_ = null;
         }
@@ -267,11 +269,24 @@ var $projections = {
             }
         });
 
-        function getStatePartition(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw) {
+        Object.defineProperty(envelope.prototype, "linkMetadata", {
+            get: function () {
+                if (!this.linkMetadata_) {
+                    if (this.linkMetadataRaw) {
+                        this.linkMetadata_ = JSON.parse(this.linkMetadataRaw);
+                    } else {
+                        this.linkMetadata_ = {};
+                    }
+                }
+                return this.linkMetadata_;
+            }
+        });
+
+        function getStatePartition(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, linkMetadataRaw) {
 
             var eventHandler = getStatePartitionHandler;
 
-            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null, null);
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, linkMetadataRaw, null, null);
 
             if (isJson)
                 tryDeserializeBody(eventEnvelope);
@@ -292,7 +307,7 @@ var $projections = {
             return envelope.isJson ? envelope.body : { $e: envelope.bodyRaw };
         }
 
-        function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, partition, streamMetadataRaw) {
+        function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, linkMetadataRaw, partition, streamMetadataRaw) {
 
             var eventName = eventType;
 
@@ -301,7 +316,7 @@ var $projections = {
 
             var index;
 
-            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, partition, streamMetadataRaw);
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, linkMetadataRaw, partition, streamMetadataRaw);
             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {
                 eventHandler = rawEventHandlers[index];

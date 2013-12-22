@@ -573,8 +573,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string streamId, int sequenceNumber, string eventType, string data, TFPos tfPos)
         {
             return new ResolvedEvent(
-                streamId, sequenceNumber, streamId, sequenceNumber, false, tfPos, Guid.NewGuid(), eventType, true, data,
-                "{}");
+                streamId, sequenceNumber, streamId, sequenceNumber, true, tfPos, Guid.NewGuid(), eventType, true, data,
+                "{}", "{\"position_meta\":1}");
         }
     }
 
@@ -592,6 +592,26 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void returns_event_data_as_state()
         {
             Assert.AreEqual("{\"data\":1}", _newState);
+            Assert.IsTrue(_emittedEventEnvelopes == null || !_emittedEventEnvelopes.Any());
+        }
+    }
+
+    [TestFixture]
+    public class with_return_link_metadata : specification_with_event_handled
+    {
+        protected override void Given()
+        {
+            _projection = @"fromAll().whenAny(function(s,e){
+                return e.linkMetadata;
+            })";
+            _state = @"{}";
+            _handledEvent = CreateSampleEvent("stream", 0, "event_type", "{\"data\":1}", new TFPos(100, 50));
+        }
+
+        [Test]
+        public void returns_position_metadata_as_state()
+        {
+            Assert.AreEqual("{\"position_meta\":1}", _newState);
             Assert.IsTrue(_emittedEventEnvelopes == null || !_emittedEventEnvelopes.Any());
         }
     }
