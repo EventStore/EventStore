@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _loadingItemsCount;
         private readonly Stack<Item> _loadQueue = new Stack<Item>();
         private CheckpointTag _loadingPrerecordedEventsFrom;
+        private static readonly char[] _linkToSeparator = new []{'@'};
 
         public MultiStreamMultiOutputCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
@@ -188,7 +189,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //      which may in turn be a link.  This is necessary to provide a correct 
             //       ResolvedEvent when replaying from the -order stream
             var linkTo = Helper.UTF8NoBom.GetString(@event.Data);
-            string[] parts = linkTo.Split('@');
+            string[] parts = linkTo.Split(_linkToSeparator, 2);
             int eventNumber = int.Parse(parts[0]);
             string streamId = parts[1];
 

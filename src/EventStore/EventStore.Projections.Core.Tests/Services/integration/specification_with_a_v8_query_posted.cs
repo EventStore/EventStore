@@ -45,6 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.integration
         protected ProjectionMode _projectionMode;
         protected bool _checkpointsEnabled;
         protected bool _emitEnabled;
+        protected bool _startSystemProjections;
 
         protected override void Given()
         {
@@ -52,11 +53,13 @@ namespace EventStore.Projections.Core.Tests.Services.integration
             AllWritesSucceed();
             NoOtherStreams();
             GivenEvents();
+            EnableReadAll();
             _projectionName = "query";
             _projectionSource = GivenQuery();
             _projectionMode = ProjectionMode.Transient;
             _checkpointsEnabled = false;
             _emitEnabled = false;
+            _startSystemProjections = GivenStartSystemProjections();
         }
 
         protected override Tuple<IBus, IPublisher, InMemoryBus>[] GivenProcessingQueues()
@@ -75,9 +78,29 @@ namespace EventStore.Projections.Core.Tests.Services.integration
 
         protected abstract string GivenQuery();
 
+        protected virtual bool GivenStartSystemProjections()
+        {
+            return false;
+        }
+
         protected override IEnumerable<WhenStep> When()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            if (_startSystemProjections)
+            {
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, "$streams", ProjectionManagementMessage.RunAs.System);
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, "$stream_by_category", ProjectionManagementMessage.RunAs.System);
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, "$by_category", ProjectionManagementMessage.RunAs.System);
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, "$by_event_type", ProjectionManagementMessage.RunAs.System);
+            }
             yield return
                 (new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), _projectionMode, _projectionName,

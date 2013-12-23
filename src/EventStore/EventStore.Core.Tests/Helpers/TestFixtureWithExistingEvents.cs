@@ -108,6 +108,7 @@ namespace EventStore.Core.Tests.Helpers
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private bool _readAllEnabled;
         private bool _noOtherStreams;
+        private static readonly char[] _linkToSeparator = new []{'@'};
 
         protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData, bool isJson = false)
         {
@@ -348,7 +349,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             if (x.EventType == "$>" && resolveLinks)
             {
-                var parts = Helper.UTF8NoBom.GetString(x.Data).Split('@');
+                var parts = Helper.UTF8NoBom.GetString(x.Data).Split(_linkToSeparator, 2);
                 var list = _lastMessageReplies[parts[1]];
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
@@ -363,7 +364,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             if (x.EventType == "$>" && resolveLinks)
             {
-                var parts = Helper.UTF8NoBom.GetString(x.Data).Split('@');
+                var parts = Helper.UTF8NoBom.GetString(x.Data).Split(_linkToSeparator, 2);
                 var list = _lastMessageReplies[parts[1]];
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
