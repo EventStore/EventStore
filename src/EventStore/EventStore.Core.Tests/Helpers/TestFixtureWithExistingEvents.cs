@@ -540,6 +540,32 @@ namespace EventStore.Core.Tests.Helpers
             Assert.AreEqual(data,Encoding.UTF8.GetString(last.Data));
         }
 
+        public void AssertStreamTail(string streamId, params string[] data)
+        {
+            var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            var eventsText = events.Skip(events.Count - data.Length).Select(v => Encoding.UTF8.GetString(v.Data)).ToList();
+            if (data.Length > 0)
+                Assert.IsNotEmpty(events, message + "The stream is empty.");
+
+            Assert.That(data.SequenceEqual(eventsText), string.Format("{0} does end with: {1}", streamId, data.Aggregate("", (a, v) => a + " " + v)));
+        }
+
+        public void AssertStreamContains(string streamId, params string[] data)
+        {
+            var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            if (data.Length > 0)
+                Assert.IsNotEmpty(events, message + "The stream is empty.");
+
+            var eventsData = new HashSet<string>(events.Select(v => Encoding.UTF8.GetString(v.Data)));
+            var missing = data.Where(v => !eventsData.Contains(v)).ToArray();
+
+            Assert.That(missing.Length == 0, string.Format("{0} does not contain: {1}", streamId, missing.Aggregate("", (a, v) => a + " " + v)));
+        }
+
         public void AssertEvent(string streamId, int eventNumber, string data)
         {
             throw new NotImplementedException();

@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Standard
         {
             builder.FromAll();
             builder.AllEvents();
+            builder.SetIncludeLinks();
         }
 
         public void Load(string state)
@@ -87,7 +88,7 @@ namespace EventStore.Projections.Core.Standard
             newSharedState = null;
             emittedEvents = null;
             newState = null;
-            if (data.EventSequenceNumber != 0 || data.ResolvedLinkTo)
+            if (data.PositionSequenceNumber != 0)
                 return false; // not our event
 
             emittedEvents = new[]
@@ -95,7 +96,7 @@ namespace EventStore.Projections.Core.Standard
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
                         SystemStreams.StreamsStream, Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null))
+                        data.PositionSequenceNumber + "@" + data.PositionStreamId, null, eventPosition, expectedTag: null))
             };
 
             return true;

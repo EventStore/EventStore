@@ -57,6 +57,7 @@ namespace EventStore.Projections.Core.Standard
         {
             builder.FromAll();
             builder.AllEvents();
+            builder.SetIncludeLinks();
         }
 
         public void Load(string state)
@@ -95,20 +96,21 @@ namespace EventStore.Projections.Core.Standard
             newState = null;
             if (data.PositionSequenceNumber != 0)
                 return false; // not our event
-            if (data.EventStreamId.StartsWith("$"))
+            var streamId = data.PositionStreamId;
+            if (streamId.StartsWith("$"))
                 return false;
-            var lastSlashPos = data.EventStreamId.LastIndexOf(_separator);
+            var lastSlashPos = streamId.LastIndexOf(_separator);
             if (lastSlashPos < 0)
                 return true; // handled but not interesting to us
 
-            var category = data.EventStreamId.Substring(0, lastSlashPos);
+            var category = streamId.Substring(0, lastSlashPos);
 
             emittedEvents = new[]
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
                         "$category" + _separator + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
-                        data.EventStreamId, null, eventPosition, expectedTag: null))
+                        streamId, null, eventPosition, expectedTag: null))
             };
 
             return true;

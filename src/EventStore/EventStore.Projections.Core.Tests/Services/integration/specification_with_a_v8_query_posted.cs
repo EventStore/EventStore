@@ -101,12 +101,14 @@ namespace EventStore.Projections.Core.Tests.Services.integration
                     new ProjectionManagementMessage.Enable(
                         Envelope, "$by_event_type", ProjectionManagementMessage.RunAs.System);
             }
-            yield return
-                (new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                    ProjectionManagementMessage.RunAs.System, "JS",
-                    _projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
-                    emitEnabled: _emitEnabled));
+            if (!string.IsNullOrEmpty(_projectionSource))
+            {
+                yield return
+                    (new ProjectionManagementMessage.Post(
+                        new PublishEnvelope(_bus), _projectionMode, _projectionName,
+                        ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
+                        checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
+            }
         }
     }
 }

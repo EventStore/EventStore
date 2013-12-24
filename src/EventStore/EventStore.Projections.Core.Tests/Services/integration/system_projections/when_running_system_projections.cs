@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
 using EventStore.Core.Services;
 using NUnit.Framework;
 
@@ -36,13 +37,23 @@ namespace EventStore.Projections.Core.Tests.Services.integration.system_projecti
     {
         protected override void GivenEvents()
         {
-            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":1}", "0@account-01");
-            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":2}", "1@account-01");
-            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":10}", "0@account-02");
 
             ExistingEvent("account-01", "test", "", "{\"a\":1}", isJson: true);
             ExistingEvent("account-01", "test", "", "{\"a\":2}", isJson: true);
             ExistingEvent("account-02", "test", "", "{\"a\":10}", isJson: true);
+
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":1}", "0@account-01");
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":2}", "1@account-01");
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":10}", "0@account-02");
+
+            ExistingEvent("stream-1", SystemEventTypes.LinkTo, "{\"a\":10}", "1@account-01");
+        }
+
+        protected override IEnumerable<WhenStep> When()
+        {
+            foreach (var e in base.When()) yield return e;
+            yield return CreateWriteEvent("test-1", "test1", "{}", "{}", isJson: true);
+            yield return CreateWriteEvent("test-2", SystemEventTypes.LinkTo, "0@test-1", "{}", isJson: true);
         }
 
         protected override bool GivenInitializeSystemProjections()
@@ -61,9 +72,26 @@ namespace EventStore.Projections.Core.Tests.Services.integration.system_projecti
         }
 
         [Test]
-        public void just()
+        public void streams_are_categorized()
         {
-            AssertLastEvent("$category-account", "account-02");
+            AssertStreamTail("$category-stream", "stream-1");
+            AssertStreamTail("$category-test", "test-1", "test-2");
+            AssertStreamTail("$category-account", "account-01", "account-02");
         }
+
+        [Test]
+        public void streams_are_indexed()
+        {
+            AssertStreamContains("$streams", "0@account-01", "0@account-02", "0@stream", "0@test-1", "0@test-2", "0@stream-1", "0@$streams");
+        }
+
+        [Test]
+        public void events_are_categorized()
+        {
+            AssertStreamTail("$ce-stream", "1@account-01");
+            AssertStreamTail("$ce-test", "0@test-1", "0@test-1");
+            AssertStreamTail("$ce-account", "0@account-01", "1@account-01", "0@account-02");
+        }
+
     }
 }
