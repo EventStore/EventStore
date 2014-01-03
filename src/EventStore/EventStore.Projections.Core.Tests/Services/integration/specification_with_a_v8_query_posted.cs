@@ -83,6 +83,14 @@ namespace EventStore.Projections.Core.Tests.Services.integration
             return false;
         }
 
+        protected Message CreateQueryMessage(string name, string source)
+        {
+            return new ProjectionManagementMessage.Post(
+                new PublishEnvelope(_bus), ProjectionMode.Transient, name,
+                ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false,
+                emitEnabled: false);
+        }
+
         protected override IEnumerable<WhenStep> When()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
@@ -101,6 +109,17 @@ namespace EventStore.Projections.Core.Tests.Services.integration
                     new ProjectionManagementMessage.Enable(
                         Envelope, "$by_event_type", ProjectionManagementMessage.RunAs.System);
             }
+            var otherProjections = GivenOtherProjections();
+            var index = 0;
+            foreach (var source in otherProjections)
+            {
+                yield return
+                    (new ProjectionManagementMessage.Post(
+                        new PublishEnvelope(_bus), ProjectionMode.Continuous, "other_" + index,
+                        ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true,
+                        emitEnabled: true));
+                index++;
+            }
             if (!string.IsNullOrEmpty(_projectionSource))
             {
                 yield return
@@ -109,6 +128,11 @@ namespace EventStore.Projections.Core.Tests.Services.integration
                         ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
                         checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
             }
+        }
+
+        protected virtual IEnumerable<string> GivenOtherProjections()
+        {
+            return new string[0];
         }
     }
 }

@@ -35,6 +35,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -550,6 +551,31 @@ namespace EventStore.Core.Tests.Helpers
                 Assert.IsNotEmpty(events, message + "The stream is empty.");
 
             Assert.That(data.SequenceEqual(eventsText), string.Format("{0} does end with: {1}", streamId, data.Aggregate("", (a, v) => a + " " + v)));
+        }
+
+        public void AssertStreamTailWithLinks(string streamId, params string[] data)
+        {
+            var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            var eventsText = events.Skip(events.Count - data.Length).Select(v => new { Text = Encoding.UTF8.GetString(v.Data), EventType = v.EventType}).
+                Select(v => v.EventType == SystemEventTypes.LinkTo ? ResolveEventText(v.Text) : v.Text).
+                ToList();
+            if (data.Length > 0)
+                Assert.IsNotEmpty(events, message + "The stream is empty.");
+
+            Assert.That(
+                data.SequenceEqual(eventsText),
+                string.Format(
+                    "{0} does end with: {1}. the tail is: {2}", streamId, data.Aggregate("", (a, v) => a + " " + v),
+                    eventsText.Aggregate("", (a, v) => a + " " + v)));
+        }
+
+        private string ResolveEventText(string link)
+        {
+            var stream = SystemEventTypes.StreamReferenceEventToStreamId(SystemEventTypes.LinkTo, link);
+            var eventNumber = SystemEventTypes.EventLinkToEventNumber(link);
+            return Encoding.UTF8.GetString(_lastMessageReplies[stream][eventNumber].Data);
         }
 
         public void AssertStreamContains(string streamId, params string[] data)

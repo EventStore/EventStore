@@ -150,6 +150,12 @@ namespace EventStore.Core.Services
             }
             return streamId;
         }
+
+        public static int EventLinkToEventNumber(string link)
+        {
+            string[] parts = link.Split(_linkToSeparator, 2);
+            return int.Parse(parts[0]);
+        }
     }
 
     public static class SystemUsers
