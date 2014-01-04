@@ -185,6 +185,7 @@
     <Compile Include="Services\Processing\AllStreamsCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\BypassingEventFilter.cs" />
+    <Compile Include="Services\Processing\ByPositionStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\ByStreamCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\CatalogStreamPositionTagger.cs" />

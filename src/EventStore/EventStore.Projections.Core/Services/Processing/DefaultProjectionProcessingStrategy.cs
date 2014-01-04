@@ -171,8 +171,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
             CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy, IResultWriter resultWriter)
         {
-            var statePartitionSelector = CreateStatePartitionSelector(
-                _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
+            var statePartitionSelector = CreateStatePartitionSelector();
 
             var orderedPartitionProcessing = _sourceDefinition.ByStreams && _sourceDefinition.IsBiState;
 
@@ -184,12 +183,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 orderedPartitionProcessing: orderedPartitionProcessing);
         }
 
-        private static StatePartitionSelector CreateStatePartitionSelector(
-            IProjectionStateHandler projectionStateHandler, bool byCustomPartitions, bool byStream)
+        protected virtual StatePartitionSelector CreateStatePartitionSelector()
         {
-            return byCustomPartitions
-                ? new ByHandleStatePartitionSelector(projectionStateHandler)
-                : (byStream
+            return _sourceDefinition.ByCustomPartitions
+                ? new ByHandleStatePartitionSelector(_stateHandler)
+                : (_sourceDefinition.ByStreams
                     ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
                     : new NoopStatePartitionSelector());
         }
