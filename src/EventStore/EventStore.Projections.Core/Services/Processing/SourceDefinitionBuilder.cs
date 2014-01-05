@@ -82,7 +82,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetIncludeLinks(bool includeLinks = true)
         {
-            _options.IncludeLinks = true;
+            _options.IncludeLinks = includeLinks;
+        }
+
+        public void SetDisableParallelism(bool disableParallelism = true)
+        {
+            _options.DisableParallelism = disableParallelism;
         }
 
         public void IncludeEvent(string eventName)
@@ -223,6 +228,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.IncludeLinks; }
         }
 
+        public bool DisableParallelismOption
+        {
+            get { return _options.DisableParallelism; }
+        }
+
         public string ResultStreamNameOption
         {
             get
@@ -310,5 +320,7 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public bool IncludeLinks { get; set; }
 
+        [DataMember]
+        public bool DisableParallelism { get; set; }
     }
 }

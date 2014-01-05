@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _subscriptionId;
         private readonly Guid _correlationId;
         private readonly bool _definesCatalogTransform;
+        private CheckpointTag _completedAtPosition;
 
         public SpoolStreamProcessingWorkItem(
             ISpoolStreamWorkItemContainer container, IResultWriter resultWriter,
@@ -83,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var streamId = TransformCatalogEvent(position, resolvedEvent);
             if (string.IsNullOrEmpty(streamId))
-                CompleteProcessing();
+                CompleteProcessing(position);
             else
                 _loadBalancer.ScheduleTask(
                     streamId, (streamId_, workerIndex) =>
@@ -97,9 +98,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     });
         }
 
-        private void CompleteProcessing()
+        private void CompleteProcessing(CheckpointTag completedAtPosition)
         {
-            _container.CompleteSpoolProcessingWorkItem(_correlationId);
+            _completedAtPosition = completedAtPosition;
             NextStage();
         }
 
@@ -119,6 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _subscriptionId, _resultMessage.Partition, _resultMessage.Result, _resultMessage.Position,
                     Guid.Empty, null);
             }
+            _container.CompleteSpoolProcessingWorkItem(_subscriptionId, _completedAtPosition);
             NextStage();
         }
 
@@ -127,13 +129,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _loadBalancer.AccountCompleted(message.Partition);
             _spoolProcessingResponseDispatcher.Cancel(_spoolRequestId);
             _resultMessage = message;
-            CompleteProcessing();
+            CompleteProcessing(message.Position);
         }
     }
 
     public interface ISpoolStreamWorkItemContainer
     {
         string TransformCatalogEvent(CheckpointTag position, ResolvedEvent @event);
-        void CompleteSpoolProcessingWorkItem(Guid subscriptionId);
+        void CompleteSpoolProcessingWorkItem(Guid subscriptionId, CheckpointTag position);
     }
 }

@@ -97,6 +97,20 @@ fromCategory(""user"")
         }
     });
 ");
+            yield return CreateQueryMessage("query3", @"
+options({disableParallelism: true});
+fromCategory(""user"")
+    .foreachStream()
+    .when({
+        $init: function() {
+            return { count: 0 }
+        },
+        ChatMessage: function(state, event) {
+            state.count += 1;
+            return state;
+        }
+    });
+");
         }
 
         protected override bool GivenInitializeSystemProjections()
@@ -129,14 +143,24 @@ fromCategory(""chat"")
         [Test]
         public void query1_returns_correct_result()
         {
-            AssertStreamTailWithLinks("$projections-query1-result", @"{""count"":3}", @"{""count"":2}");
+            AssertStreamTailWithLinks(
+                "$projections-query1-result", @"Result:{""count"":3}", @"Result:{""count"":2}", "$Eof:");
         }
 
         [Test]
         public void query2_returns_correct_result()
         {
             AssertStreamTailWithLinks(
-                "$projections-query2-result", @"{""count"":1}", @"{""count"":2}", @"{""count"":1}", @"{""count"":1}");
+                "$projections-query2-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
+                @"Result:{""count"":1}", "$Eof:");
+        }
+
+        [Test]
+        public void query3_returns_correct_result()
+        {
+            AssertStreamTailWithLinks(
+                "$projections-query3-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
+                @"Result:{""count"":1}", "$Eof:");
         }
 
     }

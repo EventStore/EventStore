@@ -54,16 +54,16 @@ namespace EventStore.Projections.Core.Services.Processing
             Func<IProjectionStateHandler> handlerFactory, IProjectionStateHandler stateHandler)
         {
 
-            if (projectionConfig.StopOnEof && sourceDefinition.ByStreams && sourceDefinition.DefinesFold
-                && !string.IsNullOrEmpty(sourceDefinition.CatalogStream))
+            if (!sourceDefinition.DisableParallelismOption && projectionConfig.StopOnEof && sourceDefinition.ByStreams
+                && sourceDefinition.DefinesFold && !string.IsNullOrEmpty(sourceDefinition.CatalogStream))
             {
                 return new ParallelQueryProcessingStrategy(
                     name, projectionVersion, stateHandler, handlerFactory, projectionConfig, sourceDefinition,
                     namesBuilder, _logger, _spoolProcessingResponseDispatcher, _subscriptionDispatcher);
             }
 
-            if (projectionConfig.StopOnEof && sourceDefinition.ByStreams && sourceDefinition.DefinesFold
-                && sourceDefinition.HasCategories())
+            if (!sourceDefinition.DisableParallelismOption && projectionConfig.StopOnEof && sourceDefinition.ByStreams
+                && sourceDefinition.DefinesFold && sourceDefinition.HasCategories())
             {
                 return new ParallelQueryProcessingStrategy(
                     name, projectionVersion, stateHandler, handlerFactory, projectionConfig, sourceDefinition,

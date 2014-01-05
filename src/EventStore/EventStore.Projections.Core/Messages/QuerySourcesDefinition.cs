@@ -86,6 +86,11 @@ namespace EventStore.Projections.Core.Messages
             get { return Options != null && Options.IncludeLinks; }
         }
 
+        bool IQuerySources.DisableParallelismOption
+        {
+            get { return Options != null && Options.DisableParallelism; }
+        }
+
         string IQuerySources.ResultStreamNameOption
         {
             get { return Options != null ? Options.ResultStreamName : null; }
@@ -144,6 +149,7 @@ namespace EventStore.Projections.Core.Messages
                         DefinesFold = sources.DefinesFold,
                         ForceProjectionName = sources.ForceProjectionNameOption,
                         IncludeLinks = sources.IncludeLinksOption,
+                        DisableParallelism = sources.DisableParallelismOption,
                         PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
                         ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
                         IsBiState = sources.IsBiState,
