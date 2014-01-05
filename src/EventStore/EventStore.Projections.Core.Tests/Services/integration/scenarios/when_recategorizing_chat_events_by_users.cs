@@ -138,6 +138,20 @@ fromCategory(""chat"")
         linkTo(userStream, event);
     }
 })";
+
+            yield return @"
+fromCategory(""user"")
+    .foreachStream()
+    .when({
+        $init: function() {
+            return { count: 0 }
+        },
+        ChatMessage: function(state, event) {
+            state.count += 1;
+            return state;
+        }
+    }).outputState();
+";
         }
 
         [Test]
@@ -161,6 +175,18 @@ fromCategory(""chat"")
             AssertStreamTailWithLinks(
                 "$projections-query3-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
                 @"Result:{""count"":1}", "$Eof:");
+        }
+
+        [Test]
+        public void other_1_projection_produces_correct_results()
+        {
+            AssertStreamTail(
+                "$projections-other_1-result", "0@$projections-other_1-user-Greg-result",
+                "0@$projections-other_1-user-Ronan-result", "0@$projections-other_1-user-James-result",
+                "0@$projections-other_1-user-Rob-result", "1@$projections-other_1-user-Ronan-result");
+            AssertStreamTailWithLinks(
+                "$projections-other_1-result", @"Result:{""count"":1}", @"Result:{""count"":1}", @"Result:{""count"":1}",
+                @"Result:{""count"":1}", @"Result:{""count"":2}");
         }
 
     }
