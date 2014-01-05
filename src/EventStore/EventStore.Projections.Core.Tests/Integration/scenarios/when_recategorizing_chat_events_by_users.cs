@@ -29,7 +29,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.integration.scenarios
+namespace EventStore.Projections.Core.Tests.Integration.scenarios
 {
     [TestFixture]
     public class when_recategorizing_chat_events_by_users : specification_with_a_v8_query_posted

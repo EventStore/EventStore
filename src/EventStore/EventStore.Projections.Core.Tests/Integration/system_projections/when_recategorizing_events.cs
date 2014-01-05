@@ -30,7 +30,7 @@ using System.Collections.Generic;
 using EventStore.Core.Services;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.integration.system_projections
+namespace EventStore.Projections.Core.Tests.Integration.system_projections
 {
     [TestFixture]
     public class when_recategorizing_events : specification_with_a_v8_query_posted
