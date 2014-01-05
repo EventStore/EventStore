@@ -187,7 +187,7 @@ namespace EventStore.Padmin
 
         private static Tuple<string, string, UserCredentials> GetQueryAndCredentials(string[] commandArgs)
         {
-            if (commandArgs.Length == 3 || commandArgs.Length >= 4)
+            if (commandArgs.Length == 3 || commandArgs.Length > 4)
                 return null;
 
             if (commandArgs.Length == 1 || commandArgs.Length == 3)
