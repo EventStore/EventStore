@@ -46,6 +46,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             protected override void Given()
             {
                 base.Given();
+                AllWritesToSucceed("$projections-" + _projectionName + "-result");
+                AllWritesToSucceed("$$$projections-" + _projectionName + "-result");
+                NoOtherStreams();
             }
 
             protected override IEnumerable<WhenStep> When()

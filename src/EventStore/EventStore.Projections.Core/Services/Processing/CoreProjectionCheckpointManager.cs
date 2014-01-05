@@ -270,7 +270,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             if (!_inCheckpoint)
                 throw new InvalidOperationException();
-            BeginWriteCheckpoint(_requestedCheckpointPosition, _requestedCheckpointState.Serialize());
+            if (_usePersistentCheckpoints)
+                BeginWriteCheckpoint(_requestedCheckpointPosition, _requestedCheckpointState.Serialize());
+            else
+                CheckpointWritten(_requestedCheckpointPosition);
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)

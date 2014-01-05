@@ -188,7 +188,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Stop()
         {
-            EnsureState(State.LoadStateRequested | State.StateLoaded | State.Subscribed | State.Running | State.PhaseCompleted);
+            EnsureState(
+                State.LoadStateRequested | State.StateLoaded | State.Subscribed | State.Running | State.PhaseCompleted
+                | State.CompletingPhase);
             try
             {
                 if (_state == State.LoadStateRequested || _state == State.PhaseCompleted)
