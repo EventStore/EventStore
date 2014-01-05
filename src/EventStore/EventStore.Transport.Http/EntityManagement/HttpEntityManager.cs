@@ -119,7 +119,7 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             try
             {
-                HttpEntity.Response.ContentType = contentType + (encoding != null ? ("; charset: " + encoding.WebName) : "");
+                HttpEntity.Response.ContentType = contentType + (encoding != null ? ("; charset=" + encoding.WebName) : "");
             }
             catch (ObjectDisposedException)
             {
