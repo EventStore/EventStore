@@ -162,19 +162,38 @@ function getV8() {
 }
 
 function getDependencies() {
+    needsDependencies=false
+
     if [[ -d v8/build/gyp ]] ; then
         pushd v8/build/gyp > /dev/null || err
-        svnrevision=`svn info | sed -ne 's/^Revision: //p'`
+        currentGypRevision=`svn info | sed -ne 's/^Revision: //p'`
+        if [[ "$currentGypRevision" -ne "1806" ]] ; then
+            needsDependencies=true
+        fi
         popd > /dev/null || err
+    else
+        needsDependencies=true
     fi
 
-    pushd v8 > /dev/null || err
-    if [[ "$svnrevision" -ne "1501" ]] ; then
-        $make dependencies || err
+    if [[ -d v8/third_party/icu ]] ; then
+        pushd v8/third_party/icu > dev/null || err
+        currentIcuRevision=`svn info | sed -ne 's/^Revision: //p'`
+        if [[ "$currentIcuRevision" -ne "239289" ]] ;
+            needsDependencies=true
+        fi
+        popd > /dev/null || err
     else
-        echo "GYP already up to date (r $svnrevision)"
+        needsDependencies=true
     fi
-    popd > /dev/null || err
+
+    if $needsDependencies ; then
+        pushd v8 > /dev/null || err
+        echo "Running make dependencies"
+        $make dependencies || err
+        popd > /dev/null || err
+    else
+        echo "Dependencies already at correct revisions"
+    fi
 }
 
 function buildV8() {
