@@ -2,7 +2,7 @@
 #------------ Start of configuration -------------
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-V8_REVISION="17915" #Tag 3.22.6
+V8_REVISION="18454" #Tag 3.24.10
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."

@@ -46,7 +46,7 @@ namespace js1 {
 
 		PreludeScript *prelude;
 
-		Status QueryScript::GetStringValue(v8::Handle<v8::Value> call_result, v8::Handle<v8::String> &result);
+		Status GetStringValue(v8::Handle<v8::Value> call_result, v8::Handle<v8::String> &result);
 
 		void on(const v8::FunctionCallbackInfo<v8::Value>& info);
 		void notify(const v8::FunctionCallbackInfo<v8::Value>& info);
