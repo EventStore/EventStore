@@ -35,7 +35,7 @@ $libsDirectory = Join-Path $srcDirectory "libs"
     $js1VersionResource = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.rc")
 
     #V8
-    $v8Revision = "17915" # Tag 3.22.6
+    $v8Revision = "18454" # Tag 3.24.10
     $v8Repository = "http://v8.googlecode.com/svn/trunk"
     $v8Directory = Join-Path $baseDirectory "v8"
 
