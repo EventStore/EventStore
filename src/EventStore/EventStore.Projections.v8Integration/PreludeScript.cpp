@@ -33,12 +33,12 @@ namespace js1
 
 		if (prelude_result.IsEmpty()) 
 		{
-			set_last_error(v8::String::New("Prelude script did not return any value"));
+			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Prelude script did not return any value"));
 			return S_ERROR;
 		}
 		if (!prelude_result->IsFunction()) 
 		{
-			set_last_error(v8::String::New("Prelude script must return a function"));
+			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Prelude script must return a function"));
 			return S_ERROR;
 		}
 		global_template_factory = std::shared_ptr<v8::Persistent<v8::Function>>(
@@ -66,12 +66,12 @@ namespace js1
 		if (prelude_result.IsEmpty())
 		{
 
-			set_last_error(v8::String::New("Global template factory did not return any value"));
+			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Global template factory did not return any value"));
 			return S_ERROR; // initialized with 0 by default
 		}
 		if (!prelude_result->IsObject()) 
 		{
-			set_last_error(v8::String::New("Prelude script must return a function"));
+			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Prelude script must return a function"));
 			return S_ERROR; // initialized with 0 by default
 		}
 
@@ -109,8 +109,10 @@ namespace js1
 	{
 		//TODO: move actual callbacks out of this script into C# code
 		result = v8::ObjectTemplate::New();
-		result->Set(v8::String::New("$log"), v8::FunctionTemplate::New(log_callback, v8::External::New(this)));
-		result->Set(v8::String::New("$load_module"), v8::FunctionTemplate::New(load_module_callback, v8::External::New(this)));
+		result->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "$log"), 
+			v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), log_callback, v8::External::New(v8::Isolate::GetCurrent(), this)));
+		result->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "$load_module"), 
+			v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), load_module_callback, v8::External::New(v8::Isolate::GetCurrent(), this)));
 		return S_OK;
 	}
 
@@ -129,13 +131,14 @@ namespace js1
 		if (args.Length() != 1)
 		{
 			args.GetReturnValue().Set(
-				v8::ThrowException(
-					v8::Exception::Error(v8::String::New("The 'log' handler expects 1 argument"))));
+				v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'log' handler expects 1 argument"))));
 			return;
 		}
 		if (args[0].IsEmpty()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'log' handler argument cannot be empty"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'log' handler argument cannot be empty"))));
 			return;
 		}
 
@@ -148,7 +151,7 @@ namespace js1
 		v8::String::Value message(args[0].As<v8::String>());
 
 		prelude->log_handler(*message);
-		args.GetReturnValue().Set(v8::Undefined());
+		args.GetReturnValue().Set(v8::Undefined(v8::Isolate::GetCurrent()));
 		return;
 	};
 
@@ -156,19 +159,22 @@ namespace js1
 	{
 		if (args.Length() != 1) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler expects 1 argument"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'load_module' handler expects 1 argument"))));
 			return;
 		}
 
 		if (args[0].IsEmpty()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler argument cannot be empty"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'load_module' handler argument cannot be empty"))));
 			return;
 		}
 
 		if (!args[0]->IsString()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler argument must be a string"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'load_module' handler argument must be a string"))));
 			return;
 		}
 
@@ -181,7 +187,8 @@ namespace js1
 		ModuleScript *module = prelude->load_module(*module_name);
 		if (module == NULL) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::String::New("Cannot load module")));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Cannot load module")));
 			return;
 		}
 		args.GetReturnValue().Set(module->get_module_object());

@@ -36,7 +36,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 
-namespace EventStore.Projections.Core.Tests.Services.integration
+namespace EventStore.Projections.Core.Tests.Integration
 {
     public abstract class specification_with_a_v8_query_posted : TestFixtureWithProjectionCoreAndManagementServices
     {

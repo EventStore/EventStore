@@ -66,10 +66,13 @@ namespace js1
 			new v8::Persistent<v8::Context>(v8::Isolate::GetCurrent(), 
 			v8::Context::New(v8::Isolate::GetCurrent(), NULL, global_local)));
 
-		v8::Context::Scope scope(v8::Isolate::GetCurrent(), *context);
+		v8::Context::Scope scope(v8::Handle<v8::Context>::New(v8::Isolate::GetCurrent(), *context));
 
 		v8::TryCatch try_catch;
-		v8::Handle<v8::Script> result = v8::Script::Compile(v8::String::New(script_source), v8::String::New(file_name));
+		v8::Handle<v8::Script> result = v8::Script::Compile(
+			v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), script_source), 
+			v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), file_name));
+
 		if (set_last_error(result.IsEmpty(), try_catch))
 			return S_ERROR;
 
@@ -94,7 +97,7 @@ namespace js1
 	bool CompiledScript::set_last_error(bool is_error, v8::TryCatch &try_catch)
 	{
 		if (!is_error && !try_catch.Exception().IsEmpty()) {
-			set_last_error(v8::String::New("Caught exception which was not indicated as an error"));
+			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Caught exception which was not indicated as an error"));
 			return true;
 		}
 		if (is_error) 
@@ -122,16 +125,16 @@ namespace js1
 
 	void CompiledScript::isolate_add_ref(v8::Isolate * isolate) 
 	{
-		size_t counter = reinterpret_cast<size_t>(isolate->GetData());
+		size_t counter = reinterpret_cast<size_t>(isolate->GetData(0));
 		counter++;
-		isolate->SetData(reinterpret_cast<void *>(counter));
+		isolate->SetData(0, reinterpret_cast<void *>(counter));
 	}
 
 	size_t CompiledScript::isolate_release(v8::Isolate * isolate) 
 	{
-		size_t counter = reinterpret_cast<size_t>(isolate->GetData());
+		size_t counter = reinterpret_cast<size_t>(isolate->GetData(0));
 		counter--;
-		isolate->SetData(reinterpret_cast<void *>(counter));
+		isolate->SetData(0, reinterpret_cast<void *>(counter));
 		return counter;
 	}
 }

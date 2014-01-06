@@ -30,25 +30,30 @@ using System.Collections.Generic;
 using EventStore.Core.Services;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.integration.system_projections
+namespace EventStore.Projections.Core.Tests.Integration.system_projections
 {
     [TestFixture]
-    public class when_recategorizing_events_while_running : specification_with_a_v8_query_posted
+    public class when_running_system_projections : specification_with_a_v8_query_posted
     {
         protected override void GivenEvents()
         {
+
             ExistingEvent("account-01", "test", "", "{\"a\":1}", isJson: true);
             ExistingEvent("account-01", "test", "", "{\"a\":2}", isJson: true);
             ExistingEvent("account-02", "test", "", "{\"a\":10}", isJson: true);
 
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":1}", "0@account-01");
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":2}", "1@account-01");
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":10}", "0@account-02");
+
+            ExistingEvent("stream-1", SystemEventTypes.LinkTo, "{\"a\":10}", "1@account-01");
         }
 
         protected override IEnumerable<WhenStep> When()
         {
             foreach (var e in base.When()) yield return e;
-            yield return CreateWriteEvent("categorized-0", SystemEventTypes.LinkTo, "1@account-01", "{\"a\":2}");
-            yield return CreateWriteEvent("categorized-0", SystemEventTypes.LinkTo, "0@account-02", "{\"a\":10}");
-            yield return CreateWriteEvent("categorized-1", SystemEventTypes.LinkTo, "0@account-01", "{\"a\":1}");
+            yield return CreateWriteEvent("test-1", "test1", "{}", "{}", isJson: true);
+            yield return CreateWriteEvent("test-2", SystemEventTypes.LinkTo, "0@test-1", "{}", isJson: true);
         }
 
         protected override bool GivenInitializeSystemProjections()
@@ -69,20 +74,24 @@ namespace EventStore.Projections.Core.Tests.Services.integration.system_projecti
         [Test]
         public void streams_are_categorized()
         {
+            AssertStreamTail("$category-stream", "stream-1");
+            AssertStreamTail("$category-test", "test-1", "test-2");
             AssertStreamTail("$category-account", "account-01", "account-02");
-            AssertStreamTail("$category-categorized", "categorized-0", "categorized-1");
+        }
+
+        [Test]
+        public void streams_are_indexed()
+        {
+            AssertStreamContains("$streams", "0@account-01", "0@account-02", "0@stream", "0@test-1", "0@test-2", "0@stream-1", "0@$streams");
         }
 
         [Test]
         public void events_are_categorized()
         {
+            AssertStreamTail("$ce-stream", "1@account-01");
+            AssertStreamTail("$ce-test", "0@test-1", "0@test-1");
             AssertStreamTail("$ce-account", "0@account-01", "1@account-01", "0@account-02");
         }
 
-        [Test]
-        public void links_are_categorized()
-        {
-            AssertStreamTail("$ce-categorized", "1@account-01", "0@account-02", "0@account-01");
-        }
     }
 }

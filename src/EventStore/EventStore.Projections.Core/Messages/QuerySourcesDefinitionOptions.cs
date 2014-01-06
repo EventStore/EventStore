@@ -57,6 +57,9 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "$includeLinks")]
         public bool IncludeLinks { get; set; }
 
+        [DataMember(Name = "disableParallelism")]
+        public bool DisableParallelism { get; set; }
+
         [DataMember(Name = "reorderEvents")]
         public bool ReorderEvents { get; set; }
 

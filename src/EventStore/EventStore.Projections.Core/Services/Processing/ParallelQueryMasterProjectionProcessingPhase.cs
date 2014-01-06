@@ -121,9 +121,10 @@ namespace EventStore.Projections.Core.Services.Processing
             return _stateHandler.TransformCatalogEvent(position, @event);
         }
 
-        public void CompleteSpoolProcessingWorkItem(Guid correlationId)
+        public void CompleteSpoolProcessingWorkItem(Guid correlationId, CheckpointTag position)
         {
             _spoolProcessingWorkItems.Remove(correlationId);
+            _checkpointManager.EventProcessed(position, 18.8f);
         }
     }
 }

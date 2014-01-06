@@ -45,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProjectionNamesBuilder _namesBuilder;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
+        private readonly string _catalogStreamName;
 
         public ParallelQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
@@ -59,6 +60,18 @@ namespace EventStore.Projections.Core.Services.Processing
             _sourceDefinition = sourceDefinition;
             _namesBuilder = namesBuilder;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
+            if (_sourceDefinition.CatalogStream == SystemStreams.AllStream)
+            {
+                _catalogStreamName = SystemStreams.AllStream;
+            }
+            else if (_sourceDefinition.HasCategories())
+            {
+                _catalogStreamName = _namesBuilder.GetCategoryCatalogStreamName(_sourceDefinition.Categories[0]);
+            }
+            else
+            {
+                _catalogStreamName = _sourceDefinition.CatalogStream;
+            }
         }
 
         protected override IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder)
@@ -71,24 +84,29 @@ namespace EventStore.Projections.Core.Services.Processing
             PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
             IProjectionProcessingPhase firstPhase)
         {
-            return new [] {firstPhase};
+            var coreProjectionCheckpointWriter =
+                new CoreProjectionCheckpointWriter(
+                    namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
+            var checkpointManager2 = new DefaultCheckpointManager(
+                publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
+                _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder,
+                GetUseCheckpoints(), false, _sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
+
+            var writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
+                1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2,
+                checkpointManager2);
+            return new[] {firstPhase, writeResultsPhase};
         }
 
         protected override IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
-            if (_sourceDefinition.CatalogStream == SystemStreams.AllStream)
+            if (_catalogStreamName == SystemStreams.AllStream)
             {
                 return new ParallelQueryAllStreamsMasterReaderStrategy(
                     0, SystemAccount.Principal, timeProvider);
             }
-            else if (_sourceDefinition.HasCategories())
-            {
-                return new ParallelQueryMasterReaderStrategy(
-                    0, SystemAccount.Principal, timeProvider,
-                    _namesBuilder.GetCategoryCatalogStreamName(_sourceDefinition.Categories[0]));
-            }
             return new ParallelQueryMasterReaderStrategy(
-                0, SystemAccount.Principal, timeProvider, _sourceDefinition.CatalogStream);
+                0, SystemAccount.Principal, timeProvider, _catalogStreamName);
         }
 
         protected override IProjectionProcessingPhase CreateFirstProcessingPhase(

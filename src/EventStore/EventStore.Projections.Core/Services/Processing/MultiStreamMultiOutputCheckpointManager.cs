@@ -52,11 +52,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public MultiStreamMultiOutputCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
-            ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool producesRunningResults, bool definesFold,
+            ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints, bool producesRunningResults, bool definesFold,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             : base(
                 publisher, projectionCorrelationId, projectionVersion, runAs, ioDispatcher, projectionConfig, name,
-                positionTagger, namingBuilder, useCheckpoints, producesRunningResults, definesFold,
+                positionTagger, namingBuilder, usePersistentCheckpoints, producesRunningResults, definesFold,
                 coreProjectionCheckpointWriter)
         {
             _positionTagger = positionTagger;

@@ -58,6 +58,8 @@ namespace EventStore.Projections.Core.Messages
 
         bool IncludeLinksOption { get; }
 
+        bool DisableParallelismOption { get; }
+
         string ResultStreamNameOption { get; }
 
         string PartitionResultStreamNamePatternOption { get; }
