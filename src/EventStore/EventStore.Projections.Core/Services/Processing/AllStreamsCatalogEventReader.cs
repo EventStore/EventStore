@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             private void ReadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
             {
-                Reader._activeReads.Add(completed.CorrelationId);
+                Reader._activeReads.Remove(completed.CorrelationId);
                 switch (completed.Result)
                 {
                     case ReadStreamResult.NoStream:
@@ -121,6 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void MetaStreamReadCompleted()
         {
+            ProcessOutQueue();
             PauseOrContinueProcessing(delay: false);
         }
 

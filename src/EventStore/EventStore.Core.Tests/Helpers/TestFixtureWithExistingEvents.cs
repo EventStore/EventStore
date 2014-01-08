@@ -111,6 +111,11 @@ namespace EventStore.Core.Tests.Helpers
         private bool _noOtherStreams;
         private static readonly char[] _linkToSeparator = new []{'@'};
 
+        protected TFPos ExistingStreamMetadata(string streamId, string metadata)
+        {
+            return ExistingEvent("$$" + streamId, SystemEventTypes.StreamMetadata, "", metadata, isJson: true);
+        }
+
         protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData, bool isJson = false)
         {
             List<EventRecord> list;
