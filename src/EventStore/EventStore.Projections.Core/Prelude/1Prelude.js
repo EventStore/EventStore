@@ -60,7 +60,10 @@ function scope($on, $notify) {
     eventProcessor.register_comand_handlers($on);
     
     function queryLog(message) {
-        _log(message);
+        if (typeof message === "string")
+            _log(message);
+        else
+            _log(JSON.stringify(message));
     }
 
     function translateOn(handlers) {

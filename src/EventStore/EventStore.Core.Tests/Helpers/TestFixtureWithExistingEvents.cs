@@ -577,7 +577,7 @@ namespace EventStore.Core.Tests.Helpers
             Assert.That(
                 data.SequenceEqual(eventsText),
                 string.Format(
-                    "{0} does end with: {1}. the tail is: {2}", streamId, data.Aggregate("", (a, v) => a + " " + v),
+                    "{0} does not end with: {1}. the tail is: {2}", streamId, data.Aggregate("", (a, v) => a + " " + v),
                     eventsText.Aggregate("", (a, v) => a + " " + v)));
         }
 
