@@ -72,12 +72,21 @@ namespace EventStore.Projections.Core.v8
 
         private CompiledScript CompileScript(string script, string fileName)
         {
-            ScheduleTerminateExecution();
-            IntPtr prelude = Js1.CompilePrelude(
-                script, fileName, _loadModuleDelegate, _enterCancellableRegion, _exitCancellableRegion, _logDelegate);
-            CancelTerminateExecution();
-            CompiledScript.CheckResult(prelude, false, disposeScriptOnException: true);
-            return new CompiledScript(prelude, fileName);
+            try
+            {
+                ScheduleTerminateExecution();
+                IntPtr prelude = Js1.CompilePrelude(
+                    script, fileName, _loadModuleDelegate, _enterCancellableRegion, _exitCancellableRegion, _logDelegate);
+                CancelTerminateExecution();
+                CompiledScript.CheckResult(prelude, false, disposeScriptOnException: true);
+                return new CompiledScript(prelude, fileName);
+            }
+            catch (DllNotFoundException ex)
+            {
+                throw new ApplicationException(
+                    "The projection subsystem failed to load a libjs1.so/js1.dll/... or one of its dependencies.  The original error message is: "
+                    + ex.Message, ex);
+            }
         }
 
         private void LogHandler(string message)
