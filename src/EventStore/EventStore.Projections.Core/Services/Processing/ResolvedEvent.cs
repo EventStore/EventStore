@@ -53,16 +53,13 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly string Data;
         public readonly string Metadata;
         public readonly string PositionMetadata;
+        public readonly string StreamMetadata;
 
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
             bool resolvedLinkTo, TFPos position, TFPos originalPosition, Guid eventId, string eventType, bool isJson, byte[] data,
-            byte[] metadata, byte[] positionMetadata, DateTime timestamp)
+            byte[] metadata, byte[] positionMetadata, byte[] streamMetadata, DateTime timestamp)
         {
-            if (Guid.Empty == eventId)
-                throw new ArgumentException("Empty eventId provided.");
-            if (string.IsNullOrEmpty(eventType))
-                throw new ArgumentException("Empty eventType provided.");
 
             _positionStreamId = positionStreamId;
             _positionSequenceNumber = positionSequenceNumber;
@@ -77,16 +74,17 @@ namespace EventStore.Projections.Core.Services.Processing
             Timestamp = timestamp;
 
             //TODO: handle utf-8 conversion exception
-            Data = Helper.UTF8NoBom.GetString(data);
-            Metadata = Helper.UTF8NoBom.GetString(metadata);
+            Data = data != null ? Helper.UTF8NoBom.GetString(data): null;
+            Metadata = metadata != null ? Helper.UTF8NoBom.GetString(metadata): null;
             PositionMetadata = positionMetadata != null ? Helper.UTF8NoBom.GetString(positionMetadata) : null;
+            StreamMetadata = streamMetadata != null ? Helper.UTF8NoBom.GetString(streamMetadata) : null;
         }
 
 
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
             bool resolvedLinkTo, TFPos position, Guid eventId, string eventType, bool isJson, string data,
-            string metadata, string positionMetadata = null)
+            string metadata, string positionMetadata = null, string streamMetadata = null)
         {
             DateTime timestamp = default(DateTime);
             if (Guid.Empty == eventId)
@@ -108,6 +106,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Data = data;
             Metadata = metadata;
             PositionMetadata = positionMetadata;
+            StreamMetadata = streamMetadata;
         }
 
         public string EventStreamId

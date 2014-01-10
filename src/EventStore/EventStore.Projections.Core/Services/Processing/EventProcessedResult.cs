@@ -35,6 +35,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly EmittedEventEnvelope[] _emittedEvents;
         private readonly PartitionState _oldState;
         private readonly PartitionState _newState;
+        private readonly PartitionState _oldSharedState;
+        private readonly PartitionState _newSharedState;
         private readonly string _partition;
         private readonly CheckpointTag _checkpointTag;
         private readonly Guid _causedBy;
@@ -42,7 +44,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EventProcessedResult(
             string partition, CheckpointTag checkpointTag, PartitionState oldState, PartitionState newState,
-            EmittedEventEnvelope[] emittedEvents, Guid causedBy, string correlationId)
+            PartitionState oldSharedState, PartitionState newSharedState, EmittedEventEnvelope[] emittedEvents,
+            Guid causedBy, string correlationId)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (checkpointTag == null) throw new ArgumentNullException("checkpointTag");
@@ -51,6 +54,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _correlationId = correlationId;
             _oldState = oldState;
             _newState = newState;
+            _oldSharedState = oldSharedState;
+            _newSharedState = newSharedState;
             _partition = partition;
             _checkpointTag = checkpointTag;
         }
@@ -71,6 +76,19 @@ namespace EventStore.Projections.Core.Services.Processing
         public PartitionState NewState
         {
             get { return _newState; }
+        }
+
+        public PartitionState OldSharedState
+        {
+            get { return _oldSharedState; }
+        }
+
+        /// <summary>
+        /// null - means no state change
+        /// </summary>
+        public PartitionState NewSharedState
+        {
+            get { return _newSharedState; }
         }
 
         public string Partition

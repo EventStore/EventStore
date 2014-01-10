@@ -106,6 +106,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
+    <Compile Include="Integration\from_streams_matching\when_running_wit_stream_metadata.cs" />
     <Compile Include="Other\json_serialization.cs" />
     <Compile Include="Other\Stopwatch.cs" />
     <Compile Include="Other\when_matching_remaining_path.cs" />
@@ -165,6 +167,7 @@
     <Compile Include="Services\core_projection\when_receiving_committed_events_the_projection_without_when.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_checkpoint_is_stopped.cs" />
+    <Compile Include="Services\event_reader\all_streams_catalog_event_reader\when_reading_catalog.cs" />
     <Compile Include="Services\event_reader\by_stream_catalog_event_reader\when_reading_catalog.cs" />
     <Compile Include="Services\event_reader\externally_fed_by_stream_event_reader\when_fed_with_streams.cs" />
     <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\index_checkpoint.cs" />
@@ -182,9 +185,15 @@
     <Compile Include="Services\feed_reader\feed_reader_by_event_indexes.cs" />
     <Compile Include="Services\event_reader\TestFixtureWithEventReaderService.cs" />
     <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
-    <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query.cs" />
-    <Compile Include="Services\integration\parallel_query\when_running_from_catalog_stream_query_twice.cs" />
-    <Compile Include="Services\integration\specification_with_a_v8_query_posted.cs" />
+    <Compile Include="Integration\parallel_query\when_running_from_streams_matching_query.cs" />
+    <Compile Include="Integration\link_metadata\when_running_from_catalog_stream_query.cs" />
+    <Compile Include="Integration\parallel_query\when_running_from_catalog_stream_query_twice.cs" />
+    <Compile Include="Integration\parallel_query\when_running_from_catalog_stream_query_with_transform.cs" />
+    <Compile Include="Integration\specification_with_a_v8_query_posted.cs" />
+    <Compile Include="Integration\scenarios\when_recategorizing_chat_events_by_users.cs" />
+    <Compile Include="Integration\system_projections\when_recategorizing_events.cs" />
+    <Compile Include="Integration\system_projections\when_recategorizing_events_while_running.cs" />
+    <Compile Include="Integration\system_projections\when_running_system_projections.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\specification_with_parallel_processing_load_balancer.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_task.cs" />
     <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_unmeasured_task.cs" />
@@ -272,8 +281,10 @@
     <Compile Include="Services\partition_state_cache\when_the_partition_state_cache_has_been_reinitialized.cs" />
     <Compile Include="Services\partition_state_cache\when_unlocking_an_overflowed_cache.cs" />
     <Compile Include="Services\partition_state_cache\when_unlocking_part_of_cached_states.cs" />
+    <Compile Include="Services\projections_manager\bi_state\a_new_posted_projection.cs" />
     <Compile Include="Services\projections_manager\continuous\a_new_posted_projection.cs" />
     <Compile Include="Services\projections_manager\continuous\a_running_projection.cs" />
+    <Compile Include="Services\projections_manager\FakeBiStateProjection.cs" />
     <Compile Include="Services\projections_manager\FakeFromCatalogStreamProjection.cs" />
     <Compile Include="Services\projections_manager\managed_projection\when_starting_a_managed_projection_without_slave_projections.cs" />
     <Compile Include="Services\projections_manager\query\an_expired_projection.cs" />
@@ -300,6 +311,7 @@
     <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_emitting_stream_links.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_with_not_passing_filter_by.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_with_transform_by.cs" />
+    <Compile Include="Services\projections_manager\v8\when_running_bi_state_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_body_reflecting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />

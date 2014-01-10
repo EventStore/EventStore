@@ -36,6 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class SpoolStreamProcessingWorkItem : WorkItem, IHandle<PartitionProcessingResult>
     {
+        private readonly ISpoolStreamWorkItemContainer _container;
         private readonly IResultWriter _resultWriter;
         private readonly ParallelProcessingLoadBalancer _loadBalancer;
         private readonly EventReaderSubscriptionMessage.CommittedEventReceived _message;
@@ -47,17 +48,23 @@ namespace EventStore.Projections.Core.Services.Processing
         private Tuple<Guid, string> _spoolRequestId;
         private readonly long _limitingCommitPosition;
         private readonly Guid _subscriptionId;
+        private readonly Guid _correlationId;
+        private readonly bool _definesCatalogTransform;
+        private CheckpointTag _completedAtPosition;
 
         public SpoolStreamProcessingWorkItem(
-            IResultWriter resultWriter, ParallelProcessingLoadBalancer loadBalancer,
-            EventReaderSubscriptionMessage.CommittedEventReceived message, SlaveProjectionCommunicationChannels slaves,
-            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher, long limitingCommitPosition, Guid subscriptionId)
+            ISpoolStreamWorkItemContainer container, IResultWriter resultWriter,
+            ParallelProcessingLoadBalancer loadBalancer, EventReaderSubscriptionMessage.CommittedEventReceived message,
+            SlaveProjectionCommunicationChannels slaves,
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher, long limitingCommitPosition,
+            Guid subscriptionId, Guid correlationId, bool definesCatalogTransform)
             : base(Guid.NewGuid())
         {
             if (resultWriter == null) throw new ArgumentNullException("resultWriter");
             if (slaves == null) throw new ArgumentNullException("slaves");
             if (spoolProcessingResponseDispatcher == null)
                 throw new ArgumentNullException("spoolProcessingResponseDispatcher");
+            _container = container;
             _resultWriter = resultWriter;
             _loadBalancer = loadBalancer;
             _message = message;
@@ -65,29 +72,55 @@ namespace EventStore.Projections.Core.Services.Processing
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
             _limitingCommitPosition = limitingCommitPosition;
             _subscriptionId = subscriptionId;
+            _correlationId = correlationId;
+            _definesCatalogTransform = definesCatalogTransform;
         }
 
         protected override void ProcessEvent()
         {
             var channelGroup = _slaves.Channels["slave"];
             var resolvedEvent = _message.Data;
-            var streamId = SystemEventTypes.StreamReferenceEventToStreamId(resolvedEvent.EventType, resolvedEvent.Data);
-            _loadBalancer.ScheduleTask(
-                streamId, (streamId_, workerIndex) =>
-                {
-                    var channel = channelGroup[workerIndex];
-                    _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
-                        channel.PublishEnvelope,
-                        new ReaderSubscriptionManagement.SpoolStreamReading(
-                            channel.SubscriptionId, Guid.NewGuid(), streamId_, resolvedEvent.PositionSequenceNumber,
-                            _limitingCommitPosition), this);
-                });
+            var position = _message.CheckpointTag;
+
+            var streamId = TransformCatalogEvent(position, resolvedEvent);
+            if (string.IsNullOrEmpty(streamId))
+                CompleteProcessing(position);
+            else
+                _loadBalancer.ScheduleTask(
+                    streamId, (streamId_, workerIndex) =>
+                    {
+                        var channel = channelGroup[workerIndex];
+                        _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
+                            channel.PublishEnvelope,
+                            new ReaderSubscriptionManagement.SpoolStreamReading(
+                                channel.SubscriptionId, _correlationId, streamId_, resolvedEvent.PositionSequenceNumber,
+                                _limitingCommitPosition), this);
+                    });
+        }
+
+        private void CompleteProcessing(CheckpointTag completedAtPosition)
+        {
+            _completedAtPosition = completedAtPosition;
+            NextStage();
+        }
+
+        private string TransformCatalogEvent(CheckpointTag position, ResolvedEvent resolvedEvent)
+        {
+            if (_definesCatalogTransform)
+                return _container.TransformCatalogEvent(position, resolvedEvent);
+            return SystemEventTypes.StreamReferenceEventToStreamId(
+                resolvedEvent.EventType, resolvedEvent.Data);
         }
 
         protected override void WriteOutput()
         {
-            _resultWriter.WriteEofResult(_subscriptionId, 
-                _resultMessage.Partition, _resultMessage.Result, _resultMessage.Position, Guid.Empty, null);
+            if (_resultMessage != null)
+            {
+                _resultWriter.WriteEofResult(
+                    _subscriptionId, _resultMessage.Partition, _resultMessage.Result, _resultMessage.Position,
+                    Guid.Empty, null);
+            }
+            _container.CompleteSpoolProcessingWorkItem(_subscriptionId, _completedAtPosition);
             NextStage();
         }
 
@@ -96,7 +129,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _loadBalancer.AccountCompleted(message.Partition);
             _spoolProcessingResponseDispatcher.Cancel(_spoolRequestId);
             _resultMessage = message;
-            NextStage();
+            CompleteProcessing(message.Position);
         }
+    }
+
+    public interface ISpoolStreamWorkItemContainer
+    {
+        string TransformCatalogEvent(CheckpointTag position, ResolvedEvent @event);
+        void CompleteSpoolProcessingWorkItem(Guid subscriptionId, CheckpointTag position);
     }
 }

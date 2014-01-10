@@ -80,9 +80,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 return false;
             }
 
-            public override bool GetIsPartitioned()
+            public override bool GetRequiresRootPartition()
             {
-                return true;
+                return false;
             }
 
             public override bool GetProducesRunningResults()

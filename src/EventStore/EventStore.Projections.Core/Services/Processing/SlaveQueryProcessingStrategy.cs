@@ -113,5 +113,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 publisher, projectionCorrelationId, _projectionConfig, _name, readerStrategy.PositionTagger,
                 namingBuilder);
         }
+
+        protected override StatePartitionSelector CreateStatePartitionSelector()
+        {
+            return new ByPositionStreamStatePartitionSelector();
+        }
     }
 }

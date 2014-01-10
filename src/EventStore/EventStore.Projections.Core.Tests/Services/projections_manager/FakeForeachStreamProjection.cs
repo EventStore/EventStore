@@ -64,10 +64,21 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _state = state;
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
         {
             _logger("Initialize");
             _state = "";
+        }
+
+        public void InitializeShared()
+        {
+            _logger("InitializeShared");
+            throw new NotImplementedException();
         }
 
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
@@ -76,10 +87,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             return @data.EventStreamId;
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEventEnvelope[] emittedEvents)
+            out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             if (data.EventType == "fail" || _query == "fail")
                 throw new Exception("failed");
             _logger("ProcessEvent(" + "..." + ")");

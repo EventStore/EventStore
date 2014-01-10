@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
             var sourceDefinition = _stateHandler.GetSourceDefinition();
             var source = QuerySourcesDefinition.From(sourceDefinition).ToJson();
             return new ParallelQueryProcessingStrategy(
-                _projectionName, _version, GivenProjectionStateHandler, _projectionConfig,
+                _projectionName, _version, GivenProjectionStateHandler(), GivenProjectionStateHandler, _projectionConfig,
                 ProjectionSourceDefinition.From(
                     _projectionName, sourceDefinition, typeof (FakeProjectionStateHandler).GetNativeHandlerName(),
                     source), new ProjectionNamesBuilder(_projectionName, sourceDefinition), null,

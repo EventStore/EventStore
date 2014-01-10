@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Linq;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -189,5 +190,16 @@ namespace EventStore.Core.Data
                                  Flags,
                                  EventType);
         }
+
+#if DEBUG
+        public string DebugDataView {
+            get { return Encoding.UTF8.GetString(Data); }
+        }
+
+        public string DebugMetadataView
+        {
+            get { return Encoding.UTF8.GetString(Metadata); }
+        }
+#endif
     }
 }

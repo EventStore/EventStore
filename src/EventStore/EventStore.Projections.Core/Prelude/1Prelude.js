@@ -60,7 +60,10 @@ function scope($on, $notify) {
     eventProcessor.register_comand_handlers($on);
     
     function queryLog(message) {
-        _log(message);
+        if (typeof message === "string")
+            _log(message);
+        else
+            _log(JSON.stringify(message));
     }
 
     function translateOn(handlers) {
@@ -68,6 +71,9 @@ function scope($on, $notify) {
         for (var name in handlers) {
             if (name == 0 || name === "$init") {
                 eventProcessor.on_init_state(handlers[name]);
+            }
+            else if (name === "$initShared") {
+                eventProcessor.on_init_shared_state(handlers[name]);
             }
             else if (name === "$any") {
                 eventProcessor.on_any(handlers[name]);
@@ -130,6 +136,7 @@ function scope($on, $notify) {
             transformBy: transformBy,
             filterBy: filterBy,
             outputTo: outputTo,
+            outputState: outputState,
         };
     }
 
@@ -192,10 +199,18 @@ function scope($on, $notify) {
         };
     }
 
-    function fromStreamCatalog(streamCatalog) {
-        eventProcessor.fromStreamCatalog(streamCatalog);
+    function fromStreamCatalog(streamCatalog, transformer) {
+        eventProcessor.fromStreamCatalog(streamCatalog, transformer ? transformer : null);
         return {
             foreachStream: foreachStream,
+        };
+    }
+
+    function fromStreamsMatching(filter) {
+        eventProcessor.fromStreamsMatching(filter);
+        return {
+            when: when,
+            whenAny: whenAny,
         };
     }
 
@@ -260,6 +275,7 @@ function scope($on, $notify) {
         fromStream: fromStream,
         fromStreams: fromStreams,
         fromStreamCatalog: fromStreamCatalog,
+        fromStreamsMatching: fromStreamsMatching,
 
         options: options,
         emit: emit, 

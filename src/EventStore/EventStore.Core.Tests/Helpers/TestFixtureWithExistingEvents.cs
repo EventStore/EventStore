@@ -35,6 +35,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -108,8 +109,14 @@ namespace EventStore.Core.Tests.Helpers
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private bool _readAllEnabled;
         private bool _noOtherStreams;
+        private static readonly char[] _linkToSeparator = new []{'@'};
 
-        protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
+        protected TFPos ExistingStreamMetadata(string streamId, string metadata)
+        {
+            return ExistingEvent("$$" + streamId, SystemEventTypes.StreamMetadata, "", metadata, isJson: true);
+        }
+
+        protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData, bool isJson = false)
         {
             List<EventRecord> list;
             if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
@@ -121,8 +128,9 @@ namespace EventStore.Core.Tests.Helpers
                 list.Count,
                 new PrepareLogRecord(
                     _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
-                    _timeProvider.Now, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
-                    Helper.UTF8NoBom.GetBytes(eventData),
+                    _timeProvider.Now,
+                    PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
+                    eventType, Helper.UTF8NoBom.GetBytes(eventData),
                     eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)));
             list.Add(eventRecord);
             var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
@@ -247,9 +255,9 @@ namespace EventStore.Core.Tests.Helpers
                                 ? (EnumerableExtensions.IsEmpty(list) ? -1 : list.Last().EventNumber)
                                 : message.FromEventNumber, message.MaxCount, ReadStreamResult.Success, records, null, false,
                             string.Empty,
-                            nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
+                            nextEventNumber: records.Length > 0 ? records.Last().OriginalEvent.EventNumber - 1 : -1,
                             lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
-                            isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == 0,
+                            isEndOfStream: records.Length == 0 || records.Last().OriginalEvent.EventNumber == 0,
                             tfLastCommitPosition: _fakePosition));
                 }
                 else
@@ -309,9 +317,9 @@ namespace EventStore.Core.Tests.Helpers
                             message.CorrelationId, message.EventStreamId,
                             message.FromEventNumber, message.MaxCount, ReadStreamResult.Success, records, null, false,
                             string.Empty,
-                            nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber + 1 : lastEventNumber + 1,
+                            nextEventNumber: records.Length > 0 ? records.Last().OriginalEvent.EventNumber + 1 : lastEventNumber + 1,
                             lastEventNumber: lastEventNumber,
-                            isEndOfStream: records.Length == 0 || records.Last().Event.EventNumber == list.Last().EventNumber,
+                            isEndOfStream: records.Length == 0 || records.Last().OriginalEvent.EventNumber == list.Last().EventNumber,
                             tfLastCommitPosition: _fakePosition));
                 }
                 else
@@ -347,7 +355,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             if (x.EventType == "$>" && resolveLinks)
             {
-                var parts = Helper.UTF8NoBom.GetString(x.Data).Split('@');
+                var parts = Helper.UTF8NoBom.GetString(x.Data).Split(_linkToSeparator, 2);
                 var list = _lastMessageReplies[parts[1]];
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
@@ -362,7 +370,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             if (x.EventType == "$>" && resolveLinks)
             {
-                var parts = Helper.UTF8NoBom.GetString(x.Data).Split('@');
+                var parts = Helper.UTF8NoBom.GetString(x.Data).Split(_linkToSeparator, 2);
                 var list = _lastMessageReplies[parts[1]];
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
@@ -527,14 +535,77 @@ namespace EventStore.Core.Tests.Helpers
             return _all.Last(v => v.Value.EventStreamId == streamId && v.Value.EventNumber == eventNumber).Key;
         }
 
-        public void AssertLastEvent(string streamId, string data, string message = null)
+        public void AssertLastEvent(string streamId, string data, string message = null, int skip = 0)
         {
             message = message ?? string.Format("Invalid last event in the '{0}' stream. ", streamId);
             List<EventRecord> events;
             Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            events = events.Take(events.Count - skip).ToList();
             Assert.IsNotEmpty(events, message + "The stream is empty.");
             var last = events[events.Count - 1];
             Assert.AreEqual(data,Encoding.UTF8.GetString(last.Data));
+        }
+
+        public void AssertStreamTail(string streamId, params string[] data)
+        {
+            var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            var eventsText = events.Skip(events.Count - data.Length).Select(v => Encoding.UTF8.GetString(v.Data)).ToList();
+            if (data.Length > 0)
+                Assert.IsNotEmpty(events, message + "The stream is empty.");
+
+            Assert.That(
+                data.SequenceEqual(eventsText),
+                string.Format(
+                    "{0} does end with: {1} the tail is: {2}", streamId, data.Aggregate("", (a, v) => a + " " + v),
+                eventsText.Aggregate("", (a, v) => a + " " + v)));
+        }
+
+        public void AssertStreamTailWithLinks(string streamId, params string[] data)
+        {
+            var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            var eventsText =
+                events.Skip(events.Count - data.Length)
+                    .Select(v => new {Text = Encoding.UTF8.GetString(v.Data), EventType = v.EventType})
+                    .Select(
+                        v =>
+                            v.EventType == SystemEventTypes.LinkTo
+                                ? ResolveEventText(v.Text)
+                                : v.EventType + ":" + v.Text)
+                    .ToList();
+            if (data.Length > 0)
+                Assert.IsNotEmpty(events, message + "The stream is empty.");
+
+            Assert.That(
+                data.SequenceEqual(eventsText),
+                string.Format(
+                    "{0} does not end with: {1}. the tail is: {2}", streamId, data.Aggregate("", (a, v) => a + " " + v),
+                    eventsText.Aggregate("", (a, v) => a + " " + v)));
+        }
+
+        private string ResolveEventText(string link)
+        {
+            var stream = SystemEventTypes.StreamReferenceEventToStreamId(SystemEventTypes.LinkTo, link);
+            var eventNumber = SystemEventTypes.EventLinkToEventNumber(link);
+            return _lastMessageReplies[stream][eventNumber].EventType + ":"
+                   + Encoding.UTF8.GetString(_lastMessageReplies[stream][eventNumber].Data);
+        }
+
+        public void AssertStreamContains(string streamId, params string[] data)
+        {
+            var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            if (data.Length > 0)
+                Assert.IsNotEmpty(events, message + "The stream is empty.");
+
+            var eventsData = new HashSet<string>(events.Select(v => Encoding.UTF8.GetString(v.Data)));
+            var missing = data.Where(v => !eventsData.Contains(v)).ToArray();
+
+            Assert.That(missing.Length == 0, string.Format("{0} does not contain: {1}", streamId, missing.Aggregate("", (a, v) => a + " " + v)));
         }
 
         public void AssertEvent(string streamId, int eventNumber, string data)
@@ -545,6 +616,14 @@ namespace EventStore.Core.Tests.Helpers
         public void AssertEmptyStream(string streamId)
         {
             throw new NotImplementedException();
+        }
+
+        public void AssertEmptyOrNoStream(string streamId)
+        {
+            List<EventRecord> events;
+            Assert.That(
+                !_lastMessageReplies.TryGetValue(streamId, out events) || events.Count == 0,
+                string.Format("The stream {0} should not exist.", streamId));
         }
     }
 }

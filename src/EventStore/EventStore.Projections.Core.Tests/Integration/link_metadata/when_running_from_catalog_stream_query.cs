@@ -26,51 +26,48 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.integration.parallel_query
+namespace EventStore.Projections.Core.Tests.Integration.link_metadata
 {
     [TestFixture]
-    public class when_running_from_catalog_stream_query: specification_with_a_v8_query_posted
+    public class when_running_a_query_using_link_metadata: specification_with_a_v8_query_posted
     {
         protected override void GivenEvents()
         {
-            ExistingEvent("catalog", SystemEventTypes.StreamReference, "", "account-01");
-            ExistingEvent("catalog", SystemEventTypes.StreamReference, "", "account-02");
-            ExistingEvent("catalog", SystemEventTypes.StreamReference, "", "account-03");
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":1}", "0@account-01");
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":2}", "1@account-01");
+            ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":10}", "0@account-02");
 
-            ExistingEvent("account-01", "test", "", "{}");
-            ExistingEvent("account-01", "test", "", "{}");
-            ExistingEvent("account-03", "test", "", "{}");
-            ExistingEvent("account-03", "test", "", "{}");
-            ExistingEvent("account-03", "test", "", "{}");
+            ExistingEvent("account-01", "test", "", "{\"a\":1}", isJson: true);
+            ExistingEvent("account-01", "test", "", "{\"a\":2}", isJson: true);
+            ExistingEvent("account-02", "test", "", "{\"a\":10}", isJson: true);
         }
 
         protected override string GivenQuery()
         {
             return @"
-fromStreamCatalog('catalog').foreachStream().when({
-    $init: function() { return {c: 0}; },
-    $any: function(s, e) { return {c: s.c + 1}; }
-})
+fromStream('stream').when({
+    $any: function(s, e) { 
+        // test
+        if (JSON.stringify(e.body) != JSON.stringify(e.linkMetadata))
+            throw 'invalid link metadata ' + JSON.stringify(e.linkMetadata) + ' expected is ' + JSON.stringify(e.body);
+        
+        return e.linkMetadata; 
+    }
+}).outputState()
 ";
         }
 
         [Test]
         public void just()
         {
-            AssertLastEvent("$projections-query-account-01-result", "{\"c\":2}");
-//            AssertLastEvent("$projections-query-account-02-result", "{\"c\":0}");
-            AssertLastEvent("$projections-query-account-03-result", "{\"c\":3}");
+            AssertLastEvent("$projections-query-result", "{\"a\":10}", skip: 1 /* $eof */);
         }
 
         [Test]

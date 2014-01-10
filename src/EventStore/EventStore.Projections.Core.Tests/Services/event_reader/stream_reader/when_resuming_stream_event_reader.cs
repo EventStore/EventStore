@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new StreamEventReader(
-                _bus, _distibutionPointCorrelationId, null, "stream", 10, new RealTimeProvider(), false);
+                _ioDispatcher, _bus, _distibutionPointCorrelationId, null, "stream", 10, new RealTimeProvider(), false);
             _edp.Resume();
         }
 

@@ -27,7 +27,7 @@ extern "C"
 	JS1_API void STDCALL dispose_script(void *script_handle);
 
 	JS1_API bool STDCALL execute_command_handler(void *script_handle, void *event_handler_handle, const uint16_t *data_json, 
-		const uint16_t *data_other[], int32_t other_length, uint16_t **result_json, void **memoryt_handle);
+		const uint16_t *data_other[], int32_t other_length, uint16_t **result_json, uint16_t **result2_json, void **memoryt_handle);
 
 	JS1_API void STDCALL free_result(void *result);
 

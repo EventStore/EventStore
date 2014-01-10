@@ -38,6 +38,7 @@ var $projections = {
         var getStatePartitionHandler = function () {
             throw "GetStatePartition is not defined";
         };
+        var catalogEventTransformer = null;
 
         var sources = {
             /* TODO: comment out default falses to reduce message size */
@@ -52,21 +53,31 @@ var $projections = {
 
             options: {
                 definesStateTransform: false,
+                definesCatalogTransform: false,
                 producesResults: false,
                 definesFold: false,
                 resultStreamName: null,
                 partitionResultStreamNamePattern: null,
                 $forceProjectionName: null,
                 $includeLinks: false,
+                disableParallelism: false,
                 reorderEvents: false,
                 processingLag: 0,
+                biState: false,
             },
             version: 4
         };
 
-        var initStateHandler = function () { return {}; };
+        var initStateHandler = function () {
+            return {};
+        };
+
+        var initSharedStateHandler = function () {
+            return {};
+        };
 
         var projectionState = null;
+        var projectionSharedState = null;
 
         var commandHandlers = {
             set_debugging: function () {
@@ -74,18 +85,48 @@ var $projections = {
             },
 
             initialize: function () {
-                projectionState = initStateHandler();
+                var initialState = initStateHandler();
+                projectionState = initialState;
                 return "OK";
             },
 
-            get_state_partition: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata) {
-                return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata);
+            initialize_shared: function () {
+                var initialState = initSharedStateHandler();
+                projectionSharedState = initialState;
+                return "OK";
             },
 
-            process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition) {
-                processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, partition);
-                var stateJson = JSON.stringify(projectionState);
-                return stateJson;
+            get_state_partition: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata) {
+                return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata, linkMetadata);
+            },
+
+            transform_catalog_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition, streamMetadataRaw) {
+                if (!catalogEventTransformer)
+                    throw "catalogEventTransformer is not set";
+                var eventEnvelope = new envelope(null, event, eventType, streamId, sequenceNumber, metadata, linkMetadata, partition, streamMetadataRaw);
+
+                if (isJson) {
+                    tryDeserializeBody(eventEnvelope);
+                }
+
+                var result = catalogEventTransformer(partition, eventEnvelope);
+
+                return result;
+            },
+
+            process_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition) {
+                processEvent(event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition);
+                var stateJson;
+                var finalResult;
+                if (!sources.options.biState) {
+                    stateJson = JSON.stringify(projectionState);
+                    return stateJson;
+                } else {
+                    stateJson = JSON.stringify(projectionState);
+                    var sharedStateJson = JSON.stringify(projectionSharedState);
+                    finalResult = [stateJson, sharedStateJson];
+                    return finalResult;
+                }
             },
 
             transform_state_to_result: function () {
@@ -102,6 +143,12 @@ var $projections = {
             set_state: function (jsonState) {
                 var parsedState = JSON.parse(jsonState);
                 projectionState = parsedState;
+                return "OK";
+            },
+
+            set_shared_state: function(jsonState) {
+                var parsedState = JSON.parse(jsonState);
+                projectionSharedState = parsedState;
                 return "OK";
             },
 
@@ -132,6 +179,11 @@ var $projections = {
 
         function on_init_state(initHandler) {
             initStateHandler = initHandler;
+            sources.options.definesFold = true;
+        }
+
+        function on_init_shared_state(initHandler) {
+            initSharedStateHandler = initHandler;
             sources.options.definesFold = true;
         }
 
@@ -180,7 +232,8 @@ var $projections = {
             }
         }
 
-        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, partition) {
+        function envelope(body, bodyRaw, eventType, streamId, sequenceNumber, metadataRaw, linkMetadataRaw,
+            partition, streamMetadataRaw) {
             this.isJson = false;
             this.data = body;
             this.body = body;
@@ -189,6 +242,8 @@ var $projections = {
             this.streamId = streamId;
             this.sequenceNumber = sequenceNumber;
             this.metadataRaw = metadataRaw;
+            this.streamMetadataRaw = streamMetadataRaw;
+            this.linkMetadataRaw = linkMetadataRaw;
             this.partition = partition;
             this.metadata_ = null;
         }
@@ -202,11 +257,37 @@ var $projections = {
             }
         });
 
-        function getStatePartition(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw) {
+        Object.defineProperty(envelope.prototype, "streamMetadata", {
+            get: function () {
+                if (!this.streamMetadata_) {
+                    if (this.streamMetadataRaw) {
+                        this.streamMetadata_ = JSON.parse(this.streamMetadataRaw);
+                    } else {
+                        this.streamMetadata_ = {};
+                    }
+                }
+                return this.streamMetadata_;
+            }
+        });
+
+        Object.defineProperty(envelope.prototype, "linkMetadata", {
+            get: function () {
+                if (!this.linkMetadata_) {
+                    if (this.linkMetadataRaw) {
+                        this.linkMetadata_ = JSON.parse(this.linkMetadataRaw);
+                    } else {
+                        this.linkMetadata_ = {};
+                    }
+                }
+                return this.linkMetadata_;
+            }
+        });
+
+        function getStatePartition(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, linkMetadataRaw) {
 
             var eventHandler = getStatePartitionHandler;
 
-            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, null);
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, linkMetadataRaw, null, null);
 
             if (isJson)
                 tryDeserializeBody(eventEnvelope);
@@ -227,16 +308,16 @@ var $projections = {
             return envelope.isJson ? envelope.body : { $e: envelope.bodyRaw };
         }
 
-        function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {
+        function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, linkMetadataRaw, partition, streamMetadataRaw) {
 
             var eventName = eventType;
 
             var eventHandler;
-            var state = projectionState;
+            var state = !sources.options.biState ? projectionState : [projectionState, projectionSharedState];
 
             var index;
 
-            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, partition);
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, linkMetadataRaw, partition, streamMetadataRaw);
             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {
                 eventHandler = rawEventHandlers[index];
@@ -252,7 +333,6 @@ var $projections = {
                 state = callHandler(defaultEventHandler, state, eventEnvelope);
             }
 
-
             for (index = 0; index < anyEventHandlers.length; index++) {
                 eventHandler = anyEventHandlers[index];
                 state = callHandler(eventHandler, state, eventEnvelope);
@@ -262,7 +342,12 @@ var $projections = {
             if (eventHandler !== undefined) {
                 state = callHandler(eventHandler, state, eventEnvelope);
             }
-            projectionState = state;
+            if (!sources.options.biState) {
+                projectionState = state;
+            } else {
+                projectionState = state[0];
+                projectionSharedState = state[1];
+            }
         }
 
         function fromStream(sourceStream) {
@@ -273,8 +358,21 @@ var $projections = {
             sources.categories.push(sourceCategory);
         }
 
-        function fromStreamCatalog(streamCatalog) {
+        function fromStreamCatalog(streamCatalog, transformer) {
             sources.catalogStream = streamCatalog;
+            sources.options.definesCatalogTransform = transformer != null;
+            catalogEventTransformer = function(streamId, ev) {
+                return transformer(ev);
+            };
+        }
+
+        function fromStreamsMatching(filter) {
+            sources.catalogStream = "$all";
+            sources.options.definesCatalogTransform = true;
+            catalogEventTransformer = function(streamId, ev) {
+                return filter(streamId, ev) ? streamId : null;
+            };
+            byStream();
         }
 
         function byStream() {
@@ -320,6 +418,7 @@ var $projections = {
         return {
             on_event: on_event,
             on_init_state: on_init_state,
+            on_init_shared_state: on_init_shared_state,
             on_any: on_any,
             on_raw: on_raw,
 
@@ -327,6 +426,7 @@ var $projections = {
             fromCategory: fromCategory,
             fromStream: fromStream,
             fromStreamCatalog: fromStreamCatalog,
+            fromStreamsMatching: fromStreamsMatching,
 
             byStream: byStream,
             partitionBy: partitionBy,

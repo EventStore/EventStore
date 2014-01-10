@@ -43,14 +43,24 @@ namespace EventStore.Projections.Core.Services
     public interface IProjectionStateHandler : IDisposable, ISourceDefinitionSource
     {
         void Load(string state);
+        void LoadShared(string state);
         void Initialize();
+        void InitializeShared();
 
         /// <summary>
         /// Get state partition from the event
         /// </summary>
         /// <returns>partition name</returns>
-        string GetStatePartition(
-            CheckpointTag eventPosition, string category, ResolvedEvent data);
+        string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data);
+
+        /// <summary>
+        /// transforms a catalog event to streamId
+        /// </summary>
+        /// <param name="streamId"></param>
+        /// <param name="eventPosition"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data);
 
         /// <summary>
         /// Processes event and updates internal state if necessary.  
@@ -58,7 +68,7 @@ namespace EventStore.Projections.Core.Services
         /// <returns>true - if event was processed (new state must be returned) </returns>
         bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEventEnvelope[] emittedEvents);
+            out string newSharedState, out EmittedEventEnvelope[] emittedEvents);
 
         /// <summary>
         /// Transforms current state into a projection result.  Should not call any emit/linkTo etc 
@@ -79,11 +89,24 @@ namespace EventStore.Projections.Core.Services
             string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
             out string state, out EmittedEventEnvelope[] emittedEvents, bool isJson = true)
         {
+            string ignoredSharedState;
             return self.ProcessEvent(
                 partition, eventPosition, category,
                 new ResolvedEvent(
-                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1),
-                    eventId, eventType, isJson, data, metadata), out state, out emittedEvents);
+                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1), eventId,
+                    eventType, isJson, data, metadata), out state, out ignoredSharedState, out emittedEvents);
+        }
+
+        public static bool ProcessEvent(
+            this IProjectionStateHandler self, string partition, CheckpointTag eventPosition, string streamId,
+            string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
+            out string state, out string sharedState, out EmittedEventEnvelope[] emittedEvents, bool isJson = true)
+        {
+            return self.ProcessEvent(
+                partition, eventPosition, category,
+                new ResolvedEvent(
+                    streamId, eventSequenceNumber, streamId, eventSequenceNumber, false, new TFPos(0, -1), eventId,
+                    eventType, isJson, data, metadata), out state, out sharedState, out emittedEvents);
         }
 
         public static string GetNativeHandlerName(this Type handlerType)

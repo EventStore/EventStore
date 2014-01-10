@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
         {
-            throw new NotSupportedException();
+            // intentionally ignored 
         }
 
         public void ProcessEvent()

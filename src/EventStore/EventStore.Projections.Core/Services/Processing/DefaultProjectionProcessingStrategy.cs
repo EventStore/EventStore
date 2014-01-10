@@ -40,6 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly IQuerySources _sourceDefinition;
         private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
+        private readonly bool _isBiState;
 
         protected EventReaderBasedProjectionProcessingStrategy(
             string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
@@ -49,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
             _subscriptionDispatcher = subscriptionDispatcher;
+            _isBiState = sourceDefinition.IsBiState;
         }
 
         public override sealed IProjectionProcessingPhase[] CreateProcessingPhases(
@@ -103,9 +105,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return _sourceDefinition;
         }
 
-        public override bool GetIsPartitioned()
+        public override bool GetRequiresRootPartition()
         {
-            return _sourceDefinition.ByStreams || _sourceDefinition.ByCustomPartitions;
+            return !(_sourceDefinition.ByStreams || _sourceDefinition.ByCustomPartitions) || _isBiState;
         }
 
         public override void EnrichStatistics(ProjectionStatistics info)
@@ -169,22 +171,23 @@ namespace EventStore.Projections.Core.Services.Processing
             Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
             CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy, IResultWriter resultWriter)
         {
-            var statePartitionSelector = CreateStatePartitionSelector(
-                _stateHandler, _sourceDefinition.ByCustomPartitions, _sourceDefinition.ByStreams);
+            var statePartitionSelector = CreateStatePartitionSelector();
+
+            var orderedPartitionProcessing = _sourceDefinition.ByStreams && _sourceDefinition.IsBiState;
 
             return new EventProcessingProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics,
-                _stateHandler, partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger,
-                zeroCheckpointTag, checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy,
-                resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof());
+                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics, _stateHandler,
+                partitionStateCache, _sourceDefinition.DefinesStateTransform, _name, _logger, zeroCheckpointTag,
+                checkpointManager, statePartitionSelector, subscriptionDispatcher, readerStrategy, resultWriter,
+                _projectionConfig.CheckpointsEnabled, this.GetStopOnEof(), _sourceDefinition.IsBiState,
+                orderedPartitionProcessing: orderedPartitionProcessing);
         }
 
-        private static StatePartitionSelector CreateStatePartitionSelector(
-            IProjectionStateHandler projectionStateHandler, bool byCustomPartitions, bool byStream)
+        protected virtual StatePartitionSelector CreateStatePartitionSelector()
         {
-            return byCustomPartitions
-                ? new ByHandleStatePartitionSelector(projectionStateHandler)
-                : (byStream
+            return _sourceDefinition.ByCustomPartitions
+                ? new ByHandleStatePartitionSelector(_stateHandler)
+                : (_sourceDefinition.ByStreams
                     ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
                     : new NoopStatePartitionSelector());
         }

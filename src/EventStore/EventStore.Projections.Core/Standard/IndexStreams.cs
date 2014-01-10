@@ -51,13 +51,23 @@ namespace EventStore.Projections.Core.Standard
         {
             builder.FromAll();
             builder.AllEvents();
+            builder.SetIncludeLinks();
         }
 
         public void Load(string state)
         {
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
+        {
+        }
+
+        public void InitializeShared()
         {
         }
 
@@ -66,13 +76,19 @@ namespace EventStore.Projections.Core.Standard
             throw new NotImplementedException();
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEventEnvelope[] emittedEvents)
+            out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             emittedEvents = null;
             newState = null;
-            if (data.EventSequenceNumber != 0 || data.ResolvedLinkTo)
+            if (data.PositionSequenceNumber != 0)
                 return false; // not our event
 
             emittedEvents = new[]
@@ -80,7 +96,7 @@ namespace EventStore.Projections.Core.Standard
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
                         SystemStreams.StreamsStream, Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null))
+                        data.PositionSequenceNumber + "@" + data.PositionStreamId, null, eventPosition, expectedTag: null))
             };
 
             return true;

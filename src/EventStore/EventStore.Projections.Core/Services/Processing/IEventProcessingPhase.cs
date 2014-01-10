@@ -54,6 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
     public interface IEventProcessingProjectionPhase : IProjectionPhaseStateManager
     {
+        string TransformCatalogEvent(EventReaderSubscriptionMessage.CommittedEventReceived message);
         EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
             string partition);
 

@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public ExternallyFedByStreamEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, IODispatcher ioDispatcher,
             long? limitingCommitPosition, ITimeProvider timeProvider, bool resolveLinkTos)
-            : base(publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents: null)
+            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents: null)
         {
             _ioDispatcher = ioDispatcher;
             _limitingCommitPosition = limitingCommitPosition;
@@ -210,7 +210,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
                         resolvedLinkTo, new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition),
                         @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                        @event.Metadata, link == null ? null : link.Metadata, positionEvent.TimeStamp),
+                        @event.Metadata, link == null ? null : link.Metadata, null, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: GetType(),
                     preTagged:
                         CheckpointTag.FromByStreamPosition(

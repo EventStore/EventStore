@@ -49,18 +49,19 @@ namespace js1
 	}
 
 	Status QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, 
-		const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result) 
+		const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result,
+			v8::Handle<v8::String> &result2) 
 	{
 		EventHandler *event_handler = reinterpret_cast<EventHandler *>(event_handler_handle);
 
 		v8::Context::Scope local(get_context());
 
-		v8::Handle<v8::String> data_json_handle = v8::String::New(data_json);
+		v8::Handle<v8::String> data_json_handle = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), data_json);
 		v8::Handle<v8::Value> argv[10];
 		argv[0] = data_json_handle;
 
 		for (int i = 0; i < other_length; i++) {
-			v8::Handle<v8::String> data_other_handle = v8::String::New(data_other[i]);
+			v8::Handle<v8::String> data_other_handle = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), data_other[i]);
 			argv[1 + i] = data_other_handle;
 		}
 
@@ -88,18 +89,20 @@ namespace js1
 			result = empty;
 			return S_ERROR;
 		}
-		if (call_result->IsNull()) 
+
+		if (call_result->IsArray()) 
 		{
-			result.Clear();
-			return S_OK;
+			v8::Handle<v8::Array> array_result = call_result.As<v8::Array>();
+			Status status = GetStringValue(array_result->Get(0), result);
+			if (status != Status::S_OK) 
+				return status;
+
+			return GetStringValue(array_result->Get(1), result2);
 		}
-		if (!call_result->IsString()) {
-			set_last_error(v8::String::New("Handler must return string data or null"));
-			result = empty;
-			return S_ERROR;
+		else 
+		{
+			return GetStringValue(call_result, result);
 		}
-		result = call_result.As<v8::String>();
-		return S_OK;
 	}
 
 	v8::Isolate *QueryScript::get_isolate()
@@ -112,11 +115,11 @@ namespace js1
 		v8::Handle<v8::Context> temp_context = v8::Context::New(v8::Isolate::GetCurrent());
 		v8::Context::Scope temp_context_scope(temp_context);
 
-		v8::Handle<v8::Value> query_script_wrap = v8::External::New(this);
+		v8::Handle<v8::Value> query_script_wrap = v8::External::New(v8::Isolate::GetCurrent(), this);
 
 		std::vector<v8::Handle<v8::Value> > arguments(2);
-		arguments[0] = v8::FunctionTemplate::New(on_callback, query_script_wrap)->GetFunction();
-		arguments[1] = v8::FunctionTemplate::New(notify_callback, query_script_wrap)->GetFunction();
+		arguments[0] = v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), on_callback, query_script_wrap)->GetFunction();
+		arguments[1] = v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), notify_callback, query_script_wrap)->GetFunction();
 
 		Status status = prelude->get_template(arguments, result);
 		if (status != S_OK)
@@ -124,28 +127,50 @@ namespace js1
 		return S_OK;
 	}
 
+	Status QueryScript::GetStringValue(v8::Handle<v8::Value> call_result, v8::Handle<v8::String> &result) 
+	{
+		v8::Handle<v8::String> empty;
+		if (call_result->IsNull()) 
+		{
+			result.Clear();
+			return S_OK;
+		}
+		if (!call_result->IsString()) {
+			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Handler must return string data or null"));
+			result = empty;
+			return S_ERROR;
+		}
+		result = call_result.As<v8::String>();
+		return S_OK;
+		
+	}
+
 	void QueryScript::on(const v8::FunctionCallbackInfo<v8::Value>& args) 
 	{
 		if (args.Length() != 2) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'on' handler expects 2 arguments"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'on' handler expects 2 arguments"))));
 			return;
 		}
 
 		if (args[0].IsEmpty() || args[1].IsEmpty()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'on' handler argument cannot be empty"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'on' handler argument cannot be empty"))));
 			return;
 		}
 		if (!args[0]->IsString()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'on' handler first argument must be a string"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'on' handler first argument must be a string"))));
 			return;
 		}
 
 		if (!args[1]->IsFunction()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'on' handler second argument must be a function"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'on' handler second argument must be a function"))));
 			return;
 		}
 
@@ -155,31 +180,35 @@ namespace js1
 		registred_handlers.push_back(event_handler);
 		v8::String::Value uname(name);
 		this->register_command_handler_callback(*uname, event_handler);
-		args.GetReturnValue().Set(v8::Undefined());
+		args.GetReturnValue().Set(v8::Undefined(v8::Isolate::GetCurrent()));
 	}
 
 	void QueryScript::notify(const v8::FunctionCallbackInfo<v8::Value>& args) 
 	{
 		if (args.Length() != 2) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'notify' handler expects 2 arguments"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'notify' handler expects 2 arguments"))));
 			return;
 		}
 
 		if (args[0].IsEmpty() || args[1].IsEmpty()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'notify' handler argument cannot be empty"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'notify' handler argument cannot be empty"))));
 			return;
 		}
 
 		if (!args[0]->IsString()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'notify' handler first argument must be a string"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'notify' handler first argument must be a string"))));
 		}
 
 		if (!args[1]->IsString()) 
 		{
-			args.GetReturnValue().Set(v8::ThrowException(v8::Exception::Error(v8::String::New("The 'notify' handler second argument must be a string"))));
+			args.GetReturnValue().Set(v8::Isolate::GetCurrent()->ThrowException(
+				v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "The 'notify' handler second argument must be a string"))));
 			return;
 		}
 
@@ -191,7 +220,7 @@ namespace js1
 
 		this->reverse_command_callback(*name_value, *body_value);
 
-		args.GetReturnValue().Set(v8::Undefined());
+		args.GetReturnValue().Set(v8::Undefined(v8::Isolate::GetCurrent()));
 	}
 
 	void QueryScript::on_callback(const v8::FunctionCallbackInfo<v8::Value>& args) 

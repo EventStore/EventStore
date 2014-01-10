@@ -219,6 +219,24 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_from_stream_catalog_with_transform : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreamCatalog('catalog1', function(e) {return e.bodyRaw;})
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.DefinesCatalogTransform);
+            }
+        }
+
+        [TestFixture]
         public class with_from_stream_catalog_by_stream : TestFixtureWithJsProjection
         {
             protected override void Given()
@@ -239,6 +257,31 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 Assert.AreEqual(true, _source.ByStreams);
             }
         }
+
+        [TestFixture]
+        public class with_from_streams_matching: TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreamsMatching(function(sm){return true;})
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.That(_source.Streams == null || _source.Streams.Length == 0);
+
+                Assert.AreEqual("$all", _source.CatalogStream);
+                Assert.AreEqual(true, _source.DefinesCatalogTransform);
+                Assert.AreEqual(true, _source.ByStreams);
+            }
+        }
+
         [TestFixture]
         public class with_from_all_by_custom_partitions : TestFixtureWithJsProjection
         {
@@ -430,6 +473,30 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_bi_state_option : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        biState: true,
+                    });
+                    fromAll().whenAny(
+                        function(state, sharedState, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.IsBiState);
+            }
+        }
+
+        [TestFixture]
         public class with_reorder_events_option : TestFixtureWithJsProjection
         {
             protected override void Given()
@@ -490,6 +557,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
     {
         protected ResolvedEvent _handledEvent;
         protected string _newState;
+        protected string _newSharedState;
         protected EmittedEventEnvelope[] _emittedEventEnvelopes;
 
         protected override void When()
@@ -498,15 +566,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 "",
                 CheckpointTag.FromPosition(
                     0, _handledEvent.Position.CommitPosition, _handledEvent.Position.PreparePosition), "", _handledEvent,
-                out _newState, out _emittedEventEnvelopes);
+                out _newState, out _newSharedState, out _emittedEventEnvelopes);
         }
 
         protected static ResolvedEvent CreateSampleEvent(
             string streamId, int sequenceNumber, string eventType, string data, TFPos tfPos)
         {
             return new ResolvedEvent(
-                streamId, sequenceNumber, streamId, sequenceNumber, false, tfPos, Guid.NewGuid(), eventType, true, data,
-                "{}");
+                streamId, sequenceNumber, streamId, sequenceNumber, true, tfPos, Guid.NewGuid(), eventType, true, data,
+                "{}", "{\"position_meta\":1}");
         }
     }
 
@@ -524,6 +592,26 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void returns_event_data_as_state()
         {
             Assert.AreEqual("{\"data\":1}", _newState);
+            Assert.IsTrue(_emittedEventEnvelopes == null || !_emittedEventEnvelopes.Any());
+        }
+    }
+
+    [TestFixture]
+    public class with_return_link_metadata : specification_with_event_handled
+    {
+        protected override void Given()
+        {
+            _projection = @"fromAll().whenAny(function(s,e){
+                return e.linkMetadata;
+            })";
+            _state = @"{}";
+            _handledEvent = CreateSampleEvent("stream", 0, "event_type", "{\"data\":1}", new TFPos(100, 50));
+        }
+
+        [Test]
+        public void returns_position_metadata_as_state()
+        {
+            Assert.AreEqual("{\"position_meta\":1}", _newState);
             Assert.IsTrue(_emittedEventEnvelopes == null || !_emittedEventEnvelopes.Any());
         }
     }

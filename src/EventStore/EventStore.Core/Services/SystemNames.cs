@@ -91,6 +91,7 @@ namespace EventStore.Core.Services
 
     public static class SystemEventTypes
     {
+        private static readonly char[] _linkToSeparator = new []{'@'};
         public const string StreamDeleted = "$streamDeleted";
         public const string StatsCollection = "$statsCollected";
         public const string LinkTo = "$>";
@@ -109,7 +110,7 @@ namespace EventStore.Core.Services
             {
                 case LinkTo:
                 {
-                    string[] parts = Helper.UTF8NoBom.GetString(data).Split('@');
+                    string[] parts = Helper.UTF8NoBom.GetString(data).Split(_linkToSeparator, 2);
                     streamId = parts[1];
                     break;
                 }
@@ -133,7 +134,7 @@ namespace EventStore.Core.Services
             {
                 case LinkTo:
                     {
-                        string[] parts = data.Split('@');
+                        string[] parts = data.Split(_linkToSeparator, 2);
                         streamId = parts[1];
                         break;
                     }
@@ -148,6 +149,12 @@ namespace EventStore.Core.Services
                     throw new NotSupportedException("Unknown event type: " + eventType);
             }
             return streamId;
+        }
+
+        public static int EventLinkToEventNumber(string link)
+        {
+            string[] parts = link.Split(_linkToSeparator, 2);
+            return int.Parse(parts[0]);
         }
     }
 

@@ -55,7 +55,16 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
+        {
+        }
+
+        public void InitializeShared()
         {
         }
 
@@ -64,10 +73,16 @@ namespace EventStore.Projections.Core.Standard
             throw new NotImplementedException();
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEventEnvelope[] emittedEvents)
+            out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             emittedEvents = null;
             newState = null;
             return true;

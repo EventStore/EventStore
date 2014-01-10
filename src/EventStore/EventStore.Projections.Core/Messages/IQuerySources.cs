@@ -48,11 +48,17 @@ namespace EventStore.Projections.Core.Messages
 
         bool DefinesStateTransform { get; }
 
+        bool DefinesCatalogTransform { get; }
+
         bool DefinesFold { get; }
 
         bool ProducesResults { get; }
 
+        bool IsBiState { get; }
+
         bool IncludeLinksOption { get; }
+
+        bool DisableParallelismOption { get; }
 
         string ResultStreamNameOption { get; }
 
