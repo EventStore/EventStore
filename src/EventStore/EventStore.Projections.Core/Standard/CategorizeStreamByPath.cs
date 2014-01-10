@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Standard
 {
     public class CategorizeStreamByPath : IProjectionStateHandler
     {
-        private readonly char _separator;
+        private readonly StreamCategoryExtractor _streamCategoryExtractor;
 
         public CategorizeStreamByPath(string source, Action<string> logger)
         {
@@ -43,14 +43,15 @@ namespace EventStore.Projections.Core.Standard
             if (trimmedSource == null || trimmedSource.Length != 1)
                 throw new InvalidOperationException(
                     "Cannot initialize categorize stream projection handler.  One symbol separator must supplied in the source.");
-            _separator = trimmedSource[0];
+            var separator = trimmedSource[0];
             if (logger != null)
             {
                 logger(
                     string.Format(
-                        "Categorize stream projection handler has been initialized with separator: '{0}'", _separator));
+                        "Categorize stream projection handler has been initialized with separator: '{0}'", separator));
             }
             // we will need to declare event types we are interested in
+            _streamCategoryExtractor = new StreamCategoryExtractorByLastSeparator(separator);
         }
 
         public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
@@ -94,23 +95,20 @@ namespace EventStore.Projections.Core.Standard
             newSharedState = null;
             emittedEvents = null;
             newState = null;
+
             if (data.PositionSequenceNumber != 0)
                 return false; // not our event
-            var streamId = data.PositionStreamId;
-            if (streamId.StartsWith("$"))
-                return false;
-            var lastSlashPos = streamId.LastIndexOf(_separator);
-            if (lastSlashPos < 0)
-                return true; // handled but not interesting to us
 
-            var category = streamId.Substring(0, lastSlashPos);
+            var category = _streamCategoryExtractor.GetCategoryByStreamId(data.PositionStreamId);
+            if (category == null)
+                return true; // handled but not interesting
 
             emittedEvents = new[]
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        "$category" + _separator + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
-                        streamId, null, eventPosition, expectedTag: null))
+                        "$category" + "-" + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
+                        data.PositionStreamId, null, eventPosition, expectedTag: null))
             };
 
             return true;

@@ -316,6 +316,8 @@
     <Compile Include="Standard\CategorizeStreamByPath.cs" />
     <Compile Include="Standard\IndexEventsByEventType.cs" />
     <Compile Include="Standard\IndexStreams.cs" />
+    <Compile Include="Standard\StreamCategoryExtractor.cs" />
+    <Compile Include="Standard\StreamCategoryExtractorByLastSeparator.cs" />
     <Compile Include="Standard\StubHandler.cs" />
     <Compile Include="Utils\EnumExtensions.cs" />
     <Compile Include="v8\CompiledScript.cs" />
