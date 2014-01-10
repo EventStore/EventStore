@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _isBiState;
 
         private string _handlerPartition;
-        private bool _sharedStateSet;
+        //private bool _sharedStateSet;
         private readonly Stopwatch _stopwatch;
 
 
@@ -282,7 +282,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionStateHandler.Initialize();
             }
 
-            if (!_sharedStateSet && _isBiState)
+            //if (!_sharedStateSet && _isBiState)
+            if (_isBiState)
             {
                 var newSharedState = _partitionStateCache.GetLockedPartitionState("");
                 if (newSharedState != null && !String.IsNullOrEmpty(newSharedState.State))
