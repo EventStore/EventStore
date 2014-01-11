@@ -134,6 +134,7 @@ function revertVersionInfo() {
 
 function err() {
     revertVersionFiles
+    revertVersionInfo
     echo "FAILED. See earlier messages"
     exit 1
 }
@@ -176,7 +177,7 @@ function getDependencies() {
     fi
 
     if [[ -d v8/third_party/icu ]] ; then
-        pushd v8/third_party/icu > dev/null || err
+        pushd v8/third_party/icu > /dev/null || err
         currentIcuRevision=`svn info | sed -ne 's/^Revision: //p'`
         if [[ "$currentIcuRevision" -ne "239289" ]] ; then
             needsDependencies=true
