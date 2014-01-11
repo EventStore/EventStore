@@ -178,7 +178,7 @@ function getDependencies() {
     if [[ -d v8/third_party/icu ]] ; then
         pushd v8/third_party/icu > dev/null || err
         currentIcuRevision=`svn info | sed -ne 's/^Revision: //p'`
-        if [[ "$currentIcuRevision" -ne "239289" ]] ;
+        if [[ "$currentIcuRevision" -ne "239289" ]] ; then
             needsDependencies=true
         fi
         popd > /dev/null || err
