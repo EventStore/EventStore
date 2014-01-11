@@ -242,6 +242,7 @@
     <Compile Include="Services\Transport\Http\ServiceAccessibility.cs" />
     <Compile Include="Services\Transport\Http\UriToActionMatch.cs" />
     <Compile Include="Services\Transport\Tcp\InternalTcpDispatcher.cs" />
+    <Compile Include="Services\Transport\Tcp\UnableToAcquireStreamException.cs" />
     <Compile Include="Services\UserManagement\AllUsersReader.cs" />
     <Compile Include="Services\UserManagement\SystemAccount.cs" />
     <Compile Include="Services\UserManagement\UserManagementService.cs" />
@@ -364,6 +365,10 @@
     <Compile Include="Util\Opts.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
+      <Project>{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}</Project>
+      <Name>EventStore.BufferManagement</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
