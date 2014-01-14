@@ -108,6 +108,7 @@
   <ItemGroup>
     <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_wit_stream_metadata.cs" />
+    <Compile Include="Integration\system_projections\when_changing_categorization_projection_configurations.cs" />
     <Compile Include="Other\json_serialization.cs" />
     <Compile Include="Other\Stopwatch.cs" />
     <Compile Include="Other\when_matching_remaining_path.cs" />

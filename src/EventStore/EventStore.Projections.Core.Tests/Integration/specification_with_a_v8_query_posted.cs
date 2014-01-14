@@ -34,6 +34,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 
 namespace EventStore.Projections.Core.Tests.Integration
@@ -98,16 +99,20 @@ namespace EventStore.Projections.Core.Tests.Integration
             {
                 yield return
                     new ProjectionManagementMessage.Enable(
-                        Envelope, "$streams", ProjectionManagementMessage.RunAs.System);
+                        Envelope, ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
                 yield return
                     new ProjectionManagementMessage.Enable(
-                        Envelope, "$stream_by_category", ProjectionManagementMessage.RunAs.System);
+                        Envelope, ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
                 yield return
                     new ProjectionManagementMessage.Enable(
-                        Envelope, "$by_category", ProjectionManagementMessage.RunAs.System);
+                        Envelope, ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
                 yield return
                     new ProjectionManagementMessage.Enable(
-                        Envelope, "$by_event_type", ProjectionManagementMessage.RunAs.System);
+                        Envelope, ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
             }
             var otherProjections = GivenOtherProjections();
             var index = 0;

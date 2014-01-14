@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Standard
                 return extractor;
             }
 
-            var parts = trimmedSource.Split(new char['\n']);
+            var parts = trimmedSource.Split(new[] { '\n' });
 
             if (parts.Length != 2)
                 throw new InvalidOperationException(
@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Standard
                     + "Invalid configuration  "
                     + ConfigurationFormatIs);
 
-            var direction = parts[0].ToLowerInvariant();
+            var direction = parts[0].ToLowerInvariant().Trim();
             if (direction != "first" && direction != "last")
                 throw new InvalidOperationException(
                     "Cannot initialize categorization projection handler.  "
