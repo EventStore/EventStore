@@ -323,7 +323,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     var result = Streams.Values.First() == other.Streams.Values.First();
                     return result;
                 case Mode.MultiStream:
-                    int rvalue;
+                    int rvalue = 0;
                     return Streams.Count == other.Streams.Count
                            && Streams.All(l => other.Streams.TryGetValue(l.Key, out rvalue) && l.Value == rvalue);
                 default:
