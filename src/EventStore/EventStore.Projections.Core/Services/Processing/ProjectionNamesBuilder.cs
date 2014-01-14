@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 String.Format(GetPartitionResultStreamNamePattern(), partitionName);
         }
 
-        public string GetResultStreamName()
+        public string GetResultStreamName ()
         {
             return _resultStreamName;
         }

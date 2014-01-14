@@ -40,20 +40,10 @@ namespace EventStore.Projections.Core.Standard
 
         public CategorizeEventsByStreamPath(string source, Action<string> logger)
         {
-            var trimmedSource = source == null ? null : source.Trim();
-            if (trimmedSource == null || trimmedSource.Length != 1)
-                throw new InvalidOperationException(
-                    "Cannot initialize categorize stream projection handler.  One symbol separator must supplied in the source.");
-            var separator = trimmedSource[0];
-            if (logger != null)
-            {
-                logger(
-                    string.Format(
-                        "Categorize stream projection handler has been initialized with separator: '{0}'", separator));
-            }
+            var extractor = StreamCategoryExtractor.GetExtractor(source, logger);
             // we will need to declare event types we are interested in
             _categoryStreamPrefix = "$ce-";
-            _streamCategoryExtractor = new StreamCategoryExtractorByLastSeparator(separator);
+            _streamCategoryExtractor = extractor;
         }
 
         public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
