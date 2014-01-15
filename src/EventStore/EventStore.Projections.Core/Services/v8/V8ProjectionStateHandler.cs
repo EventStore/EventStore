@@ -128,10 +128,22 @@ namespace EventStore.Projections.Core.Services.v8
             _query.SetState(state);
         }
 
+        public void LoadShared(string state)
+        {
+            CheckDisposed();
+            _query.SetSharedState(state);
+        }
+
         public void Initialize()
         {
             CheckDisposed();
             _query.Initialize();
+        }
+
+        public void InitializeShared()
+        {
+            CheckDisposed();
+            _query.InitializeShared();
         }
 
         public string GetStatePartition(
@@ -144,7 +156,8 @@ namespace EventStore.Projections.Core.Services.v8
                 new string[]
                 {
                     @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
-                    @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? ""
+                    @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+                    @event.PositionMetadata ?? ""
                 });
             if (partition == "")
                 return null;
@@ -152,24 +165,41 @@ namespace EventStore.Projections.Core.Services.v8
                 return partition;
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            CheckDisposed();
+            if (data == null) throw new ArgumentNullException("data");
+
+            return _query.TransformCatalogEvent(
+                (data.Data ?? "").Trim(), // trimming data passed to a JS 
+                new[]
+                {
+                    data.IsJson ? "1" : "", data.EventStreamId, data.EventType ?? "", "",
+                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
+                    data.PositionMetadata ?? "", data.EventStreamId, data.StreamMetadata ?? ""
+                });
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEventEnvelope[] emittedEvents)
+            out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
             CheckDisposed();
             if (data == null)
                 throw new ArgumentNullException("data");
             _eventPosition = eventPosition;
             _emittedEvents = null;
-            newState = _query.Push(
+            var newStates = _query.Push(
                 data.Data.Trim(), // trimming data passed to a JS 
                 new[]
-                    {
-                        data.IsJson ? "1" : "",
-                        data.EventStreamId, data.EventType, category ?? "", data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        data.Metadata, partition
-                    });
-            try
+                {
+                    data.IsJson ? "1" : "", data.EventStreamId, data.EventType, category ?? "",
+                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
+                    data.PositionMetadata ?? "", partition, ""
+                });
+            newState = newStates.Item1;
+            newSharedState = newStates.Item2;
+/*            try
             {
                 if (!string.IsNullOrEmpty(newState))
                 {
@@ -177,10 +207,14 @@ namespace EventStore.Projections.Core.Services.v8
                 }
 
             }
-            catch (JsonException)
+            catch (InvalidCastException)
             {
                 Console.Error.WriteLine(newState);
             }
+            catch (JsonException)
+            {
+                Console.Error.WriteLine(newState);
+            }*/
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }

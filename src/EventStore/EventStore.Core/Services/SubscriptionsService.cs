@@ -68,6 +68,7 @@ namespace EventStore.Core.Services
         private readonly IEnvelope _busEnvelope;
         private readonly IQueuedHandler _queuedHandler;
         private readonly IReadIndex _readIndex;
+        private static readonly char[] _linkToSeparator = new []{'@'};
 
         public SubscriptionsService(IPublisher bus, IQueuedHandler queuedHandler, IReadIndex readIndex)
         {
@@ -316,7 +317,7 @@ namespace EventStore.Core.Services
             {
                 try
                 {
-                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split('@');
+                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(_linkToSeparator, 2);
                     int eventNumber = int.Parse(parts[0]);
                     string streamId = parts[1];
 

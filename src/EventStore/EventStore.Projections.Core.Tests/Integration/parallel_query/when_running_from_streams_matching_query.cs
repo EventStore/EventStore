@@ -26,71 +26,62 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.integration.parallel_query
+namespace EventStore.Projections.Core.Tests.Integration.parallel_query
 {
     [TestFixture]
-    public class when_running_from_catalog_stream_query_twice : specification_with_a_v8_query_posted
+    public class when_running_from_streams_matching_query: specification_with_a_v8_query_posted
     {
         protected override void GivenEvents()
         {
-            ExistingEvent("catalog", SystemEventTypes.StreamReference, "", "account-01");
-            ExistingEvent("catalog", SystemEventTypes.StreamReference, "", "account-02");
-            ExistingEvent("catalog", SystemEventTypes.StreamReference, "", "account-03");
+            ExistingEvent("account-01", "test", "", "{a:2}");
+            ExistingEvent("account-01", "test", "", "{a:3}");
+            ExistingEvent("account-02", "test", "", "{a:5}");
+            ExistingEvent("account-03", "test", "", "{a:7}");
+            ExistingEvent("account-03", "test", "", "{a:8}");
+            ExistingEvent("account-04", "test", "", "{a:11}");
+            ExistingEvent("account-05", "test", "", "{a:13}");
 
-            ExistingEvent("account-01", "test", "", "{}");
-            ExistingEvent("account-01", "test", "", "{}");
-            ExistingEvent("account-03", "test", "", "{}");
-            ExistingEvent("account-03", "test", "", "{}");
-            ExistingEvent("account-03", "test", "", "{}");
+            ExistingEvent("$$account-01", SystemEventTypes.StreamMetadata, "", "{\"Skip\": 1}");
+            ExistingEvent("$$account-02", SystemEventTypes.StreamMetadata, "", "{\"Skip\": 0}");
+            ExistingEvent("$$account-05", SystemEventTypes.StreamMetadata, "", "{\"Skip\": 1}");
+
+            ExistingEvent("$streams", SystemEventTypes.StreamReference, "", "account-01");
+            ExistingEvent("$streams", SystemEventTypes.StreamReference, "", "account-02");
+            ExistingEvent("$streams", SystemEventTypes.StreamReference, "", "account-03");
+            ExistingEvent("$streams", SystemEventTypes.StreamReference, "", "account-04");
+            ExistingEvent("$streams", SystemEventTypes.StreamReference, "", "account-05");
+
         }
 
         protected override string GivenQuery()
         {
             return @"
-fromStreamCatalog('catalog').foreachStream().when({
+fromStreamsMatching(
+    function(streamId, ev){
+        return !ev.streamMetadata.Skip;
+    }
+).when({
     $init: function() { return {c: 0}; },
     $any: function(s, e) { return {c: s.c + 1}; }
 })
 ";
         }
 
-        protected override IEnumerable<WhenStep> When()
-        {
-            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return
-                (new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                    ProjectionManagementMessage.RunAs.System, "JS",
-                    _projectionSource, enabled: false, checkpointsEnabled: false,
-                    emitEnabled: false));
-            yield return
-                new ProjectionManagementMessage.Enable(
-                    Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
-            yield return
-                new WhenStep(
-                    new ProjectionManagementMessage.UpdateQuery(
-                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.System, "JS", _projectionSource,
-                        emitEnabled: false), 
-                    new ProjectionManagementMessage.Enable(
-                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.System));
-        }
-
         [Test]
         public void just()
         {
-            AssertLastEvent("$projections-query-account-01-result", "{\"c\":2}");
-//            AssertLastEvent("$projections-query-account-02-result", "{\"c\":0}");
-            AssertLastEvent("$projections-query-account-03-result", "{\"c\":3}");
+            AssertEmptyOrNoStream("$projections-query-account-01-result");
+            AssertLastEvent("$projections-query-account-02-result", "{\"c\":1}");
+            AssertLastEvent("$projections-query-account-03-result", "{\"c\":2}");
+            AssertLastEvent("$projections-query-account-04-result", "{\"c\":1}");
+            AssertEmptyOrNoStream("$projections-query-account-05-result");
         }
 
         [Test]

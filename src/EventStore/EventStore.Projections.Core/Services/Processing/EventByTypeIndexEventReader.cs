@@ -32,6 +32,7 @@ using System.Linq;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -70,10 +71,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, string> _streamToEventType;
 
         public EventByTypeIndexEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, string[] eventTypes,
-            TFPos fromTfPosition, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
-            bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
+            string[] eventTypes, TFPos fromTfPosition, Dictionary<string, int> fromPositions, bool resolveLinkTos,
+            ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
+            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (eventTypes == null) throw new ArgumentNullException("eventTypes");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -481,7 +482,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var resolvedEvent = new ResolvedEvent(
                     positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
                     true, new TFPos(-1, positionEvent.LogPosition), position, @event.EventId, @event.EventType,
-                    (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata, positionEvent.Metadata,
+                    (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata, positionEvent.Metadata, null,
                     positionEvent.TimeStamp);
                 DeliverEvent(progress, resolvedEvent, position);
             }
@@ -647,7 +648,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var resolvedEvent = new ResolvedEvent(
                     @event.EventStreamId, @event.EventNumber, @event.EventStreamId, @event.EventNumber, false, position,
                     position, @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                    @event.Metadata, null, @event.TimeStamp);
+                    @event.Metadata, null, null, @event.TimeStamp);
 
                 DeliverEvent(progress, resolvedEvent, position);
             }

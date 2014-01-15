@@ -62,7 +62,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (committedEvent.Data.PositionStreamId != _catalogStream)
                 throw new InvalidOperationException(
                     string.Format(
-                        "Invalid catalog stream '{0}'.  Expected catalog stream is '{1}'", committedEvent.Data.EventStreamId, _catalogStream));
+                        "Invalid catalog stream '{0}'.  Expected catalog stream is '{1}'",
+                        committedEvent.Data.EventStreamId, _catalogStream));
 
             return CheckpointTag.FromByStreamPosition(
                 previous.Phase, "", committedEvent.Data.PositionSequenceNumber, null,
@@ -89,9 +90,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag AdjustTag(CheckpointTag tag)
         {
-            if (tag.Phase != Phase)
+            if (tag.Phase < Phase)
+                return tag;
+            if (tag.Phase > Phase)
                 throw new ArgumentException(
-                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, tag.Phase), "tag");
+                    string.Format("Invalid checkpoint tag phase.  Expected less or equal to: {0} Was: {1}", Phase, tag.Phase), "tag");
 
             if (tag.Mode_ == CheckpointTag.Mode.ByStream)
                 return tag;

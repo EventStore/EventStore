@@ -30,6 +30,7 @@ using System;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -49,10 +50,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _deliveredEvents;
 
         public TransactionFileEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, TFPos @from,
-            ITimeProvider timeProvider, bool stopOnEof = false, bool deliverEndOfTFPosition = true,
+            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
+            TFPos @from, ITimeProvider timeProvider, bool stopOnEof = false, bool deliverEndOfTFPosition = true,
             bool resolveLinkTos = true, int? stopAfterNEvents = null)
-            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
@@ -206,7 +207,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         @event.Event.EventNumber, @event.Link != null, receivedPosition,
                         originalPosition, @event.Event.EventId, @event.Event.EventType,
                         (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata,
-                        @event.Link == null ? null : @event.Link.Metadata, positionEvent.TimeStamp),
+                        @event.Link == null ? null : @event.Link.Metadata, null, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
                     100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
         }

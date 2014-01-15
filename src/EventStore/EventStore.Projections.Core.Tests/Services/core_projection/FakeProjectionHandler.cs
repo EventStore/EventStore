@@ -37,6 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public class FakeProjectionStateHandler : IProjectionStateHandler
     {
         public int _initializeCalled = 0;
+        public int _initializeSharedCalled = 0;
         public int _loadCalled = 0;
         public int _eventsProcessed = 0;
         public string _loadedState = null;
@@ -99,6 +100,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _loadedState = state;
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
         {
             if (_failOnInitialize)
@@ -106,6 +112,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _initializeCalled++;
             _loadedState = "";
         }
+        public void InitializeShared()
+        {
+            if (_failOnInitialize)
+                throw new Exception("INITIALIZE_SHARED_FAILED");
+            _initializeSharedCalled++;
+            _loadedState = "";
+        }
+
 
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
@@ -114,10 +128,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             return "region-a";
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEventEnvelope[] emittedEvents)
+            out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             if (_failOnProcessEvent)
                 throw new Exception("PROCESS_EVENT_FAILED");
             _lastProcessedStreamId = data.EventStreamId;

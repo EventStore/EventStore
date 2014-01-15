@@ -182,8 +182,10 @@
     <Compile Include="Services\Management\ManagedProjectionState.cs" />
     <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
     <Compile Include="Services\Management\TimeoutScheduler.cs" />
+    <Compile Include="Services\Processing\AllStreamsCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\BypassingEventFilter.cs" />
+    <Compile Include="Services\Processing\ByPositionStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\ByStreamCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\CatalogStreamPositionTagger.cs" />
@@ -236,6 +238,7 @@
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
     <Compile Include="Services\Processing\ParallelProcessingLoadBalancer.cs" />
+    <Compile Include="Services\Processing\ParallelQueryAllStreamsMasterReaderStrategy.cs" />
     <Compile Include="Services\Processing\ParallelQueryMasterProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\ParallelQueryMasterReaderStrategy.cs" />
     <Compile Include="Services\Processing\ParallelQueryProcessingStrategy.cs" />
@@ -313,6 +316,9 @@
     <Compile Include="Standard\CategorizeStreamByPath.cs" />
     <Compile Include="Standard\IndexEventsByEventType.cs" />
     <Compile Include="Standard\IndexStreams.cs" />
+    <Compile Include="Standard\StreamCategoryExtractor.cs" />
+    <Compile Include="Standard\StreamCategoryExtractorByFirstSeparator.cs" />
+    <Compile Include="Standard\StreamCategoryExtractorByLastSeparator.cs" />
     <Compile Include="Standard\StubHandler.cs" />
     <Compile Include="Utils\EnumExtensions.cs" />
     <Compile Include="v8\CompiledScript.cs" />

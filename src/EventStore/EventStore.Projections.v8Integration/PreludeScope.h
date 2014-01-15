@@ -13,7 +13,7 @@ namespace js1 {
 			v8::Isolate *current = v8::Isolate::GetCurrent();
 			if (current != isolate)
 			{
-				if (current != NULL && current->GetData() != NULL)
+				if (current != NULL && current->GetData(0) != NULL)
 					current->Exit();
 				isolate->Enter();
 			}

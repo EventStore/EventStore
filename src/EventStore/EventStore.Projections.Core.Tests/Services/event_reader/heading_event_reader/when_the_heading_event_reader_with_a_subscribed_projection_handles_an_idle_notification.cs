@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _point.Start(
                 _distibutionPointCorrelationId,
                 new TransactionFileEventReader(
-                    _bus, _distibutionPointCorrelationId, null, new TFPos(0, -1), new RealTimeProvider()));
+                    _ioDispatcher, _bus, _distibutionPointCorrelationId, null, new TFPos(0, -1), new RealTimeProvider()));
             DateTime timestamp = DateTime.UtcNow;
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(

@@ -53,6 +53,7 @@ namespace EventStore.Core.Services.Storage
         private readonly IPublisher _publisher;
         private readonly IReadIndex _readIndex;
         private readonly ICheckpoint _writerCheckpoint;
+        private static readonly char[] _linkToSeparator = new char[]{'@'};
 
         public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, ICheckpoint writerCheckpoint)
         {
@@ -427,7 +428,7 @@ namespace EventStore.Core.Services.Storage
             {
                 try
                 {
-                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split('@');
+                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(_linkToSeparator, 2);
                     int eventNumber = int.Parse(parts[0]);
                     string streamId = parts[1];
 

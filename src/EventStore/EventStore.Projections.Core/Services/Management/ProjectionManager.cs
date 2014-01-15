@@ -661,10 +661,10 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (_initializeSystemProjections)
             {
-                CreateSystemProjection("$streams", typeof (IndexStreams), "");
-                CreateSystemProjection("$stream_by_category", typeof (CategorizeStreamByPath), "-");
-                CreateSystemProjection("$by_category", typeof (CategorizeEventsByStreamPath), "-");
-                CreateSystemProjection("$by_event_type", typeof (IndexEventsByEventType), "");
+                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, typeof (IndexStreams), "");
+                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, typeof (CategorizeStreamByPath), "-");
+                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, typeof (CategorizeEventsByStreamPath), "-");
+                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, typeof (IndexEventsByEventType), "");
             }
         }
 

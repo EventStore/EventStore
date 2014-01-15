@@ -33,6 +33,15 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProjectionNamesBuilder 
     {
+
+        public static class StandardProjections
+        {
+            public const string StreamsStandardProjection = "$streams";
+            public const string StreamByCategoryStandardProjection = "$stream_by_category";
+            public const string EventByCategoryStandardProjection = "$by_category";
+            public const string EventByTypeStandardProjection = "$by_event_type";
+        }
+
         public const string EventType_ProjectionCheckpoint = "$ProjectionCheckpoint";
         public const string EventType_PartitionCheckpoint = "$Checkpoint";
 
@@ -81,7 +90,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 String.Format(GetPartitionResultStreamNamePattern(), partitionName);
         }
 
-        public string GetResultStreamName()
+        public string GetResultStreamName ()
         {
             return _resultStreamName;
         }

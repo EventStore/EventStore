@@ -107,7 +107,7 @@ extern "C"
 	};
 
 	JS1_API bool STDCALL execute_command_handler(void *script_handle, void* event_handler_handle, const uint16_t *data_json, 
-		const uint16_t *data_other[], int32_t other_length, uint16_t **result_json, void **memory_handle)
+		const uint16_t *data_other[], int32_t other_length, uint16_t **result_json, uint16_t **result2_json, void **memory_handle)
 	{
 
 		js1::QueryScript *query_script;
@@ -119,7 +119,10 @@ extern "C"
 		v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
 		v8::Handle<v8::String> result;
-		js1::Status success = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length, result);
+		v8::Handle<v8::String> result2;
+		js1::Status success = query_script->
+			execute_handler(event_handler_handle, data_json, data_other, other_length, result, result2);
+
 		if (success != js1::S_OK) {
 			*result_json = NULL;
 			*memory_handle = NULL;
@@ -129,8 +132,15 @@ extern "C"
 		if (!result.IsEmpty()) 
 		{
 			v8::String::Value * result_buffer = new v8::String::Value(result);
+			v8::String::Value * result2_buffer = new v8::String::Value(result2);
 			*result_json = **result_buffer;
-			*memory_handle = result_buffer;
+			*result2_json = **result2_buffer;
+
+			void** handles = new void*[2];
+
+			handles[0] = result_buffer;
+			handles[1] = result2_buffer;
+			*memory_handle = handles;
 		}
 		else 
 		{
@@ -142,8 +152,19 @@ extern "C"
 
 	JS1_API void STDCALL free_result(void *result)
 	{
-		v8::String::Value * result_buffer = reinterpret_cast<v8::String::Value *>(result);		
+		if (!result)
+			return;
+
+		void **memory_handles = (void**)result;
+
+		v8::String::Value * result_buffer = reinterpret_cast<v8::String::Value *>(memory_handles[0]);		
 		delete result_buffer;
+
+		v8::String::Value * result2_buffer = reinterpret_cast<v8::String::Value *>(memory_handles[1]);		
+		if (result2_buffer)
+			delete result2_buffer;
+
+		delete memory_handles;
 	};
 
 	JS1_API void STDCALL terminate_execution(void *script_handle)

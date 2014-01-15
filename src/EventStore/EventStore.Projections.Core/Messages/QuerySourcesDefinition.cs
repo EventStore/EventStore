@@ -66,6 +66,11 @@ namespace EventStore.Projections.Core.Messages
             get { return Options != null && Options.DefinesStateTransform; }
         }
 
+        bool IQuerySources.DefinesCatalogTransform
+        {
+            get { return Options != null && Options.DefinesCatalogTransform; }
+        }
+
         bool IQuerySources.ProducesResults
         {
             get { return Options != null && Options.ProducesResults; }
@@ -79,6 +84,11 @@ namespace EventStore.Projections.Core.Messages
         bool IQuerySources.IncludeLinksOption
         {
             get { return Options != null && Options.IncludeLinks; }
+        }
+
+        bool IQuerySources.DisableParallelismOption
+        {
+            get { return Options != null && Options.DisableParallelism; }
         }
 
         string IQuerySources.ResultStreamNameOption
@@ -109,6 +119,11 @@ namespace EventStore.Projections.Core.Messages
             get { return Options != null ? Options.ProcessingLag : null; }
         }
 
+        bool IQuerySources.IsBiState
+        {
+            get { return Options != null ? Options.IsBiState : false; }
+        }
+
         [DataMember(Name = "options")]
         public QuerySourcesDefinitionOptions Options { get; set; }
 
@@ -129,12 +144,15 @@ namespace EventStore.Projections.Core.Messages
                     new QuerySourcesDefinitionOptions
                     {
                         DefinesStateTransform = sources.DefinesStateTransform,
+                        DefinesCatalogTransform = sources.DefinesCatalogTransform,
                         ProducesResults = sources.ProducesResults,
                         DefinesFold = sources.DefinesFold,
                         ForceProjectionName = sources.ForceProjectionNameOption,
                         IncludeLinks = sources.IncludeLinksOption,
+                        DisableParallelism = sources.DisableParallelismOption,
                         PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
                         ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
+                        IsBiState = sources.IsBiState,
                         ReorderEvents = sources.ReorderEventsOption,
                         ResultStreamName = sources.ResultStreamNameOption,
                     }

@@ -37,17 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class CoreProjectionQueue
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<CoreProjectionQueue>();
-        private readonly StagedProcessingQueue _queuePendingEvents =
-            new StagedProcessingQueue(
-                new[]
-                    {
-                        true /* record event order - async with ordered output*/, 
-                        true /* get state partition - ordered as it may change correlation id - sync */, 
-                        false /* load foreach state - async- unordered completion*/, 
-                        false /* process Js - unordered - inherently unordered completion*/, 
-                        true /* write emits - ordered - async ordered completion*/, 
-                        false /* complete item */ 
-                    });
+        private readonly StagedProcessingQueue _queuePendingEvents;
 
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
@@ -66,8 +56,19 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public CoreProjectionQueue(
             Guid projectionCorrelationId, IPublisher publisher, int pendingEventsThreshold,
-            Action updateStatistics = null)
+            bool orderedPartitionProcessing, Action updateStatistics = null)
         {
+            _queuePendingEvents =
+                new StagedProcessingQueue(
+                    new[]
+                    {
+                        true /* record event order - async with ordered output*/, 
+                        true /* get state partition - ordered as it may change correlation id - sync */, 
+                        false /* load foreach state - async- unordered completion*/, 
+                        orderedPartitionProcessing /* process Js - unordered/ordered - inherently unordered/ordered completion*/, 
+                        true /* write emits - ordered - async ordered completion*/, 
+                        false /* complete item */ 
+                    });
             _publisher = publisher;
             _projectionCorrelationId = projectionCorrelationId;
             _pendingEventsThreshold = pendingEventsThreshold;

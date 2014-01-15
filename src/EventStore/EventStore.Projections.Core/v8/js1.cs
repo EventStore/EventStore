@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.v8
         public static extern bool ExecuteCommandHandler(
             IntPtr scriptHandle, IntPtr eventHandlerHandle, [MarshalAs(UnmanagedType.LPWStr)] string dataJson,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] dataOther, int otherLength,
-            out IntPtr resultJson, out IntPtr memoryHandle);
+            out IntPtr resultJson, out IntPtr result2Json, out IntPtr memoryHandle);
 
         [DllImport("js1", EntryPoint = "free_result")]
         public static extern void FreeResult(IntPtr resultHandle);

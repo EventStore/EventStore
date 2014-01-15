@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
         {
             private CategorizeEventsByStreamPath _handler;
             private string _state;
+            private string _sharedState;
             private EmittedEventEnvelope[] _emittedEvents;
             private bool _result;
 
@@ -54,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                     "", CheckpointTag.FromPosition(0, 200, 150), null,
                     new ResolvedEvent(
                         "cat1-stream1", 10, "cat1-stream1", 10, false, new TFPos(200, 150), Guid.NewGuid(),
-                        "event_type", true, "{}", "{}"), out _state, out _emittedEvents);
+                        "event_type", true, "{}", "{}"), out _state, out _sharedState, out _emittedEvents);
             }
 
             [Test]
@@ -87,6 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
         {
             private CategorizeEventsByStreamPath _handler;
             private string _state;
+            private string _sharedState;
             private EmittedEventEnvelope[] _emittedEvents;
             private bool _result;
 
@@ -99,7 +101,7 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                     "", CheckpointTag.FromPosition(0, 200, 150), null,
                     new ResolvedEvent(
                         "cat2-stream2", 20, "cat2-stream2", 20, true, new TFPos(200, 150), Guid.NewGuid(),
-                        "$>", true, "10@cat1-stream1", "{}"), out _state, out _emittedEvents);
+                        "$>", true, "10@cat1-stream1", "{}"), out _state, out _sharedState, out _emittedEvents);
             }
 
             [Test]

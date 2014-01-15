@@ -42,10 +42,13 @@ namespace EventStore.Projections.Core.v8
         private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();
 
         private Func<string, string[], string> _getStatePartition;
-        private Func<string, string[], string> _processEvent;
+        private Func<string, string[], string> _transformCatalogEvent;
+        private Func<string, string[], Tuple<string, string>> _processEvent;
         private Func<string> _transformStateToResult;
         private Action<string> _setState;
+        private Action<string> _setSharedState;
         private Action _initialize;
+        private Action _initialize_shared;
         private Func<string> _getSources;
 
         // the following two delegates must be kept alive while used by unmanaged code
@@ -116,11 +119,20 @@ namespace EventStore.Projections.Core.v8
                 case "initialize":
                     _initialize = () => ExecuteHandler(handlerHandle, "");
                     break;
+                case "initialize_shared":
+                    _initialize_shared = () => ExecuteHandler(handlerHandle, "");
+                    break;
                 case "get_state_partition":
                     _getStatePartition = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
                 case "process_event":
-                    _processEvent = (json, other) => ExecuteHandler(handlerHandle, json, other);
+                    string newSharedState;
+                    _processEvent =
+                        (json, other) =>
+                            Tuple.Create(ExecuteHandler(handlerHandle, json, other, out newSharedState), newSharedState);
+                    break;
+                case "transform_catalog_event":
+                    _transformCatalogEvent = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
                 case "transform_state_to_result":
                     _transformStateToResult = () => ExecuteHandler(handlerHandle, "");
@@ -129,6 +141,9 @@ namespace EventStore.Projections.Core.v8
                     break;
                 case "set_state":
                     _setState = json => ExecuteHandler(handlerHandle, json);
+                    break;
+                case "set_shared_state":
+                    _setSharedState = json => ExecuteHandler(handlerHandle, json);
                     break;
                 case "get_sources":
                     _getSources = () => ExecuteHandler(handlerHandle, "");
@@ -159,29 +174,40 @@ namespace EventStore.Projections.Core.v8
             _sources = sourcesJson.ParseJson<QuerySourcesDefinition>();
         }
 
-        private string ExecuteHandler(IntPtr commandHandlerHandle, string json, string[] other = null)
+        private string ExecuteHandler(
+            IntPtr commandHandlerHandle, string json, string[] other = null)
+        {
+            string newSharedState;
+            return ExecuteHandler(commandHandlerHandle, json, other, out newSharedState);
+        }
+
+        private string ExecuteHandler(
+            IntPtr commandHandlerHandle, string json, string[] other, out string newSharedState)
         {
             _reverseCommandHandlerException = null;
 
             _prelude.ScheduleTerminateExecution();
 
             IntPtr resultJsonPtr;
+            IntPtr result2JsonPtr;
             IntPtr memoryHandle;
             bool success = Js1.ExecuteCommandHandler(
                 _script.GetHandle(), commandHandlerHandle, json, other, other != null ? other.Length : 0,
-                out resultJsonPtr, out memoryHandle);
+                out resultJsonPtr, out result2JsonPtr, out memoryHandle);
 
             var terminated = _prelude.CancelTerminateExecution();
             if (!success)
                 CompiledScript.CheckResult(_script.GetHandle(), terminated, disposeScriptOnException: false);
             string resultJson = Marshal.PtrToStringUni(resultJsonPtr);
+            string result2Json = Marshal.PtrToStringUni(result2JsonPtr);
             Js1.FreeResult(memoryHandle);
             if (_reverseCommandHandlerException != null)
             {
                 throw new ApplicationException(
-                    "An exception occurred while executing a reverse command handler. " + _reverseCommandHandlerException.Message,
-                    _reverseCommandHandlerException);
+                    "An exception occurred while executing a reverse command handler. "
+                    + _reverseCommandHandlerException.Message, _reverseCommandHandlerException);
             }
+            newSharedState = result2Json;
             return resultJson;
         }
 
@@ -201,10 +227,21 @@ namespace EventStore.Projections.Core.v8
             InitializeScript();
         }
 
+        public void InitializeShared()
+        {
+            InitializeScriptShared();
+        }
+
         private void InitializeScript()
         {
             if (_initialize != null)
                 _initialize();
+        }
+
+        private void InitializeScriptShared()
+        {
+            if (_initialize_shared != null)
+                _initialize_shared();
         }
 
         public string GetPartition(string json, string[] other)
@@ -215,7 +252,15 @@ namespace EventStore.Projections.Core.v8
             return _getStatePartition(json, other);
         }
 
-        public string Push(string json, string[] other)
+        public string TransformCatalogEvent(string json, string[] other)
+        {
+            if (_transformCatalogEvent == null)
+                throw new InvalidOperationException("'transform_catalog_event' command handler has not been registered");
+
+            return _transformCatalogEvent(json, other);
+        }
+
+        public Tuple<string, string> Push(string json, string[] other)
         {
             if (_processEvent == null)
                 throw new InvalidOperationException("'process_event' command handler has not been registered");
@@ -238,9 +283,17 @@ namespace EventStore.Projections.Core.v8
             _setState(state);
         }
 
+        public void SetSharedState(string state)
+        {
+            if (_setSharedState == null)
+                throw new InvalidOperationException("'set_shared_state' command handler has not been registered");
+            _setSharedState(state);
+        }
+
         public QuerySourcesDefinition GetSourcesDefintion()
         {
             return _sources;
         }
+
     }
 }

@@ -41,8 +41,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IProjectionStateHandler _projectionStateHandler;
         private readonly bool _definesStateTransform;
         private readonly StatePartitionSelector _statePartitionSelector;
+        private readonly bool _isBiState;
 
         private string _handlerPartition;
+        //private bool _sharedStateSet;
         private readonly Stopwatch _stopwatch;
 
 
@@ -52,16 +54,18 @@ namespace EventStore.Projections.Core.Services.Processing
             PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
             CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
             StatePartitionSelector statePartitionSelector, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool useCheckpoints, bool stopOnEof)
+            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool useCheckpoints, bool stopOnEof,
+            bool isBiState, bool orderedPartitionProcessing)
             : base(
                 publisher, coreProjection, projectionCorrelationId, coreProjectionCheckpointManager, projectionConfig,
                 projectionName, logger, zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics,
-                subscriptionDispatcher, readerStrategy, useCheckpoints, stopOnEof)
+                subscriptionDispatcher, readerStrategy, useCheckpoints, stopOnEof, orderedPartitionProcessing, isBiState)
         {
 
             _projectionStateHandler = projectionStateHandler;
             _definesStateTransform = definesStateTransform;
             _statePartitionSelector = statePartitionSelector;
+            _isBiState = isBiState;
 
             _stopwatch = new Stopwatch();
 
@@ -107,6 +111,21 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
+        public string TransformCatalogEvent(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            switch (_state)
+            {
+                case PhaseState.Running:
+                    var result = InternalTransformCatalogEvent(message);
+                    return result;
+                case PhaseState.Stopped:
+                    _logger.Error("Ignoring committed catalog event in stopped state");
+                    return null;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         public EventProcessedResult ProcessCommittedEvent(
             EventReaderSubscriptionMessage.CommittedEventReceived message, string partition)
         {
@@ -129,19 +148,33 @@ namespace EventStore.Projections.Core.Services.Processing
             string newState;
             string projectionResult;
             EmittedEventEnvelope[] emittedEvents;
+            //TODO: support shared state
+            string newSharedState;
             var hasBeenProcessed = SafeProcessEventByHandler(
-                partition, message, out newState, out projectionResult, out emittedEvents);
+                partition, message, out newState, out newSharedState, out projectionResult, out emittedEvents);
             if (hasBeenProcessed)
             {
                 var newPartitionState = new PartitionState(newState, projectionResult, message.CheckpointTag);
-                return InternalCommittedEventProcessed(partition, message, emittedEvents, newPartitionState);
+                var newSharedPartitionState = newSharedState != null
+                    ? new PartitionState(newSharedState, null, message.CheckpointTag)
+                    : null;
+
+                return InternalCommittedEventProcessed(
+                    partition, message, emittedEvents, newPartitionState, newSharedPartitionState);
             }
             return null;
         }
 
+        private string InternalTransformCatalogEvent(
+            EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            var result = SafeTransformCatalogEventByHandler(message);
+            return result;
+        }
+
         private bool SafeProcessEventByHandler(
             string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState,
-            out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
+            out string newSharedState, out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
         {
             projectionResult = null;
             //TODO: not emitting (optimized) projection handlers can skip serializing state on each processed event
@@ -149,7 +182,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 hasBeenProcessed = ProcessEventByHandler(
-                    partition, message, out newState, out projectionResult, out emittedEvents);
+                    partition, message, out newState, out newSharedState, out projectionResult, out emittedEvents);
             }
             catch (Exception ex)
             {
@@ -160,11 +193,32 @@ namespace EventStore.Projections.Core.Services.Processing
                         "The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
                         _projectionName, GetHandlerTypeName(), message.CheckpointTag, ex.Message), ex);
                 newState = null;
+                newSharedState = null;
                 emittedEvents = null;
                 hasBeenProcessed = false;
             }
             newState = newState ?? "";
             return hasBeenProcessed;
+        }
+
+        private string SafeTransformCatalogEventByHandler(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            string result;
+            try
+            {
+                result = TransformCatalogEventByHandler(message);
+            }
+            catch (Exception ex)
+            {
+                // update progress to reflect exact fault position
+                _checkpointManager.Progress(message.Progress);
+                SetFaulting(
+                    String.Format(
+                        "The {0} projection failed to transform a catalog event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
+                        _projectionName, GetHandlerTypeName(), message.CheckpointTag, ex.Message), ex);
+                result = null;
+            }
+            return result;
         }
 
         private string GetHandlerTypeName()
@@ -174,13 +228,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool ProcessEventByHandler(
             string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState,
-            out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
+            out string newSharedState, out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
         {
             projectionResult = null;
             SetHandlerState(partition);
             _stopwatch.Start();
             var result = _projectionStateHandler.ProcessEvent(
-                partition, message.CheckpointTag, message.EventCategory, message.Data, out newState, out emittedEvents);
+                partition, message.CheckpointTag, message.EventCategory, message.Data, out newState, out newSharedState,
+                out emittedEvents);
             if (result)
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
@@ -205,18 +260,38 @@ namespace EventStore.Projections.Core.Services.Processing
             return result;
         }
 
+        private string TransformCatalogEventByHandler(EventReaderSubscriptionMessage.CommittedEventReceived message)
+        {
+            _stopwatch.Start();
+            var result = _projectionStateHandler.TransformCatalogEvent(message.CheckpointTag, message.Data);
+            _stopwatch.Stop();
+            return result;
+        }
+
         private void SetHandlerState(string partition)
         {
             if (_handlerPartition == partition)
                 return;
+
             var newState = _partitionStateCache.GetLockedPartitionState(partition);
             _handlerPartition = partition;
             if (newState != null && !String.IsNullOrEmpty(newState.State))
                 _projectionStateHandler.Load(newState.State);
             else
+            {
                 _projectionStateHandler.Initialize();
-        }
+            }
 
+            //if (!_sharedStateSet && _isBiState)
+            if (_isBiState)
+            {
+                var newSharedState = _partitionStateCache.GetLockedPartitionState("");
+                if (newSharedState != null && !String.IsNullOrEmpty(newSharedState.State))
+                    _projectionStateHandler.LoadShared(newSharedState.State);
+                else
+                    _projectionStateHandler.InitializeShared();
+            }
+        }
 
         public override void NewCheckpointStarted(CheckpointTag at)
         {

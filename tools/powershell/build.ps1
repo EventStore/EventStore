@@ -35,7 +35,7 @@ $libsDirectory = Join-Path $srcDirectory "libs"
     $js1VersionResource = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.rc")
 
     #V8
-    $v8Revision = "17915" # Tag 3.22.6
+    $v8Revision = "18456" # Tag 3.24.10
     $v8Repository = "http://v8.googlecode.com/svn/trunk"
     $v8Directory = Join-Path $baseDirectory "v8"
 
@@ -46,12 +46,12 @@ $libsDirectory = Join-Path $srcDirectory "libs"
 
     #GYP
     $gypRepository = "http://gyp.googlecode.com/svn/trunk"
-    $gypRevision = "1746"
+    $gypRevision = "1806"
     $gypDirectory = Join-Path $v8Directory (Join-Path "build" "gyp")
 
     #ICU
     $icuRepository = "https://src.chromium.org/chrome/trunk/deps/third_party/icu46"
-    $icuRevision = "228516"
+    $icuRevision = "239289"
     $icuDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "icu")
 
     #Cygwin

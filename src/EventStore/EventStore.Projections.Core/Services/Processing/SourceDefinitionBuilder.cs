@@ -82,7 +82,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetIncludeLinks(bool includeLinks = true)
         {
-            _options.IncludeLinks = true;
+            _options.IncludeLinks = includeLinks;
+        }
+
+        public void SetDisableParallelism(bool disableParallelism = true)
+        {
+            _options.DisableParallelism = disableParallelism;
         }
 
         public void IncludeEvent(string eventName)
@@ -143,6 +148,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ProcessingLag = processingLag;
         }
 
+        public void SetIsBiState(bool isBiState)
+        {
+            _options.IsBiState = isBiState;
+        }
+
         public bool AllStreams
         {
             get { return _allStreams; }
@@ -198,6 +208,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.DefinesStateTransform; }
         }
 
+        public bool DefinesCatalogTransform
+        {
+            get { return _options.DefinesCatalogTransform; }
+        }
+
         public bool ProducesResults
         {
             get { return _options.ProducesResults; }
@@ -211,6 +226,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool IncludeLinksOption
         {
             get { return _options.IncludeLinks; }
+        }
+
+        public bool DisableParallelismOption
+        {
+            get { return _options.DisableParallelism; }
         }
 
         public string ResultStreamNameOption
@@ -239,6 +259,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public int? ProcessingLagOption
         {
             get { return _options.ProcessingLag; }
+        }
+
+        public bool IsBiState 
+        {
+            get { return _options.IsBiState; }
         }
 
         public static IQuerySources From(Action<SourceDefinitionBuilder> configure)
@@ -278,7 +303,13 @@ namespace EventStore.Projections.Core.Services.Processing
         public int ProcessingLag { get; set; }
 
         [DataMember]
+        public bool IsBiState { get; set; }
+
+        [DataMember]
         public bool DefinesStateTransform { get; set; }
+
+        [DataMember]
+        public bool DefinesCatalogTransform { get; set; }
 
         [DataMember]
         public bool ProducesResults { get; set; }
@@ -289,5 +320,7 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public bool IncludeLinks { get; set; }
 
+        [DataMember]
+        public bool DisableParallelism { get; set; }
     }
 }

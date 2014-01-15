@@ -34,9 +34,10 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 
-namespace EventStore.Projections.Core.Tests.Services.integration
+namespace EventStore.Projections.Core.Tests.Integration
 {
     public abstract class specification_with_a_v8_query_posted : TestFixtureWithProjectionCoreAndManagementServices
     {
@@ -45,6 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.integration
         protected ProjectionMode _projectionMode;
         protected bool _checkpointsEnabled;
         protected bool _emitEnabled;
+        protected bool _startSystemProjections;
 
         protected override void Given()
         {
@@ -52,11 +54,13 @@ namespace EventStore.Projections.Core.Tests.Services.integration
             AllWritesSucceed();
             NoOtherStreams();
             GivenEvents();
+            EnableReadAll();
             _projectionName = "query";
             _projectionSource = GivenQuery();
             _projectionMode = ProjectionMode.Transient;
             _checkpointsEnabled = false;
             _emitEnabled = false;
+            _startSystemProjections = GivenStartSystemProjections();
         }
 
         protected override Tuple<IBus, IPublisher, InMemoryBus>[] GivenProcessingQueues()
@@ -75,15 +79,65 @@ namespace EventStore.Projections.Core.Tests.Services.integration
 
         protected abstract string GivenQuery();
 
+        protected virtual bool GivenStartSystemProjections()
+        {
+            return false;
+        }
+
+        protected Message CreateQueryMessage(string name, string source)
+        {
+            return new ProjectionManagementMessage.Post(
+                new PublishEnvelope(_bus), ProjectionMode.Transient, name,
+                ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false,
+                emitEnabled: false);
+        }
+
         protected override IEnumerable<WhenStep> When()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return
-                (new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                    ProjectionManagementMessage.RunAs.System, "JS",
-                    _projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
-                    emitEnabled: _emitEnabled));
+            if (_startSystemProjections)
+            {
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
+                yield return
+                    new ProjectionManagementMessage.Enable(
+                        Envelope, ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection,
+                        ProjectionManagementMessage.RunAs.System);
+            }
+            var otherProjections = GivenOtherProjections();
+            var index = 0;
+            foreach (var source in otherProjections)
+            {
+                yield return
+                    (new ProjectionManagementMessage.Post(
+                        new PublishEnvelope(_bus), ProjectionMode.Continuous, "other_" + index,
+                        ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true,
+                        emitEnabled: true));
+                index++;
+            }
+            if (!string.IsNullOrEmpty(_projectionSource))
+            {
+                yield return
+                    (new ProjectionManagementMessage.Post(
+                        new PublishEnvelope(_bus), _projectionMode, _projectionName,
+                        ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
+                        checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
+            }
+        }
+
+        protected virtual IEnumerable<string> GivenOtherProjections()
+        {
+            return new string[0];
         }
     }
 }

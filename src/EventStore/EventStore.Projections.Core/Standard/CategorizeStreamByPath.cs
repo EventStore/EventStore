@@ -35,35 +35,36 @@ namespace EventStore.Projections.Core.Standard
 {
     public class CategorizeStreamByPath : IProjectionStateHandler
     {
-        private readonly char _separator;
+        private readonly StreamCategoryExtractor _streamCategoryExtractor;
 
         public CategorizeStreamByPath(string source, Action<string> logger)
         {
-            var trimmedSource = source == null ? null : source.Trim();
-            if (trimmedSource == null || trimmedSource.Length != 1)
-                throw new InvalidOperationException(
-                    "Cannot initialize categorize stream projection handler.  One symbol separator must supplied in the source.");
-            _separator = trimmedSource[0];
-            if (logger != null)
-            {
-                logger(
-                    string.Format(
-                        "Categorize stream projection handler has been initialized with separator: '{0}'", _separator));
-            }
+            var extractor = StreamCategoryExtractor.GetExtractor(source, logger);
             // we will need to declare event types we are interested in
+            _streamCategoryExtractor = extractor;
         }
 
         public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
             builder.FromAll();
             builder.AllEvents();
+            builder.SetIncludeLinks();
         }
 
         public void Load(string state)
         {
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
+        {
+        }
+
+        public void InitializeShared()
         {
         }
 
@@ -72,28 +73,32 @@ namespace EventStore.Projections.Core.Standard
             throw new NotImplementedException();
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-            out string newState, out EmittedEventEnvelope[] emittedEvents)
+            out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             emittedEvents = null;
             newState = null;
+
             if (data.PositionSequenceNumber != 0)
                 return false; // not our event
-            if (data.EventStreamId.StartsWith("$"))
-                return false;
-            var lastSlashPos = data.EventStreamId.LastIndexOf(_separator);
-            if (lastSlashPos < 0)
-                return true; // handled but not interesting to us
 
-            var category = data.EventStreamId.Substring(0, lastSlashPos);
+            var category = _streamCategoryExtractor.GetCategoryByStreamId(data.PositionStreamId);
+            if (category == null)
+                return true; // handled but not interesting
 
             emittedEvents = new[]
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        "$category" + _separator + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
-                        data.EventStreamId, null, eventPosition, expectedTag: null))
+                        "$category" + "-" + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
+                        data.PositionStreamId, null, eventPosition, expectedTag: null))
             };
 
             return true;

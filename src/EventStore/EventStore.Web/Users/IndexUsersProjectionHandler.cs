@@ -60,7 +60,16 @@ namespace EventStore.Web.Users
         {
         }
 
+        public void LoadShared(string state)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize()
+        {
+        }
+
+        public void InitializeShared()
         {
         }
 
@@ -69,10 +78,16 @@ namespace EventStore.Web.Users
             throw new NotImplementedException();
         }
 
+        public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
-            out EmittedEventEnvelope[] emittedEvents)
+            out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
+            newSharedState = null;
             if (!data.EventStreamId.StartsWith(UserStreamPrefix))
                 throw new InvalidOperationException(
                     string.Format(

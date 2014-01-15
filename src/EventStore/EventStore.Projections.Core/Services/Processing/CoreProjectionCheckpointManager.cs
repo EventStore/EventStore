@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly ILogger _logger;
 
-        private readonly bool _useCheckpoints;
+        private readonly bool _usePersistentCheckpoints;
         private readonly bool _producesRunningResults;
 
         private readonly IPublisher _publisher;
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected CoreProjectionCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, bool useCheckpoints,
+            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints,
             bool producesRunningResults)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionConfig = projectionConfig;
             _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
             _namingBuilder = namingBuilder;
-            _useCheckpoints = useCheckpoints;
+            _usePersistentCheckpoints = usePersistentCheckpoints;
             _producesRunningResults = producesRunningResults;
             _requestedCheckpointState = new PartitionState("", null, _zeroTag);
             _currentProjectionState = new PartitionState("", null, _zeroTag);
@@ -192,7 +192,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Stopping");
 
 
-            if (_producesRunningResults && partition != "")
+            if (_usePersistentCheckpoints && partition != "")
                 CapturePartitionStateUpdated(partition, oldState, newState);
 
             if (partition == "" && newState.State == null) // ignore non-root partitions and non-changed states
@@ -236,7 +236,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public bool CheckpointSuggested(CheckpointTag checkpointTag, float progress)
         {
-            if (!_useCheckpoints)
+            if (!_usePersistentCheckpoints)
                 throw new InvalidOperationException("Checkpoints are not used");
             if (_stopped || _stopping)
                 return true;
@@ -270,7 +270,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             if (!_inCheckpoint)
                 throw new InvalidOperationException();
-            BeginWriteCheckpoint(_requestedCheckpointPosition, _requestedCheckpointState.Serialize());
+            if (_usePersistentCheckpoints)
+                BeginWriteCheckpoint(_requestedCheckpointPosition, _requestedCheckpointState.Serialize());
+            else
+                CheckpointWritten(_requestedCheckpointPosition);
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
@@ -301,9 +304,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_inCheckpoint) // checkpoint in progress.  no other writes will happen, so we can stop here.
                 return;
             // do not request checkpoint if no events were processed since last checkpoint
-            if (_useCheckpoints && _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
+            //NOTE: we ignore _usePersistentCheckpoints flag as we need to flush final writes before query object 
+            // has been disposed
+            if (/* _usePersistentCheckpoints && */ _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
             {
-                RequestCheckpoint(_lastProcessedEventPosition);
+                RequestCheckpoint(_lastProcessedEventPosition, forcePrepareCheckpoint: true);
                 return;
             }
             _publisher.Publish(
@@ -318,9 +323,9 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         /// <returns>true - if checkpoint has beem completed in-sync</returns>
-        private bool RequestCheckpoint(PositionTracker lastProcessedEventPosition)
+        private bool RequestCheckpoint(PositionTracker lastProcessedEventPosition, bool forcePrepareCheckpoint = false)
         {
-            if (!_useCheckpoints)
+            if (!forcePrepareCheckpoint && !_usePersistentCheckpoints)
                 throw new InvalidOperationException("Checkpoints are not allowed");
             if (_inCheckpoint)
                 throw new InvalidOperationException("Checkpoint in progress");
@@ -337,7 +342,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (requestedCheckpointPosition == _lastCompletedCheckpointPosition)
                 return true; // either suggested or requested to stop
 
-           EmitPartitionCheckpoints();
+            if (_usePersistentCheckpoints) // do not emit any events if we do not use persistent checkpoints
+                EmitPartitionCheckpoints();
 
             _inCheckpoint = true;
             _requestedCheckpointPosition = requestedCheckpointPosition;
@@ -360,7 +366,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     position.EventStreamId, position.EventNumber, pair.Event.EventStreamId, pair.Event.EventNumber,
                     pair.Link != null, new TFPos(-1, position.LogPosition), new TFPos(-1, pair.Event.LogPosition),
                     pair.Event.EventId, pair.Event.EventType, (pair.Event.Flags & PrepareFlags.IsJson) != 0,
-                    pair.Event.Data, pair.Event.Metadata, pair.Link == null ? null : pair.Link.Metadata,
+                    pair.Event.Data, pair.Event.Metadata, pair.Link == null ? null : pair.Link.Metadata, null,
                     pair.Event.TimeStamp), null, -1, source: this.GetType());
             _publisher.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
