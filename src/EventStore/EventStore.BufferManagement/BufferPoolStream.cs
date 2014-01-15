@@ -117,5 +117,10 @@ namespace EventStore.BufferManagement
                 _bufferPool.Dispose();
             base.Dispose(disposing);
         }
+
+        public byte[] ToArray()
+        {
+            return _bufferPool.ToByteArray();
+        }
     }
 }
