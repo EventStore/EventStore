@@ -27,9 +27,7 @@
 // 
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
-using EventStore.BufferManagement;
 using EventStore.Common.Concurrent;
 using EventStore.Common.Log;
 using ProtoBuf;
@@ -38,12 +36,12 @@ namespace EventStore.Core.Services.Transport.Tcp
 {
     public static class ProtobufExtensions
     {
-        private static ConcurrentStack<MemoryStream> _streams;
+        private static readonly ConcurrentStack<MemoryStream> _streams;
 
         static ProtobufExtensions()
         {
             _streams = new ConcurrentStack<MemoryStream>();
-            for(int i=0;i<300;i++)
+            for(var i=0;i<300;i++)
             {
                 _streams.Push(new MemoryStream(2048));
             }
@@ -53,10 +51,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         static MemoryStream AcquireStream()
         {
-            int counter = 0;
-            MemoryStream ret;
-            for(int i=0;i<1000;i++)
+            for(var i=0;i<1000;i++)
             {
+                MemoryStream ret;
                 if(_streams.TryPop(out ret))
                 {
                     ret.SetLength(0);
