@@ -27,14 +27,12 @@
 // 
 
 using System;
-using System.Runtime.InteropServices;
 using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Utils;
@@ -49,7 +47,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                   ICoreProjectionForProcessingPhase,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
                                   IHandle<CoreProjectionManagementMessage.GetResult>,
-                                  IHandle<PartitionProcessingResult>,
                                   IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
     {
         [Flags]
@@ -708,11 +705,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Subscribed()
         {
             GoToState(State.Subscribed);
-        }
-
-        public void Handle(PartitionProcessingResult message)
-        {
-            throw new NotImplementedException();
         }
 
         public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message)

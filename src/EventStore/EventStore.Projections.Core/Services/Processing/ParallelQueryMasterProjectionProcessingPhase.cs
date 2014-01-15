@@ -35,7 +35,10 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
-        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>, ISpoolStreamWorkItemContainer
+        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
+        IHandle<EventReaderSubscriptionMessage.PartitionMeasured>,
+        ISpoolStreamWorkItemContainer
+
 
     {
         //TODO: make it configurable
@@ -86,7 +89,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void Subscribe(CheckpointTag @from, bool fromCheckpoint)
         {
             if (_slaves == null)
-                throw new InvalidOperationException("Cannot subscribe to event reader without assigned slave projections");
+                throw new InvalidOperationException(
+                    "Cannot subscribe to event reader without assigned slave projections");
             base.Subscribe(@from, fromCheckpoint);
         }
 
@@ -114,6 +118,21 @@ namespace EventStore.Projections.Core.Services.Processing
                 _coreProjection.SetFaulted(ex);
             }
 
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message)
+        {
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                //TODO: handle
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
         }
 
         public string TransformCatalogEvent(CheckpointTag position, ResolvedEvent @event)

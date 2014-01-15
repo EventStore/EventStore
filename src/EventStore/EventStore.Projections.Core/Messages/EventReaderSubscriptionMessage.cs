@@ -177,6 +177,7 @@ namespace EventStore.Projections.Core.Messages
                 _size = size;
             }
         }
+
         public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

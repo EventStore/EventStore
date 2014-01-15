@@ -28,7 +28,6 @@
 
 using System;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -47,11 +46,17 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void WriteEofResult(
-            Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
+            Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid,
+            string correlationId)
         {
             _resultsPublisher.Publish(
                 new PartitionProcessingResult(
                     _masterCoreProjectionId, subscriptionId, partition, causedByGuid, causedBy, resultBody));
+        }
+
+        public void WritePartitionMeasured(Guid subscriptionId, string partition, int size)
+        {
+            _resultsPublisher.Publish(new PartitionMeasured(_masterCoreProjectionId, subscriptionId, partition, size));
         }
 
         public void WriteRunningResult(EventProcessedResult result)

@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class SpoolStreamProcessingWorkItem : WorkItem, IHandle<PartitionProcessingResult>
+    public class SpoolStreamProcessingWorkItem : WorkItem, IHandle<PartitionProcessingResult>, IHandle<PartitionMeasured>
     {
         private readonly ISpoolStreamWorkItemContainer _container;
         private readonly IResultWriter _resultWriter;
@@ -130,6 +130,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _spoolProcessingResponseDispatcher.Cancel(_spoolRequestId);
             _resultMessage = message;
             CompleteProcessing(message.Position);
+        }
+
+        public void Handle(PartitionMeasured message)
+        {
+            _loadBalancer.AccountMeasured(message.Partition, message.Size);
         }
     }
 

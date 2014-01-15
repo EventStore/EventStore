@@ -42,7 +42,6 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.EofReached>,
         IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
         IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>,
-        IHandle<EventReaderSubscriptionMessage.PartitionMeasured>,
         IProjectionProcessingPhase,
         IProjectionPhaseStateManager
     {
@@ -207,21 +206,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 var completedWorkItem = new CompletedWorkItem(this);
                 _processingQueue.EnqueueTask(completedWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
-            }
-            catch (Exception ex)
-            {
-                _coreProjection.SetFaulted(ex);
-            }
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message)
-        {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-            try
-            {
-                //TODO: handle
             }
             catch (Exception ex)
             {

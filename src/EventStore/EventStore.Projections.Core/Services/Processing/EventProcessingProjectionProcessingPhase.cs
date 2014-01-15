@@ -36,6 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class EventProcessingProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
         IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
+        IHandle<EventReaderSubscriptionMessage.PartitionMeasured>,
         IEventProcessingProjectionPhase
     {
         private readonly IProjectionStateHandler _projectionStateHandler;
@@ -333,6 +334,21 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_projectionStateHandler != null)
                 _projectionStateHandler.Dispose();
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message)
+        {
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                _resultWriter.WritePartitionMeasured(message.SubscriptionId, message.Partition, message.Size);
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
         }
     }
 }
