@@ -81,7 +81,9 @@ namespace js1
 			return S_TERMINATED;
 		}
 
-		if (set_last_error(call_result.IsEmpty(), try_catch))
+		bool empty_result = call_result.IsEmpty();
+
+		if (set_last_error(empty_result, try_catch))
 			return S_ERROR;
 		v8::Handle<v8::String> empty;
 		if (!try_catch.Exception().IsEmpty())
@@ -136,7 +138,7 @@ namespace js1
 			return S_OK;
 		}
 		if (!call_result->IsString()) {
-			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Handler must return string data or null"));
+			set_last_error("Handler must return string data or null");
 			result = empty;
 			return S_ERROR;
 		}

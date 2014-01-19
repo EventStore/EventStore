@@ -41,7 +41,7 @@ namespace js1
 		}
 		else 
 		{
-			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Module script must return an object"));
+			set_last_error("Module script must return an object");
 			return S_ERROR;
 		}
 		return S_OK;
