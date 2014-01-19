@@ -46,8 +46,10 @@ namespace EventStore.Projections.Core.v8
 
         public delegate void ReportErrorDelegate(int erroe_code, [MarshalAs(UnmanagedType.LPWStr)] string error_message);
 
+        [return: MarshalAs(UnmanagedType.I1)]
         public delegate bool EnterCancellableRegionDelegate();
 
+        [return: MarshalAs(UnmanagedType.I1)]
         public delegate bool ExitCancellableRegionDelegate();
 
         [DllImport("js1", EntryPoint = "js1_api_version")]
@@ -76,6 +78,7 @@ namespace EventStore.Projections.Core.v8
 
         //TODO: add no result execute_handler
         [DllImport("js1", EntryPoint = "execute_command_handler")]
+        [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool ExecuteCommandHandler(
             IntPtr scriptHandle, IntPtr eventHandlerHandle, [MarshalAs(UnmanagedType.LPWStr)] string dataJson,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] dataOther, int otherLength,
