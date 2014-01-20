@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.BufferManagement", "EventStore.BufferManagement\EventStore.BufferManagement.csproj", "{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Transport.Tcp", "EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj", "{A3C1CBE0-4728-451F-B709-480134432880}"
@@ -113,8 +115,8 @@ Global
 		{03E02082-E179-4730-81FF-CE914749D6E3}.Release|x64.Build.0 = Release|Any CPU
 		{03E02082-E179-4730-81FF-CE914749D6E3}.Release|x86.ActiveCfg = Release|x86
 		{03E02082-E179-4730-81FF-CE914749D6E3}.Release|x86.Build.0 = Release|x86
-		{A1EF4189-61D3-4B9A-8304-2F4B91C48711}.Debug|x64.ActiveCfg = Debug|x64
-		{A1EF4189-61D3-4B9A-8304-2F4B91C48711}.Debug|x64.Build.0 = Debug|x64
+		{A1EF4189-61D3-4B9A-8304-2F4B91C48711}.Debug|x64.ActiveCfg = Release|x64
+		{A1EF4189-61D3-4B9A-8304-2F4B91C48711}.Debug|x64.Build.0 = Release|x64
 		{A1EF4189-61D3-4B9A-8304-2F4B91C48711}.Debug|x86.ActiveCfg = Debug|Win32
 		{A1EF4189-61D3-4B9A-8304-2F4B91C48711}.Debug|x86.Build.0 = Debug|Win32
 		{A1EF4189-61D3-4B9A-8304-2F4B91C48711}.Release|x64.ActiveCfg = Release|x64
