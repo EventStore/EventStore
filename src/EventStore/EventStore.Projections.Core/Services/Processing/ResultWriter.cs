@@ -116,5 +116,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _coreProjectionCheckpointManager.EventsEmitted(scheduledWrites, causedBy, correlationId);
         }
+
+        public void WriteProgress(Guid subscriptionId, float progress)
+        {
+            // intentionally does nothing
+        }
     }
 }

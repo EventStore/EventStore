@@ -222,6 +222,7 @@
     <Compile Include="Services\Processing\IndexedEventTypeEventFilter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
     <Compile Include="Services\Processing\IEventProcessingPhase.cs" />
+    <Compile Include="Services\Processing\IProgressResultWriter.cs" />
     <Compile Include="Services\Processing\IProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\IReaderStrategy.cs" />
     <Compile Include="Services\Processing\IResultEventEmitter.cs" />

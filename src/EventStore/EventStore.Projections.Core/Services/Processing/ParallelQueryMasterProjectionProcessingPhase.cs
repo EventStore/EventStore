@@ -36,7 +36,6 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
-        IHandle<EventReaderSubscriptionMessage.PartitionMeasured>,
         ISpoolStreamWorkItemContainer
 
 
@@ -82,8 +81,9 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
         {
             _slaves = slaveProjections;
+            var workerCount = _slaves.Channels["slave"].Length;
             _loadBalancer = new ParallelProcessingLoadBalancer(
-                _slaves.Channels["slave"].Length, _maxScheduledSizePerWorker, _maxUnmeasuredTasksPerWorker);
+                workerCount, _maxScheduledSizePerWorker, _maxUnmeasuredTasksPerWorker);
         }
 
         public override void Subscribe(CheckpointTag @from, bool fromCheckpoint)
@@ -118,21 +118,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 _coreProjection.SetFaulted(ex);
             }
 
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message)
-        {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-            try
-            {
-                //TODO: handle
-            }
-            catch (Exception ex)
-            {
-                _coreProjection.SetFaulted(ex);
-            }
         }
 
         public string TransformCatalogEvent(CheckpointTag position, ResolvedEvent @event)

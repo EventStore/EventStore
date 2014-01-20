@@ -73,5 +73,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             throw new NotSupportedException();
         }
+
+        public void WriteProgress(Guid subscriptionId, float progress)
+        {
+            _resultsPublisher.Publish(
+                new PartitionProcessingProgress(_masterCoreProjectionId, subscriptionId, progress));
+        }
     }
 }

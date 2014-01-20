@@ -99,6 +99,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionMeasured>());
+            coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingProgress>());
 
             coreInputBus.Subscribe(_feedReaderService);
 

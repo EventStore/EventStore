@@ -34,7 +34,10 @@ using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class SpoolStreamProcessingWorkItem : WorkItem, IHandle<PartitionProcessingResult>, IHandle<PartitionMeasured>
+    public class SpoolStreamProcessingWorkItem : WorkItem,
+        IHandle<PartitionProcessingResult>,
+        IHandle<PartitionMeasured>,
+        IHandle<PartitionProcessingProgress>
     {
         private readonly ISpoolStreamWorkItemContainer _container;
         private readonly IResultWriter _resultWriter;
@@ -108,8 +111,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_definesCatalogTransform)
                 return _container.TransformCatalogEvent(position, resolvedEvent);
-            return SystemEventTypes.StreamReferenceEventToStreamId(
-                resolvedEvent.EventType, resolvedEvent.Data);
+            return SystemEventTypes.StreamReferenceEventToStreamId(resolvedEvent.EventType, resolvedEvent.Data);
         }
 
         protected override void WriteOutput()
@@ -135,6 +137,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(PartitionMeasured message)
         {
             _loadBalancer.AccountMeasured(message.Partition, message.Size);
+        }
+
+        public void Handle(PartitionProcessingProgress message)
+        {
+            throw new NotImplementedException();
         }
     }
 

@@ -15,9 +15,9 @@ namespace EventStore.Projections.Core.Messages
                 get { return TypeId; }
             }
 
-            protected Guid _correlationId;
-            protected Guid _subscriptionId;
-            protected string _partition;
+            protected readonly Guid _correlationId;
+            protected readonly Guid _subscriptionId;
+            protected readonly string _partition;
 
             protected PartitionProcessingResultBase(Guid correlationId, Guid subscriptionId, string partition)
             {
@@ -60,9 +60,6 @@ namespace EventStore.Projections.Core.Messages
                 string result)
                 : base(correlationId, subscriptionId, partition)
             {
-                _correlationId = correlationId;
-                _subscriptionId = subscriptionId;
-                _partition = partition;
                 _causedByGuid = causedByGuid;
                 _position = position;
                 _result = result;
@@ -99,9 +96,6 @@ namespace EventStore.Projections.Core.Messages
             public PartitionMeasured(Guid correlationId, Guid subscriptionId, string partition, int size)
                 : base(correlationId, subscriptionId, partition)
             {
-                _correlationId = correlationId;
-                _subscriptionId = subscriptionId;
-                _partition = partition;
                 _size = size;
             }
 
@@ -112,5 +106,27 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public sealed class PartitionProcessingProgress : PartitionProcessingResultBase
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
+
+            private readonly float _progress;
+
+            public PartitionProcessingProgress(Guid correlationId, Guid subscriptionId, float progress)
+                : base(correlationId, subscriptionId, null)
+            {
+                _progress = progress;
+            }
+
+            public float Progress
+            {
+                get { return _progress; }
+            }
+        }
     }
 }
