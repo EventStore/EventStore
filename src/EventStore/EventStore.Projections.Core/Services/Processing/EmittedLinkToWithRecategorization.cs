@@ -36,14 +36,16 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly string _target;
         private readonly string _originalStreamId;
+        private readonly bool _isStreamDeletedEvent;
 
         public EmittedLinkToWithRecategorization(
             string streamId, Guid eventId,
-            string target, CheckpointTag causedByTag, CheckpointTag expectedTag, string originalStreamId = null)
+            string target, CheckpointTag causedByTag, CheckpointTag expectedTag, string originalStreamId, bool isStreamDeletedEvent)
             : base(streamId, eventId, "$>", causedByTag, expectedTag, null)
         {
             _target = target;
             _originalStreamId = originalStreamId;
+            _isStreamDeletedEvent = isStreamDeletedEvent;
         }
 
         public override string Data
@@ -65,6 +67,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!string.IsNullOrEmpty(_originalStreamId))
                 yield return new KeyValuePair<string, string>("$o", JsonConvert.ToString(_originalStreamId));
+            if (_isStreamDeletedEvent)
+                yield return new KeyValuePair<string, string>("$deleted", JsonConvert.ToString(true));
         }
     }
 }

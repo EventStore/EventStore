@@ -157,6 +157,12 @@ namespace EventStore.Core.Tests.Helpers
         protected void DeletedStream(string streamId)
         {
             _deletedStreams.Add(streamId);
+            ExistingStreamMetadata(streamId, CreateStreamDeletedEventJson());
+        }
+
+        private static string CreateStreamDeletedEventJson()
+        {
+            return new StreamMetadata(null, null, EventNumber.DeletedStream, null, null, null).ToJsonString();
         }
 
         protected void AllWritesSucceed()
@@ -447,7 +453,8 @@ namespace EventStore.Core.Tests.Helpers
             }
 
             var firstEventNumber = list.Count - events.Length;
-            envelope.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
+            if (envelope != null)
+                envelope.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
         }
 
         public void Handle(ClientMessage.DeleteStream message)
@@ -464,7 +471,14 @@ namespace EventStore.Core.Tests.Helpers
                 return;
             }
             _deletedStreams.Add(message.EventStreamId);
-                message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.Success, string.Empty));
+
+            ProcessWrite<Message>(
+                null, message.CorrelationId, SystemStreams.MetastreamOf(message.EventStreamId), ExpectedVersion.Any,
+                new Event[]
+                {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, CreateStreamDeletedEventJson(), null)},
+                null, null);
+
+            message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.Success, string.Empty));
         }
 
         public void Handle(ClientMessage.ReadAllEventsForward message)
@@ -643,7 +657,7 @@ namespace EventStore.Core.Tests.Helpers
                     var record = list[index];
                     try
                     {
-                        Console.WriteLine("{0}: '{1}' ==> \r\\n{2}", index, record.EventType, record.DebugDataView);
+                        Console.WriteLine("{0}: '{1}' ==> \r\n{2}", index, record.EventType, record.DebugDataView);
                     }
                     catch (Exception ex)
                     {

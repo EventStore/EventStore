@@ -103,9 +103,11 @@ fromCategory('chat').when({
             return "";
         }
 
-        [Test]
+        [Test, Explicit]
         public void just()
         {
+            DumpStream("$$chat-2");
+            DumpStream("$ce-chat");
             DumpStream("out1");
         }
 

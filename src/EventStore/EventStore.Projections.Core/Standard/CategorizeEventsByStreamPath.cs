@@ -26,10 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Standard
 {
@@ -87,9 +89,36 @@ namespace EventStore.Projections.Core.Standard
             newSharedState = null;
             emittedEvents = null;
             newState = null;
-            var category = _streamCategoryExtractor.GetCategoryByStreamId(data.PositionStreamId);
+            string positionStreamId;
+            bool isMetaStream;
+            if (SystemStreams.IsMetastream(data.PositionStreamId))
+            {
+                isMetaStream = true;
+                positionStreamId = data.PositionStreamId.Substring("$$".Length);
+            }
+            else
+            {
+                isMetaStream = false;
+                positionStreamId = data.PositionStreamId;
+            }
+            var category = _streamCategoryExtractor.GetCategoryByStreamId(positionStreamId);
             if (category == null)
                 return true; // handled but not interesting
+
+            var isStreamDeletedEvent = false;
+            if (isMetaStream)
+            {
+                if (data.EventType != SystemEventTypes.StreamMetadata)
+                    return true; // handled but not interesting
+
+                var metadata = StreamMetadata.FromJson(data.Data);
+                //NOTE: we do not ignore JSON deserialization exceptions here assuming that metadata stream events must be deserializable
+
+                if (metadata.TruncateBefore != EventNumber.DeletedStream)
+                    return true; // handled but not interesting
+
+                isStreamDeletedEvent = true;
+            }
 
             string linkTarget;
             if (data.EventType == SystemEventTypes.LinkTo) 
@@ -102,7 +131,7 @@ namespace EventStore.Projections.Core.Standard
                 new EmittedEventEnvelope(
                     new EmittedLinkToWithRecategorization(
                         _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
-                        originalStreamId: data.PositionStreamId))
+                        originalStreamId: positionStreamId, isStreamDeletedEvent: isStreamDeletedEvent))
             };
 
             return true;
