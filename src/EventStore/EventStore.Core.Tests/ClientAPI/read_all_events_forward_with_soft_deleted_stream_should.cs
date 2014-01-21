@@ -41,7 +41,7 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class read_all_events_forward_with_deleted_stream_should : SpecificationWithDirectoryPerTestFixture
+    public class read_all_events_forward_with_soft_deleted_stream_should : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
         private IEventStoreConnection _conn;
@@ -93,6 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI
                         .ToArray()));
             var lastEvent = read.Events.Last().Event;
             Assert.AreEqual("$$stream", lastEvent.EventStreamId);
+            Assert.AreEqual(SystemEventTypes.StreamMetadata, lastEvent.EventType);
             var metadata = StreamMetadata.FromJsonBytes(lastEvent.Data);
             Assert.AreEqual(EventNumber.DeletedStream, metadata.TruncateBefore);
         }
