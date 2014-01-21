@@ -120,6 +120,9 @@ namespace EventStore.Projections.Core.Standard
                 isStreamDeletedEvent = true;
             }
 
+            if (data.EventType == SystemEventTypes.StreamDeleted)
+                isStreamDeletedEvent = true;
+
             string linkTarget;
             if (data.EventType == SystemEventTypes.LinkTo) 
                 linkTarget = data.Data;
