@@ -92,6 +92,13 @@ namespace EventStore.Projections.Core.Tests.Integration
                 emitEnabled: false);
         }
 
+        protected Message CreateNewProjectionMessage(string name, string source)
+        {
+            return new ProjectionManagementMessage.Post(
+                new PublishEnvelope(_bus), ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
+                "JS", source, enabled: true, checkpointsEnabled: true, emitEnabled: true);
+        }
+
         protected override IEnumerable<WhenStep> When()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));

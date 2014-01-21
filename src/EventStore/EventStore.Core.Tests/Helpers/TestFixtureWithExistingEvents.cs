@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.Helpers
 
         protected TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
-        protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies =
+        protected readonly Dictionary<string, List<EventRecord>> _streams =
             new Dictionary<string, List<EventRecord>>();
 
         protected readonly SortedList<TFPos, EventRecord> _all = new SortedList<TFPos, EventRecord>();
@@ -119,10 +119,10 @@ namespace EventStore.Core.Tests.Helpers
         protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData, bool isJson = false)
         {
             List<EventRecord> list;
-            if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
+            if (!_streams.TryGetValue(streamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
-                _lastMessageReplies[streamId] = list;
+                _streams[streamId] = list;
             }
             var eventRecord = new EventRecord(
                 list.Count,
@@ -146,7 +146,7 @@ namespace EventStore.Core.Tests.Helpers
 
         protected void NoStream(string streamId)
         {
-            _lastMessageReplies[streamId] = null;
+            _streams[streamId] = null;
         }
 
         protected void NoOtherStreams()
@@ -207,7 +207,7 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _bus.Subscribe(_ioDispatcher.StreamDeleter);
-            _lastMessageReplies.Clear();
+            _streams.Clear();
             _deletedStreams.Clear();
             _all.Clear();
             _readAllEnabled = false;
@@ -236,7 +236,7 @@ namespace EventStore.Core.Tests.Helpers
                         ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, EventNumber.DeletedStream, true, _fakePosition));
                             
             }
-            else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)
+            else if (_streams.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)
             {
                 if (list != null && list.Count > 0 && (list.Last().EventNumber >= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
@@ -301,7 +301,7 @@ namespace EventStore.Core.Tests.Helpers
                         ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, EventNumber.DeletedStream, true, _fakePosition));
                             
             }
-            else if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)
+            else if (_streams.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)
             {
                 if (list != null && list.Count > 0 && message.FromEventNumber >= 0)
                 {
@@ -356,7 +356,9 @@ namespace EventStore.Core.Tests.Helpers
             if (x.EventType == "$>" && resolveLinks)
             {
                 var parts = Helper.UTF8NoBom.GetString(x.Data).Split(_linkToSeparator, 2);
-                var list = _lastMessageReplies[parts[1]];
+                List<EventRecord> list;
+                if (_deletedStreams.Contains(parts[1]) || !_streams.TryGetValue(parts[1], out list))
+                    return new ResolvedEvent(x, null);
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
 
@@ -371,7 +373,7 @@ namespace EventStore.Core.Tests.Helpers
             if (x.EventType == "$>" && resolveLinks)
             {
                 var parts = Helper.UTF8NoBom.GetString(x.Data).Split(_linkToSeparator, 2);
-                var list = _lastMessageReplies[parts[1]];
+                var list = _streams[parts[1]];
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
 
@@ -409,10 +411,10 @@ namespace EventStore.Core.Tests.Helpers
                 }
             }
             List<EventRecord> list;
-            if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
+            if (!_streams.TryGetValue(streamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
-                _lastMessageReplies[streamId] = list;
+                _streams[streamId] = list;
             }
             if (expectedVersion != EventStore.ClientAPI.ExpectedVersion.Any)
             {
@@ -456,7 +458,7 @@ namespace EventStore.Core.Tests.Helpers
                 message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.StreamDeleted, string.Empty));
                 return;
             }
-            if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
+            if (!_streams.TryGetValue(message.EventStreamId, out list) || list == null)
             {
                 message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.WrongExpectedVersion, string.Empty));
                 return;
@@ -539,7 +541,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             message = message ?? string.Format("Invalid last event in the '{0}' stream. ", streamId);
             List<EventRecord> events;
-            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
             events = events.Take(events.Count - skip).ToList();
             Assert.IsNotEmpty(events, message + "The stream is empty.");
             var last = events[events.Count - 1];
@@ -550,7 +552,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
             List<EventRecord> events;
-            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
             var eventsText = events.Skip(events.Count - data.Length).Select(v => Encoding.UTF8.GetString(v.Data)).ToList();
             if (data.Length > 0)
                 Assert.IsNotEmpty(events, message + "The stream is empty.");
@@ -566,7 +568,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
             List<EventRecord> events;
-            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
             var eventsText =
                 events.Skip(events.Count - data.Length)
                     .Select(v => new {Text = Encoding.UTF8.GetString(v.Data), EventType = v.EventType})
@@ -590,15 +592,15 @@ namespace EventStore.Core.Tests.Helpers
         {
             var stream = SystemEventTypes.StreamReferenceEventToStreamId(SystemEventTypes.LinkTo, link);
             var eventNumber = SystemEventTypes.EventLinkToEventNumber(link);
-            return _lastMessageReplies[stream][eventNumber].EventType + ":"
-                   + Encoding.UTF8.GetString(_lastMessageReplies[stream][eventNumber].Data);
+            return _streams[stream][eventNumber].EventType + ":"
+                   + Encoding.UTF8.GetString(_streams[stream][eventNumber].Data);
         }
 
         public void AssertStreamContains(string streamId, params string[] data)
         {
             var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
             List<EventRecord> events;
-            Assert.That(_lastMessageReplies.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
             if (data.Length > 0)
                 Assert.IsNotEmpty(events, message + "The stream is empty.");
 
@@ -622,8 +624,33 @@ namespace EventStore.Core.Tests.Helpers
         {
             List<EventRecord> events;
             Assert.That(
-                !_lastMessageReplies.TryGetValue(streamId, out events) || events.Count == 0,
+                !_streams.TryGetValue(streamId, out events) || events.Count == 0,
                 string.Format("The stream {0} should not exist.", streamId));
+        }
+
+        public void DumpStream(string streamId)
+        {
+            if (_deletedStreams.Contains(streamId))
+                Console.WriteLine("Stream '{0}' has been deleted", streamId);
+
+            List<EventRecord> list;
+            if (!_streams.TryGetValue(streamId, out list) || list == null)
+                Console.WriteLine("Stream '{0}' does not exist", streamId);
+            if (list != null)
+            {
+                for (int index = 0; index < list.Count; index++)
+                {
+                    var record = list[index];
+                    try
+                    {
+                        Console.WriteLine("{0}: '{1}' ==> \r\\n{2}", index, record.EventType, record.DebugDataView);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("EXCEPTION: {0}", ex);
+                    }
+                }
+            }
         }
     }
 }
