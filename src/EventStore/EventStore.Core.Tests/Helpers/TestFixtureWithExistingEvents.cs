@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
@@ -642,8 +643,10 @@ namespace EventStore.Core.Tests.Helpers
                 string.Format("The stream {0} should not exist.", streamId));
         }
 
+        [Conditional("DEBUG")]
         public void DumpStream(string streamId)
         {
+#if DEBUG
             if (_deletedStreams.Contains(streamId))
                 Console.WriteLine("Stream '{0}' has been deleted", streamId);
 
@@ -665,6 +668,7 @@ namespace EventStore.Core.Tests.Helpers
                     }
                 }
             }
+#if DEBUG
         }
     }
 }
