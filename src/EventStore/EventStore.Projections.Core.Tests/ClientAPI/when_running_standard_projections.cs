@@ -26,33 +26,33 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Linq;
-using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
+using EventStore.Core.Bus;
 using EventStore.Core.Tests;
-using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class soft_delete : SpecificationWithDirectoryPerTestFixture
+    public class when_running_standard_projections : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
         private IEventStoreConnection _conn;
         private ProjectionsSubsystem _projections;
         private UserCredentials _admin = new UserCredentials("admin", "changeit");
+        private ProjectionsManager _manager;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
+            QueueStatsCollector.InitializeIdleDetection();
             _projections = new Projections.Core.ProjectionsSubsystem(
                 projectionWorkerThreadCount: 1, runProjections: RunProjections.All);
             _node = new MiniNode(
@@ -61,6 +61,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
             _conn.Connect();
+
+            _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint);
         }
 
         [TestFixtureTearDown]
@@ -69,11 +71,17 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _conn.Close();
             _node.Shutdown();
             base.TestFixtureTearDown();
+            QueueStatsCollector.InitializeIdleDetection(enable: false);
         }
 
         [Test, Category("LongRunning"), Category("Network"), Ignore]
         public void streams_stream_exists()
         {
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, _admin);
+            QueueStatsCollector.WaitIdle();
             //TODO: enable system projections
             //TODO: await all worker threads empty
             Assert.AreEqual(

@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Diagnostics;
+using System.Net.Configuration;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
@@ -41,6 +42,11 @@ namespace EventStore.Core.Bus
         public readonly string GroupName;
 
         public Type InProgressMessage { get { return _inProgressMsgType; } }
+
+        public static int NonIdle
+        {
+            get { return _nonIdle; }
+        }
 
         private readonly object _statisticsLock = new object(); // this lock is mostly acquired from a single thread (+ rarely to get statistics), so performance penalty is not too high
         
@@ -107,6 +113,19 @@ namespace EventStore.Core.Bus
             if (_wasIdle)
                 return;
             _wasIdle = true;
+#if DEBUG
+            if (_notifyLock != null)
+            {
+                lock (_notifyLock)
+                {
+                    _nonIdle = NonIdle - 1;
+                    if (NonIdle == 0)
+                    {
+                        Monitor.Pulse(_notifyLock);
+                    }
+                }
+            }
+#endif
 
             //NOTE: the following locks are primarily acquired in main thread, 
             //      so not too high performance penalty
@@ -125,6 +144,16 @@ namespace EventStore.Core.Bus
             if (!_wasIdle)
                 return;
             _wasIdle = false;
+
+#if DEBUG
+            if (_notifyLock != null)
+            {
+                lock (_notifyLock)
+                {
+                    _nonIdle = NonIdle + 1;
+                }
+            }
+#endif
 
             lock (_statisticsLock)
             {
@@ -177,6 +206,38 @@ namespace EventStore.Core.Bus
                 }
                 return stats;
             }
+        }
+
+#if DEBUG
+        private static object _notifyLock;
+        private static int _nonIdle = 0;
+        public static void InitializeIdleDetection(bool enable = true)
+        {
+            if (enable)
+            {
+                _nonIdle = 0;
+                _notifyLock = new object();
+            }
+            else
+            {
+                _notifyLock = null;
+            }
+        }
+
+#endif
+        [Conditional("DEBUG")]
+        public static void WaitIdle()
+        {
+#if DEBUG
+            lock (_notifyLock)
+            {
+                while (_nonIdle > 0)
+                {
+                    if (!Monitor.Wait(_notifyLock, 100))
+                        Console.WriteLine("Waiting for IDLE state...");
+                }
+            }
+#endif
         }
     }
 }

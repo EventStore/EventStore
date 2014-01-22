@@ -106,7 +106,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClientAPI\soft_delete1.cs" />
+    <Compile Include="ClientAPI\when_running_standard_projections.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_wit_stream_metadata.cs" />
     <Compile Include="Integration\scenarios\when_deleting_already_categorized_stream.cs" />
