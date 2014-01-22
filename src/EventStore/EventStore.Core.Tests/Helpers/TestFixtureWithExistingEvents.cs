@@ -668,7 +668,7 @@ namespace EventStore.Core.Tests.Helpers
                     }
                 }
             }
-#if DEBUG
+#endif
         }
     }
 }

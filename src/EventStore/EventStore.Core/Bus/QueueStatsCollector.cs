@@ -43,11 +43,12 @@ namespace EventStore.Core.Bus
 
         public Type InProgressMessage { get { return _inProgressMsgType; } }
 
+#if DEBUG        
         public static int NonIdle
         {
             get { return _nonIdle; }
         }
-
+#endif
         private readonly object _statisticsLock = new object(); // this lock is mostly acquired from a single thread (+ rarely to get statistics), so performance penalty is not too high
         
         private readonly Stopwatch _busyWatch = new Stopwatch();
