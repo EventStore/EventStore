@@ -27,6 +27,8 @@
 // 
 
 using System;
+using System.Text;
+using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
@@ -68,6 +70,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _conn.Connect();
 
             _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, _admin);
+            QueueStatsCollector.WaitIdle();
         }
 
         [TestFixtureTearDown]
@@ -84,15 +91,32 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         [Test, Category("LongRunning"), Category("Network"), Ignore]
         public void streams_stream_exists()
         {
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, _admin);
-            QueueStatsCollector.WaitIdle();
             //TODO: enable system projections
             //TODO: await all worker threads empty
             Assert.AreEqual(
                 SliceReadStatus.Success, _conn.ReadStreamEventsForward("$streams", 0, 10, false, _admin).Status);
+
+        }
+
+        [Test, Category("LongRunning"), Category("Network"), Explicit]
+        public void deleted_stream_events_are_indexed()
+        {
+            var r1 = _conn.AppendToStream(
+                "cat-1", ExpectedVersion.NoStream, _admin,
+                new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
+
+            var r2 = _conn.AppendToStream(
+                "cat-1", r1.NextExpectedVersion, _admin,
+                new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
+
+            _conn.DeleteStream("cat-1", r2.NextExpectedVersion, true, _admin);
+            Thread.Sleep(260);
+            QueueStatsCollector.WaitIdle();
+
+            //TODO: enable system projections
+            //TODO: await all worker threads empty
+            var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
+            Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
         }
 

@@ -80,6 +80,15 @@ namespace EventStore.Core.Bus
         public void Start()
         {
             _totalTimeWatch.Start();
+#if DEBUG
+            if (_notifyLock != null)
+            {
+                lock (_notifyLock)
+                {
+                    _nonIdle++;
+                }
+            }
+#endif
             EnterIdle();
         }
 
