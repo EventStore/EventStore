@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
@@ -52,7 +53,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
+#if DEBUG
             QueueStatsCollector.InitializeIdleDetection();
+#else 
+            throw new NotSupportedException("These tests require DEBUG conditional");
+#endif
             _projections = new Projections.Core.ProjectionsSubsystem(
                 projectionWorkerThreadCount: 1, runProjections: RunProjections.All);
             _node = new MiniNode(
@@ -71,7 +76,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _conn.Close();
             _node.Shutdown();
             base.TestFixtureTearDown();
+#if DEBUG
             QueueStatsCollector.InitializeIdleDetection(enable: false);
+#endif
         }
 
         [Test, Category("LongRunning"), Category("Network"), Ignore]
