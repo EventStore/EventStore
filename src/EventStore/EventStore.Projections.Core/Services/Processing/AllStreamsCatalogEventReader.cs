@@ -223,6 +223,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Queue<DeliverEventOutItem> _readMetaStreamItemsQueue = new Queue<DeliverEventOutItem>();
         private int _metaStreamReadsCount;
         private readonly IODispatcher _ioDispatcher;
+        private long _lastPosition;
 
         public AllStreamsCatalogEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
@@ -252,6 +253,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
             NotifyIfStarting(message.TfLastCommitPosition);
+            UpdateLastPosition(message);
             switch (message.Result)
             {
                 case ReadStreamResult.NoStream:
@@ -302,6 +304,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private void UpdateLastPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
+        {
+            _lastPosition = message.TfLastCommitPosition;
         }
 
         private void EnqueueNotAuthorized()
@@ -368,9 +375,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 var readEventsForward = CreateReadEventsMessage();
                 if (delay)
                     _publisher.Publish(
-                        TimerMessage.Schedule.Create(
-                            TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                            readEventsForward));
+                        new AwakeReaderServiceMessage.SubscribeAwake(
+                            new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                            new TFPos(_lastPosition, _lastPosition), readEventsForward));
                 else
                     _publisher.Publish(readEventsForward);
             }

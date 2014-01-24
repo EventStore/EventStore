@@ -204,6 +204,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 output_.Subscribe(
                     Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.ControlMessage>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<AwakeReaderServiceMessage.SubscribeAwake>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<AwakeReaderServiceMessage.UnsubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<Message>(inputQueue)); // forward all
 
                 var forwarder = new RequestResponseQueueForwarder(

@@ -38,6 +38,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messaging;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -59,6 +60,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _safePositionToJoin;
         private readonly Dictionary<string, bool> _eofs;
         private int _deliveredEvents;
+        private long _lastPosition;
 
         public MultiStreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
@@ -99,6 +101,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (PauseRequested || Paused)
                 return;
+            _publisher.Publish(
+                TimerMessage.Schedule.Create(
+                    TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
+                    new UnwrapEnvelopeMessage(ProcessBuffers)));
             foreach (var stream in _streams)
                 RequestEvents(stream, delay: delay);
         }
@@ -118,6 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Read events has not been requested");
             if (Paused)
                 throw new InvalidOperationException("Paused");
+            _lastPosition = message.TfLastCommitPosition;
             switch (message.Result)
             {
                 case ReadStreamResult.NoStream:
@@ -189,6 +196,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessBuffers()
         {
+            if (_disposed)
+                return;
             if (_safePositionToJoin == null)
                 return;
             while (true)
@@ -260,9 +269,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
             if (delay)
                 _publisher.Publish(
-                    TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                        readEventsForward));
+                    new AwakeReaderServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new TFPos(_lastPosition, _lastPosition), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }

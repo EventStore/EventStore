@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _eventsRequested;
         private int _maxReadCount = 111;
         private int _deliveredEvents;
+        private long _lastPosition;
 
         public StreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
@@ -82,6 +83,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (Paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
+            _lastPosition = message.TfLastCommitPosition;
             NotifyIfStarting(message.TfLastCommitPosition);
             switch (message.Result)
             {
@@ -162,9 +164,9 @@ namespace EventStore.Projections.Core.Services.Processing
             var readEventsForward = CreateReadEventsMessage();
             if (delay)
                 _publisher.Publish(
-                    TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                        readEventsForward));
+                    new AwakeReaderServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new TFPos(_lastPosition, _lastPosition), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }

@@ -48,6 +48,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
         private int _deliveredEvents;
+        private long _lastPosition;
 
         public TransactionFileEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
@@ -76,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (Paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
-
+            _lastPosition = message.TfLastCommitPosition;
             if (message.Result == ReadAllResult.AccessDenied)
             {
                 SendNotAuthorized();
@@ -144,9 +145,9 @@ namespace EventStore.Projections.Core.Services.Processing
             var readEventsForward = CreateReadEventsMessage();
             if (delay)
                 _publisher.Publish(
-                    TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                        readEventsForward));
+                    new AwakeReaderServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new TFPos(_lastPosition, _lastPosition), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }

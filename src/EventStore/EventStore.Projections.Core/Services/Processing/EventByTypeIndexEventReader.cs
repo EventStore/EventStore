@@ -69,6 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private TFPos _lastEventPosition;
         private readonly Dictionary<string, int> _fromPositions;
         private readonly Dictionary<string, string> _streamToEventType;
+        private long _lastPosition;
 
         public EventByTypeIndexEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
@@ -139,9 +140,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (delay)
                 _publisher.Publish(
-                    TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                        readEventsForward));
+                    new AwakeReaderServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new TFPos(_lastPosition, _lastPosition), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }
@@ -232,6 +233,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendNotAuthorized();
                     return;
                 }
+                _reader._lastPosition = message.TfLastCommitPosition;
                 if (message.EventStreamId == "$et")
                 {
                     ReadIndexCheckpointStreamCompleted(message.Result, message.Events);
@@ -557,6 +559,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new InvalidOperationException("TF events has not been requested");
                 if (_reader.Paused)
                     throw new InvalidOperationException("Paused");
+                _reader._lastPosition = message.TfLastCommitPosition;
                 _tfEventsRequested = false;
                 switch (message.Result)
                 {

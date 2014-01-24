@@ -40,6 +40,7 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Messaging;
+using EventStore.Projections.Core.Services.AwakeReaderService;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core
@@ -149,6 +150,11 @@ namespace EventStore.Projections.Core
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
 
+                    projectionNode.CoreOutput.Subscribe(
+                        Forwarder.Create<AwakeReaderServiceMessage.SubscribeAwake>(_managerInputQueue));
+                    projectionNode.CoreOutput.Subscribe(
+                        Forwarder.Create<AwakeReaderServiceMessage.UnsubscribeAwake>(_managerInputQueue));
+
                 }
                 projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);
 
@@ -162,6 +168,12 @@ namespace EventStore.Projections.Core
 
             _managerInputBus.Subscribe(
             Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
+
+            var awakeReaderService = new AwakeReaderService();
+            mainBus.Subscribe<StorageMessage.EventCommited>(awakeReaderService);
+            mainBus.Subscribe<AwakeReaderServiceMessage.SubscribeAwake>(awakeReaderService);
+            mainBus.Subscribe<AwakeReaderServiceMessage.UnsubscribeAwake>(awakeReaderService);
+
 
             _projectionManagerNode = ProjectionManagerNode.Create(
                 db, _managerInputQueue, httpForwarder, httpServices, networkSendQueue,
