@@ -46,8 +46,15 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
         private readonly Dictionary<Guid, AwakeReaderServiceMessage.SubscribeAwake> _map =
             new Dictionary<Guid, AwakeReaderServiceMessage.SubscribeAwake>();
 
+        private TFPos _lastPosition;
+
         public void Handle(AwakeReaderServiceMessage.SubscribeAwake message)
         {
+            if (message.From <= _lastPosition)
+            {
+                message.Envelope.ReplyWith(message.ReplyWithMessage);
+                return;
+            }
             _map.Add(message.CorrelationId, message);
             HashSet<AwakeReaderServiceMessage.SubscribeAwake> list;
             string streamId = message.StreamId ?? "$all";
@@ -61,6 +68,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         public void Handle(StorageMessage.EventCommited message)
         {
+            _lastPosition = new TFPos(message.CommitPosition, message.Event.LogPosition);
             NotifyEventInStream("$all", message);
             NotifyEventInStream(message.Event.EventStreamId, message);
         }
