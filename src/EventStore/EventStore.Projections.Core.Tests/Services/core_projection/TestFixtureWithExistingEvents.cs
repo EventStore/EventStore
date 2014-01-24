@@ -32,6 +32,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.AwakeReaderService;
 using EventStore.Projections.Core.Services.Management;
@@ -83,6 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe<StorageMessage.EventCommited>(_awakeReaderService);
             _bus.Subscribe<AwakeReaderServiceMessage.SubscribeAwake>(_awakeReaderService);
             _bus.Subscribe<AwakeReaderServiceMessage.UnsubscribeAwake>(_awakeReaderService);
+            _bus.Subscribe(new UnwrapEnvelopeHandler());
         }
 
         public void Handle(ProjectionCoreServiceMessage.CoreTick message)

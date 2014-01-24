@@ -101,12 +101,19 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (PauseRequested || Paused)
                 return;
-            _publisher.Publish(
-                TimerMessage.Schedule.Create(
-                    TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                    new UnwrapEnvelopeMessage(ProcessBuffers)));
+            if (delay)
+                _publisher.Publish(
+                    TimerMessage.Schedule.Create(
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
+                        new UnwrapEnvelopeMessage(ProcessBuffers2)));
             foreach (var stream in _streams)
                 RequestEvents(stream, delay: delay);
+        }
+
+        private void ProcessBuffers2()
+        {
+            ProcessBuffers();
+            CheckIdle();
         }
 
         protected override bool AreEventsRequested()
