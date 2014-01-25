@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
 
         protected override ManualQueue GiveInputQueue()
         {
-            return new ManualQueue(_bus);
+            return new ManualQueue(_bus, _timeProvider);
         }
 
         [SetUp]

@@ -39,12 +39,14 @@ namespace EventStore.Core.Tests.Helpers
     {
         private readonly Queue<Message> _queue = new Queue<Message>();
         private readonly IBus _bus;
-        private readonly List<TimerMessage.Schedule> _timerQueue = new List<TimerMessage.Schedule>();
+        private readonly ITimeProvider _time;
+        private readonly List<InternalSchedule> _timerQueue = new List<InternalSchedule>();
         private bool _timerDisabled;
 
-        public ManualQueue(IBus bus)
+        public ManualQueue(IBus bus, ITimeProvider time)
         {
             _bus = bus;
+            _time = time;
             _bus.Subscribe(this);
         }
 
@@ -77,10 +79,15 @@ namespace EventStore.Core.Tests.Helpers
         {
             if (!_timerDisabled)
             {
-                var orderedTimerMessages = _timerQueue.OrderBy(v => v.TriggerAfter).ToArray();
+                var orderedTimerMessages = _timerQueue.OrderBy(v => v.Scheduled.Add(v.Message.TriggerAfter)).ToArray();
                 _timerQueue.Clear();
                 foreach (var timerMessage in orderedTimerMessages)
-                    timerMessage.Reply();
+                {
+                    if (timerMessage.Scheduled.Add(timerMessage.Message.TriggerAfter) <= _time.Now)
+                        timerMessage.Message.Reply();
+                    else
+                        _timerQueue.Add(timerMessage);
+                }
             }
         }
 
@@ -96,9 +103,21 @@ namespace EventStore.Core.Tests.Helpers
                 Process();
         }
 
+        private class InternalSchedule
+        {
+            public readonly TimerMessage.Schedule Message;
+            public readonly DateTime Scheduled;
+
+            public InternalSchedule(TimerMessage.Schedule message, DateTime scheduled)
+            {
+                Message = message;
+                Scheduled = scheduled;
+            }
+        }
+
         public void Handle(TimerMessage.Schedule message)
         {
-            _timerQueue.Add(message);
+            _timerQueue.Add(new InternalSchedule(message, _time.Now));
         }
     }
 }
