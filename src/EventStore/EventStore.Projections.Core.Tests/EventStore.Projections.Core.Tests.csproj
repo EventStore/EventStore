@@ -120,6 +120,7 @@
     <Compile Include="Playground\Launchpad3.cs" />
     <Compile Include="Playground\LaunchpadBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\awake_reader_service\when_handling_committed_event_after_unsybscribe.cs" />
     <Compile Include="Services\awake_reader_service\when_handling_committed_event_with_subscribers.cs" />
     <Compile Include="Services\awake_reader_service\when_handling_subscribe_awake.cs" />
     <Compile Include="Services\awake_reader_service\when_handling_comitted_event.cs" />

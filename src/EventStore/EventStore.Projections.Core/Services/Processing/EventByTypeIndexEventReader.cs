@@ -136,13 +136,15 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        private void PublishIORequest(bool delay, Message readEventsForward)
+        private void PublishIORequest(bool delay, Message readEventsForward, Guid correlationId)
         {
             if (delay)
+            {
                 _publisher.Publish(
                     new AwakeReaderServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new PublishEnvelope(_publisher, crossThread: true), correlationId, null,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
+            }
             else
                 _publisher.Publish(readEventsForward);
         }
@@ -197,6 +199,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             private readonly Dictionary<string, string> _streamToEventType;
             private readonly HashSet<string> _eventsRequested = new HashSet<string>();
+            private readonly HashSet<Guid> _validRequests = new HashSet<Guid>();
+            private readonly HashSet<Guid> _awakeSubscriptions = new HashSet<Guid>();
             private bool _indexCheckpointStreamRequested;
             private int _lastKnownIndexCheckpointEventNumber = -1;
             private TFPos? _lastKnownIndexCheckpointPosition = null;
@@ -233,12 +237,18 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendNotAuthorized();
                     return;
                 }
-                _reader._lastPosition = message.TfLastCommitPosition;
+
+                //we may receive read replies in any order (we read multiple streams)
+                if (message.TfLastCommitPosition > _reader._lastPosition)  
+                    _reader._lastPosition = message.TfLastCommitPosition;
                 if (message.EventStreamId == "$et")
                 {
                     ReadIndexCheckpointStreamCompleted(message.Result, message.Events);
                     return;
                 }
+
+                if (!_validRequests.Contains(message.CorrelationId))
+                    return;
 
                 if (!_streamToEventType.ContainsKey(message.EventStreamId))
                     throw new InvalidOperationException(
@@ -251,14 +261,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     case ReadStreamResult.NoStream:
                         _eofs[message.EventStreamId] = true;
-                        ProcessBuffersAndContinue(message, eof: true);
+                        ProcessBuffersAndContinue(eof: true, eventStreamId: message.EventStreamId);
                         break;
                     case ReadStreamResult.Success:
                         _reader.UpdateNextStreamPosition(message.EventStreamId, message.NextEventNumber);
                         var isEof = message.Events.Length == 0;
                         _eofs[message.EventStreamId] = isEof;
                         EnqueueEvents(message);
-                        ProcessBuffersAndContinue(message, eof: isEof);
+                        ProcessBuffersAndContinue(eof: isEof, eventStreamId: message.EventStreamId);
                         break;
                     default:
                         throw new NotSupportedException(
@@ -266,10 +276,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
-            private void ProcessBuffersAndContinue(ClientMessage.ReadStreamEventsForwardCompleted message, bool eof)
+            private void ProcessBuffersAndContinue(bool eof, string eventStreamId)
             {
                 ProcessBuffers();
-                _eventsRequested.Remove(message.EventStreamId);
+                if (eventStreamId != null)
+                    _eventsRequested.Remove(eventStreamId);
                 _reader.PauseOrContinueProcessing(delay: eof);
                 CheckSwitch();
             }
@@ -287,6 +298,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_disposed)
                     return;
+                //we may receive read replies in any order (we read multiple streams)
+                if (message.TfLastCommitPosition > _reader._lastPosition)
+                    _reader._lastPosition = message.TfLastCommitPosition;
                 if (message.Result == ReadStreamResult.AccessDenied)
                 {
                     SendNotAuthorized();
@@ -362,10 +376,23 @@ namespace EventStore.Projections.Core.Services.Processing
                                 // reset eofs before this point - probably some where updated so we cannot go 
                                 // forward with this position without making sure nothing appeared
                                 // NOTE: performance is not very good, but we should switch to TF mode shortly
+
+
+                                foreach (var corrId in _validRequests)
+                                {
+                                    _publisher.Publish(new AwakeReaderServiceMessage.UnsubscribeAwake(corrId));
+                                }
+                                _validRequests.Clear();
+                                _eventsRequested.Clear();
+                                //TODO: cancel subscribeAwake
+                                //TODO: reissue read requests
+                                //TODO: make sure async completions of awake do not work
+
                                 foreach (var key in _eofs.Keys.ToArray())
                                     _eofs[key] = false;
                             }
                         }
+                        ProcessBuffersAndContinue(events.Length == 0, null);
                         _reader.PauseOrContinueProcessing(delay: events.Length == 0);
                         break;
                     default:
@@ -453,7 +480,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
                         _lastKnownIndexCheckpointEventNumber + 1, 100, false, false, null, _readAs);
                 }
-                _reader.PublishIORequest(delay, readRequest);
+                _reader.PublishIORequest(delay, readRequest, Guid.NewGuid());
             }
 
             private void RequestEvents(string stream, bool delay)
@@ -470,11 +497,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     return;
                 _eventsRequested.Add(stream);
 
+                var corrId = Guid.NewGuid();
+                _validRequests.Add(corrId);
+
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
-                    Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), stream,
+                    corrId, corrId, new SendToThisEnvelope(this), stream,
                     _reader._fromPositions[stream], _maxReadCount, _reader._resolveLinkTos, false, null,
                     _readAs);
-                _reader.PublishIORequest(delay, readEventsForward);
+                _reader.PublishIORequest(delay, readEventsForward, corrId);
             }
 
             private void DeliverEventRetrievedByIndex(
@@ -633,7 +663,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _fromTfPosition.CommitPosition,
                     _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, 111,
                     true, false, null, _readAs);
-                _reader.PublishIORequest(delay, readRequest);
+                _reader.PublishIORequest(delay, readRequest, Guid.NewGuid());
             }
 
             private void DeliverLastCommitPosition(TFPos lastPosition)

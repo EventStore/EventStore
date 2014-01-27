@@ -42,7 +42,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
 {
     [TestFixture]
-    public class when_handling_committed_event_with_subscribers
+    public class when_handling_committed_event_after_unsybscribe
     {
         private AwakeReaderService _it;
         private EventRecord _eventRecord;
@@ -56,6 +56,11 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
         private TestMessage _reply3;
         private TestMessage _reply4;
         private TestMessage _reply5;
+        private Guid _correlationId1;
+        private Guid _correlationId2;
+        private Guid _correlationId3;
+        private Guid _correlationId4;
+        private Guid _correlationId5;
 
         [SetUp]
         public void SetUp()
@@ -102,27 +107,38 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
             _reply4 = new TestMessage(4);
             _reply5 = new TestMessage(5);
 
+            _correlationId1 = Guid.NewGuid();
             _it.Handle(
                 new AwakeReaderServiceMessage.SubscribeAwake(
-                    _envelope, Guid.NewGuid(), "Stream", new TFPos(1000, 500), _reply1));
+                    _envelope, _correlationId1, "Stream", new TFPos(1000, 500), _reply1));
+            _correlationId2 = Guid.NewGuid();
             _it.Handle(
                 new AwakeReaderServiceMessage.SubscribeAwake(
-                    _envelope, Guid.NewGuid(), "Stream", new TFPos(100000, 99500), _reply2));
+                    _envelope, _correlationId2, "Stream", new TFPos(100000, 99500), _reply2));
+            _correlationId3 = Guid.NewGuid();
             _it.Handle(
                 new AwakeReaderServiceMessage.SubscribeAwake(
-                    _envelope, Guid.NewGuid(), "Stream2", new TFPos(1000, 500), _reply3));
+                    _envelope, _correlationId3, "Stream2", new TFPos(1000, 500), _reply3));
+            _correlationId4 = Guid.NewGuid();
             _it.Handle(
                 new AwakeReaderServiceMessage.SubscribeAwake(
-                    _envelope, Guid.NewGuid(), null, new TFPos(1000, 500), _reply4));
+                    _envelope, _correlationId4, null, new TFPos(1000, 500), _reply4));
+            _correlationId5 = Guid.NewGuid();
             _it.Handle(
                 new AwakeReaderServiceMessage.SubscribeAwake(
-                    _envelope, Guid.NewGuid(), null, new TFPos(100000, 99500), _reply5));
+                    _envelope, _correlationId5, null, new TFPos(100000, 99500), _reply5));
+
         }
 
         private void When()
         {
             try
             {
+                _it.Handle(new AwakeReaderServiceMessage.UnsubscribeAwake(_correlationId1));
+                _it.Handle(new AwakeReaderServiceMessage.UnsubscribeAwake(_correlationId2));
+                _it.Handle(new AwakeReaderServiceMessage.UnsubscribeAwake(_correlationId3));
+                _it.Handle(new AwakeReaderServiceMessage.UnsubscribeAwake(_correlationId4));
+                _it.Handle(new AwakeReaderServiceMessage.UnsubscribeAwake(_correlationId5));
                 _it.Handle(_eventCommited);
             }
             catch (Exception ex)
@@ -138,33 +154,33 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
         }
 
         [Test]
-        public void awakes_stream_subscriber_before_position()
+        public void does_not_awake_stream_subscriber_before_position()
         {
-            Assert.That(_handler.HandledMessages.Any(m => m.Kind == 1));
+            Assert.That(!_handler.HandledMessages.Any(m => m.Kind == 1));
         }
 
         [Test]
         public void does_not_awake_stream_subscriber_after_position()
         {
-            Assert.That(_handler.HandledMessages.All(m => m.Kind != 2));
+            Assert.That(!_handler.HandledMessages.Any(m => m.Kind == 2));
         }
 
         [Test]
-        public void awakes_all_subscriber_before_position()
+        public void does_not_awake_all_subscriber_before_position()
         {
-            Assert.That(_handler.HandledMessages.Any(m => m.Kind == 4));
+            Assert.That(!_handler.HandledMessages.Any(m => m.Kind == 4));
         }
 
         [Test]
         public void does_not_awake_all_subscriber_after_position()
         {
-            Assert.That(_handler.HandledMessages.All(m => m.Kind != 5));
+            Assert.That(!_handler.HandledMessages.Any(m => m.Kind == 5));
         }
 
         [Test]
         public void does_not_awake_another_stream_subscriber_before_position()
         {
-            Assert.That(_handler.HandledMessages.All(m => m.Kind != 3));
+            Assert.That(!_handler.HandledMessages.Any(m => m.Kind == 3));
         }
     }
 }

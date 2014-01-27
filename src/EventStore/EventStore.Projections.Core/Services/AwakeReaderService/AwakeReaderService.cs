@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         public void Handle(AwakeReaderServiceMessage.SubscribeAwake message)
         {
-            if (message.From <= _lastPosition)
+            if (message.From < _lastPosition)
             {
                 message.Envelope.ReplyWith(message.ReplyWithMessage);
                 return;
@@ -104,7 +104,13 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         public void Handle(AwakeReaderServiceMessage.UnsubscribeAwake message)
         {
-            throw new NotImplementedException();
+            AwakeReaderServiceMessage.SubscribeAwake subscriber;
+            if (_map.TryGetValue(message.CorrelationId, out subscriber))
+            {
+                _map.Remove(message.CorrelationId);
+                var list = _subscribers[subscriber.StreamId ?? "$all"];
+                list.Remove(subscriber);
+            }
         }
     }
 }
