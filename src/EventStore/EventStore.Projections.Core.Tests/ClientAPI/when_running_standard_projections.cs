@@ -88,17 +88,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 #endif
         }
 
-        [Test, Category("LongRunning"), Category("Network"), Ignore]
+        [Test, Category("LongRunning"), Category("Network")]
         public void streams_stream_exists()
         {
-            //TODO: enable system projections
-            //TODO: await all worker threads empty
+            QueueStatsCollector.WaitIdle();
             Assert.AreEqual(
                 SliceReadStatus.Success, _conn.ReadStreamEventsForward("$streams", 0, 10, false, _admin).Status);
 
         }
 
-        [Test, Category("LongRunning"), Category("Network"), Explicit]
+        [Test, Category("LongRunning"), Category("Network")]
         public void deleted_stream_events_are_indexed()
         {
             var r1 = _conn.AppendToStream(
@@ -112,8 +111,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _conn.DeleteStream("cat-1", r2.NextExpectedVersion, true, _admin);
             QueueStatsCollector.WaitIdle();
 
-            //TODO: enable system projections
-            //TODO: await all worker threads empty
             var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
             Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
