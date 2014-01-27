@@ -151,9 +151,9 @@ namespace EventStore.Projections.Core
                         Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
 
                     projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<AwakeReaderServiceMessage.SubscribeAwake>(_managerInputQueue));
+                        Forwarder.Create<AwakeReaderServiceMessage.SubscribeAwake>(mainQueue));
                     projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<AwakeReaderServiceMessage.UnsubscribeAwake>(_managerInputQueue));
+                        Forwarder.Create<AwakeReaderServiceMessage.UnsubscribeAwake>(mainQueue));
 
                 }
                 projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);

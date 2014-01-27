@@ -110,7 +110,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                 new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
 
             _conn.DeleteStream("cat-1", r2.NextExpectedVersion, true, _admin);
-            Thread.Sleep(260);
             QueueStatsCollector.WaitIdle();
 
             //TODO: enable system projections
