@@ -140,18 +140,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         }
 
         [Test]
-        public void publishes_schedule()
+        public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeReaderServiceMessage.SubscribeAwake>().Count());
         }
 
-        [Test]
-        public void publishes_read_events_on_schedule_reply()
-        {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
-            var schedule = _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Single();
-            schedule.Reply();
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
-        }
+        
     }
 }
