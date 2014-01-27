@@ -114,6 +114,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
             Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
+            Assert.Inconclusive();
+
         }
 
     }
