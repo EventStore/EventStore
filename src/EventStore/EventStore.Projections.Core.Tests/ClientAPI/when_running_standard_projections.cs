@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning"), Category("Network")]
-        public void deleted_stream_events_are_indexed()
+        public void hard_deleted_stream_events_are_indexed()
         {
             var r1 = _conn.AppendToStream(
                 "cat-1", ExpectedVersion.NoStream, _admin,
@@ -114,9 +114,29 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
             Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
-            Assert.Inconclusive();
+            Assert.AreEqual(3, slice.Events.Length);
 
         }
 
+        [Test, Category("LongRunning"), Category("Network")]
+        public void soft_deleted_stream_events_are_indexed()
+        {
+            var r1 = _conn.AppendToStream(
+                "cat2-1", ExpectedVersion.NoStream, _admin,
+                new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
+
+            var r2 = _conn.AppendToStream(
+                "cat2-1", r1.NextExpectedVersion, _admin,
+                new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
+
+            _conn.DeleteStream("cat2-1", r2.NextExpectedVersion, false, _admin);
+            QueueStatsCollector.WaitIdle();
+
+            var slice = _conn.ReadStreamEventsForward("$ce-cat2", 0, 10, true, _admin);
+            Assert.AreEqual(SliceReadStatus.Success, slice.Status);
+
+            Assert.AreEqual(3, slice.Events.Length);
+
+        }
     }
 }
