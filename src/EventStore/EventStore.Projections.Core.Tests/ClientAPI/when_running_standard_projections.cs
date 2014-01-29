@@ -30,64 +30,14 @@ using System;
 using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common.Log;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Common.Options;
-using EventStore.Core;
 using EventStore.Core.Bus;
-using EventStore.Core.Tests;
-using EventStore.Core.Tests.Helpers;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class when_running_standard_projections : SpecificationWithDirectoryPerTestFixture
+    public class when_running_standard_projections : specification_with_standard_projections_runnning
     {
-        private MiniNode _node;
-        private IEventStoreConnection _conn;
-        private ProjectionsSubsystem _projections;
-        private UserCredentials _admin = new UserCredentials("admin", "changeit");
-        private ProjectionsManager _manager;
-
-        [TestFixtureSetUp]
-        public override void TestFixtureSetUp()
-        {
-            base.TestFixtureSetUp();
-#if DEBUG
-            QueueStatsCollector.InitializeIdleDetection();
-#else 
-            throw new NotSupportedException("These tests require DEBUG conditional");
-#endif
-            _projections = new Projections.Core.ProjectionsSubsystem(
-                projectionWorkerThreadCount: 1, runProjections: RunProjections.All);
-            _node = new MiniNode(
-                PathName, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] {_projections});
-            _node.Start();
-
-            _conn = EventStoreConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
-
-            _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, _admin);
-            QueueStatsCollector.WaitIdle();
-        }
-
-        [TestFixtureTearDown]
-        public override void TestFixtureTearDown()
-        {
-            _conn.Close();
-            _node.Shutdown();
-            base.TestFixtureTearDown();
-#if DEBUG
-            QueueStatsCollector.InitializeIdleDetection(enable: false);
-#endif
-        }
-
         [Test, Category("LongRunning"), Category("Network")]
         public void streams_stream_exists()
         {

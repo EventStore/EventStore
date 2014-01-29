@@ -1,0 +1,171 @@
+﻿// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.SystemData;
+using EventStore.Common.Options;
+using EventStore.Core;
+using EventStore.Core.Bus;
+using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
+
+namespace EventStore.Projections.Core.Tests.ClientAPI
+{
+    [Category("ClientAPI")]
+    public class specification_with_standard_projections_runnning : SpecificationWithDirectoryPerTestFixture
+    {
+        protected MiniNode _node;
+        protected IEventStoreConnection _conn;
+        protected ProjectionsSubsystem _projections;
+        protected UserCredentials _admin = new UserCredentials("admin", "changeit");
+        protected ProjectionsManager _manager;
+
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
+        {
+            base.TestFixtureSetUp();
+#if DEBUG
+            QueueStatsCollector.InitializeIdleDetection();
+#else 
+            throw new NotSupportedException("These tests require DEBUG conditional");
+#endif
+            _projections = new ProjectionsSubsystem(1, runProjections: RunProjections.All);
+            _node = new MiniNode(
+                PathName, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] {_projections});
+            _node.Start();
+
+            _conn = EventStoreConnection.Create(_node.TcpEndPoint);
+            _conn.Connect();
+
+            _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, _admin);
+            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, _admin);
+            QueueStatsCollector.WaitIdle();
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _conn.Close();
+            _node.Shutdown();
+            base.TestFixtureTearDown();
+#if DEBUG
+            QueueStatsCollector.InitializeIdleDetection(false);
+#endif
+        }
+
+        [SetUp]
+        public void SetUp()
+        {
+            Given();
+            When();
+        }
+
+        protected virtual void When()
+        {
+        }
+
+        protected virtual void Given()
+        {
+        }
+
+        protected void PostEvent(string stream, string eventType, string data)
+        {
+            _conn.AppendToStream(stream, ExpectedVersion.Any, new[] {event_by_type_index.with_existing_events.CreateEvent(eventType, data)});
+        }
+
+        protected static EventData CreateEvent(string type, string data)
+        {
+            return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);
+        }
+
+        protected static void WaitIdle()
+        {
+            QueueStatsCollector.WaitIdle();
+        }
+
+        [Conditional("DEBUG")]
+        protected void AssertStreamTail(string streamId, params string[] events)
+        {
+#if DEBUG
+            var result = _conn.ReadStreamEventsBackward(streamId, -1, events.Length, true, _admin);
+            switch (result.Status)
+            {
+                case SliceReadStatus.StreamDeleted:
+                    Assert.Fail("Stream '{0}' is deleted", streamId);
+                    break;
+                case SliceReadStatus.StreamNotFound:
+                    Assert.Fail("Stream '{0}' doe snot exist", streamId);
+                    break;
+                case SliceReadStatus.Success:
+                    if (result.Events.Length < events.Length)
+                        DumpFailed("Stream does not contain enough events", streamId, result, events);
+                    else
+                    {
+                        for (var index = 0; index < events.Length; index++)
+                        {
+                            var parts = events[index].Split(new char[] { ':' }, 2);
+                            var eventType = parts[0];
+                            var eventData = parts[1];
+
+                            if (result.Events[index].Event.EventType != eventType)
+                                DumpFailed("Invalid event type", streamId, result, events);
+                            else
+                                if (result.Events[index].Event.DebugDataView != eventData)
+                                    DumpFailed("Invalid event body", streamId, result, events);
+                        }
+                    }
+                    break;
+            }
+#endif
+        }
+
+#if DEBUG
+        private void DumpFailed(string message, string streamId, StreamEventsSlice result, string[] events)
+        {
+            var expected = events.Aggregate("", (a, v) => a + ", " + v);
+            var actual = result.Events.Aggregate(
+                "", (a, v) => a + ", " + v.Event.EventType + ":" + v.Event.DebugDataView);
+
+            Assert.Fail(
+                "Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n Expected events: \r\n{3}", streamId,
+                message, actual, expected);
+        }
+#endif
+
+    }
+}

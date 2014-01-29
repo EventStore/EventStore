@@ -106,6 +106,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientAPI\event_by_type_index.cs" />
+    <Compile Include="ClientAPI\specification_with_standard_projections_runnning.cs" />
     <Compile Include="ClientAPI\when_running_standard_projections.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_wit_stream_metadata.cs" />
