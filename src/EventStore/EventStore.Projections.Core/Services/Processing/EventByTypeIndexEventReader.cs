@@ -35,6 +35,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -179,11 +180,26 @@ namespace EventStore.Projections.Core.Services.Processing
                     return;
                 _reader._lastEventPosition = resolvedEvent.OriginalPosition;
                 _reader._deliveredEvents ++;
-                _reader._publisher.Publish(
-                    //TODO: publish both link and event data
-                    new ReaderSubscriptionMessage.CommittedEventDistributed(
-                        _reader.EventReaderCorrelationId, resolvedEvent,
-                        _reader._stopOnEof ? (long?) null : position.PreparePosition, progress, source: this.GetType()));
+
+                if (resolvedEvent.PositionStreamId == "$et-$deleted")
+                {
+                    var deletedPartition = SystemStreams.IsMetastream(resolvedEvent.EventStreamId)
+                        ? SystemStreams.OriginalStreamOf(resolvedEvent.EventStreamId)
+                        : resolvedEvent.EventStreamId;
+
+                    _reader._publisher.Publish(
+                        //TODO: publish both link and event data
+                        new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
+                            _reader.EventReaderCorrelationId,
+                            deletedPartition, source: this.GetType()));
+                }
+                else
+                    _reader._publisher.Publish(
+                        //TODO: publish both link and event data
+                        new ReaderSubscriptionMessage.CommittedEventDistributed(
+                            _reader.EventReaderCorrelationId, resolvedEvent,
+                            _reader._stopOnEof ? (long?) null : position.PreparePosition, progress,
+                            source: this.GetType()));
             }
 
             protected void SendNotAuthorized()

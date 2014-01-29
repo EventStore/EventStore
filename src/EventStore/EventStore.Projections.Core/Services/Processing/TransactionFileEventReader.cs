@@ -36,6 +36,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Standard;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -200,17 +201,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 originalPosition = receivedPosition;
             }
 
+            var resolvedEvent = new ResolvedEvent(
+                positionEvent.EventStreamId, positionEvent.EventNumber, @event.Event.EventStreamId,
+                @event.Event.EventNumber, @event.Link != null, receivedPosition,
+                originalPosition, @event.Event.EventId, @event.Event.EventType,
+                (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata,
+                @event.Link == null ? null : @event.Link.Metadata, null, positionEvent.TimeStamp);
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId,
-                    new ResolvedEvent(
-                        positionEvent.EventStreamId, positionEvent.EventNumber, @event.Event.EventStreamId,
-                        @event.Event.EventNumber, @event.Link != null, receivedPosition,
-                        originalPosition, @event.Event.EventId, @event.Event.EventType,
-                        (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata,
-                        @event.Link == null ? null : @event.Link.Metadata, null, positionEvent.TimeStamp),
+                    resolvedEvent,
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
                     100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
+
+            string positionStreamId;
+            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(resolvedEvent, out positionStreamId);
+            if (isStreamDeletedEvent)
+                _publisher.Publish(
+                    new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
+                        EventReaderCorrelationId, positionStreamId, source: this.GetType()));
         }
     }
 }

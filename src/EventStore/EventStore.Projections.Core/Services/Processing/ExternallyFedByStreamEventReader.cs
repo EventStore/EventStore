@@ -158,8 +158,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendNotAuthorized();
                     return;
                 case ReadStreamResult.NoStream:
+                    _dataNextSequenceNumber = int.MaxValue;
+                    PauseOrContinueProcessing(delay: false);
+                    break;
                 case ReadStreamResult.StreamDeleted:
                     _dataNextSequenceNumber = int.MaxValue;
+                    SendPartitionDeleted(_dataStreamName);
                     PauseOrContinueProcessing(delay: false);
                     break;
                 case ReadStreamResult.Success:

@@ -160,11 +160,11 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _partition;
 
             public EventReaderPartitionDeleted(
-                Guid correlationId, string partition, CheckpointTag preTagged, object source = null)
+                Guid correlationId, string partition, CheckpointTag preTagged = null, object source = null)
                 : base(correlationId, preTagged, source)
             {
                 _partition = partition;
-            }
+            }   
 
             public string Partition
             {

@@ -53,6 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
 
         // event, link, progress
+        // null element in a queue means tream deleted 
         private readonly Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>> _buffers =
             new Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>>();
 
@@ -134,6 +135,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastPosition = message.TfLastCommitPosition;
             switch (message.Result)
             {
+                case ReadStreamResult.StreamDeleted:
+                    UpdateSafePositionToJoin(message.EventStreamId, message.TfLastCommitPosition);
+                    EnqueueItem(null, message.EventStreamId);
+                    goto case ReadStreamResult.NoStream;
                 case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));
@@ -162,16 +167,9 @@ namespace EventStore.Projections.Core.Services.Processing
                             EventRecord positionEvent = (link ?? @event);
                             UpdateSafePositionToJoin(
                                 positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
-                            Queue<Tuple<EventRecord, EventRecord, float>> queue;
-                            if (!_buffers.TryGetValue(positionEvent.EventStreamId, out queue))
-                            {
-                                queue = new Queue<Tuple<EventRecord, EventRecord, float>>();
-                                _buffers.Add(positionEvent.EventStreamId, queue);
-                            }
-                            //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
-                            queue.Enqueue(
-                                Tuple.Create(
-                                    @event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
+                            var itemToEnqueue = Tuple.Create(
+                                @event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber);
+                            EnqueueItem(itemToEnqueue, positionEvent.EventStreamId);
                         }
                     }
 
@@ -186,6 +184,18 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private void EnqueueItem(Tuple<EventRecord, EventRecord, float> itemToEnqueue, string streamId)
+        {
+            Queue<Tuple<EventRecord, EventRecord, float>> queue;
+            if (!_buffers.TryGetValue(streamId, out queue))
+            {
+                queue = new Queue<Tuple<EventRecord, EventRecord, float>>();
+                _buffers.Add(streamId, queue);
+            }
+            //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
+            queue.Enqueue(itemToEnqueue);
         }
 
         private void CheckEof()
