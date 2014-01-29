@@ -27,9 +27,12 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Standard
 {
@@ -93,15 +96,24 @@ namespace EventStore.Projections.Core.Standard
             newState = null;
             if (data.EventStreamId != data.PositionStreamId)
                 return false;
-            if (data.EventType == "$>")
+            var indexedEventType = data.EventType;
+            if (indexedEventType == "$>")
                 return false;
+
+            string positionStreamId;
+            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(data, out positionStreamId);
+            if (isStreamDeletedEvent)
+                indexedEventType = "$deleted";
 
             emittedEvents = new[]
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        _indexStreamPrefix + data.EventType, Guid.NewGuid(), "$>", false,
-                        data.EventSequenceNumber + "@" + data.EventStreamId, null, eventPosition, expectedTag: null))
+                        _indexStreamPrefix + indexedEventType, Guid.NewGuid(), "$>", false,
+                        data.EventSequenceNumber + "@" + positionStreamId,
+                        isStreamDeletedEvent
+                            ? new ExtraMetaData(new Dictionary<string, JRaw> {{"$deleted", new JRaw(true)}})
+                            : null, eventPosition, expectedTag: null))
             };
 
             return true;

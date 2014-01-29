@@ -87,6 +87,13 @@ namespace EventStore.Projections.Core.Services.Processing
             NotifyIfStarting(message.TfLastCommitPosition);
             switch (message.Result)
             {
+                case ReadStreamResult.StreamDeleted:
+                    DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
+                    PauseOrContinueProcessing(delay: true);
+                    SendIdle();
+                    SendPartitionDeleted(_streamName);
+                    SendEof();
+                    break;
                 case ReadStreamResult.NoStream:
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
                     PauseOrContinueProcessing(delay: true);

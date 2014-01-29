@@ -148,6 +148,30 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class EventReaderPartitionDeleted : SubscriptionMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
+
+            private readonly string _partition;
+
+            public EventReaderPartitionDeleted(
+                Guid correlationId, string partition, CheckpointTag preTagged, object source = null)
+                : base(correlationId, preTagged, source)
+            {
+                _partition = partition;
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+        }
+
         public class EventReaderPartitionMeasured : SubscriptionMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

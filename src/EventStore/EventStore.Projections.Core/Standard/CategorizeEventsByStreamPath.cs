@@ -90,38 +90,12 @@ namespace EventStore.Projections.Core.Standard
             emittedEvents = null;
             newState = null;
             string positionStreamId;
-            bool isMetaStream;
-            if (SystemStreams.IsMetastream(data.PositionStreamId))
-            {
-                isMetaStream = true;
-                positionStreamId = data.PositionStreamId.Substring("$$".Length);
-            }
-            else
-            {
-                isMetaStream = false;
-                positionStreamId = data.PositionStreamId;
-            }
+            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(data, out positionStreamId);
+
             var category = _streamCategoryExtractor.GetCategoryByStreamId(positionStreamId);
             if (category == null)
                 return true; // handled but not interesting
 
-            var isStreamDeletedEvent = false;
-            if (isMetaStream)
-            {
-                if (data.EventType != SystemEventTypes.StreamMetadata)
-                    return true; // handled but not interesting
-
-                var metadata = StreamMetadata.FromJson(data.Data);
-                //NOTE: we do not ignore JSON deserialization exceptions here assuming that metadata stream events must be deserializable
-
-                if (metadata.TruncateBefore != EventNumber.DeletedStream)
-                    return true; // handled but not interesting
-
-                isStreamDeletedEvent = true;
-            }
-
-            if (data.EventType == SystemEventTypes.StreamDeleted)
-                isStreamDeletedEvent = true;
 
             string linkTarget;
             if (data.EventType == SystemEventTypes.LinkTo) 

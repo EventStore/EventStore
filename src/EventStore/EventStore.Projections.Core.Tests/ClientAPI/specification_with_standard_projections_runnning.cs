@@ -75,6 +75,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, _admin);
             _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, _admin);
             QueueStatsCollector.WaitIdle();
+            Given();
+            When();
         }
 
         [TestFixtureTearDown]
@@ -86,13 +88,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 #if DEBUG
             QueueStatsCollector.InitializeIdleDetection(false);
 #endif
-        }
-
-        [SetUp]
-        public void SetUp()
-        {
-            Given();
-            When();
         }
 
         protected virtual void When()

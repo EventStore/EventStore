@@ -53,5 +53,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             // ignore
         }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

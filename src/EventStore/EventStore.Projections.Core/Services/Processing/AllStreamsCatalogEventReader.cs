@@ -36,8 +36,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing

@@ -132,6 +132,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ReaderSubscriptionMessage.EventReaderPartitionEof(EventReaderCorrelationId, partition, preTagged));
         }
 
+        protected void SendPartitionDeleted(string partition, CheckpointTag preTagged = null)
+        {
+            if (_disposed)
+                return;
+            _publisher.Publish(
+                new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
+                    EventReaderCorrelationId, partition, preTagged));
+        }
+
         public void SendNotAuthorized()
         {
             if (_disposed)

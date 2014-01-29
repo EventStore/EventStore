@@ -180,6 +180,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(readerService);
+            bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionDeleted>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionMeasured>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(readerService);
