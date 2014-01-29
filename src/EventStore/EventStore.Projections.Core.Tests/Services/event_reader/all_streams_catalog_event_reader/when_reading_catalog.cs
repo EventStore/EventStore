@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
 {
     namespace when_reading_catalog
     {
-        abstract class with_all_streams_catelog_event_reader: TestFixtureWithEventReaderService
+        abstract class with_all_streams_catalog_event_reader: TestFixtureWithEventReaderService
         {
             protected const int TailLength = 10;
             protected Guid _subscriptionId;
@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
         }
 
         [TestFixture]
-        class when_starting_from_the_beginning : with_all_streams_catelog_event_reader
+        class when_starting_from_the_beginning : with_all_streams_catalog_event_reader
         {
             protected override IEnumerable<WhenStep> When()
             {
