@@ -167,5 +167,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         }
 #endif
 
+        protected void PostProjection(string query)
+        {
+            _manager.CreateContinuous("test-projection", query, _admin);
+            WaitIdle();
+        }
     }
 }

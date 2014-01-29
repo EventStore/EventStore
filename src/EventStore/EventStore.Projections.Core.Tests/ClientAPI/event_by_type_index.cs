@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI
@@ -55,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             protected override void When()
             {
                 base.When();
-                var query = @"
+                PostProjection(@"
 fromAll().when({
     $init: function(){
         return {c: 0};
@@ -67,10 +68,7 @@ fromAll().when({
 function count(s,e) {
     return {c: s.c + 1};
 }
-";
-                _manager.CreateContinuous("test-projection", query, _admin);
-                WaitIdle();
-
+");
             }
 
             [Test, Category("Network")]
@@ -81,5 +79,36 @@ function count(s,e) {
 
         }
 
+        [TestFixture, Category("LongRunning")]
+        public class when_posting_more_events : with_existing_events
+        {
+            protected override void When()
+            {
+                base.When();
+                PostProjection(@"
+fromAll().when({
+    $init: function(){
+        return {c: 0};
+    },
+    type1: count,
+    type2: count
+}).outputState()
+
+function count(s,e) {
+    return {c: s.c + 1};
+}
+");
+                PostEvent("stream3", "type2", "{}");
+                PostEvent("stream3", "type3", "{}");
+                WaitIdle();
+            }
+
+            [Test, Category("Network")]
+            public void result_is_correct()
+            {
+                AssertStreamTail("$projections-test-projection-result", "Result:{\"c\":5}");
+            }
+
+        }
     }
 }
