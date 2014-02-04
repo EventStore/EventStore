@@ -190,8 +190,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     _reader._publisher.Publish(
                         //TODO: publish both link and event data
                         new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
-                            _reader.EventReaderCorrelationId,
-                            deletedPartition, source: this.GetType()));
+                            _reader.EventReaderCorrelationId, deletedPartition, source: this.GetType(),
+                            lastEventNumber: -1, deleteEventPosition: position, positionStreamId: "$et-$deleted",
+                            positionEventNumber: resolvedEvent.PositionSequenceNumber));
                 }
                 else
                     _reader._publisher.Publish(

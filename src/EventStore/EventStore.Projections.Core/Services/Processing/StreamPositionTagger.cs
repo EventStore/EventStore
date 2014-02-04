@@ -28,7 +28,7 @@
 
 using System;
 using System.Linq;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -72,6 +72,21 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
         {
             throw new NotImplementedException();
+        }
+
+        public override CheckpointTag MakeCheckpointTag(
+            CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionDeleted partitionDeleted)
+        {
+            if (previous.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
+            if (partitionDeleted.Partition != _stream)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Invalid stream '{0}'.  Expected stream is '{1}'", partitionDeleted.Partition, _stream));
+            return CheckpointTag.FromStreamPosition(
+                previous.Phase, partitionDeleted.Partition, EventNumber.DeletedStream);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()

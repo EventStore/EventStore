@@ -136,12 +136,11 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case ReadStreamResult.StreamDeleted:
-                    UpdateSafePositionToJoin(message.EventStreamId, message.TfLastCommitPosition);
-                    EnqueueItem(null, message.EventStreamId);
-                    goto case ReadStreamResult.NoStream;
                 case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));
+                    if (message.Result == ReadStreamResult.NoStream && message.LastEventNumber >= 0)
+                        EnqueueItem(null, message.EventStreamId);
                     ProcessBuffers();
                     _eventsRequested.Remove(message.EventStreamId);
                     PauseOrContinueProcessing(delay: true);

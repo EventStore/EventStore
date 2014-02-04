@@ -158,17 +158,46 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly string _partition;
+            private readonly int? _lastEventNumber;
+            private readonly TFPos? _deleteEventPosition;
+            private readonly string _positionStreamId;
+            private readonly int? _positionEventNumber;
 
             public EventReaderPartitionDeleted(
-                Guid correlationId, string partition, CheckpointTag preTagged = null, object source = null)
+                Guid correlationId, string partition, int? lastEventNumber, TFPos? deleteEventPosition,
+                string positionStreamId, int? positionEventNumber, CheckpointTag preTagged = null, object source = null)
                 : base(correlationId, preTagged, source)
             {
                 _partition = partition;
-            }   
+                _lastEventNumber = lastEventNumber;
+                _deleteEventPosition = deleteEventPosition;
+                _positionStreamId = positionStreamId;
+                _positionEventNumber = positionEventNumber;
+            }
 
             public string Partition
             {
                 get { return _partition; }
+            }
+
+            public int? LastEventNumber
+            {
+                get { return _lastEventNumber; }
+            }
+
+            public TFPos? DeleteEventPosition
+            {
+                get { return _deleteEventPosition; }
+            }
+
+            public string PositionStreamId
+            {
+                get { return _positionStreamId; }
+            }
+
+            public int? PositionEventNumber
+            {
+                get { return _positionEventNumber; }
             }
         }
 

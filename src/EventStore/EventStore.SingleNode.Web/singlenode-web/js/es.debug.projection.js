@@ -30,7 +30,7 @@ require(['projections/Observer', 'projections/Controller'],
             observer.subscribe({
                 statusChanged: function (status) {
                     if (status.status !== "Stopped" && status.status !== "Faulted")
-                        alert("The projection must be stopped to be debugged");
+                        alert("The projection must be stopped to be debugged. " + status.status);
                     projectionStatusOk = true;
                     checkLoaded();
                 },

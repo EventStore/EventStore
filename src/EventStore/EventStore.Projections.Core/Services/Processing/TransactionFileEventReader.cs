@@ -219,7 +219,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (isStreamDeletedEvent)
                 _publisher.Publish(
                     new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
-                        EventReaderCorrelationId, positionStreamId, source: this.GetType()));
+                        EventReaderCorrelationId, positionStreamId, source: this.GetType(), lastEventNumber: -1,
+                        deleteEventPosition: resolvedEvent.OriginalPosition, positionStreamId: null,
+                        positionEventNumber: null));
         }
     }
 }

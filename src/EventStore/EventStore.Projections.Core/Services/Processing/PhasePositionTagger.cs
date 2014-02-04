@@ -25,7 +25,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
+        }
+
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionDeleted partitionDeleted)
+        {
+            throw new NotSupportedException();
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()

@@ -88,6 +88,27 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
+        public override CheckpointTag MakeCheckpointTag(
+            CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionDeleted partitionDeleted)
+        {
+            if (previous.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
+            if (partitionDeleted.DeleteEventPosition < previous.Position)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Cannot make a checkpoint tag at earlier position. '{0}' < '{1}'",
+                        partitionDeleted.DeleteEventPosition, previous.Position));
+            var byIndex = _streams.Contains(partitionDeleted.PositionStreamId);
+            //TODO: handle invalid partition deleted messages without required values
+            return byIndex
+                ? previous.UpdateEventTypeIndexPosition(
+                    partitionDeleted.DeleteEventPosition.Value, _streamToEventType[partitionDeleted.PositionStreamId],
+                    partitionDeleted.PositionEventNumber.Value)
+                : previous.UpdateEventTypeIndexPosition(partitionDeleted.DeleteEventPosition.Value);
+        }
+
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromEventTypeIndexPositions(

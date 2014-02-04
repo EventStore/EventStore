@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Standard
                 new EmittedEventEnvelope(
                     new EmittedLinkToWithRecategorization(
                         _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
-                        originalStreamId: positionStreamId, isStreamDeletedEvent: isStreamDeletedEvent))
+                        originalStreamId: positionStreamId, streamDeletedAt: isStreamDeletedEvent ? -1 : (int?) null))
             };
 
             return true;
