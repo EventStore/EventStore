@@ -169,6 +169,7 @@
     <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />
     <Compile Include="Http\StreamSecurity\SpecificationWithUsers.cs" />
     <Compile Include="Http\StreamSecurity\stream_access.cs" />
+    <Compile Include="Http\Streams\idempotency.cs" />
     <Compile Include="Http\Streams\basic.cs" />
     <Compile Include="Http\Streams\feed.cs" />
     <Compile Include="Http\Streams\SetUpFixture.cs" />
