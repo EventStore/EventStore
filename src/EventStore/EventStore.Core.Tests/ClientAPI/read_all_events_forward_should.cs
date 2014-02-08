@@ -40,34 +40,18 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class read_all_events_forward_should: SpecificationWithDirectoryPerTestFixture
+    public class read_all_events_forward_should: SpecificationWithMiniNode
     {
-        private MiniNode _node;
-        private IEventStoreConnection _conn;
         private EventData[] _testEvents;
 
-        [TestFixtureSetUp]
-        public override void TestFixtureSetUp()
+        protected override void When()
         {
-            base.TestFixtureSetUp();
-            _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-            _node.Start();
-            _conn = TestConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
             _conn.SetStreamMetadata("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
                                     new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 
             _testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
             _conn.AppendToStream("stream", ExpectedVersion.EmptyStream, _testEvents);
-        }
-
-        [TestFixtureTearDown]
-        public override void TestFixtureTearDown()
-        {
-            _conn.Close();
-            _node.Shutdown();
-            base.TestFixtureTearDown();
         }
 
         [Test, Category("LongRunning")]

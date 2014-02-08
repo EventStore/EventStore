@@ -98,6 +98,7 @@
     <Compile Include="ClientAPI\Security\overriden_user_stream_security.cs" />
     <Compile Include="ClientAPI\Security\overriden_system_stream_security.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
+    <Compile Include="ClientAPI\SpecificationWithMiniNode.cs" />
     <Compile Include="ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\read_event_should.cs" />
