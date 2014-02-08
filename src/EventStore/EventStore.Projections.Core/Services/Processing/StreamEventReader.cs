@@ -34,7 +34,6 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -125,8 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
-                            DeliverEvent(
-                                @event, @link, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
+                            DeliverEvent(message.Events[index], 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
                                 ref oldFromSequenceNumber);
                             if (CheckEnough())
                                 return;
@@ -196,28 +194,21 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId, null, safeJoinPosition, 100.0f, source: this.GetType()));
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref int sequenceNumber)
         {
             _deliveredEvents++;
 
-            EventRecord positionEvent = (link ?? @event);
+            EventRecord positionEvent = pair.OriginalEvent;
             if (positionEvent.EventNumber != sequenceNumber)
                 throw new InvalidOperationException(
                     string.Format(
                         "Event number {0} was expected in the stream {1}, but event number {2} was received",
                         sequenceNumber, _streamName, positionEvent.EventNumber));
             sequenceNumber = positionEvent.EventNumber + 1;
-            var resolvedLinkTo = positionEvent.EventStreamId != @event.EventStreamId
-                                 || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId,
-                    new ResolvedEvent(
-                        positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
-                        resolvedLinkTo, new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition),
-                        @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                        @event.Metadata, link == null ? null : link.Metadata, null, positionEvent.TimeStamp),
+                    EventReaderCorrelationId, new ResolvedEvent(pair, null),
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
         }
     }

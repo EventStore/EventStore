@@ -30,6 +30,7 @@ using System;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -55,6 +56,52 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly string PositionMetadata;
         public readonly string StreamMetadata;
 
+        public ResolvedEvent(EventStore.Core.Data.ResolvedEvent resolvedEvent, byte[] streamMetadata)
+        {
+            var positionEvent = resolvedEvent.Link ?? resolvedEvent.Event;
+            var @event = resolvedEvent.Event;
+            _positionStreamId = positionEvent.EventStreamId;
+            _positionSequenceNumber = positionEvent.EventNumber;
+            _eventStreamId = @event.EventStreamId;
+            _eventSequenceNumber = @event.EventNumber;
+            _resolvedLinkTo = positionEvent != @event;
+            _position = resolvedEvent.OriginalPosition ?? new TFPos(-1, positionEvent.LogPosition);
+            EventId = @event.EventId;
+            EventType = @event.EventType;
+            IsJson = (@event.Flags & PrepareFlags.IsJson) != 0;
+            Timestamp = positionEvent.TimeStamp;
+
+            //TODO: handle utf-8 conversion exception
+            Data = @event.Data != null ? Helper.UTF8NoBom.GetString(@event.Data) : null;
+            Metadata = @event.Metadata != null ? Helper.UTF8NoBom.GetString(@event.Metadata) : null;
+            PositionMetadata = _resolvedLinkTo
+                ? (positionEvent.Metadata != null ? Helper.UTF8NoBom.GetString(positionEvent.Metadata) : null)
+                : null;
+            StreamMetadata = streamMetadata != null ? Helper.UTF8NoBom.GetString(streamMetadata) : null;
+
+            TFPos originalPosition;
+            if (_resolvedLinkTo)
+            {
+                if (positionEvent.Metadata != null && positionEvent.Metadata.Length > 0)
+                {
+                    var parsedPosition =
+                        positionEvent.Metadata.ParseCheckpointTagJson().Position;
+                    originalPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
+                                           ? parsedPosition
+                                           : new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
+                }
+                else
+                    originalPosition = new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
+            }
+            else
+            {
+                originalPosition = resolvedEvent.OriginalPosition ?? new TFPos(-1, positionEvent.LogPosition); 
+            }
+            _originalPosition = originalPosition;
+
+        }
+
+
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
             bool resolvedLinkTo, TFPos position, TFPos originalPosition, Guid eventId, string eventType, bool isJson, byte[] data,
@@ -74,8 +121,8 @@ namespace EventStore.Projections.Core.Services.Processing
             Timestamp = timestamp;
 
             //TODO: handle utf-8 conversion exception
-            Data = data != null ? Helper.UTF8NoBom.GetString(data): null;
-            Metadata = metadata != null ? Helper.UTF8NoBom.GetString(metadata): null;
+            Data = data != null ? Helper.UTF8NoBom.GetString(data) : null;
+            Metadata = metadata != null ? Helper.UTF8NoBom.GetString(metadata) : null;
             PositionMetadata = positionMetadata != null ? Helper.UTF8NoBom.GetString(positionMetadata) : null;
             StreamMetadata = streamMetadata != null ? Helper.UTF8NoBom.GetString(streamMetadata) : null;
         }

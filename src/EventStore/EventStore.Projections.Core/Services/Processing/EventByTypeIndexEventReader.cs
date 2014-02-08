@@ -37,7 +37,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -51,15 +50,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private class PendingEvent
         {
-            public readonly EventRecord Event;
-            public readonly EventRecord PositionEvent;
+            public readonly EventStore.Core.Data.ResolvedEvent ResolvedEvent;
             public readonly float Progress;
             public readonly TFPos TfPosition;
 
-            public PendingEvent(EventRecord @event, EventRecord positionEvent, TFPos tfPosition, float progress)
+            public PendingEvent(EventStore.Core.Data.ResolvedEvent resolvedEvent, TFPos tfPosition, float progress)
             {
-                Event = @event;
-                PositionEvent = positionEvent;
+                ResolvedEvent = resolvedEvent;
                 Progress = progress;
                 TfPosition = tfPosition;
             }
@@ -338,7 +335,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     var tfPosition =
                         positionEvent.Metadata.ParseCheckpointTagJson().Position;
                     var progress = 100.0f*(link ?? @event).EventNumber/message.LastEventNumber;
-                    var pendingEvent = new PendingEvent(@event, positionEvent, tfPosition, progress);
+                    var pendingEvent = new PendingEvent(message.Events[index], tfPosition, progress);
                     queue.Enqueue(pendingEvent);
                 }
             }
@@ -459,8 +456,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (!anyEof || BeforeTheLastKnownIndexCheckpoint(minPosition))
                     {
                         var minHead = _buffers[minStreamId].Dequeue();
-                        DeliverEventRetrievedByIndex(
-                            minHead.Event, minHead.PositionEvent, minHead.Progress, minPosition);
+                        DeliverEventRetrievedByIndex(minHead.ResolvedEvent, minHead.Progress, minPosition);
                     }
                     else
                         return; // no safe events to deliver
@@ -524,15 +520,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _reader.PublishIORequest(delay, readEventsForward, corrId);
             }
 
-            private void DeliverEventRetrievedByIndex(
-                EventRecord @event, EventRecord positionEvent, float progress, TFPos position)
+            private void DeliverEventRetrievedByIndex(EventStore.Core.Data.ResolvedEvent pair, float progress, TFPos position)
             {
                 //TODO: add event sequence validation for inside the index stream
-                var resolvedEvent = new ResolvedEvent(
-                    positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
-                    true, new TFPos(-1, positionEvent.LogPosition), position, @event.EventId, @event.EventType,
-                    (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata, positionEvent.Metadata, null,
-                    positionEvent.TimeStamp);
+                var resolvedEvent = new ResolvedEvent(pair, null);
                 DeliverEvent(progress, resolvedEvent, position);
             }
 
@@ -640,14 +631,13 @@ namespace EventStore.Projections.Core.Services.Processing
                                 { // ignore data just update positions
                                     _reader.UpdateNextStreamPosition(
                                         @event.Link.EventStreamId, @event.Link.EventNumber + 1);
-                                    DeliverEventRetrievedFromTf(
+/*                                    DeliverEventRetrievedFromTf(@event,
                                         @event.Link, 100.0f*@event.Link.LogPosition/message.TfLastCommitPosition,
-                                        @event.OriginalPosition.Value);
+                                        @event.OriginalPosition.Value);*/
                                 }
                                 else if (byEvent)
                                 {
-                                    DeliverEventRetrievedFromTf(
-                                        @event.Event, 100.0f*@event.Event.LogPosition/message.TfLastCommitPosition,
+                                    DeliverEventRetrievedFromTf(@event, 100.0f*@event.Event.LogPosition/message.TfLastCommitPosition,
                                         @event.OriginalPosition.Value);
                                 }
                                 if (_reader.CheckEnough())
@@ -693,12 +683,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: check was is passed here
             }
 
-            private void DeliverEventRetrievedFromTf(EventRecord @event, float progress, TFPos position)
+            private void DeliverEventRetrievedFromTf(EventStore.Core.Data.ResolvedEvent pair, float progress, TFPos position)
             {
-                var resolvedEvent = new ResolvedEvent(
-                    @event.EventStreamId, @event.EventNumber, @event.EventStreamId, @event.EventNumber, false, position,
-                    position, @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                    @event.Metadata, null, null, @event.TimeStamp);
+                var resolvedEvent = new ResolvedEvent(pair, null);
 
                 DeliverEvent(progress, resolvedEvent, position);
             }

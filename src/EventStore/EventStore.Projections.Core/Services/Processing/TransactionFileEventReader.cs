@@ -34,7 +34,6 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 
@@ -185,35 +184,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format(
                         "ReadFromTF returned events in incorrect order.  Last known position is: {0}.  Received position is: {1}",
                         currentFrom, receivedPosition));
-            TFPos originalPosition;
-            if (@event.IsResolved)
-            {
-                if (positionEvent.Metadata != null && positionEvent.Metadata.Length > 0)
-                {
-                    var parsedPosition =
-                        positionEvent.Metadata.ParseCheckpointTagJson().Position;
-                    originalPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
-                                           ? parsedPosition
-                                           : new TFPos(-1, @event.OriginalEvent.LogPosition);
-                }
-                else
-                    originalPosition = new TFPos(-1, @event.OriginalEvent.LogPosition);
-            }
-            else
-            {
-                originalPosition = receivedPosition;
-            }
 
-            var resolvedEvent = new ResolvedEvent(
-                positionEvent.EventStreamId, positionEvent.EventNumber, targetEvent.EventStreamId,
-                targetEvent.EventNumber, linkEvent != null, receivedPosition,
-                originalPosition, targetEvent.EventId, targetEvent.EventType,
-                (targetEvent.Flags & PrepareFlags.IsJson) != 0, targetEvent.Data, targetEvent.Metadata,
-                linkEvent == null ? null : linkEvent.Metadata, null, positionEvent.TimeStamp);
+            var resolvedEvent = new ResolvedEvent(@event, null);
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId,
-                    resolvedEvent,
+                    EventReaderCorrelationId, resolvedEvent,
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
                     100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
 

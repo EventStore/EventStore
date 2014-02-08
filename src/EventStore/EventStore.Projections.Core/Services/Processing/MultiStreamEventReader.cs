@@ -36,7 +36,6 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 
@@ -54,8 +53,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         // event, link, progress
         // null element in a queue means tream deleted 
-        private readonly Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>> _buffers =
-            new Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>>();
+        private readonly Dictionary<string, Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>> _buffers =
+            new Dictionary<string, Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>>();
 
         private const int _maxReadCount = 111;
         private long? _safePositionToJoin;
@@ -166,8 +165,8 @@ namespace EventStore.Projections.Core.Services.Processing
                             EventRecord positionEvent = (link ?? @event);
                             UpdateSafePositionToJoin(
                                 positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
-                            var itemToEnqueue = Tuple.Create(
-                                @event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber);
+                            Tuple<EventStore.Core.Data.ResolvedEvent, float> itemToEnqueue = Tuple.Create(message.Events[index],
+                                100.0f*(link ?? @event).EventNumber/message.LastEventNumber);
                             EnqueueItem(itemToEnqueue, positionEvent.EventStreamId);
                         }
                     }
@@ -185,12 +184,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void EnqueueItem(Tuple<EventRecord, EventRecord, float> itemToEnqueue, string streamId)
+        private void EnqueueItem(Tuple<EventStore.Core.Data.ResolvedEvent, float> itemToEnqueue, string streamId)
         {
-            Queue<Tuple<EventRecord, EventRecord, float>> queue;
+            Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>> queue;
             if (!_buffers.TryGetValue(streamId, out queue))
             {
-                queue = new Queue<Tuple<EventRecord, EventRecord, float>>();
+                queue = new Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>();
                 _buffers.Add(streamId, queue);
             }
             //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
@@ -248,7 +247,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 }
                 var minHead = _buffers[minStreamId].Dequeue();
-                DeliverEvent(minHead.Item1, minHead.Item2, minHead.Item3);
+                DeliverEvent(minHead.Item1, minHead.Item2);
                 if (CheckEnough())
                     return;
                 if (_buffers[minStreamId].Count == 0)
@@ -275,7 +274,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_eventsRequested.Contains(stream))
                 return;
-            Queue<Tuple<EventRecord, EventRecord, float>> queue;
+            Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>> queue;
             if (_buffers.TryGetValue(stream, out queue) && queue.Count > 0)
                 return;
             _eventsRequested.Add(stream);
@@ -309,9 +308,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _safePositionToJoin = _preparePositions.Min(v => v.Value.GetValueOrDefault());
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord positionEvent, float progress)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress)
         {
             _deliveredEvents ++;
+            var positionEvent = pair.OriginalEvent;
             string streamId = positionEvent.EventStreamId;
             int fromPosition = _fromPositions.Streams[streamId];
             if (positionEvent.EventNumber != fromPosition)
@@ -320,16 +320,10 @@ namespace EventStore.Projections.Core.Services.Processing
                         "Event number {0} was expected in the stream {1}, but event number {2} was received",
                         fromPosition, streamId, positionEvent.EventNumber));
             _fromPositions = _fromPositions.UpdateStreamPosition(streamId, positionEvent.EventNumber + 1);
-            var resolvedLinkTo = streamId != @event.EventStreamId || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId,
-                    new ResolvedEvent(
-                        streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
-                        new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition), @event.EventId,
-                        @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata,
-                        @event == positionEvent ? null : positionEvent.Metadata, null, positionEvent.TimeStamp),
+                    EventReaderCorrelationId, new ResolvedEvent(pair, null),
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
         }
 
@@ -343,9 +337,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return GetLastCommitPositionFrom(message);
         }
 
-        private long GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
+        private long GetItemPosition(Tuple<EventStore.Core.Data.ResolvedEvent, float> head)
         {
-            return head.Item2.LogPosition;
+            return head.Item1.OriginalEvent.LogPosition;
         }
 
         private long GetMaxPosition()

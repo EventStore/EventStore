@@ -35,7 +35,6 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -171,7 +170,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 case ReadStreamResult.Success:
                     foreach (var e in completed.Events)
                     {
-                        DeliverEvent(e.Event, e.Link, 17.7f);
+                        DeliverEvent(e, 17.7f);
                         if (CheckEnough())
                             return;
                     }
@@ -198,25 +197,18 @@ namespace EventStore.Projections.Core.Services.Processing
             _catalogEof = true;
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord link, float progress)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress)
         {
             _deliveredEvents++;
 
-            EventRecord positionEvent = (link ?? @event);
+            EventRecord positionEvent = pair.OriginalEvent;
             if (positionEvent.LogPosition > _limitingCommitPosition)
                 return;
 
-            var resolvedLinkTo = positionEvent.EventStreamId != @event.EventStreamId
-                                 || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId,
-                    new ResolvedEvent(
-                        positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
-                        resolvedLinkTo, new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition),
-                        @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                        @event.Metadata, link == null ? null : link.Metadata, null, positionEvent.TimeStamp),
+                    EventReaderCorrelationId, new ResolvedEvent(pair, null),
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: GetType(),
                     preTagged:
                         CheckpointTag.FromByStreamPosition(
