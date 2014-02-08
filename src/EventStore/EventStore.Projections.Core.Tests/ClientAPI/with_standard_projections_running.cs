@@ -28,7 +28,6 @@
 
 using System;
 using System.Text;
-using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Services.Processing;
@@ -56,13 +55,15 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                 Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
                 Assert.AreEqual(3, slice.Events.Length);
-                //NOTE: the following ?? is required as we cannot resolve link to the tombstone of a deleted stream
-                var deletedLinkMetadata = (slice.Events[2].Link ?? slice.Events[2].Event).Metadata;
+                var deletedLinkMetadata = slice.Events[2].Link.Metadata;
                 Assert.IsNotNull(deletedLinkMetadata);
 
                 var checkpointTag = Encoding.UTF8.GetString(deletedLinkMetadata).ParseCheckpointExtraJson();
                 JToken deletedValue;
                 Assert.IsTrue(checkpointTag.TryGetValue("$deleted", out deletedValue));
+                JToken originalStream;
+                Assert.IsTrue(checkpointTag.TryGetValue("$o", out originalStream));
+                Assert.AreEqual("cat-1", ((JValue)originalStream).Value);
 
             }
 

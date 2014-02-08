@@ -175,7 +175,10 @@ namespace EventStore.Projections.Core.Services.Processing
             EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, TFPos currentFrom)
         {
             _deliveredEvents++;
-            EventRecord positionEvent = (@event.Link ?? @event.Event);
+            EventRecord linkEvent = @event.Link;
+            EventRecord targetEvent = @event.Event ?? linkEvent;
+            EventRecord positionEvent = (linkEvent ?? targetEvent);
+
             TFPos receivedPosition = @event.OriginalPosition.Value;
             if (currentFrom > receivedPosition)
                 throw new Exception(
@@ -202,11 +205,11 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
             var resolvedEvent = new ResolvedEvent(
-                positionEvent.EventStreamId, positionEvent.EventNumber, @event.Event.EventStreamId,
-                @event.Event.EventNumber, @event.Link != null, receivedPosition,
-                originalPosition, @event.Event.EventId, @event.Event.EventType,
-                (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata,
-                @event.Link == null ? null : @event.Link.Metadata, null, positionEvent.TimeStamp);
+                positionEvent.EventStreamId, positionEvent.EventNumber, targetEvent.EventStreamId,
+                targetEvent.EventNumber, linkEvent != null, receivedPosition,
+                originalPosition, targetEvent.EventId, targetEvent.EventType,
+                (targetEvent.Flags & PrepareFlags.IsJson) != 0, targetEvent.Data, targetEvent.Metadata,
+                linkEvent == null ? null : linkEvent.Metadata, null, positionEvent.TimeStamp);
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId,

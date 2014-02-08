@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Standard
                         _indexStreamPrefix + indexedEventType, Guid.NewGuid(), "$>", false,
                         data.EventSequenceNumber + "@" + positionStreamId,
                         isStreamDeletedEvent
-                            ? new ExtraMetaData(new Dictionary<string, JRaw> {{"$deleted", new JRaw(true)}})
+                            ? new ExtraMetaData(new Dictionary<string, JRaw> {{"$deleted", new JRaw(-1)}})
                             : null, eventPosition, expectedTag: null))
             };
 
