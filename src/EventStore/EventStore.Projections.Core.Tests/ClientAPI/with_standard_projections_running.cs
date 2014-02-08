@@ -31,15 +31,54 @@ using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Core.Bus;
+using EventStore.Projections.Core.Services.Processing;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI
 {
     namespace with_standard_projections_running
     {
+        public abstract class when_deleting_stream_base : specification_with_standard_projections_runnning
+        {
+            [Test, Category("Network")]
+            public void streams_stream_exists()
+            {
+                Assert.AreEqual(
+                    SliceReadStatus.Success, _conn.ReadStreamEventsForward("$streams", 0, 10, false, _admin).Status);
+
+            }
+
+            [Test, Category("Network")]
+            public void deleted_stream_events_are_indexed()
+            {
+                var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
+                Assert.AreEqual(SliceReadStatus.Success, slice.Status);
+
+                Assert.AreEqual(3, slice.Events.Length);
+                //NOTE: the following ?? is required as we cannot resolve link to the tombstone of a deleted stream
+                var deletedLinkMetadata = (slice.Events[2].Link ?? slice.Events[2].Event).Metadata;
+                Assert.IsNotNull(deletedLinkMetadata);
+
+                var checkpointTag = Encoding.UTF8.GetString(deletedLinkMetadata).ParseCheckpointExtraJson();
+                JToken deletedValue;
+                Assert.IsTrue(checkpointTag.TryGetValue("$deleted", out deletedValue));
+
+            }
+
+            [Test, Category("Network")]
+            public void deleted_stream_events_are_indexed_as_deleted()
+            {
+                var slice = _conn.ReadStreamEventsForward("$et-$deleted", 0, 10, true, _admin);
+                Assert.AreEqual(SliceReadStatus.Success, slice.Status);
+
+                Assert.AreEqual(1, slice.Events.Length);
+
+            }
+        }
 
         [TestFixture, Category("ClientAPI")]
-        public class when_hard_deleting_stream : specification_with_standard_projections_runnning
+        public class when_hard_deleting_stream : when_deleting_stream_base
         {
             protected override void When()
             {
@@ -55,40 +94,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                 _conn.DeleteStream("cat-1", r2.NextExpectedVersion, true, _admin);
                 QueueStatsCollector.WaitIdle();
             }
-
-            [Test, Category("Network")]
-            public void streams_stream_exists()
-            {
-                Assert.AreEqual(
-                    SliceReadStatus.Success, _conn.ReadStreamEventsForward("$streams", 0, 10, false, _admin).Status);
-
-            }
-
-            [Test, Category("Network")]
-            public void hard_deleted_stream_events_are_indexed()
-            {
-                var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
-                Assert.AreEqual(SliceReadStatus.Success, slice.Status);
-
-                Assert.AreEqual(3, slice.Events.Length);
-
-            }
-
-            [Test, Category("Network")]
-            public void hard_deleted_stream_events_are_indexed_as_deleted()
-            {
-                var slice = _conn.ReadStreamEventsForward("$et-$deleted", 0, 10, true, _admin);
-                Assert.AreEqual(SliceReadStatus.Success, slice.Status);
-
-                Assert.AreEqual(1, slice.Events.Length);
-
-            }
-
-
         }
 
         [TestFixture, Category("ClientAPI")]
-        public class when_soft_deleting_stream : specification_with_standard_projections_runnning
+        public class when_soft_deleting_stream : when_deleting_stream_base
         {
             protected override void When()
             {
@@ -103,34 +112,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
                 _conn.DeleteStream("cat-1", r2.NextExpectedVersion, false, _admin);
                 QueueStatsCollector.WaitIdle();
-            }
-
-            [Test, Category("Network")]
-            public void streams_stream_exists()
-            {
-                Assert.AreEqual(
-                    SliceReadStatus.Success, _conn.ReadStreamEventsForward("$streams", 0, 10, false, _admin).Status);
-
-            }
-
-            [Test, Category("Network")]
-            public void soft_deleted_stream_events_are_indexed()
-            {
-                var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
-                Assert.AreEqual(SliceReadStatus.Success, slice.Status);
-
-                Assert.AreEqual(3, slice.Events.Length);
-
-            }
-
-            [Test, Category("Network")]
-            public void soft_deleted_stream_events_are_indexed_as_deleted()
-            {
-                var slice = _conn.ReadStreamEventsForward("$et-$deleted", 0, 10, true, _admin);
-                Assert.AreEqual(SliceReadStatus.Success, slice.Status);
-
-                Assert.AreEqual(1, slice.Events.Length);
-
             }
 
         }
