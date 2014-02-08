@@ -177,7 +177,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     return;
                 _reader._lastEventPosition = resolvedEvent.OriginalPosition;
                 _reader._deliveredEvents ++;
-
+                //TODO: this is incomplete.  where reading from TF we need to handle actual deletes
                 if (resolvedEvent.PositionStreamId == "$et-$deleted")
                 {
                     var deletedPartition = SystemStreams.IsMetastream(resolvedEvent.EventStreamId)
@@ -631,9 +631,13 @@ namespace EventStore.Projections.Core.Services.Processing
                                 { // ignore data just update positions
                                     _reader.UpdateNextStreamPosition(
                                         @event.Link.EventStreamId, @event.Link.EventNumber + 1);
-/*                                    DeliverEventRetrievedFromTf(@event,
-                                        @event.Link, 100.0f*@event.Link.LogPosition/message.TfLastCommitPosition,
-                                        @event.OriginalPosition.Value);*/
+                                    // recover unresolved link event
+                                    var unresolvedLinkEvent = new EventStore.Core.Data.ResolvedEvent(
+                                        @event.Link, @event.OriginalPosition.Value.CommitPosition);
+                                    DeliverEventRetrievedFromTf(
+                                        unresolvedLinkEvent,
+                                        100.0f*@event.Event.LogPosition/message.TfLastCommitPosition,
+                                        @event.OriginalPosition.Value);
                                 }
                                 else if (byEvent)
                                 {
