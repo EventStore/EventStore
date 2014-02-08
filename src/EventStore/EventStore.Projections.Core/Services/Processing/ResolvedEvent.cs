@@ -62,18 +62,18 @@ namespace EventStore.Projections.Core.Services.Processing
             var @event = resolvedEvent.Event;
             _positionStreamId = positionEvent.EventStreamId;
             _positionSequenceNumber = positionEvent.EventNumber;
-            _eventStreamId = @event.EventStreamId;
-            _eventSequenceNumber = @event.EventNumber;
+            _eventStreamId = @event != null ? @event.EventStreamId : null;
+            _eventSequenceNumber = @event != null ? @event.EventNumber : -1;
             _resolvedLinkTo = positionEvent != @event;
             _position = resolvedEvent.OriginalPosition ?? new TFPos(-1, positionEvent.LogPosition);
-            EventId = @event.EventId;
-            EventType = @event.EventType;
-            IsJson = (@event.Flags & PrepareFlags.IsJson) != 0;
+            EventId = @event != null ? @event.EventId : Guid.Empty;
+            EventType = @event != null ? @event.EventType : null;
+            IsJson = @event != null && (@event.Flags & PrepareFlags.IsJson) != 0;
             Timestamp = positionEvent.TimeStamp;
 
             //TODO: handle utf-8 conversion exception
-            Data = @event.Data != null ? Helper.UTF8NoBom.GetString(@event.Data) : null;
-            Metadata = @event.Metadata != null ? Helper.UTF8NoBom.GetString(@event.Metadata) : null;
+            Data = @event != null && @event.Data != null ? Helper.UTF8NoBom.GetString(@event.Data) : null;
+            Metadata = @event != null && @event.Metadata != null ? Helper.UTF8NoBom.GetString(@event.Metadata) : null;
             PositionMetadata = _resolvedLinkTo
                 ? (positionEvent.Metadata != null ? Helper.UTF8NoBom.GetString(positionEvent.Metadata) : null)
                 : null;
