@@ -329,6 +329,8 @@ namespace EventStore.Core.Services
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
+                // return unresolved link
+                return new ResolvedEvent(null, eventRecord, commitPosition);
             }
             return new ResolvedEvent(eventRecord, null, commitPosition);
         }

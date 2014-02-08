@@ -443,6 +443,8 @@ namespace EventStore.Core.Services.Storage
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
+                // return unresolved link
+                return new ResolvedEvent(null, eventRecord);
             }
             return new ResolvedEvent(eventRecord);
         }
