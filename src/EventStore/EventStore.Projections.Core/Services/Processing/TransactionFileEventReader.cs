@@ -193,7 +193,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
 
             string positionStreamId;
-            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(resolvedEvent, out positionStreamId);
+            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                resolvedEvent.PositionStreamId, resolvedEvent.EventType, resolvedEvent.Data, out positionStreamId);
             if (isStreamDeletedEvent)
                 _publisher.Publish(
                     new ReaderSubscriptionMessage.EventReaderPartitionDeleted(

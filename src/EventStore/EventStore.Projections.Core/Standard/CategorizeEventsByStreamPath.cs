@@ -90,7 +90,8 @@ namespace EventStore.Projections.Core.Standard
             emittedEvents = null;
             newState = null;
             string positionStreamId;
-            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(data, out positionStreamId);
+            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                data.PositionStreamId, data.EventType, data.Data, out positionStreamId);
 
             var category = _streamCategoryExtractor.GetCategoryByStreamId(positionStreamId);
             if (category == null)

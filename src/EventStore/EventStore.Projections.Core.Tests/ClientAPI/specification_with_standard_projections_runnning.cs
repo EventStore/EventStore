@@ -63,7 +63,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 #endif
             _projections = new ProjectionsSubsystem(1, runProjections: RunProjections.All);
             _node = new MiniNode(
-                PathName, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] {_projections});
+                PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
+                subsystems: new ISubsystem[] {_projections});
             _node.Start();
 
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);

@@ -101,7 +101,8 @@ namespace EventStore.Projections.Core.Standard
                 return false;
 
             string positionStreamId;
-            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(data, out positionStreamId);
+            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                data.PositionStreamId, data.EventType, data.Data, out positionStreamId);
             if (isStreamDeletedEvent)
                 indexedEventType = "$deleted";
 

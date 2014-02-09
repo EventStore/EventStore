@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,50 +24,22 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-namespace EventStore.Core.Data
+// 
+
+using EventStore.Common.Utils;
+
+namespace EventStore.Projections.Core.Utils
 {
-    public struct ResolvedEvent
+    public static class EncodingExtensions
     {
-        public static readonly ResolvedEvent[] EmptyArray = new ResolvedEvent[0];
-
-        public readonly EventRecord Event;
-        public readonly EventRecord Link;
-        public EventRecord OriginalEvent { get { return Link ?? Event; } }
-
-        /// <summary>
-        /// Position of the OriginalEvent (unresolved link or event) if available
-        /// </summary>
-        public readonly TFPos? OriginalPosition;
-        public string OriginalStreamId { get { return OriginalEvent.EventStreamId; } }
-        public int OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
-
-        public ResolvedEvent(EventRecord @event, EventRecord link)
+        public static string FromUtf8(this byte[] self)
         {
-            Event = @event;
-            Link = link;
-            OriginalPosition = null;
+            return Helper.UTF8NoBom.GetString(self);
         }
 
-        public ResolvedEvent(EventRecord @event, EventRecord link, long commitPosition)
+        public static byte[] ToUtf8(this string self)
         {
-            Event = @event;
-            Link = link;
-            OriginalPosition = new TFPos(commitPosition, (link ?? @event).LogPosition);
-        }
-
-        public ResolvedEvent(EventRecord @event)
-        {
-            Event = @event;
-            Link = null;
-            OriginalPosition = null;
-        }
-
-        public ResolvedEvent(EventRecord @event, long commitPosition)
-        {
-            Event = @event;
-            Link = null;
-            OriginalPosition = new TFPos(commitPosition, @event.LogPosition);
+            return Helper.UTF8NoBom.GetBytes(self);
         }
     }
 }

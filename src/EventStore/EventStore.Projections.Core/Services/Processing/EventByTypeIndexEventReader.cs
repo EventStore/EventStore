@@ -38,6 +38,8 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Standard;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -178,17 +180,19 @@ namespace EventStore.Projections.Core.Services.Processing
                 _reader._lastEventPosition = resolvedEvent.OriginalPosition;
                 _reader._deliveredEvents ++;
                 //TODO: this is incomplete.  where reading from TF we need to handle actual deletes
-                if (resolvedEvent.PositionStreamId == "$et-$deleted")
+                string partitionStreamId;
+                var isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                    resolvedEvent.EventStreamId, resolvedEvent.EventType, resolvedEvent.Data, out partitionStreamId);
+                if (isDeletedStreamEvent)
                 {
-                    var deletedPartition = SystemStreams.IsMetastream(resolvedEvent.EventStreamId)
-                        ? SystemStreams.OriginalStreamOf(resolvedEvent.EventStreamId)
-                        : resolvedEvent.EventStreamId;
+                    var deletedPartition = partitionStreamId;
 
                     _reader._publisher.Publish(
                         //TODO: publish both link and event data
                         new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
                             _reader.EventReaderCorrelationId, deletedPartition, source: this.GetType(),
-                            lastEventNumber: -1, deleteEventPosition: position, positionStreamId: "$et-$deleted",
+                            lastEventNumber: -1, deleteEventPosition: position,
+                            positionStreamId: resolvedEvent.PositionStreamId,
                             positionEventNumber: resolvedEvent.PositionSequenceNumber));
                 }
                 else
@@ -624,25 +628,31 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             foreach (var @event in message.Events)
                             {
-                                var byStream = @event.Link != null
-                                               && _streamToEventType.ContainsKey(@event.Link.EventStreamId);
-                                var byEvent = @event.Link == null && _eventTypes.Contains(@event.Event.EventType);
+                                var link = @event.Link;
+                                var data = @event.Event;
+                                var byStream = link != null && _streamToEventType.ContainsKey(link.EventStreamId);
+                                string adjustedPositionStreamId;
+                                var isDeleteStreamEvent =
+                                    StreamDeletedHelper.IsStreamDeletedEvent(
+                                        @event.OriginalStreamId, @event.OriginalEvent.EventType,
+                                        @event.OriginalEvent.Data, out adjustedPositionStreamId);
+                                var eventType = isDeleteStreamEvent ? "$deleted" : data.EventType;
+                                var byEvent = link == null && _eventTypes.Contains(eventType);
+                                var originalTfPosition = @event.OriginalPosition.Value;
                                 if (byStream)
                                 { // ignore data just update positions
-                                    _reader.UpdateNextStreamPosition(
-                                        @event.Link.EventStreamId, @event.Link.EventNumber + 1);
+                                    _reader.UpdateNextStreamPosition(link.EventStreamId, link.EventNumber + 1);
                                     // recover unresolved link event
                                     var unresolvedLinkEvent = new EventStore.Core.Data.ResolvedEvent(
-                                        @event.Link, @event.OriginalPosition.Value.CommitPosition);
+                                        link, originalTfPosition.CommitPosition);
                                     DeliverEventRetrievedFromTf(
-                                        unresolvedLinkEvent,
-                                        100.0f*@event.Event.LogPosition/message.TfLastCommitPosition,
-                                        @event.OriginalPosition.Value);
+                                        unresolvedLinkEvent, 100.0f*link.LogPosition/message.TfLastCommitPosition,
+                                        originalTfPosition);
                                 }
                                 else if (byEvent)
                                 {
-                                    DeliverEventRetrievedFromTf(@event, 100.0f*@event.Event.LogPosition/message.TfLastCommitPosition,
-                                        @event.OriginalPosition.Value);
+                                    DeliverEventRetrievedFromTf(
+                                        @event, 100.0f*data.LogPosition/message.TfLastCommitPosition, originalTfPosition);
                                 }
                                 if (_reader.CheckEnough())
                                     return;

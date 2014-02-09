@@ -323,6 +323,7 @@
     <Compile Include="Standard\StreamCategoryExtractorByLastSeparator.cs" />
     <Compile Include="Standard\StreamDeletedHelper.cs" />
     <Compile Include="Standard\StubHandler.cs" />
+    <Compile Include="Utils\EncodingExtensions.cs" />
     <Compile Include="Utils\EnumExtensions.cs" />
     <Compile Include="v8\CompiledScript.cs" />
     <Compile Include="v8\js1.cs" />
