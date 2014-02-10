@@ -453,6 +453,29 @@ namespace EventStore.Projections.Core.Services.Processing
             else return null;
         }
 
+        protected EventProcessedResult InternalPartitionDeletedProcessed(
+            string partition, CheckpointTag deletePosition,
+            PartitionState newPartitionState
+            )
+        {
+            var oldState = _partitionStateCache.GetLockedPartitionState(partition);
+            var oldSharedState = _isBiState ? _partitionStateCache.GetLockedPartitionState("") : null;
+            bool changed = oldState.IsChanged(newPartitionState);
+                           
+
+            PartitionState partitionState = null;
+            // NOTE: projectionResult cannot change independently unless projection definition has changed
+            if (changed)
+            {
+                var lockPartitionStateAt = partition != "" ? deletePosition : null;
+                partitionState = newPartitionState;
+                _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
+            }
+            return new EventProcessedResult(
+                partition, deletePosition, oldState, partitionState, oldSharedState, null, null, Guid.Empty, null,
+                isPartitionTombstone: true);
+        }
+
         public void BeginGetPartitionStateAt(
             string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted, bool lockLoaded)
         {

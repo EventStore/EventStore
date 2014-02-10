@@ -54,5 +54,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 ? eventStreamId.Substring("$$".Length)
                 : eventStreamId;
         }
+
+        public override bool EventReaderBasePartitionDeletedIsSupported()
+        {
+            return true;
+        }
     }
 }

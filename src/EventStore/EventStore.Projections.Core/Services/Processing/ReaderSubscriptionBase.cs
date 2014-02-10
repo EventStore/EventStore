@@ -44,8 +44,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _stopOnEof;
         private readonly int? _stopAfterNEvents;
         private readonly EventFilter _eventFilter;
-        private readonly PositionTagger _positionTagger;
-        private readonly PositionTracker _positionTracker;
+        protected readonly PositionTagger _positionTagger;
+        protected readonly PositionTracker _positionTracker;
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
@@ -152,11 +152,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
         }
 
-        protected void PublishPartitionDeleted(string partition)
+        protected void PublishPartitionDeleted(string partition, CheckpointTag deletePosition)
         {
             _publisher.Publish(
                 new EventReaderSubscriptionMessage.PartitionDeleted(
-                    _subscriptionId, partition, _subscriptionMessageSequenceNumber++));
+                    _subscriptionId, deletePosition, partition, _subscriptionMessageSequenceNumber++));
         }
 
         protected void PublishStartingAt(long startingLastCommitPosition)

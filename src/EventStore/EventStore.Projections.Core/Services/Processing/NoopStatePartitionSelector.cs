@@ -35,5 +35,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return "";
         }
+
+        public override bool EventReaderBasePartitionDeletedIsSupported()
+        {
+            return false;
+        }
     }
 }

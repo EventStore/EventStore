@@ -245,6 +245,7 @@
     <Compile Include="Services\Processing\ParallelQueryMasterReaderStrategy.cs" />
     <Compile Include="Services\Processing\ParallelQueryProcessingStrategy.cs" />
     <Compile Include="Services\Processing\PartitionCompletedWorkItem.cs" />
+    <Compile Include="Services\Processing\PartitionDeletedWorkItem.cs" />
     <Compile Include="Services\Processing\PartitionState.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PartitionStateUpdateManager.cs" />

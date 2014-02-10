@@ -111,7 +111,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _queuePendingEvents.Enqueue(workItem);
         }
 
-        public void InitializeQueue(CheckpointTag zeroCheckpointTag)
+        public void InitializeQueue(CheckpointTag startingPosition)
         {
             _subscriptionPaused = false;
             _unsubscribed = false;
@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _queuePendingEvents.Initialize();
 
-            _lastEnqueuedEventTag = zeroCheckpointTag;
+            _lastEnqueuedEventTag = startingPosition;
             _justInitialized = true;
         }
 

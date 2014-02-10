@@ -56,7 +56,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
         {
-            PublishPartitionDeleted(message.Partition);
+            var deletePosition = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+            PublishPartitionDeleted(message.Partition, deletePosition);
         }
     }
 }

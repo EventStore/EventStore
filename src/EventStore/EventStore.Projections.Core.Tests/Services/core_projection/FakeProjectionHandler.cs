@@ -234,6 +234,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             }
         }
 
+        public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
+        {
+            throw new NotImplementedException();
+        }
+
         public string TransformStateToResult()
         {
             return _loadedState;

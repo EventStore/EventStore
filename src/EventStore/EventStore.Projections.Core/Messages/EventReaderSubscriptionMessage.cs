@@ -198,8 +198,9 @@ namespace EventStore.Projections.Core.Messages
             }
 
             public PartitionDeleted(
-                Guid subscriptionId, string partition, long subscriptionMessageSequenceNumber, object source = null)
-                : base(subscriptionId, null, 100.0f, subscriptionMessageSequenceNumber, source)
+                Guid subscriptionId, CheckpointTag checkpointTag, string partition,
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber, source)
             {
                 _partition = partition;
             }

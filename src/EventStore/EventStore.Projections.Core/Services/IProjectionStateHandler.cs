@@ -71,6 +71,12 @@ namespace EventStore.Projections.Core.Services
             out string newSharedState, out EmittedEventEnvelope[] emittedEvents);
 
         /// <summary>
+        /// Processes partition deleted notification and updates internal state if necessary.  
+        /// </summary>
+        /// <returns>true - if event was processed (new state must be returned) </returns>
+        bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState);
+
+        /// <summary>
         /// Transforms current state into a projection result.  Should not call any emit/linkTo etc 
         /// </summary>
         /// <returns>result JSON or NULL if current state has been skipped</returns>
