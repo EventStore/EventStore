@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
         }
 
-        [TestFixture, Category("ClientAPI")]
+        [TestFixture]
         public class when_creating : with_existing_events
         {
             protected override void When()
@@ -78,7 +78,7 @@ function count(s,e) {
 
         }
 
-        [TestFixture, Category("ClientAPI")]
+        [TestFixture]
         public class when_posting_more_events : with_existing_events
         {
             protected override void When()

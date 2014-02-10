@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EventReorderingReaderSubscription : ProjectionSubscriptionBase, IReaderSubscription
+    public class EventReorderingReaderSubscription : ReaderSubscriptionBase, IReaderSubscription
     {
         private readonly SortedList<long, ReaderSubscriptionMessage.CommittedEventDistributed> _buffer =
             new SortedList<long, ReaderSubscriptionMessage.CommittedEventDistributed>();

@@ -36,6 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class EventProcessingProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
         IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
+        IHandle<EventReaderSubscriptionMessage.PartitionDeleted>,
         IEventProcessingProjectionPhase
     {
         private readonly IProjectionStateHandler _projectionStateHandler;
@@ -82,6 +83,27 @@ namespace EventStore.Projections.Core.Services.Processing
                 CheckpointTag eventTag = message.CheckpointTag;
                 var committedEventWorkItem = new CommittedEventWorkItem(this, message, _statePartitionSelector);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
+                if (_state == PhaseState.Running) // prevent processing mostly one projection
+                    EnsureTickPending();
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.PartitionDeleted message)
+        {
+            throw new NotImplementedException();
+            //TODO:  make sure this is no longer required : if (_state != State.StateLoaded)
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                CheckpointTag eventTag = message.CheckpointTag;
+//                var committedEventWorkItem = new CommittedEventWorkItem(this, message, _statePartitionSelector);
+                //_processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 if (_state == PhaseState.Running) // prevent processing mostly one projection
                     EnsureTickPending();
             }

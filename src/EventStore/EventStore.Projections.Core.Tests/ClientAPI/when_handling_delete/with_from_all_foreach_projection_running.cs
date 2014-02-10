@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,37 +26,42 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Bus;
-using EventStore.Projections.Core.Messages;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
 {
-    public class ReaderSubscription : ReaderSubscriptionBase, IReaderSubscription
+    [TestFixture]
+    public class with_from_all_foreach_projection_running : specification_with_standard_projections_runnning
     {
-        public ReaderSubscription(
-            IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
-            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false,
-            int? stopAfterNEvents = null)
-            : base(
-                publisher, subscriptionId, @from, readerStrategy, checkpointUnhandledBytesThreshold,
-                checkpointProcessedEventsThreshold, stopOnEof, stopAfterNEvents)
+        protected override void Given()
         {
+            base.Given();
+            PostEvent("stream1", "type1", "{}");
+            PostEvent("stream1", "type2", "{}");
+            PostEvent("stream2", "type1", "{}");
+            PostEvent("stream2", "type2", "{}");
+            WaitIdle();
+            PostProjection(@"
+fromAll().foreachStream().when({
+    $init: function(){return {}},
+    type1: function(s,e){},
+    type2: function(s,e){},
+    $deleted: function(s,e){throw 1; s.deleted=1;},
+}).outputState();
+");
         }
 
-        public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
+        protected override void When()
         {
-            ProcessOne(message);
+            base.When();
+            this.HardDeleteStream("stream1");
+            WaitIdle();
         }
 
-        public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
+        [Test, Category("Network")]
+        public void receives_deleted_notification()
         {
-            // ignore
-        }
-
-        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-        {
-            PublishPartitionDeleted(message.Partition);
+            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{}", "Result:{\"deleted\":1}");
         }
     }
 }

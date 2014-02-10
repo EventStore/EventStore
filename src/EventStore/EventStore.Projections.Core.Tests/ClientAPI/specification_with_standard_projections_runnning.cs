@@ -104,6 +104,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _conn.AppendToStream(stream, ExpectedVersion.Any, new[] {event_by_type_index.with_existing_events.CreateEvent(eventType, data)});
         }
 
+        protected void HardDeleteStream(string stream)
+        {
+            _conn.DeleteStream(stream, ExpectedVersion.Any, true, _admin);
+        }
+
+        protected void SoftDeleteStream(string stream)
+        {
+            _conn.DeleteStream(stream, ExpectedVersion.Any, false, _admin);
+        }
+
         protected static EventData CreateEvent(string type, string data)
         {
             return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);

@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionSubscriptionBase
+    public class ReaderSubscriptionBase
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingReaderSubscription>();
         private readonly IPublisher _publisher;
@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _subscriptionId;
         private bool _eofReached;
 
-        protected ProjectionSubscriptionBase(
+        protected ReaderSubscriptionBase(
             IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
             long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof,
             int? stopAfterNEvents)
@@ -150,6 +150,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 new EventReaderSubscriptionMessage.ProgressChanged(
                     _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
+        }
+
+        protected void PublishPartitionDeleted(string partition)
+        {
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.PartitionDeleted(
+                    _subscriptionId, partition, _subscriptionMessageSequenceNumber++));
         }
 
         protected void PublishStartingAt(long startingLastCommitPosition)

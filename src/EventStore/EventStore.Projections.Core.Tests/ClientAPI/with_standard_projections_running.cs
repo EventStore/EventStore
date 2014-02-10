@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             }
         }
 
-        [TestFixture, Category("ClientAPI")]
+        [TestFixture]
         public class when_hard_deleting_stream : when_deleting_stream_base
         {
             protected override void When()
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             }
         }
 
-        [TestFixture, Category("ClientAPI")]
+        [TestFixture]
         public class when_soft_deleting_stream : when_deleting_stream_base
         {
             protected override void When()
