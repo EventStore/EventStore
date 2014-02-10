@@ -71,13 +71,29 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _conn.Connect();
 
             _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, _admin);
-            _manager.Enable(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, _admin);
+            if (GivenStandardProjectionsRunning())
+                EnableStandardProjections();
             QueueStatsCollector.WaitIdle();
             Given();
             When();
+        }
+
+        private void EnableStandardProjections()
+        {
+            EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
+            EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
+            EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
+            EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection);
+        }
+
+        protected virtual bool GivenStandardProjectionsRunning()
+        {
+            return true;
+        }
+
+        private void EnableProjection(string name)
+        {
+            _manager.Enable(name, _admin);
         }
 
         [TestFixtureTearDown]

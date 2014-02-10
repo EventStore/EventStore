@@ -26,13 +26,19 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Threading;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
 {
     [TestFixture]
-    public class with_from_all_foreach_projection_running : specification_with_standard_projections_runnning
+    public class with_from_all_foreach_projection_running_and_no_indexing : specification_with_standard_projections_runnning
     {
+        protected override bool GivenStandardProjectionsRunning()
+        {
+            return false;
+        }
+
         protected override void Given()
         {
             base.Given();
@@ -54,6 +60,7 @@ fromAll().foreachStream().when({
         protected override void When()
         {
             base.When();
+            Thread.Sleep(1000);
             this.HardDeleteStream("stream1");
             WaitIdle();
         }
@@ -61,6 +68,7 @@ fromAll().foreachStream().when({
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
+            Thread.Sleep(1000);
             AssertStreamTail("$projections-test-projection-stream1-result", "Result:{}", "Result:{\"deleted\":1}");
         }
     }
