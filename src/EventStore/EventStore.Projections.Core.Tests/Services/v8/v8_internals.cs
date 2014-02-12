@@ -28,17 +28,13 @@
 
 using System;
 using System.IO;
-using System.Text;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Services.v8;
 using EventStore.Projections.Core.v8;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
     [TestFixture]
     public class v8_internals

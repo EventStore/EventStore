@@ -29,10 +29,11 @@
 using System;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 using EventStore.Projections.Core.v8;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
     public class when_running_a_faulting_v8_projection {
 

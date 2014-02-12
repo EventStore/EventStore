@@ -29,9 +29,10 @@
 using System;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
     [TestFixture]
     public class when_running_a_v8_projection_with_transform_by : TestFixtureWithJsProjection

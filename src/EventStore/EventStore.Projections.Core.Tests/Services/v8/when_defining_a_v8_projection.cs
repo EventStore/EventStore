@@ -27,14 +27,14 @@
 // 
 
 using System;
-using System.Collections;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
     public static class when_defining_a_v8_projection
     {

@@ -27,48 +27,38 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Services;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
     [TestFixture]
-    public class when_running_body_reflecting_v8_projection : TestFixtureWithJsProjection
+    public class when_partitioning_by_custom_rule : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
-                fromAll().when({$any: 
-                    function(state, event) {
-                        if (event.body) 
-                            return event.body; 
-                            else return {};
-                    }
+                fromAll().partitionBy(function(event){
+                    return event.body.region;
+                }).whenAny(function(event, state) {
+                    return {};
                 });
             ";
         }
 
-        [Test, Category("v8")]
-        public void process_event_should_reflect_event()
+        [Test]
+        public void get_state_partition_returns_correct_result()
         {
-            string state;
-            EmittedEventEnvelope[] emittedEvents;
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""a"":""b""}", out state, out emittedEvents);
-            Assert.AreEqual(@"{""a"":""b""}", state);
-        }
+            var result = _stateHandler.GetStatePartition(
+                CheckpointTag.FromPosition(0, 100, 50), "category",
+                new ResolvedEvent(
+                    "stream1", 0, "stream1", 0, false, new TFPos(100, 50), Guid.NewGuid(), "type1", true,
+                    @"{""region"":""Europe""}", "metadata"));
 
-        [Test, Category("v8")]
-        public void process_event_should_not_reflect_non_json_events_even_if_valid_json()
-        {
-            string state;
-            EmittedEventEnvelope[] emittedEvents;
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""a"":""b""}", out state, out emittedEvents, isJson: false);
-            Assert.AreEqual(@"{}", state);
+            Assert.AreEqual("Europe", result);
         }
 
     }

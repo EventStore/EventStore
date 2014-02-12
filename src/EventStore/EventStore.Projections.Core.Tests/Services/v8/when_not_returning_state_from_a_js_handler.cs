@@ -27,47 +27,46 @@
 // 
 
 using System;
-using System.Globalization;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
     [TestFixture]
-    public class when_running_bi_state_v8_projection : TestFixtureWithJsProjection
+    public class when_not_returning_state_from_a_js_handler : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
-                options({
-                    biState: true,
-                });
-                fromAll().foreachStream().when({
-                    type1: function(state, event) {
-                        state[0].count = state[0].count + 1;
-                        state[1].sharedCount = state[1].sharedCount + 1;
-                        log(state[0].count);
-                        log(state[1].sharedCount);
-                        return state;
-                    }});
+                fromAll().when({$any: function(state, event) {
+                    state.newValue = 'new';
+                }});
             ";
-            _state = @"{""count"": 0}";
-            _sharedState = @"{""sharedCount"": 0}";
         }
 
         [Test, Category("v8")]
-        public void process_event_counts_events()
+        public void process_event_should_return_updated_state()
         {
             string state;
-            string sharedState;
             EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(0, 10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""a"":""b""}", out state, out sharedState, out emittedEvents);
-            Assert.AreEqual(2, _logged.Count);
-            Assert.AreEqual(@"1", _logged[0]);
-            Assert.AreEqual(@"1", _logged[1]);
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category",
+                Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}", out state, out emittedEvents);
+            Assert.IsTrue(state.Contains("\"newValue\":\"new\""));
+        }
+
+        [Test, Category("v8")]
+        public void process_event_returns_true()
+        {
+            string state;
+            EmittedEventEnvelope[] emittedEvents;
+            var result = _stateHandler.ProcessEvent(
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category",
+                Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}", out state, out emittedEvents);
+
+            Assert.IsTrue(result);
         }
 
     }

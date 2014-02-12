@@ -27,58 +27,79 @@
 // 
 
 using System;
-using System.Globalization;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
+
     [TestFixture]
-    public class when_running_counting_v8_projection : TestFixtureWithJsProjection
+    public class when_running_emitting_v8_projection : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
                 fromAll().when({$any: 
                     function(state, event) {
-                        state.count = state.count + 1;
-                        log(state.count);
-                        return state;
-                    }});
+                    emit('output-stream' + event.sequenceNumber, 'emitted-event' + event.sequenceNumber, {a: JSON.parse(event.bodyRaw).a});
+                    return {};
+                }});
             ";
-            _state = @"{""count"": 0}";
         }
 
         [Test, Category("v8")]
-        public void process_event_counts_events()
+        public void process_event_returns_true()
+        {
+            string state;
+            EmittedEventEnvelope[] emittedEvents;
+            var result = _stateHandler.ProcessEvent(
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                @"{""a"":""b""}", out state, out emittedEvents);
+
+            Assert.IsTrue(result);
+        }
+
+        [Test, Category("v8")]
+        public void process_event_returns_emitted_event()
         {
             string state;
             EmittedEventEnvelope[] emittedEvents;
             _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(0, 10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(0, 20, 15), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
-                @"{""a"":""b""}", out state, out emittedEvents);
-            Assert.AreEqual(2, _logged.Count);
-            Assert.AreEqual(@"1", _logged[0]);
-            Assert.AreEqual(@"2", _logged[1]);
+
+            Assert.IsNotNull(emittedEvents);
+            Assert.AreEqual(1, emittedEvents.Length);
+            Assert.AreEqual("emitted-event0", emittedEvents[0].Event.EventType);
+            Assert.AreEqual("output-stream0", emittedEvents[0].Event.StreamId);
+            Assert.AreEqual(@"{""a"":""b""}", emittedEvents[0].Event.Data);
         }
 
         [Test, Category("v8"), Category("Manual"), Explicit]
-        public void can_handle_million_events()
+        public void can_pass_though_millions_of_events()
         {
-            for (var i = 0; i < 1000000; i++)
+            for (var i = 0; i < 100000000; i++)
             {
-                _logged.Clear();
                 string state;
                 EmittedEventEnvelope[] emittedEvents;
                 _stateHandler.ProcessEvent(
-                    "", CheckpointTag.FromPosition(0, i * 10, i * 10 - 5), "stream" + i, "type" + i, "category", Guid.NewGuid(), 0,
+                    "", CheckpointTag.FromPosition(0, i * 10 + 20, i * 10 + 10), "stream" + i, "type" + i, "category", Guid.NewGuid(), i,
                     "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
-                Assert.AreEqual(1, _logged.Count);
-                Assert.AreEqual((i + 1).ToString(CultureInfo.InvariantCulture), _logged[_logged.Count - 1]);
+
+                Assert.IsNotNull(emittedEvents);
+                Assert.AreEqual(1, emittedEvents.Length);
+                Assert.AreEqual("emitted-event" + i, emittedEvents[0].Event.EventType);
+                Assert.AreEqual("output-stream" + i, emittedEvents[0].Event.StreamId);
+                Assert.AreEqual(@"{""a"":""" + i + @"""}", emittedEvents[0].Event.Data);
+
+                if (i%10000 == 0)
+                {
+                    Teardown();
+                    Setup(); // recompile..
+                    Console.Write(".");
+                }
             }
         }
     }

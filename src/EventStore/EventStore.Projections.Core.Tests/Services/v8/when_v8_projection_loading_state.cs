@@ -27,38 +27,38 @@
 // 
 
 using System;
-using EventStore.Core.Data;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Tests.Services.v8
 {
     [TestFixture]
-    public class when_partitioning_by_custom_rule : TestFixtureWithJsProjection
+    public class when_v8_projection_loading_state : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
-                fromAll().partitionBy(function(event){
-                    return event.body.region;
-                }).whenAny(function(event, state) {
-                    return {};
+                fromAll().when({$any: 
+                    function(state, event) {
+                        return state;
+                    }
                 });
             ";
+            _state = @"{""A"":""A"",""B"":""B""}";
         }
 
-        [Test]
-        public void get_state_partition_returns_correct_result()
+        [Test, Category("v8")]
+        public void the_state_is_loaded()
         {
-            var result = _stateHandler.GetStatePartition(
-                CheckpointTag.FromPosition(0, 100, 50), "category",
-                new ResolvedEvent(
-                    "stream1", 0, "stream1", 0, false, new TFPos(100, 50), Guid.NewGuid(), "type1", true,
-                    @"{""region"":""Europe""}", "metadata"));
+            string state;
+            EmittedEventEnvelope[] emittedEvents;
+            _stateHandler.ProcessEvent(
+                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                @"{""x"":""y""}", out state, out emittedEvents);
 
-            Assert.AreEqual("Europe", result);
+            Assert.AreEqual(_state, state);
         }
-
     }
 }
