@@ -221,7 +221,17 @@ namespace EventStore.Projections.Core.Services.v8
 
         public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
         {
-            throw new NotImplementedException();
+            CheckDisposed();
+            _eventPosition = deletePosition;
+            _emittedEvents = null;
+            var newStates = _query.NotifyDeleted(
+                "", // trimming data passed to a JS 
+                new[]
+                {
+                    partition, "" /* isSoftDedleted */
+                });
+            newState = newStates;
+            return true;
         }
 
         public string TransformStateToResult()

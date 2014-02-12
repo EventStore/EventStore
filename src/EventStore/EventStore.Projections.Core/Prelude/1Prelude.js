@@ -78,6 +78,9 @@ function scope($on, $notify) {
             else if (name === "$any") {
                 eventProcessor.on_any(handlers[name]);
             }
+            else if (name === "$deleted") {
+                eventProcessor.on_deleted_notification(handlers[name]);
+            }
             else {
                 eventProcessor.on_event(name, handlers[name]);
             }
