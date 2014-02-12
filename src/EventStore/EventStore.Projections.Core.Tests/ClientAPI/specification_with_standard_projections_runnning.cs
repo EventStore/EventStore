@@ -40,6 +40,7 @@ using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI
 {
@@ -154,8 +155,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                     Assert.Fail("Stream '{0}' doe snot exist", streamId);
                     break;
                 case SliceReadStatus.Success:
-                    if (result.Events.Length < events.Length)
-                        DumpFailed("Stream does not contain enough events", streamId, result, events);
+                    var resultEventsReversed = result.Events.Reverse().ToArray();
+                    if (resultEventsReversed.Length < events.Length)
+                        DumpFailed("Stream does not contain enough events", streamId, events, result.Events);
                     else
                     {
                         for (var index = 0; index < events.Length; index++)
@@ -164,11 +166,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                             var eventType = parts[0];
                             var eventData = parts[1];
 
-                            if (result.Events[index].Event.EventType != eventType)
-                                DumpFailed("Invalid event type", streamId, result, events);
+                            if (resultEventsReversed[index].Event.EventType != eventType)
+                                DumpFailed("Invalid event type", streamId, events, resultEventsReversed);
                             else
-                                if (result.Events[index].Event.DebugDataView != eventData)
-                                    DumpFailed("Invalid event body", streamId, result, events);
+                                if (resultEventsReversed[index].Event.DebugDataView != eventData)
+                                    DumpFailed("Invalid event body", streamId, events, resultEventsReversed);
                         }
                     }
                     break;
@@ -177,15 +179,19 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         }
 
 #if DEBUG
-        private void DumpFailed(string message, string streamId, StreamEventsSlice result, string[] events)
+        private void DumpFailed(string message, string streamId, string[] events, ResolvedEvent[] resultEvents)
         {
             var expected = events.Aggregate("", (a, v) => a + ", " + v);
-            var actual = result.Events.Aggregate(
+            var actual = resultEvents.Aggregate(
                 "", (a, v) => a + ", " + v.Event.EventType + ":" + v.Event.DebugDataView);
 
+            var actualMeta = resultEvents.Aggregate(
+                "", (a, v) => a + "\r\n" + v.Event.EventType + ":" + v.Event.DebugMetadataView);
+
+
             Assert.Fail(
-                "Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n Expected events: \r\n{3}", streamId,
-                message, actual, expected);
+                "Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n Expected events: \r\n{3}\r\n\r\nActual metas:{4}", streamId,
+                message, actual, expected, actualMeta);
         }
 #endif
 

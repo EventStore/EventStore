@@ -67,7 +67,8 @@ fromAll().foreachStream().when({
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
-            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{\"a\":1}", "Result:{\"deleted\":1}");
+            AssertStreamTail(
+                "$projections-test-projection-stream1-result", "Result:{\"a\":1}", "Result:{\"a\":1,\"deleted\":1}");
         }
     }
 }
