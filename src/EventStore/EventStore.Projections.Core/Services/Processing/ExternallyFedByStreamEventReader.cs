@@ -90,11 +90,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
-            if (delay)
-                throw new NotSupportedException();
 
             if (AreEventsRequested())
                 throw new InvalidOperationException("Read operation is already in progress");
@@ -160,12 +158,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     _dataNextSequenceNumber = int.MaxValue;
                     if (completed.LastEventNumber >= 0)
                         SendPartitionDeleted(_dataStreamName, -1, null, null, null);
-                    PauseOrContinueProcessing(delay: false);
+                    PauseOrContinueProcessing();
                     break;
                 case ReadStreamResult.StreamDeleted:
                     _dataNextSequenceNumber = int.MaxValue;
                     SendPartitionDeleted(_dataStreamName, -1, null, null, null);
-                    PauseOrContinueProcessing(delay: false);
+                    PauseOrContinueProcessing();
                     break;
                 case ReadStreamResult.Success:
                     foreach (var e in completed.Events)
@@ -178,7 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _dataNextSequenceNumber = int.MaxValue;
                     else
                         _dataNextSequenceNumber = completed.NextEventNumber;
-                    PauseOrContinueProcessing(delay: false);
+                    PauseOrContinueProcessing();
                     break;
                 default:
                     throw new NotSupportedException();
@@ -189,7 +187,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _pendingStreams.Enqueue(Tuple.Create(streamId, catalogSequenceNumber));
             if (!AreEventsRequested() && !PauseRequested && !Paused)
-                RequestEvents(delay: false);
+                RequestEvents();
         }
 
         private void CompleteStreamProcessing()

@@ -50,9 +50,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
             PostProjection(@"
 fromAll().foreachStream().when({
     $init: function(){return {}},
-    type1: function(s,e){},
-    type2: function(s,e){},
-    $deleted: function(s,e){throw 1; s.deleted=1;},
+    type1: function(s,e){s.a=1},
+    type2: function(s,e){s.a=1},
+    $deleted: function(s,e){s.deleted=1;},
 }).outputState();
 ");
         }
@@ -60,7 +60,6 @@ fromAll().foreachStream().when({
         protected override void When()
         {
             base.When();
-            Thread.Sleep(1000);
             this.HardDeleteStream("stream1");
             WaitIdle();
         }
@@ -68,8 +67,7 @@ fromAll().foreachStream().when({
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
-            Thread.Sleep(1000);
-            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{}", "Result:{\"deleted\":1}");
+            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{\"a\":1}", "Result:{\"deleted\":1}");
         }
     }
 }

@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _maxReadCount = 111;
         private int _deliveredEvents;
         private long _lastPosition;
+        private bool _eof;
 
         public StreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
@@ -87,15 +88,17 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case ReadStreamResult.StreamDeleted:
+                    _eof = true;
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
-                    PauseOrContinueProcessing(delay: true);
+                    PauseOrContinueProcessing();
                     SendIdle();
                     SendPartitionDeleted(_streamName, -1, null, null, null);
                     SendEof();
                     break;
                 case ReadStreamResult.NoStream:
+                    _eof = true;
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
-                    PauseOrContinueProcessing(delay: true);
+                    PauseOrContinueProcessing();
                     SendIdle();
                     if (message.LastEventNumber >= 0)
                         SendPartitionDeleted(_streamName, message.LastEventNumber, null, null, null);
@@ -105,11 +108,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     var oldFromSequenceNumber = _fromSequenceNumber;
                     _fromSequenceNumber = message.NextEventNumber;
                     var eof = message.Events.Length == 0;
+                    _eof = eof;
                     var willDispose = eof && _stopOnEof;
 
                     if (!willDispose)
                     {
-                        PauseOrContinueProcessing(delay: eof);
+                        PauseOrContinueProcessing();
                     }
                     if (eof)
                     {
@@ -158,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
             if (_eventsRequested)
@@ -169,7 +173,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
             var readEventsForward = CreateReadEventsMessage();
-            if (delay)
+            if (_eof)
                 _publisher.Publish(
                     new AwakeReaderServiceMessage.SubscribeAwake(
                         new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,

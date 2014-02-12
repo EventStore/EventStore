@@ -55,6 +55,7 @@ var $projections = {
             options: {
                 definesStateTransform: false,
                 definesCatalogTransform: false,
+                handlesDeletedNotifications: false,
                 producesResults: false,
                 definesFold: false,
                 resultStreamName: null,
@@ -208,7 +209,7 @@ var $projections = {
 
         function on_deleted_notification(eventHandler) {
             deletedNotificationHandlers.push(eventHandler);
-            sources.deletedNotifications = true;
+            sources.options.handlesDeletedNotifications = true;
             sources.options.definesFold = true;
         }
 

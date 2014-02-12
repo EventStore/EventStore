@@ -97,17 +97,17 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (PauseRequested || Paused)
                 return;
-            if (delay)
+            if (_eofs.Any(v => v.Value))
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
                         TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
                         new UnwrapEnvelopeMessage(ProcessBuffers2)));
             foreach (var stream in _streams)
-                RequestEvents(stream, delay: delay);
+                RequestEvents(stream, delay: _eofs[stream]);
         }
 
         private void ProcessBuffers2()
@@ -142,7 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         EnqueueItem(null, message.EventStreamId);
                     ProcessBuffers();
                     _eventsRequested.Remove(message.EventStreamId);
-                    PauseOrContinueProcessing(delay: true);
+                    PauseOrContinueProcessing();
                     CheckIdle();
                     CheckEof();
                     break;
@@ -173,7 +173,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                     ProcessBuffers();
                     _eventsRequested.Remove(message.EventStreamId);
-                    PauseOrContinueProcessing(delay: message.Events.Length == 0);
+                    PauseOrContinueProcessing();
                     break;
                 case ReadStreamResult.AccessDenied:
                     SendNotAuthorized();
@@ -251,7 +251,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (CheckEnough())
                     return;
                 if (_buffers[minStreamId].Count == 0)
-                    PauseOrContinueProcessing(delay: false);
+                    PauseOrContinueProcessing();
             }
         }
 

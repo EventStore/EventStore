@@ -107,6 +107,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
             }
 
+            if (sources.HandlesDeletedNotifications && !sources.ByStreams)
+                throw new InvalidOperationException(
+                    "Deleted stream notifications are only supported with foreachStream()");
+
             var readerStrategy = new ReaderStrategy(
                 phase, sources.AllStreams, sources.Categories, sources.Streams, sources.AllEvents,
                 sources.IncludeLinksOption, sources.Events, sources.CatalogStream, sources.ProcessingLagOption,

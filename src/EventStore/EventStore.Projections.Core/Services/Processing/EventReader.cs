@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _paused = false;
             _pauseRequested = false;
 //            _logger.Trace("Resuming event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
-            RequestEvents(delay: false);
+            RequestEvents();
         }
 
         public void Pause()
@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected abstract bool AreEventsRequested();
-        protected abstract void RequestEvents(bool delay);
+        protected abstract void RequestEvents();
 
         protected void SendEof()
         {
@@ -161,14 +161,14 @@ namespace EventStore.Projections.Core.Services.Processing
                         : (long?) null;
         }
 
-        protected void PauseOrContinueProcessing(bool delay)
+        protected void PauseOrContinueProcessing()
         {
             if (_disposed)
                 return;
             if (_pauseRequested)
                 _paused = !AreEventsRequested();
             else
-                RequestEvents(delay);
+                RequestEvents();
         }
 
         private void SendStarting(long startingLastCommitPosition)

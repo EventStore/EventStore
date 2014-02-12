@@ -223,6 +223,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.DefinesFold; }
         }
 
+        public bool HandlesDeletedNotifications
+        {
+            get { return _options.HandlesDeletedNotifications; }
+        }
+
         public bool IncludeLinksOption
         {
             get { return _options.IncludeLinks; }
@@ -316,6 +321,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public bool DefinesFold { get; set; }
+
+        [DataMember]
+        public bool HandlesDeletedNotifications { get; set; }
 
         [DataMember]
         public bool IncludeLinks { get; set; }

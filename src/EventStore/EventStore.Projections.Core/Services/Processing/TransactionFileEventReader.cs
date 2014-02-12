@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ITimeProvider _timeProvider;
         private int _deliveredEvents;
         private long _lastPosition;
+        private bool _eof;
 
         public TransactionFileEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
@@ -85,13 +86,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
             var eof = message.Events.Length == 0;
+            _eof = eof;
             var willDispose = _stopOnEof && eof;
             var oldFrom = _from;
             _from = message.NextPos;
 
             if (!willDispose)
             {
-                PauseOrContinueProcessing(delay: eof);
+                PauseOrContinueProcessing();
             }
 
             if (eof)
@@ -132,7 +134,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
             if (_eventsRequested)
@@ -143,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
             var readEventsForward = CreateReadEventsMessage();
-            if (delay)
+            if (_eof)
                 _publisher.Publish(
                     new AwakeReaderServiceMessage.SubscribeAwake(
                         new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,

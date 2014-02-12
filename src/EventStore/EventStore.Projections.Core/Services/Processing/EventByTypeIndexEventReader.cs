@@ -112,11 +112,11 @@ namespace EventStore.Projections.Core.Services.Processing
             base.Dispose();
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (_disposed || PauseRequested || Paused)
                 return;
-            _state.RequestEvents(delay);
+            _state.RequestEvents();
         }
 
         protected override bool AreEventsRequested()
@@ -160,7 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private abstract class State : IDisposable
         {
-            public abstract void RequestEvents(bool delay);
+            public abstract void RequestEvents();
             public abstract bool AreEventsRequested();
             public abstract void Dispose();
 
@@ -228,6 +228,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             private readonly Dictionary<string, bool> _eofs;
             private bool _disposed;
+            private bool _indexStreamEof = false; 
             private readonly IPublisher _publisher;
 
             public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, IPrincipal readAs)
@@ -279,14 +280,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     case ReadStreamResult.NoStream:
                         _eofs[message.EventStreamId] = true;
-                        ProcessBuffersAndContinue(eof: true, eventStreamId: message.EventStreamId);
+                        ProcessBuffersAndContinue(eventStreamId: message.EventStreamId);
                         break;
                     case ReadStreamResult.Success:
                         _reader.UpdateNextStreamPosition(message.EventStreamId, message.NextEventNumber);
                         var isEof = message.Events.Length == 0;
                         _eofs[message.EventStreamId] = isEof;
                         EnqueueEvents(message);
-                        ProcessBuffersAndContinue(eof: isEof, eventStreamId: message.EventStreamId);
+                        ProcessBuffersAndContinue(eventStreamId: message.EventStreamId);
                         break;
                     default:
                         throw new NotSupportedException(
@@ -294,12 +295,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
-            private void ProcessBuffersAndContinue(bool eof, string eventStreamId)
+            private void ProcessBuffersAndContinue(string eventStreamId)
             {
                 ProcessBuffers();
                 if (eventStreamId != null)
                     _eventsRequested.Remove(eventStreamId);
-                _reader.PauseOrContinueProcessing(delay: eof);
+                _reader.PauseOrContinueProcessing();
                 CheckSwitch();
             }
 
@@ -374,17 +375,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 switch (result)
                 {
                     case ReadStreamResult.NoStream:
-                        _reader.PauseOrContinueProcessing(delay: true);
+                        _indexStreamEof = true;
                         _lastKnownIndexCheckpointPosition = default(TFPos);
+                        ProcessBuffersAndContinue(null);
                         break;
                     case ReadStreamResult.Success:
                         if (events.Length == 0)
                         {
+                            _indexStreamEof = true;
                             if (_lastKnownIndexCheckpointPosition == null)
                                 _lastKnownIndexCheckpointPosition = default(TFPos);
                         }
                         else
                         {
+                            _indexStreamEof = false;
                             //NOTE: only one event if backward order was requested
                             foreach (var @event in events)
                             {
@@ -410,8 +414,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                     _eofs[key] = false;
                             }
                         }
-                        ProcessBuffersAndContinue(events.Length == 0, null);
-                        _reader.PauseOrContinueProcessing(delay: events.Length == 0);
+                        ProcessBuffersAndContinue(null);
                         break;
                     default:
                         throw new NotSupportedException(
@@ -469,7 +472,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         return;
 
                     if (_buffers[minStreamId].Count == 0)
-                        _reader.PauseOrContinueProcessing(delay: false);
+                        _reader.PauseOrContinueProcessing();
                 }
             }
 
@@ -541,11 +544,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 _disposed = true;
             }
 
-            public override void RequestEvents(bool delay)
+            public override void RequestEvents()
             {
                 foreach (var stream in _streamToEventType.Keys)
-                    RequestEvents(stream, delay: delay);
-                RequestCheckpointStream(delay: delay);
+                    RequestEvents(stream, delay: _eofs[stream]);
+                RequestCheckpointStream(delay: _indexStreamEof);
             }
 
             private bool ShouldSwitch()
@@ -574,6 +577,7 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly Dictionary<string, string> _streamToEventType;
             private readonly IPublisher _publisher;
             private TFPos _fromTfPosition;
+            private bool _eof;
 
             public TfBased(
                 ITimeProvider timeProvider, EventByTypeIndexEventReader reader, TFPos fromTfPosition,
@@ -607,12 +611,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     case ReadAllResult.Success:
                         var eof = message.Events.Length == 0;
+                        _eof = eof;
                         var willDispose = _reader._stopOnEof && eof;
                         _fromTfPosition = message.NextPos;
 
                         if (!willDispose)
                         {
-                            _reader.PauseOrContinueProcessing(delay: eof);
+                            _reader.PauseOrContinueProcessing();
                         }
 
                         if (eof)
@@ -715,9 +720,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 _disposed = true;
             }
 
-            public override void RequestEvents(bool delay)
+            public override void RequestEvents()
             {
-                RequestTfEvents(delay: delay);
+                RequestTfEvents(delay: _eof);
             }
 
             public override bool AreEventsRequested()
@@ -737,7 +742,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastEventPosition = lastKnownIndexCheckpointPosition;
 
             _state = new TfBased(_timeProvider, this, _lastEventPosition, this._publisher, ReadAs);
-            _state.RequestEvents(delay: false);
+            _state.RequestEvents();
         }
     }
 }

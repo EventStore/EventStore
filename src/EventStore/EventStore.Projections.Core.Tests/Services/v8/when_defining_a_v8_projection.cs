@@ -553,6 +553,42 @@ namespace EventStore.Projections.Core.Tests.Services.v8
 
     }
 
+    [TestFixture]
+    public class with_foreach_and_deleted_notification_handled : TestFixtureWithJsProjection
+    {
+        protected override void Given()
+        {
+            _projection = @"fromAll().foreachStream().when({
+                $deleted: function(){}
+            })";
+            _state = @"{}";
+        }
+
+        [Test]
+        public void source_definition_is_correct()
+        {
+            Assert.AreEqual(true, _source.HandlesDeletedNotifications);
+        }
+    }
+
+    [TestFixture]
+    public class with_deleted_notification_handled : TestFixtureWithJsProjection
+    {
+        protected override void Given()
+        {
+            _projection = @"fromAll().foreachStream().when({
+                $deleted: function(){}
+            })";
+            _state = @"{}";
+        }
+
+        [Test]
+        public void source_definition_is_correct()
+        {
+            Assert.AreEqual(true, _source.HandlesDeletedNotifications);
+        }
+    }
+
     public abstract class specification_with_event_handled : TestFixtureWithJsProjection
     {
         protected ResolvedEvent _handledEvent;
@@ -615,5 +651,4 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             Assert.IsTrue(_emittedEventEnvelopes == null || !_emittedEventEnvelopes.Any());
         }
     }
-
 }
