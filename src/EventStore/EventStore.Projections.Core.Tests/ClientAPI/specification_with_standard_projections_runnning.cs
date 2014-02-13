@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             When();
         }
 
-        private void EnableStandardProjections()
+        protected void EnableStandardProjections()
         {
             EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
             EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
@@ -87,14 +87,27 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection);
         }
 
+        protected void DisableStandardProjections()
+        {
+            DisableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
+            DisableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
+            DisableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
+            DisableProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection);
+        }
+
         protected virtual bool GivenStandardProjectionsRunning()
         {
             return true;
         }
 
-        private void EnableProjection(string name)
+        protected void EnableProjection(string name)
         {
             _manager.Enable(name, _admin);
+        }
+
+        protected void DisableProjection(string name)
+        {
+            _manager.Disable(name, _admin);
         }
 
         [TestFixtureTearDown]

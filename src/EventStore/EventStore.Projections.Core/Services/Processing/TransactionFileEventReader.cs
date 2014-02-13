@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
                 resolvedEvent.PositionStreamId, resolvedEvent.EventType, resolvedEvent.Data, out positionStreamId);
             if (isStreamDeletedEvent)
-                _publisher.Publish(
+                 _publisher.Publish(
                     new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
                         EventReaderCorrelationId, positionStreamId, source: this.GetType(), lastEventNumber: -1,
                         deleteEventPosition: resolvedEvent.OriginalPosition, positionStreamId: null,

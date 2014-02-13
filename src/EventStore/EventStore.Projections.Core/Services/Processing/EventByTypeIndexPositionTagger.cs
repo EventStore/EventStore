@@ -40,11 +40,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<string> _eventTypes;
         private readonly Dictionary<string, string> _streamToEventType;
 
-        public EventByTypeIndexPositionTagger(int phase, string[] eventTypes): base(phase)
+        public EventByTypeIndexPositionTagger(
+            int phase, string[] eventTypes, bool includeStreamDeletedNotification = false)
+            : base(phase)
         {
             if (eventTypes == null) throw new ArgumentNullException("eventTypes");
             if (eventTypes.Length == 0) throw new ArgumentException("eventTypes");
             _eventTypes = new HashSet<string>(eventTypes);
+            if (includeStreamDeletedNotification)
+                _eventTypes.Add("$deleted");
             _streams = new HashSet<string>(from eventType in eventTypes select "$et-" + eventType);
             _streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
         }

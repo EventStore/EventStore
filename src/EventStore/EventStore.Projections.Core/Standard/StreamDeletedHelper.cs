@@ -9,6 +9,11 @@ namespace EventStore.Projections.Core.Standard
         public static bool IsStreamDeletedEvent(
             string streamOrMetaStreamId, string eventType, string eventData, out string streamId)
         {
+            if (string.IsNullOrEmpty(streamOrMetaStreamId))
+            {
+                streamId = null;
+                return false;
+            }
             bool isMetaStream;
             if (SystemStreams.IsMetastream(streamOrMetaStreamId))
             {

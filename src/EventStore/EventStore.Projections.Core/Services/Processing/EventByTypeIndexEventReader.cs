@@ -40,6 +40,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 using EventStore.Projections.Core.Utils;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -48,6 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private const int _maxReadCount = 111;
         private readonly HashSet<string> _eventTypes;
         private readonly bool _resolveLinkTos;
+        private readonly bool _includeDeletedStreamNotification;
         private readonly ITimeProvider _timeProvider;
 
         private class PendingEvent
@@ -73,16 +75,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EventByTypeIndexEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
-            string[] eventTypes, TFPos fromTfPosition, Dictionary<string, int> fromPositions, bool resolveLinkTos,
-            ITimeProvider timeProvider, bool stopOnEof = false, int? stopAfterNEvents = null)
+            string[] eventTypes, bool includeDeletedStreamNotification, TFPos fromTfPosition,
+            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
+            bool stopOnEof = false, int? stopAfterNEvents = null)
             : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (eventTypes == null) throw new ArgumentNullException("eventTypes");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
             if (eventTypes.Length == 0) throw new ArgumentException("empty", "eventTypes");
 
+            _includeDeletedStreamNotification = includeDeletedStreamNotification;
             _timeProvider = timeProvider;
             _eventTypes = new HashSet<string>(eventTypes);
+            if (includeDeletedStreamNotification)
+                _eventTypes.Add("$deleted");
             _streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
             _lastEventPosition = fromTfPosition;
             _resolveLinkTos = resolveLinkTos;
@@ -180,20 +186,33 @@ namespace EventStore.Projections.Core.Services.Processing
                 _reader._lastEventPosition = resolvedEvent.OriginalPosition;
                 _reader._deliveredEvents ++;
                 //TODO: this is incomplete.  where reading from TF we need to handle actual deletes
+
                 string partitionStreamId;
-                var isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
-                    resolvedEvent.EventStreamId, resolvedEvent.EventType, resolvedEvent.Data, out partitionStreamId);
+
+
+                bool isDeletedStreamEvent;
+                if (resolvedEvent.IsLinkToStreamDeleted)
+                {
+                    isDeletedStreamEvent = true;
+                    partitionStreamId = resolvedEvent.EventStreamId;
+                }
+                else
+                {
+                    isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                        resolvedEvent.EventStreamId, resolvedEvent.EventType, resolvedEvent.Data, out partitionStreamId);
+                }
                 if (isDeletedStreamEvent)
                 {
                     var deletedPartition = partitionStreamId;
 
-                    _reader._publisher.Publish(
-                        //TODO: publish both link and event data
-                        new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
-                            _reader.EventReaderCorrelationId, deletedPartition, source: this.GetType(),
-                            lastEventNumber: -1, deleteEventPosition: position,
-                            positionStreamId: resolvedEvent.PositionStreamId,
-                            positionEventNumber: resolvedEvent.PositionSequenceNumber));
+                    if (_reader._includeDeletedStreamNotification)
+                        _reader._publisher.Publish(
+                            //TODO: publish both link and event data
+                            new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
+                                _reader.EventReaderCorrelationId, deletedPartition, source: this.GetType(),
+                                lastEventNumber: -1, deleteEventPosition: position,
+                                positionStreamId: resolvedEvent.PositionStreamId,
+                                positionEventNumber: resolvedEvent.PositionSequenceNumber));
                 }
                 else
                     _reader._publisher.Publish(
@@ -641,6 +660,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                     StreamDeletedHelper.IsStreamDeletedEvent(
                                         @event.OriginalStreamId, @event.OriginalEvent.EventType,
                                         @event.OriginalEvent.Data, out adjustedPositionStreamId);
+                                if (data == null)
+                                    continue;
                                 var eventType = isDeleteStreamEvent ? "$deleted" : data.EventType;
                                 var byEvent = link == null && _eventTypes.Contains(eventType);
                                 var originalTfPosition = @event.OriginalPosition.Value;

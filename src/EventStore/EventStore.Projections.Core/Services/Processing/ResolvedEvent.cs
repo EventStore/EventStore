@@ -27,10 +27,13 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.LogRecords;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -55,6 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly string Metadata;
         public readonly string PositionMetadata;
         public readonly string StreamMetadata;
+        public readonly bool IsLinkToStreamDeleted;
 
         public ResolvedEvent(EventStore.Core.Data.ResolvedEvent resolvedEvent, byte[] streamMetadata)
         {
@@ -84,11 +88,32 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (positionEvent.Metadata != null && positionEvent.Metadata.Length > 0)
                 {
-                    var parsedPosition =
-                        positionEvent.Metadata.ParseCheckpointTagJson().Position;
+                    //TODO: parse JSON only when unresolved link and just tag otherwise
+                    Dictionary<string, JToken> extraMetadata = null;
+                    CheckpointTag tag;
+                    if (resolvedEvent.Link != null && resolvedEvent.Event == null)
+                    {
+                        var checkpointTagJson =
+                            positionEvent.Metadata.ParseCheckpointTagVersionExtraJson(default(ProjectionVersion));
+                        tag = checkpointTagJson.Tag;
+                        extraMetadata = checkpointTagJson.ExtraMetadata;
+                    }
+                    else
+                    {
+                        tag = positionEvent.Metadata.ParseCheckpointTagJson();
+                    }
+                    var parsedPosition = tag.Position;
                     originalPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
                                            ? parsedPosition
                                            : new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
+                    JToken deletedValue;
+                    if (extraMetadata != null && extraMetadata.TryGetValue("$deleted", out deletedValue))
+                    {
+                        IsLinkToStreamDeleted = true;
+                        var streamId= SystemEventTypes.StreamReferenceEventToStreamId(
+                            SystemEventTypes.LinkTo, resolvedEvent.Link.Data);
+                        _eventStreamId = streamId;
+                    }
                 }
                 else
                     originalPosition = new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);

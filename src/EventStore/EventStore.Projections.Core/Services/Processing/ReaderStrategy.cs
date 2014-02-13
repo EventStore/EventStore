@@ -46,6 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _allEvents;
         private readonly bool _includeLinks;
         private readonly HashSet<string> _events;
+        private readonly bool _includeStreamDeletedNotification;
         private readonly string _catalogStream;
         private readonly bool _reorderEvents;
         private readonly IPrincipal _runAs;
@@ -113,14 +114,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var readerStrategy = new ReaderStrategy(
                 phase, sources.AllStreams, sources.Categories, sources.Streams, sources.AllEvents,
-                sources.IncludeLinksOption, sources.Events, sources.CatalogStream, sources.ProcessingLagOption,
-                sources.ReorderEventsOption, runAs, timeProvider);
+                sources.IncludeLinksOption, sources.Events, sources.HandlesDeletedNotifications, sources.CatalogStream,
+                sources.ProcessingLagOption, sources.ReorderEventsOption, runAs, timeProvider);
             return readerStrategy;
         }
 
         private ReaderStrategy(
             int phase, bool allStreams, string[] categories, string[] streams, bool allEvents, bool includeLinks,
-            string[] events, string catalogStream, int? processingLag, bool reorderEvents, IPrincipal runAs,
+            string[] events, bool includeStreamDeletedNotification, string catalogStream, int? processingLag, bool reorderEvents, IPrincipal runAs,
             ITimeProvider timeProvider)
         {
             _phase = phase;
@@ -130,6 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _allEvents = allEvents;
             _includeLinks = includeLinks;
             _events = events != null && events.Length > 0 ? new HashSet<string>(events) : null;
+            _includeStreamDeletedNotification = includeStreamDeletedNotification;
             _catalogStream = catalogStream;
             _processingLag = processingLag.GetValueOrDefault();
             _reorderEvents = reorderEvents;
@@ -187,7 +189,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 //IEnumerable<string> streams = GetEventIndexStreams();
                 return CreatePausedEventIndexEventReader(
-                    eventReaderId, ioDispatcher, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _events);
+                    eventReaderId, ioDispatcher, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _events,
+                    _includeStreamDeletedNotification);
             }
             if (_allStreams)
             {
@@ -249,7 +252,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private PositionTagger CreatePositionTagger()
         {
             if (_allStreams && _events != null && _events.Count >= 1)
-                return new EventByTypeIndexPositionTagger(_phase, _events.ToArray());
+                return new EventByTypeIndexPositionTagger(_phase, _events.ToArray(), _includeStreamDeletedNotification);
             if (_allStreams && _reorderEvents)
                 return new PreparePositionTagger(_phase);
             if (_allStreams)
@@ -285,16 +288,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private IEventReader CreatePausedEventIndexEventReader(
             Guid eventReaderId, IODispatcher ioDispatcher, IPublisher publisher, CheckpointTag checkpointTag,
-            bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, IEnumerable<string> eventTypes)
+            bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, IEnumerable<string> eventTypes,
+            bool includeStreamDeletedNotification)
         {
             //NOTE: just optimization - anyway if reading from TF events may reappear
             int p;
             var nextPositions = eventTypes.ToDictionary(
                 v => "$et-" + v, v => checkpointTag.Streams.TryGetValue(v, out p) ? p + 1 : 0);
 
+            if (includeStreamDeletedNotification)
+                nextPositions.Add("$et-$deleted", checkpointTag.Streams.TryGetValue("$deleted", out p) ? p + 1 : 0);
+
             return new EventByTypeIndexEventReader(
-                ioDispatcher, publisher, eventReaderId, _runAs, eventTypes.ToArray(), checkpointTag.Position,
-                nextPositions, resolveLinkTos, _timeProvider, stopOnEof, stopAfterNEvents);
+                ioDispatcher, publisher, eventReaderId, _runAs, eventTypes.ToArray(), includeStreamDeletedNotification,
+                checkpointTag.Position, nextPositions, resolveLinkTos, _timeProvider, stopOnEof, stopAfterNEvents);
         }
 
         private IEventReader CreatePausedMultiStreamEventReader(
