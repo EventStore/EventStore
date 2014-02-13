@@ -122,7 +122,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             return _cached ? Interlocked.Read(ref _lastFlushed) : ReadCurrent();
         }
 
-        public long ReadNonFlushed()
+        public long 
+            ReadNonFlushed()
         {
             return Interlocked.Read(ref _last);
         }

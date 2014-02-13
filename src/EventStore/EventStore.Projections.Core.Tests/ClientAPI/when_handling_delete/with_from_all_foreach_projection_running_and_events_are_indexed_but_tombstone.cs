@@ -1,9 +1,10 @@
-﻿using NUnit.Framework;
+﻿using System.Threading;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
 {
     [TestFixture]
-    public class with_from_all_foreach_projection_running_and_events_are_indexed : specification_with_standard_projections_runnning
+    public class with_from_all_foreach_projection_running_and_events_are_indexed_but_tombstone : specification_with_standard_projections_runnning
     {
         protected override bool GivenStandardProjectionsRunning()
         {
@@ -20,9 +21,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
             WaitIdle();
             EnableStandardProjections();
             WaitIdle();
-            HardDeleteStream("stream1");
-            WaitIdle();
             DisableStandardProjections();
+            WaitIdle();
+            HardDeleteStream("stream1");
             WaitIdle();
             
         }
@@ -45,7 +46,7 @@ fromAll().foreachStream().when({
         public void receives_deleted_notification()
         {
             AssertStreamTail(
-                "$projections-test-projection-stream1-result", "Result:{\"deleted\":1}");
+                "$projections-test-projection-stream1-result", "Result:{\"a\":1}", "Result:{\"a\":1,\"deleted\":1}");
         }
     }
 }

@@ -110,6 +110,7 @@
     <Compile Include="ClientAPI\specification_with_standard_projections_runnning.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_all_foreach_projection_running.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_all_foreach_projection_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_delete\with_from_all_foreach_projection_running_and_events_are_indexed_but_tombstone.cs" />
     <Compile Include="ClientAPI\with_standard_projections_running.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_wit_stream_metadata.cs" />

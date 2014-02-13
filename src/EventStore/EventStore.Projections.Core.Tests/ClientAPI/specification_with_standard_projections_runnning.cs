@@ -165,7 +165,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                     Assert.Fail("Stream '{0}' is deleted", streamId);
                     break;
                 case SliceReadStatus.StreamNotFound:
-                    Assert.Fail("Stream '{0}' doe snot exist", streamId);
+                    Assert.Fail("Stream '{0}' does not exist", streamId);
                     break;
                 case SliceReadStatus.Success:
                     var resultEventsReversed = result.Events.Reverse().ToArray();

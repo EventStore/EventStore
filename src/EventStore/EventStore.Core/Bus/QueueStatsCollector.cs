@@ -31,6 +31,7 @@ using System.Net.Configuration;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
+using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Bus
 {
@@ -221,6 +222,9 @@ namespace EventStore.Core.Bus
 #if DEBUG
         private static object _notifyLock;
         private static int _nonIdle = 0;
+        private static ICheckpoint _writerCheckpoint;
+        private static ICheckpoint _chaserCheckpoint;
+
         public static void InitializeIdleDetection(bool enable = true)
         {
             if (enable)
@@ -238,10 +242,11 @@ namespace EventStore.Core.Bus
         [Conditional("DEBUG")]
         public static void WaitIdle()
         {
+            throw new NotImplementedException("Must account for real queue length as well.  for instance interlocked on enqueue and processed");
 #if DEBUG
             lock (_notifyLock)
             {
-                while (_nonIdle > 0)
+                while (_nonIdle > 0 || _writerCheckpoint.Read() != _chaserCheckpoint.Read())
                 {
                     if (!Monitor.Wait(_notifyLock, 100))
                         Console.WriteLine("Waiting for IDLE state...");
@@ -249,6 +254,13 @@ namespace EventStore.Core.Bus
             }
 #endif
         }
+#if DEBUG
+        public static void InitializeCheckpoints(ICheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint)
+        {
+            _chaserCheckpoint = chaserCheckpoint;
+            _writerCheckpoint = writerCheckpoint;
+        }
+#endif
     }
 }
 
