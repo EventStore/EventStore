@@ -162,6 +162,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER, Authorization");
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
+                HttpEntity.Response.AddHeader("Access-Control-Expose-Headers", "Location");
                 if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized)
                     HttpEntity.Response.AddHeader("WWW-Authenticate", "Basic realm=\"ES\"");
             }
