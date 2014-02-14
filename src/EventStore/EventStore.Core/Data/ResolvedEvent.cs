@@ -39,21 +39,29 @@ namespace EventStore.Core.Data
         /// Position of the OriginalEvent (unresolved link or event) if available
         /// </summary>
         public readonly TFPos? OriginalPosition;
+
+        public readonly ReadEventResult ResolveResult;
+
         public string OriginalStreamId { get { return OriginalEvent.EventStreamId; } }
         public int OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
 
-        public ResolvedEvent(EventRecord @event, EventRecord link)
+        public ResolvedEvent(
+            EventRecord @event, EventRecord link, ReadEventResult resolveResult = default(ReadEventResult))
         {
             Event = @event;
             Link = link;
             OriginalPosition = null;
+            ResolveResult = resolveResult;
         }
 
-        public ResolvedEvent(EventRecord @event, EventRecord link, long commitPosition)
+        public ResolvedEvent(
+            EventRecord @event, EventRecord link, long commitPosition,
+            ReadEventResult resolveResult = default(ReadEventResult))
         {
             Event = @event;
             Link = link;
             OriginalPosition = new TFPos(commitPosition, (link ?? @event).LogPosition);
+            ResolveResult = resolveResult;
         }
 
         public ResolvedEvent(EventRecord @event)
@@ -61,6 +69,7 @@ namespace EventStore.Core.Data
             Event = @event;
             Link = null;
             OriginalPosition = null;
+            ResolveResult = default(ReadEventResult);
         }
 
         public ResolvedEvent(EventRecord @event, long commitPosition)
@@ -68,6 +77,7 @@ namespace EventStore.Core.Data
             Event = @event;
             Link = null;
             OriginalPosition = new TFPos(commitPosition, @event.LogPosition);
+            ResolveResult = default(ReadEventResult);
         }
     }
 }

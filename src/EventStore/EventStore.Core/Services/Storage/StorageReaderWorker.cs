@@ -437,14 +437,15 @@ namespace EventStore.Core.Services.Storage
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
                     if (res.Result == ReadEventResult.Success)
-                        return new ResolvedEvent(res.Record, eventRecord);
+                        return new ResolvedEvent(res.Record, eventRecord, ReadEventResult.Success);
+                    return new ResolvedEvent(null, eventRecord, res.Result);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
                 // return unresolved link
-                return new ResolvedEvent(null, eventRecord);
+                return new ResolvedEvent(null, eventRecord, ReadEventResult.Error);
             }
             return new ResolvedEvent(eventRecord);
         }
@@ -460,14 +461,17 @@ namespace EventStore.Core.Services.Storage
                     var resolvedPair = ResolveLinkToEvent(record.Event, user);
                     if (resolvedPair == null)
                         return null;
-                    result[i] = new ResolvedEvent(resolvedPair.Value.Event, resolvedPair.Value.Link, record.CommitPosition);
+                    result[i] = new ResolvedEvent(
+                        resolvedPair.Value.Event, resolvedPair.Value.Link, record.CommitPosition,
+                        resolvedPair.Value.ResolveResult);
                 }
             }
             else
             {
                 for (int i = 0; i < result.Length; ++i)
                 {
-                    result[i] = new ResolvedEvent(records[i].Event, null, records[i].CommitPosition);
+                    result[i] = new ResolvedEvent(
+                        records[i].Event, null, records[i].CommitPosition, default(ReadEventResult));
                 }
             }
             return result;
