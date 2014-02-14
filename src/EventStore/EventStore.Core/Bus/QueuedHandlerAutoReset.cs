@@ -146,6 +146,9 @@ namespace EventStore.Core.Bus
                     else
                     {
                         _queueStats.EnterBusy();
+#if DEBUG
+                        _queueStats.Dequeued();
+#endif
 
                         iterationsCount = 0;
 
@@ -191,6 +194,9 @@ namespace EventStore.Core.Bus
         public void Publish(Message message)
         {
             //Ensure.NotNull(message, "message");
+#if DEBUG
+            _queueStats.Enqueued();
+#endif
             _queue.Enqueue(message);
             if (_starving)
                 _msgAddEvent.Set();

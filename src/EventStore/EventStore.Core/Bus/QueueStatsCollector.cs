@@ -224,12 +224,14 @@ namespace EventStore.Core.Bus
         private static int _nonIdle = 0;
         private static ICheckpoint _writerCheckpoint;
         private static ICheckpoint _chaserCheckpoint;
+        private static int _length;
 
         public static void InitializeIdleDetection(bool enable = true)
         {
             if (enable)
             {
                 _nonIdle = 0;
+                _length = 0;
                 _notifyLock = new object();
             }
             else
@@ -242,11 +244,10 @@ namespace EventStore.Core.Bus
         [Conditional("DEBUG")]
         public static void WaitIdle()
         {
-            throw new NotImplementedException("Must account for real queue length as well.  for instance interlocked on enqueue and processed");
 #if DEBUG
             lock (_notifyLock)
             {
-                while (_nonIdle > 0 || _writerCheckpoint.Read() != _chaserCheckpoint.Read())
+                while (_nonIdle > 0 || _length > 0 || _writerCheckpoint.Read() != _chaserCheckpoint.Read())
                 {
                     if (!Monitor.Wait(_notifyLock, 100))
                         Console.WriteLine("Waiting for IDLE state...");
@@ -261,6 +262,18 @@ namespace EventStore.Core.Bus
             _writerCheckpoint = writerCheckpoint;
         }
 #endif
+
+        [Conditional("DEBUG")]
+        public void Enqueued()
+        {
+            Interlocked.Increment(ref _length);
+        }
+
+        [Conditional("DEBUG")]
+        public void Dequeued()
+        {
+            Interlocked.Decrement(ref _length);
+        }
     }
 }
 

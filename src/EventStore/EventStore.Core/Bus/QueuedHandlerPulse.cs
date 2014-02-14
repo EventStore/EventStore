@@ -134,6 +134,9 @@ namespace EventStore.Core.Bus
                     }
 
                     _queueStats.EnterBusy();
+#if DEBUG
+                    _queueStats.Dequeued();
+#endif
 
                     var cnt = _queue.Count;
                     _queueStats.ProcessingStarted(msg.GetType(), cnt);
@@ -176,6 +179,9 @@ namespace EventStore.Core.Bus
         public void Publish(Message message)
         {
             //Ensure.NotNull(message, "message");
+#if DEBUG
+            _queueStats.Enqueued();
+#endif
             _queue.Enqueue(message);
             if (_starving)
             {
