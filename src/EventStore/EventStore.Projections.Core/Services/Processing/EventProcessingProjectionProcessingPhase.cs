@@ -407,6 +407,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override void NewCheckpointStarted(CheckpointTag at)
         {
+            if (!(_state == PhaseState.Running || _state == PhaseState.Starting))
+            {
+                Console.WriteLine("Starting a checkpoint in non-runnable state");
+                return;
+            }
             var checkpointHandler = _projectionStateHandler as IProjectionCheckpointHandler;
             if (checkpointHandler != null)
             {
@@ -429,7 +434,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (!ValidateEmittedEvents(emittedEvents))
                         return;
 
-                    if (_state == PhaseState.Running)
+                    if (_state == PhaseState.Running || _state == PhaseState.Starting)
                         _resultWriter.EventsEmitted(emittedEvents, Guid.Empty, correlationId: null);
                 }
             }

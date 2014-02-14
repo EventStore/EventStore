@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly string Metadata;
         public readonly string PositionMetadata;
         public readonly string StreamMetadata;
-        public readonly bool IsLinkToStreamDeleted;
+        public readonly bool IsLinkToDeletedStream;
 
         public ResolvedEvent(EventStore.Core.Data.ResolvedEvent resolvedEvent, byte[] streamMetadata)
         {
@@ -86,10 +86,10 @@ namespace EventStore.Projections.Core.Services.Processing
             TFPos originalPosition;
             if (_resolvedLinkTo)
             {
+                Dictionary<string, JToken> extraMetadata = null;
                 if (positionEvent.Metadata != null && positionEvent.Metadata.Length > 0)
                 {
                     //TODO: parse JSON only when unresolved link and just tag otherwise
-                    Dictionary<string, JToken> extraMetadata = null;
                     CheckpointTag tag;
                     if (resolvedEvent.Link != null && resolvedEvent.Event == null)
                     {
@@ -106,17 +106,20 @@ namespace EventStore.Projections.Core.Services.Processing
                     originalPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
                                            ? parsedPosition
                                            : new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
-                    JToken deletedValue;
-                    if (extraMetadata != null && extraMetadata.TryGetValue("$deleted", out deletedValue))
-                    {
-                        IsLinkToStreamDeleted = true;
-                        var streamId= SystemEventTypes.StreamReferenceEventToStreamId(
-                            SystemEventTypes.LinkTo, resolvedEvent.Link.Data);
-                        _eventStreamId = streamId;
-                    }
                 }
                 else
                     originalPosition = new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
+
+                JToken deletedValue;
+                if (resolvedEvent.ResolveResult == ReadEventResult.StreamDeleted
+                    || resolvedEvent.ResolveResult == ReadEventResult.NoStream
+                    || extraMetadata != null && extraMetadata.TryGetValue("$deleted", out deletedValue))
+                {
+                    IsLinkToDeletedStream = true;
+                    var streamId = SystemEventTypes.StreamReferenceEventToStreamId(
+                        SystemEventTypes.LinkTo, resolvedEvent.Link.Data);
+                    _eventStreamId = streamId;
+                }
             }
             else
             {

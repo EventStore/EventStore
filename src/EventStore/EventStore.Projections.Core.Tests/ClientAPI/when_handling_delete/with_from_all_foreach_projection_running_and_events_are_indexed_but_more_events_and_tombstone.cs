@@ -43,7 +43,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
         {
             base.Given();
             PostEvent("stream1", "type1", "{}");
-            PostEvent("stream1", "type2", "{}");
             PostEvent("stream2", "type1", "{}");
             PostEvent("stream2", "type2", "{}");
             WaitIdle();
@@ -51,6 +50,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
             WaitIdle();
             DisableStandardProjections();
             WaitIdle();
+
+            // required to flush index checkpoint
+            {
+                EnableStandardProjections();
+                WaitIdle();
+                DisableStandardProjections();
+                WaitIdle();
+            }
+
+            PostEvent("stream1", "type2", "{}");
             HardDeleteStream("stream1");
             WaitIdle();
         }
@@ -60,9 +69,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
             base.When();
             PostProjection(@"
 fromAll().foreachStream().when({
-    $init: function(){return {}},
-    type1: function(s,e){s.a=1},
-    type2: function(s,e){s.a=1},
+    $init: function(){return {a:0}},
+    type1: function(s,e){s.a++},
+    type2: function(s,e){},
     $deleted: function(s,e){s.deleted=1},
 }).outputState();
 ");
@@ -73,7 +82,7 @@ fromAll().foreachStream().when({
         public void receives_deleted_notification()
         {
             AssertStreamTail(
-                "$projections-test-projection-stream1-result", "Result:{\"a\":1}", "Result:{\"a\":1,\"deleted\":1}");
+                "$projections-test-projection-stream1-result", "Result:{\"a\":0,\"deleted\":1}");
         }
     }
 }

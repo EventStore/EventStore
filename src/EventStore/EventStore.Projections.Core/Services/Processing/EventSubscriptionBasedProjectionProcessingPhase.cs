@@ -403,7 +403,6 @@ namespace EventStore.Projections.Core.Services.Processing
             // this can be old checkpoint
             var adjustedCheckpointTag = _readerStrategy.PositionTagger.AdjustTag(checkpointTag);
             _processingQueue.InitializeQueue(adjustedCheckpointTag);
-            NewCheckpointStarted(adjustedCheckpointTag);
         }
 
         public int GetBufferedEventCount()
@@ -618,8 +617,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetProjectionState(PhaseState state)
         {
+            var starting = _state == PhaseState.Starting && state == PhaseState.Running;
+
             _state = state;
             _processingQueue.SetIsRunning(state == PhaseState.Running);
+            if (starting)
+                NewCheckpointStarted(LastProcessedEventPosition);
         }
     }
 }

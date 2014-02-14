@@ -287,8 +287,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
         {
-            if (upTo == _zeroPosition)
-                throw new ArgumentException("upTo cannot be equal to zero position");
+//            if (upTo == _zeroPosition)
+//                throw new ArgumentException("upTo cannot be equal to zero position");
 
             if (!_awaitingListEventsCompleted)
                 throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
