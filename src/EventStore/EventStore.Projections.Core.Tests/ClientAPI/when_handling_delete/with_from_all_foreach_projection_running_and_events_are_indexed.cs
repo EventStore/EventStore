@@ -41,8 +41,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
             PostProjection(@"
 fromAll().foreachStream().when({
     $init: function(){return {}},
-    type1: function(s,e){s.a=1},
-    type2: function(s,e){s.a=1},
+    type1: function(s,e){s.a=(s.a||0) + 1},
+    type2: function(s,e){s.a=(s.a||0) + 1},
     $deleted: function(s,e){s.deleted=1},
 }).outputState();
 ");
@@ -55,7 +55,7 @@ fromAll().foreachStream().when({
             AssertStreamTail(
                 "$projections-test-projection-stream1-result", "Result:{\"deleted\":1}");
             AssertStreamTail(
-                "$projections-test-projection-stream2-result", "Result:{\"deleted\":1}");
+                "$projections-test-projection-stream2-result", "Result:{\"a\":2}");
         }
     }
 }
