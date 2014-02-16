@@ -54,6 +54,8 @@ fromAll().foreachStream().when({
         {
             AssertStreamTail(
                 "$projections-test-projection-stream1-result", "Result:{\"deleted\":1}");
+            AssertStreamTail(
+                "$projections-test-projection-stream2-result", "Result:{\"deleted\":1}");
         }
     }
 }
