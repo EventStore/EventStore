@@ -107,8 +107,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientAPI\event_by_type_index.cs" />
+    <Compile Include="ClientAPI\event_by_type_index\when_revering_after_index_catches_up.cs" />
     <Compile Include="ClientAPI\specification_with_standard_projections_runnning.cs" />
     <Compile Include="ClientAPI\when_handling_delete\recovery\with_from_all_foreach_projection_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_delete\recovery\with_from_all_foreach_projection_running_and_events_get_indexed_before_recovery.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_all_foreach_projection_running.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_all_foreach_projection_running_and_events_are_indexed.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_all_foreach_projection_running_and_events_are_indexed_but_a_stream_and_tombstone.cs" />

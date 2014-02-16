@@ -30,7 +30,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI
 {
-    public class event_by_type_index
+    namespace event_by_type_index
     {
 
         public class with_existing_events : specification_with_standard_projections_runnning
