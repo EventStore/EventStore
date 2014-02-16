@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _noCheckpoints = noCheckpoints;
         }
 
-        public void EmitEvents(EmittedEvent[] events)
+        public void EmitEvents(EmittedEventEnvelope[] events)
         {
             if (events == null) throw new ArgumentNullException("events");
             CheckpointTag groupCausedBy = null;
@@ -637,8 +637,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     SubmitWriteEvents();
                     return;
                 }
-                var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
-                ValidateEmittedEventInRecoveryMode(topAlreadyCommitted, eventToWrite);
+                var topAlreadyCommitted = ValidateEmittedEventInRecoveryMode(eventToWrite);
+                if (topAlreadyCommitted == null)
+                    continue; // means skipped one already comitted item due to deleted stream handling
                 anyFound = true;
                 NotifyEventCommitted(eventToWrite, topAlreadyCommitted.Item3); 
                 _pendingWrites.Dequeue(); // drop already committed event
@@ -646,14 +647,18 @@ namespace EventStore.Projections.Core.Services.Processing
             OnWriteCompleted();
         }
 
-        private static void ValidateEmittedEventInRecoveryMode(Tuple<CheckpointTag, string, int> topAlreadyCommitted, EmittedEvent eventsToWrite)
+        private Tuple<CheckpointTag, string, int> ValidateEmittedEventInRecoveryMode(EmittedEvent eventsToWrite)
         {
+            var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
+            if (topAlreadyCommitted.Item1 < eventsToWrite.CausedByTag)
+                return null;
             var failed = topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag || topAlreadyCommitted.Item2 != eventsToWrite.EventType;
             if (failed)
                 throw new InvalidEmittedEventSequenceExceptioin(
                     string.Format(
                         "An event emitted in recovery differ from the originally emitted event.  Existing('{0}', '{1}'). New('{2}', '{3}')",
                         topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType, eventsToWrite.CausedByTag));
+            return topAlreadyCommitted;
         }
 
         private void RecoveryCompleted()
