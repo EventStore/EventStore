@@ -112,6 +112,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             get { return _correlationId; }
         }
+
+        public bool IsPartitionTombstone
+        {
+            get { return _isPartitionTombstone; }
+        }
     }
 }
 

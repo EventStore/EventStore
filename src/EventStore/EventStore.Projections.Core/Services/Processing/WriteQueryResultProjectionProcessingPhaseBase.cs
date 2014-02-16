@@ -97,7 +97,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var writeEofResults = WriteEofEvent(phaseCheckpointTag);
 
-            _emittedEventWriter.EventsEmitted(writeResults.Concat(writeEofResults).ToArray(), Guid.Empty, null);
+            _emittedEventWriter.EventsEmitted(
+                writeResults.Concat(writeEofResults).ToArray(), Guid.Empty, null);
 
             _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
             _coreProjection.CompletePhase();

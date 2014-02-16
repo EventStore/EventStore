@@ -83,7 +83,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         public void PostTestAsserts()
         {
             var all = _manager.ListAll(_admin);
-            Assert.That(!all.Contains("Faulted"), "Projections faulted while running the test");
+            if (all.Contains("Faulted"))
+                Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
         }
 
         protected void EnableStandardProjections()

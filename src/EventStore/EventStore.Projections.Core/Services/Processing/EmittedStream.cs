@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IPrincipal _writeAs;
         private readonly PositionTagger _positionTagger;
         private readonly CheckpointTag _zeroPosition;
-        private readonly CheckpointTag _from;
+        private readonly CheckpointTag _fromCheckpointPosition;
         private readonly IEmittedStreamContainer _readyHandler;
 
         private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents =
@@ -156,13 +156,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EmittedStream(
             string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
-            PositionTagger positionTagger, CheckpointTag @from, IODispatcher ioDispatcher,
+            PositionTagger positionTagger, CheckpointTag fromCheckpointPosition, IODispatcher ioDispatcher,
             IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
             if (writerConfiguration == null) throw new ArgumentNullException("writerConfiguration");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
-            if (@from == null) throw new ArgumentNullException("from");
+            if (fromCheckpointPosition == null) throw new ArgumentNullException("fromCheckpointPosition");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
@@ -172,7 +172,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeAs = writerConfiguration.WriteAs;
             _positionTagger = positionTagger;
             _zeroPosition = positionTagger.MakeZeroCheckpointTag();
-            _from = @from;
+            _fromCheckpointPosition = fromCheckpointPosition;
             _lastQueuedEventPosition = null;
             _ioDispatcher = ioDispatcher;
             _readyHandler = readyHandler;
@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _noCheckpoints = noCheckpoints;
         }
 
-        public void EmitEvents(EmittedEventEnvelope[] events)
+        public void EmitEvents(EmittedEvent[] events)
         {
             if (events == null) throw new ArgumentNullException("events");
             CheckpointTag groupCausedBy = null;
@@ -190,7 +190,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (groupCausedBy == null)
                 {
                     groupCausedBy = @event.CausedByTag;
-                    if (!(_lastQueuedEventPosition != null && groupCausedBy > _lastQueuedEventPosition) && !(_lastQueuedEventPosition == null && groupCausedBy >= _from))
+                    if (!(_lastQueuedEventPosition != null && groupCausedBy > _lastQueuedEventPosition) && !(_lastQueuedEventPosition == null && groupCausedBy >= _fromCheckpointPosition))
                         throw new InvalidOperationException(
                             string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _lastQueuedEventPosition));
                     _lastQueuedEventPosition = groupCausedBy;
@@ -285,10 +285,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler.Handle(new CoreProjectionProcessingMessage.Failed(Guid.Empty, reason));
         }
 
-        private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
+        private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag lastCheckpointPosition)
         {
-//            if (upTo == _zeroPosition)
-//                throw new ArgumentException("upTo cannot be equal to zero position");
+//            if (lastCheckpointPosition == _zeroPosition)
+//                throw new ArgumentException("lastCheckpointPosition cannot be equal to zero position");
 
             if (!_awaitingListEventsCompleted)
                 throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
@@ -336,7 +336,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
-            var stop = CollectAlreadyCommittedEvents(message, upTo);
+            var stop = CollectAlreadyCommittedEvents(message, lastCheckpointPosition);
 
             if (stop)
                 try
@@ -348,11 +348,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     Failed(ex.Message);
                 }
             else
-                SubmitListEvents(upTo, message.NextEventNumber);
+                SubmitListEvents(lastCheckpointPosition, message.NextEventNumber);
 
         }
 
-        private bool CollectAlreadyCommittedEvents(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
+        private bool CollectAlreadyCommittedEvents(
+            ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag lastCheckpointPosition)
         {
             var stop = false;
             foreach (var e in message.Events)
@@ -378,10 +379,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     //NOTE: may need to compare with last pre-recorded event
                     //      but should not push to alreadyCommitted if source changed (must be at checkpoint)
                     var adjustedTag = checkpointTagVersion.AdjustBy(_positionTagger, _projectionVersion);
-                    doStop = adjustedTag < upTo;
+                    doStop = adjustedTag <= lastCheckpointPosition;
                 }
                 if (doStop)
-                    // ignore any events prior to the requested upTo (== first emitted event position)
+                    // ignore any events prior to the requested lastCheckpointPosition (== first emitted event position)
                 {
                     stop = true;
                     break;
@@ -406,7 +407,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var firstEvent = _pendingWrites.Peek();
                 if (_lastCommittedOrSubmittedEventPosition == null)
-                    SubmitListEvents(firstEvent.CausedByTag);
+                    SubmitListEvents(_fromCheckpointPosition);
                 else
                     SubmitWriteEventsInRecovery();
             }

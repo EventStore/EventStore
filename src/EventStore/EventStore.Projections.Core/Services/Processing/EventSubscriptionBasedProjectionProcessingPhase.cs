@@ -524,7 +524,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     _resultWriter.AccountPartition(result);
                     if (_projectionConfig.EmitEventEnabled && result.EmittedEvents != null)
-                        _resultWriter.EventsEmitted(result.EmittedEvents, result.CausedBy, result.CorrelationId);
+                        _resultWriter.EventsEmitted(
+                            result.EmittedEvents, result.CausedBy, result.CorrelationId);
                     if (result.NewState != null)
                     {
                         _resultWriter.WriteRunningResult(result);

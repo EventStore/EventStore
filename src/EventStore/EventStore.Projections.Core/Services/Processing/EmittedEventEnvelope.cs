@@ -32,15 +32,12 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public readonly EmittedEvent Event;
         public readonly EmittedStream.WriterConfiguration.StreamMetadata StreamMetadata;
-        public readonly bool CausedByStreamDeletedNotification;
 
         public EmittedEventEnvelope(
-            EmittedEvent @event, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null,
-            bool causedByStreamDeletedNotification = false)
+            EmittedEvent @event, EmittedStream.WriterConfiguration.StreamMetadata streamMetadata = null)
         {
             Event = @event;
             StreamMetadata = streamMetadata;
-            CausedByStreamDeletedNotification = causedByStreamDeletedNotification;
         }
 
     }

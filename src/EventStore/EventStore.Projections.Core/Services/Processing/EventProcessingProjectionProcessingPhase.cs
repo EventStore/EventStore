@@ -435,7 +435,8 @@ namespace EventStore.Projections.Core.Services.Processing
                         return;
 
                     if (_state == PhaseState.Running || _state == PhaseState.Starting)
-                        _resultWriter.EventsEmitted(emittedEvents, Guid.Empty, correlationId: null);
+                        _resultWriter.EventsEmitted(
+                            emittedEvents, Guid.Empty, correlationId: null);
                 }
             }
         }

@@ -47,7 +47,8 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void WriteEofResult(
-            Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
+            Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid,
+            string correlationId)
         {
             _resultsPublisher.Publish(
                 new PartitionProcessingResult(
@@ -64,7 +65,8 @@ namespace EventStore.Projections.Core.Services.Processing
             // intentionally does nothing            
         }
 
-        public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
+        public void EventsEmitted(
+            EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
         {
             throw new NotSupportedException();
         }
