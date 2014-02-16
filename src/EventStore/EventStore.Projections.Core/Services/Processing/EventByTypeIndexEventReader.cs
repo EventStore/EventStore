@@ -191,7 +191,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
                 bool isDeletedStreamEvent;
-                if (resolvedEvent.IsLinkToDeletedStream)
+                if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
+                    return;
+
+                if (resolvedEvent.IsLinkToDeletedStreamTombstone)
                 {
                     isDeletedStreamEvent = true;
                     partitionStreamId = resolvedEvent.EventStreamId;

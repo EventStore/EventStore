@@ -43,8 +43,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.recov
         {
             base.Given();
             PostEvent("stream1", "type1", "{}");
-            PostEvent("stream1", "type2", "{}");
             PostEvent("stream2", "type1", "{}");
+            PostEvent("stream1", "type2", "{}");
             PostEvent("stream2", "type2", "{}");
             WaitIdle();
             PostProjection(@"
@@ -56,9 +56,9 @@ fromAll().foreachStream().when({
 }).outputState();
 ");
             WaitIdle();
-            _manager.Abort("test-projection", _admin);
-            WaitIdle();
             HardDeleteStream("stream1");
+            WaitIdle();
+            _manager.Abort("test-projection", _admin);
             WaitIdle();
             EnableStandardProjections();
             WaitIdle();

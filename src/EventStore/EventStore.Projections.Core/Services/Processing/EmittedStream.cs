@@ -339,7 +339,14 @@ namespace EventStore.Projections.Core.Services.Processing
             var stop = CollectAlreadyCommittedEvents(message, upTo);
 
             if (stop)
-                SubmitWriteEventsInRecovery();
+                try
+                {
+                    SubmitWriteEventsInRecovery();
+                }
+                catch (InvalidEmittedEventSequenceExceptioin ex)
+                {
+                    Failed(ex.Message);
+                }
             else
                 SubmitListEvents(upTo, message.NextEventNumber);
 
@@ -641,8 +648,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private static void ValidateEmittedEventInRecoveryMode(Tuple<CheckpointTag, string, int> topAlreadyCommitted, EmittedEvent eventsToWrite)
         {
-            if (topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag || topAlreadyCommitted.Item2 != eventsToWrite.EventType)
-                throw new InvalidOperationException(
+            var failed = topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag || topAlreadyCommitted.Item2 != eventsToWrite.EventType;
+            if (failed)
+                throw new InvalidEmittedEventSequenceExceptioin(
                     string.Format(
                         "An event emitted in recovery differ from the originally emitted event.  Existing('{0}', '{1}'). New('{2}', '{3}')",
                         topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType, eventsToWrite.CausedByTag));
@@ -676,6 +684,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_awaitingReady)
                 throw new InvalidOperationException("AwaitingReady state required");
             ProcessWrites();
+        }
+    }
+
+    class InvalidEmittedEventSequenceExceptioin : Exception
+    {
+        public InvalidEmittedEventSequenceExceptioin(string message)
+            : base(message)
+        {
         }
     }
 }

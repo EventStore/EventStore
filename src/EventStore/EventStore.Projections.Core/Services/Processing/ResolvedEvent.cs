@@ -59,6 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly string PositionMetadata;
         public readonly string StreamMetadata;
         public readonly bool IsLinkToDeletedStream;
+        public readonly bool IsLinkToDeletedStreamTombstone;
 
         public ResolvedEvent(EventStore.Core.Data.ResolvedEvent resolvedEvent, byte[] streamMetadata)
         {
@@ -111,9 +112,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     originalPosition = new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
 
                 JToken deletedValue;
-                if (resolvedEvent.ResolveResult == ReadEventResult.StreamDeleted
-                    || resolvedEvent.ResolveResult == ReadEventResult.NoStream
-                    || extraMetadata != null && extraMetadata.TryGetValue("$deleted", out deletedValue))
+                IsLinkToDeletedStreamTombstone = extraMetadata != null && extraMetadata.TryGetValue("$deleted", out deletedValue);
+                if (resolvedEvent.ResolveResult == ReadEventResult.NoStream
+                    || resolvedEvent.ResolveResult == ReadEventResult.StreamDeleted || IsLinkToDeletedStreamTombstone)
                 {
                     IsLinkToDeletedStream = true;
                     var streamId = SystemEventTypes.StreamReferenceEventToStreamId(

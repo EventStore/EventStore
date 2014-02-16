@@ -79,6 +79,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             When();
         }
 
+        [TearDown]
+        public void PostTestAsserts()
+        {
+            var all = _manager.ListAll(_admin);
+            Assert.That(!all.Contains("Faulted"), "Projections faulted while running the test");
+        }
+
         protected void EnableStandardProjections()
         {
             EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
