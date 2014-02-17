@@ -28,11 +28,10 @@
 
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
+namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_from_all_foreach_projection.recovery
 {
     [TestFixture]
-    public class with_from_all_foreach_projection_running_and_no_indexing_and_other_events :
-        specification_with_standard_projections_runnning
+    public class when_running_and_events_get_indexed_before_recovery : specification_with_standard_projections_runnning
     {
         protected override bool GivenStandardProjectionsRunning()
         {
@@ -43,8 +42,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete
         {
             base.Given();
             PostEvent("stream1", "type1", "{}");
-            PostEvent("stream1", "type2", "{}");
             PostEvent("stream2", "type1", "{}");
+            PostEvent("stream1", "type2", "{}");
             PostEvent("stream2", "type2", "{}");
             WaitIdle();
             PostProjection(@"
@@ -52,29 +51,34 @@ fromAll().foreachStream().when({
     $init: function(){return {a:0}},
     type1: function(s,e){s.a++},
     type2: function(s,e){s.a++},
-    $deleted: function(s,e){s.deleted=1;},
+    $deleted: function(s,e){s.deleted=1},
 }).outputState();
 ");
+            WaitIdle();
+            HardDeleteStream("stream1");
+            WaitIdle();
+            _manager.Abort("test-projection", _admin);
+            WaitIdle();
+            EnableStandardProjections();
+            WaitIdle();
+            DisableStandardProjections();
+            WaitIdle();
+            EnableStandardProjections();
+            WaitIdle();
         }
 
         protected override void When()
         {
             base.When();
-            this.HardDeleteStream("stream1");
-            WaitIdle();
-            PostEvent("stream2", "type1", "{}");
-            PostEvent("stream2", "type2", "{}");
-            PostEvent("stream3", "type1", "{}");
+            _manager.Enable("test-projection", _admin);
             WaitIdle();
         }
 
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
-            AssertStreamTail(
-                "$projections-test-projection-stream1-result", "Result:{\"a\":2}", "Result:{\"a\":2,\"deleted\":1}");
-            AssertStreamTail("$projections-test-projection-stream2-result", "Result:{\"a\":4}");
-            AssertStreamTail("$projections-test-projection-stream3-result", "Result:{\"a\":1}");
+            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{\"a\":2,\"deleted\":1}");
+            AssertStreamTail("$projections-test-projection-stream2-result", "Result:{\"a\":2}");
         }
     }
 }

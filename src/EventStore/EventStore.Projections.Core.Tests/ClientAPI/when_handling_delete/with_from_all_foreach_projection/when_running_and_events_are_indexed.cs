@@ -28,11 +28,10 @@
 
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.recovery
+namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_from_all_foreach_projection
 {
     [TestFixture]
-    public class with_from_all_foreach_projection_running_and_events_get_indexed_before_recovery :
-        specification_with_standard_projections_runnning
+    public class when_running_and_events_are_indexed : specification_with_standard_projections_runnning
     {
         protected override bool GivenStandardProjectionsRunning()
         {
@@ -43,42 +42,44 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.recov
         {
             base.Given();
             PostEvent("stream1", "type1", "{}");
-            PostEvent("stream2", "type1", "{}");
             PostEvent("stream1", "type2", "{}");
+            PostEvent("stream2", "type1", "{}");
             PostEvent("stream2", "type2", "{}");
             WaitIdle();
-            PostProjection(@"
-fromAll().foreachStream().when({
-    $init: function(){return {a:0}},
-    type1: function(s,e){s.a++},
-    type2: function(s,e){s.a++},
-    $deleted: function(s,e){s.deleted=1},
-}).outputState();
-");
+            EnableStandardProjections();
             WaitIdle();
             HardDeleteStream("stream1");
             WaitIdle();
-            _manager.Abort("test-projection", _admin);
-            WaitIdle();
-            EnableStandardProjections();
-            WaitIdle();
             DisableStandardProjections();
             WaitIdle();
-            EnableStandardProjections();
-            WaitIdle();
+
+            // required to flush index checkpoint
+            {
+                EnableStandardProjections();
+                WaitIdle();
+                DisableStandardProjections();
+                WaitIdle();
+            }
         }
 
         protected override void When()
         {
             base.When();
-            _manager.Enable("test-projection", _admin);
+            PostProjection(@"
+fromAll().foreachStream().when({
+    $init: function(){return {}},
+    type1: function(s,e){s.a=(s.a||0) + 1},
+    type2: function(s,e){s.a=(s.a||0) + 1},
+    $deleted: function(s,e){s.deleted=1},
+}).outputState();
+");
             WaitIdle();
         }
 
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
-            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{\"a\":2,\"deleted\":1}");
+            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{\"deleted\":1}");
             AssertStreamTail("$projections-test-projection-stream2-result", "Result:{\"a\":2}");
         }
     }
