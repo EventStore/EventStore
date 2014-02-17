@@ -31,7 +31,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_from_category_foreach_projection
 {
     [TestFixture]
-    public class when_running_and_no_indexing_and_other_events : specification_with_standard_projections_runnning
+    public class when_running_and_then_other_events_tombstone_ant_other_events : specification_with_standard_projections_runnning
     {
         protected override bool GivenStandardProjectionsRunning()
         {
@@ -41,11 +41,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_
         protected override void Given()
         {
             base.Given();
-            PostEvent("stream-1", "type1", "{}");
-            PostEvent("stream-1", "type2", "{}");
-            PostEvent("stream-2", "type1", "{}");
-            PostEvent("stream-2", "type2", "{}");
-            WaitIdle();
             PostProjection(@"
 fromCategory('stream').foreachStream().when({
     $init: function(){return {a:0}},
@@ -54,12 +49,19 @@ fromCategory('stream').foreachStream().when({
     $deleted: function(s,e){s.deleted=1;},
 }).outputState();
 ");
+            WaitIdle();
+            EnableStandardProjections();
         }
 
         protected override void When()
         {
             base.When();
-            this.HardDeleteStream("stream-1");
+            PostEvent("stream-1", "type1", "{}");
+            PostEvent("stream-1", "type2", "{}");
+            PostEvent("stream-2", "type1", "{}");
+            PostEvent("stream-2", "type2", "{}");
+            WaitIdle();
+            HardDeleteStream("stream-1");
             WaitIdle();
             PostEvent("stream-2", "type1", "{}");
             PostEvent("stream-2", "type2", "{}");

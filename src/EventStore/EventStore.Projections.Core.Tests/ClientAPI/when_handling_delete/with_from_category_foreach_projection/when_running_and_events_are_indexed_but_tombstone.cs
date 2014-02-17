@@ -48,40 +48,27 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_
             WaitIdle();
             EnableStandardProjections();
             WaitIdle();
-            DisableStandardProjections();
-            WaitIdle();
-
-            // required to flush index checkpoint
-            {
-                EnableStandardProjections();
-                WaitIdle();
-                DisableStandardProjections();
-                WaitIdle();
-            }
-
-
-            HardDeleteStream("stream-1");
-            WaitIdle();
+            PostProjection(@"
+fromCategory('stream').foreachStream().when({
+    $init: function(){return {a:0}},
+    type1: function(s,e){s.a++},
+    type2: function(s,e){s.a++},
+    $deleted: function(s,e){s.deleted=1},
+}).outputState();
+");
         }
 
         protected override void When()
         {
             base.When();
-            PostProjection(@"
-fromCategory('stream').foreachStream().when({
-    $init: function(){return {}},
-    type1: function(s,e){s.a=1},
-    type2: function(s,e){s.a=1},
-    $deleted: function(s,e){s.deleted=1},
-}).outputState();
-");
+            HardDeleteStream("stream-1");
             WaitIdle();
         }
 
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
-            AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"deleted\":1}");
+            AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"a\":2,\"deleted\":1}");
         }
     }
 }

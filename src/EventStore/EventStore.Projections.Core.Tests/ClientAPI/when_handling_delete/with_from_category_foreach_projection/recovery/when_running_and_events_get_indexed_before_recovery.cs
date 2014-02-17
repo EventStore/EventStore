@@ -46,6 +46,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_
             PostEvent("stream-1", "type2", "{}");
             PostEvent("stream-2", "type2", "{}");
             WaitIdle();
+            EnableStandardProjections();
+            WaitIdle();
             PostProjection(@"
 fromCategory('stream').foreachStream().when({
     $init: function(){return {a:0}},
@@ -58,12 +60,6 @@ fromCategory('stream').foreachStream().when({
             HardDeleteStream("stream-1");
             WaitIdle();
             _manager.Abort("test-projection", _admin);
-            WaitIdle();
-            EnableStandardProjections();
-            WaitIdle();
-            DisableStandardProjections();
-            WaitIdle();
-            EnableStandardProjections();
             WaitIdle();
         }
 

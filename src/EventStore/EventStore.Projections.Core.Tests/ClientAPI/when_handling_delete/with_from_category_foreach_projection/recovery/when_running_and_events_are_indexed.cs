@@ -59,10 +59,6 @@ fromCategory('stream').foreachStream().when({
             WaitIdle();
             HardDeleteStream("stream-1");
             WaitIdle();
-            DisableStandardProjections();
-            WaitIdle();
-            EnableStandardProjections();
-            WaitIdle();
         }
 
         protected override void When()
