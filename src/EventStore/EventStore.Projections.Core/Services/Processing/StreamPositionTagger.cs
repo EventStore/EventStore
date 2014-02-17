@@ -81,12 +81,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new ArgumentException(
                     string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
 
-            if (partitionDeleted.Partition != _stream)
+            if (partitionDeleted.PositionStreamId != _stream)
                 throw new InvalidOperationException(
                     string.Format(
                         "Invalid stream '{0}'.  Expected stream is '{1}'", partitionDeleted.Partition, _stream));
+
+            // return ordinary checkpoint tag (suitable for fromCategory.foreachStream as well as for regular fromStream
             return CheckpointTag.FromStreamPosition(
-                previous.Phase, partitionDeleted.Partition, EventNumber.DeletedStream);
+                previous.Phase, partitionDeleted.PositionStreamId, partitionDeleted.PositionEventNumber.Value);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()

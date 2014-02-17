@@ -207,14 +207,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: handle if not the same
                 return CreatePausedStreamEventReader(
                     eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true,
-                    stopAfterNEvents: stopAfterNEvents);
+                    stopAfterNEvents: stopAfterNEvents, produceStreamDeletes: _includeStreamDeletedNotification);
             }
             if (_categories != null && _categories.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 return CreatePausedStreamEventReader(
                     eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true,
-                    stopAfterNEvents: stopAfterNEvents);
+                    stopAfterNEvents: stopAfterNEvents, produceStreamDeletes: _includeStreamDeletedNotification);
             }
             if (_streams != null && _streams.Count > 1)
             {
@@ -276,13 +276,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private IEventReader CreatePausedStreamEventReader(
             Guid eventReaderId, IODispatcher ioDispatcher, IPublisher publisher, CheckpointTag checkpointTag,
-            string streamName, bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos)
+            string streamName, bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, bool produceStreamDeletes)
         {
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
             var eventReader = new StreamEventReader(
                 ioDispatcher, publisher, eventReaderId, _runAs, streamName, fromSequenceNumber, _timeProvider,
-                resolveLinkTos, stopOnEof, stopAfterNEvents);
+                resolveLinkTos, produceStreamDeletes, stopOnEof, stopAfterNEvents);
             return eventReader;
         }
 

@@ -35,6 +35,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Standard;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -44,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _fromSequenceNumber;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
+        private readonly bool _produceStreamDeletes;
 
         private bool _eventsRequested;
         private int _maxReadCount = 111;
@@ -54,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public StreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
             string streamName, int fromSequenceNumber, ITimeProvider timeProvider, bool resolveLinkTos,
-            bool stopOnEof = false, int? stopAfterNEvents = null)
+            bool produceStreamDeletes, bool stopOnEof = false, int? stopAfterNEvents = null)
             : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
@@ -64,6 +66,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _fromSequenceNumber = fromSequenceNumber;
             _timeProvider = timeProvider;
             _resolveLinkTos = resolveLinkTos;
+            _produceStreamDeletes = produceStreamDeletes;
         }
 
         protected override bool AreEventsRequested()
@@ -209,11 +212,45 @@ namespace EventStore.Projections.Core.Services.Processing
                         "Event number {0} was expected in the stream {1}, but event number {2} was received",
                         sequenceNumber, _streamName, positionEvent.EventNumber));
             sequenceNumber = positionEvent.EventNumber + 1;
-            _publisher.Publish(
-                //TODO: publish both link and event data
-                new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId, new ResolvedEvent(pair, null),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
+            var resolvedEvent = new ResolvedEvent(pair, null);
+
+            string partitionStreamId;
+
+            bool isDeletedStreamEvent;
+            if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
+                return;
+
+            if (resolvedEvent.IsLinkToDeletedStreamTombstone)
+            {
+                isDeletedStreamEvent = true;
+                partitionStreamId = resolvedEvent.EventStreamId;
+            }
+            else
+            {
+                isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                    resolvedEvent.EventStreamId, resolvedEvent.EventType, resolvedEvent.Data, out partitionStreamId);
+            }
+
+            if (isDeletedStreamEvent)
+            {
+                var deletedPartition = partitionStreamId;
+
+                if (_produceStreamDeletes)
+                    _publisher.Publish(
+                        //TODO: publish both link and event data
+                        new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
+                            EventReaderCorrelationId, deletedPartition, source: this.GetType(),
+                            lastEventNumber: -1, deleteEventPosition: null,
+                            positionStreamId: resolvedEvent.PositionStreamId,
+                            positionEventNumber: resolvedEvent.PositionSequenceNumber));
+            }
+
+            else
+                _publisher.Publish(
+                    //TODO: publish both link and event data
+                    new ReaderSubscriptionMessage.CommittedEventDistributed(
+                        EventReaderCorrelationId, resolvedEvent, _stopOnEof ? (long?) null : positionEvent.LogPosition,
+                        progress, source: this.GetType()));
         }
     }
 }
