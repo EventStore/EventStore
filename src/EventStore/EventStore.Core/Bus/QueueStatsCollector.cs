@@ -245,12 +245,18 @@ namespace EventStore.Core.Bus
         public static void WaitIdle()
         {
 #if DEBUG
+            var counter = 0;
             lock (_notifyLock)
             {
                 while (_nonIdle > 0 || _length > 0 || _writerCheckpoint.Read() != _chaserCheckpoint.Read())
                 {
                     if (!Monitor.Wait(_notifyLock, 100))
+                    {
                         Console.WriteLine("Waiting for IDLE state...");
+                        counter++;
+                        if (counter > 10)
+                            throw new ApplicationException("Infinite loop?");
+                    }
                 }
             }
 #endif
