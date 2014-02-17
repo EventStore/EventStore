@@ -28,6 +28,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Services;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -54,7 +55,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
             //TODO: add tests to assure that resolved by link events are not passed twice into the subscription?!!
-            return !resolvedFromLinkTo || _streams.Contains(positionStreamId);
+            return !(resolvedFromLinkTo && !SystemStreams.IsSystemStream(positionStreamId))
+                   || _streams.Contains(positionStreamId);
         }
 
         public override string GetCategory(string positionStreamId)
