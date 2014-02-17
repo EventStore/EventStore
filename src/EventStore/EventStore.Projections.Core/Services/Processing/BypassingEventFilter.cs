@@ -35,6 +35,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
         }
 
+        public override bool DeletedNotificationPasses(string positionStreamId)
+        {
+            return true;
+        }
+
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
             return true;

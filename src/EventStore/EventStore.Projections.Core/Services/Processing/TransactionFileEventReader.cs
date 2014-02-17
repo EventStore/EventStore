@@ -194,15 +194,19 @@ namespace EventStore.Projections.Core.Services.Processing
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
                     100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
 
-            string positionStreamId;
-            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
-                resolvedEvent.PositionStreamId, resolvedEvent.EventType, resolvedEvent.Data, out positionStreamId);
-            if (isStreamDeletedEvent)
-                 _publisher.Publish(
+            string deletedPartitionStreamId;
+            if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
+                return;
+
+            bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                resolvedEvent, out deletedPartitionStreamId);
+            if (isDeletedStreamEvent)
+                _publisher.Publish(
                     new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
-                        EventReaderCorrelationId, positionStreamId, source: this.GetType(), lastEventNumber: -1,
-                        deleteEventPosition: resolvedEvent.OriginalPosition, positionStreamId: null,
-                        positionEventNumber: null));
+                        EventReaderCorrelationId, deletedPartitionStreamId, source: this.GetType(), lastEventNumber: -1,
+                        deleteEventOrLinkTargetPosition: resolvedEvent.EventOrLinkTargetPosition,
+                        deleteLinkOrEventPosition: resolvedEvent.LinkOrEventPosition,
+                        positionStreamId: positionEvent.EventStreamId, positionEventNumber: positionEvent.EventNumber));
         }
     }
 }

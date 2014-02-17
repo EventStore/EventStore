@@ -199,6 +199,26 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 #endif
         }
 
+        [Conditional("DEBUG")]
+        protected void DumpStream(string streamId)
+        {
+#if DEBUG
+            var result = _conn.ReadStreamEventsBackward(streamId, -1, 100, true, _admin);
+            switch (result.Status)
+            {
+                case SliceReadStatus.StreamDeleted:
+                    Assert.Fail("Stream '{0}' is deleted", streamId);
+                    break;
+                case SliceReadStatus.StreamNotFound:
+                    Assert.Fail("Stream '{0}' does not exist", streamId);
+                    break;
+                case SliceReadStatus.Success:
+                    Dump("Dumping..", streamId, result.Events.Reverse().ToArray());
+                    break;
+            }
+#endif
+        }
+
 #if DEBUG
         private void DumpFailed(string message, string streamId, string[] events, ResolvedEvent[] resultEvents)
         {
@@ -213,6 +233,21 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             Assert.Fail(
                 "Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n Expected events: \r\n{3}\r\n\r\nActual metas:{4}", streamId,
                 message, actual, expected, actualMeta);
+
+        }
+
+        private void Dump(string message, string streamId, ResolvedEvent[] resultEvents)
+        {
+            var actual = resultEvents.Aggregate(
+                "", (a, v) => a + ", " + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugDataView);
+
+            var actualMeta = resultEvents.Aggregate(
+                "", (a, v) => a + "\r\n" + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugMetadataView);
+
+
+            Debug.WriteLine(
+                "Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n \r\nActual metas:{3}", streamId,
+                message, actual, actualMeta);
         }
 #endif
 

@@ -40,6 +40,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _includeLinks = includeLinks;
         }
 
+        public override bool DeletedNotificationPasses(string positionStreamId)
+        {
+            return true;
+        }
+
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
             return _includeLinks || !resolvedFromLinkTo;

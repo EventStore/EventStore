@@ -133,15 +133,15 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected void SendPartitionDeleted(
-            string partition, int? lastEventNumber, TFPos? deletedEventPosition, string positionStreamId,
+            string partition, int? lastEventNumber, TFPos? deletedLinkOrEventPosition, TFPos? deletedEventPosition, string positionStreamId,
             int? positionEventNumber, CheckpointTag preTagged = null)
         {
             if (_disposed)
                 return;
             _publisher.Publish(
                 new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
-                    EventReaderCorrelationId, partition, lastEventNumber, deletedEventPosition, positionStreamId,
-                    positionEventNumber, preTagged));
+                    EventReaderCorrelationId, partition, lastEventNumber, deletedLinkOrEventPosition,
+                    deletedEventPosition, positionStreamId, positionEventNumber, preTagged));
         } 
 
         public void SendNotAuthorized()

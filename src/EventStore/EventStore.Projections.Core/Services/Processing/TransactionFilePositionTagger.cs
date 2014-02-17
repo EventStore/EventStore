@@ -103,10 +103,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new ArgumentException(
                     string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
 
-            if (partitionDeleted.DeleteEventPosition == null)
-                throw new ArgumentException("Invalid partiton deleted message. DeleteEventPosition required");
+            if (partitionDeleted.DeleteLinkOrEventPosition == null)
+                throw new ArgumentException("Invalid partiton deleted message. deleteEventOrLinkTargetPosition required");
 
-            return CheckpointTag.FromPosition(previous.Phase, partitionDeleted.DeleteEventPosition.Value);
+            return CheckpointTag.FromPosition(previous.Phase, partitionDeleted.DeleteLinkOrEventPosition.Value);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()

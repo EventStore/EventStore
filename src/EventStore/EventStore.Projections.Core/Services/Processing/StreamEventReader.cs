@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
                     PauseOrContinueProcessing();
                     SendIdle();
-                    SendPartitionDeleted(_streamName, -1, null, null, null);
+                    SendPartitionDeleted(_streamName, -1, null, null, null, null);
                     SendEof();
                     break;
                 case ReadStreamResult.NoStream:
@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     PauseOrContinueProcessing();
                     SendIdle();
                     if (message.LastEventNumber >= 0)
-                        SendPartitionDeleted(_streamName, message.LastEventNumber, null, null, null);
+                        SendPartitionDeleted(_streamName, message.LastEventNumber, null, null, null, null);
                     SendEof();
                     break;
                 case ReadStreamResult.Success:
@@ -214,33 +214,23 @@ namespace EventStore.Projections.Core.Services.Processing
             sequenceNumber = positionEvent.EventNumber + 1;
             var resolvedEvent = new ResolvedEvent(pair, null);
 
-            string partitionStreamId;
+            string deletedPartitionStreamId;
 
-            bool isDeletedStreamEvent;
             if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
                 return;
 
-            if (resolvedEvent.IsLinkToDeletedStreamTombstone)
-            {
-                isDeletedStreamEvent = true;
-                partitionStreamId = resolvedEvent.EventStreamId;
-            }
-            else
-            {
-                isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
-                    resolvedEvent.EventStreamId, resolvedEvent.EventType, resolvedEvent.Data, out partitionStreamId);
-            }
+            bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(resolvedEvent, out deletedPartitionStreamId);
 
             if (isDeletedStreamEvent)
             {
-                var deletedPartition = partitionStreamId;
+                var deletedPartition = deletedPartitionStreamId;
 
                 if (_produceStreamDeletes)
                     _publisher.Publish(
                         //TODO: publish both link and event data
                         new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
-                            EventReaderCorrelationId, deletedPartition, source: this.GetType(),
-                            lastEventNumber: -1, deleteEventPosition: null,
+                            EventReaderCorrelationId, deletedPartition, source: this.GetType(), lastEventNumber: -1,
+                            deleteEventOrLinkTargetPosition: null, deleteLinkOrEventPosition: resolvedEvent.EventOrLinkTargetPosition,
                             positionStreamId: resolvedEvent.PositionStreamId,
                             positionEventNumber: resolvedEvent.PositionSequenceNumber));
             }

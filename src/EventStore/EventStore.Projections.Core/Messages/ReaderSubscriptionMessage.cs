@@ -159,18 +159,21 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly string _partition;
             private readonly int? _lastEventNumber;
-            private readonly TFPos? _deleteEventPosition;
+            private readonly TFPos? _deleteLinkOrEventPosition;
+            private readonly TFPos? _deleteEventOrLinkTargetPosition;
             private readonly string _positionStreamId;
             private readonly int? _positionEventNumber;
 
             public EventReaderPartitionDeleted(
-                Guid correlationId, string partition, int? lastEventNumber, TFPos? deleteEventPosition,
-                string positionStreamId, int? positionEventNumber, CheckpointTag preTagged = null, object source = null)
+                Guid correlationId, string partition, int? lastEventNumber, TFPos? deleteLinkOrEventPosition,
+                TFPos? deleteEventOrLinkTargetPosition, string positionStreamId, int? positionEventNumber,
+                CheckpointTag preTagged = null, object source = null)
                 : base(correlationId, preTagged, source)
             {
                 _partition = partition;
                 _lastEventNumber = lastEventNumber;
-                _deleteEventPosition = deleteEventPosition;
+                _deleteLinkOrEventPosition = deleteLinkOrEventPosition;
+                _deleteEventOrLinkTargetPosition = deleteEventOrLinkTargetPosition;
                 _positionStreamId = positionStreamId;
                 _positionEventNumber = positionEventNumber;
             }
@@ -185,9 +188,9 @@ namespace EventStore.Projections.Core.Messages
                 get { return _lastEventNumber; }
             }
 
-            public TFPos? DeleteEventPosition
+            public TFPos? DeleteEventOrLinkTargetPosition
             {
-                get { return _deleteEventPosition; }
+                get { return _deleteEventOrLinkTargetPosition; }
             }
 
             public string PositionStreamId
@@ -198,6 +201,11 @@ namespace EventStore.Projections.Core.Messages
             public int? PositionEventNumber
             {
                 get { return _positionEventNumber; }
+            }
+
+            public TFPos? DeleteLinkOrEventPosition
+            {
+                get { return _deleteLinkOrEventPosition; }
             }
         }
 

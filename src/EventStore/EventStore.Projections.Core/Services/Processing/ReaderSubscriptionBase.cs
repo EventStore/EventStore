@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int? _checkpointProcessedEventsThreshold;
         private readonly bool _stopOnEof;
         private readonly int? _stopAfterNEvents;
-        private readonly EventFilter _eventFilter;
+        protected readonly EventFilter _eventFilter;
         protected readonly PositionTagger _positionTagger;
         protected readonly PositionTracker _positionTracker;
         private long? _lastPassedOrCheckpointedEventPosition;

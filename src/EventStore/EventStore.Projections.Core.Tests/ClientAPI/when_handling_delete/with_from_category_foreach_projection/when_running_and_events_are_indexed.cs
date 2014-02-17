@@ -45,21 +45,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_
             PostEvent("stream-1", "type2", "{}");
             PostEvent("stream-2", "type1", "{}");
             PostEvent("stream-2", "type2", "{}");
-            WaitIdle();
-            EnableStandardProjections();
-            WaitIdle();
             HardDeleteStream("stream-1");
             WaitIdle();
-            DisableStandardProjections();
-            WaitIdle();
-
-            // required to flush index checkpoint
-            {
-                EnableStandardProjections();
-                WaitIdle();
-                DisableStandardProjections();
-                WaitIdle();
-            }
+            EnableStandardProjections();
         }
 
         protected override void When()

@@ -181,39 +181,31 @@ namespace EventStore.Projections.Core.Services.Processing
 
             protected void DeliverEvent(float progress, ResolvedEvent resolvedEvent, TFPos position)
             {
-                if (resolvedEvent.OriginalPosition <= _reader._lastEventPosition)
+                if (resolvedEvent.EventOrLinkTargetPosition <= _reader._lastEventPosition)
                     return;
-                _reader._lastEventPosition = resolvedEvent.OriginalPosition;
+                _reader._lastEventPosition = resolvedEvent.EventOrLinkTargetPosition;
                 _reader._deliveredEvents ++;
                 //TODO: this is incomplete.  where reading from TF we need to handle actual deletes
 
-                string partitionStreamId;
+                string deletedPartitionStreamId;
 
 
-                bool isDeletedStreamEvent;
                 if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
                     return;
 
-                if (resolvedEvent.IsLinkToDeletedStreamTombstone)
-                {
-                    isDeletedStreamEvent = true;
-                    partitionStreamId = resolvedEvent.EventStreamId;
-                }
-                else
-                {
-                    isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
-                        resolvedEvent.EventStreamId, resolvedEvent.EventType, resolvedEvent.Data, out partitionStreamId);
-                }
+                bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                    resolvedEvent, out deletedPartitionStreamId);
                 if (isDeletedStreamEvent)
                 {
-                    var deletedPartition = partitionStreamId;
+                    var deletedPartition = deletedPartitionStreamId;
 
                     if (_reader._includeDeletedStreamNotification)
                         _reader._publisher.Publish(
                             //TODO: publish both link and event data
                             new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
                                 _reader.EventReaderCorrelationId, deletedPartition, source: this.GetType(),
-                                lastEventNumber: -1, deleteEventPosition: position,
+                                lastEventNumber: -1, deleteEventOrLinkTargetPosition: position,
+                                deleteLinkOrEventPosition: resolvedEvent.EventOrLinkTargetPosition,
                                 positionStreamId: resolvedEvent.PositionStreamId,
                                 positionEventNumber: resolvedEvent.PositionSequenceNumber));
                 }

@@ -46,7 +46,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _positionStreamId;
         private readonly int _positionSequenceNumber;
         private readonly TFPos _position;
-        private readonly TFPos _originalPosition;
+        private readonly TFPos _eventOrLinkTargetPosition;
+        private readonly TFPos _linkOrEventPosition;
 
 
         public readonly Guid EventId;
@@ -64,6 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public ResolvedEvent(EventStore.Core.Data.ResolvedEvent resolvedEvent, byte[] streamMetadata)
         {
             var positionEvent = resolvedEvent.Link ?? resolvedEvent.Event;
+            _linkOrEventPosition = resolvedEvent.OriginalPosition.GetValueOrDefault();
             var @event = resolvedEvent.Event;
             _positionStreamId = positionEvent.EventStreamId;
             _positionSequenceNumber = positionEvent.EventNumber;
@@ -84,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 : null;
             StreamMetadata = streamMetadata != null ? Helper.UTF8NoBom.GetString(streamMetadata) : null;
 
-            TFPos originalPosition;
+            TFPos eventOrLinkTargetPosition;
             if (_resolvedLinkTo)
             {
                 Dictionary<string, JToken> extraMetadata = null;
@@ -104,15 +106,16 @@ namespace EventStore.Projections.Core.Services.Processing
                         tag = positionEvent.Metadata.ParseCheckpointTagJson();
                     }
                     var parsedPosition = tag.Position;
-                    originalPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
-                                           ? parsedPosition
-                                           : new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
+                    eventOrLinkTargetPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
+                        ? parsedPosition
+                        : new TFPos(-1, resolvedEvent.Event.LogPosition);
                 }
                 else
-                    originalPosition = new TFPos(-1, resolvedEvent.OriginalEvent.LogPosition);
+                    eventOrLinkTargetPosition = new TFPos(-1, resolvedEvent.Event.LogPosition);
 
                 JToken deletedValue;
-                IsLinkToDeletedStreamTombstone = extraMetadata != null && extraMetadata.TryGetValue("$deleted", out deletedValue);
+                IsLinkToDeletedStreamTombstone = extraMetadata != null
+                                                 && extraMetadata.TryGetValue("$deleted", out deletedValue);
                 if (resolvedEvent.ResolveResult == ReadEventResult.NoStream
                     || resolvedEvent.ResolveResult == ReadEventResult.StreamDeleted || IsLinkToDeletedStreamTombstone)
                 {
@@ -124,16 +127,17 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                originalPosition = resolvedEvent.OriginalPosition ?? new TFPos(-1, positionEvent.LogPosition); 
+                // not a link
+                eventOrLinkTargetPosition = resolvedEvent.OriginalPosition ?? new TFPos(-1, positionEvent.LogPosition);
             }
-            _originalPosition = originalPosition;
+            _eventOrLinkTargetPosition = eventOrLinkTargetPosition;
 
         }
 
 
         public ResolvedEvent(
             string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
-            bool resolvedLinkTo, TFPos position, TFPos originalPosition, Guid eventId, string eventType, bool isJson, byte[] data,
+            bool resolvedLinkTo, TFPos position, TFPos eventOrLinkTargetPosition, Guid eventId, string eventType, bool isJson, byte[] data,
             byte[] metadata, byte[] positionMetadata, byte[] streamMetadata, DateTime timestamp)
         {
 
@@ -143,7 +147,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventSequenceNumber = eventSequenceNumber;
             _resolvedLinkTo = resolvedLinkTo;
             _position = position;
-            _originalPosition = originalPosition;
+            _eventOrLinkTargetPosition = eventOrLinkTargetPosition;
             EventId = eventId;
             EventType = eventType;
             IsJson = isJson;
@@ -215,9 +219,14 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _position; }
         }
 
-        public TFPos OriginalPosition
+        public TFPos EventOrLinkTargetPosition
         {
-            get { return _originalPosition; }
+            get { return _eventOrLinkTargetPosition; }
+        }
+
+        public TFPos LinkOrEventPosition
+        {
+            get { return _linkOrEventPosition; }
         }
     }
 }

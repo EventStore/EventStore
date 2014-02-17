@@ -1,29 +1,47 @@
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Utils;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Standard
 {
     public static class StreamDeletedHelper
     {
+        public static bool IsStreamDeletedEvent(ResolvedEvent resolvedEvent, out string deletedPartitionStreamId)
+        {
+            bool isDeletedStreamEvent;
+            if (resolvedEvent.IsLinkToDeletedStreamTombstone)
+            {
+                isDeletedStreamEvent = true;
+                deletedPartitionStreamId = resolvedEvent.EventStreamId;
+            }
+            else
+            {
+                isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                    resolvedEvent.EventStreamId, resolvedEvent.EventType, resolvedEvent.Data,
+                    out deletedPartitionStreamId);
+            }
+            return isDeletedStreamEvent;
+        }
+
         public static bool IsStreamDeletedEvent(
-            string streamOrMetaStreamId, string eventType, string eventData, out string streamId)
+            string streamOrMetaStreamId, string eventType, string eventData, out string deletedPartitionStreamId)
         {
             if (string.IsNullOrEmpty(streamOrMetaStreamId))
             {
-                streamId = null;
+                deletedPartitionStreamId = null;
                 return false;
             }
             bool isMetaStream;
             if (SystemStreams.IsMetastream(streamOrMetaStreamId))
             {
                 isMetaStream = true;
-                streamId = streamOrMetaStreamId.Substring("$$".Length);
+                deletedPartitionStreamId = streamOrMetaStreamId.Substring("$$".Length);
             }
             else
             {
                 isMetaStream = false;
-                streamId = streamOrMetaStreamId;
+                deletedPartitionStreamId = streamOrMetaStreamId;
             }
             var isStreamDeletedEvent = false;
             if (isMetaStream)
@@ -46,18 +64,18 @@ namespace EventStore.Projections.Core.Standard
         }
 
         public static bool IsStreamDeletedEvent(
-            string streamOrMetaStreamId, string eventType, byte[] eventData, out string streamId)
+            string streamOrMetaStreamId, string eventType, byte[] eventData, out string deletedPartitionStreamId)
         {
             bool isMetaStream;
             if (SystemStreams.IsMetastream(streamOrMetaStreamId))
             {
                 isMetaStream = true;
-                streamId = streamOrMetaStreamId.Substring("$$".Length);
+                deletedPartitionStreamId = streamOrMetaStreamId.Substring("$$".Length);
             }
             else
             {
                 isMetaStream = false;
-                streamId = streamOrMetaStreamId;
+                deletedPartitionStreamId = streamOrMetaStreamId;
             }
             var isStreamDeletedEvent = false;
             if (isMetaStream)

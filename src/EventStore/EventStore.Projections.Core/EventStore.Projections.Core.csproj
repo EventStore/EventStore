@@ -221,8 +221,6 @@
     <Compile Include="Services\Processing\ICoreProjectionForProcessingPhase.cs" />
     <Compile Include="Services\Processing\IEventReader.cs" />
     <Compile Include="Services\Processing\IEventWriter.cs" />
-    <Compile Include="Services\Processing\IndexedEventTypeEventFilter.cs" />
-    <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
     <Compile Include="Services\Processing\IEventProcessingPhase.cs" />
     <Compile Include="Services\Processing\IProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\IReaderStrategy.cs" />

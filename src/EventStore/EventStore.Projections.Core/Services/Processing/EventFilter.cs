@@ -46,6 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
                    && (_allEvents || _events != null && _events.Contains(eventName));
         }
 
+        public abstract bool DeletedNotificationPasses(string positionStreamId);
         public abstract bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType);
         public abstract string GetCategory(string positionStreamId);
     }

@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Processing
             public readonly ReaderSubscriptionMessage.EventReaderPartitionDeleted Message;
 
             public PartitionDeletedItem(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-                : base(message.DeleteEventPosition.Value)
+                : base(message.DeleteLinkOrEventPosition.Value)
             {
                 Message = message;
             }
@@ -166,13 +166,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ValidateEventOrder(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
         {
-            if (_lastEventPosition > message.DeleteEventPosition.Value
-                || _lastDeletePosition >= message.DeleteEventPosition.Value)
+            if (_lastEventPosition > message.DeleteLinkOrEventPosition.Value
+                || _lastDeletePosition >= message.DeleteLinkOrEventPosition.Value)
                 throw new InvalidOperationException(
                     string.Format(
                         "Invalid partition deleted event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
-                        _lastEventPosition, message.DeleteEventPosition.Value, _lastEventPosition));
-            _lastDeletePosition = message.DeleteEventPosition.Value;
+                        _lastEventPosition, message.DeleteLinkOrEventPosition.Value, _lastEventPosition));
+            _lastDeletePosition = message.DeleteLinkOrEventPosition.Value;
         }
 
         public void Start(Guid eventReaderId, IEventReader eventReader)

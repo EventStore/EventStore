@@ -112,7 +112,7 @@
     <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\recovery\when_running_and_events_are_indexed.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\recovery\when_running_and_events_get_indexed_before_recovery.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\when_running_and_events_are_indexed.cs" />
-    <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\when_running_and_events_are_indexed_but_a_stream_and_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\when_running_and_events_are_indexed_but_a_stream_and_tombstone_postponed.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\when_running_and_events_are_indexed_but_more_events_and_tombstone.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\when_running_and_events_are_indexed_but_tombstone.cs" />
     <Compile Include="ClientAPI\when_handling_delete\with_from_category_foreach_projection\when_running_and_no_indexing.cs" />

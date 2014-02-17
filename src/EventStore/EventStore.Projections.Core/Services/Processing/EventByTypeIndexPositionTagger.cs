@@ -60,10 +60,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return true;
             if (previous.Mode_ != CheckpointTag.Mode.EventTypeIndex)
                 throw new ArgumentException("Mode.EventTypeIndex expected", "previous");
-            if (committedEvent.Data.OriginalPosition.CommitPosition <= 0)
+            if (committedEvent.Data.EventOrLinkTargetPosition.CommitPosition <= 0)
                 throw new ArgumentException("complete TF position required", "committedEvent");
 
-            return committedEvent.Data.OriginalPosition > previous.Position;
+            return committedEvent.Data.EventOrLinkTargetPosition > previous.Position;
         }
 
         public override CheckpointTag MakeCheckpointTag(
@@ -73,18 +73,18 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new ArgumentException(
                     string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
 
-            if (committedEvent.Data.OriginalPosition < previous.Position)
+            if (committedEvent.Data.EventOrLinkTargetPosition < previous.Position)
                 throw new InvalidOperationException(
                     string.Format(
                         "Cannot make a checkpoint tag at earlier position. '{0}' < '{1}'",
-                        committedEvent.Data.OriginalPosition, previous.Position));
+                        committedEvent.Data.EventOrLinkTargetPosition, previous.Position));
             var byIndex = _streams.Contains(committedEvent.Data.PositionStreamId);
             return byIndex
                        ? previous.UpdateEventTypeIndexPosition(
-                           committedEvent.Data.OriginalPosition,
+                           committedEvent.Data.EventOrLinkTargetPosition,
                            _streamToEventType[committedEvent.Data.PositionStreamId],
                            committedEvent.Data.PositionSequenceNumber)
-                       : previous.UpdateEventTypeIndexPosition(committedEvent.Data.OriginalPosition);
+                       : previous.UpdateEventTypeIndexPosition(committedEvent.Data.EventOrLinkTargetPosition);
         }
 
         public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
@@ -99,18 +99,18 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new ArgumentException(
                     string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
 
-            if (partitionDeleted.DeleteEventPosition < previous.Position)
+            if (partitionDeleted.DeleteEventOrLinkTargetPosition < previous.Position)
                 throw new InvalidOperationException(
                     string.Format(
                         "Cannot make a checkpoint tag at earlier position. '{0}' < '{1}'",
-                        partitionDeleted.DeleteEventPosition, previous.Position));
+                        partitionDeleted.DeleteEventOrLinkTargetPosition, previous.Position));
             var byIndex = _streams.Contains(partitionDeleted.PositionStreamId);
             //TODO: handle invalid partition deleted messages without required values
             return byIndex
                 ? previous.UpdateEventTypeIndexPosition(
-                    partitionDeleted.DeleteEventPosition.Value, _streamToEventType[partitionDeleted.PositionStreamId],
+                    partitionDeleted.DeleteEventOrLinkTargetPosition.Value, _streamToEventType[partitionDeleted.PositionStreamId],
                     partitionDeleted.PositionEventNumber.Value)
-                : previous.UpdateEventTypeIndexPosition(partitionDeleted.DeleteEventPosition.Value);
+                : previous.UpdateEventTypeIndexPosition(partitionDeleted.DeleteEventOrLinkTargetPosition.Value);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()

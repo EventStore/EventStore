@@ -31,7 +31,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_from_category_foreach_projection
 {
     [TestFixture]
-    public class when_running_and_events_are_indexed_but_a_stream_and_tombstone :
+    public class when_running_and_events_are_indexed_but_a_stream_and_tombstone_postponed :
         specification_with_standard_projections_runnning
     {
         protected override bool GivenStandardProjectionsRunning()
@@ -49,24 +49,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_
             WaitIdle();
             DisableStandardProjections();
             WaitIdle();
-
-            // required to flush index checkpoint
-            {
-                EnableStandardProjections();
-                WaitIdle();
-                DisableStandardProjections();
-                WaitIdle();
-            }
-
-            PostEvent("stream-1", "type1", "{}");
-            PostEvent("stream-1", "type2", "{}");
-            HardDeleteStream("stream-1");
-            WaitIdle();
-        }
-
-        protected override void When()
-        {
-            base.When();
+            
             PostProjection(@"
 fromCategory('stream').foreachStream().when({
     $init: function(){return {a:0}},
@@ -76,11 +59,25 @@ fromCategory('stream').foreachStream().when({
 }).outputState();
 ");
             WaitIdle();
+            // SUT projection must have been joined heading reader
+            EnableStandardProjections();
+            WaitIdle();
+        }
+
+        protected override void When()
+        {
+            base.When();
+            PostEvent("stream-1", "type1", "{}");
+            PostEvent("stream-1", "type2", "{}");
+            WaitIdle();
+            HardDeleteStream("stream-1");
+            WaitIdle();
         }
 
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
+            DumpStream("$ce-stream");
             AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"a\":2,\"deleted\":1}");
         }
     }
