@@ -41,10 +41,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_
         protected override void Given()
         {
             base.Given();
-            PostEvent("stream1", "type1", "{}");
-            PostEvent("stream1", "type2", "{}");
-            PostEvent("stream2", "type1", "{}");
-            PostEvent("stream2", "type2", "{}");
+            PostEvent("stream-1", "type1", "{}");
+            PostEvent("stream-1", "type2", "{}");
+            PostEvent("stream-2", "type1", "{}");
+            PostEvent("stream-2", "type2", "{}");
             WaitIdle();
             EnableStandardProjections();
             WaitIdle();
@@ -57,7 +57,7 @@ fromAll().foreachStream().when({
 }).outputState();
 ");
             WaitIdle();
-            HardDeleteStream("stream1");
+            HardDeleteStream("stream-1");
             WaitIdle();
             DisableStandardProjections();
             WaitIdle();
@@ -77,8 +77,8 @@ fromAll().foreachStream().when({
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
-            AssertStreamTail("$projections-test-projection-stream1-result", "Result:{\"a\":2,\"deleted\":1}");
-            AssertStreamTail("$projections-test-projection-stream2-result", "Result:{\"a\":2}");
+            AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"a\":2,\"deleted\":1}");
+            AssertStreamTail("$projections-test-projection-stream-2-result", "Result:{\"a\":2}");
         }
     }
 }
