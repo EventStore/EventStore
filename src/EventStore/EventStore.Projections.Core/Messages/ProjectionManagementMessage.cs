@@ -297,6 +297,25 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class Abort : ControlMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly string _name;
+
+            public Abort(IEnvelope envelope, string name, RunAs runAs)
+                : base(envelope, runAs)
+            {
+                _name = name;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+        }
+
         public class SetRunAs : ControlMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

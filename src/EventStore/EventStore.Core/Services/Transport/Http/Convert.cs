@@ -131,7 +131,10 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
             for (int i = msg.Events.Length - 1; i >= 0; --i)
             {
-                feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), requestedUrl, embedContent));
+                feed.AddEntry(
+                    ToEntry(
+                        new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link, msg.Events[i].ResolveResult),
+                        requestedUrl, embedContent));
             }
             return feed;
         }
@@ -156,7 +159,10 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
             for (int i = 0; i < msg.Events.Length; ++i)
             {
-                feed.AddEntry(ToEntry(new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link), requestedUrl, embedContent));
+                feed.AddEntry(
+                    ToEntry(
+                        new ResolvedEvent(msg.Events[i].Event, msg.Events[i].Link, msg.Events[i].ResolveResult),
+                        requestedUrl, embedContent));
             }
             return feed;
         }

@@ -32,7 +32,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ReaderSubscription : ProjectionSubscriptionBase, IReaderSubscription
+    public class ReaderSubscription : ReaderSubscriptionBase, IReaderSubscription
     {
         public ReaderSubscription(
             IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
@@ -52,6 +52,14 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             // ignore
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+        {
+            if (!base._eventFilter.DeletedNotificationPasses(message.PositionStreamId))
+                return;
+            var deletePosition = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+            PublishPartitionDeleted(message.Partition, deletePosition);
         }
     }
 }

@@ -403,7 +403,6 @@ namespace EventStore.Projections.Core.Services.Processing
             // this can be old checkpoint
             var adjustedCheckpointTag = _readerStrategy.PositionTagger.AdjustTag(checkpointTag);
             _processingQueue.InitializeQueue(adjustedCheckpointTag);
-            NewCheckpointStarted(adjustedCheckpointTag);
         }
 
         public int GetBufferedEventCount()
@@ -451,6 +450,29 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
             else return null;
+        }
+
+        protected EventProcessedResult InternalPartitionDeletedProcessed(
+            string partition, CheckpointTag deletePosition,
+            PartitionState newPartitionState
+            )
+        {
+            var oldState = _partitionStateCache.GetLockedPartitionState(partition);
+            var oldSharedState = _isBiState ? _partitionStateCache.GetLockedPartitionState("") : null;
+            bool changed = oldState.IsChanged(newPartitionState);
+                           
+
+            PartitionState partitionState = null;
+            // NOTE: projectionResult cannot change independently unless projection definition has changed
+            if (changed)
+            {
+                var lockPartitionStateAt = partition != "" ? deletePosition : null;
+                partitionState = newPartitionState;
+                _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
+            }
+            return new EventProcessedResult(
+                partition, deletePosition, oldState, partitionState, oldSharedState, null, null, Guid.Empty, null,
+                isPartitionTombstone: true);
         }
 
         public void BeginGetPartitionStateAt(
@@ -502,7 +524,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     _resultWriter.AccountPartition(result);
                     if (_projectionConfig.EmitEventEnabled && result.EmittedEvents != null)
-                        _resultWriter.EventsEmitted(result.EmittedEvents, result.CausedBy, result.CorrelationId);
+                        _resultWriter.EventsEmitted(
+                            result.EmittedEvents, result.CausedBy, result.CorrelationId);
                     if (result.NewState != null)
                     {
                         _resultWriter.WriteRunningResult(result);
@@ -595,8 +618,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetProjectionState(PhaseState state)
         {
+            var starting = _state == PhaseState.Starting && state == PhaseState.Running;
+
             _state = state;
             _processingQueue.SetIsRunning(state == PhaseState.Running);
+            if (starting)
+                NewCheckpointStarted(LastProcessedEventPosition);
         }
     }
 }

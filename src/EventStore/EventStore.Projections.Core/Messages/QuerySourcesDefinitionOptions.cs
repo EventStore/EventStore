@@ -39,6 +39,9 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "definesFold")]
         public bool DefinesFold { get; set; }
 
+        [DataMember(Name = "handlesDeletedNotifications")]
+        public bool HandlesDeletedNotifications { get; set; }
+
         [DataMember(Name = "definesStateTransform")]
         public bool DefinesStateTransform { get; set;}
 

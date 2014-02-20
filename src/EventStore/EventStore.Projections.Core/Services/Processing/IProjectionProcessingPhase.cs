@@ -9,7 +9,8 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         Unknown,
         Stopped,
-        Running
+        Starting,
+        Running,
     }
 
 

@@ -76,7 +76,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var partition = result.Partition;
                 var causedBy = newState.CausedBy;
-                WriteResult(partition, resultBody, causedBy, result.CausedBy, result.CorrelationId);
+                WriteResult(
+                    partition, resultBody, causedBy, result.CausedBy, result.CorrelationId);
             }
         }
 
@@ -103,13 +104,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     var resultEvents = RegisterNewPartition(result.Partition, result.CheckpointTag);
                     if (resultEvents != null)
-                        _coreProjectionCheckpointManager.EventsEmitted(resultEvents, Guid.Empty, correlationId: null);
+                        _coreProjectionCheckpointManager.EventsEmitted(
+                            resultEvents, Guid.Empty, correlationId: null);
                 }
         }
 
-        public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
+        public void EventsEmitted(
+            EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
         {
-            _coreProjectionCheckpointManager.EventsEmitted(scheduledWrites, causedBy, correlationId);
+            _coreProjectionCheckpointManager.EventsEmitted(
+                scheduledWrites, causedBy, correlationId);
         }
     }
 }

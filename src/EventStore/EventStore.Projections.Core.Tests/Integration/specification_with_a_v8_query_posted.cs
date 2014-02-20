@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Integration
         {
             var buses = new IBus[] {new InMemoryBus("1"), new InMemoryBus("2")};
             var outBuses = new[] { new InMemoryBus("o1"), new InMemoryBus("o2") };
-            _otherQueues = new ManualQueue[] { new ManualQueue(buses[0]), new ManualQueue(buses[1]) };
+            _otherQueues = new ManualQueue[] { new ManualQueue(buses[0], _timeProvider), new ManualQueue(buses[1], _timeProvider) };
             return new[]
             {
                 Tuple.Create(buses[0], (IPublisher) _otherQueues[0], outBuses[0]),
@@ -90,6 +90,13 @@ namespace EventStore.Projections.Core.Tests.Integration
                 new PublishEnvelope(_bus), ProjectionMode.Transient, name,
                 ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false,
                 emitEnabled: false);
+        }
+
+        protected Message CreateNewProjectionMessage(string name, string source)
+        {
+            return new ProjectionManagementMessage.Post(
+                new PublishEnvelope(_bus), ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
+                "JS", source, enabled: true, checkpointsEnabled: true, emitEnabled: true);
         }
 
         protected override IEnumerable<WhenStep> When()

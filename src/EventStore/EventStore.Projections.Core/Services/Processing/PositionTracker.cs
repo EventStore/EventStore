@@ -72,5 +72,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _lastTag = null;
         }
+
     }
 }

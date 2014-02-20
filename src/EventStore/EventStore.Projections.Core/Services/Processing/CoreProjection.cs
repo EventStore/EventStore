@@ -149,9 +149,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private void BeginPhase(IProjectionProcessingPhase processingPhase, CheckpointTag startFrom)
         {
             _projectionProcessingPhase = processingPhase;
+            _projectionProcessingPhase.SetProjectionState(PhaseState.Starting);
             _checkpointManager = processingPhase.CheckpointManager;
 
-            _projectionProcessingPhase.InitializeFromCheckpoint(startFrom);
+             _projectionProcessingPhase.InitializeFromCheckpoint(startFrom);
             _checkpointManager.Start(startFrom);
         }
 
@@ -392,6 +393,8 @@ namespace EventStore.Projections.Core.Services.Processing
             var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
             var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
                               || _state == State.CompletingPhase;
+            var wasStarting = _state == State.LoadStateRequested || _state == State.StateLoaded
+                              || _state == State.Subscribed;
             var wasStarted = _state == State.Subscribed || _state == State.Running || _state == State.Stopping
                              || _state == State.FaultedStopping || _state == State.CompletingPhase;
             var wasRunning = _state == State.Running;
@@ -418,6 +421,12 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_projectionProcessingPhase != null) // null while loading state
                 switch (state)
                 {
+                    case State.LoadStateRequested:
+                    case State.StateLoaded:
+                    case State.Subscribed:
+                        if (!wasStarting)
+                            _projectionProcessingPhase.SetProjectionState(PhaseState.Starting);
+                        break;
                     case State.Running:
                         if (!wasRunning)
                             _projectionProcessingPhase.SetProjectionState(PhaseState.Running);

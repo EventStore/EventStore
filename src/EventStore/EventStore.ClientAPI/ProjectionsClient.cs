@@ -55,6 +55,11 @@ namespace EventStore.ClientAPI
             return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/disable", name), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
+        public Task Abort(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        {
+            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/abort", name), string.Empty, userCredentials, HttpStatusCode.OK);
+        }
+
         public Task CreateOneTime(IPEndPoint endPoint, string query, UserCredentials userCredentials = null)
         {
             return SendPost(endPoint.ToHttpUrl("/projections/onetime?type=JS"), query, userCredentials, HttpStatusCode.Created);

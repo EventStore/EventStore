@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
                 new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0),
-                CheckpointTag.FromPosition(0, 200, 150), _ioDispatcher, _readyHandler);
+                CheckpointTag.FromPosition(0, 100, 50), _ioDispatcher, _readyHandler);
             _stream.Start();
         }
 
@@ -74,6 +74,32 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type3", true, "data", null, CheckpointTag.FromPosition(0, 300, 250), null)
                 });
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+        }
+
+        [Test]
+        public void does_not_fail_the_projection_if_events_are_skipped()
+        {
+            _stream.EmitEvents(
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type3", true, "data", null, CheckpointTag.FromPosition(0, 300, 250), null)
+                });
+            Assert.AreEqual(0, _readyHandler.HandledFailedMessages.Count);
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+        }
+
+        [Test]
+        public void fails_the_projection_if_events_are_at_different_positions()
+        {
+            _stream.EmitEvents(
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type3", true, "data", null, CheckpointTag.FromPosition(0, 250, 220), null)
+                });
+            Assert.AreEqual(1, _readyHandler.HandledFailedMessages.Count);
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
 

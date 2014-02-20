@@ -44,5 +44,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return _handler.GetStatePartition(@event.CheckpointTag, @event.EventCategory, @event.Data);
         }
+
+        public override bool EventReaderBasePartitionDeletedIsSupported()
+        {
+            return false;
+        }
     }
 }

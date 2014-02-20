@@ -56,9 +56,16 @@ namespace EventStore.Projections.Core.Services.Processing
             return CheckpointTag.FromPreparePosition(previous.Phase, committedEvent.Data.Position.PreparePosition);
         }
 
-        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
+        public override CheckpointTag MakeCheckpointTag(
+            CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof)
         {
             throw new NotImplementedException();
+        }
+
+        public override CheckpointTag MakeCheckpointTag(
+            CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionDeleted partitionDeleted)
+        {
+            throw new NotSupportedException();
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
@@ -77,7 +84,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 return tag;
             if (tag.Phase > Phase)
                 throw new ArgumentException(
-                    string.Format("Invalid checkpoint tag phase.  Expected less or equal to: {0} Was: {1}", Phase, tag.Phase), "tag");
+                    string.Format(
+                        "Invalid checkpoint tag phase.  Expected less or equal to: {0} Was: {1}", Phase, tag.Phase),
+                    "tag");
 
             if (tag.Mode_ == CheckpointTag.Mode.PreparePosition)
                 return tag;

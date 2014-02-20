@@ -36,8 +36,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -122,7 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void MetaStreamReadCompleted()
         {
             ProcessOutQueue();
-            PauseOrContinueProcessing(delay: false);
+            PauseOrContinueProcessing();
         }
 
         private class DeliverSafePositionToJoinoutItem : OutItem
@@ -223,6 +221,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Queue<DeliverEventOutItem> _readMetaStreamItemsQueue = new Queue<DeliverEventOutItem>();
         private int _metaStreamReadsCount;
         private readonly IODispatcher _ioDispatcher;
+        private long _lastPosition;
+        private bool _eof;
 
         public AllStreamsCatalogEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
@@ -252,11 +252,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
             NotifyIfStarting(message.TfLastCommitPosition);
+            UpdateLastPosition(message);
             switch (message.Result)
             {
                 case ReadStreamResult.NoStream:
+                    _eof = true;
                     EnqueueDeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
-                    PauseOrContinueProcessing(delay: true);
+                    PauseOrContinueProcessing();
                     EnqueueIdle();
                     EnqueueEof();
                     break;
@@ -269,12 +271,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (eof)
                     {
                         // the end
+                        _eof = true;
                         EnqueueDeliverSafeJoinPosition(GetLastCommitPositionFrom(message));
                         EnqueueIdle();
                         EnqueueEof();
                     }
                     else
                     {
+                        _eof = false;
                         for (int index = 0; index < message.Events.Length; index++)
                         {
                             var @event = message.Events[index].Event;
@@ -291,17 +295,23 @@ namespace EventStore.Projections.Core.Services.Processing
                     // i.e. reading metastreams for each stream mentioned
                     if (!willDispose)
                     {
-                        PauseOrContinueProcessing(delay: eof && _readMetaStreamItemsQueue.Count == 0);
+                        PauseOrContinueProcessing();
                     }
 
                     break;
                 case ReadStreamResult.AccessDenied:
+                    _eof = true;
                     EnqueueNotAuthorized();
                     return;
                 default:
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private void UpdateLastPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
+        {
+            _lastPosition = message.TfLastCommitPosition;
         }
 
         private void EnqueueNotAuthorized()
@@ -342,7 +352,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
             if (PauseRequested || Paused)
@@ -366,11 +376,11 @@ namespace EventStore.Projections.Core.Services.Processing
             {
 
                 var readEventsForward = CreateReadEventsMessage();
-                if (delay)
+                if (_eof)
                     _publisher.Publish(
-                        TimerMessage.Schedule.Create(
-                            TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                            readEventsForward));
+                        new AwakeReaderServiceMessage.SubscribeAwake(
+                            new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                            new TFPos(_lastPosition, _lastPosition), readEventsForward));
                 else
                     _publisher.Publish(readEventsForward);
             }

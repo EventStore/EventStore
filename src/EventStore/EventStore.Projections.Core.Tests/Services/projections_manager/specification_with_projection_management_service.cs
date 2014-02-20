@@ -33,6 +33,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.AwakeReaderService;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
@@ -42,6 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected ProjectionManager _manager;
         private bool _initializeSystemProjections;
+        protected AwakeReaderService _awakeReaderService;
 
 
         protected override void Given1()
@@ -61,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected override ManualQueue GiveInputQueue()
         {
-            return new ManualQueue(_bus);
+            return new ManualQueue(_bus, _timeProvider);
         }
 
         [SetUp]
@@ -97,6 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.GetResult>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Disable>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Enable>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Abort>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.SetRunAs>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Reset>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.StartSlaveProjections>(_manager);
@@ -110,6 +113,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
             _bus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
             _bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
+
+            _awakeReaderService = new AwakeReaderService();
+            _bus.Subscribe<StorageMessage.EventCommited>(_awakeReaderService);
+            _bus.Subscribe<AwakeReaderServiceMessage.SubscribeAwake>(_awakeReaderService);
+            _bus.Subscribe<AwakeReaderServiceMessage.UnsubscribeAwake>(_awakeReaderService);
+
 
             Given();
             WhenLoop();

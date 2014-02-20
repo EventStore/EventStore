@@ -27,9 +27,11 @@
 // 
 using System;
 using System.Diagnostics;
+using System.Net.Configuration;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
+using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Bus
 {
@@ -42,6 +44,12 @@ namespace EventStore.Core.Bus
 
         public Type InProgressMessage { get { return _inProgressMsgType; } }
 
+#if DEBUG        
+        public static int NonIdle
+        {
+            get { return _nonIdle; }
+        }
+#endif
         private readonly object _statisticsLock = new object(); // this lock is mostly acquired from a single thread (+ rarely to get statistics), so performance penalty is not too high
         
         private readonly Stopwatch _busyWatch = new Stopwatch();
@@ -73,6 +81,15 @@ namespace EventStore.Core.Bus
         public void Start()
         {
             _totalTimeWatch.Start();
+#if DEBUG
+            if (_notifyLock != null)
+            {
+                lock (_notifyLock)
+                {
+                    _nonIdle++;
+                }
+            }
+#endif
             EnterIdle();
         }
 
@@ -107,6 +124,19 @@ namespace EventStore.Core.Bus
             if (_wasIdle)
                 return;
             _wasIdle = true;
+#if DEBUG
+            if (_notifyLock != null)
+            {
+                lock (_notifyLock)
+                {
+                    _nonIdle = NonIdle - 1;
+                    if (NonIdle == 0)
+                    {
+                        Monitor.Pulse(_notifyLock);
+                    }
+                }
+            }
+#endif
 
             //NOTE: the following locks are primarily acquired in main thread, 
             //      so not too high performance penalty
@@ -125,6 +155,16 @@ namespace EventStore.Core.Bus
             if (!_wasIdle)
                 return;
             _wasIdle = false;
+
+#if DEBUG
+            if (_notifyLock != null)
+            {
+                lock (_notifyLock)
+                {
+                    _nonIdle = NonIdle + 1;
+                }
+            }
+#endif
 
             lock (_statisticsLock)
             {
@@ -177,6 +217,68 @@ namespace EventStore.Core.Bus
                 }
                 return stats;
             }
+        }
+
+#if DEBUG
+        private static object _notifyLock;
+        private static int _nonIdle = 0;
+        private static ICheckpoint _writerCheckpoint;
+        private static ICheckpoint _chaserCheckpoint;
+        private static int _length;
+
+        public static void InitializeIdleDetection(bool enable = true)
+        {
+            if (enable)
+            {
+                _nonIdle = 0;
+                _length = 0;
+                _notifyLock = new object();
+            }
+            else
+            {
+                _notifyLock = null;
+            }
+        }
+
+#endif
+        [Conditional("DEBUG")]
+        public static void WaitIdle()
+        {
+#if DEBUG
+            var counter = 0;
+            lock (_notifyLock)
+            {
+                while (_nonIdle > 0 || _length > 0 || _writerCheckpoint.Read() != _chaserCheckpoint.Read())
+                {
+                    if (!Monitor.Wait(_notifyLock, 100))
+                    {
+                        Console.WriteLine("Waiting for IDLE state...");
+                        counter++;
+                        if (counter > 10)
+                            throw new ApplicationException("Infinite loop?");
+                    }
+                }
+            }
+#endif
+        }
+#if DEBUG
+        public static void InitializeCheckpoints(ICheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint)
+        {
+            _chaserCheckpoint = chaserCheckpoint;
+            _writerCheckpoint = writerCheckpoint;
+        }
+#endif
+
+        [Conditional("DEBUG")]
+        public void Enqueued()
+        {
+            Interlocked.Increment(ref _length);
+        }
+
+        [Conditional("DEBUG")]
+        public void Dequeued()
+        {
+            Interlocked.Decrement(ref _length);
         }
     }
 }

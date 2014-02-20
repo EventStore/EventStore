@@ -102,6 +102,11 @@ namespace EventStore.Projections.Core.Standard
             return true;
         }
 
+        public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
+        {
+            throw new NotImplementedException();
+        }
+
         public string TransformStateToResult()
         {
             throw new NotImplementedException();

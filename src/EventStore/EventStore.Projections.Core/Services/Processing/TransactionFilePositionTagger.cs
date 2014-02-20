@@ -97,6 +97,18 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionDeleted partitionDeleted)
+        {
+            if (previous.Phase != Phase)
+                throw new ArgumentException(
+                    string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
+            if (partitionDeleted.DeleteLinkOrEventPosition == null)
+                throw new ArgumentException("Invalid partiton deleted message. deleteEventOrLinkTargetPosition required");
+
+            return CheckpointTag.FromPosition(previous.Phase, partitionDeleted.DeleteLinkOrEventPosition.Value);
+        }
+
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromPosition(Phase, 0, -1);

@@ -53,6 +53,9 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
         private readonly CheckpointTag _a2b1 = CheckpointTag.FromEventTypeIndexPositions(
             1, new TFPos(400, 350), new Dictionary<string, int> {{"a", 2}, {"b", 1}});
 
+        private readonly CheckpointTag _a2b1_after = CheckpointTag.FromEventTypeIndexPositions(
+            1, new TFPos(430, 420), new Dictionary<string, int> { { "a", 2 }, { "b", 1 } });
+
         private readonly CheckpointTag _a1b2 = CheckpointTag.FromEventTypeIndexPositions(
             1, new TFPos(500, 450), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
 
@@ -83,6 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_a1 < _a1b1);
             Assert.IsTrue(_a1 < _a1b2);
             Assert.IsTrue(_a1 < _a2b2);
+            Assert.IsTrue(_a2b1 < _a2b1_after);
             Assert.IsFalse(_a1b2 < _a1b2);
             Assert.IsFalse(_a1b2 < _a1b1);
             Assert.IsFalse(_a1b2 < _a2b1);
@@ -95,6 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_a1 <= _a1b1);
             Assert.IsTrue(_a1 <= _a1b2);
             Assert.IsTrue(_a1 <= _a2b2);
+            Assert.IsTrue(_a2b1 <= _a2b1_after);
             Assert.IsTrue(_a1b2 <= _a1b2);
             Assert.IsFalse(_a1b2 <= _a1b1);
             Assert.IsFalse(_a1b2 <= _a2b1);
@@ -107,6 +112,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsFalse(_a1 > _a1b1);
             Assert.IsFalse(_a1 > _a1b2);
             Assert.IsFalse(_a1 > _a2b2);
+            Assert.IsFalse(_a2b1 > _a2b1_after);
+            Assert.IsTrue(_a2b1_after > _a2b1);
             Assert.IsFalse(_a1b2 > _a1b2);
             Assert.IsTrue(_a1b2 > _a1b1);
             Assert.IsTrue(_a1b2 > _a2b1);
@@ -119,6 +126,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsFalse(_a1 >= _a1b1);
             Assert.IsFalse(_a1 >= _a1b2);
             Assert.IsFalse(_a1 >= _a2b2);
+            Assert.IsFalse(_a2b1 >= _a2b1_after);
+            Assert.IsTrue(_a2b1_after >= _a2b1);
             Assert.IsTrue(_a1b2 >= _a1b2);
             Assert.IsTrue(_a1b2 >= _a1b1);
             Assert.IsTrue(_a1b2 >= _a2b1);

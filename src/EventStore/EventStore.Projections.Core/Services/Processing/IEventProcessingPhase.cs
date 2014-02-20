@@ -65,5 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         void EmitEofResult(
             string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
+
+        EventProcessedResult ProcessPartitionDeleted(string partition, CheckpointTag deletedPosition);
     }
 }

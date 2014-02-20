@@ -80,6 +80,8 @@ namespace EventStore.Core.Tests.Helpers
             _envelope = null;
             _timeProvider = new FakeTimeProvider();
             _bus = new InMemoryBus("bus");
+            _consumer = new TestHandler<Message>();
+            _bus.Subscribe(_consumer);
             _queue = GiveInputQueue();
             _otherQueues = null;
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
@@ -93,8 +95,6 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Subscribe(_ioDispatcher.StreamDeleter);
             _bus.Subscribe(_ioDispatcher);
 
-            _consumer = new TestHandler<Message>();
-            _bus.Subscribe(_consumer);
         }
 
         protected virtual ManualQueue GiveInputQueue()
@@ -128,6 +128,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             foreach (var step in steps)
             {
+                _timeProvider.AddTime(TimeSpan.FromMilliseconds(10));
                 if (step.Action != null)
                 {
                     step.Action();

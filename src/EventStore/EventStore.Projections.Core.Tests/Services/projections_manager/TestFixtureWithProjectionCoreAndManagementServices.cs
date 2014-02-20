@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected override ManualQueue GiveInputQueue()
         {
-            return new ManualQueue(_bus);
+            return new ManualQueue(_bus, _timeProvider);
         }
 
         [SetUp]
@@ -104,6 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.GetResult>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Disable>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Enable>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Abort>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.SetRunAs>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Reset>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.StartSlaveProjections>(_manager);
@@ -139,6 +140,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
+            bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
@@ -180,6 +182,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(readerService);
+            bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionDeleted>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionMeasured>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(readerService);
             bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(readerService);
@@ -204,6 +207,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 output_.Subscribe(
                     Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.ControlMessage>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<AwakeReaderServiceMessage.SubscribeAwake>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<AwakeReaderServiceMessage.UnsubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<Message>(inputQueue)); // forward all
 
                 var forwarder = new RequestResponseQueueForwarder(

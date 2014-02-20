@@ -288,7 +288,14 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            Stop(() => DoDisable(message));
+            Stop(() => DoDisable(message.Envelope, message.Name));
+        }
+
+        public void Handle(ProjectionManagementMessage.Abort message)
+        {
+            _lastAccessed = _timeProvider.Now;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
+            Abort(() => DoDisable(message.Envelope, message.Name));
         }
 
         public void Handle(ProjectionManagementMessage.Enable message)
@@ -856,6 +863,37 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        private void Abort(Action completed)
+        {
+            switch (_state)
+            {
+                case ManagedProjectionState.Stopped:
+                case ManagedProjectionState.Completed:
+                case ManagedProjectionState.Faulted:
+                case ManagedProjectionState.Loaded:
+                    if (completed != null) completed();
+                    return;
+                case ManagedProjectionState.Loading:
+                case ManagedProjectionState.Creating:
+                    throw new InvalidOperationException(
+                        string.Format(
+                            "Cannot stop a projection in the '{0}' state",
+                            Enum.GetName(typeof (ManagedProjectionState), _state)));
+                case ManagedProjectionState.Stopping:
+                    _onStopped = completed;
+                    _coreQueue.Publish(new CoreProjectionManagementMessage.Kill(Id));
+                    return;
+                case ManagedProjectionState.Running:
+                case ManagedProjectionState.Starting:
+                    _state = ManagedProjectionState.Stopping;
+                    _onStopped = completed;
+                    _coreQueue.Publish(new CoreProjectionManagementMessage.Kill(Id));
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         private void SetFaulted(string reason, Exception ex = null)
         {
             if (ex != null)
@@ -916,15 +954,15 @@ namespace EventStore.Projections.Core.Services.Management
             Prepare(() => BeginWrite(completed));
         }
 
-        private void DoDisable(ProjectionManagementMessage.Disable message)
+        private void DoDisable(IEnvelope envelope, string name)
         {
             if (!Enabled)
             {
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Not enabled"));
+                envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Not enabled"));
                 return;
             }
             Disable();
-            Action completed = () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
+            Action completed = () => envelope.ReplyWith(new ProjectionManagementMessage.Updated(name));
             UpdateProjectionVersion();
             if (Enabled)
                 Prepare(() => BeginWrite(completed));

@@ -33,6 +33,7 @@ var $projections = {
         var runDefaultHandler = true;
         var eventHandlers = {};
         var anyEventHandlers = [];
+        var deletedNotificationHandlers = [];
         var rawEventHandlers = [];
         var transformers = [];
         var getStatePartitionHandler = function () {
@@ -54,6 +55,7 @@ var $projections = {
             options: {
                 definesStateTransform: false,
                 definesCatalogTransform: false,
+                handlesDeletedNotifications: false,
                 producesResults: false,
                 definesFold: false,
                 resultStreamName: null,
@@ -129,6 +131,17 @@ var $projections = {
                 }
             },
 
+            process_deleted_notification: function (partition, isSoftDeleted) {
+                processDeletedNotification(partition, isSoftDeleted);
+                var stateJson;
+                if (!sources.options.biState) {
+                    stateJson = JSON.stringify(projectionState);
+                    return stateJson;
+                } else {
+                    throw "Bi-State projections do not support delete notifications";
+                }
+            },
+
             transform_state_to_result: function () {
                 var result = projectionState;
                 for (var i = 0; i < transformers.length; i++) {
@@ -194,6 +207,12 @@ var $projections = {
             sources.options.definesFold = true;
         }
 
+        function on_deleted_notification(eventHandler) {
+            deletedNotificationHandlers.push(eventHandler);
+            sources.options.handlesDeletedNotifications = true;
+            sources.options.definesFold = true;
+        }
+
         function on_raw(eventHandler) {
             runDefaultHandler = false;
             sources.allEvents = true;
@@ -201,10 +220,10 @@ var $projections = {
             sources.options.definesFold = true;
         }
 
-        function callHandler(handler, state, envelope) {
+        function callHandler(handler, state, eventEnvelope) {
             if (debugging)
                 debugger;
-            var newState = handler(state, envelope);
+            var newState = handler(state, eventEnvelope);
             if (newState === undefined)
                 newState = state;
             return newState;
@@ -304,8 +323,8 @@ var $projections = {
 
         }
 
-        function defaultEventHandler(state, envelope) {
-            return envelope.isJson ? envelope.body : { $e: envelope.bodyRaw };
+        function defaultEventHandler(state, eventEnvelope) {
+            return eventEnvelope.isJson ? eventEnvelope.body : { $e: eventEnvelope.bodyRaw };
         }
 
         function processEvent(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, linkMetadataRaw, partition, streamMetadataRaw) {
@@ -347,6 +366,25 @@ var $projections = {
             } else {
                 projectionState = state[0];
                 projectionSharedState = state[1];
+            }
+        }
+
+        function processDeletedNotification(partition, isSoftDeleted) {
+
+            var eventEnvelope = { partition: partition, isSoftDeleted: isSoftDeleted };
+            var state = !sources.options.biState ? projectionState : [projectionState, projectionSharedState];
+            var index;
+            var eventHandler;
+
+            for (index = 0; index < deletedNotificationHandlers.length; index++) {
+                eventHandler = deletedNotificationHandlers[index];
+                state = callHandler(eventHandler, state, eventEnvelope);
+            }
+
+            if (!sources.options.biState) {
+                projectionState = state;
+            } else {
+                throw "Bi-State projections do not support delete notifications";
             }
         }
 
@@ -421,6 +459,7 @@ var $projections = {
             on_init_shared_state: on_init_shared_state,
             on_any: on_any,
             on_raw: on_raw,
+            on_deleted_notification: on_deleted_notification,
 
             fromAll: fromAll,
             fromCategory: fromCategory,

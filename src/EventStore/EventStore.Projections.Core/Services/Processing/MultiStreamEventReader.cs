@@ -36,8 +36,8 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messaging;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -52,13 +52,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
 
         // event, link, progress
-        private readonly Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>> _buffers =
-            new Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>>();
+        // null element in a queue means tream deleted 
+        private readonly Dictionary<string, Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>> _buffers =
+            new Dictionary<string, Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>>();
 
         private const int _maxReadCount = 111;
         private long? _safePositionToJoin;
         private readonly Dictionary<string, bool> _eofs;
         private int _deliveredEvents;
+        private long _lastPosition;
 
         public MultiStreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
@@ -95,12 +97,23 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (PauseRequested || Paused)
                 return;
+            if (_eofs.Any(v => v.Value))
+                _publisher.Publish(
+                    TimerMessage.Schedule.Create(
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
+                        new UnwrapEnvelopeMessage(ProcessBuffers2)));
             foreach (var stream in _streams)
-                RequestEvents(stream, delay: delay);
+                RequestEvents(stream, delay: _eofs[stream]);
+        }
+
+        private void ProcessBuffers2()
+        {
+            ProcessBuffers();
+            CheckIdle();
         }
 
         protected override bool AreEventsRequested()
@@ -118,14 +131,18 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Read events has not been requested");
             if (Paused)
                 throw new InvalidOperationException("Paused");
+            _lastPosition = message.TfLastCommitPosition;
             switch (message.Result)
             {
+                case ReadStreamResult.StreamDeleted:
                 case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));
+                    if (message.Result == ReadStreamResult.NoStream && message.LastEventNumber >= 0)
+                        EnqueueItem(null, message.EventStreamId);
                     ProcessBuffers();
                     _eventsRequested.Remove(message.EventStreamId);
-                    PauseOrContinueProcessing(delay: true);
+                    PauseOrContinueProcessing();
                     CheckIdle();
                     CheckEof();
                     break;
@@ -148,22 +165,15 @@ namespace EventStore.Projections.Core.Services.Processing
                             EventRecord positionEvent = (link ?? @event);
                             UpdateSafePositionToJoin(
                                 positionEvent.EventStreamId, EventPairToPosition(message.Events[index]));
-                            Queue<Tuple<EventRecord, EventRecord, float>> queue;
-                            if (!_buffers.TryGetValue(positionEvent.EventStreamId, out queue))
-                            {
-                                queue = new Queue<Tuple<EventRecord, EventRecord, float>>();
-                                _buffers.Add(positionEvent.EventStreamId, queue);
-                            }
-                            //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
-                            queue.Enqueue(
-                                Tuple.Create(
-                                    @event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
+                            Tuple<EventStore.Core.Data.ResolvedEvent, float> itemToEnqueue = Tuple.Create(message.Events[index],
+                                100.0f*(link ?? @event).EventNumber/message.LastEventNumber);
+                            EnqueueItem(itemToEnqueue, positionEvent.EventStreamId);
                         }
                     }
 
                     ProcessBuffers();
                     _eventsRequested.Remove(message.EventStreamId);
-                    PauseOrContinueProcessing(delay: message.Events.Length == 0);
+                    PauseOrContinueProcessing();
                     break;
                 case ReadStreamResult.AccessDenied:
                     SendNotAuthorized();
@@ -172,6 +182,18 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private void EnqueueItem(Tuple<EventStore.Core.Data.ResolvedEvent, float> itemToEnqueue, string streamId)
+        {
+            Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>> queue;
+            if (!_buffers.TryGetValue(streamId, out queue))
+            {
+                queue = new Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>();
+                _buffers.Add(streamId, queue);
+            }
+            //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
+            queue.Enqueue(itemToEnqueue);
         }
 
         private void CheckEof()
@@ -189,6 +211,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessBuffers()
         {
+            if (_disposed)
+                return;
             if (_safePositionToJoin == null)
                 return;
             while (true)
@@ -223,11 +247,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 }
                 var minHead = _buffers[minStreamId].Dequeue();
-                DeliverEvent(minHead.Item1, minHead.Item2, minHead.Item3);
+                DeliverEvent(minHead.Item1, minHead.Item2);
                 if (CheckEnough())
                     return;
                 if (_buffers[minStreamId].Count == 0)
-                    PauseOrContinueProcessing(delay: false);
+                    PauseOrContinueProcessing();
             }
         }
 
@@ -250,7 +274,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_eventsRequested.Contains(stream))
                 return;
-            Queue<Tuple<EventRecord, EventRecord, float>> queue;
+            Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>> queue;
             if (_buffers.TryGetValue(stream, out queue) && queue.Count > 0)
                 return;
             _eventsRequested.Add(stream);
@@ -260,9 +284,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
             if (delay)
                 _publisher.Publish(
-                    TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                        readEventsForward));
+                    new AwakeReaderServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new TFPos(_lastPosition, _lastPosition), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }
@@ -284,9 +308,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _safePositionToJoin = _preparePositions.Min(v => v.Value.GetValueOrDefault());
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord positionEvent, float progress)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress)
         {
             _deliveredEvents ++;
+            var positionEvent = pair.OriginalEvent;
             string streamId = positionEvent.EventStreamId;
             int fromPosition = _fromPositions.Streams[streamId];
             if (positionEvent.EventNumber != fromPosition)
@@ -295,16 +320,10 @@ namespace EventStore.Projections.Core.Services.Processing
                         "Event number {0} was expected in the stream {1}, but event number {2} was received",
                         fromPosition, streamId, positionEvent.EventNumber));
             _fromPositions = _fromPositions.UpdateStreamPosition(streamId, positionEvent.EventNumber + 1);
-            var resolvedLinkTo = streamId != @event.EventStreamId || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId,
-                    new ResolvedEvent(
-                        streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
-                        new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition), @event.EventId,
-                        @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data, @event.Metadata,
-                        @event == positionEvent ? null : positionEvent.Metadata, null, positionEvent.TimeStamp),
+                    EventReaderCorrelationId, new ResolvedEvent(pair, null),
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
         }
 
@@ -318,9 +337,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return GetLastCommitPositionFrom(message);
         }
 
-        private long GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
+        private long GetItemPosition(Tuple<EventStore.Core.Data.ResolvedEvent, float> head)
         {
-            return head.Item2.LogPosition;
+            return head.Item1.OriginalEvent.LogPosition;
         }
 
         private long GetMaxPosition()

@@ -90,7 +90,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Asynchronously disables a projection.
+        /// Asynchronously aborts and disables a projection without writing a checkpoint.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
@@ -99,6 +99,29 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(name, "name");
             return _client.Disable(_httpEndPoint, name, userCredentials);
+        }
+
+        /// <summary>
+        /// Synchronously avborts and disables a projection without writing a checkpoint.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
+        public void Abort(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            AbortAsync(name, userCredentials).Wait();
+        }
+
+        /// <summary>
+        /// Asynchronously disables a projection.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
+        /// <returns>A task representing the operation.</returns>
+        public Task AbortAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.Abort(_httpEndPoint, name, userCredentials);
         }
 
         /// <summary>

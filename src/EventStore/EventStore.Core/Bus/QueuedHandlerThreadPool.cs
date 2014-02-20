@@ -115,6 +115,9 @@ namespace EventStore.Core.Bus
                 Message msg;
                 while (!_stop && _queue.TryDequeue(out msg))
                 {
+#if DEBUG
+                    _queueStats.Dequeued();
+#endif
                     try
                     {
                         var queueCnt = _queue.Count;
@@ -161,6 +164,9 @@ namespace EventStore.Core.Bus
         public void Publish(Message message)
         {
             //Ensure.NotNull(message, "message");
+#if DEBUG
+            _queueStats.Enqueued();
+#endif
             _queue.Enqueue(message);
             if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
                 ThreadPool.QueueUserWorkItem(ReadFromQueue);

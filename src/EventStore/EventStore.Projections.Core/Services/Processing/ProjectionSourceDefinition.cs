@@ -57,6 +57,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return Options != null && Options.DefinesFold; }
         }
 
+        bool IQuerySources.HandlesDeletedNotifications
+        {
+            get { return Options != null && Options.HandlesDeletedNotifications; }
+        }
+
         bool IQuerySources.IncludeLinksOption
         {
             get { return Options != null && Options.IncludeLinks; }
@@ -139,6 +144,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         DefinesCatalogTransform = sources.DefinesCatalogTransform,
                         ProducesResults = sources.ProducesResults,
                         DefinesFold = sources.DefinesFold,
+                        HandlesDeletedNotifications = sources.HandlesDeletedNotifications,
                         ForceProjectionName = sources.ForceProjectionNameOption,
                         IncludeLinks = sources.IncludeLinksOption,
                         DisableParallelism = sources.DisableParallelismOption,

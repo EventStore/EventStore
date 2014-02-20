@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections
         {
             AssertStreamContains(
                 "$streams", "0@account-01", "0@account-02", "0@stream", "0@test-1", "0@test-2", "0@stream-1",
-                "0@$streams", "0@account-000-02");
+                "0@account-000-02");
         }
 
         [Test]

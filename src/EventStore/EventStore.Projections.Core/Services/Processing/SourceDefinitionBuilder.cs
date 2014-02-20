@@ -153,6 +153,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.IsBiState = isBiState;
         }
 
+        public void SetHandlesStreamDeletedNotifications(bool value = true)
+        {
+            _options.HandlesDeletedNotifications = value;
+        }
+
         public bool AllStreams
         {
             get { return _allStreams; }
@@ -221,6 +226,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool DefinesFold
         {
             get { return _options.DefinesFold; }
+        }
+
+        public bool HandlesDeletedNotifications
+        {
+            get { return _options.HandlesDeletedNotifications; }
         }
 
         public bool IncludeLinksOption
@@ -316,6 +326,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public bool DefinesFold { get; set; }
+
+        [DataMember]
+        public bool HandlesDeletedNotifications { get; set; }
 
         [DataMember]
         public bool IncludeLinks { get; set; }

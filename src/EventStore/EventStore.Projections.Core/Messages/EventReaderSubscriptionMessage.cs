@@ -177,6 +177,35 @@ namespace EventStore.Projections.Core.Messages
                 _size = size;
             }
         }
+
+        /// <summary>
+        /// NOTEL the PartitionDeleted may appear out-of-order and is not guaranteed
+        /// to appear at the same sequence position in a recovery 
+        /// </summary>
+        public class PartitionDeleted : EventReaderSubscriptionMessage
+        {
+            private readonly string _partition;
+            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+
+            public PartitionDeleted(
+                Guid subscriptionId, CheckpointTag checkpointTag, string partition,
+                long subscriptionMessageSequenceNumber, object source = null)
+                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber, source)
+            {
+                _partition = partition;
+            }
+        }
+
         public class CommittedEventReceived : EventReaderSubscriptionMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

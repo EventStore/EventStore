@@ -79,7 +79,7 @@ namespace EventStore.ClientAPI
 
         internal ResolvedEvent(ClientMessage.ResolvedIndexedEvent evnt)
         {
-            Event = new RecordedEvent(evnt.Event);
+            Event = evnt.Event == null ? null : new RecordedEvent(evnt.Event);
             Link = evnt.Link == null ? null : new RecordedEvent(evnt.Link);
             OriginalPosition = null;
         }

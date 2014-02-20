@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService
 
             protected override ManualQueue GiveInputQueue()
             {
-                return new ManualQueue(_bus);
+                return new ManualQueue(_bus, _timeProvider);
             }
 
             [SetUp]

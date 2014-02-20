@@ -35,23 +35,13 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class read_event_should: SpecificationWithDirectoryPerTestFixture
+    public class read_event_should: SpecificationWithMiniNode
     {
-        private MiniNode _node;
-        private IEventStoreConnection _conn;
         private Guid _eventId0;
         private Guid _eventId1;
 
-        [TestFixtureSetUp]
-        public override void TestFixtureSetUp()
+        protected override void When()
         {
-            base.TestFixtureSetUp();
-            _node = new MiniNode(PathName);
-            _node.Start();
-
-            _conn = TestConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
-
             _eventId0 = Guid.NewGuid();
             _eventId1 = Guid.NewGuid();
 
@@ -60,14 +50,6 @@ namespace EventStore.Core.Tests.ClientAPI
                                  new EventData(_eventId0, "event0", false, new byte[3], new byte[2]),
                                  new EventData(_eventId1, "event1", false, new byte[7], new byte[10]));
             _conn.DeleteStream("deleted-stream", -1, hardDelete: true);
-        }
-
-        [TestFixtureTearDown]
-        public override void TestFixtureTearDown()
-        {
-            _conn.Close();
-            _node.Shutdown();
-            base.TestFixtureTearDown();
         }
 
         [Test, Category("Network")]

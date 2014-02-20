@@ -37,10 +37,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _categoryStream;
 
         public CategoryEventFilter(string category, bool allEvents, HashSet<string> events)
-            : base(allEvents, events)
+            : base(allEvents, false, events)
         {
             _category = category;
             _categoryStream = "$ce-" + category;
+        }
+
+        public override bool DeletedNotificationPasses(string positionStreamId)
+        {
+            return _categoryStream == positionStreamId;
         }
 
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)

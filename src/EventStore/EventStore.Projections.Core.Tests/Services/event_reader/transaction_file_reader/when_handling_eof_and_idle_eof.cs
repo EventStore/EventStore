@@ -74,15 +74,18 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
                     {
                         new EventStore.Core.Data.ResolvedEvent(
                             new EventRecord(
-                                1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, _fakeTimeProvider.Now,
+                                1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any,
+                                _fakeTimeProvider.Now,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type1", new byte[] {1}, new byte[] {2}), null, 100), 
-                                new EventStore.Core.Data.ResolvedEvent(
+                                "event_type1", new byte[] {1}, new byte[] {2}), null, 100),
+                        new EventStore.Core.Data.ResolvedEvent(
                             new EventRecord(
-                                2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
+                                2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any,
+                                _fakeTimeProvider.Now,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type1", new byte[] {1}, new byte[] {2}), null, 200), 
-                    }, null, false, 100, new EventStore.Core.Data.TFPos(200, 150), new TFPos(500, -1), new TFPos(100, 50), 500));
+                                "event_type1", new byte[] {1}, new byte[] {2}), null, 200),
+                    }, null, false, 100,
+                    new TFPos(200, 150), new TFPos(500, -1), new TFPos(100, 50), 500));
 
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(

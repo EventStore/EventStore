@@ -291,10 +291,11 @@ namespace EventStore.Core.Services
             ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
         }
 
-        private ResolvedEvent? ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent)
+        private ResolvedEvent? ProcessEventCommited(
+            string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent)
         {
             List<Subscription> subscriptions;
-            if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions)) 
+            if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions))
                 return resolvedEvent;
             for (int i = 0, n = subscriptions.Count; i < n; i++)
             {
@@ -302,8 +303,9 @@ namespace EventStore.Core.Services
                 if (commitPosition <= subscr.LastCommitPosition || evnt.EventNumber <= subscr.LastEventNumber)
                     continue;
 
-                var pair = new ResolvedEvent(evnt, null, commitPosition);
+                var pair = new ResolvedEvent(evnt, null, commitPosition, default(ReadEventResult));
                 if (subscr.ResolveLinkTos)
+                    // resolve event if has not been previously resolved
                     resolvedEvent = pair = resolvedEvent ?? ResolveLinkToEvent(evnt, commitPosition);
 
                 subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
@@ -323,14 +325,17 @@ namespace EventStore.Core.Services
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
                     if (res.Result == ReadEventResult.Success)
-                        return new ResolvedEvent(res.Record, eventRecord, commitPosition);
+                        return new ResolvedEvent(res.Record, eventRecord, commitPosition, ReadEventResult.Success);
+                    return new ResolvedEvent(null, eventRecord, res.Result);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
+                // return unresolved link
+                return new ResolvedEvent(null, eventRecord, commitPosition, ReadEventResult.Error);
             }
-            return new ResolvedEvent(eventRecord, null, commitPosition);
+            return new ResolvedEvent(eventRecord, null, commitPosition, default(ReadEventResult));
         }
 
         private void ReissueReadsFor(string streamId, long commitPosition, int eventNumber)

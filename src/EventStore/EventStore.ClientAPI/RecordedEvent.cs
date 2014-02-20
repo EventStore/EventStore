@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Text;
 using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
@@ -64,6 +65,20 @@ namespace EventStore.ClientAPI
         /// A byte array representing the metadata associated with this event
         /// </summary>
         public readonly byte[] Metadata;
+
+
+#if DEBUG
+        public string DebugDataView
+        {
+            get { return Encoding.UTF8.GetString(Data); }
+        }
+
+        public string DebugMetadataView
+        {
+            get { return Encoding.UTF8.GetString(Metadata); }
+        }
+#endif
+
 
         internal RecordedEvent(ClientMessage.EventRecord systemRecord)
         {
