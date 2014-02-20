@@ -153,6 +153,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.IsBiState = isBiState;
         }
 
+        public void SetHandlesStreamDeletedNotifications(bool value = true)
+        {
+            _options.HandlesDeletedNotifications = value;
+        }
+
         public bool AllStreams
         {
             get { return _allStreams; }

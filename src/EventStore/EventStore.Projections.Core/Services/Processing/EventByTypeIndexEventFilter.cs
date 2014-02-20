@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<string> _streams;
 
         public EventByTypeIndexEventFilter(HashSet<string> events)
-            : base(false, events)
+            : base(false, false, events)
         {
             _events = events;
             _streams = new HashSet<string>(from eventType in events select "$et-" + eventType);

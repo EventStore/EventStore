@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class BypassingEventFilter : EventFilter
     {
         public BypassingEventFilter()
-            : base(true, null)
+            : base(true, true, null)
         {
         }
 

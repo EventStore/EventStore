@@ -26,33 +26,44 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
+using EventStore.ClientAPI.Common;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.event_filter
 {
-    public class MultiStreamEventFilter : EventFilter
+    [TestFixture]
+    public class include_everything_handling_deleted_notifications_event_filter : TestFixtureWithEventFilter
     {
-        private readonly HashSet<string> _streams;
-
-        public MultiStreamEventFilter(HashSet<string> streams, bool allEvents, HashSet<string> events)
-            : base(allEvents, false, events)
+        protected override void Given()
         {
-            _streams = streams;
+            _builder.FromAll();
+            _builder.AllEvents();
+            _builder.SetHandlesStreamDeletedNotifications();
+            _builder.SetByStream();
         }
 
-        public override bool DeletedNotificationPasses(string positionStreamId)
+        [Test]
+        public void can_be_built()
         {
-            return false;
+            Assert.IsNotNull(_ef);
         }
 
-        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
+        [Test]
+        public void does_not_pass_categorized_event()
         {
-            return _streams.Contains(positionStreamId);
+            Assert.IsFalse(_ef.Passes(true, "$ce-stream", "event"));
         }
 
-        public override string GetCategory(string positionStreamId)
+        [Test]
+        public void passes_uncategorized_event()
         {
-            return null;
+            Assert.IsTrue(_ef.Passes(false, "stream", "event"));
+        }
+
+        [Test]
+        public void does_not_pass_stream_deleted_event()
+        {
+            Assert.IsFalse(_ef.Passes(false, "stream", SystemEventTypes.StreamMetadata, isStreamDeletedEvent: true));
         }
     }
 }

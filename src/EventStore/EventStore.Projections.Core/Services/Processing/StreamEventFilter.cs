@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _streamId;
 
         public StreamEventFilter(string streamId, bool allEvents, HashSet<string> events)
-            : base(allEvents, events)
+            : base(allEvents, false, events)
         {
             _streamId = streamId;
         }

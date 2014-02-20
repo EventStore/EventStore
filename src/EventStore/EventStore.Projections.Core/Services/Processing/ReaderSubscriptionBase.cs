@@ -112,7 +112,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
             _positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
-            if (_eventFilter.Passes(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType))
+            if (_eventFilter.Passes(
+                message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType,
+                message.Data.IsStreamDeletedEvent))
             {
                 _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
                 var convertedMessage =

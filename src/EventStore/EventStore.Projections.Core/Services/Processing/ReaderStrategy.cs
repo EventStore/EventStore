@@ -235,7 +235,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_allStreams && _events != null && _events.Count >= 1)
                 return new EventByTypeIndexEventFilter(_events);
             if (_allStreams)
-                return new TransactionFileEventFilter(_allEvents, _events, includeLinks: _includeLinks);
+                //NOTE: a projection cannot handle both stream deleted notifications 
+                // and real stream tombstone/stream deleted events as they have the same position
+                // and thus processing cannot be correctly checkpointed
+                return new TransactionFileEventFilter(
+                    _allEvents, !_includeStreamDeletedNotification, _events, includeLinks: _includeLinks);
             if (_categories != null && _categories.Count == 1)
                 return new CategoryEventFilter(_categories.First(), _allEvents, _events);
             if (_categories != null)

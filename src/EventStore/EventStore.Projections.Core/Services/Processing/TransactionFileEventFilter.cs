@@ -35,8 +35,9 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly bool _includeLinks;
 
-        public TransactionFileEventFilter(bool allEvents, HashSet<string> events, bool includeLinks = false)
-            : base(allEvents, events)
+        public TransactionFileEventFilter(
+            bool allEvents, bool includeDeletedStreamEvents, HashSet<string> events, bool includeLinks = false)
+            : base(allEvents, includeDeletedStreamEvents, events)
         {
             _includeLinks = includeLinks;
         }

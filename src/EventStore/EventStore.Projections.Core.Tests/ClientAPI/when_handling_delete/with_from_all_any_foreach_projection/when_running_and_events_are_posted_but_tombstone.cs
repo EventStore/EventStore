@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,33 +26,46 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_delete.with_from_all_any_foreach_projection
 {
-    public class MultiStreamEventFilter : EventFilter
+    [TestFixture]
+    public class when_running_and_events_are_posted_but_tombstone : specification_with_standard_projections_runnning
     {
-        private readonly HashSet<string> _streams;
-
-        public MultiStreamEventFilter(HashSet<string> streams, bool allEvents, HashSet<string> events)
-            : base(allEvents, false, events)
-        {
-            _streams = streams;
-        }
-
-        public override bool DeletedNotificationPasses(string positionStreamId)
+        protected override bool GivenStandardProjectionsRunning()
         {
             return false;
         }
 
-        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
+        protected override void Given()
         {
-            return _streams.Contains(positionStreamId);
+            base.Given();
+            PostEvent("stream-1", "type1", "{}");
+            PostEvent("stream-1", "type2", "{}");
+            PostEvent("stream-2", "type1", "{}");
+            PostEvent("stream-2", "type2", "{}");
+            WaitIdle();
+            PostProjection(@"
+fromAll().foreachStream().when({
+    $init: function(){return {a:0}},
+    $any: function(s,e){s.a++},
+    $deleted: function(s,e){s.deleted=1;},
+}).outputState();
+");
         }
 
-        public override string GetCategory(string positionStreamId)
+        protected override void When()
         {
-            return null;
+            base.When();
+            HardDeleteStream("stream-1");
+            WaitIdle();
+        }
+
+        [Test, Category("Network")]
+        public void receives_deleted_notification()
+        {
+            AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"a\":2,\"deleted\":1}");
         }
     }
 }

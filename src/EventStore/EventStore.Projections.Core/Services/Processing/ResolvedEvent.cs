@@ -33,6 +33,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Projections.Core.Standard;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -227,6 +228,15 @@ namespace EventStore.Projections.Core.Services.Processing
         public TFPos LinkOrEventPosition
         {
             get { return _linkOrEventPosition; }
+        }
+
+        public bool IsStreamDeletedEvent
+        {
+            get
+            {
+                string temp;
+                return StreamDeletedHelper.IsStreamDeletedEvent(EventStreamId, EventType, Data, out temp);
+            }
         }
     }
 }

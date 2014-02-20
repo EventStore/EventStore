@@ -235,7 +235,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             positionEventNumber: resolvedEvent.PositionSequenceNumber));
             }
 
-            else
+            else if (!resolvedEvent.IsStreamDeletedEvent)
                 _publisher.Publish(
                     //TODO: publish both link and event data
                     new ReaderSubscriptionMessage.CommittedEventDistributed(

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.ClientAPI.Common;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_filter
@@ -56,5 +57,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
         {
             Assert.IsTrue(_ef.Passes(false, "stream", "event"));
         }
+
+        [Test]
+        public void passes_stream_deleted_event()
+        {
+            Assert.IsTrue(_ef.Passes(false, "stream", SystemEventTypes.StreamMetadata, isStreamDeletedEvent: true));
+        }
+
+
     }
 }

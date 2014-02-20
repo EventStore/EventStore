@@ -203,10 +203,13 @@ namespace EventStore.Projections.Core.Services.Processing
             if (positionEvent.LogPosition > _limitingCommitPosition)
                 return;
 
+            var resolvedEvent = new ResolvedEvent(pair, null);
+            if (resolvedEvent.IsLinkToDeletedStream || resolvedEvent.IsStreamDeletedEvent)
+                return;
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId, new ResolvedEvent(pair, null),
+                    EventReaderCorrelationId, resolvedEvent,
                     _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: GetType(),
                     preTagged:
                         CheckpointTag.FromByStreamPosition(

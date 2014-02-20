@@ -189,11 +189,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         currentFrom, receivedPosition));
 
             var resolvedEvent = new ResolvedEvent(@event, null);
-            _publisher.Publish(
-                new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId, resolvedEvent,
-                    _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
-                    100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
 
             string deletedPartitionStreamId;
             if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
@@ -201,6 +196,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
             bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
                 resolvedEvent, out deletedPartitionStreamId);
+
+            _publisher.Publish(
+                new ReaderSubscriptionMessage.CommittedEventDistributed(
+                    EventReaderCorrelationId, resolvedEvent,
+                    _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
+                    100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
             if (isDeletedStreamEvent)
                 _publisher.Publish(
                     new ReaderSubscriptionMessage.EventReaderPartitionDeleted(

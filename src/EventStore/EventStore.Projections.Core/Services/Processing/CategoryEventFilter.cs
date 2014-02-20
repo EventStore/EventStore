@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _categoryStream;
 
         public CategoryEventFilter(string category, bool allEvents, HashSet<string> events)
-            : base(allEvents, events)
+            : base(allEvents, false, events)
         {
             _category = category;
             _categoryStream = "$ce-" + category;
