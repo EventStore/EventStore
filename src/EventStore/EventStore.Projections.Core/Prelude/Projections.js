@@ -34,6 +34,7 @@ var $projections = {
         var eventHandlers = {};
         var anyEventHandlers = [];
         var deletedNotificationHandlers = [];
+        var createdNotificationHandlers = [];
         var rawEventHandlers = [];
         var transformers = [];
         var getStatePartitionHandler = function () {
@@ -142,6 +143,13 @@ var $projections = {
                 }
             },
 
+            process_created_notification: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition) {
+                processCreatedNotification(event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition);
+                var stateJson;
+                stateJson = JSON.stringify(projectionState);
+                return stateJson;
+            },
+
             transform_state_to_result: function () {
                 var result = projectionState;
                 for (var i = 0; i < transformers.length; i++) {
@@ -210,6 +218,12 @@ var $projections = {
         function on_deleted_notification(eventHandler) {
             deletedNotificationHandlers.push(eventHandler);
             sources.options.handlesDeletedNotifications = true;
+            sources.options.definesFold = true;
+        }
+
+        function on_created_notification(eventHandler) {
+            createdNotificationHandlers.push(eventHandler);
+            sources.options.handlesCreatedNotifications = true;
             sources.options.definesFold = true;
         }
 
@@ -388,6 +402,32 @@ var $projections = {
             }
         }
 
+        function processCreatedNotification(eventRaw, isJson, streamId, eventType, category, sequenceNumber, metadataRaw, linkMetadataRaw, partition, streamMetadataRaw) {
+
+            var eventHandler;
+            var state = !sources.options.biState ? projectionState : [projectionState, projectionSharedState];
+
+            var index;
+
+            var eventEnvelope = new envelope(null, eventRaw, eventType, streamId, sequenceNumber, metadataRaw, linkMetadataRaw, partition, streamMetadataRaw);
+
+            if (isJson) {
+                tryDeserializeBody(eventEnvelope);
+            }
+
+            for (index = 0; index < createdNotificationHandlers.length; index++) {
+                eventHandler = createdNotificationHandlers[index];
+                state = callHandler(eventHandler, state, eventEnvelope);
+            }
+
+            if (!sources.options.biState) {
+                projectionState = state;
+            } else {
+                projectionState = state[0];
+                projectionSharedState = state[1];
+            }
+        }
+
         function fromStream(sourceStream) {
             sources.streams.push(sourceStream);
         }
@@ -460,6 +500,7 @@ var $projections = {
             on_any: on_any,
             on_raw: on_raw,
             on_deleted_notification: on_deleted_notification,
+            on_created_notification: on_created_notification,
 
             fromAll: fromAll,
             fromCategory: fromCategory,

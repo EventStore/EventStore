@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
@@ -310,8 +311,15 @@ namespace EventStore.Projections.Core.Services.Processing
             out string newSharedState, out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
         {
             projectionResult = null;
-            SetHandlerState(partition);
+            var newPatitionInitialized = InitOrLoadHandlerState(partition);
             _stopwatch.Start();
+            EmittedEventEnvelope[] eventsEmittedOnInitialization = null;
+            if (newPatitionInitialized)
+            {
+                _projectionStateHandler.ProcessPartitionCreated(
+                    partition, message.CheckpointTag, out eventsEmittedOnInitialization);
+            }
+
             var result = _projectionStateHandler.ProcessEvent(
                 partition, message.CheckpointTag, message.EventCategory, message.Data, out newState, out newSharedState,
                 out emittedEvents);
@@ -336,6 +344,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
             _stopwatch.Stop();
+            if (eventsEmittedOnInitialization != null)
+            {
+                if (emittedEvents == null || emittedEvents.Length == 0)
+                    emittedEvents = eventsEmittedOnInitialization;
+                else
+                    emittedEvents = eventsEmittedOnInitialization.Concat(emittedEvents).ToArray();
+
+            }
             return result;
         }
 
@@ -344,7 +360,7 @@ namespace EventStore.Projections.Core.Services.Processing
             out string projectionResult)
         {
             projectionResult = null;
-            SetHandlerState(partition);
+            InitOrLoadHandlerState(partition);
             _stopwatch.Start();
             var result = _projectionStateHandler.ProcessPartitionDeleted(
                 partition, deletePosition, out newState);
@@ -380,17 +396,24 @@ namespace EventStore.Projections.Core.Services.Processing
             return result;
         }
 
-        private void SetHandlerState(string partition)
+        /// <summary>
+        /// initializes or loads existing partition state
+        /// </summary>
+        /// <param name="partition"></param>
+        /// <returns>true - if new partition state was initialized</returns>
+        private bool InitOrLoadHandlerState(string partition)
         {
             if (_handlerPartition == partition)
-                return;
+                return false;
 
             var newState = _partitionStateCache.GetLockedPartitionState(partition);
             _handlerPartition = partition;
+            var initialized = false;
             if (newState != null && !String.IsNullOrEmpty(newState.State))
                 _projectionStateHandler.Load(newState.State);
             else
             {
+                initialized = true;
                 _projectionStateHandler.Initialize();
             }
 
@@ -403,6 +426,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                     _projectionStateHandler.InitializeShared();
             }
+            return initialized;
         }
 
         public override void NewCheckpointStarted(CheckpointTag at)

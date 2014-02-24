@@ -71,6 +71,16 @@ namespace EventStore.Projections.Core.Services
             out string newSharedState, out EmittedEventEnvelope[] emittedEvents);
 
         /// <summary>
+        /// Processes partition created notificatiion and updates internal state if necessary.  
+        /// </summary>
+        /// <param name="partition"></param>
+        /// <param name="createPosition"></param>
+        /// <param name="emittedEvents"></param>
+        /// <returns>true - if notification was processed (new state must be returned)</returns>
+        bool ProcessPartitionCreated(
+            string partition, CheckpointTag createPosition, out EmittedEventEnvelope[] emittedEvents);
+
+        /// <summary>
         /// Processes partition deleted notification and updates internal state if necessary.  
         /// </summary>
         /// <returns>true - if event was processed (new state must be returned) </returns>

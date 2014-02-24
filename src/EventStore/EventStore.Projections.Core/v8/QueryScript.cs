@@ -45,6 +45,7 @@ namespace EventStore.Projections.Core.v8
         private Func<string, string[], string> _transformCatalogEvent;
         private Func<string, string[], Tuple<string, string>> _processEvent;
         private Func<string, string[], string> _processDeletedNotification;
+        private Func<string, string[], string> _processCreatedNotification;
         private Func<string> _transformStateToResult;
         private Action<string> _setState;
         private Action<string> _setSharedState;
@@ -134,6 +135,9 @@ namespace EventStore.Projections.Core.v8
                     break;
                 case "process_deleted_notification":
                     _processDeletedNotification = (json, other) => ExecuteHandler(handlerHandle, json, other);
+                    break;
+                case "process_created_notification":
+                    _processCreatedNotification = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
                 case "transform_catalog_event":
                     _transformCatalogEvent = (json, other) => ExecuteHandler(handlerHandle, json, other);
@@ -278,6 +282,14 @@ namespace EventStore.Projections.Core.v8
                 throw new InvalidOperationException("'process_deleted_notification' command handler has not been registered");
 
             return _processDeletedNotification(json, other);
+        }
+
+        public string NotifyCreated(string json, string[] other)
+        {
+            if (_processCreatedNotification == null)
+                throw new InvalidOperationException("'process_created_notification' command handler has not been registered");
+
+            return _processCreatedNotification(json, other);
         }
 
         public string TransformStateToResult()

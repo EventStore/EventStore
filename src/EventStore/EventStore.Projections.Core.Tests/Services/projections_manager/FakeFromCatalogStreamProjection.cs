@@ -104,6 +104,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             return true;
         }
 
+        public bool ProcessPartitionCreated(
+            string partition, CheckpointTag createPosition, out EmittedEventEnvelope[] emittedEvents)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
         {
             throw new NotImplementedException();

@@ -71,17 +71,15 @@ function scope($on, $notify) {
         for (var name in handlers) {
             if (name == 0 || name === "$init") {
                 eventProcessor.on_init_state(handlers[name]);
-            }
-            else if (name === "$initShared") {
+            } else if (name === "$initShared") {
                 eventProcessor.on_init_shared_state(handlers[name]);
-            }
-            else if (name === "$any") {
+            } else if (name === "$any") {
                 eventProcessor.on_any(handlers[name]);
-            }
-            else if (name === "$deleted") {
+            } else if (name === "$deleted") {
                 eventProcessor.on_deleted_notification(handlers[name]);
-            }
-            else {
+            } else if (name === "$created") {
+                eventProcessor.on_created_notification(handlers[name]);
+            } else {
                 eventProcessor.on_event(name, handlers[name]);
             }
         }

@@ -40,6 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public int _initializeSharedCalled = 0;
         public int _loadCalled = 0;
         public int _eventsProcessed = 0;
+        public int _partitionCreatedProcessed = 0;
         public string _loadedState = null;
         public string _lastProcessedStreamId;
         public string _lastProcessedEventType;
@@ -232,6 +233,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 default:
                     throw new NotSupportedException();
             }
+        }
+
+        public bool ProcessPartitionCreated(
+            string partition, CheckpointTag createPosition, out EmittedEventEnvelope[] emittedEvents)
+        {
+            _partitionCreatedProcessed++;
+            emittedEvents = null;
+            return true;
         }
 
         public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
