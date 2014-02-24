@@ -29,13 +29,15 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoch
 {
     [TestFixture]
-    public class when_handling_emits_with_previously_written_events_at_the_same_position : TestFixtureWithExistingEvents
+    public class when_handling_emits_with_previously_written_events_in_different_epochs : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
@@ -47,8 +49,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             AllWritesQueueUp();
             //NOTE: it is possible for a batch of events to be partially written if it contains links 
-            ExistingEvent("test_stream", "type1", @"{""c"": 100, ""p"": 50}", "data");
-            ExistingEvent("test_stream", "type2", @"{""c"": 100, ""p"": 50}", "data");
+            ExistingEvent("test_stream", "type1", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
+            ExistingEvent("test_stream", "type1", @"{""v"": 2, ""c"": 100, ""p"": 50}", "data");
         }
 
         private EmittedEvent[] CreateEventBatch()
@@ -73,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 20, 10),
+                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 20, 10),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());
@@ -81,20 +83,32 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         }
 
         [Test]
-        public void publishes_not_yet_written_events_only()
+        public void publishes_all_events()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
-            var writeMessage = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single();
-            Assert.AreEqual(1, writeMessage.Events.Length);
-            Assert.AreEqual("type3", writeMessage.Events[0].EventType);
+            var writtenEvents =
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().SelectMany(v => v.Events).ToArray();
+            Assert.AreEqual(2, writtenEvents.Length);
+            Assert.AreEqual("type2", writtenEvents[0].EventType);
+            Assert.AreEqual("type3", writtenEvents[1].EventType);
         }
+
+        [Test]
+        public void updates_stream_metadata()
+        {
+            var writes =
+                HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .OfEventType(SystemEventTypes.StreamMetadata)
+                    .ToArray();
+            Assert.AreEqual(0, writes.Length);
+        }
+
 
         [Test]
         public void reports_correct_event_numbers()
         {
-            Assert.AreEqual(0, _1);
-            Assert.AreEqual(1, _2);
-            Assert.AreEqual(2, _3);
+            Assert.AreEqual(1, _1);
+            Assert.AreEqual(2, _2);
+            Assert.AreEqual(3, _3);
         }
     }
 }

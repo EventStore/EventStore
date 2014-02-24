@@ -75,10 +75,11 @@ namespace EventStore.Projections.Core.Services
         /// </summary>
         /// <param name="partition"></param>
         /// <param name="createPosition"></param>
+        /// <param name="data"></param>
         /// <param name="emittedEvents"></param>
         /// <returns>true - if notification was processed (new state must be returned)</returns>
         bool ProcessPartitionCreated(
-            string partition, CheckpointTag createPosition, out EmittedEventEnvelope[] emittedEvents);
+            string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents);
 
         /// <summary>
         /// Processes partition deleted notification and updates internal state if necessary.  

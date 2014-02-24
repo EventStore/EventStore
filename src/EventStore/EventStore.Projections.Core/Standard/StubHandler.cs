@@ -88,8 +88,7 @@ namespace EventStore.Projections.Core.Standard
             return true;
         }
 
-        public bool ProcessPartitionCreated(
-            string partition, CheckpointTag createPosition, out EmittedEventEnvelope[] emittedEvents)
+        public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents)
         {
             throw new NotImplementedException();
         }

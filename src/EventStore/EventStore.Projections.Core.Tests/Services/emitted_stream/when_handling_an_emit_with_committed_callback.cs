@@ -27,27 +27,22 @@
 // 
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using EventStore.Common.Utils;
-using EventStore.Core.Messages;
-using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
-using Newtonsoft.Json.Linq;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream
 {
     [TestFixture]
-    public class when_handling_an_emit_with_extra_metadata : TestFixtureWithExistingEvents
+    public class when_handling_an_emit_with_committed_callback : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
 
         protected override void Given()
         {
-            AllWritesQueueUp();
             ExistingEvent("test_stream", "type", @"{""c"": 100, ""p"": 50}", "data");
+            AllWritesSucceed();
         }
 
         [SetUp]
@@ -56,36 +51,37 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
+        }
 
+        [Test]
+        public void completes_already_published_events()
+        {
+            var invoked = false;
             _stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", true, "data", new ExtraMetaData(new Dictionary<string, string> {{"a", "1"}, {"b", "{}"}}), CheckpointTag.FromPosition(0, 200, 150), null)
+                        (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
+                        (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 100, 50), (CheckpointTag) null, v => invoked = true)
                 });
+            Assert.IsTrue(invoked);
         }
 
         [Test]
-        public void publishes_not_yet_published_events()
+        public void completes_not_yet_published_events()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
-        }
-
-        [Test]
-        public void combines_checkpoint_tag_with_extra_metadata()
-        {
-            var writeEvent = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single();
-
-            Assert.AreEqual(1, writeEvent.Events.Length);
-            var @event = writeEvent.Events[0];
-            var metadata = Helper.UTF8NoBom.GetString(@event.Metadata).ParseJson<JObject>();
-
-            HelperExtensions.AssertJson(new {a = 1, b = new {}}, metadata);
-            var checkpoint = @event.Metadata.ParseCheckpointTagJson();
-            Assert.AreEqual(CheckpointTag.FromPosition(0, 200, 150), checkpoint);
+            var invoked = false;
+            _stream.EmitEvents(
+                new[]
+                {
+                    new EmittedDataEvent(
+                        (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
+                        (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 200, 150), (CheckpointTag) null, v => invoked = true)
+                });
+            Assert.IsTrue(invoked);
         }
     }
 }

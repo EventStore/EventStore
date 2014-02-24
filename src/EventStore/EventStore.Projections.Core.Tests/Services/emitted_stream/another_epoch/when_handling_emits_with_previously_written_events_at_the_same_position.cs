@@ -28,15 +28,20 @@
 
 using System;
 using System.Linq;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using TestFixtureWithExistingEvents = EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream.another_epoch
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoch
 {
     [TestFixture]
-    public class when_handling_emits_with_previously_written_events_in_different_epochs : TestFixtureWithExistingEvents
+    public class when_handling_emits_with_previously_written_events_at_the_same_position : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
@@ -47,9 +52,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         protected override void Given()
         {
             AllWritesQueueUp();
+            AllWritesToSucceed("$$test_stream");
             //NOTE: it is possible for a batch of events to be partially written if it contains links 
             ExistingEvent("test_stream", "type1", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
-            ExistingEvent("test_stream", "type1", @"{""v"": 2, ""c"": 100, ""p"": 50}", "data");
+            ExistingEvent("test_stream", "type2", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
+            NoOtherStreams();
         }
 
         private EmittedEvent[] CreateEventBatch()
@@ -74,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 20, 10),
+                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 100, 50),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());
@@ -82,13 +89,27 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         }
 
         [Test]
+        public void truncates_existing_stream_at_correct_position()
+        {
+            var writes =
+                HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .OfEventType(SystemEventTypes.StreamMetadata)
+                    .ToArray();
+            Assert.AreEqual(1, writes.Length);
+            HelperExtensions.AssertJson(new {___tb = 2}, writes[0].Data.ParseJson<JObject>());
+        }
+
+        [Test]
         public void publishes_all_events()
         {
             var writtenEvents =
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().SelectMany(v => v.Events).ToArray();
-            Assert.AreEqual(2, writtenEvents.Length);
-            Assert.AreEqual("type2", writtenEvents[0].EventType);
-            Assert.AreEqual("type3", writtenEvents[1].EventType);
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .ToArray();
+            Assert.AreEqual(3, writtenEvents.Length);
+            Assert.AreEqual("type1", writtenEvents[0].EventType);
+            Assert.AreEqual("type2", writtenEvents[1].EventType);
+            Assert.AreEqual("type3", writtenEvents[2].EventType);
         }
 
         [Test]
@@ -98,16 +119,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 HandledMessages.OfType<ClientMessage.WriteEvents>()
                     .OfEventType(SystemEventTypes.StreamMetadata)
                     .ToArray();
-            Assert.AreEqual(0, writes.Length);
+            Assert.AreEqual(1, writes.Length);
         }
-
 
         [Test]
         public void reports_correct_event_numbers()
         {
-            Assert.AreEqual(1, _1);
-            Assert.AreEqual(2, _2);
-            Assert.AreEqual(3, _3);
+            Assert.AreEqual(2, _1);
+            Assert.AreEqual(3, _2);
+            Assert.AreEqual(4, _3);
         }
     }
 }

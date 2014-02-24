@@ -317,7 +317,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (newPatitionInitialized)
             {
                 _projectionStateHandler.ProcessPartitionCreated(
-                    partition, message.CheckpointTag, out eventsEmittedOnInitialization);
+                    partition, message.CheckpointTag, message.Data, out eventsEmittedOnInitialization);
             }
 
             var result = _projectionStateHandler.ProcessEvent(

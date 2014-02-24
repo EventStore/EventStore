@@ -27,60 +27,59 @@
 // 
 
 using System;
+using System.Linq;
+using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream
 {
     [TestFixture]
-    public class when_handling_an_emit_with_committed_callback : TestFixtureWithExistingEvents
+    public class when_checkpoint_requested_with_pending_writes : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
 
         protected override void Given()
         {
-            ExistingEvent("test_stream", "type", @"{""c"": 100, ""p"": 50}", "data");
+            base.Given();
             AllWritesSucceed();
+            NoOtherStreams();
         }
 
         [SetUp]
         public void setup()
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
+            ;
             _stream = new EmittedStream(
-                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
-                _ioDispatcher, _readyHandler);
+                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, _readyHandler);
             _stream.Start();
-        }
-
-        [Test]
-        public void completes_already_published_events()
-        {
-            var invoked = false;
             _stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
-                        (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
-                        (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 100, 50), (CheckpointTag) null, v => invoked = true)
+                        "test", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), null)
                 });
-            Assert.IsTrue(invoked);
+            _stream.Checkpoint();
         }
 
         [Test]
-        public void completes_not_yet_published_events()
+        public void does_not_publish_ready_for_checkpoint_immediately()
         {
-            var invoked = false;
-            _stream.EmitEvents(
-                new[]
-                {
-                    new EmittedDataEvent(
-                        (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
-                        (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 200, 150), (CheckpointTag) null, v => invoked = true)
-                });
-            Assert.IsTrue(invoked);
+            Assert.AreEqual(
+                0, _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
+        }
+
+        [Test]
+        public void publishes_ready_for_checkpoint_on_handling_last_write_events_completed()
+        {
+            var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
+            _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0, 0));
+            Assert.AreEqual(
+                1, _readyHandler.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }
     }
 }

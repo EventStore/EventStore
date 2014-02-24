@@ -29,20 +29,23 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream.another_projection
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream
 {
     [TestFixture]
-    public class when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream : TestFixtureWithExistingEvents
+    public class when_handling_an_emit_with_not_ready_event : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
 
         protected override void Given()
         {
-            ExistingEvent("test_stream", "type", @"{""v"": ""2:3:4"", ""c"": 100, ""p"": 50}", "data");
+            AllWritesSucceed();
+            NoOtherStreams();
         }
 
         [SetUp]
@@ -51,22 +54,52 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-                new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
                 _ioDispatcher, _readyHandler);
             _stream.Start();
         }
 
         [Test]
-        public void fails_the_projection()
+        public void replies_with_await_message()
         {
             _stream.EmitEvents(
                 new[]
                 {
-                    new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), CheckpointTag.FromPosition(0, 40, 20))
+                    new EmittedLinkTo(
+                        "test_stream", Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(0, 1100, 1000), null)
                 });
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
-            Assert.AreEqual(1, _readyHandler.HandledFailedMessages.Count());
+            Assert.AreEqual(1, _readyHandler.HandledStreamAwaitingMessage.Count);
+            Assert.AreEqual("test_stream", _readyHandler.HandledStreamAwaitingMessage[0].StreamId);
+        }
+
+        [Test]
+        public void processes_write_on_write_completed_if_ready()
+        {
+            var linkTo = new EmittedLinkTo(
+                "test_stream", Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(0, 1100, 1000), null);
+            _stream.EmitEvents(new[] {linkTo});
+            linkTo.SetTargetEventNumber(1);
+            _stream.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("other_stream"));
+
+            Assert.AreEqual(1, _readyHandler.HandledStreamAwaitingMessage.Count);
+            Assert.AreEqual(
+                1,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .OfEventType(SystemEventTypes.LinkTo)
+                    .Count());
+        }
+
+        [Test]
+        public void replies_with_await_message_on_write_completed_if_not_yet_ready()
+        {
+            var linkTo = new EmittedLinkTo(
+                "test_stream", Guid.NewGuid(), "other_stream", CheckpointTag.FromPosition(0, 1100, 1000), null);
+            _stream.EmitEvents(new[] {linkTo});
+            _stream.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("one_more_stream"));
+
+            Assert.AreEqual(2, _readyHandler.HandledStreamAwaitingMessage.Count);
+            Assert.AreEqual("test_stream", _readyHandler.HandledStreamAwaitingMessage[0].StreamId);
+            Assert.AreEqual("test_stream", _readyHandler.HandledStreamAwaitingMessage[1].StreamId);
         }
     }
 }

@@ -219,15 +219,19 @@ namespace EventStore.Projections.Core.Services.v8
             return true;
         }
 
-        public bool ProcessPartitionCreated(
-            string partition, CheckpointTag createPosition, out EmittedEventEnvelope[] emittedEvents)
+        public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents)
         {
             CheckDisposed();
             _eventPosition = createPosition;
             _emittedEvents = null;
             var newStates = _query.NotifyCreated(
-                "", // trimming data passed to a JS 
-                new[] {partition, "" /* isSoftDedleted */});
+                data.Data.Trim(), // trimming data passed to a JS 
+                new[]
+                {
+                    data.IsJson ? "1" : "", data.EventStreamId, data.EventType, "",
+                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
+                    data.PositionMetadata ?? "", partition, ""
+                });
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }

@@ -235,8 +235,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             }
         }
 
-        public bool ProcessPartitionCreated(
-            string partition, CheckpointTag createPosition, out EmittedEventEnvelope[] emittedEvents)
+        public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents)
         {
             _partitionCreatedProcessed++;
             emittedEvents = null;

@@ -29,25 +29,24 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream
 {
     [TestFixture]
-    public class when_handling_an_emit_with_stream_metadata_to_empty_stream : TestFixtureWithExistingEvents
+    public class when_handling_an_emit_to_the_nonexisting_stream : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
-        private EmittedStream.WriterConfiguration.StreamMetadata _streamMetadata;
-        private EmittedStream.WriterConfiguration _writerConfiguration;
 
         protected override void Given()
         {
             AllWritesQueueUp();
-            NoStream("test_stream");
-            _streamMetadata = new EmittedStream.WriterConfiguration.StreamMetadata(maxCount: 10);
-            _writerConfiguration = new EmittedStream.WriterConfiguration(_streamMetadata, null, maxWriteBatchLength: 50);
+            AllWritesToSucceed("$$test_stream");
+            NoOtherStreams();
         }
 
         [SetUp]
@@ -55,60 +54,79 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", _writerConfiguration, new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0),
-                CheckpointTag.FromPosition(0, 40, 30), _ioDispatcher, _readyHandler);
+                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
+                new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
+                _ioDispatcher, _readyHandler);
             _stream.Start();
+        }
+
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void throws_if_position_is_prior_to_from_position()
+        {
+            _stream.EmitEvents(
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 20, 10), null)
+                });
+        }
+
+        [Test]
+        public void publishes_already_published_events()
+        {
+            _stream.EmitEvents(
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), null)
+                });
+            Assert.AreEqual(
+                1,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .Count());
+        }
+
+        [Test]
+        public void publishes_not_yet_published_events()
+        {
             _stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
-        }
-
-        [Test]
-        public void publishes_write_stream_metadata()
-        {
             Assert.AreEqual(
-                1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToStream("$$test_stream").Count());
-        }
-
-        [Test]
-        public void does_not_write_stream_metadata_second_time()
-        {
-            OneWriteCompletes();
-            OneWriteCompletes();
-            _stream.EmitEvents(
-                new[]
-                {
-                    new EmittedDataEvent(
-                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 400, 350), null)
-                });
-            Assert.AreEqual(
-                1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToStream("$$test_stream").Count());
-        }
-
-        [Test]
-        public void publishes_write_emitted_event_on_write_stream_metadata_completed()
-        {
-            OneWriteCompletes();
-            Assert.AreEqual(
-                1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToStream("test_stream").Count());
+                1,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+                    .ExceptOfEventType(SystemEventTypes.StreamMetadata)
+                    .Count());
         }
 
         [Test]
         public void does_not_reply_with_write_completed_message()
         {
+            _stream.EmitEvents(
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
+                });
             Assert.AreEqual(0, _readyHandler.HandledWriteCompletedMessage.Count);
         }
 
         [Test]
         public void reply_with_write_completed_message_when_write_completes()
         {
-            OneWriteCompletes();
+            _stream.EmitEvents(
+                new[]
+                {
+                    new EmittedDataEvent(
+                        "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
+                });
             OneWriteCompletes();
             Assert.IsTrue(_readyHandler.HandledWriteCompletedMessage.Any(v => v.StreamId == "test_stream"));
-            // more than one is ok
+                // more than one is ok
         }
     }
 }

@@ -30,9 +30,10 @@ using System;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream
 {
     [TestFixture]
     public class when_handling_emits_with_previously_written_events : TestFixtureWithExistingEvents
