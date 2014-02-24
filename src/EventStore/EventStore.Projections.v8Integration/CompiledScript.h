@@ -22,6 +22,7 @@ namespace js1 {
 		v8::Handle<v8::Value> run_script(v8::Handle<v8::Context> context);
 		bool set_last_error(bool is_error, v8::TryCatch &try_catch);
 		void set_last_error(v8::Handle<v8::String> message);
+		void set_last_error(char *message);
 		static void isolate_add_ref(v8::Isolate * isolate);
 		static size_t isolate_release(v8::Isolate * isolate);
 	private:

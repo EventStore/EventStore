@@ -57,6 +57,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 WriteResult(partition, resultBody, causedBy, causedByGuid, correlationId);
         }
 
+        public void WritePartitionMeasured(Guid subscriptionId, string partition, int size)
+        {
+            // intentionally does nothing
+        }
+
         private void WriteResult(
             string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
         {
@@ -114,6 +119,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _coreProjectionCheckpointManager.EventsEmitted(
                 scheduledWrites, causedBy, correlationId);
+        }
+
+        public void WriteProgress(Guid subscriptionId, float progress)
+        {
+            // intentionally does nothing
         }
     }
 }

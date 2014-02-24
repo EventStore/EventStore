@@ -97,7 +97,7 @@ namespace js1
 	bool CompiledScript::set_last_error(bool is_error, v8::TryCatch &try_catch)
 	{
 		if (!is_error && !try_catch.Exception().IsEmpty()) {
-			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Caught exception which was not indicated as an error"));
+			set_last_error("Caught exception which was not indicated as an error");
 			return true;
 		}
 		if (is_error) 
@@ -123,7 +123,12 @@ namespace js1
 			new v8::Persistent<v8::Value>(v8::Isolate::GetCurrent(), exception));
 	}
 
-	void CompiledScript::isolate_add_ref(v8::Isolate * isolate) 
+	void CompiledScript::set_last_error(char *message)
+	{
+		set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), message));
+	}
+
+	void CompiledScript::isolate_add_ref(v8::Isolate * isolate)
 	{
 		size_t counter = reinterpret_cast<size_t>(isolate->GetData(0));
 		counter++;

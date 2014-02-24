@@ -42,7 +42,6 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.EofReached>,
         IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
         IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>,
-        IHandle<EventReaderSubscriptionMessage.PartitionMeasured>,
         IProjectionProcessingPhase,
         IProjectionPhaseStateManager
     {
@@ -50,6 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ICoreProjectionForProcessingPhase _coreProjection;
         protected readonly Guid _projectionCorrelationId;
         protected readonly ICoreProjectionCheckpointManager _checkpointManager;
+        protected readonly IProgressResultWriter _progressResultWriter;
         protected readonly ProjectionConfig _projectionConfig;
         protected readonly string _projectionName;
         protected readonly ILogger _logger;
@@ -94,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _useCheckpoints = useCheckpoints;
             _stopOnEof = stopOnEof;
             _isBiState = isBiState;
+            _progressResultWriter = new ProgressResultWriter(this, _resultWriter);
         }
 
         public void UnlockAndForgetBefore(CheckpointTag checkpointTag)
@@ -147,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
             try
             {
-                var progressWorkItem = new ProgressWorkItem(_checkpointManager, message.Progress);
+                var progressWorkItem = new ProgressWorkItem(_checkpointManager, _progressResultWriter, message.Progress);
                 _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
             }
@@ -207,21 +208,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 var completedWorkItem = new CompletedWorkItem(this);
                 _processingQueue.EnqueueTask(completedWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 ProcessEvent();
-            }
-            catch (Exception ex)
-            {
-                _coreProjection.SetFaulted(ex);
-            }
-        }
-
-        public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message)
-        {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-            try
-            {
-                //TODO: handle
             }
             catch (Exception ex)
             {
@@ -537,6 +523,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
+                _progressResultWriter.WriteProgress(progress);
             }
         }
 
@@ -625,5 +612,23 @@ namespace EventStore.Projections.Core.Services.Processing
             if (starting)
                 NewCheckpointStarted(LastProcessedEventPosition);
         }
+
+        class ProgressResultWriter : IProgressResultWriter
+        {
+            private readonly EventSubscriptionBasedProjectionProcessingPhase _phase;
+            private readonly IResultWriter _resultWriter;
+
+            public ProgressResultWriter(EventSubscriptionBasedProjectionProcessingPhase phase, IResultWriter resultWriter)
+            {
+                _phase = phase;
+                _resultWriter = resultWriter;
+            }
+
+            public void WriteProgress(float progress)
+            {
+                _resultWriter.WriteProgress(_phase._currentSubscriptionId, progress);
+            }
+        }
     }
+
 }

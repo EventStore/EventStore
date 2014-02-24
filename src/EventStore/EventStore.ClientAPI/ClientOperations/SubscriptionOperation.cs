@@ -127,7 +127,7 @@ namespace EventStore.ClientAPI.ClientOperations
                         return new InspectionResult(InspectionDecision.Subscribed, "SubscriptionConfirmation");
                     }
 
-                    case TcpCommand.StreamEventAppeared:
+                    case TcpCommand.StreamEventAppeared:  
                     {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
                         EventAppeared(new ResolvedEvent(dto.Event));

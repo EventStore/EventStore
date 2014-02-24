@@ -33,12 +33,12 @@ namespace js1
 
 		if (prelude_result.IsEmpty()) 
 		{
-			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Prelude script did not return any value"));
+			set_last_error("Prelude script did not return any value");
 			return S_ERROR;
 		}
 		if (!prelude_result->IsFunction()) 
 		{
-			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Prelude script must return a function"));
+			set_last_error("Prelude script must return a function");
 			return S_ERROR;
 		}
 		global_template_factory = std::shared_ptr<v8::Persistent<v8::Function>>(
@@ -66,12 +66,12 @@ namespace js1
 		if (prelude_result.IsEmpty())
 		{
 
-			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Global template factory did not return any value"));
+			set_last_error("Global template factory did not return any value");
 			return S_ERROR; // initialized with 0 by default
 		}
 		if (!prelude_result->IsObject()) 
 		{
-			set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "Prelude script must return a function"));
+			set_last_error("Prelude script must return a function");
 			return S_ERROR; // initialized with 0 by default
 		}
 

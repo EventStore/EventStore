@@ -99,21 +99,6 @@ namespace EventStore.Projections.Core.Services.Processing
             Schedule();
         }
 
-        private void Schedule()
-        {
-            while (_pendingTasks.Count > 0)
-            {
-                var leastLoadedWorker = FindLeastLoaded();
-                if (_workLoadEstimationStrategy.MayScheduleOn(_workerState[leastLoadedWorker]))
-                {
-                    var task = _pendingTasks.Dequeue();
-                    ScheduleOn(leastLoadedWorker, task);
-                }
-                else
-                    break;
-            }
-        }
-
         public void ScheduleTask<T>(T task, Action<T, int> scheduled)
         {
             var index = FindLeastLoaded();
@@ -127,6 +112,21 @@ namespace EventStore.Projections.Core.Services.Processing
             else
             {
                 _pendingTasks.Enqueue(taskState);
+            }
+        }
+
+        private void Schedule()
+        {
+            while (_pendingTasks.Count > 0)
+            {
+                var leastLoadedWorker = FindLeastLoaded();
+                if (_workLoadEstimationStrategy.MayScheduleOn(_workerState[leastLoadedWorker]))
+                {
+                    var task = _pendingTasks.Dequeue();
+                    ScheduleOn(leastLoadedWorker, task);
+                }
+                else
+                    break;
             }
         }
 

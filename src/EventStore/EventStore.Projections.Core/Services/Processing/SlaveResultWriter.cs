@@ -28,7 +28,6 @@
 
 using System;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -55,6 +54,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     _masterCoreProjectionId, subscriptionId, partition, causedByGuid, causedBy, resultBody));
         }
 
+        public void WritePartitionMeasured(Guid subscriptionId, string partition, int size)
+        {
+            _resultsPublisher.Publish(new PartitionMeasured(_masterCoreProjectionId, subscriptionId, partition, size));
+        }
+
         public void WriteRunningResult(EventProcessedResult result)
         {
             // intentionally does nothing            
@@ -69,6 +73,12 @@ namespace EventStore.Projections.Core.Services.Processing
             EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
         {
             throw new NotSupportedException();
+        }
+
+        public void WriteProgress(Guid subscriptionId, float progress)
+        {
+            _resultsPublisher.Publish(
+                new PartitionProcessingProgress(_masterCoreProjectionId, subscriptionId, progress));
         }
     }
 }
