@@ -162,6 +162,7 @@
     <Compile Include="Helpers\ClientApiLoggerBridge.cs" />
     <Compile Include="Helpers\LengthPrefixSuffixFramer.cs" />
     <Compile Include="Helpers\ManualQueue.cs" />
+    <Compile Include="Helpers\MiniClusterNode.cs" />
     <Compile Include="Helpers\MiniNode.cs" />
     <Compile Include="Helpers\ReflectionDynamic.cs" />
     <Compile Include="Helpers\PortsHelper.cs" />
