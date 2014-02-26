@@ -75,6 +75,45 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
         [TestFixture, Category("LongRunning")]
+        class when_posting_an_event_with_date_time : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    TestStream,
+                    new[]
+                        {
+                            new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1987-11-07T00:00:00.000+01:00"}},
+                        });
+            }
+
+            [Test]
+            public void returns_created_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+            }
+
+            [Test]
+            public void returns_a_location_header()
+            {
+                Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
+            }
+
+            [Test]
+            public void the_json_data_is_not_mangled()
+            {
+                var json = GetJson<JObject>(_response.Headers[HttpResponseHeader.Location]);
+                HelperExtensions.AssertJson(new { A = "1987-11-07T00:00:00.000+01:00" }, json);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
         class when_posting_an_events_as_array : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
