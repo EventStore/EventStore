@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService
                 httpIntPort = tcpIntPort + 10,
                 httpExtPort = tcpIntPort + 11;
 
-			var vnode = new ClusterVNodeSettings(Guid.NewGuid(),
+			var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 0,
 				GetLoopbackForPort(tcpIntPort), null,
 				GetLoopbackForPort(tcpExtPort), null,
 				GetLoopbackForPort(httpIntPort), GetLoopbackForPort(httpExtPort),
