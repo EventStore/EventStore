@@ -41,7 +41,7 @@ namespace EventStore.Core.Cluster.Settings
 		public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
 	    public readonly bool DisableScavengeMerging;
 
-	    public ClusterVNodeSettings(Guid instanceId,
+	    public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 									IPEndPoint internalTcpEndPoint,
 									IPEndPoint internalSecureTcpEndPoint,
 									IPEndPoint externalTcpEndPoint,
@@ -91,7 +91,7 @@ namespace EventStore.Core.Cluster.Settings
 			if (useSsl)
 				Ensure.NotNull(sslTargetHost, "sslTargetHost");
 
-			NodeInfo = new VNodeInfo(instanceId,
+			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 									 internalTcpEndPoint, internalSecureTcpEndPoint,
 									 externalTcpEndPoint, externalSecureTcpEndPoint,
 									 internalHttpEndPoint, externalHttpEndPoint);

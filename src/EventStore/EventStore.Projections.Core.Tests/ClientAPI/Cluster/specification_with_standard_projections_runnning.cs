@@ -31,6 +31,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
@@ -102,13 +103,21 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
             PortsHelper.GetAvailablePort(IPAddress.Loopback);
 
-            _nodes[0] = CreateNode(
+            _nodes[0] = CreateNode(0, 
                 _nodeEndpoints[0], new IPEndPoint[] {_nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp});
-            _nodes[1] = CreateNode(
+            _nodes[1] = CreateNode(1, 
                 _nodeEndpoints[1], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp });
-            _nodes[2] = CreateNode(
+            
+            _nodes[2] = CreateNode(2, 
                 _nodeEndpoints[2], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp });
+            
 
+            _nodes[0].Start();
+            _nodes[1].Start();
+            _nodes[2].Start();
+
+            WaitHandle.WaitAll(new[] { _nodes[0].StartedEvent, _nodes[1].StartedEvent, _nodes[2].StartedEvent });
+            QueueStatsCollector.WaitIdle();
             _conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
             _conn.Connect();
 
@@ -120,14 +129,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             When();
         }
 
-        private MiniClusterNode CreateNode(Endpoints endpoints, IPEndPoint[] gossipSeeds)
+        private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds)
         {
             _projections = new ProjectionsSubsystem(1, runProjections: RunProjections.All);
             var node = new MiniClusterNode(
-                PathName, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
+                PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
                 endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
                 subsystems: new ISubsystem[] {_projections}, gossipSeeds: gossipSeeds);
-            node.Start();
+            WaitIdle();
             return node;
         }
 
@@ -309,6 +318,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         {
             _manager.CreateContinuous("test-projection", query, _admin);
             WaitIdle();
+        }
+    }
+
+    [TestFixture]
+    public class TestTest : specification_with_standard_projections_runnning
+    {
+        [Test]
+        public void Test()
+        {
+            Assert.Inconclusive();
         }
     }
 }

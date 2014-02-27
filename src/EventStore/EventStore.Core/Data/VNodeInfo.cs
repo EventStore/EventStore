@@ -35,6 +35,7 @@ namespace EventStore.Core.Data
     public class VNodeInfo
     {
         public readonly Guid InstanceId;
+        public readonly int DebugIndex;
         public readonly IPEndPoint InternalTcp;
         public readonly IPEndPoint InternalSecureTcp;
         public readonly IPEndPoint ExternalTcp;
@@ -42,7 +43,7 @@ namespace EventStore.Core.Data
         public readonly IPEndPoint InternalHttp;
         public readonly IPEndPoint ExternalHttp;
 
-        public VNodeInfo(Guid instanceId,
+        public VNodeInfo(Guid instanceId, int debugIndex,
                          IPEndPoint internalTcp, IPEndPoint internalSecureTcp,
                          IPEndPoint externalTcp, IPEndPoint externalSecureTcp,
                          IPEndPoint internalHttp, IPEndPoint externalHttp)
@@ -53,6 +54,7 @@ namespace EventStore.Core.Data
             Ensure.NotNull(internalHttp, "internalHttp");
             Ensure.NotNull(externalHttp, "externalHttp");
 
+            DebugIndex = debugIndex;
             InstanceId = instanceId;
             InternalTcp = internalTcp;
             InternalSecureTcp = internalSecureTcp;

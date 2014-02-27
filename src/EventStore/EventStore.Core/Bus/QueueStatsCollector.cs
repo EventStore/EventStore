@@ -222,8 +222,8 @@ namespace EventStore.Core.Bus
 #if DEBUG
         private static object _notifyLock;
         private static int _nonIdle = 0;
-        private static ICheckpoint _writerCheckpoint;
-        private static ICheckpoint _chaserCheckpoint;
+        private static ICheckpoint[] _writerCheckpoint = new ICheckpoint[3];
+        private static ICheckpoint[] _chaserCheckpoint = new ICheckpoint[3];
         private static int _length;
 
         public static void InitializeIdleDetection(bool enable = true)
@@ -233,6 +233,8 @@ namespace EventStore.Core.Bus
                 _nonIdle = 0;
                 _length = 0;
                 _notifyLock = new object();
+                _writerCheckpoint = new ICheckpoint[3];
+                _chaserCheckpoint = new ICheckpoint[3];
             }
             else
             {
@@ -241,6 +243,7 @@ namespace EventStore.Core.Bus
         }
 
 #endif
+
         [Conditional("DEBUG")]
         public static void WaitIdle()
         {
@@ -248,7 +251,7 @@ namespace EventStore.Core.Bus
             var counter = 0;
             lock (_notifyLock)
             {
-                while (_nonIdle > 0 || _length > 0 || _writerCheckpoint.Read() != _chaserCheckpoint.Read())
+                while (_nonIdle > 0 || _length > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1) || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent())
                 {
                     if (!Monitor.Wait(_notifyLock, 100))
                     {
@@ -261,11 +264,33 @@ namespace EventStore.Core.Bus
             }
 #endif
         }
-#if DEBUG
-        public static void InitializeCheckpoints(ICheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint)
+
+        private static bool AreCheckpointsDifferent(int index)
         {
-            _chaserCheckpoint = chaserCheckpoint;
-            _writerCheckpoint = writerCheckpoint;
+            return _writerCheckpoint[index] != null && _chaserCheckpoint[index] != null
+                   && _writerCheckpoint[index].Read() != _chaserCheckpoint[index].Read();
+        }
+
+        private static bool AnyCheckpointsDifferent()
+        {
+            long c1 = _writerCheckpoint[0] != null ? _writerCheckpoint[0].Read() : -1;
+            long c2 = _writerCheckpoint[1] != null ? _writerCheckpoint[1].Read() : -1;
+            long c3 = _writerCheckpoint[2] != null ? _writerCheckpoint[2].Read() : -1;
+
+            return (c2 != -1 && c1 != c2) || (c2 != -1 && c3 != -1 && c2 != c3);
+        }
+
+#if DEBUG
+        public static void InitializeCheckpoints(int index, ICheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint)
+        {
+            if (index == -1)
+            {
+                index = 0;
+                _chaserCheckpoint[1] = _chaserCheckpoint[2] = null;
+                _writerCheckpoint[1] = _writerCheckpoint[2] = null;
+            }
+            _chaserCheckpoint[index] = chaserCheckpoint;
+            _writerCheckpoint[index] = writerCheckpoint;
         }
 #endif
 

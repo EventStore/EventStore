@@ -75,44 +75,46 @@ namespace EventStore.Core.Tests.Helpers
         public readonly ClusterVNode Node;
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
+        public ManualResetEvent StartedEvent;
 
         public MiniClusterNode(
-            string pathname, IPEndPoint internalTcpPort, IPEndPoint internalTcpSecPort, IPEndPoint internalHttpPort, IPEndPoint externalTcpPort,
-            IPEndPoint externalTcpSecPort, IPEndPoint externalHttpPort, IPEndPoint[] gossipSeeds, ISubsystem[] subsystems = null,
-            int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false,
-            bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000, bool inMemDb = true)
+            string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
+            IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
+            ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
+            bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
+            bool inMemDb = true)
         {
-            if (_running) throw new Exception("Previous MiniNode is still running!!!");
+//            if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
 
             RunningTime.Start();
             RunCount += 1;
 
-            IPAddress ip = IPAddress.Loopback; //GetLocalIp();
-
             _dbPath = Path.Combine(
                 pathname,
-                string.Format("mini-cluster-node-db-{0}-{1}-{2}", externalTcpPort, externalTcpSecPort, externalHttpPort));
+                string.Format(
+                    "mini-cluster-node-db-{0}-{1}-{2}", externalTcp.Port, externalTcpSec.Port, externalHttp.Port));
 
             Directory.CreateDirectory(_dbPath);
             Db =
                 new TFChunkDb(
                     CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize, inMemDb));
 
-            InternalTcpEndPoint = internalTcpPort;
-            InternalTcpSecEndPoint = internalTcpSecPort;
-            InternalHttpEndPoint = internalHttpPort;
+            InternalTcpEndPoint = internalTcp;
+            InternalTcpSecEndPoint = internalTcpSec;
+            InternalHttpEndPoint = internalHttp;
 
-            ExternalTcpEndPoint = externalTcpPort;
-            ExternalTcpSecEndPoint = externalTcpSecPort;
-            ExternalHttpEndPoint = externalHttpPort;
+            ExternalTcpEndPoint = externalTcp;
+            ExternalTcpSecEndPoint = externalTcpSec;
+            ExternalHttpEndPoint = externalHttp;
 
             var singleVNodeSettings = new ClusterVNodeSettings(
-                Guid.NewGuid(), InternalTcpEndPoint, InternalTcpSecEndPoint, InternalHttpEndPoint, ExternalTcpEndPoint,
-                ExternalTcpSecEndPoint, ExternalHttpEndPoint, new[] {ExternalHttpEndPoint.ToHttpUrl()},
-                enableTrustedAuth, ssl_connections.GetCertificate(), 1, false, "", gossipSeeds, TFConsts.MinFlushDelayMs,
-                3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2), false, "", false, TimeSpan.FromHours(1),
-                StatsStorage.None, 0, new InternalAuthenticationProviderFactory(), true);
+                Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
+                ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
+                new[] {ExternalHttpEndPoint.ToHttpUrl()}, enableTrustedAuth, ssl_connections.GetCertificate(), 1, false,
+                "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
+                false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
+                new InternalAuthenticationProviderFactory(), true);
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
@@ -136,16 +138,16 @@ namespace EventStore.Core.Tests.Helpers
         {
             StartingTime.Start();
 
-            var startedEvent = new ManualResetEventSlim(false);
+            StartedEvent = new ManualResetEvent(false);
             Node.MainBus.Subscribe(
-                new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => startedEvent.Set()));
+                new AdHocHandler<SystemMessage.SystemStart>(m => StartedEvent.Set()));
 
             Node.Start();
 
-            if (!startedEvent.Wait(60000))
-                throw new TimeoutException("MiniNode haven't started in 60 seconds.");
+            //if (!StartedEvent.Wait(60000))
+            //    throw new TimeoutException("MiniNode haven't started in 60 seconds.");
 
-            StartingTime.Stop();
+            //StartingTime.Stop();
         }
 
         public void Shutdown(bool keepDb = false, bool keepPorts = false)
