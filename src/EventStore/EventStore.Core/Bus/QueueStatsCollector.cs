@@ -278,8 +278,10 @@ namespace EventStore.Core.Bus
         [Conditional("DEBUG")]
         public void Dequeued()
         {
+#if DEBUG            
             Interlocked.Decrement(ref _length);
+#endif
         }
-    }
+    }    
 }
 
