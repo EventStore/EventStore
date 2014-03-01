@@ -60,7 +60,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new StreamEventReader(
-                _ioDispatcher, _bus, _distibutionPointCorrelationId, null, "stream", 10, new RealTimeProvider(), false);
+                _ioDispatcher, _bus, _distibutionPointCorrelationId, null, "stream", 10, new RealTimeProvider(), false,
+                produceStreamDeletes: false);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
@@ -131,27 +132,20 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             Assert.AreEqual(100, second.Data.Position.PreparePosition);
             Assert.AreEqual(-1, first.Data.Position.CommitPosition);
             Assert.AreEqual(-1, second.Data.Position.CommitPosition);
-            Assert.AreEqual(50, first.Data.OriginalPosition.PreparePosition);
-            Assert.AreEqual(100, second.Data.OriginalPosition.PreparePosition);
-            Assert.AreEqual(-1, first.Data.OriginalPosition.CommitPosition);
-            Assert.AreEqual(-1, second.Data.OriginalPosition.CommitPosition);
+            Assert.AreEqual(50, first.Data.EventOrLinkTargetPosition.PreparePosition);
+            Assert.AreEqual(100, second.Data.EventOrLinkTargetPosition.PreparePosition);
+            Assert.AreEqual(-1, first.Data.EventOrLinkTargetPosition.CommitPosition);
+            Assert.AreEqual(-1, second.Data.EventOrLinkTargetPosition.CommitPosition);
             Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
             Assert.AreEqual(100, second.SafeTransactionFileReaderJoinPosition);
         }
 
         [Test]
-        public void publishes_schedule()
+        public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeReaderServiceMessage.SubscribeAwake>().Count());
         }
 
-        [Test]
-        public void publishes_read_events_on_schedule_reply()
-        {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
-            var schedule = _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Single();
-            schedule.Reply();
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
-        }
+        
     }
 }

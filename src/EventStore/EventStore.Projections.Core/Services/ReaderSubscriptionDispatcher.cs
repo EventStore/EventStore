@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Services
     public sealed class SpooledStreamReadingDispatcher :
         PublishSubscribeDispatcher
             <Tuple<Guid, string>, ReaderSubscriptionManagement.SpoolStreamReading,
-                ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResult>
+                ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResultBase>
     {
         public SpooledStreamReadingDispatcher(IPublisher publisher)
             : base(

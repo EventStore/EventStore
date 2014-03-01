@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
 
@@ -47,7 +49,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
-            return @event.Data.EventStreamId;
+            var eventStreamId = @event.Data.EventStreamId;
+            return SystemStreams.IsMetastream(eventStreamId)
+                ? eventStreamId.Substring("$$".Length)
+                : eventStreamId;
+        }
+
+        public override bool EventReaderBasePartitionDeletedIsSupported()
+        {
+            return true;
         }
     }
 }

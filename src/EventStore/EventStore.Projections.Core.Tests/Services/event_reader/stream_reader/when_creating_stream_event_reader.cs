@@ -40,37 +40,49 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void it_can_be_created()
         {
-            new StreamEventReader(_ioDispatcher, _bus, Guid.NewGuid(), null, "stream", 0, new RealTimeProvider(), false);
+            new StreamEventReader(
+                _ioDispatcher, _bus, Guid.NewGuid(), null, "stream", 0, new RealTimeProvider(), false,
+                produceStreamDeletes: false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            new StreamEventReader(_ioDispatcher, null, Guid.NewGuid(), null, "stream", 0, new RealTimeProvider(), false);
+            new StreamEventReader(
+                _ioDispatcher, null, Guid.NewGuid(), null, "stream", 0, new RealTimeProvider(), false,
+                produceStreamDeletes: false);
         }
 
         [Test, ExpectedException(typeof(ArgumentException))]
         public void empty_event_reader_id_throws_argument_exception()
         {
-            new StreamEventReader(_ioDispatcher, _bus, Guid.Empty, null, "stream", 0, new RealTimeProvider(), false);
+            new StreamEventReader(
+                _ioDispatcher, _bus, Guid.Empty, null, "stream", 0, new RealTimeProvider(), false,
+                produceStreamDeletes: false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_stream_name_throws_argument_null_exception()
         {
-            new StreamEventReader(_ioDispatcher, _bus, Guid.NewGuid(), null, null, 0, new RealTimeProvider(), false);
+            new StreamEventReader(
+                _ioDispatcher, _bus, Guid.NewGuid(), null, null, 0, new RealTimeProvider(), false,
+                produceStreamDeletes: false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_stream_name_throws_argument_exception()
         {
-            new StreamEventReader(_ioDispatcher, _bus, Guid.NewGuid(), null, "", 0, new RealTimeProvider(), false);
+            new StreamEventReader(
+                _ioDispatcher, _bus, Guid.NewGuid(), null, "", 0, new RealTimeProvider(), false,
+                produceStreamDeletes: false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void negative_event_sequence_number_throws_argument_exception()
         {
-            new StreamEventReader(_ioDispatcher, _bus, Guid.NewGuid(), null, "", -1, new RealTimeProvider(), false);
+            new StreamEventReader(
+                _ioDispatcher, _bus, Guid.NewGuid(), null, "", -1, new RealTimeProvider(), false,
+                produceStreamDeletes: false);
         }
     }
 }

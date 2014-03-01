@@ -62,6 +62,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.GetResult>,
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
+                                     IHandle<ProjectionManagementMessage.Abort>,
                                      IHandle<ProjectionManagementMessage.SetRunAs>,
                                      IHandle<ProjectionManagementMessage.Reset>,
                                      IHandle<ProjectionManagementMessage.StartSlaveProjections>,
@@ -297,6 +298,19 @@ namespace EventStore.Projections.Core.Services.Management
                 _logger.Error("DBG: PROJECTION *{0}* NOT FOUND!!!", message.Name);
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             }
+            else
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionManagementMessage.Abort message)
+        {
+            if (!_started)
+                return;
+            _logger.Info("Aborting '{0}' projection", message.Name);
+
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
                 projection.Handle(message);
         }

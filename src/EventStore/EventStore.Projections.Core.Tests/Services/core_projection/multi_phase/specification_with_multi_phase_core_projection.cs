@@ -302,7 +302,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
                 throw new NotImplementedException();
             }
 
-            public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
+            public void EventsEmitted(
+                EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
             {
                 EmittedEvents.AddRange(scheduledWrites);
             }

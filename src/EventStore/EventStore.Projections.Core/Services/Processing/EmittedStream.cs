@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IPrincipal _writeAs;
         private readonly PositionTagger _positionTagger;
         private readonly CheckpointTag _zeroPosition;
-        private readonly CheckpointTag _from;
+        private readonly CheckpointTag _fromCheckpointPosition;
         private readonly IEmittedStreamContainer _readyHandler;
 
         private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents =
@@ -156,13 +156,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EmittedStream(
             string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
-            PositionTagger positionTagger, CheckpointTag @from, IODispatcher ioDispatcher,
+            PositionTagger positionTagger, CheckpointTag fromCheckpointPosition, IODispatcher ioDispatcher,
             IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
             if (writerConfiguration == null) throw new ArgumentNullException("writerConfiguration");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
-            if (@from == null) throw new ArgumentNullException("from");
+            if (fromCheckpointPosition == null) throw new ArgumentNullException("fromCheckpointPosition");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
@@ -172,7 +172,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeAs = writerConfiguration.WriteAs;
             _positionTagger = positionTagger;
             _zeroPosition = positionTagger.MakeZeroCheckpointTag();
-            _from = @from;
+            _fromCheckpointPosition = fromCheckpointPosition;
             _lastQueuedEventPosition = null;
             _ioDispatcher = ioDispatcher;
             _readyHandler = readyHandler;
@@ -190,7 +190,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (groupCausedBy == null)
                 {
                     groupCausedBy = @event.CausedByTag;
-                    if (!(_lastQueuedEventPosition != null && groupCausedBy > _lastQueuedEventPosition) && !(_lastQueuedEventPosition == null && groupCausedBy >= _from))
+                    if (!(_lastQueuedEventPosition != null && groupCausedBy > _lastQueuedEventPosition) && !(_lastQueuedEventPosition == null && groupCausedBy >= _fromCheckpointPosition))
                         throw new InvalidOperationException(
                             string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _lastQueuedEventPosition));
                     _lastQueuedEventPosition = groupCausedBy;
@@ -285,10 +285,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler.Handle(new CoreProjectionProcessingMessage.Failed(Guid.Empty, reason));
         }
 
-        private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
+        private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag lastCheckpointPosition)
         {
-            if (upTo == _zeroPosition)
-                throw new ArgumentException("upTo cannot be equal to zero position");
+//            if (lastCheckpointPosition == _zeroPosition)
+//                throw new ArgumentException("lastCheckpointPosition cannot be equal to zero position");
 
             if (!_awaitingListEventsCompleted)
                 throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
@@ -336,16 +336,24 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
-            var stop = CollectAlreadyCommittedEvents(message, upTo);
+            var stop = CollectAlreadyCommittedEvents(message, lastCheckpointPosition);
 
             if (stop)
-                SubmitWriteEventsInRecovery();
+                try
+                {
+                    SubmitWriteEventsInRecovery();
+                }
+                catch (InvalidEmittedEventSequenceExceptioin ex)
+                {
+                    Failed(ex.Message);
+                }
             else
-                SubmitListEvents(upTo, message.NextEventNumber);
+                SubmitListEvents(lastCheckpointPosition, message.NextEventNumber);
 
         }
 
-        private bool CollectAlreadyCommittedEvents(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
+        private bool CollectAlreadyCommittedEvents(
+            ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag lastCheckpointPosition)
         {
             var stop = false;
             foreach (var e in message.Events)
@@ -371,10 +379,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     //NOTE: may need to compare with last pre-recorded event
                     //      but should not push to alreadyCommitted if source changed (must be at checkpoint)
                     var adjustedTag = checkpointTagVersion.AdjustBy(_positionTagger, _projectionVersion);
-                    doStop = adjustedTag < upTo;
+                    doStop = adjustedTag <= lastCheckpointPosition;
                 }
                 if (doStop)
-                    // ignore any events prior to the requested upTo (== first emitted event position)
+                    // ignore any events prior to the requested lastCheckpointPosition (== first emitted event position)
                 {
                     stop = true;
                     break;
@@ -387,7 +395,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private static bool IsV1StreamCreatedEvent(EventStore.Core.Data.ResolvedEvent e)
         {
-            return !e.IsResolved && e.OriginalEventNumber == 0
+            return e.Link == null && e.OriginalEventNumber == 0
                    && (e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreatedImplicit__
                        || e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreated__);
         }
@@ -399,7 +407,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var firstEvent = _pendingWrites.Peek();
                 if (_lastCommittedOrSubmittedEventPosition == null)
-                    SubmitListEvents(firstEvent.CausedByTag);
+                    SubmitListEvents(_fromCheckpointPosition);
                 else
                     SubmitWriteEventsInRecovery();
             }
@@ -630,8 +638,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     SubmitWriteEvents();
                     return;
                 }
-                var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
-                ValidateEmittedEventInRecoveryMode(topAlreadyCommitted, eventToWrite);
+                var topAlreadyCommitted = ValidateEmittedEventInRecoveryMode(eventToWrite);
+                if (topAlreadyCommitted == null)
+                    continue; // means skipped one already comitted item due to deleted stream handling
                 anyFound = true;
                 NotifyEventCommitted(eventToWrite, topAlreadyCommitted.Item3); 
                 _pendingWrites.Dequeue(); // drop already committed event
@@ -639,13 +648,18 @@ namespace EventStore.Projections.Core.Services.Processing
             OnWriteCompleted();
         }
 
-        private static void ValidateEmittedEventInRecoveryMode(Tuple<CheckpointTag, string, int> topAlreadyCommitted, EmittedEvent eventsToWrite)
+        private Tuple<CheckpointTag, string, int> ValidateEmittedEventInRecoveryMode(EmittedEvent eventsToWrite)
         {
-            if (topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag || topAlreadyCommitted.Item2 != eventsToWrite.EventType)
-                throw new InvalidOperationException(
+            var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
+            if (topAlreadyCommitted.Item1 < eventsToWrite.CausedByTag)
+                return null;
+            var failed = topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag || topAlreadyCommitted.Item2 != eventsToWrite.EventType;
+            if (failed)
+                throw new InvalidEmittedEventSequenceExceptioin(
                     string.Format(
                         "An event emitted in recovery differ from the originally emitted event.  Existing('{0}', '{1}'). New('{2}', '{3}')",
                         topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType, eventsToWrite.CausedByTag));
+            return topAlreadyCommitted;
         }
 
         private void RecoveryCompleted()
@@ -676,6 +690,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_awaitingReady)
                 throw new InvalidOperationException("AwaitingReady state required");
             ProcessWrites();
+        }
+    }
+
+    class InvalidEmittedEventSequenceExceptioin : Exception
+    {
+        public InvalidEmittedEventSequenceExceptioin(string message)
+            : base(message)
+        {
         }
     }
 }

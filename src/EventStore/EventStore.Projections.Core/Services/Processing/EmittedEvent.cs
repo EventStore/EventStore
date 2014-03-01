@@ -100,5 +100,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _correlationId = correlationId;
         }
+
     }
 }

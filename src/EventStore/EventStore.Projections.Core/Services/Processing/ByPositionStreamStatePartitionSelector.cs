@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
 
@@ -47,7 +48,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
-            return @event.Data.PositionStreamId;
+            var eventStreamId = @event.Data.PositionStreamId;
+            return SystemStreams.IsMetastream(eventStreamId)
+                ? eventStreamId.Substring("$$".Length)
+                : eventStreamId;
+        }
+
+        public override bool EventReaderBasePartitionDeletedIsSupported()
+        {
+            return true;
         }
     }
 }

@@ -84,81 +84,91 @@ namespace EventStore.Core.Data
         {
             using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json))))
             {
+                return FromJsonReader(reader);
+            }
+        }
+
+        public static StreamMetadata FromJson(string json)
+        {
+            using (var reader = new JsonTextReader(new StringReader(json)))
+            {
+                return FromJsonReader(reader);
+            }
+        }
+
+        public static StreamMetadata FromJsonReader(JsonTextReader reader)
+        {
+            Check(reader.Read(), reader);
+            Check(JsonToken.StartObject, reader);
+
+            int? maxCount = null;
+            TimeSpan? maxAge = null;
+            int? truncateBefore = null;
+            bool? tempStream = null;
+            TimeSpan? cacheControl = null;
+            StreamAcl acl = null;
+
+            while (true)
+            {
                 Check(reader.Read(), reader);
-                Check(JsonToken.StartObject, reader);
-
-                int? maxCount = null;
-                TimeSpan? maxAge = null;
-                int? truncateBefore = null;
-                bool? tempStream = null;
-                TimeSpan? cacheControl = null;
-                StreamAcl acl = null;
-
-                while (true)
+                if (reader.TokenType == JsonToken.EndObject)
+                    break;
+                Check(JsonToken.PropertyName, reader);
+                var name = (string) reader.Value;
+                switch (name)
                 {
-                    Check(reader.Read(), reader);
-                    if (reader.TokenType == JsonToken.EndObject)
-                        break;
-                    Check(JsonToken.PropertyName, reader);
-                    var name = (string) reader.Value;
-                    switch (name)
+                    case SystemMetadata.MaxCount:
                     {
-                        case SystemMetadata.MaxCount:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.Integer, reader);
-                            maxCount = (int) (long) reader.Value;
-                            break;
-                        }
-                        case SystemMetadata.MaxAge:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.Integer, reader);
-                            maxAge = TimeSpan.FromSeconds((long) reader.Value);
-                            break;
-                        }
-                        case SystemMetadata.TruncateBefore:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.Integer, reader);
-                            truncateBefore = (int)(long)reader.Value;
-                            break;
-                        }
-                        case SystemMetadata.TempStream:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.Boolean, reader);
-                            tempStream = (bool)reader.Value;
-                            break;
-                        }
-                        case SystemMetadata.CacheControl:
-                        {
-                            Check(reader.Read(), reader);
-                            Check(JsonToken.Integer, reader);
-                            cacheControl = TimeSpan.FromSeconds((long) reader.Value);
-                            break;
-                        }
-                        case SystemMetadata.Acl:
-                        {
-                            acl = ReadAcl(reader);
-                            break;
-                        }
-                        default:
-                        {
-                            Check(reader.Read(), reader);
-                            // skip
-                            JToken.ReadFrom(reader);
-                            break;
-                        }
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.Integer, reader);
+                        maxCount = (int) (long) reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.MaxAge:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.Integer, reader);
+                        maxAge = TimeSpan.FromSeconds((long) reader.Value);
+                        break;
+                    }
+                    case SystemMetadata.TruncateBefore:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.Integer, reader);
+                        truncateBefore = (int) (long) reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.TempStream:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.Boolean, reader);
+                        tempStream = (bool) reader.Value;
+                        break;
+                    }
+                    case SystemMetadata.CacheControl:
+                    {
+                        Check(reader.Read(), reader);
+                        Check(JsonToken.Integer, reader);
+                        cacheControl = TimeSpan.FromSeconds((long) reader.Value);
+                        break;
+                    }
+                    case SystemMetadata.Acl:
+                    {
+                        acl = ReadAcl(reader);
+                        break;
+                    }
+                    default:
+                    {
+                        Check(reader.Read(), reader);
+                        // skip
+                        JToken.ReadFrom(reader);
+                        break;
                     }
                 }
-                return new StreamMetadata(maxCount > 0 ? maxCount : null,
-                                          maxAge > TimeSpan.Zero ? maxAge : null,
-                                          truncateBefore >= 0 ? truncateBefore : null,
-                                          tempStream,
-                                          cacheControl > TimeSpan.Zero ? cacheControl : null,
-                                          acl);
             }
+            return new StreamMetadata(
+                maxCount > 0 ? maxCount : null, maxAge > TimeSpan.Zero ? maxAge : null,
+                truncateBefore >= 0 ? truncateBefore : null, tempStream, cacheControl > TimeSpan.Zero ? cacheControl : null, acl);
         }
 
         internal static StreamAcl ReadAcl(JsonTextReader reader)

@@ -35,7 +35,9 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryMasterProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
-        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>, ISpoolStreamWorkItemContainer
+        IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
+        ISpoolStreamWorkItemContainer
+
 
     {
         //TODO: make it configurable
@@ -79,14 +81,16 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections)
         {
             _slaves = slaveProjections;
+            var workerCount = _slaves.Channels["slave"].Length;
             _loadBalancer = new ParallelProcessingLoadBalancer(
-                _slaves.Channels["slave"].Length, _maxScheduledSizePerWorker, _maxUnmeasuredTasksPerWorker);
+                workerCount, _maxScheduledSizePerWorker, _maxUnmeasuredTasksPerWorker);
         }
 
         public override void Subscribe(CheckpointTag @from, bool fromCheckpoint)
         {
             if (_slaves == null)
-                throw new InvalidOperationException("Cannot subscribe to event reader without assigned slave projections");
+                throw new InvalidOperationException(
+                    "Cannot subscribe to event reader without assigned slave projections");
             base.Subscribe(@from, fromCheckpoint);
         }
 

@@ -65,7 +65,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _distibutionPointCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
             _edp = new StreamEventReader(
-                _ioDispatcher, _bus, _distibutionPointCorrelationId, null, "stream", 10, _fakeTimeProvider, false);
+                _ioDispatcher, _bus, _distibutionPointCorrelationId, null, "stream", 10, _fakeTimeProvider, false,
+                produceStreamDeletes: false);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();

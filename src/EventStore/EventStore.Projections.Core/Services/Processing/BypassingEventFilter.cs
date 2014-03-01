@@ -31,8 +31,13 @@ namespace EventStore.Projections.Core.Services.Processing
     public class BypassingEventFilter : EventFilter
     {
         public BypassingEventFilter()
-            : base(true, null)
+            : base(true, true, null)
         {
+        }
+
+        public override bool DeletedNotificationPasses(string positionStreamId)
+        {
+            return true;
         }
 
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)

@@ -35,9 +35,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _streamId;
 
         public StreamEventFilter(string streamId, bool allEvents, HashSet<string> events)
-            : base(allEvents, events)
+            : base(allEvents, false, events)
         {
             _streamId = streamId;
+        }
+
+        public override bool DeletedNotificationPasses(string positionStreamId)
+        {
+            return positionStreamId == _streamId;
         }
 
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)

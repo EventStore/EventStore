@@ -219,6 +219,38 @@ namespace EventStore.Projections.Core.Services.v8
             return true;
         }
 
+        public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents)
+        {
+            CheckDisposed();
+            _eventPosition = createPosition;
+            _emittedEvents = null;
+            var newStates = _query.NotifyCreated(
+                data.Data.Trim(), // trimming data passed to a JS 
+                new[]
+                {
+                    data.IsJson ? "1" : "", data.EventStreamId, data.EventType, "",
+                    data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
+                    data.PositionMetadata ?? "", partition, ""
+                });
+            emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
+            return true;
+        }
+
+        public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
+        {
+            CheckDisposed();
+            _eventPosition = deletePosition;
+            _emittedEvents = null;
+            var newStates = _query.NotifyDeleted(
+                "", // trimming data passed to a JS 
+                new[]
+                {
+                    partition, "" /* isSoftDedleted */
+                });
+            newState = newStates;
+            return true;
+        }
+
         public string TransformStateToResult()
         {
             CheckDisposed();

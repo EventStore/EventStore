@@ -148,6 +148,67 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class EventReaderPartitionDeleted : SubscriptionMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
+
+            private readonly string _partition;
+            private readonly int? _lastEventNumber;
+            private readonly TFPos? _deleteLinkOrEventPosition;
+            private readonly TFPos? _deleteEventOrLinkTargetPosition;
+            private readonly string _positionStreamId;
+            private readonly int? _positionEventNumber;
+
+            public EventReaderPartitionDeleted(
+                Guid correlationId, string partition, int? lastEventNumber, TFPos? deleteLinkOrEventPosition,
+                TFPos? deleteEventOrLinkTargetPosition, string positionStreamId, int? positionEventNumber,
+                CheckpointTag preTagged = null, object source = null)
+                : base(correlationId, preTagged, source)
+            {
+                _partition = partition;
+                _lastEventNumber = lastEventNumber;
+                _deleteLinkOrEventPosition = deleteLinkOrEventPosition;
+                _deleteEventOrLinkTargetPosition = deleteEventOrLinkTargetPosition;
+                _positionStreamId = positionStreamId;
+                _positionEventNumber = positionEventNumber;
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+
+            public int? LastEventNumber
+            {
+                get { return _lastEventNumber; }
+            }
+
+            public TFPos? DeleteEventOrLinkTargetPosition
+            {
+                get { return _deleteEventOrLinkTargetPosition; }
+            }
+
+            public string PositionStreamId
+            {
+                get { return _positionStreamId; }
+            }
+
+            public int? PositionEventNumber
+            {
+                get { return _positionEventNumber; }
+            }
+
+            public TFPos? DeleteLinkOrEventPosition
+            {
+                get { return _deleteLinkOrEventPosition; }
+            }
+        }
+
         public class EventReaderPartitionMeasured : SubscriptionMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

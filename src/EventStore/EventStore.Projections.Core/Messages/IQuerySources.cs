@@ -52,6 +52,8 @@ namespace EventStore.Projections.Core.Messages
 
         bool DefinesFold { get; }
 
+        bool HandlesDeletedNotifications { get; }
+
         bool ProducesResults { get; }
 
         bool IsBiState { get; }

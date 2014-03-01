@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -41,8 +42,51 @@ namespace EventStore.Projections.Core.Services.Processing
         private IEventReader _headEventReader;
         private TFPos _subscribeFromPosition = new TFPos(long.MaxValue, long.MaxValue);
 
-        private readonly Queue<ReaderSubscriptionMessage.CommittedEventDistributed> _lastMessages =
-            new Queue<ReaderSubscriptionMessage.CommittedEventDistributed>();
+        private abstract class Item
+        {
+            public readonly TFPos Position;
+
+            public Item(TFPos position)
+            {
+                Position = position;
+            }
+
+            public abstract void Handle(IReaderSubscription subscription);
+        }
+
+        private class CommittedEventItem : Item
+        {
+            public readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
+
+            public CommittedEventItem(ReaderSubscriptionMessage.CommittedEventDistributed message)
+                : base(message.Data.Position)
+            {
+                Message = message;
+            }
+
+            public override void Handle(IReaderSubscription subscription)
+            {
+                subscription.Handle(Message);
+            }
+        }
+
+        private class PartitionDeletedItem : Item
+        {
+            public readonly ReaderSubscriptionMessage.EventReaderPartitionDeleted Message;
+
+            public PartitionDeletedItem(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+                : base(message.DeleteLinkOrEventPosition.Value)
+            {
+                Message = message;
+            }
+
+            public override void Handle(IReaderSubscription subscription)
+            {
+                subscription.Handle(Message);
+            }
+        }
+
+        private readonly Queue<Item> _lastMessages = new Queue<Item>();
 
         private readonly int _eventCacheSize;
 
@@ -50,9 +94,13 @@ namespace EventStore.Projections.Core.Services.Processing
             new Dictionary<Guid, IReaderSubscription>();
 
         private bool _headEventReaderPaused;
+
         private Guid _eventReaderId;
+
         private bool _started;
+
         private TFPos _lastEventPosition = new TFPos(0, -1);
+        private TFPos _lastDeletePosition = new TFPos(0, -1);
 
         public HeadingEventReader(int eventCacheSize)
         {
@@ -78,6 +126,25 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
+        public bool Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+        {
+            EnsureStarted();
+            if (message.CorrelationId != _eventReaderId)
+                return false;
+
+            ValidateEventOrder(message);
+
+
+            CacheRecentMessage(message);
+            DistributeMessage(message);
+            if (_headSubscribers.Count == 0 && !_headEventReaderPaused)
+            {
+                //                _headEventReader.Pause();
+                //                _headEventReaderPaused = true;
+            }
+            return true;
+        }
+
         public bool Handle(ReaderSubscriptionMessage.EventReaderIdle message)
         {
             EnsureStarted();
@@ -89,12 +156,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ValidateEventOrder(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
-            if (_lastEventPosition >= message.Data.Position)
+            if (_lastEventPosition >= message.Data.Position || _lastDeletePosition > message.Data.Position)
                 throw new InvalidOperationException(
                     string.Format(
-                        "Invalid committed event order.  Last: '{0}' Received: '{1}'", _lastEventPosition,
-                        message.Data.Position));
+                        "Invalid committed event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
+                        _lastEventPosition, message.Data.Position, _lastEventPosition));
             _lastEventPosition = message.Data.Position;
+        }
+
+        private void ValidateEventOrder(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+        {
+            if (_lastEventPosition > message.DeleteLinkOrEventPosition.Value
+                || _lastDeletePosition >= message.DeleteLinkOrEventPosition.Value)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Invalid partition deleted event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
+                        _lastEventPosition, message.DeleteLinkOrEventPosition.Value, _lastEventPosition));
+            _lastDeletePosition = message.DeleteLinkOrEventPosition.Value;
         }
 
         public void Start(Guid eventReaderId, IEventReader eventReader)
@@ -148,16 +226,20 @@ namespace EventStore.Projections.Core.Services.Processing
             _headSubscribers.Remove(projectionId);
         }
 
-        private void DispatchRecentMessagesTo(
-            IHandle<ReaderSubscriptionMessage.CommittedEventDistributed> subscription,
-            long fromTransactionFilePosition)
+        private void DispatchRecentMessagesTo(IReaderSubscription subscription, long fromTransactionFilePosition)
         {
             foreach (var m in _lastMessages)
-                if (m.Data.Position.CommitPosition >= fromTransactionFilePosition)
-                    subscription.Handle(m);
+                if (m.Position.CommitPosition >= fromTransactionFilePosition)
+                    m.Handle(subscription);
         }
 
         private void DistributeMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
+        {
+            foreach (var subscriber in _headSubscribers.Values)
+                subscriber.Handle(message);
+        }
+
+        private void DistributeMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
         {
             foreach (var subscriber in _headSubscribers.Values)
                 subscriber.Handle(message);
@@ -171,13 +253,24 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void CacheRecentMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
-            _lastMessages.Enqueue(message);
+            _lastMessages.Enqueue(new CommittedEventItem(message));
             if (_lastMessages.Count > _eventCacheSize)
             {
                 _lastMessages.Dequeue();
             }
             var lastAvailableCommittedevent = _lastMessages.Peek();
-            _subscribeFromPosition = lastAvailableCommittedevent.Data.Position;
+            _subscribeFromPosition = lastAvailableCommittedevent.Position;
+        }
+
+        private void CacheRecentMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+        {
+            _lastMessages.Enqueue(new PartitionDeletedItem(message));
+            if (_lastMessages.Count > _eventCacheSize)
+            {
+                _lastMessages.Dequeue();
+            }
+            var lastAvailableCommittedevent = _lastMessages.Peek();
+            _subscribeFromPosition = lastAvailableCommittedevent.Position;
         }
 
         private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription)
@@ -198,5 +291,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_started)
                 throw new InvalidOperationException("Not started");
         }
+
     }
 }

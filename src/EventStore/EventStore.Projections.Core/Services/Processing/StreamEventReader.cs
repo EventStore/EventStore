@@ -34,8 +34,8 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Standard;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -45,15 +45,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _fromSequenceNumber;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
+        private readonly bool _produceStreamDeletes;
 
         private bool _eventsRequested;
         private int _maxReadCount = 111;
         private int _deliveredEvents;
+        private long _lastPosition;
+        private bool _eof;
 
         public StreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
             string streamName, int fromSequenceNumber, ITimeProvider timeProvider, bool resolveLinkTos,
-            bool stopOnEof = false, int? stopAfterNEvents = null)
+            bool produceStreamDeletes, bool stopOnEof = false, int? stopAfterNEvents = null)
             : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
@@ -63,6 +66,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _fromSequenceNumber = fromSequenceNumber;
             _timeProvider = timeProvider;
             _resolveLinkTos = resolveLinkTos;
+            _produceStreamDeletes = produceStreamDeletes;
         }
 
         protected override bool AreEventsRequested()
@@ -82,24 +86,37 @@ namespace EventStore.Projections.Core.Services.Processing
             if (Paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
+            _lastPosition = message.TfLastCommitPosition;
             NotifyIfStarting(message.TfLastCommitPosition);
             switch (message.Result)
             {
-                case ReadStreamResult.NoStream:
+                case ReadStreamResult.StreamDeleted:
+                    _eof = true;
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
-                    PauseOrContinueProcessing(delay: true);
+                    PauseOrContinueProcessing();
                     SendIdle();
+                    SendPartitionDeleted(_streamName, -1, null, null, null, null);
+                    SendEof();
+                    break;
+                case ReadStreamResult.NoStream:
+                    _eof = true;
+                    DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
+                    PauseOrContinueProcessing();
+                    SendIdle();
+                    if (message.LastEventNumber >= 0)
+                        SendPartitionDeleted(_streamName, message.LastEventNumber, null, null, null, null);
                     SendEof();
                     break;
                 case ReadStreamResult.Success:
                     var oldFromSequenceNumber = _fromSequenceNumber;
                     _fromSequenceNumber = message.NextEventNumber;
                     var eof = message.Events.Length == 0;
+                    _eof = eof;
                     var willDispose = eof && _stopOnEof;
 
                     if (!willDispose)
                     {
-                        PauseOrContinueProcessing(delay: eof);
+                        PauseOrContinueProcessing();
                     }
                     if (eof)
                     {
@@ -114,8 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
-                            DeliverEvent(
-                                @event, @link, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
+                            DeliverEvent(message.Events[index], 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
                                 ref oldFromSequenceNumber);
                             if (CheckEnough())
                                 return;
@@ -149,7 +165,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
         }
 
-        protected override void RequestEvents(bool delay)
+        protected override void RequestEvents()
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
             if (_eventsRequested)
@@ -160,11 +176,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
             var readEventsForward = CreateReadEventsMessage();
-            if (delay)
+            if (_eof)
                 _publisher.Publish(
-                    TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
-                        readEventsForward));
+                    new AwakeReaderServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new TFPos(_lastPosition, _lastPosition), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }
@@ -185,29 +201,46 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId, null, safeJoinPosition, 100.0f, source: this.GetType()));
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref int sequenceNumber)
         {
             _deliveredEvents++;
 
-            EventRecord positionEvent = (link ?? @event);
+            EventRecord positionEvent = pair.OriginalEvent;
             if (positionEvent.EventNumber != sequenceNumber)
                 throw new InvalidOperationException(
                     string.Format(
                         "Event number {0} was expected in the stream {1}, but event number {2} was received",
                         sequenceNumber, _streamName, positionEvent.EventNumber));
             sequenceNumber = positionEvent.EventNumber + 1;
-            var resolvedLinkTo = positionEvent.EventStreamId != @event.EventStreamId
-                                 || positionEvent.EventNumber != @event.EventNumber;
-            _publisher.Publish(
-                //TODO: publish both link and event data
-                new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId,
-                    new ResolvedEvent(
-                        positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
-                        resolvedLinkTo, new TFPos(-1, positionEvent.LogPosition), new TFPos(-1, @event.LogPosition),
-                        @event.EventId, @event.EventType, (@event.Flags & PrepareFlags.IsJson) != 0, @event.Data,
-                        @event.Metadata, link == null ? null : link.Metadata, null, positionEvent.TimeStamp),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress, source: this.GetType()));
+            var resolvedEvent = new ResolvedEvent(pair, null);
+
+            string deletedPartitionStreamId;
+
+            if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
+                return;
+
+            bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(resolvedEvent, out deletedPartitionStreamId);
+
+            if (isDeletedStreamEvent)
+            {
+                var deletedPartition = deletedPartitionStreamId;
+
+                if (_produceStreamDeletes)
+                    _publisher.Publish(
+                        //TODO: publish both link and event data
+                        new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
+                            EventReaderCorrelationId, deletedPartition, source: this.GetType(), lastEventNumber: -1,
+                            deleteEventOrLinkTargetPosition: null, deleteLinkOrEventPosition: resolvedEvent.EventOrLinkTargetPosition,
+                            positionStreamId: resolvedEvent.PositionStreamId,
+                            positionEventNumber: resolvedEvent.PositionSequenceNumber));
+            }
+
+            else if (!resolvedEvent.IsStreamDeletedEvent)
+                _publisher.Publish(
+                    //TODO: publish both link and event data
+                    new ReaderSubscriptionMessage.CommittedEventDistributed(
+                        EventReaderCorrelationId, resolvedEvent, _stopOnEof ? (long?) null : positionEvent.LogPosition,
+                        progress, source: this.GetType()));
         }
     }
 }

@@ -35,9 +35,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<string> _streams;
 
         public MultiStreamEventFilter(HashSet<string> streams, bool allEvents, HashSet<string> events)
-            : base(allEvents, events)
+            : base(allEvents, false, events)
         {
             _streams = streams;
+        }
+
+        public override bool DeletedNotificationPasses(string positionStreamId)
+        {
+            return false;
         }
 
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)

@@ -33,7 +33,7 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    internal class TestEvent
+    public class TestEvent
     {
         public static EventData NewTestEvent(string data = null, string metadata = null)
         {

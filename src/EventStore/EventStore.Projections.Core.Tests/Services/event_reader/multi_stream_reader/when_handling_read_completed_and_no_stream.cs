@@ -159,9 +159,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 
 
         [Test]
-        public void publishes_schedule()
+        public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeReaderServiceMessage.SubscribeAwake>().Count());
         }
 
         [Test]

@@ -117,7 +117,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
-                DisableTimer();
+                //DisableTimer();
                 yield return CreateWriteEvent("test-stream", "type1", "{Data: 3}", "{}");
                 _tfPos3 = _all.Last(v => v.Value.EventStreamId == "test-stream").Key;
 
@@ -136,10 +136,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                     _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
                         .Single(v => v.EventStreamId == "$et");
 
-                yield return
+                /*yield return
                     _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
                         .Single(v => v.EventStreamId == "$et-type2");
-                EnableTimer();
+                EnableTimer();*/
             }
 
             [Test]

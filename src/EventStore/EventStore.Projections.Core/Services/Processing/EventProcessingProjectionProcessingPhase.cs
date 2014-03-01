@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
@@ -36,6 +37,8 @@ namespace EventStore.Projections.Core.Services.Processing
     public class EventProcessingProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,
         IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
         IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
+        IHandle<EventReaderSubscriptionMessage.PartitionDeleted>,
+        IHandle<EventReaderSubscriptionMessage.PartitionMeasured>,
         IEventProcessingProjectionPhase
     {
         private readonly IProjectionStateHandler _projectionStateHandler;
@@ -84,6 +87,28 @@ namespace EventStore.Projections.Core.Services.Processing
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 if (_state == PhaseState.Running) // prevent processing mostly one projection
                     EnsureTickPending();
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.PartitionDeleted message)
+        {
+            //TODO:  make sure this is no longer required : if (_state != State.StateLoaded)
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                if (_statePartitionSelector.EventReaderBasePartitionDeletedIsSupported())
+                {
+                    var partitionDeletedWorkItem = new PartitionDeletedWorkItem(this, message);
+                    _processingQueue.EnqueueOutOfOrderTask(partitionDeletedWorkItem);
+                    if (_state == PhaseState.Running) // prevent processing mostly one projection
+                        EnsureTickPending();
+                }
             }
             catch (Exception ex)
             {
@@ -142,6 +167,21 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public EventProcessedResult ProcessPartitionDeleted(string partition, CheckpointTag deletedPosition)
+        {
+            switch (_state)
+            {
+                case PhaseState.Running:
+                    var result = InternalProcessPartitionDeleted(partition, deletedPosition);
+                    return result;
+                case PhaseState.Stopped:
+                    _logger.Error("Ignoring committed event in stopped state");
+                    return null;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         private EventProcessedResult InternalProcessCommittedEvent(
             string partition, EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
@@ -161,6 +201,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 return InternalCommittedEventProcessed(
                     partition, message, emittedEvents, newPartitionState, newSharedPartitionState);
+            }
+            return null;
+        }
+
+        private EventProcessedResult InternalProcessPartitionDeleted(
+            string partition, CheckpointTag deletedPosition)
+        {
+            string newState;
+            string projectionResult;
+            var hasBeenProcessed = SafeProcessPartitionDeletedByHandler(
+                partition, deletedPosition, out newState, out projectionResult);
+            if (hasBeenProcessed)
+            {
+                var newPartitionState = new PartitionState(newState, projectionResult, deletedPosition);
+
+                return InternalPartitionDeletedProcessed(partition, deletedPosition, newPartitionState);
             }
             return null;
         }
@@ -201,6 +257,31 @@ namespace EventStore.Projections.Core.Services.Processing
             return hasBeenProcessed;
         }
 
+        private bool SafeProcessPartitionDeletedByHandler(
+            string partition, CheckpointTag deletedPosition, out string newState,
+            out string projectionResult)
+        {
+            projectionResult = null;
+            //TODO: not emitting (optimized) projection handlers can skip serializing state on each processed event
+            bool hasBeenProcessed;
+            try
+            {
+                hasBeenProcessed = ProcessPartitionDeletedByHandler(
+                    partition, deletedPosition, out newState, out projectionResult);
+            }
+            catch (Exception ex)
+            {
+                SetFaulting(
+                    String.Format(
+                        "The {0} projection failed to process a delete partition notification.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
+                        _projectionName, GetHandlerTypeName(), deletedPosition, ex.Message), ex);
+                newState = null;
+                hasBeenProcessed = false;
+            }
+            newState = newState ?? "";
+            return hasBeenProcessed;
+        }
+
         private string SafeTransformCatalogEventByHandler(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             string result;
@@ -231,11 +312,59 @@ namespace EventStore.Projections.Core.Services.Processing
             out string newSharedState, out string projectionResult, out EmittedEventEnvelope[] emittedEvents)
         {
             projectionResult = null;
-            SetHandlerState(partition);
+            var newPatitionInitialized = InitOrLoadHandlerState(partition);
             _stopwatch.Start();
+            EmittedEventEnvelope[] eventsEmittedOnInitialization = null;
+            if (newPatitionInitialized)
+            {
+                _projectionStateHandler.ProcessPartitionCreated(
+                    partition, message.CheckpointTag, message.Data, out eventsEmittedOnInitialization);
+            }
+
             var result = _projectionStateHandler.ProcessEvent(
                 partition, message.CheckpointTag, message.EventCategory, message.Data, out newState, out newSharedState,
                 out emittedEvents);
+            if (result)
+            {
+                var oldState = _partitionStateCache.GetLockedPartitionState(partition);
+                //TODO: depending on query processing final state to result transformation should happen either here (if EOF) on while writing results
+                if ( /*_producesRunningResults && */oldState.State != newState)
+                {
+                    if (_definesStateTransform)
+                    {
+                        projectionResult = _projectionStateHandler.TransformStateToResult();
+                    }
+                    else
+                    {
+                        projectionResult = newState;
+                    }
+                }
+                else
+                {
+                    projectionResult = oldState.Result;
+                }
+            }
+            _stopwatch.Stop();
+            if (eventsEmittedOnInitialization != null)
+            {
+                if (emittedEvents == null || emittedEvents.Length == 0)
+                    emittedEvents = eventsEmittedOnInitialization;
+                else
+                    emittedEvents = eventsEmittedOnInitialization.Concat(emittedEvents).ToArray();
+
+            }
+            return result;
+        }
+
+        private bool ProcessPartitionDeletedByHandler(
+            string partition, CheckpointTag deletePosition, out string newState,
+            out string projectionResult)
+        {
+            projectionResult = null;
+            InitOrLoadHandlerState(partition);
+            _stopwatch.Start();
+            var result = _projectionStateHandler.ProcessPartitionDeleted(
+                partition, deletePosition, out newState);
             if (result)
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
@@ -268,17 +397,24 @@ namespace EventStore.Projections.Core.Services.Processing
             return result;
         }
 
-        private void SetHandlerState(string partition)
+        /// <summary>
+        /// initializes or loads existing partition state
+        /// </summary>
+        /// <param name="partition"></param>
+        /// <returns>true - if new partition state was initialized</returns>
+        private bool InitOrLoadHandlerState(string partition)
         {
             if (_handlerPartition == partition)
-                return;
+                return false;
 
             var newState = _partitionStateCache.GetLockedPartitionState(partition);
             _handlerPartition = partition;
+            var initialized = false;
             if (newState != null && !String.IsNullOrEmpty(newState.State))
                 _projectionStateHandler.Load(newState.State);
             else
             {
+                initialized = true;
                 _projectionStateHandler.Initialize();
             }
 
@@ -291,10 +427,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                     _projectionStateHandler.InitializeShared();
             }
+            return initialized;
         }
 
         public override void NewCheckpointStarted(CheckpointTag at)
         {
+            if (!(_state == PhaseState.Running || _state == PhaseState.Starting))
+            {
+                Console.WriteLine("Starting a checkpoint in non-runnable state");
+                return;
+            }
             var checkpointHandler = _projectionStateHandler as IProjectionCheckpointHandler;
             if (checkpointHandler != null)
             {
@@ -317,8 +459,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (!ValidateEmittedEvents(emittedEvents))
                         return;
 
-                    if (_state == PhaseState.Running)
-                        _resultWriter.EventsEmitted(emittedEvents, Guid.Empty, correlationId: null);
+                    if (_state == PhaseState.Running || _state == PhaseState.Starting)
+                        _resultWriter.EventsEmitted(
+                            emittedEvents, Guid.Empty, correlationId: null);
                 }
             }
         }
@@ -333,6 +476,21 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_projectionStateHandler != null)
                 _projectionStateHandler.Dispose();
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message)
+        {
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+            try
+            {
+                _resultWriter.WritePartitionMeasured(message.SubscriptionId, message.Partition, message.Size);
+            }
+            catch (Exception ex)
+            {
+                _coreProjection.SetFaulted(ex);
+            }
         }
     }
 }

@@ -41,6 +41,19 @@ namespace EventStore.Transport.Http.Codecs
         public static Formatting Formatting = Formatting.Indented;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<JsonCodec>();
+        private static readonly JsonSerializerSettings FromSettings = new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            DateParseHandling = DateParseHandling.None,
+            NullValueHandling = NullValueHandling.Ignore,
+            DefaultValueHandling = DefaultValueHandling.Ignore,
+            MissingMemberHandling = MissingMemberHandling.Ignore,
+            TypeNameHandling = TypeNameHandling.None,
+            Converters = new JsonConverter[]
+            {
+                new StringEnumConverter()
+            }
+        };
 
         public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
@@ -77,7 +90,7 @@ namespace EventStore.Transport.Http.Codecs
         {
             try
             {
-                return JsonConvert.DeserializeObject<T>(text, JsonSettings);
+                return JsonConvert.DeserializeObject<T>(text, FromSettings);
             }
             catch (Exception e)
             {

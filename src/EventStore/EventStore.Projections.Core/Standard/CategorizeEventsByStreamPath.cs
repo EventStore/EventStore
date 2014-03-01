@@ -26,10 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Standard
 {
@@ -87,9 +89,14 @@ namespace EventStore.Projections.Core.Standard
             newSharedState = null;
             emittedEvents = null;
             newState = null;
-            var category = _streamCategoryExtractor.GetCategoryByStreamId(data.PositionStreamId);
+            string positionStreamId;
+            var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+                data.PositionStreamId, data.EventType, data.Data, out positionStreamId);
+
+            var category = _streamCategoryExtractor.GetCategoryByStreamId(positionStreamId);
             if (category == null)
                 return true; // handled but not interesting
+
 
             string linkTarget;
             if (data.EventType == SystemEventTypes.LinkTo) 
@@ -102,10 +109,21 @@ namespace EventStore.Projections.Core.Standard
                 new EmittedEventEnvelope(
                     new EmittedLinkToWithRecategorization(
                         _categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
-                        originalStreamId: data.PositionStreamId))
+                        originalStreamId: positionStreamId, streamDeletedAt: isStreamDeletedEvent ? -1 : (int?) null))
             };
 
             return true;
+        }
+
+        public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents)
+        {
+            emittedEvents = null;
+            return false;
+        }
+
+        public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
+        {
+            throw new NotImplementedException();
         }
 
         public string TransformStateToResult()

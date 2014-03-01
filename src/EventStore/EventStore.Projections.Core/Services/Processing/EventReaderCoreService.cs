@@ -55,6 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>,
         IHandle<ReaderSubscriptionMessage.EventReaderEof>,
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
+        IHandle<ReaderSubscriptionMessage.EventReaderPartitionDeleted>,
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
         IHandle<ReaderCoreServiceMessage.ReaderTick>
     {
@@ -224,6 +225,18 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             Guid projectionId;
             if (_stopped)
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (_runHeadingReader && _headingEventReader.Handle(message))
                 return;
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed

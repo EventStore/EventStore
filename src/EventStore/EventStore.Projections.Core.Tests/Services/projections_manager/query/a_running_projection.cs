@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             public void writes_result_stream()
             {
                 List<EventRecord> resultsStream;
-                Assert.IsTrue((_lastMessageReplies.TryGetValue("$projections-test-projection-result", out resultsStream)));
+                Assert.IsTrue((_streams.TryGetValue("$projections-test-projection-result", out resultsStream)));
                 Assert.AreEqual(1 + 1 /* $Eof*/, resultsStream.Count);
                 Assert.AreEqual("{\"data\": 1}", Encoding.UTF8.GetString(resultsStream[0].Data));
             }

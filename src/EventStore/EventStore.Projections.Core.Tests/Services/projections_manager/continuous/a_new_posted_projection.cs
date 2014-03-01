@@ -32,6 +32,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -111,6 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             {
                 base.Given();
                 EnableReadAll();
+                ExistingEvent("temp1", "test1", "{}", "{}");
             }
 
             protected override IEnumerable<WhenStep> When()
@@ -131,8 +133,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 Assert.AreEqual(
                     "{\"data\": 1}", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
                 Assert.AreEqual(
-                    _all.Last().Key,
-                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Position.Position);
+                    _all.Last(v => !SystemStreams.IsSystemStream(v.Value.EventStreamId)).Key,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>()
+                        .Single()
+                        .Position.Position);
             }
         }
 

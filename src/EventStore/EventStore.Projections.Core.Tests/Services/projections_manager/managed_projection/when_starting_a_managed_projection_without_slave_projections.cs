@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
         protected override ManualQueue GiveInputQueue()
         {
-            return new ManualQueue(_bus);
+            return new ManualQueue(_bus, _timeProvider);
         }
 
         protected override void Given()

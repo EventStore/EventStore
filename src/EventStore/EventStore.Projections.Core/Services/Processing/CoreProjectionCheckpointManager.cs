@@ -30,8 +30,6 @@ using System;
 using System.Diagnostics.Contracts;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -359,15 +357,8 @@ namespace EventStore.Projections.Core.Services.Processing
             EventStore.Core.Data.ResolvedEvent pair, CheckpointTag positionTag,
             long prerecordedEventMessageSequenceNumber)
         {
-            var position = pair.OriginalEvent;
             var committedEvent = new ReaderSubscriptionMessage.CommittedEventDistributed(
-                Guid.Empty,
-                new ResolvedEvent(
-                    position.EventStreamId, position.EventNumber, pair.Event.EventStreamId, pair.Event.EventNumber,
-                    pair.Link != null, new TFPos(-1, position.LogPosition), new TFPos(-1, pair.Event.LogPosition),
-                    pair.Event.EventId, pair.Event.EventType, (pair.Event.Flags & PrepareFlags.IsJson) != 0,
-                    pair.Event.Data, pair.Event.Metadata, pair.Link == null ? null : pair.Link.Metadata, null,
-                    pair.Event.TimeStamp), null, -1, source: this.GetType());
+                Guid.Empty, new ResolvedEvent(pair, null), null, -1, source: this.GetType());
             _publisher.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
                     committedEvent, positionTag, null, _projectionCorrelationId, 

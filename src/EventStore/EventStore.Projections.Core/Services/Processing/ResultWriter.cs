@@ -57,6 +57,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 WriteResult(partition, resultBody, causedBy, causedByGuid, correlationId);
         }
 
+        public void WritePartitionMeasured(Guid subscriptionId, string partition, int size)
+        {
+            // intentionally does nothing
+        }
+
         private void WriteResult(
             string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId)
         {
@@ -76,7 +81,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var partition = result.Partition;
                 var causedBy = newState.CausedBy;
-                WriteResult(partition, resultBody, causedBy, result.CausedBy, result.CorrelationId);
+                WriteResult(
+                    partition, resultBody, causedBy, result.CausedBy, result.CorrelationId);
             }
         }
 
@@ -103,13 +109,21 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     var resultEvents = RegisterNewPartition(result.Partition, result.CheckpointTag);
                     if (resultEvents != null)
-                        _coreProjectionCheckpointManager.EventsEmitted(resultEvents, Guid.Empty, correlationId: null);
+                        _coreProjectionCheckpointManager.EventsEmitted(
+                            resultEvents, Guid.Empty, correlationId: null);
                 }
         }
 
-        public void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
+        public void EventsEmitted(
+            EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId)
         {
-            _coreProjectionCheckpointManager.EventsEmitted(scheduledWrites, causedBy, correlationId);
+            _coreProjectionCheckpointManager.EventsEmitted(
+                scheduledWrites, causedBy, correlationId);
+        }
+
+        public void WriteProgress(Guid subscriptionId, float progress)
+        {
+            // intentionally does nothing
         }
     }
 }

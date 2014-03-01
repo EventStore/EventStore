@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
 
         protected override ManualQueue GiveInputQueue()
         {
-            return new ManualQueue(_bus);
+            return new ManualQueue(_bus, _timeProvider);
         }
 
         [SetUp]
@@ -85,6 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
             _bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_readerService);
+            _bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionDeleted>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_readerService);
             _bus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(_readerService);

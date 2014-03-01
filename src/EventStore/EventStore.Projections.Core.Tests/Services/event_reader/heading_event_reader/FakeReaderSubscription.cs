@@ -52,6 +52,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         private readonly List<ReaderSubscriptionMessage.EventReaderPartitionEof> _receivedPartitionEofNotifications =
             new List<ReaderSubscriptionMessage.EventReaderPartitionEof>();
 
+        private readonly List<ReaderSubscriptionMessage.EventReaderPartitionDeleted> _receivedPartitionDeletedNotifications =
+            new List<ReaderSubscriptionMessage.EventReaderPartitionDeleted>();
+
         private readonly List<ReaderSubscriptionMessage.EventReaderPartitionMeasured> _receivedPartitionMeasuredNotifications =
             new List<ReaderSubscriptionMessage.EventReaderPartitionMeasured>();
 
@@ -88,6 +91,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             get { return _receivedPartitionEofNotifications; }
         }
 
+        public List<ReaderSubscriptionMessage.EventReaderPartitionDeleted> ReceivedPartitionDeletedNotifications
+        {
+            get { return _receivedPartitionDeletedNotifications; }
+        }
+
         public List<ReaderSubscriptionMessage.EventReaderNotAuthorized> ReceivedNotAuthorizedNotifications
         {
             get { return _receivedNotAuthorizedNotifications; }
@@ -111,6 +119,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
         {
             _receivedPartitionEofNotifications.Add(message);
+        }
+
+        public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+        {
+            _receivedPartitionDeletedNotifications.Add(message);
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message)
