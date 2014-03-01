@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2014, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -38,10 +38,9 @@ namespace EventStore.Core.Index.Hashes
 
         public unsafe UInt32 Hash(string s)
         {
-            var data = s.ToCharArray();
-            fixed (char* input = &data[0])
+            fixed (char* input = s)
             {
-                return Hash((byte*)input, (uint)data.Length * sizeof(char), Seed);
+                return Hash((byte*)input, (uint)s.Length * sizeof(char), Seed);
             }
         }
 
