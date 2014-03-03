@@ -581,8 +581,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             manager.ReadTextRequestAsync(
                 (man, body) =>
-                {
-                    var events = AutoEventConverter.SmartParse(body, manager.RequestCodec);
+                    {
+                    var events = new Event[0];
+                    try
+                    {
+                        events = AutoEventConverter.SmartParse(body, manager.RequestCodec);
+                    }
+                    catch(Exception ex)
+                    {
+                        SendBadRequest(manager, ex.Message);
+                    }
                     if (events.IsEmpty())
                     {
                         SendBadRequest(manager, "Write request body invalid.");
