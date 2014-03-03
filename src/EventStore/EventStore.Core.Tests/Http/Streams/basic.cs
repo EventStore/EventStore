@@ -74,6 +74,53 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+
+        [TestFixture, Category("LongRunning")]
+        public class when_posting_an_event_without_EventId_as_array : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    TestStream,
+                    new[] { new { EventType = "event-type", Data = new { A = "1" } } });
+            }
+
+            [Test]
+            public void returns_bad_request_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_posting_an_event_without_EventType_as_array : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    TestStream,
+                    new[] { new { EventId = Guid.NewGuid(), Data = new { A = "1" } } });
+            }
+
+            [Test]
+            public void returns_bad_request_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+
         [TestFixture, Category("LongRunning")]
         public class when_posting_an_event_with_date_time : HttpBehaviorSpecification
         {
