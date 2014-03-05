@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "terminated", MatchType = MessageMatch.Contains)]
         public void long_compilation_times_out()
         {
             string m = null;
@@ -117,7 +117,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "terminated", MatchType = MessageMatch.Contains)]
         public void long_execution_times_out()
         {
             //string m = null;
@@ -148,7 +148,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "terminated", MatchType = MessageMatch.Contains)]
         public void long_post_processing_times_out()
         {
             //string m = null;
