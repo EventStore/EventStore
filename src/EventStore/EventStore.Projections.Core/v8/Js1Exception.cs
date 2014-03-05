@@ -39,5 +39,10 @@ namespace EventStore.Projections.Core.v8
         {
             _errorCode = errorCode;
         }
+
+        public int ErrorCode
+        {
+            get { return _errorCode; }
+        }
     }
 }

@@ -74,11 +74,30 @@ namespace EventStore.Projections.Core.v8
         {
             try
             {
-                ScheduleTerminateExecution();
-                IntPtr prelude = Js1.CompilePrelude(
-                    script, fileName, _loadModuleDelegate, _enterCancellableRegion, _exitCancellableRegion, _logDelegate);
-                CancelTerminateExecution();
-                CompiledScript.CheckResult(prelude, false, disposeScriptOnException: true);
+                var attempts = 3;
+                var prelude = default(IntPtr);
+                do
+                {
+                    attempts--;
+                    try
+                    {
+                        ScheduleTerminateExecution();
+                        prelude = Js1.CompilePrelude(
+                            script, fileName, _loadModuleDelegate, _enterCancellableRegion, _exitCancellableRegion,
+                            _logDelegate);
+                        CancelTerminateExecution();
+                        CompiledScript.CheckResult(prelude, false, disposeScriptOnException: true);
+                    }
+                    catch (Js1Exception ex)
+                    {
+                        if (attempts > 0 && (ex.ErrorCode == -1 || ex.ErrorCode == -2))
+                        {
+                            // timeouts
+                            Thread.Sleep(2000);
+                        }
+                        else throw;
+                    }
+                } while (prelude == default(IntPtr));
                 return new CompiledScript(prelude, fileName);
             }
             catch (DllNotFoundException ex)
