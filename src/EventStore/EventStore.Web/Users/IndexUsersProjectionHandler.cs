@@ -115,12 +115,14 @@ namespace EventStore.Web.Users
 
         public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents)
         {
-            throw new NotImplementedException();
+            emittedEvents = null;
+            return false;
         }
 
         public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState)
         {
-            throw new NotImplementedException();
+            newState = null;
+            return false;
         }
 
         public string TransformStateToResult()
