@@ -116,6 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _awakeReaderService = new AwakeReaderService();
             _bus.Subscribe<StorageMessage.EventCommited>(_awakeReaderService);
+            _bus.Subscribe<StorageMessage.TfEofAtNonCommitRecord>(_awakeReaderService);
             _bus.Subscribe<AwakeReaderServiceMessage.SubscribeAwake>(_awakeReaderService);
             _bus.Subscribe<AwakeReaderServiceMessage.UnsubscribeAwake>(_awakeReaderService);
 

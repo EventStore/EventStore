@@ -72,6 +72,7 @@ namespace EventStore.Core.Services.Storage
         private long _lastFlush;
 
         private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
+        private bool _commitsAfterEof;
 
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
@@ -196,7 +197,8 @@ namespace EventStore.Core.Services.Storage
                 }
                 case LogRecordType.Commit:
                 {
-                    var record = (CommitLogRecord) result.LogRecord;
+                    _commitsAfterEof = !result.Eof;
+                    var record = (CommitLogRecord)result.LogRecord;
                     ProcessCommitRecord(record);
                     break;
                 }
@@ -204,6 +206,12 @@ namespace EventStore.Core.Services.Storage
                 {
                     var record = (SystemLogRecord) result.LogRecord;
                     ProcessSystemRecord(record);
+
+                    if (result.Eof && _commitsAfterEof)
+                    {
+                        _commitsAfterEof = false;
+                        _masterBus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
+                    }
                     break;
                 }
                 default:

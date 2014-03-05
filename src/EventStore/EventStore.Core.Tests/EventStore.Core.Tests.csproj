@@ -436,6 +436,7 @@
     <Compile Include="TransactionLog\when_destroying_a_tfchunk_that_is_locked.cs" />
     <Compile Include="TransactionLog\when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_database.cs" />
+    <Compile Include="TransactionLog\when_sequentially_reading_db_with_one_chunk_ending_with_prepare.cs" />
     <Compile Include="TransactionLog\when_unlocking_a_tfchunk_that_has_been_marked_for_deletion.cs" />
     <Compile Include="TransactionLog\commit_log_record_should.cs" />
     <Compile Include="TransactionLog\Validation\when_validating_tfchunk_db_with_multi_chunks.cs" />

@@ -116,6 +116,22 @@ namespace EventStore.Core.Tests.TransactionLog
                 ++count;
             }
             Assert.AreEqual(RecordsCount, count);
+
+        }
+
+        [Test]
+        public void only_the_last_record_is_marked_eof()
+        {
+            var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, 0);
+
+            SeqReadResult res;
+            int count = 0;
+            while ((res = seqReader.TryReadNext()).Success)
+            {
+                ++count;
+                Assert.AreEqual(count == RecordsCount, res.Eof);
+            }
+            Assert.AreEqual(RecordsCount, count);
         }
 
         [Test]

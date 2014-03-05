@@ -58,21 +58,24 @@ namespace EventStore.Core.TransactionLog
 
     public struct SeqReadResult
     {
-        public static readonly SeqReadResult Failure = new SeqReadResult(false, null, 0, -1, -1);
+        public static readonly SeqReadResult Failure = new SeqReadResult(false, true, null, 0, -1, -1);
 
         public readonly bool Success;
+        public readonly bool Eof;
         public readonly LogRecord LogRecord;
         public readonly int RecordLength;
         public readonly long RecordPrePosition;
         public readonly long RecordPostPosition;
 
         public SeqReadResult(bool success, 
+                             bool eof,
                              LogRecord logRecord, 
                              int recordLength, 
                              long recordPrePosition, 
                              long recordPostPosition)
         {
             Success = success;
+            Eof = eof;
             LogRecord = logRecord;
             RecordLength = recordLength;
             RecordPrePosition = recordPrePosition;

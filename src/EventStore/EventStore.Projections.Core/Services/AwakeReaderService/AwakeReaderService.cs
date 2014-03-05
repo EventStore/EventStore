@@ -37,7 +37,8 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 {
     public class AwakeReaderService : IHandle<AwakeReaderServiceMessage.SubscribeAwake>,
         IHandle<AwakeReaderServiceMessage.UnsubscribeAwake>,
-        IHandle<StorageMessage.EventCommited>
+        IHandle<StorageMessage.EventCommited>,
+        IHandle<StorageMessage.TfEofAtNonCommitRecord>
 
     {
         private readonly Dictionary<string, HashSet<AwakeReaderServiceMessage.SubscribeAwake>> _subscribers =
@@ -111,6 +112,11 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
                 var list = _subscribers[subscriber.StreamId ?? "$all"];
                 list.Remove(subscriber);
             }
+        }
+
+        public void Handle(StorageMessage.TfEofAtNonCommitRecord message)
+        {
+            throw new NotImplementedException();
         }
     }
 }
