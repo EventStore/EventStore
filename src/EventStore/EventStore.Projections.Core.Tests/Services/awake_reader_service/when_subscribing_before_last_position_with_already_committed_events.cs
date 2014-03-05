@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
     {
         private AwakeReaderService _it;
         private EventRecord _eventRecord;
-        private StorageMessage.EventCommited _eventCommited;
+        private StorageMessage.EventCommitted _eventCommitted;
         private Exception _exception;
         private IEnvelope _envelope;
         private InMemoryBus _publisher;
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
                 new PrepareLogRecord(
                     1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, "Stream", 99, DateTime.UtcNow, PrepareFlags.Data,
                     "event", new byte[0], null));
-            _eventCommited = new StorageMessage.EventCommited(2000, _eventRecord);
+            _eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord);
             _publisher = new InMemoryBus("bus");
             _envelope = new PublishEnvelope(_publisher);
             _handler = new TestHandler<TestMessage>();
@@ -102,7 +102,7 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
             _reply4 = new TestMessage(4);
             _reply5 = new TestMessage(5);
 
-            _it.Handle(_eventCommited);
+            _it.Handle(_eventCommitted);
 
         }
 

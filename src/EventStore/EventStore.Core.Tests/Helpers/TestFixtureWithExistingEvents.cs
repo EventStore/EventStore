@@ -452,7 +452,7 @@ namespace EventStore.Core.Tests.Helpers
                 list.Add(eventRecord.record);
                 var tfPos = new TFPos(commitPosition ?? eventRecord.position + 50, eventRecord.position);
                 _all.Add(tfPos, eventRecord.record);
-                _bus.Publish(new StorageMessage.EventCommited(tfPos.CommitPosition, eventRecord.record));
+                _bus.Publish(new StorageMessage.EventCommitted(tfPos.CommitPosition, eventRecord.record));
             }
 
             var firstEventNumber = list.Count - events.Length;

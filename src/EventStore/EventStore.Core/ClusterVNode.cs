@@ -352,7 +352,7 @@ namespace EventStore.Core
             _mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.PollStream, Message>());
             _mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
-            _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommited, Message>());
+            _mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
 
             var subscription = new SubscriptionsService(_mainQueue, subscrQueue, readIndex);
             subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
@@ -362,7 +362,7 @@ namespace EventStore.Core
             subscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscription);
             subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
             subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
-            subscrBus.Subscribe<StorageMessage.EventCommited>(subscription);
+            subscrBus.Subscribe<StorageMessage.EventCommitted>(subscription);
 
             // TIMER
             _timeProvider = new RealTimeProvider();

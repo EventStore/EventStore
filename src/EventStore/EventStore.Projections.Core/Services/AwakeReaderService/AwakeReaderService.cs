@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 {
     public class AwakeReaderService : IHandle<AwakeReaderServiceMessage.SubscribeAwake>,
         IHandle<AwakeReaderServiceMessage.UnsubscribeAwake>,
-        IHandle<StorageMessage.EventCommited>,
+        IHandle<StorageMessage.EventCommitted>,
         IHandle<StorageMessage.TfEofAtNonCommitRecord>
 
     {
@@ -67,14 +67,14 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
             list.Add(message);
         }
 
-        public void Handle(StorageMessage.EventCommited message)
+        public void Handle(StorageMessage.EventCommitted message)
         {
             _lastPosition = new TFPos(message.CommitPosition, message.Event.LogPosition);
             NotifyEventInStream("$all", message);
             NotifyEventInStream(message.Event.EventStreamId, message);
         }
 
-        private void NotifyEventInStream(string streamId, StorageMessage.EventCommited message)
+        private void NotifyEventInStream(string streamId, StorageMessage.EventCommitted message)
         {
             HashSet<AwakeReaderServiceMessage.SubscribeAwake> list;
             List<AwakeReaderServiceMessage.SubscribeAwake> toRemove = null;

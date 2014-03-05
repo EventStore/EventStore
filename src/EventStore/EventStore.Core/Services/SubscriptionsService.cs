@@ -51,7 +51,7 @@ namespace EventStore.Core.Services
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
                                         IHandle<SubscriptionMessage.PollStream>,
                                         IHandle<SubscriptionMessage.CheckPollTimeout>,
-                                        IHandle<StorageMessage.EventCommited>
+                                        IHandle<StorageMessage.EventCommitted>
     {
         public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
 
@@ -280,7 +280,7 @@ namespace EventStore.Core.Services
                                               originalRequest.GetType(), originalRequest));
         }
 
-        public void Handle(StorageMessage.EventCommited message)
+        public void Handle(StorageMessage.EventCommitted message)
         {
             _lastSeenCommitPosition = message.CommitPosition;
  

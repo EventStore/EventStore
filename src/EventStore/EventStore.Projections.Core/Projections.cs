@@ -170,7 +170,7 @@ namespace EventStore.Projections.Core
             Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
 
             var awakeReaderService = new AwakeReaderService();
-            mainBus.Subscribe<StorageMessage.EventCommited>(awakeReaderService);
+            mainBus.Subscribe<StorageMessage.EventCommitted>(awakeReaderService);
             mainBus.Subscribe<StorageMessage.TfEofAtNonCommitRecord>(awakeReaderService);
             mainBus.Subscribe<AwakeReaderServiceMessage.SubscribeAwake>(awakeReaderService);
             mainBus.Subscribe<AwakeReaderServiceMessage.UnsubscribeAwake>(awakeReaderService);
