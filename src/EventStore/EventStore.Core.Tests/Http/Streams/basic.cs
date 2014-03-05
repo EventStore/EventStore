@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Http.Streams
     namespace basic
     {
         [TestFixture, Category("LongRunning")]
-        class when_posting_an_event_as_array : HttpBehaviorSpecification
+        public class when_posting_an_event_as_array : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
 
@@ -74,8 +74,55 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+
         [TestFixture, Category("LongRunning")]
-        class when_posting_an_event_with_date_time : HttpBehaviorSpecification
+        public class when_posting_an_event_without_EventId_as_array : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    TestStream,
+                    new[] { new { EventType = "event-type", Data = new { A = "1" } } });
+            }
+
+            [Test]
+            public void returns_bad_request_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_posting_an_event_without_EventType_as_array : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    TestStream,
+                    new[] { new { EventId = Guid.NewGuid(), Data = new { A = "1" } } });
+            }
+
+            [Test]
+            public void returns_bad_request_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_posting_an_event_with_date_time : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
 
@@ -114,7 +161,7 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_posting_an_events_as_array : HttpBehaviorSpecification
+        public class when_posting_an_events_as_array : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
 
@@ -153,7 +200,7 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
-        abstract class HttpBehaviorSpecificationWithSingleEvent : HttpBehaviorSpecification
+        public abstract class HttpBehaviorSpecificationWithSingleEvent : HttpBehaviorSpecification
         {
             protected HttpWebResponse _response;
 
@@ -168,7 +215,7 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_single_event_in_the_stream_as_atom_json: HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_as_atom_json: HttpBehaviorSpecificationWithSingleEvent
         {
             private JObject _json;
 
@@ -191,8 +238,10 @@ namespace EventStore.Core.Tests.Http.Streams
 
         }
 
+
+
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_single_event_in_the_stream_as_event_json: HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_as_event_json: HttpBehaviorSpecificationWithSingleEvent
         {
             private JObject _json;
 
@@ -216,7 +265,7 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_single_event_in_the_stream_as_json: HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_as_json: HttpBehaviorSpecificationWithSingleEvent
         {
             private JObject _json;
 
@@ -240,7 +289,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_single_event_in_the_stream_as_atom_xml: HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_as_atom_xml: HttpBehaviorSpecificationWithSingleEvent
         {
             //private JObject _json;
 
@@ -258,7 +307,7 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_single_event_in_the_stream_as_event_xml: HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_as_event_xml: HttpBehaviorSpecificationWithSingleEvent
         {
             //private JObject _json;
 
@@ -276,7 +325,7 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_requesting_a_single_event_in_the_stream_as_xml: HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_as_xml: HttpBehaviorSpecificationWithSingleEvent
         {
             //private JObject _json;
 

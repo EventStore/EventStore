@@ -132,7 +132,23 @@ namespace EventStore.Transport.Http.Server
             }
 
             if (success)
-                ProcessRequest(context);
+                try 
+                {
+                    ProcessRequest(context);
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+                catch (ApplicationException)
+                {
+                }
+                catch(Exception ex) 
+                {
+                    Logger.ErrorException(ex, "ProcessRequest error");
+                }
 
             try
             {
