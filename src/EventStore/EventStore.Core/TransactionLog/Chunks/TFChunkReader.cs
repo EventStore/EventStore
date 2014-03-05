@@ -86,7 +86,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                 catch (FileBeingDeletedException)
                 {
                     if (retries > MaxRetries)
-                        throw new Exception(string.Format("Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.", MaxRetries));
+                        throw new Exception(
+                            string.Format(
+                                "Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.",
+                                MaxRetries));
                     return TryReadNextInternal(retries + 1);
                 }
 
@@ -94,7 +97,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
                     var postPos = result.LogRecord.LogPosition + result.RecordLength + 2 * sizeof(int);
-                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
+                    var eof = postPos == writerChk;
+                    return new SeqReadResult(
+                        true, eof, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
                 }
 
                 // we are the end of chunk
@@ -146,7 +151,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
                     var postPos = result.LogRecord.LogPosition + result.RecordLength + 2 * sizeof(int);
-                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
+                    var eof = postPos == writerChk;
+                    return new SeqReadResult(true, eof, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
                 }
 
                 // we are the beginning of chunk, so need to switch to previous one
