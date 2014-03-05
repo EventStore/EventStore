@@ -256,7 +256,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             for (int i = 0, n = indexEntries.Count; i < n; ++i)
             {
-                _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
+                _bus.Publish(new StorageMessage.EventCommitted(commit.LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
             }
 
             return eventNumber;
@@ -325,7 +325,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             for (int i = 0, n = indexEntries.Count; i < n; ++i)
             {
-                _bus.Publish(new StorageMessage.EventCommited(prepares[i].LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
+                _bus.Publish(new StorageMessage.EventCommitted(prepares[i].LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
             }
 
             return eventNumber;

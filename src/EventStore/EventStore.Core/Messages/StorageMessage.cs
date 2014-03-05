@@ -248,7 +248,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class EventCommited: Message
+        public class EventCommitted: Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -256,7 +256,7 @@ namespace EventStore.Core.Messages
             public readonly long CommitPosition;
             public readonly EventRecord Event;
 
-            public EventCommited(long commitPosition, EventRecord @event)
+            public EventCommitted(long commitPosition, EventRecord @event)
             {
                 CommitPosition = commitPosition;
                 Event = @event;

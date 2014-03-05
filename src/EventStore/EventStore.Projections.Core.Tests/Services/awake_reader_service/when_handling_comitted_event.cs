@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
     {
         private AwakeReaderService _it;
         private EventRecord _eventRecord;
-        private StorageMessage.EventCommited _eventCommited;
+        private StorageMessage.EventCommitted _eventCommitted;
         private Exception _exception;
 
         [SetUp]
@@ -61,14 +61,14 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
                 new PrepareLogRecord(
                     500, Guid.NewGuid(), Guid.NewGuid(), 500, 0, "Stream", 99, DateTime.UtcNow, PrepareFlags.Data,
                     "event", new byte[0], null));
-            _eventCommited = new StorageMessage.EventCommited(1000, _eventRecord);
+            _eventCommitted = new StorageMessage.EventCommitted(1000, _eventRecord);
         }
 
         private void When()
         {
             try
             {
-                _it.Handle(_eventCommited);
+                _it.Handle(_eventCommitted);
             }
             catch (Exception ex)
             {
