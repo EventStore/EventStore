@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
                 new PrepareLogRecord(
                     1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, "Stream", 99, DateTime.UtcNow, PrepareFlags.Data,
                     "event", new byte[0], null));
-            _eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord);
+            _eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord, isTfEof: true);
             _publisher = new InMemoryBus("bus");
             _envelope = new PublishEnvelope(_publisher);
             _handler = new TestHandler<TestMessage>();

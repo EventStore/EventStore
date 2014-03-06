@@ -49,6 +49,36 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         private TFPos _lastPosition;
 
+        private readonly List<AwakeReaderServiceMessage.SubscribeAwake> _batchedReplies =
+            new List<AwakeReaderServiceMessage.SubscribeAwake>();
+
+        private int _processedEvents;
+
+        private void BeginReplyBatch()
+        {
+            if (_batchedReplies.Count > 0)
+                throw new Exception();
+            _processedEvents = 0;
+        }
+
+        private void EndReplyBatch()
+        {
+            foreach (var subscriber in _batchedReplies)
+            {
+                subscriber.Envelope.ReplyWith(subscriber.ReplyWithMessage);
+            }
+            _batchedReplies.Clear();
+        }
+
+        private void CheckProcessedEventThreshold()
+        {
+            if (_processedEvents > 100)
+            {
+                EndReplyBatch();
+                BeginReplyBatch();
+            }
+        }
+
         public void Handle(AwakeReaderServiceMessage.SubscribeAwake message)
         {
             if (message.From < _lastPosition)
@@ -69,9 +99,16 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         public void Handle(StorageMessage.EventCommitted message)
         {
+            _processedEvents++;
             _lastPosition = new TFPos(message.CommitPosition, message.Event.LogPosition);
             NotifyEventInStream("$all", message);
             NotifyEventInStream(message.Event.EventStreamId, message);
+            if (message.TfEof)
+            {
+                EndReplyBatch();
+                BeginReplyBatch();
+            }
+            CheckProcessedEventThreshold();
         }
 
         private void NotifyEventInStream(string streamId, StorageMessage.EventCommitted message)
@@ -84,7 +121,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
                 {
                     if (subscriber.From < new TFPos(message.CommitPosition, message.Event.LogPosition))
                     {
-                        subscriber.Envelope.ReplyWith(subscriber.ReplyWithMessage);
+                        _batchedReplies.Add(subscriber);
                         _map.Remove(subscriber.CorrelationId);
                         if (toRemove == null)
                             toRemove = new List<AwakeReaderServiceMessage.SubscribeAwake>();
@@ -116,7 +153,8 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         public void Handle(StorageMessage.TfEofAtNonCommitRecord message)
         {
-            throw new NotImplementedException();
+            EndReplyBatch();
+            BeginReplyBatch();
         }
     }
 }

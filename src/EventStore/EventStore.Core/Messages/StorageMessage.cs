@@ -255,11 +255,13 @@ namespace EventStore.Core.Messages
 
             public readonly long CommitPosition;
             public readonly EventRecord Event;
+            public readonly bool TfEof;
 
-            public EventCommitted(long commitPosition, EventRecord @event)
+            public EventCommitted(long commitPosition, EventRecord @event, bool isTfEof)
             {
                 CommitPosition = commitPosition;
                 Event = @event;
+                TfEof = isTfEof;
             }
         }
 
@@ -267,6 +269,10 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
+
+            public TfEofAtNonCommitRecord()
+            {
+            }
         }
 
         public class AlreadyCommitted : Message
