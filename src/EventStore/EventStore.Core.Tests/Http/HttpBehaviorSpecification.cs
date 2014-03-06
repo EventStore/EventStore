@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Http
 
         protected virtual bool GivenSkipInitializeStandardUsersCheck()
         {
-            return true;
+            return false;
         }
 
         [TestFixtureTearDown]
