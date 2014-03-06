@@ -53,6 +53,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
             new List<AwakeReaderServiceMessage.SubscribeAwake>();
 
         private int _processedEvents;
+        private int _processedEventsAwakeThreshold = 1000;
 
         private void BeginReplyBatch()
         {
@@ -72,7 +73,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         private void CheckProcessedEventThreshold()
         {
-            if (_processedEvents > 100)
+            if (_processedEvents > _processedEventsAwakeThreshold)
             {
                 EndReplyBatch();
                 BeginReplyBatch();
