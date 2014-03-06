@@ -176,7 +176,7 @@ namespace EventStore.ClusterNode
 
 			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.AuthenticationConfigFile);
 
-			return new ClusterVNodeSettings(Guid.NewGuid(),
+			return new ClusterVNodeSettings(Guid.NewGuid(), 0,
 	                                        intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
 	                                        prefixes, options.EnableTrustedAuth,
 	                                        certificate,
