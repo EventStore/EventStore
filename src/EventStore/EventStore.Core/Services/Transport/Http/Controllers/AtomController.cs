@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
@@ -103,6 +104,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs);
             Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs);
 
+            Register(http, "/streams/{stream}/", HttpMethod.Post, PermRedirect, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/", HttpMethod.Delete, PermRedirect, Codec.NoCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/", HttpMethod.Get, PermRedirect, AtomCodecs, AtomCodecs);
+
             Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             Register(http, "/streams/{stream}/{event}?embed={embed}", HttpMethod.Get, GetStreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
@@ -129,6 +134,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(http, "/streams/%24all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/%24all/{position}/backward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             RegisterCustom(http, "/streams/%24all/{position}/forward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+        }
+
+        private void PermRedirect(HttpEntityManager httpEntity, UriTemplateMatch uriTemplateMatch)
+        {
+            var original = uriTemplateMatch.RequestUri.ToString();
+            var header = new []
+                             {new KeyValuePair<string, string>("Location", original.Substring(0, original.Length - 1))};
+            httpEntity.ReplyTextContent("Moved Permanently", HttpStatusCode.MovedPermanently, "", "", header, e => { });
         }
 
         // STREAMS
