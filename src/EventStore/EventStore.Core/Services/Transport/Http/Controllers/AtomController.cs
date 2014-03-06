@@ -127,6 +127,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             RegisterCustom(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             // $ALL
+            Register(http, "/streams/$all/", HttpMethod.Get, PermRedirect, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/%24all/", HttpMethod.Get, PermRedirect, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all/{position}/backward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
