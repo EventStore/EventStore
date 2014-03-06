@@ -72,8 +72,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         long LastCommitPosition { get; }
         void Init(long buildToPosition);
         void Dispose();
-        int Commit(CommitLogRecord commit);
-        int Commit(IList<PrepareLogRecord> commitedPrepares);
+        int Commit(CommitLogRecord commit, bool isTfEof);
+        int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof);
     }
 
     public class IndexCommitter : IIndexCommitter
@@ -145,14 +145,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     commitedPrepares.Add(prepare);
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                                 {
-                                    Commit(commitedPrepares);
+                                    Commit(commitedPrepares, result.Eof);
                                     commitedPrepares.Clear();
                                 }
                             }
                             break;
                         }
                         case LogRecordType.Commit:
-                            Commit((CommitLogRecord)result.LogRecord);
+                            Commit((CommitLogRecord) result.LogRecord, result.Eof);
                             break;
                         case LogRecordType.System:
                             break;
@@ -169,7 +169,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
                 }
                 Log.Debug("ReadIndex rebuilding done: total processed {0} records, time elapsed: {1}.", processed, DateTime.UtcNow - startTime);
-
+                _bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
                 _backend.SetSystemSettings(GetSystemSettings());
             }
 
@@ -189,7 +189,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public int Commit(CommitLogRecord commit)
+        public int Commit(CommitLogRecord commit, bool isTfEof)
         {
             int eventNumber = EventNumber.Invalid;
 
@@ -256,13 +256,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             for (int i = 0, n = indexEntries.Count; i < n; ++i)
             {
-                _bus.Publish(new StorageMessage.EventCommitted(commit.LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
+                _bus.Publish(
+                    new StorageMessage.EventCommitted(
+                        commit.LogPosition,
+                        new EventRecord(indexEntries[i].Version, prepares[i]),
+                        isTfEof && i == n - 1));
             }
 
             return eventNumber;
         }
 
-        public int Commit(IList<PrepareLogRecord> commitedPrepares)
+        public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof)
         {
             int eventNumber = EventNumber.Invalid;
 
@@ -325,7 +329,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             for (int i = 0, n = indexEntries.Count; i < n; ++i)
             {
-                _bus.Publish(new StorageMessage.EventCommitted(prepares[i].LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
+                _bus.Publish(
+                    new StorageMessage.EventCommitted(
+                        prepares[i].LogPosition,
+                        new EventRecord(indexEntries[i].Version, prepares[i]),
+                        isTfEof && i == n - 1));
             }
 
             return eventNumber;
