@@ -57,7 +57,7 @@ namespace EventStore.Common.Concurrent
     using EventStore.Common.Utils;
 
     /// <summary>
-    /// This is a not concurrent ConcurrentQueue that actually works with mono. Alas one day it may be fixed.
+    /// This is a not concurrent ConcurrentQueue that was needed as monos concurrent queue didnt work. It does now.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
