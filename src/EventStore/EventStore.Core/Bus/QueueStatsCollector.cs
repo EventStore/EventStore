@@ -265,6 +265,7 @@ namespace EventStore.Core.Bus
 #endif
         }
 
+#if DEBUG
         private static bool AreCheckpointsDifferent(int index)
         {
             return _writerCheckpoint[index] != null && _chaserCheckpoint[index] != null
@@ -280,7 +281,6 @@ namespace EventStore.Core.Bus
             return (c2 != -1 && c1 != c2) || (c2 != -1 && c3 != -1 && c2 != c3);
         }
 
-#if DEBUG
         public static void InitializeCheckpoints(int index, ICheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint)
         {
             if (index == -1)
