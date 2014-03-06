@@ -29,6 +29,7 @@
 using System;
 using System.Net;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -73,6 +74,186 @@ namespace EventStore.Core.Tests.Http.Streams
                 HelperExtensions.AssertJson(new {A = "1"}, json);
             }
         }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_posting_an_event_as_array_to_stream_with_slash : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                var request = CreateRequest(TestStream + "/", "", "POST", "application/json", null);
+                request.AllowAutoRedirect = false;
+                request.GetRequestStream().WriteJson(new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } });
+                _response = (HttpWebResponse) request.GetResponse();
+            }
+
+            [Test]
+            public void returns_permanent_redirect()
+            {
+                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+            }
+
+            [Test]
+            public void returns_a_location_header()
+            {
+                Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
+            }
+
+            [Test]
+            public void returns_a_location_header_that_is_to_stream_without_slash()
+            {
+                Assert.AreEqual(MakeUrl(TestStream), _response.Headers[HttpResponseHeader.Location]);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_deleting_to_stream_with_slash : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                var request = CreateRequest(TestStream + "/", "", "DELETE", "application/json", null);
+                request.AllowAutoRedirect = false;
+                _response = (HttpWebResponse)request.GetResponse();
+            }
+
+            [Test]
+            public void returns_permanent_redirect()
+            {
+                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+            }
+
+            [Test]
+            public void returns_a_location_header()
+            {
+                Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
+            }
+
+            [Test]
+            public void returns_a_location_header_that_is_to_stream_without_slash()
+            {
+                Assert.AreEqual(MakeUrl(TestStream), _response.Headers[HttpResponseHeader.Location]);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_getting_from_stream_with_slash : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                var request = CreateRequest(TestStream + "/", "", "GET", "application/json", null);
+                request.AllowAutoRedirect = false;
+                _response = (HttpWebResponse)request.GetResponse();
+            }
+
+            [Test]
+            public void returns_permanent_redirect()
+            {
+                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+            }
+
+            [Test]
+            public void returns_a_location_header()
+            {
+                Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
+            }
+
+            [Test]
+            public void returns_a_location_header_that_is_to_stream_without_slash()
+            {
+                Assert.AreEqual(MakeUrl(TestStream), _response.Headers[HttpResponseHeader.Location]);
+            }
+        }
+
+        //[TestFixture, Category("LongRunning")]
+        //public class when_posting_an_event_as_array_to_metadata_stream_with_slash : HttpBehaviorSpecification
+        //{
+        //    private HttpWebResponse _response;
+
+        //    protected override void Given()
+        //    {
+        //    }
+
+        //    protected override void When()
+        //    {
+        //        var request = CreateRequest(TestStream + "/metadata/", "", "POST", "application/json", null);
+        //        request.AllowAutoRedirect = false;
+        //        request.GetRequestStream().WriteJson(new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } });
+        //        _response = (HttpWebResponse)request.GetResponse();
+        //    }
+
+        //    [Test]
+        //    public void returns_permanent_redirect()
+        //    {
+        //        Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+        //    }
+
+        //    [Test]
+        //    public void returns_a_location_header()
+        //    {
+        //        Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
+        //    }
+
+        //    [Test]
+        //    public void returns_a_location_header_that_is_to_stream_without_slash()
+        //    {
+        //        Assert.AreEqual(MakeUrl(TestStream + "/metadata"), _response.Headers[HttpResponseHeader.Location]);
+        //    }
+        //}
+
+
+        //[TestFixture, Category("LongRunning")]
+        //public class when_getting_from_metadata_stream_with_slash : HttpBehaviorSpecification
+        //{
+        //    private HttpWebResponse _response;
+
+        //    protected override void Given()
+        //    {
+        //    }
+
+        //    protected override void When()
+        //    {
+        //        var request = CreateRequest(TestStream + "/metadata/", "", "GET", "application/json", null);
+        //        request.Credentials = new NetworkCredential("admin", "changeit");
+        //        request.AllowAutoRedirect = false;
+        //        _response = (HttpWebResponse)request.GetResponse();
+        //    }
+
+        //    [Test]
+        //    public void returns_permanent_redirect()
+        //    {
+        //        Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+        //    }
+
+        //    [Test]
+        //    public void returns_a_location_header()
+        //    {
+        //        Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
+        //    }
+
+        //    [Test]
+        //    public void returns_a_location_header_that_is_to_stream_without_slash()
+        //    {
+        //        Assert.AreEqual(MakeUrl(TestStream + "/metadata/"), _response.Headers[HttpResponseHeader.Location]);
+        //    }
+        //}
+
 
 
         [TestFixture, Category("LongRunning")]
