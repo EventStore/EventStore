@@ -50,8 +50,8 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 return string.Format("{0} " +
                                      "<writers, default = 20> " +
                                      "<readers, default = 30> " +
-                                     "<events, default = 100000> " +
-                                     "<streams per plugin, default = 100> " +
+                                     "<events, default = 1000000> " +
+                                     "<streams per plugin, default = 1000> " +
                                      "<producers, default = [bank], available = [{1}]>",
                                      Keyword, 
                                      string.Join(",", AvailableProducers));
@@ -72,8 +72,8 @@ namespace EventStore.TestClient.Commands.DvuBasic
         {
             var writers = 20;
             var readers = 30;
-            var events = 100000;
-            var streams = 100;
+            var events = 1000000;
+            var streams = 1000;
             var producers = new[] {"bank"};
 
             if (args.Length != 0 && args.Length != 5)
