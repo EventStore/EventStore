@@ -117,6 +117,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             // METASTREAMS
             Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, PermRedirect, AtomCodecs, AtomCodecs);
 
             Register(http, "/streams/{stream}/metadata?embed={embed}", HttpMethod.Get, GetMetastreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/{stream}/metadata/{event}?embed={embed}", HttpMethod.Get, GetMetastreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
