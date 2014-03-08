@@ -143,7 +143,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var original = uriTemplateMatch.RequestUri.ToString();
             var header = new []
-                             {new KeyValuePair<string, string>("Location", original.Substring(0, original.Length - 1))};
+                             {new KeyValuePair<string, string>("Location", original.Substring(0, original.Length - 1)),
+                             new KeyValuePair<string, string>("Cache-Control", "max-age=31536000, public"), };
             httpEntity.ReplyTextContent("Moved Permanently", HttpStatusCode.MovedPermanently, "", "", header, e => { });
         }
 
