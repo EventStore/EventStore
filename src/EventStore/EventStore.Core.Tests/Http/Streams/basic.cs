@@ -99,6 +99,12 @@ namespace EventStore.Core.Tests.Http.Streams
             }
 
             [Test]
+            public void redirect_is_cacheable()
+            {
+                Assert.AreEqual("max-age=31536000, public",_response.Headers[HttpResponseHeader.CacheControl]);
+            }
+
+            [Test]
             public void returns_a_location_header()
             {
                 Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
