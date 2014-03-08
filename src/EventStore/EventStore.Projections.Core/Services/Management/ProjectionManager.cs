@@ -221,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Management
                 if (_projections.ContainsKey(message.Name))
                 {
                     message.Envelope.ReplyWith(
-                        new ProjectionManagementMessage.OperationFailed("Duplicate projection name: " + message.Name));
+                        new ProjectionManagementMessage.Conflict("Duplicate projection name: " + message.Name));
                 }
                 else
                 {

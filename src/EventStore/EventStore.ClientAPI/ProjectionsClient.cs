@@ -196,6 +196,8 @@ namespace EventStore.ClientAPI
                          {
                              if (response.HttpStatusCode == expectedCode)
                                  source.SetResult(null);
+                             else if (response.HttpStatusCode == 409)
+                                 source.SetException(new ProjectionCommandConflictException(response.StatusDescription));
                              else
                                  source.SetException(new ProjectionCommandFailedException(
                                                              string.Format("Server returned {0} ({1}) for POST on {2}",
