@@ -498,11 +498,22 @@ namespace EventStore.Projections.Core.Services.Http
         private IEnvelope ErrorsEnvelope(HttpEntityManager http)
         {
             return new SendToHttpEnvelope<ProjectionManagementMessage.NotFound>(
-                _networkSendQueue, http, NotFoundFormatter, NotFoundConfigurator,
+                _networkSendQueue,
+                http,
+                NotFoundFormatter,
+                NotFoundConfigurator,
                 new SendToHttpEnvelope<ProjectionManagementMessage.NotAuthorized>(
-                    _networkSendQueue, http, NotAuthorizedFormatter, NotAuthorizedConfigurator,
-                new SendToHttpEnvelope<ProjectionManagementMessage.OperationFailed>(
-                    _networkSendQueue, http, OperationFailedFormatter, OperationFailedConfigurator, null)));
+                    _networkSendQueue,
+                    http,
+                    NotAuthorizedFormatter,
+                    NotAuthorizedConfigurator,
+                    new SendToHttpEnvelope<ProjectionManagementMessage.Conflict>(
+                        _networkSendQueue,
+                        http,
+                        ConflictFormatter,
+                        ConflictConfigurator,
+                        new SendToHttpEnvelope<ProjectionManagementMessage.OperationFailed>(
+                            _networkSendQueue, http, OperationFailedFormatter, OperationFailedConfigurator, null))));
         }
 
         private ResponseConfiguration NotFoundConfigurator(ICodec codec, ProjectionManagementMessage.NotFound message)
@@ -533,6 +544,17 @@ namespace EventStore.Projections.Core.Services.Http
         }
 
         private string OperationFailedFormatter(ICodec codec, ProjectionManagementMessage.OperationFailed message)
+        {
+            return message.Reason;
+        }
+        
+        private ResponseConfiguration ConflictConfigurator(
+            ICodec codec, ProjectionManagementMessage.OperationFailed message)
+        {
+            return new ResponseConfiguration(409, "Conflict", "text/plain", Helper.UTF8NoBom);
+        }
+
+        private string ConflictFormatter(ICodec codec, ProjectionManagementMessage.OperationFailed message)
         {
             return message.Reason;
         }

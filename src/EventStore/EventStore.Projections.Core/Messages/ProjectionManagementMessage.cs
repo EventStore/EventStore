@@ -80,6 +80,18 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class Conflict : OperationFailed
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public Conflict(string reason)
+                : base(reason)
+            {
+            }
+
+        }
+
         public sealed class RunAs
         {
             private readonly IPrincipal _runAs;
