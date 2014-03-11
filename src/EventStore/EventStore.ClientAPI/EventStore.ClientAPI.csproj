@@ -111,6 +111,7 @@
     <Compile Include="ClusterSettingsBuilder.cs" />
     <Compile Include="ClientConnectionEventArgs.cs" />
     <Compile Include="EventReadStatus.cs" />
+    <Compile Include="Exceptions\ProjectionCommandConflictException.cs" />
     <Compile Include="RawStreamMetadataResult.cs" />
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
