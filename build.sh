@@ -226,7 +226,7 @@ function buildV8() {
     if [[ "$unixtype" -eq "mac" ]] ; then
         v8OutputDir=`pwd`/out/$makecall
         fileext="dylib"
-        DLYD_LIBRARY_PATH=$v8OutputDir $make $makecall $WERRORSTRING library=shared || err
+        DYLD_LIBRARY_PATH=$v8OutputDir $make $makecall $WERRORSTRING library=shared || err
     else
         v8OutputDir=out/$makeCall/lib.target
         filext="so"
