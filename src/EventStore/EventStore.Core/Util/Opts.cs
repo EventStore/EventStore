@@ -130,6 +130,13 @@ namespace EventStore.Core.Util
         public const string EnableTrustedAuthDescr = "Enables trusted authentication by an intermediary in the Http";
         public const bool EnableTrustedAuthDefault = false;
 
+
+        public const string MaxMemTableSizeCmd = "max-memtable-size";
+        public const string MaxMemTableSizeEnv = "MAX_MEMTABLE_SIZE";
+        public const string MaxMemTableSizeJson = "maxMemtableSize";
+        public const string MaxMemTableSizeDescr = "Adjusts the maximum size of a mem table.";
+        public const int MaxMemtableSizeDefault = 1000000;
+
         public const string SkipDbVerifyCmd = "do-not-verify-db-hashes-on-startup|skip-db-verify";
         public const string SkipDbVerifyEnv = "SKIP_DB_VERIFY";
         public const string SkipDbVerifyJson = "skipDbVerify";

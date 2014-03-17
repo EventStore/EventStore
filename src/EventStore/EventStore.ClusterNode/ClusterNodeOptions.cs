@@ -40,6 +40,8 @@ namespace EventStore.ClusterNode
         public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
         public long ChunksCacheSize { get { return _helper.Get(() => ChunksCacheSize); } }
+        public int MaxMemTableSize { get { return _helper.Get(() => MaxMemTableSize); } }
+        
 
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public bool InMemDb { get { return _helper.Get(() => InMemDb); } }
@@ -92,7 +94,9 @@ namespace EventStore.ClusterNode
             
             _helper.Register(() => CommitCount, Opts.CommitCountCmd, Opts.CommitCountEnv, Opts.CommitCountJson, Opts.CommitCountDefault, Opts.CommitCountDescr);
             _helper.Register(() => PrepareCount, Opts.PrepareCountCmd, Opts.PrepareCountEnv, Opts.PrepareCountJson, Opts.PrepareCountDefault, Opts.PrepareCountDescr);
-			
+            _helper.Register(() => MaxMemTableSize, Opts.MaxMemTableSizeCmd, Opts.MaxMemTableSizeEnv, Opts.MaxMemTableSizeJson, Opts.MaxMemtableSizeDefault, Opts.MaxMemTableSizeDescr);
+            
+
 			_helper.Register(() => DiscoverViaDns, Opts.DiscoverViaDnsCmd, Opts.DiscoverViaDnsEnv, Opts.DiscoverViaDnsJson, Opts.DiscoverViaDnsDefault, Opts.DiscoverViaDnsDescr);
 			_helper.RegisterRef(() => ClusterDns, Opts.ClusterDnsCmd, Opts.ClusterDnsEnv, Opts.ClusterDnsJson, Opts.ClusterDnsDefault, Opts.ClusterDnsDescr);
 	        _helper.Register(() => ClusterGossipPort, Opts.ClusterGossipPortCmd, Opts.ClusterGossipPortEnv, Opts.ClusterGossipPortJson, Opts.ClusterGossipPortDefault, Opts.ClusterGossipPortDescr);
