@@ -14,4 +14,4 @@ exit /B %errorlevel%
 :help
 
 echo Usage:
-echo build.cmd build-type configuration platform version specific-vs-version force-network defines
+echo build.cmd ^quick^|full^|clean-all^|v8^|js1^ ^[-Configuration=debug^|release^] ^[-Platform=x64^|x86^] ^[-Version=0.0.0.0^] ^[-SpecificVisualStudioVersion=Windows7.1SDK^|2013^|2012^|2010^] ^[-ForceNetwork^] ^[-Defines=^]
