@@ -66,6 +66,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly byte[] Metadata;
 
+        /// <summary>
+        /// A datetime representing when this event was created in the system
+        /// </summary>
+        public DateTime Created;
 
 #if DEBUG
         public string DebugDataView
@@ -88,7 +92,8 @@ namespace EventStore.ClientAPI
             EventNumber = systemRecord.EventNumber;
 
             EventType = systemRecord.EventType;
-
+            if (systemRecord.Created.HasValue)
+                Created = DateTime.FromBinary(systemRecord.Created.Value);
             Data = systemRecord.Data ?? Empty.ByteArray;
             Metadata = systemRecord.Metadata ?? Empty.ByteArray;
         }
