@@ -78,9 +78,12 @@ namespace EventStore.Core.Messages
     [ProtoMember(8, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
+    [ProtoMember(9, IsRequired = false, Name=@"created", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? Created;
+  
     private EventRecord() {}
   
-    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata)
+    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
@@ -90,6 +93,7 @@ namespace EventStore.Core.Messages
         MetadataContentType = metadataContentType;
         Data = data;
         Metadata = metadata;
+        Created = created;
     }
   }
   

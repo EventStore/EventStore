@@ -30,6 +30,7 @@ message EventRecord {
 	required int32 metadata_content_type = 6;
 	required bytes data = 7;
 	optional bytes metadata = 8;
+	optional int64 created = 9;
 }
 
 message ResolvedIndexedEvent {
