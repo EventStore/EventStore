@@ -121,7 +121,7 @@ namespace EventStore.ClusterNode
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, dbVerifyHashes, opts.MaxMemTableSize, _projections);
-            RegisterWebControllers(enabledNodeSubsystems);
+            RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
             RegisterUiProjections();
         }
 
@@ -131,12 +131,16 @@ namespace EventStore.ClusterNode
             _node.MainBus.Subscribe(users);
         }
 
-        private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems)
+        private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterVNodeSettings settings)
         {
             _node.InternalHttpService.SetupController(new ClusterWebUIController(_node.MainQueue, enabledNodeSubsystems));
-            _node.ExternalHttpService.SetupController(new ClusterWebUIController(_node.MainQueue, enabledNodeSubsystems));
             _node.InternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
-            _node.ExternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
+            if (settings.AdminOnPublic)
+            {
+                _node.ExternalHttpService.SetupController(
+                    new ClusterWebUIController(_node.MainQueue, enabledNodeSubsystems));
+                _node.ExternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
+            }
         }
 
         private static int GetQuorumSize(int clusterSize)

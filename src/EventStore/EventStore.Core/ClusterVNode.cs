@@ -285,7 +285,7 @@ namespace EventStore.Core
                 _externalHttpService.SetupController(statController);
             _externalHttpService.SetupController(atomController);
             if(vNodeSettings.GossipOnPublic)
-            _externalHttpService.SetupController(gossipController);
+                _externalHttpService.SetupController(gossipController);
             
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
