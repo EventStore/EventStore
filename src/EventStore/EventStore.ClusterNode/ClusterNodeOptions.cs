@@ -137,8 +137,8 @@ namespace EventStore.ClusterNode
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
             _helper.Register(() => DisableScavengeMerging, Opts.DisableScavengeMergeCmd, Opts.DisableScavengeMergeEnv, Opts.DisableScavengeMergeJson, Opts.DisableScavengeMergeDefault, Opts.DisableScavengeMergeDescr);
             _helper.Register(() => GossipOnExt, Opts.GossipOnExtCmd, Opts.GossipOnExtEnv, Opts.GossipOnExtJson, Opts.GossipOnExtDefault, Opts.GossipOnExtDescr);
-            _helper.Register(() => GossipOnExt, Opts.StatsOnExtCmd, Opts.StatsOnExtEnv, Opts.StatsOnExtJson, Opts.StatsOnExtDefault, Opts.StatsOnExtDescr);
-            _helper.Register(() => GossipOnExt, Opts.AdminOnExtCmd, Opts.AdminOnExtEnv, Opts.AdminOnExtJson, Opts.AdminOnExtDefault, Opts.AdminOnExtDescr);
+            _helper.Register(() => StatsOnExt, Opts.StatsOnExtCmd, Opts.StatsOnExtEnv, Opts.StatsOnExtJson, Opts.StatsOnExtDefault, Opts.StatsOnExtDescr);
+            _helper.Register(() => AdminOnExt, Opts.AdminOnExtCmd, Opts.AdminOnExtEnv, Opts.AdminOnExtJson, Opts.AdminOnExtDefault, Opts.AdminOnExtDescr);
         }
 
         public void Parse(params string[] args)
