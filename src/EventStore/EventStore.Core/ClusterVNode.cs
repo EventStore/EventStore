@@ -186,6 +186,7 @@ namespace EventStore.Core
 
             // AUTHENTICATION INFRASTRUCTURE - delegate to plugins
 	        var authenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus, _workersHandler, _workerBuses);
+
 	        Ensure.NotNull(authenticationProvider, "authenticationProvider");
 		
             {

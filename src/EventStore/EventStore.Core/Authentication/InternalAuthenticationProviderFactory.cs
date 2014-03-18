@@ -17,7 +17,7 @@ namespace EventStore.Core.Authentication
 		{
 			var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
 			var dispatcher = new IODispatcher(mainQueue, new PublishEnvelope(workersQueue, crossThread: true));
-			
+
 			foreach (var bus in workerBusses) {
 				bus.Subscribe(dispatcher.ForwardReader);
 				bus.Subscribe(dispatcher.BackwardReader);
@@ -46,7 +46,12 @@ namespace EventStore.Core.Authentication
 			mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
 			mainBus.Subscribe<SystemMessage.BecomeMaster>(userManagement);
 			
-			return new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
+			var provider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
+            var passwordChangeNotificationReader = new PasswordChangeNotificationReader(mainQueue, dispatcher);
+            mainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
+            mainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
+            mainBus.Subscribe(provider);
+		    return provider;
 		}
 
 		public void RegisterHttpControllers(HttpService externalHttpService, HttpService internalHttpService, HttpSendService httpSendService, IPublisher mainQueue, IPublisher networkSendQueue)
