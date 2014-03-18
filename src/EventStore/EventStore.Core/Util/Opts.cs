@@ -233,6 +233,26 @@ namespace EventStore.Core.Util
         /*
          *  CLUSTER OPTIONS
          */
+
+
+        public const string AdminOnExtCmd = "admin-on-ext";
+        public const string AdminOnExtEnv = "ADMIN_ON_EXT";
+        public const string AdminOnExtJson = "adminOnExt";
+        public const string AdminOnExtDescr = "Whether or not to run the admin ui on the external http endpoint";
+        public const bool AdminOnExtDefault = true;
+
+        public const string GossipOnExtCmd = "gossip-on-ext";
+        public const string GossipOnExtEnv = "GOSSIP_ON_EXT";
+        public const string GossipOnExtJson = "gossipOnExt";
+        public const string GossipOnExtDescr = "Whether or not to accept gossip requests on the external http endpoint";
+        public const bool GossipOnExtDefault = true;
+
+        public const string StatsOnExtCmd = "stats-on-ext";
+        public const string StatsOnExtEnv = "STATS_ON_EXT";
+        public const string StatsOnExtJson = "statsOnExt";
+        public const string StatsOnExtDescr = "Whether or not to accept statistics requests on the external http endpoint, needed if you use admin ui";
+        public const bool StatsOnExtDefault = true;
+
         public const string InternalIpCmd = "int-ip|internal-ip=";
         public const string InternalIpEnv = "INT_IP";
         public const string InternalIpJson = "internalIp";

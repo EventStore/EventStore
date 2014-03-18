@@ -188,7 +188,8 @@ namespace EventStore.ClusterNode
 	                                        TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
 	                                        options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
 	                                        TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
-											options.NodePriority, authenticationProviderFactory, options.DisableScavengeMerging);
+											options.NodePriority, authenticationProviderFactory, options.DisableScavengeMerging,
+                                            options.AdminOnExt, options.StatsOnExt, options.GossipOnExt);
         }
 
 	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)

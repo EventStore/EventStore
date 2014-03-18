@@ -278,10 +278,13 @@ namespace EventStore.Core
             // EXTERNAL HTTP
             _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
                                                     _workersHandler, vNodeSettings.HttpPrefixes);
-            _externalHttpService.SetupController(adminController);
+            if(vNodeSettings.AdminOnPublic)
+                _externalHttpService.SetupController(adminController);
             _externalHttpService.SetupController(pingController);
-            _externalHttpService.SetupController(statController);
+            if(vNodeSettings.StatsOnPublic)
+                _externalHttpService.SetupController(statController);
             _externalHttpService.SetupController(atomController);
+            if(vNodeSettings.GossipOnPublic)
             _externalHttpService.SetupController(gossipController);
             
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);

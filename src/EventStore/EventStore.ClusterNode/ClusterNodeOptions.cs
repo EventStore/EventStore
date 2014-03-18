@@ -29,7 +29,11 @@ namespace EventStore.ClusterNode
 
         public int CommitCount { get { return _helper.Get(() => CommitCount); } }
         public int PrepareCount { get { return _helper.Get(() => PrepareCount); } }
-        
+
+
+        public bool AdminOnExt { get { return _helper.Get(() => AdminOnExt); } }
+        public bool StatsOnExt { get { return _helper.Get(() => StatsOnExt); } }
+        public bool GossipOnExt { get { return _helper.Get(() => GossipOnExt); } }
         public bool DisableScavengeMerging { get { return _helper.Get(() => DisableScavengeMerging); } }
 
 		public bool DiscoverViaDns { get { return _helper.Get(() => DiscoverViaDns); } }
@@ -132,6 +136,9 @@ namespace EventStore.ClusterNode
             _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
             _helper.Register(() => DisableScavengeMerging, Opts.DisableScavengeMergeCmd, Opts.DisableScavengeMergeEnv, Opts.DisableScavengeMergeJson, Opts.DisableScavengeMergeDefault, Opts.DisableScavengeMergeDescr);
+            _helper.Register(() => GossipOnExt, Opts.GossipOnExtCmd, Opts.GossipOnExtEnv, Opts.GossipOnExtJson, Opts.GossipOnExtDefault, Opts.GossipOnExtDescr);
+            _helper.Register(() => GossipOnExt, Opts.StatsOnExtCmd, Opts.StatsOnExtEnv, Opts.StatsOnExtJson, Opts.StatsOnExtDefault, Opts.StatsOnExtDescr);
+            _helper.Register(() => GossipOnExt, Opts.AdminOnExtCmd, Opts.AdminOnExtEnv, Opts.AdminOnExtJson, Opts.AdminOnExtDefault, Opts.AdminOnExtDescr);
         }
 
         public void Parse(params string[] args)
