@@ -26,6 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -39,20 +42,27 @@ namespace EventStore.Transport.Http.Server
         public event Action<HttpAsyncServer, HttpListenerContext> RequestReceived;
         
         public bool IsListening { get { return _listener.IsListening; } }
-        public readonly string[] ListenPrefixes;
+        public readonly string[] _listenPrefixes;
 
-        private readonly HttpListener _listener;
+        private HttpListener _listener;
 
 
         public HttpAsyncServer(string[] prefixes)
         {
             Ensure.NotNull(prefixes, "prefixes");
 
-            ListenPrefixes = prefixes;
+            _listenPrefixes = prefixes;
 
-            _listener = new HttpListener();
-            _listener.Realm = "ES";
-            _listener.AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous;
+            CreateListener(prefixes);
+        }
+
+        private void CreateListener(IEnumerable<string> prefixes)
+        {
+            _listener = new HttpListener
+                            {
+                                Realm = "ES",
+                                AuthenticationSchemes = AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous
+                            };
             foreach (var prefix in prefixes)
             {
                 _listener.Prefixes.Add(prefix);
@@ -64,7 +74,21 @@ namespace EventStore.Transport.Http.Server
             try
             {
                 Logger.Info("Starting HTTP server on [{0}]...", string.Join(",", _listener.Prefixes));
-                _listener.Start();
+                try
+                {
+                    _listener.Start();
+                }
+                catch(HttpListenerException ex)
+                {
+                    if (ex.ErrorCode == 5) //Access error don't see any better way of getting it
+                    {
+                        if (_listenPrefixes.Length > 0)
+                            TryAddAcl(_listenPrefixes[0]);
+                        CreateListener(_listenPrefixes);
+                        Logger.Info("Retrying HTTP server on [{0}]...", string.Join(",", _listener.Prefixes));
+                        _listener.Start();
+                    }
+                }
 
                 _listener.BeginGetContext(ContextAcquired, null);
 
@@ -79,6 +103,24 @@ namespace EventStore.Transport.Http.Server
             }
         }
 
+        private void TryAddAcl(string address)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Xbox || Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
+                return;
+
+            var args = string.Format(@"http add urlacl url={0} user={1}\{2}", address, Environment.UserDomainName, Environment.UserName);
+            Logger.Info("Attempting to add permissions for " + address + " using netsh " + args);
+            var startInfo = new ProcessStartInfo("netsh", args)
+                          {
+                              Verb = "runas",
+                              CreateNoWindow = true,
+                              WindowStyle = ProcessWindowStyle.Hidden,
+                              UseShellExecute = true
+                          };
+
+            Process.Start(startInfo).WaitForExit();
+        }
+    
         public void Shutdown()
         {
             try

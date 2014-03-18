@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Http
         private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
 
         public bool IsListening { get { return _server.IsListening; } }
-        public IEnumerable<string> ListenPrefixes { get { return _server.ListenPrefixes; } }
+        public IEnumerable<string> ListenPrefixes { get { return _server._listenPrefixes; } }
         public ServiceAccessibility Accessibility { get { return _accessibility; } }
 
         private readonly ServiceAccessibility _accessibility;
@@ -106,7 +106,7 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 Application.Exit(ExitCode.Error,
                                  string.Format("Http async server failed to start listening at [{0}].", 
-                                               string.Join(", ", _server.ListenPrefixes)));
+                                               string.Join(", ", _server._listenPrefixes)));
             }
         }
 
@@ -116,7 +116,7 @@ namespace EventStore.Core.Services.Transport.Http
                 Shutdown();
             _inputBus.Publish(
                 new SystemMessage.ServiceShutdown(
-                    string.Format("HttpServer [{0}]", string.Join(", ", _server.ListenPrefixes))));
+                    string.Format("HttpServer [{0}]", string.Join(", ", _server._listenPrefixes))));
         }
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
