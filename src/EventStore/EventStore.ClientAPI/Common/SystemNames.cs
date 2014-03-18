@@ -68,7 +68,7 @@ namespace EventStore.ClientAPI.Common
         public const string SystemStreamAcl = "$systemStreamAcl";
     }
 
-    public static class SystemEventTypes
+    internal static class SystemEventTypes
     {
         public const string StreamDeleted = "$streamDeleted";
         public const string StatsCollection = "$statsCollected";
