@@ -752,7 +752,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 </head>
 <body>
 <script>
-    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented, JsonCodec.JsonSettings) + @";
+    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented, JsonCodec.ToSettings) + @";
     var templateJs = '/web/es/js/atom/" + value.GetType().Name + @".html';
 
     function reRenderData(data) {

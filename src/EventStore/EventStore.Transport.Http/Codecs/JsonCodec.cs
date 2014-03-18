@@ -55,18 +55,15 @@ namespace EventStore.Transport.Http.Codecs
             }
         };
 
-        public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        public static readonly JsonSerializerSettings ToSettings = new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             DateFormatHandling = DateFormatHandling.IsoDateFormat,
             NullValueHandling = NullValueHandling.Ignore,
-            DefaultValueHandling = DefaultValueHandling.Ignore,
+            DefaultValueHandling = DefaultValueHandling.Include,
             MissingMemberHandling = MissingMemberHandling.Ignore,
             TypeNameHandling = TypeNameHandling.None,
-            Converters = new JsonConverter[]
-            {
-                new StringEnumConverter()
-            }
+            Converters = new JsonConverter[] {new StringEnumConverter()}
         };
 
 
@@ -103,7 +100,7 @@ namespace EventStore.Transport.Http.Codecs
         {
             try
             {
-                return JsonConvert.SerializeObject(value, Formatting, JsonSettings);
+                return JsonConvert.SerializeObject(value, Formatting, ToSettings);
             }
             catch (Exception ex)
             {
