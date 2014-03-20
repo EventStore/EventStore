@@ -73,6 +73,8 @@ namespace EventStore.ClusterNode
 	    public int PrepareTimeoutMs { get { return _helper.Get(() => PrepareTimeoutMs); } }
         public int CommitTimeoutMs { get { return _helper.Get(() => CommitTimeoutMs); } }
 
+        public bool UnsafeDisableFlushToDisk { get { return _helper.Get(() => UnsafeDisableFlushToDisk); } }
+
         private readonly OptsHelper _helper;
 
         public ClusterNodeOptions()
@@ -134,6 +136,7 @@ namespace EventStore.ClusterNode
 	        _helper.RegisterRef(() => AuthenticationType, Opts.AuthenticationTypeCmd, Opts.AuthenticationTypeEnv, Opts.AuthenticationTypeJson, Opts.AuthenticationTypeDefault, Opts.AuthenticationTypeDescr);
 	        _helper.RegisterRef(() => AuthenticationConfigFile, Opts.AuthenticationConfigFileCmd, Opts.AuthenticationConfigFileEnv, Opts.AuthenticationConfigFileJson, Opts.AuthenticationConfigFileDefault, Opts.AuthenticationConfigFileDescr);
 
+            _helper.Register(() => UnsafeDisableFlushToDisk, Opts.UnsafeDisableFlushToDiskCmd, Opts.UnsafeDisableFlushToDiskEnv, Opts.PrepareTimeoutMsJson, Opts.UnsafeDisableFlushToDiskDefault, Opts.UnsafeDisableFlushToDiskDescr);
             _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
             _helper.Register(() => DisableScavengeMerging, Opts.DisableScavengeMergeCmd, Opts.DisableScavengeMergeEnv, Opts.DisableScavengeMergeJson, Opts.DisableScavengeMergeDefault, Opts.DisableScavengeMergeDescr);

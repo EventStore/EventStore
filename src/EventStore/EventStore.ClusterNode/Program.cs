@@ -72,6 +72,7 @@ namespace EventStore.ClusterNode
                 throw new Exception(string.Format("Couldn't acquire exclusive Cluster Node mutex '{0}'.", _clusterNodeMutex.MutexName));
 
             var dbConfig = CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.InMemDb);
+            FileStreamExtensions.ConfigureFlush(disableFlushToDisk: opts.UnsafeDisableFlushToDisk);
             var db = new TFChunkDb(dbConfig);
             var vNodeSettings = GetClusterVNodeSettings(opts);
 

@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Helpers
                         ISubsystem[] subsystems = null,
                         int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true,
                         int memTableSize = 1000,
-                        bool inMemDb = true)
+                        bool inMemDb = true, bool disableFlushToDisk = false)
         {
             if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -91,6 +91,7 @@ namespace EventStore.Core.Tests.Helpers
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
+            FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
             Db = new TFChunkDb(CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize, inMemDb));
             
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);

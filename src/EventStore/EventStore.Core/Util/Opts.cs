@@ -167,6 +167,13 @@ namespace EventStore.Core.Util
         public const string HttpPrefixesDescr = "The prefixes that the http server should respond to.";
         public static readonly string[] HttpPrefixesDefault = new string[0];
 
+
+        public const string UnsafeDisableFlushToDiskCmd = "unsafe-disable-flush-to-disk";
+        public const string UnsafeDisableFlushToDiskEnv = "UNSAFE_DISABLE_FLUSH_TO_DISK";
+        public const string UnsafeDisableFlushToDiskJson = "unsafeDisableFlushToDisk";
+        public const string UnsafeDisableFlushToDiskDescr = "Disable flushing to disk.  (UNSAFE: on power off)";
+        public static readonly bool UnsafeDisableFlushToDiskDefault = false; 
+
         public const string PrepareTimeoutMsCmd = "pt|prepare-timeout=";
         public const string PrepareTimeoutMsEnv = "PREPARE_TIMEOUT_MS";
         public const string PrepareTimeoutMsJson = "prepareTimeoutMs";

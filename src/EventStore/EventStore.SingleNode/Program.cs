@@ -85,6 +85,7 @@ namespace EventStore.SingleNode
                     throw new Exception(string.Format("Couldn't acquire exclusive lock on DB at '{0}'.", dbPath));
             }
 
+            FileStreamExtensions.ConfigureFlush(disableFlushToDisk: opts.UnsafeDisableFlushToDisk);
             var db = new TFChunkDb(CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.InMemDb));
             var vnodeSettings = GetVNodeSettings(opts);
             var dbVerifyHashes = !opts.SkipDbVerify;
