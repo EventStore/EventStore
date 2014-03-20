@@ -340,7 +340,7 @@ namespace EventStore.ClientAPI
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
-                                                                         int? fromEventNumberExclusive,
+                                                                         int? lastCheckpoint,
                                                                          bool resolveLinkTos,
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
@@ -351,7 +351,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription =
-                    new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, fromEventNumberExclusive, 
+                    new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint, 
                                                             resolveLinkTos, userCredentials, eventAppeared, 
                                                             liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
@@ -383,7 +383,7 @@ namespace EventStore.ClientAPI
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
-                Position? fromPositionExclusive,
+                Position? lastCheckpoint,
                 bool resolveLinkTos,
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
@@ -393,7 +393,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = 
-                    new EventStoreAllCatchUpSubscription(this, _settings.Log, fromPositionExclusive, resolveLinkTos,
+                    new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint, resolveLinkTos,
                                                          userCredentials, eventAppeared, liveProcessingStarted, 
                                                          subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();

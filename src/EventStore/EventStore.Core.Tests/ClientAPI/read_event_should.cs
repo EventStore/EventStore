@@ -28,8 +28,6 @@
 
 using System;
 using EventStore.ClientAPI;
-using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -119,6 +117,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(res.Event.Value.OriginalEvent.EventId, _eventId0);
             Assert.AreEqual("test-stream", res.Stream);
             Assert.AreEqual(0, res.EventNumber);
+            Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
         }
 
         [Test, Category("Network")]
@@ -130,6 +129,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(res.Event.Value.OriginalEvent.EventId, _eventId1);
             Assert.AreEqual("test-stream", res.Stream);
             Assert.AreEqual(-1, res.EventNumber);
+            Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
         }
     }
 }

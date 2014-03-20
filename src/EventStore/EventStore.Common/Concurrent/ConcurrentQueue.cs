@@ -30,7 +30,6 @@
 namespace EventStore.Common.Concurrent
 {
 #if !PSEUDO_CONCURRENT_COLLECTIONS
-
     using System.Collections.Generic;
 
     public class ConcurrentQueue<T> : System.Collections.Concurrent.ConcurrentQueue<T>
@@ -43,11 +42,9 @@ namespace EventStore.Common.Concurrent
             : base(items)
         {
         }
-
         // JUST INHERITING EVERYTHING
     }
 }
-
 #else
     using EventStore.Common.Locks;
     using System;
@@ -177,4 +174,3 @@ namespace EventStore.Common.Concurrent
     }
 }
 #endif
-

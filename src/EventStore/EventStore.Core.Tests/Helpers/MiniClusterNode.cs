@@ -114,7 +114,8 @@ namespace EventStore.Core.Tests.Helpers
                 new[] {ExternalHttpEndPoint.ToHttpUrl()}, enableTrustedAuth, ssl_connections.GetCertificate(), 1, false,
                 "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
                 false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
-                new InternalAuthenticationProviderFactory(), true);
+                new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, adminOnPublic: true, 
+                statsOnPublic: true, gossipOnPublic: true);
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"

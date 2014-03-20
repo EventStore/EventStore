@@ -186,6 +186,7 @@ namespace EventStore.Core
 
             // AUTHENTICATION INFRASTRUCTURE - delegate to plugins
 	        var authenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus, _workersHandler, _workerBuses);
+
 	        Ensure.NotNull(authenticationProvider, "authenticationProvider");
 		
             {
@@ -277,11 +278,14 @@ namespace EventStore.Core
             // EXTERNAL HTTP
             _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
                                                     _workersHandler, vNodeSettings.HttpPrefixes);
-            _externalHttpService.SetupController(adminController);
+            if(vNodeSettings.AdminOnPublic)
+                _externalHttpService.SetupController(adminController);
             _externalHttpService.SetupController(pingController);
-            _externalHttpService.SetupController(statController);
+            if(vNodeSettings.StatsOnPublic)
+                _externalHttpService.SetupController(statController);
             _externalHttpService.SetupController(atomController);
-            _externalHttpService.SetupController(gossipController);
+            if(vNodeSettings.GossipOnPublic)
+                _externalHttpService.SetupController(gossipController);
             
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);

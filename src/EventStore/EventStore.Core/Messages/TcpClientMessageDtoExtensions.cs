@@ -60,6 +60,7 @@ namespace EventStore.Core.Messages
                 EventId = eventRecord.EventId.ToByteArray();
                 EventType = eventRecord.EventType;
                 Data = eventRecord.Data;
+                Created = eventRecord.TimeStamp.ToBinary();
                 Metadata = eventRecord.Metadata;
             }
         }

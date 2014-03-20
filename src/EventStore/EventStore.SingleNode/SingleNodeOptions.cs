@@ -52,6 +52,7 @@ namespace EventStore.SingleNode
         public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
         public long ChunksCacheSize { get { return _helper.Get(() => ChunksCacheSize); } }
         public double MinFlushDelayMs { get { return _helper.Get(() => MinFlushDelayMs); } }
+        public int MaxMemTableSize { get { return _helper.Get(() => MaxMemTableSize); } }
 
         public string DbPath { get { return _helper.Get(() => DbPath); } }
         public bool InMemDb { get { return _helper.Get(() => InMemDb); } }
@@ -104,6 +105,8 @@ namespace EventStore.SingleNode
             _helper.Register(() => RunProjections, Opts.RunProjectionsCmd, Opts.RunProjectionsEnv, Opts.RunProjectionsJson, Opts.RunProjectionsDefault, Opts.RunProjectionsDescr);
             _helper.Register(() => ProjectionThreads, Opts.ProjectionThreadsCmd, Opts.ProjectionThreadsEnv, Opts.ProjectionThreadsJson, Opts.ProjectionThreadsDefault, Opts.ProjectionThreadsDescr);
             _helper.Register(() => WorkerThreads, Opts.WorkerThreadsCmd, Opts.WorkerThreadsEnv, Opts.WorkerThreadsJson, Opts.WorkerThreadsDefault, Opts.WorkerThreadsDescr);
+
+            _helper.Register(() => MaxMemTableSize, Opts.MaxMemTableSizeCmd, Opts.MaxMemTableSizeEnv, Opts.MaxMemTableSizeJson, Opts.MaxMemtableSizeDefault, Opts.MaxMemTableSizeDescr);
 
             _helper.RegisterArray(() => HttpPrefixes, Opts.HttpPrefixesCmd, Opts.HttpPrefixesEnv, ",", Opts.HttpPrefixesJson, Opts.HttpPrefixesDefault, Opts.HttpPrefixesDescr);
             _helper.Register(() => EnableTrustedAuth, Opts.EnableTrustedAuthCmd, Opts.EnableTrustedAuthEnv, Opts.EnableTrustedAuthJson, Opts.EnableTrustedAuthDefault, Opts.EnableTrustedAuthDescr);

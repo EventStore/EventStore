@@ -59,7 +59,7 @@ scripts. *There is a batch file in the root of the repository named
 PowerShell if you run it as Administrator. Obviously you may want to audit what
 the script does before executing it on your machine!*
 
-###Debug Builds on Linux (Ubuntu 12.04) / Mono
+###Debug Builds on Linux (Ubuntu 12.04) or MacOS X / Mono
 
 ####Prerequisites
 

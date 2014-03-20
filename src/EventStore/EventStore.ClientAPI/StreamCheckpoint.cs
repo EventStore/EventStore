@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -25,24 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-[assembly: AssemblyTitle("EventStore.ClientAPI")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Event Store LLP")]
-[assembly: AssemblyProduct("EventStore.ClientAPI")]
-[assembly: AssemblyCopyright("Copyright © Event Store LLP. All rights reserved.")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-
-[assembly: AssemblyVersion("0.0.0.0")]
-[assembly: AssemblyFileVersion("0.0.0.0")]
-
-[assembly: InternalsVisibleTo("EventStore.Core.Tests")]
-[assembly: InternalsVisibleTo("EventStore.Projections.Core.Tests")]
-
-[assembly: ComVisible(false)]
-[assembly: Guid("0bffd734-18c5-4575-9321-324ed1a3bbfb")]
+namespace EventStore.ClientAPI
+{
+    /// <summary>
+    /// This class contains constants to be used when setting up subscriptions
+    /// using the  <see cref="IEventStoreConnection.SubscribeToStreamFrom" /> method
+    /// on <see cref="IEventStoreConnection" />.
+    /// </summary>
+    public static class StreamCheckpoint
+    {
+        /// <summary>
+        /// Indicates that a catch-up subscription should receive all events
+        /// in the stream.
+        /// </summary>
+        public static int? StreamStart = null;
+    }
+}

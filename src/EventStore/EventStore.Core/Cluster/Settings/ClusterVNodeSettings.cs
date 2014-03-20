@@ -40,7 +40,9 @@ namespace EventStore.Core.Cluster.Settings
 
 		public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
 	    public readonly bool DisableScavengeMerging;
-
+	    public bool AdminOnPublic;
+	    public bool StatsOnPublic;
+        public bool GossipOnPublic;
 	    public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 									IPEndPoint internalTcpEndPoint,
 									IPEndPoint internalSecureTcpEndPoint,
@@ -68,7 +70,10 @@ namespace EventStore.Core.Cluster.Settings
 									StatsStorage statsStorage,
 									int nodePriority,
 									IAuthenticationProviderFactory authenticationProviderFactory,
-                                    bool disableScavengeMerging)
+                                    bool disableScavengeMerging,
+                                    bool adminOnPublic,
+                                    bool statsOnPublic,
+                                    bool gossipOnPublic)
 		{
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -122,6 +127,9 @@ namespace EventStore.Core.Cluster.Settings
 
 			NodePriority = nodePriority;
 	        DisableScavengeMerging = disableScavengeMerging;
+	        AdminOnPublic = adminOnPublic;
+	        StatsOnPublic = statsOnPublic;
+	        GossipOnPublic = gossipOnPublic;
 		}
 
 		public override string ToString()

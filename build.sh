@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#------------ Start of configuration -------------
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 V8_REVISION="18454" #Tag 3.24.10
@@ -7,16 +6,29 @@ PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 
+# NOTE: We detect whether we're running on a Mac-like system
+# because in that case we need to deal with .dylib's instead
+# of .so's, and set the DYLD_LIBRARY_PATH before attempting
+# to build V8's snapshot. The output paths also appear to be
+# different.
+
+# TODO: Figure out whether FreeBSD behaves like MacOS or like
+# Linux.
+platform='unix'
 make='make'
 if [[ `uname` == 'Linux' ]]; then
     make='make'
+    unixtype='unix'
 elif [[ `uname` == 'FreeBSD' ]]; then
+    # TODO: Does FreeBSD behave like OS X or Linux?
     make='gmake'
+    unixtype='unix'
 elif [[ `uname` == 'Darwin' ]]; then
     make='make'
+    unixtype='mac'
 fi
 
-#------------ End of configuration -------------
+# ------------ End of configuration -------------
 
 function usage() {
     echo ""
@@ -200,21 +212,41 @@ function getDependencies() {
 function buildV8() {
     pushd v8 > /dev/null || err
    
-    if [[ "$PLATFORM" -eq "x64" ]] ; then
+    if [[ "$PLATFORM" == "x64" ]] ; then
         makecall="x64.$CONFIGURATION"
-    elif [[ "$PLATFORM" -eq "x86" ]] ; then
+    elif [[ "$PLATFORM" == "x86" ]] ; then
         makecall="ia32.$CONFIGURATION"
     else
         echo "Unsupported platform $PLATFORM."
         exit 1
     fi
 
-    $make $makecall $WERRORSTRING library=shared || err
+    if [[ "$unixtype" == "mac" ]] ; then
+        v8OutputDir=`pwd`/out/$makecall
+        fileext="dylib"
+        DYLD_LIBRARY_PATH=$v8OutputDir $make $makecall $WERRORSTRING library=shared || err
+    else
+        v8OutputDir=`pwd`/out/$makecall/lib.target
+        fileext="so"
+        $make $makecall $WERRORSTRING library=shared || err
+    fi
 
-    pushd out/$makecall/lib.target > /dev/null
-    cp libv8.so ../../../../src/EventStore/libs || err
-    cp libicui18n.so ../../../../src/EventStore/libs || err
-    cp libicuuc.so ../../../../src/EventStore/libs || err
+    echo "Coping some crap" $fileext
+    pushd ../src/EventStore/libs > /dev/null
+    cp $v8OutputDir/libv8.$fileext . || err
+    cp $v8OutputDir/libicui18n.$fileext . ||  err
+    cp $v8OutputDir/libicuuc.$fileext . || err
+
+    if [[ "$unixtype" == "mac" ]] ; then
+        install_name_tool -id libv8.dylib libv8.dylib
+        install_name_tool -id libicui18n.dylib libicui18n.dylib
+        install_name_tool -id libicuuc.dylib libicuuc.dylib
+        
+        install_name_tool -change /usr/local/lib/libicuuc.dylib libicuuc.dylib libicui18n.dylib
+
+        install_name_tool -change /usr/local/lib/libicuuc.dylib libicuuc.dylib libv8.dylib
+        install_name_tool -change /usr/local/lib/libicui18n.dylib libicui18n.dylib libv8.dylib
+    fi
     popd > /dev/null
 
     [[ -d ../src/EventStore/libs/include ]] || mkdir ../src/EventStore/libs/include
@@ -240,7 +272,22 @@ function buildJS1() {
         gccArch="-arch amd64"
     fi
 
-    g++ $includeString $libsString *.cpp -o $outputDir/libjs1.so $gccArch -lv8 -O2 -fPIC --shared --save-temps -std=c++0x || err
+    if [[ "$unixtype" == "mac" ]] ; then
+        outputObj=$outputDir/libjs1.dylib
+    else
+        outputObj=$outputDir/libjs1.so
+    fi
+
+    g++ $includeString $libsString *.cpp -o $outputObj $gccArch -lv8 -O2 -fPIC --shared --save-temps -std=c++0x || err
+
+    if [[ "$unixtype" == "mac" ]] ; then
+        pushd $outputDir > /dev/null || err
+        install_name_tool -id libjs1.dylib libjs1.dylib
+        install_name_tool -change /usr/local/lib/libv8.dylib libv8.dylib libjs1.dylib
+        popd > /dev/null || err
+    fi
+
+
     popd > /dev/null || err
 }
 
