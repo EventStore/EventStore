@@ -52,6 +52,12 @@ namespace EventStore.Common.Utils
 
         static FileStreamExtensions()
         {
+
+#if NOFLUSH
+                FlushSafe = f => f.Flush(flushToDisk: false);
+            return;
+
+#endif
             if (Runtime.IsMono)
                 FlushSafe = f => f.Flush(flushToDisk: true);
             else

@@ -28,6 +28,7 @@
 
 using System.Net;
 using EventStore.Common.Options;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 
 namespace EventStore.Web.Playground
@@ -68,9 +69,10 @@ namespace EventStore.Web.Playground
             _helper.RegisterArray(() => HttpPrefixes, Opts.HttpPrefixesCmd, Opts.HttpPrefixesEnv, ",", Opts.HttpPrefixesJson, Opts.HttpPrefixesDefault, Opts.HttpPrefixesDescr);
         }
 
-        public void Parse(params string[] args)
+        public bool Parse(params string[] args)
         {
-            _helper.Parse(args);
+            var result = _helper.Parse(args);
+            return result.IsEmpty();
         }
 
         public string DumpOptions()

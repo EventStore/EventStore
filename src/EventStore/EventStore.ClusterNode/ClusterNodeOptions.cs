@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using EventStore.Common.Options;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 
 namespace EventStore.ClusterNode
@@ -130,9 +131,10 @@ namespace EventStore.ClusterNode
             _helper.Register(() => DisableScavengeMerging, Opts.DisableScavengeMergeCmd, Opts.DisableScavengeMergeEnv, Opts.DisableScavengeMergeJson, Opts.DisableScavengeMergeDefault, Opts.DisableScavengeMergeDescr);
         }
 
-        public void Parse(params string[] args)
+        public bool Parse(params string[] args)
         {
-            _helper.Parse(args);
+            var result = _helper.Parse(args);
+            return result.IsEmpty();
         }
 
         public string DumpOptions()
