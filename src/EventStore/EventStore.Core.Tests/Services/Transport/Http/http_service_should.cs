@@ -39,7 +39,7 @@ using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
 {
-    [TestFixture]
+    [TestFixture,Category("LongRunning")]
     public class http_service_should
     {
         private readonly IPEndPoint _serverEndPoint;
