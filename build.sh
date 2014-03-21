@@ -409,6 +409,7 @@ else
         buildEventStore
     else
         [[ -f src/EventStore/libs/libv8.so ]] || exitWithError "Cannot find libv8.so - in src/EventStore/libs/libv8.so so cannot do a quick build!"
+        [[ -f src/EventStore/libs/libicui18n.so ]] || exitWithError "Cannot find libicui18n.so - in src/EventStore/libs/libicui18n.so so cannot do a quick build!"
         [[ -f src/EventStore/libs/libjs1.so ]] || exitWithError "Cannot find libjs1.so - at src/EventStore/libs/libjs1.so so cannot do a quick build!"
 
         buildEventStore
