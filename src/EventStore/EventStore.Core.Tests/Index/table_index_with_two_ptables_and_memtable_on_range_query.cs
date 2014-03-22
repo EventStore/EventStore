@@ -34,7 +34,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class table_index_with_two_ptables_and_memtable_on_range_query : SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
