@@ -37,7 +37,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public abstract class when_publishing_to_queued_handler : QueuedHandlerTestWithWaitingConsumer
     {
         protected when_publishing_to_queued_handler(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.Bus
         }
     }
 
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class when_publishing_to_queued_handler_mres : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_mres()
@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Bus
         }
     }
 
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class when_publishing_to_queued_handler_autoreset : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_autoreset()
@@ -132,7 +132,7 @@ namespace EventStore.Core.Tests.Bus
         }
     }
 
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class when_publishing_to_queued_handler_sleep : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_sleep()
@@ -141,7 +141,7 @@ namespace EventStore.Core.Tests.Bus
         }
     }
 
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class when_publishing_to_queued_handler_pulse : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_pulse()
@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.Bus
         }
     }
 
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class when_publishing_to_queued_handler_threadpool : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_threadpool()
