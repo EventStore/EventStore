@@ -156,7 +156,7 @@ function getV8() {
 
     if [[ -d v8/.svn ]] ; then
         pushd v8 > /dev/null || err
-		svnrevision=`svn info | sed -ne 's/^Revision: //p'`        
+		svnrevision=`svn info | sed -ne 's/^Revision: //p'`
 
         if [[ "$svnrevision" != "$revision" ]] ; then
             echo "Updating V8 repository to revision $revision..."
@@ -211,7 +211,7 @@ function getDependencies() {
 
 function buildV8() {
     pushd v8 > /dev/null || err
-   
+
     if [[ "$PLATFORM" == "x64" ]] ; then
         makecall="x64.$CONFIGURATION"
     elif [[ "$PLATFORM" == "x86" ]] ; then
@@ -241,9 +241,7 @@ function buildV8() {
         install_name_tool -id libv8.dylib libv8.dylib
         install_name_tool -id libicui18n.dylib libicui18n.dylib
         install_name_tool -id libicuuc.dylib libicuuc.dylib
-        
         install_name_tool -change /usr/local/lib/libicuuc.dylib libicuuc.dylib libicui18n.dylib
-
         install_name_tool -change /usr/local/lib/libicuuc.dylib libicuuc.dylib libv8.dylib
         install_name_tool -change /usr/local/lib/libicui18n.dylib libicui18n.dylib libv8.dylib
     fi
@@ -308,7 +306,7 @@ function patchVersionFiles {
     assemblyProductNamePattern='AssemblyProduct(.*'
     assemblyCopyrightPattern='AssemblyCopyright(.*'
     assemblyCompanyPattern='AssemblyCompany(.*'
-    
+
     files=$( find . -name "AssemblyInfo.cs" )
 
     for file in $files
@@ -355,10 +353,10 @@ function patchVersionInfo {
     do
         tempfile="$file.tmp"
 	sed -e "s/$versionPattern/$newVersion/" \
-	    -e "s/$branchPattern/$newBranch/" \
-	    -e "s/$commitHashPattern/$newCommitHash/" \
-	    -e "s/$timestampPattern/$newTimestamp/" \
-	    $file > $tempfile
+        -e "s/$branchPattern/$newBranch/" \
+        -e "s/$commitHashPattern/$newCommitHash/" \
+        -e "s/$timestampPattern/$newTimestamp/" \
+        $file > $tempfile
 
         mv $tempfile $file
 	echo "Patched $file with version information"
