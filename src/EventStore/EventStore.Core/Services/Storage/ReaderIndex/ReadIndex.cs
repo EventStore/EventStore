@@ -70,8 +70,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
             _indexReader = new IndexReader(_indexBackend, hasher, tableIndex, metastreamMetadata);
-            _indexWriter = new IndexWriter(_indexBackend, _indexReader);
-            _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, hasher, additionalCommitChecks);
+            var writer = new IndexWriter(bus, tableIndex, hasher, _indexBackend, _indexReader, additionalCommitChecks);
+            _indexWriter = writer;
+            _indexCommitter = writer;
             _allReader = new AllReader(_indexBackend);
         }
 
