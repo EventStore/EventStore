@@ -65,6 +65,7 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Subscribe(_ioDispatcher.ForwardReader);
             _bus.Subscribe(_ioDispatcher.Writer);
             _bus.Subscribe(_ioDispatcher.StreamDeleter);
+            _bus.Subscribe(_ioDispatcher.Awaker);
             _bus.Subscribe(_ioDispatcher);
 
         }

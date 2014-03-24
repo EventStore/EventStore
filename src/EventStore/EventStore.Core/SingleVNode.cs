@@ -193,6 +193,7 @@ namespace EventStore.Core
                 bus.Subscribe(dispatcher.BackwardReader);
                 bus.Subscribe(dispatcher.Writer);
                 bus.Subscribe(dispatcher.StreamDeleter);
+                bus.Subscribe(dispatcher.Awaker);
                 bus.Subscribe(dispatcher);
             });
 
@@ -313,6 +314,7 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher.ForwardReader);
             _mainBus.Subscribe(ioDispatcher.Writer);
             _mainBus.Subscribe(ioDispatcher.StreamDeleter);
+            _mainBus.Subscribe(ioDispatcher.Awaker);
             _mainBus.Subscribe(ioDispatcher);
 
             var userManagement = new UserManagementService(

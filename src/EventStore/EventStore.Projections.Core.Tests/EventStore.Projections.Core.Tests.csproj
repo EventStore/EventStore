@@ -149,12 +149,6 @@
     <Compile Include="Playground\Launchpad3.cs" />
     <Compile Include="Playground\LaunchpadBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\awake_reader_service\when_handling_committed_event_after_unsybscribe.cs" />
-    <Compile Include="Services\awake_reader_service\when_handling_committed_event_with_subscribers.cs" />
-    <Compile Include="Services\awake_reader_service\when_handling_subscribe_awake.cs" />
-    <Compile Include="Services\awake_reader_service\when_handling_comitted_event.cs" />
-    <Compile Include="Services\awake_reader_service\when_creating.cs" />
-    <Compile Include="Services\awake_reader_service\when_subscribing_before_last_position_with_already_committed_events.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_prepare_position.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position.cs" />

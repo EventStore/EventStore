@@ -169,6 +169,8 @@
     <Compile Include="Messages\UserManagementMessage.cs" />
     <Compile Include="Messaging\RequestResponseDispatcher.cs" />
     <Compile Include="PluginModel\IAuthenticationPlugin.cs" />
+    <Compile Include="Services\AwakeReaderService\AwakeService.cs" />
+    <Compile Include="Services\AwakeReaderService\AwakeServiceMessage.cs" />
     <Compile Include="Services\ClusterStorageWriterService.cs" />
     <Compile Include="Services\ElectionsService.cs" />
     <Compile Include="Services\Gossip\DnsGossipSeedSource.cs" />

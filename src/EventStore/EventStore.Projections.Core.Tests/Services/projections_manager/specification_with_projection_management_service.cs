@@ -3,9 +3,9 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.AwakeReaderService;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected ProjectionManager _manager;
         private bool _initializeSystemProjections;
-        protected AwakeReaderService _awakeReaderService;
+        protected AwakeService AwakeService;
 
 
         protected override void Given1()
@@ -84,13 +84,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
             _bus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
+            _bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher.Awaker);
             _bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
 
-            _awakeReaderService = new AwakeReaderService();
-            _bus.Subscribe<StorageMessage.EventCommitted>(_awakeReaderService);
-            _bus.Subscribe<StorageMessage.TfEofAtNonCommitRecord>(_awakeReaderService);
-            _bus.Subscribe<AwakeReaderServiceMessage.SubscribeAwake>(_awakeReaderService);
-            _bus.Subscribe<AwakeReaderServiceMessage.UnsubscribeAwake>(_awakeReaderService);
+            AwakeService = new AwakeService();
+            _bus.Subscribe<StorageMessage.EventCommitted>(AwakeService);
+            _bus.Subscribe<StorageMessage.TfEofAtNonCommitRecord>(AwakeService);
+            _bus.Subscribe<AwakeServiceMessage.SubscribeAwake>(AwakeService);
+            _bus.Subscribe<AwakeServiceMessage.UnsubscribeAwake>(AwakeService);
 
 
             Given();

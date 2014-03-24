@@ -5,6 +5,7 @@ using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
@@ -12,7 +13,6 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Messaging;
-using EventStore.Projections.Core.Services.AwakeReaderService;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core
@@ -123,9 +123,9 @@ namespace EventStore.Projections.Core
                         Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
 
                     projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<AwakeReaderServiceMessage.SubscribeAwake>(mainQueue));
+                        Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(mainQueue));
                     projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<AwakeReaderServiceMessage.UnsubscribeAwake>(mainQueue));
+                        Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(mainQueue));
 
                 }
                 projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);
@@ -141,11 +141,11 @@ namespace EventStore.Projections.Core
             _managerInputBus.Subscribe(
             Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
 
-            var awakeReaderService = new AwakeReaderService();
+            var awakeReaderService = new AwakeService();
             mainBus.Subscribe<StorageMessage.EventCommitted>(awakeReaderService);
             mainBus.Subscribe<StorageMessage.TfEofAtNonCommitRecord>(awakeReaderService);
-            mainBus.Subscribe<AwakeReaderServiceMessage.SubscribeAwake>(awakeReaderService);
-            mainBus.Subscribe<AwakeReaderServiceMessage.UnsubscribeAwake>(awakeReaderService);
+            mainBus.Subscribe<AwakeServiceMessage.SubscribeAwake>(awakeReaderService);
+            mainBus.Subscribe<AwakeServiceMessage.UnsubscribeAwake>(awakeReaderService);
 
 
             _projectionManagerNode = ProjectionManagerNode.Create(

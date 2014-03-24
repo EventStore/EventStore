@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Util;
@@ -143,6 +144,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
             bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
             bus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
+            bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher.Awaker);
             bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
             bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(coreService);
             bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(coreService);
@@ -179,8 +181,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 output_.Subscribe(
                     Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.ControlMessage>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<AwakeReaderServiceMessage.SubscribeAwake>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<AwakeReaderServiceMessage.UnsubscribeAwake>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<Message>(inputQueue)); // forward all
 
                 var forwarder = new RequestResponseQueueForwarder(

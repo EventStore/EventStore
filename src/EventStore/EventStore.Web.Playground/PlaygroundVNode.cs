@@ -99,6 +99,7 @@ namespace EventStore.Web.Playground
                 bus.Subscribe(dispatcher.BackwardReader);
                 bus.Subscribe(dispatcher.Writer);
                 bus.Subscribe(dispatcher.StreamDeleter);
+                bus.Subscribe(dispatcher.Awaker);
             });
 
             // TCP

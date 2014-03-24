@@ -154,7 +154,6 @@
   <ItemGroup>
     <Compile Include="EventReaders\Feeds\FeedReader.cs" />
     <Compile Include="EventReaders\Feeds\FeedReaderService.cs" />
-    <Compile Include="Messages\AwakeReaderServiceMessage.cs" />
     <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
     <Compile Include="Messages\CoreProjectionProcessingMessage.cs" />
     <Compile Include="Messages\EventReaders\Feeds\FeedReaderMessage.cs" />
@@ -177,7 +176,6 @@
     <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />
     <Compile Include="ProjectionManagerNode.cs" />
     <Compile Include="Projections.cs" />
-    <Compile Include="Services\AwakeReaderService\AwakeReaderService.cs" />
     <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
     <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
     <Compile Include="Services\Management\ManagedProjection.cs" />

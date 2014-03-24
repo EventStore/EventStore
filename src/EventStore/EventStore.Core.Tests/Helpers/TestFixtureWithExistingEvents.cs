@@ -186,6 +186,7 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _bus.Subscribe(_ioDispatcher.StreamDeleter);
+            _bus.Subscribe(_ioDispatcher.Awaker);
             _streams.Clear();
             _deletedStreams.Clear();
             _all.Clear();

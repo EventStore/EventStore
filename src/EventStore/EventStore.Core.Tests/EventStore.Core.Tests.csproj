@@ -69,6 +69,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Authentication\StubPasswordHashAlgorithm.cs" />
+    <Compile Include="AwakeService\when_creating.cs" />
+    <Compile Include="AwakeService\when_handling_comitted_event.cs" />
+    <Compile Include="AwakeService\when_handling_committed_event_after_unsybscribe.cs" />
+    <Compile Include="AwakeService\when_handling_committed_event_with_subscribers.cs" />
+    <Compile Include="AwakeService\when_handling_subscribe_awake.cs" />
+    <Compile Include="AwakeService\when_subscribing_before_last_position_with_already_committed_events.cs" />
     <Compile Include="Bus\FSMSpeedTest.cs" />
     <Compile Include="Bus\Helpers\BusTestMessages.cs" />
     <Compile Include="Bus\Helpers\NoopConsumer.cs" />

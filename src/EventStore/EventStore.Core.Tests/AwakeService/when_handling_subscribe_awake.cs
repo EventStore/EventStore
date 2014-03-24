@@ -2,18 +2,17 @@
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.AwakeReaderService;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
+namespace EventStore.Core.Tests.AwakeService
 {
     [TestFixture]
     public class when_handling_subscribe_awake
     {
-        private AwakeReaderService _it;
+        private Core.Services.AwakeReaderService.AwakeService _it;
         private EventRecord _eventRecord;
         private StorageMessage.EventCommitted _eventCommitted;
         private Exception _exception;
@@ -29,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
 
         private void Given()
         {
-            _it = new AwakeReaderService();
+            _it = new Core.Services.AwakeReaderService.AwakeService();
 
             _eventRecord = new EventRecord(
                 10,
@@ -45,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.awake_reader_service
             try
             {
                 _it.Handle(
-                    new AwakeReaderServiceMessage.SubscribeAwake(
+                    new AwakeServiceMessage.SubscribeAwake(
                         _envelope, Guid.NewGuid(), "Stream", new TFPos(1000, 500), new TestMessage()));
             }
             catch (Exception ex)

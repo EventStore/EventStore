@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -133,7 +134,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         [Test]
         public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeReaderServiceMessage.SubscribeAwake>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
         }
 
         [Test]

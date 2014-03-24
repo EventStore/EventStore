@@ -8,6 +8,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
@@ -119,7 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (delay)
             {
                 _publisher.Publish(
-                    new AwakeReaderServiceMessage.SubscribeAwake(
+                    new AwakeServiceMessage.SubscribeAwake(
                         new PublishEnvelope(_publisher, crossThread: true), correlationId, null,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
             }
@@ -388,7 +389,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                                 foreach (var corrId in _validRequests)
                                 {
-                                    _publisher.Publish(new AwakeReaderServiceMessage.UnsubscribeAwake(corrId));
+                                    _publisher.Publish(new AwakeServiceMessage.UnsubscribeAwake(corrId));
                                 }
                                 _validRequests.Clear();
                                 _eventsRequested.Clear();

@@ -6,6 +6,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Helpers
@@ -28,6 +29,8 @@ namespace EventStore.Core.Helpers
 
         public readonly RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>
             StreamDeleter;
+
+        public readonly RequestResponseDispatcher<AwakeServiceMessage.SubscribeAwake, IODispatcherDelayedMessage> Awaker;
 
         public IODispatcher(IPublisher publisher, IEnvelope envelope)
         {
@@ -60,6 +63,14 @@ namespace EventStore.Core.Helpers
                     v => v.CorrelationId,
                     v => v.CorrelationId,
                     envelope);
+
+            Awaker =
+                new RequestResponseDispatcher<AwakeServiceMessage.SubscribeAwake, IODispatcherDelayedMessage>(
+                    publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    envelope);
+
         }
 
         public Guid ReadBackward(

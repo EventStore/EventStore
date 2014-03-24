@@ -23,7 +23,8 @@ namespace EventStore.Core.Authentication
 				bus.Subscribe(dispatcher.BackwardReader);
 				bus.Subscribe(dispatcher.Writer);
 				bus.Subscribe(dispatcher.StreamDeleter);
-				bus.Subscribe(dispatcher);
+                bus.Subscribe(dispatcher.Awaker);
+                bus.Subscribe(dispatcher);
 			}
 
 			// USER MANAGEMENT
@@ -32,7 +33,8 @@ namespace EventStore.Core.Authentication
 			mainBus.Subscribe(ioDispatcher.ForwardReader);
 			mainBus.Subscribe(ioDispatcher.Writer);
 			mainBus.Subscribe(ioDispatcher.StreamDeleter);
-			mainBus.Subscribe(ioDispatcher);
+            mainBus.Subscribe(ioDispatcher.Awaker);
+            mainBus.Subscribe(ioDispatcher);
 
 			var userManagement = new UserManagementService(mainQueue, ioDispatcher, passwordHashAlgorithm, skipInitializeStandardUsersCheck: false);
 			mainBus.Subscribe<UserManagementMessage.Create>(userManagement);

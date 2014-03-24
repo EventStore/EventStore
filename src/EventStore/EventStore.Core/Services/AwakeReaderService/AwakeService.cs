@@ -3,26 +3,25 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Projections.Core.Messages;
 
-namespace EventStore.Projections.Core.Services.AwakeReaderService
+namespace EventStore.Core.Services.AwakeReaderService
 {
-    public class AwakeReaderService : IHandle<AwakeReaderServiceMessage.SubscribeAwake>,
-        IHandle<AwakeReaderServiceMessage.UnsubscribeAwake>,
+    public class AwakeService : IHandle<AwakeServiceMessage.SubscribeAwake>,
+        IHandle<AwakeServiceMessage.UnsubscribeAwake>,
         IHandle<StorageMessage.EventCommitted>,
         IHandle<StorageMessage.TfEofAtNonCommitRecord>
 
     {
-        private readonly Dictionary<string, HashSet<AwakeReaderServiceMessage.SubscribeAwake>> _subscribers =
-            new Dictionary<string, HashSet<AwakeReaderServiceMessage.SubscribeAwake>>();
+        private readonly Dictionary<string, HashSet<AwakeServiceMessage.SubscribeAwake>> _subscribers =
+            new Dictionary<string, HashSet<AwakeServiceMessage.SubscribeAwake>>();
 
-        private readonly Dictionary<Guid, AwakeReaderServiceMessage.SubscribeAwake> _map =
-            new Dictionary<Guid, AwakeReaderServiceMessage.SubscribeAwake>();
+        private readonly Dictionary<Guid, AwakeServiceMessage.SubscribeAwake> _map =
+            new Dictionary<Guid, AwakeServiceMessage.SubscribeAwake>();
 
         private TFPos _lastPosition;
 
-        private readonly List<AwakeReaderServiceMessage.SubscribeAwake> _batchedReplies =
-            new List<AwakeReaderServiceMessage.SubscribeAwake>();
+        private readonly List<AwakeServiceMessage.SubscribeAwake> _batchedReplies =
+            new List<AwakeServiceMessage.SubscribeAwake>();
 
         private int _processedEvents;
         private int _processedEventsAwakeThreshold = 1000;
@@ -52,7 +51,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
             }
         }
 
-        public void Handle(AwakeReaderServiceMessage.SubscribeAwake message)
+        public void Handle(AwakeServiceMessage.SubscribeAwake message)
         {
             if (message.From < _lastPosition)
             {
@@ -60,11 +59,11 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
                 return;
             }
             _map.Add(message.CorrelationId, message);
-            HashSet<AwakeReaderServiceMessage.SubscribeAwake> list;
+            HashSet<AwakeServiceMessage.SubscribeAwake> list;
             string streamId = message.StreamId ?? "$all";
             if (!_subscribers.TryGetValue(streamId, out list))
             {
-                list = new HashSet<AwakeReaderServiceMessage.SubscribeAwake>();
+                list = new HashSet<AwakeServiceMessage.SubscribeAwake>();
                 _subscribers.Add(streamId, list);
             }
             list.Add(message);
@@ -86,8 +85,8 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
 
         private void NotifyEventInStream(string streamId, StorageMessage.EventCommitted message)
         {
-            HashSet<AwakeReaderServiceMessage.SubscribeAwake> list;
-            List<AwakeReaderServiceMessage.SubscribeAwake> toRemove = null;
+            HashSet<AwakeServiceMessage.SubscribeAwake> list;
+            List<AwakeServiceMessage.SubscribeAwake> toRemove = null;
             if (_subscribers.TryGetValue(streamId, out list))
             {
                 foreach (var subscriber in list)
@@ -97,7 +96,7 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
                         _batchedReplies.Add(subscriber);
                         _map.Remove(subscriber.CorrelationId);
                         if (toRemove == null)
-                            toRemove = new List<AwakeReaderServiceMessage.SubscribeAwake>();
+                            toRemove = new List<AwakeServiceMessage.SubscribeAwake>();
                         toRemove.Add(subscriber);
                     }
                 }
@@ -113,9 +112,9 @@ namespace EventStore.Projections.Core.Services.AwakeReaderService
             }
         }
 
-        public void Handle(AwakeReaderServiceMessage.UnsubscribeAwake message)
+        public void Handle(AwakeServiceMessage.UnsubscribeAwake message)
         {
-            AwakeReaderServiceMessage.SubscribeAwake subscriber;
+            AwakeServiceMessage.SubscribeAwake subscriber;
             if (_map.TryGetValue(message.CorrelationId, out subscriber))
             {
                 _map.Remove(message.CorrelationId);

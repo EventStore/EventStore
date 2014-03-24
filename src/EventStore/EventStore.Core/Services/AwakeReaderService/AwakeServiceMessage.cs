@@ -2,9 +2,9 @@
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Projections.Core.Messages
+namespace EventStore.Core.Services.AwakeReaderService
 {
-    public class AwakeReaderServiceMessage
+    public class AwakeServiceMessage
     {
         public sealed class SubscribeAwake : Message
         {

@@ -98,6 +98,7 @@ namespace EventStore.Projections.Core
                 coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
                 coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_ioDispatcher.Writer);
                 coreInputBus.Subscribe<ClientMessage.DeleteStreamCompleted>(_ioDispatcher.StreamDeleter);
+                coreInputBus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher.Awaker);
                 coreInputBus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher);
                 coreInputBus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_projectionCoreService);

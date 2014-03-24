@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
@@ -150,7 +151,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var readEventsForward = CreateReadEventsMessage();
             if (_eof)
                 _publisher.Publish(
-                    new AwakeReaderServiceMessage.SubscribeAwake(
+                    new AwakeServiceMessage.SubscribeAwake(
                         new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
             else
