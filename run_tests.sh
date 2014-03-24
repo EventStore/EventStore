@@ -36,7 +36,7 @@ fi
 
 LD_LIBRARY_PATH=bin/eventstore/$CONFIGURATION/anycpu/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/eventstore.tests/$CONFIGURATION/anycpu/EventStore.Core.Tests.dll $EXCLUDE -out foo -xml=inter
 rc=$?
-xsltproc src/EventStore/libs/results.xslt inter
+xsltproc tools/nunit-2.6.3/results.xslt inter
 rm inter
 if [[ $rc != 0 ]] ; then
     exit $rc
