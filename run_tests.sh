@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 while getopts "c:m:x:p" option
 do
     case $option in
@@ -35,7 +34,13 @@ if [[ $MONOPATH == "" ]]; then
     MONOPATH="/opt/mono"
 fi
 
-LD_LIBRARY_PATH=bin/eventstore/$CONFIGURATION/anycpu/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/eventstore.tests/$CONFIGURATION/anycpu/EventStore.Core.Tests.dll $EXCLUDE 
+LD_LIBRARY_PATH=bin/eventstore/$CONFIGURATION/anycpu/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/eventstore.tests/$CONFIGURATION/anycpu/EventStore.Core.Tests.dll $EXCLUDE -out foo -xml=inter
+rc=$?
+xsltproc src/EventStore/libs/results.xslt inter
+rm inter
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
 
 if [[ $RUNPROJECTIONS == "TRUE" ]]; then
     LD_LIBRARY_PATH=bin/eventstore/$CONFIGURATION/anycpu/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/eventstore.tests/$CONFIGURATION/anycpu/EventStore.Projections.Core.Tests.dll $EXCLUDE
