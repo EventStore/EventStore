@@ -115,7 +115,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly bool _additionalCommitChecks;
         private long _persistedPreparePos = -1;
         private long _persistedCommitPos = -1;
-        private bool _indexRebuild = true;
         private long _lastCommitPosition = -1;
 
         public IndexWriter(IPublisher bus, ITableIndex tableIndex, IHasher hasher, IIndexBackend indexBackend, IIndexReader indexReader, bool additionalCommitChecks)
@@ -151,7 +150,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             Log.Info("ReadIndex building...");
 
-            _indexRebuild = true;
             using (var reader = _indexBackend.BorrowReader())
             {
                 var startPosition = Math.Max(0, _persistedCommitPos);
@@ -201,8 +199,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 _bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
                 _indexBackend.SetSystemSettings(GetSystemSettings());
             }
-
-            _indexRebuild = false;
         }
 
         public void Dispose()
@@ -227,7 +223,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             int eventNumber = EventNumber.Invalid;
 
             var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
-            if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
+            if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !doingInit))
                 return eventNumber;  // already committed
 
             string streamId = null;
@@ -330,7 +326,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (prepare.EventStreamId != streamId) 
                     throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
 
-                if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
+                if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !doingInit))
                     continue;  // already committed
 
                 eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
