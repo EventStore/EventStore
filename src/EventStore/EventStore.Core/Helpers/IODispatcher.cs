@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -25,7 +26,8 @@ namespace EventStore.Core.Helpers
 
         public readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> Writer;
 
-        public readonly RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted> StreamDeleter;
+        public readonly RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>
+            StreamDeleter;
 
         public IODispatcher(IPublisher publisher, IEnvelope envelope)
         {
@@ -34,18 +36,30 @@ namespace EventStore.Core.Helpers
             ForwardReader =
                 new RequestResponseDispatcher
                     <ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>(
-                    publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
+                    publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    envelope);
             BackwardReader =
                 new RequestResponseDispatcher
                     <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                    publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
+                    publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    envelope);
             Writer =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
+                    publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    envelope);
 
             StreamDeleter =
                 new RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>(
-                    publisher, v => v.CorrelationId, v => v.CorrelationId, envelope);
+                    publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    envelope);
         }
 
         public Guid ReadBackward(
@@ -53,10 +67,20 @@ namespace EventStore.Core.Helpers
             Action<ClientMessage.ReadStreamEventsBackwardCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            return BackwardReader.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
-                    corrId, corrId, BackwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, false, null, principal),
-                action);
+            return
+                BackwardReader.Publish(
+                    new ClientMessage.ReadStreamEventsBackward(
+                        corrId,
+                        corrId,
+                        BackwardReader.Envelope,
+                        streamId,
+                        fromEventNumber,
+                        maxCount,
+                        resolveLinks,
+                        false,
+                        null,
+                        principal),
+                    action);
         }
 
         public Guid ReadForward(
@@ -64,10 +88,20 @@ namespace EventStore.Core.Helpers
             Action<ClientMessage.ReadStreamEventsForwardCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            return ForwardReader.Publish(
-                new ClientMessage.ReadStreamEventsForward(
-                    corrId, corrId, ForwardReader.Envelope, streamId, fromEventNumber, maxCount, resolveLinks, false, null, principal),
-                action);
+            return
+                ForwardReader.Publish(
+                    new ClientMessage.ReadStreamEventsForward(
+                        corrId,
+                        corrId,
+                        ForwardReader.Envelope,
+                        streamId,
+                        fromEventNumber,
+                        maxCount,
+                        resolveLinks,
+                        false,
+                        null,
+                        principal),
+                    action);
         }
 
         public void ConfigureStreamAndWriteEvents(
@@ -78,44 +112,65 @@ namespace EventStore.Core.Helpers
                 WriteEvents(streamId, expectedVersion, events, principal, action);
             else
                 ReadBackward(
-                    streamId, -1, 1, false, principal, completed =>
+                    streamId,
+                    -1,
+                    1,
+                    false,
+                    principal,
+                    completed =>
+                    {
+                        switch (completed.Result)
                         {
-                            switch (completed.Result)
-                            {
-                                case ReadStreamResult.Success:
-                                case ReadStreamResult.NoStream:
-                                    if (completed.Events != null && completed.Events.Length > 0)
-                                        WriteEvents(streamId, expectedVersion, events, principal, action);
-                                    else
-                                        UpdateStreamAcl(
-                                            streamId, ExpectedVersion.Any, principal, streamMetadata.Value,
-                                            metaCompleted =>
+                            case ReadStreamResult.Success:
+                            case ReadStreamResult.NoStream:
+                                if (completed.Events != null && completed.Events.Length > 0)
+                                    WriteEvents(streamId, expectedVersion, events, principal, action);
+                                else
+                                    UpdateStreamAcl(
+                                        streamId,
+                                        ExpectedVersion.Any,
+                                        principal,
+                                        streamMetadata.Value,
+                                        metaCompleted =>
                                             WriteEvents(streamId, expectedVersion, events, principal, action));
-                                    break;
-                                case ReadStreamResult.AccessDenied:
-                                    action(
-                                        new ClientMessage.WriteEventsCompleted(
-                                            Guid.NewGuid(), OperationResult.AccessDenied, ""));
-                                    break;
-                                case ReadStreamResult.StreamDeleted:
-                                    action(
-                                        new ClientMessage.WriteEventsCompleted(
-                                            Guid.NewGuid(), OperationResult.StreamDeleted, ""));
-                                    break;
-                                default:
-                                    throw new NotSupportedException();
-                            }
-                        });
+                                break;
+                            case ReadStreamResult.AccessDenied:
+                                action(
+                                    new ClientMessage.WriteEventsCompleted(
+                                        Guid.NewGuid(),
+                                        OperationResult.AccessDenied,
+                                        ""));
+                                break;
+                            case ReadStreamResult.StreamDeleted:
+                                action(
+                                    new ClientMessage.WriteEventsCompleted(
+                                        Guid.NewGuid(),
+                                        OperationResult.StreamDeleted,
+                                        ""));
+                                break;
+                            default:
+                                throw new NotSupportedException();
+                        }
+                    });
         }
 
         public Guid WriteEvents(
-            string streamId, int expectedVersion, Event[] events, IPrincipal principal, 
+            string streamId, int expectedVersion, Event[] events, IPrincipal principal,
             Action<ClientMessage.WriteEventsCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            return Writer.Publish(
-                new ClientMessage.WriteEvents(corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, events, principal),
-                action);
+            return
+                Writer.Publish(
+                    new ClientMessage.WriteEvents(
+                        corrId,
+                        corrId,
+                        Writer.Envelope,
+                        false,
+                        streamId,
+                        expectedVersion,
+                        events,
+                        principal),
+                    action);
         }
 
         public Guid WriteEvent(
@@ -123,19 +178,36 @@ namespace EventStore.Core.Helpers
             Action<ClientMessage.WriteEventsCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            return Writer.Publish(
-                new ClientMessage.WriteEvents(
-                    corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, new[] {@event}, principal),
-                action);
+            return
+                Writer.Publish(
+                    new ClientMessage.WriteEvents(
+                        corrId,
+                        corrId,
+                        Writer.Envelope,
+                        false,
+                        streamId,
+                        expectedVersion,
+                        new[] {@event},
+                        principal),
+                    action);
         }
 
         public void DeleteStream(
-            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal, 
+            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal,
             Action<ClientMessage.DeleteStreamCompleted> action)
         {
             var corrId = Guid.NewGuid();
             StreamDeleter.Publish(
-                new ClientMessage.DeleteStream(corrId, corrId, Writer.Envelope, false, streamId, expectedVersion, hardDelete, principal), action);
+                new ClientMessage.DeleteStream(
+                    corrId,
+                    corrId,
+                    Writer.Envelope,
+                    false,
+                    streamId,
+                    expectedVersion,
+                    hardDelete,
+                    principal),
+                action);
         }
 
         public void UpdateStreamAcl(
@@ -143,15 +215,20 @@ namespace EventStore.Core.Helpers
             Action<ClientMessage.WriteEventsCompleted> completed)
         {
             WriteEvents(
-                SystemStreams.MetastreamOf(streamId), expectedVersion,
+                SystemStreams.MetastreamOf(streamId),
+                expectedVersion,
                 new[] {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata.ToJsonBytes(), null)},
-                principal, completed);
+                principal,
+                completed);
         }
 
         public void Delay(TimeSpan delay, Action action)
         {
             _publisher.Publish(
-                TimerMessage.Schedule.Create(delay, _inputQueueEnvelope, new IODispatcherDelayedMessage(_selfId, action)));
+                TimerMessage.Schedule.Create(
+                    delay,
+                    _inputQueueEnvelope,
+                    new IODispatcherDelayedMessage(_selfId, action)));
         }
 
         public void Handle(IODispatcherDelayedMessage message)
@@ -159,6 +236,157 @@ namespace EventStore.Core.Helpers
             if (_selfId != message.CorrelationId)
                 return;
             message.Action();
+        }
+
+
+        public delegate void Step(IEnumerator<Step> nextSteps);
+
+        public void Perform(IEnumerable<Step> actions)
+        {
+            var actionsEnumerator = actions.GetEnumerator();
+            Perform(actionsEnumerator);
+        }
+
+        private void Perform(IEnumerator<Step> actions)
+        {
+            if (actions.MoveNext())
+            {
+                var action = actions.Current;
+                action(actions);
+            }
+        }
+
+        public Step BeginReadForward(
+            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
+            Action<ClientMessage.ReadStreamEventsForwardCompleted> handler)
+        {
+            return steps => ReadForward(
+                streamId,
+                fromEventNumber,
+                maxCount,
+                resolveLinks,
+                principal,
+                response =>
+                {
+                    handler(response);
+                    Perform(steps);
+                });
+        }
+
+        public Step BeginReadBackward(
+            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
+            Action<ClientMessage.ReadStreamEventsBackwardCompleted> handler)
+        {
+            return steps => ReadBackward(
+                streamId,
+                fromEventNumber,
+                maxCount,
+                resolveLinks,
+                principal,
+                response =>
+                {
+                    handler(response);
+                    Perform(steps);
+                });
+        }
+
+        public Step BeginWriteEvents(
+            string streamId, int expectedVersion, IPrincipal principal, Event[] events,
+            Action<ClientMessage.WriteEventsCompleted> handler)
+        {
+            return steps => WriteEventsWithRetry(streamId, expectedVersion, principal, events, handler, steps);
+        }
+
+        public Step BeginDeleteStream(
+            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal,
+            Action<ClientMessage.DeleteStreamCompleted> handler)
+        {
+              return steps => DeleteStreamWithRetry(streamId, expectedVersion, hardDelete, principal, handler, steps);
+        }
+
+        private void WriteEventsWithRetry(
+            string streamId, int expectedVersion, IPrincipal principal, Event[] events,
+            Action<ClientMessage.WriteEventsCompleted> handler, IEnumerator<Step> steps)
+        {
+            PerformWithRetry(
+                handler,
+                steps,
+                TimeSpan.FromMilliseconds(100),
+                action =>
+                    WriteEvents(
+                        streamId,
+                        expectedVersion,
+                        events,
+                        principal,
+                        response => action(response, response.Result)));
+        }
+
+
+        private void DeleteStreamWithRetry(
+            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal,
+            Action<ClientMessage.DeleteStreamCompleted> handler, IEnumerator<Step> steps)
+        {
+            PerformWithRetry(
+                handler,
+                steps,
+                TimeSpan.FromMilliseconds(100),
+                action =>
+                    DeleteStream(
+                        streamId,
+                        expectedVersion,
+                        hardDelete,
+                        principal,
+                        response => action(response, response.Result)));
+        }
+
+        private void PerformWithRetry<T>(
+            Action<T> handler, IEnumerator<Step> steps, TimeSpan timeout, Action<Action<T, OperationResult>> action)
+        {
+            action(
+                (response, result) =>
+                {
+                    if (ShouldRetry(result))
+                    {
+                        Delay(
+                            timeout,
+                            () =>
+                            {
+                                if (timeout < TimeSpan.FromSeconds(10))
+                                    timeout += timeout;
+                                PerformWithRetry(handler, steps, timeout, action);
+                            });
+                    }
+                    else
+                    {
+                        handler(response);
+                        Perform(steps);
+                    }
+                });
+        }
+
+        private bool ShouldRetry(OperationResult result)
+        {
+            switch (result)
+            {
+                case OperationResult.CommitTimeout:
+                case OperationResult.ForwardTimeout:
+                case OperationResult.PrepareTimeout:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+
+        public Step BeginDelay(TimeSpan timeout, Action handler)
+        {
+            return steps => Delay(
+                timeout,
+                () =>
+                {
+                    handler();
+                    Perform(steps);
+                });
         }
     }
 }

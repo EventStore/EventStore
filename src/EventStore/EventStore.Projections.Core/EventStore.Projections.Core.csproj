@@ -365,6 +365,7 @@
     <Content Include="Prelude\Projections.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Services\Management\TODO.txt" />
     <Content Include="web-resources\js\es.menu.part.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

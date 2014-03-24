@@ -1,0 +1,6 @@
+﻿0. projection workers should listen to a master notification stream
+1. register projection workers on a master registration stream
+2. de-register projection workers on the master registration stream
+3. projection manager listen to registrations
+4. on projection worker set changed issue projection wroker set updated event on the master notification stream
+5. 
