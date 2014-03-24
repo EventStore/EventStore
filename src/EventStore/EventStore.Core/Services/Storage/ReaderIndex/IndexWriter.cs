@@ -172,14 +172,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     commitedPrepares.Add(prepare);
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                                 {
-                                    Commit(commitedPrepares, result.Eof, true);
+                                    Commit(commitedPrepares, result.Eof, true, 0);
                                     commitedPrepares.Clear();
                                 }
                             }
                             break;
                         }
                         case LogRecordType.Commit:
-                            Commit((CommitLogRecord) result.LogRecord, result.Eof, true);
+                        var commitRecord = (CommitLogRecord) result.LogRecord;
+                            Commit(commitRecord, result.Eof, true);
                             break;
                         case LogRecordType.System:
                             break;
@@ -219,91 +220,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         }
 
         private int Commit(CommitLogRecord commit, bool isTfEof, bool doingInit)
-        {
+        {            
             int eventNumber = EventNumber.Invalid;
 
             var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
             if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !doingInit))
                 return eventNumber;  // already committed
-
-            string streamId = null;
-            uint streamHash = 0;
-            var indexEntries = new List<IndexEntry>();
-            var prepares = new List<PrepareLogRecord>();
-
-            foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
-            {
-                if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
-                    continue;
-
-                if (streamId == null)
-                {
-                    streamId = prepare.EventStreamId;
-                    streamHash = _hasher.Hash(prepare.EventStreamId);
-                }
-                else
-                {
-                    if (prepare.EventStreamId != streamId)
-                        throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
-                }
-                eventNumber = prepare.Flags.HasAllOf(PrepareFlags.StreamDelete)
-                                      ? EventNumber.DeletedStream
-                                      : commit.FirstEventNumber + prepare.TransactionOffset;
-
-                if (new TFPos(commit.LogPosition, prepare.LogPosition) > new TFPos(_persistedCommitPos, _persistedPreparePos))
-                {
-                    //TODO GFY FIX THIS UP A BIT THERE ARE BETTER WAYS OF DOING THIS
-                    if(doingInit) {
-                        _committedEvents.PutRecord(prepare.EventId, new EventInfo(streamId, eventNumber), throwOnDuplicate: false);
-                    }
-                    indexEntries.Add(new IndexEntry(streamHash, eventNumber, prepare.LogPosition));
-                    prepares.Add(prepare);
-                }
-            }
-
-            if (indexEntries.Count > 0)
-            {
-                if (_additionalCommitChecks)
-                {
-                    CheckStreamVersion(streamId, indexEntries[0].Version, commit);
-                    CheckDuplicateEvents(streamHash, commit, indexEntries, prepares);
-                }
-                _tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
-            }
-
-            if (eventNumber != EventNumber.Invalid)
-            {
-                if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
-
-                _indexBackend.SetStreamLastEventNumber(streamId, eventNumber);
-                if (SystemStreams.IsMetastream(streamId))
-                    _indexBackend.SetStreamMetadata(SystemStreams.OriginalStreamOf(streamId), null); // invalidate cached metadata
-
-                if (streamId == SystemStreams.SettingsStream)
-                    _indexBackend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
-            }
-
-            var newLastCommitPosition = Math.Max(commit.LogPosition, lastCommitPosition);
-            if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
-                throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
-
-            for (int i = 0, n = indexEntries.Count; i < n; ++i)
-            {
-                _bus.Publish(
-                    new StorageMessage.EventCommitted(
-                        commit.LogPosition,
-                        new EventRecord(indexEntries[i].Version, prepares[i]),
-                        isTfEof && i == n - 1));
-            }
-
-            return eventNumber;
+            var shit = GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition).ToList();
+            return Commit(shit, isTfEof, doingInit, commit.FirstEventNumber);
         }
 
         public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof) {
-            return Commit(commitedPrepares, isTfEof, false);
+            return Commit(commitedPrepares, isTfEof, false, 0);
         }
 
-        private int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool doingInit)
+        private int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool doingInit, int commitOffset)
         {
             int eventNumber = EventNumber.Invalid;
 
@@ -329,8 +260,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !doingInit))
                     continue;  // already committed
 
-                eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
-
+                if(prepare.Flags.HasAllOf(PrepareFlags.IsCommitted)) {
+                    eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
+                }
+                else {
+                    eventNumber = prepare.Flags.HasAllOf(PrepareFlags.StreamDelete)
+                      ? EventNumber.DeletedStream
+                      : commitOffset + prepare.TransactionOffset;
+                }
                 if (new TFPos(prepare.LogPosition, prepare.LogPosition) > new TFPos(_persistedCommitPos, _persistedPreparePos))
                 {
                     //TODO GFY FIX THIS UP A BIT THERE ARE BETTER WAYS OF DOING THIS
