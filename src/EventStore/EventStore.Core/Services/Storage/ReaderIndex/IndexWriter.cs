@@ -49,8 +49,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         long LastCommitPosition { get; }
         void Init(long buildToPosition);
         void Dispose();
-        int Commit(CommitLogRecord commit, bool isTfEof, bool isInit);
-        int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool isInit);
+        int Commit(CommitLogRecord commit, bool isTfEof);
+        int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof);
     }
 
     public interface IIndexWriter
@@ -174,14 +174,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     commitedPrepares.Add(prepare);
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                                 {
-                                    Commit(commitedPrepares, result.Eof, false);
+                                    Commit(commitedPrepares, result.Eof, true);
                                     commitedPrepares.Clear();
                                 }
                             }
                             break;
                         }
                         case LogRecordType.Commit:
-                            Commit((CommitLogRecord) result.LogRecord, result.Eof, false);
+                            Commit((CommitLogRecord) result.LogRecord, result.Eof, true);
                             break;
                         case LogRecordType.System:
                             break;
@@ -218,7 +218,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public int Commit(CommitLogRecord commit, bool isTfEof, bool doingInit)
+        public int Commit(CommitLogRecord commit, bool isTfEof) {
+            return Commit(commit, isTfEof, false);
+        }
+
+        private int Commit(CommitLogRecord commit, bool isTfEof, bool doingInit)
         {
             int eventNumber = EventNumber.Invalid;
 
@@ -299,7 +303,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return eventNumber;
         }
 
-        public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool doingInit)
+        public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof) {
+            return Commit(commitedPrepares, isTfEof, false);
+        }
+
+        private int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool doingInit)
         {
             int eventNumber = EventNumber.Invalid;
 

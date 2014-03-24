@@ -262,7 +262,7 @@ namespace EventStore.Core.Services.Storage
             CommitPendingTransaction(_transaction, isTfEof);
 
             var firstEventNumber = record.FirstEventNumber;
-            var lastEventNumber = _indexCommitter.Commit(record, isTfEof, false);
+            var lastEventNumber = _indexCommitter.Commit(record, isTfEof);
             if (lastEventNumber == EventNumber.Invalid)
                 lastEventNumber = record.FirstEventNumber - 1;
             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition, record.TransactionPosition, firstEventNumber, lastEventNumber));
@@ -287,7 +287,7 @@ namespace EventStore.Core.Services.Storage
         {
             if (transaction.Count > 0)
             {
-                _indexCommitter.Commit(_transaction, isTfEof, false);
+                _indexCommitter.Commit(_transaction, isTfEof);
                 _transaction.Clear();
             }
         }
