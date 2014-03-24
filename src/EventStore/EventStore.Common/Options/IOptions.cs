@@ -34,7 +34,7 @@ namespace EventStore.Common.Options
         string LogsDir { get; }
         string[] Defines { get; }
         bool Force { get; }
-        void Parse(params string[] args);
+        bool Parse(params string[] args);
         string DumpOptions();
         string GetUsage();
     }

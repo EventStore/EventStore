@@ -26,8 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Net;
 using EventStore.Common.Options;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 
 namespace EventStore.SingleNode
@@ -74,6 +76,8 @@ namespace EventStore.SingleNode
 
         public bool Force { get { return _helper.Get(() => Force); } }
 
+        public bool UnsafeDisableFlushToDisk { get { return _helper.Get(() => UnsafeDisableFlushToDisk); } }
+
         private readonly OptsHelper _helper;
 
         public SingleNodeOptions()
@@ -114,15 +118,17 @@ namespace EventStore.SingleNode
             _helper.RegisterRef(() => CertificateFile, Opts.CertificateFileCmd, Opts.CertificateFileEnv, Opts.CertificateFileJson, Opts.CertificateFileDefault, Opts.CertificateFileDescr);
             _helper.RegisterRef(() => CertificatePassword, Opts.CertificatePasswordCmd, Opts.CertificatePasswordEnv, Opts.CertificatePasswordJson, Opts.CertificatePasswordDefault, Opts.CertificatePasswordDescr);
 
+            _helper.Register(() => UnsafeDisableFlushToDisk, Opts.UnsafeDisableFlushToDiskCmd, Opts.UnsafeDisableFlushToDiskEnv, Opts.PrepareTimeoutMsJson, Opts.UnsafeDisableFlushToDiskDefault, Opts.UnsafeDisableFlushToDiskDescr);
             _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
             _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
             _helper.Register(() => Force, Opts.ForceCmd, Opts.ForceEnv, Opts.ForceJson, false, "Force usage on non-recommended environments such as Boehm GC");
             _helper.Register(() => DisableScavengeMerging, Opts.DisableScavengeMergeCmd, Opts.DisableScavengeMergeEnv, Opts.DisableScavengeMergeJson, Opts.DisableScavengeMergeDefault, Opts.DisableScavengeMergeDescr);
         }
 
-        public void Parse(params string[] args)
+        public bool Parse(params string[] args)
         {
-            _helper.Parse(args);
+            var result = _helper.Parse(args);
+            return result.IsEmpty();
         }
 
         public string DumpOptions()

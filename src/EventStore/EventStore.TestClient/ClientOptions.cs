@@ -80,9 +80,10 @@ namespace EventStore.TestClient
             return "Usage: EventStore.Client -i 127.0.0.1 -t 1113 -h 2113\n\n" + _helper.GetUsage();
         }
 
-        public void Parse(params string[] args)
+        public bool Parse(params string[] args)
         {
             Command = _helper.Parse(args);
+            return true;
         }
 
         public string DumpOptions()

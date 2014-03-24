@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
     [TestFixture]
     public class when_truncating_database: SpecificationWithDirectoryPerTestFixture
     {
-        [Test]
+        [Test, Category("LongRunning")]
         public void everything_should_go_fine()
         {
             var miniNode = new MiniNode(PathName, inMemDb: false);

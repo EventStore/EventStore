@@ -676,8 +676,8 @@ namespace EventStore.Projections.Core.Services.Management
             if (_initializeSystemProjections)
             {
                 CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, typeof (IndexStreams), "");
-                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, typeof (CategorizeStreamByPath), "-");
-                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, typeof (CategorizeEventsByStreamPath), "-");
+                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection, typeof (CategorizeStreamByPath), "first\r\n-");
+                CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection, typeof (CategorizeEventsByStreamPath), "first\r\n-");
                 CreateSystemProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, typeof (IndexEventsByEventType), "");
             }
         }

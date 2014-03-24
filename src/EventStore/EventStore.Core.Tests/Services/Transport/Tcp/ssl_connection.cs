@@ -40,7 +40,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class ssl_connections
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ssl_connections>();

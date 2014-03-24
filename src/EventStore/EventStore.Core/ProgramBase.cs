@@ -64,8 +64,8 @@ namespace EventStore.Core
             {
                 Application.RegisterExitAction(Exit);
 
-                options.Parse(args);
-                if (options.ShowHelp)
+                var parsed = options.Parse(args);
+                if (!parsed || options.ShowHelp)
                 {
                     Console.WriteLine("Options:");
                     Console.WriteLine(options.GetUsage());

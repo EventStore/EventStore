@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Helpers
             IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
             ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
             bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-            bool inMemDb = true)
+            bool inMemDb = true, bool disableFlushToDisk = false)
         {
 //            if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -96,6 +96,7 @@ namespace EventStore.Core.Tests.Helpers
                     "mini-cluster-node-db-{0}-{1}-{2}", externalTcp.Port, externalTcpSec.Port, externalHttp.Port));
 
             Directory.CreateDirectory(_dbPath);
+            FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
             Db =
                 new TFChunkDb(
                     CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize, inMemDb));
@@ -114,7 +115,8 @@ namespace EventStore.Core.Tests.Helpers
                 new[] {ExternalHttpEndPoint.ToHttpUrl()}, enableTrustedAuth, ssl_connections.GetCertificate(), 1, false,
                 "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
                 false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
-                new InternalAuthenticationProviderFactory(), true, true, true, true);
+                new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, adminOnPublic: true, 
+                statsOnPublic: true, gossipOnPublic: true);
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"

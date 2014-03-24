@@ -39,8 +39,8 @@ namespace EventStore.Common.Utils
     public static class FileStreamExtensions
     {
         private static readonly ILogger Log = LogManager.GetLogger("FileStreamExtensions");
-        private static readonly Action<FileStream> FlushSafe;
-        private static readonly Func<FileStream, SafeFileHandle> GetFileHandle;
+        private static Action<FileStream> FlushSafe;
+        private static Func<FileStream, SafeFileHandle> GetFileHandle;
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -52,6 +52,23 @@ namespace EventStore.Common.Utils
 
         static FileStreamExtensions()
         {
+            ConfigureFlush(disableFlushToDisk: false);
+        }
+
+        public static void FlushToDisk(this FileStream fs)
+        {
+            FlushSafe(fs);
+        }
+
+        public static void ConfigureFlush(bool disableFlushToDisk)
+        {
+            if (disableFlushToDisk)
+            {
+                Log.Info("FlushToDisk: DISABLED");
+                FlushSafe = f => f.Flush(flushToDisk: false);
+                return;
+            }
+
             if (Runtime.IsMono)
                 FlushSafe = f => f.Flush(flushToDisk: true);
             else
@@ -74,11 +91,6 @@ namespace EventStore.Common.Utils
                     FlushSafe = f => f.Flush(flushToDisk: true);
                 }
             }
-        }
-
-        public static void FlushToDisk(this FileStream fs)
-        {
-            FlushSafe(fs);
         }
     }
 }
