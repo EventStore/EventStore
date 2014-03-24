@@ -19,6 +19,7 @@ namespace EventStore.Projections.Core
     {
         private readonly RunProjections _runProjections;
         private readonly ProjectionCoreService _projectionCoreService;
+        private readonly ProjectionCoreServiceCommandReader _projectionCoreServiceCommandReader;
         private readonly InMemoryBus _coreOutput;
         private readonly EventReaderCoreService _eventReaderCoreService;
 
@@ -29,7 +30,11 @@ namespace EventStore.Projections.Core
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
-        public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue, ITimeProvider timeProvider, RunProjections runProjections)
+        public ProjectionWorkerNode(
+            TFChunkDb db,
+            QueuedHandler inputQueue,
+            ITimeProvider timeProvider,
+            RunProjections runProjections)
         {
             _runProjections = runProjections;
             Ensure.NotNull(db, "db");
@@ -37,18 +42,27 @@ namespace EventStore.Projections.Core
             _coreOutput = new InMemoryBus("Core Output");
 
             IPublisher publisher = CoreOutput;
-            _subscriptionDispatcher =
-                new ReaderSubscriptionDispatcher(publisher);
+            _subscriptionDispatcher = new ReaderSubscriptionDispatcher(publisher);
             _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(publisher);
 
             _ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
             _eventReaderCoreService = new EventReaderCoreService(
-                publisher, _ioDispatcher, 10, db.Config.WriterCheckpoint, runHeadingReader: runProjections >= RunProjections.System);
+                publisher,
+                _ioDispatcher,
+                10,
+                db.Config.WriterCheckpoint,
+                runHeadingReader: runProjections >= RunProjections.System);
+
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
             if (runProjections >= RunProjections.System)
             {
+                _projectionCoreServiceCommandReader = new ProjectionCoreServiceCommandReader(_ioDispatcher);
                 _projectionCoreService = new ProjectionCoreService(
-                    inputQueue, publisher, _subscriptionDispatcher, timeProvider, _ioDispatcher,
+                    inputQueue,
+                    publisher,
+                    _subscriptionDispatcher,
+                    timeProvider,
+                    _ioDispatcher,
                     _spoolProcessingResponseDispatcher);
             }
         }
@@ -81,6 +95,8 @@ namespace EventStore.Projections.Core
 
                 coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_projectionCoreService);
                 coreInputBus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_projectionCoreService);
+                coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_projectionCoreServiceCommandReader);
+                coreInputBus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_projectionCoreServiceCommandReader);
                 coreInputBus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_projectionCoreService);

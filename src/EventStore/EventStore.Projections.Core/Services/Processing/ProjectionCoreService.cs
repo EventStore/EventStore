@@ -3,14 +3,9 @@ using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -75,20 +70,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
-            _ioDispatcher.Perform(PerformStartCore());
-        }
-
-        private IEnumerable<IODispatcher.Step> PerformStartCore()
-        {
-            var events = new[] {new Event(Guid.NewGuid(), "$projection-worker-started", true, "{}", null)};
-            ClientMessage.WriteEventsCompleted response = null;
-            yield return
-                _ioDispatcher.BeginWriteEvents(
-                    "$projections-master",
-                    ExpectedVersion.Any,
-                    SystemAccount.Principal,
-                    events,
-                    r => response = r);
         }
 
         public void Handle(ProjectionCoreServiceMessage.StopCore message)

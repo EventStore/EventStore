@@ -221,6 +221,19 @@ namespace EventStore.Core.Helpers
                 action);
         }
 
+        public void SubscribeAwake(string streamId, TFPos from, Action<IODispatcherDelayedMessage> action)
+        {
+            var corrId = Guid.NewGuid();
+            Awaker.Publish(
+                new AwakeServiceMessage.SubscribeAwake(
+                    Awaker.Envelope,
+                    corrId,
+                    streamId,
+                    from,
+                    new IODispatcherDelayedMessage(corrId, null)),
+                action);
+        }
+
         public void UpdateStreamAcl(
             string streamId, int expectedVersion, IPrincipal principal, StreamMetadata metadata,
             Action<ClientMessage.WriteEventsCompleted> completed)
@@ -313,6 +326,18 @@ namespace EventStore.Core.Helpers
             Action<ClientMessage.DeleteStreamCompleted> handler)
         {
               return steps => DeleteStreamWithRetry(streamId, expectedVersion, hardDelete, principal, handler, steps);
+        }
+
+        public Step BeginSubscribeAwake(string streamId, TFPos from, Action<IODispatcherDelayedMessage> handler)
+        {
+            return steps => SubscribeAwake(
+                streamId,
+                from,
+                message =>
+                {
+                    handler(message);
+                    Perform(steps);
+                });
         }
 
         private void WriteEventsWithRetry(

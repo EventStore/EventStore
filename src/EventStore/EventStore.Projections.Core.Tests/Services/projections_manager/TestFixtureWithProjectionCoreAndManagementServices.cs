@@ -121,6 +121,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe(spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
 
             var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
+            var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(ioDispatcher);
             var coreService = new ProjectionCoreService(
                 inputQueue, output, _subscriptionDispatcher, _timeProvider, ioDispatcher, spoolProcessingResponseDispatcher);
 
@@ -148,6 +149,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
             bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(coreService);
             bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(coreService);
+            bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(coreServiceCommandReader);
+            bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(coreServiceCommandReader);
             bus.Subscribe<ReaderCoreServiceMessage.StartReader>(readerService);
             bus.Subscribe<ReaderCoreServiceMessage.StopReader>(readerService);
             bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(coreService);

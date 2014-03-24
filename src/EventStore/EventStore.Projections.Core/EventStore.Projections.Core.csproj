@@ -252,6 +252,7 @@
     <Compile Include="Services\Processing\PreTaggedPositionTagger.cs" />
     <Compile Include="Services\Processing\ProcessingStrategySelector.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
+    <Compile Include="Services\Processing\ProjectionCoreServiceCommandReader.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\EventReaderCoreService.cs" />
     <Compile Include="Services\Processing\EventProcessingProjectionProcessingPhase.cs" />
