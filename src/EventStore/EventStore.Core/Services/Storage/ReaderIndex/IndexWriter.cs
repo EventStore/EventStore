@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public long CachedTransInfo { get { return Interlocked.Read(ref _cachedTransInfo); } }
         public long NotCachedTransInfo { get { return Interlocked.Read(ref _notCachedTransInfo); } }
 
-        private readonly IIndexBackend _indexBackend;
+        private readonly IIndexCache _indexCache;
         private readonly IIndexReader _indexReader;
 
         private readonly IStickyLRUCache<long, TransactionInfo> _transactionInfoCache = new StickyLRUCache<long, TransactionInfo>(ESConsts.TransactionMetadataCacheCapacity);
@@ -117,9 +117,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _persistedCommitPos = -1;
         private long _lastCommitPosition = -1;
 
-        public IndexWriter(IPublisher bus, ITableIndex tableIndex, IHasher hasher, IIndexBackend indexBackend, IIndexReader indexReader, bool additionalCommitChecks)
+        public IndexWriter(IPublisher bus, ITableIndex tableIndex, IHasher hasher, IIndexCache indexCache, IIndexReader indexReader, bool additionalCommitChecks)
         {
-            Ensure.NotNull(indexBackend, "indexBackend");
+            Ensure.NotNull(indexCache, "indexBackend");
             Ensure.NotNull(indexReader, "indexReader");
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(tableIndex, "tableIndex");
@@ -127,7 +127,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _bus = bus;
             _tableIndex = tableIndex;
             _hasher = hasher;
-            _indexBackend = indexBackend;
+            _indexCache = indexCache;
             _indexReader = indexReader;
             _additionalCommitChecks = additionalCommitChecks;
         }
@@ -150,7 +150,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             Log.Info("ReadIndex building...");
 
-            using (var reader = _indexBackend.BorrowReader())
+            using (var reader = _indexCache.BorrowReader())
             {
                 var startPosition = Math.Max(0, _persistedCommitPos);
                 reader.Reposition(startPosition);
@@ -198,7 +198,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 }
                 Log.Debug("ReadIndex rebuilding done: total processed {0} records, time elapsed: {1}.", processed, DateTime.UtcNow - startTime);
                 _bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
-                _indexBackend.SetSystemSettings(GetSystemSettings());
+                _indexCache.SetSystemSettings(GetSystemSettings());
             }
         }
 
@@ -293,12 +293,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
 
-                _indexBackend.SetStreamLastEventNumber(streamId, eventNumber);
+                _indexCache.SetStreamLastEventNumber(streamId, eventNumber);
                 if (SystemStreams.IsMetastream(streamId))
-                    _indexBackend.SetStreamMetadata(SystemStreams.OriginalStreamOf(streamId), null); // invalidate cached metadata
+                    _indexCache.SetStreamMetadata(SystemStreams.OriginalStreamOf(streamId), null); // invalidate cached metadata
 
                 if (streamId == SystemStreams.SettingsStream)
-                    _indexBackend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
+                    _indexCache.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
             }
 
             var newLastCommitPosition = Math.Max(lastPrepare.LogPosition, lastCommitPosition);
@@ -319,7 +319,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos, long commitPos)
         {
-            using (var reader = _indexBackend.BorrowReader())
+            using (var reader = _indexCache.BorrowReader())
             {
                 reader.Reposition(transactionPos);
 
@@ -360,7 +360,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private void CheckDuplicateEvents(uint streamHash, CommitLogRecord commit, IList<IndexEntry> indexEntries, IList<PrepareLogRecord> prepares)
         {
-            using (var reader = _indexBackend.BorrowReader())
+            using (var reader = _indexCache.BorrowReader())
             {
                 var entries = _tableIndex.GetRange(streamHash, indexEntries[0].Version, indexEntries[indexEntries.Count-1].Version);
                 foreach (var indexEntry in entries)
@@ -424,7 +424,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             string streamId;
             int expectedVersion;
-            using (var reader = _indexBackend.BorrowReader())
+            using (var reader = _indexCache.BorrowReader())
             {
                 try
                 {
@@ -607,7 +607,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private bool GetTransactionInfoUncached(long writerCheckpoint, long transactionId, out TransactionInfo transactionInfo)
         {
-            using (var reader = _indexBackend.BorrowReader())
+            using (var reader = _indexCache.BorrowReader())
             {
                 reader.Reposition(writerCheckpoint);
                 SeqReadResult result;
