@@ -26,26 +26,39 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using TestFixtureWithExistingEvents =
+    EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_core_service_command_reader
 {
-    [TestFixture]
-    public class when_starting : specification_with_projection_core_service_command_reader
+    public class specification_with_projection_core_service_command_reader : TestFixtureWithExistingEvents
     {
-        protected override IEnumerable<WhenStep> When()
+        private ProjectionCoreServiceCommandReader _commandReader;
+
+        protected override void Given()
         {
-            yield return new ProjectionCoreServiceMessage.StartCore();
+            base.Given();
+            AllWritesSucceed();
+
+            _commandReader = new ProjectionCoreServiceCommandReader(_ioDispatcher);
+
+            _bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_commandReader);
+            _bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_commandReader);
         }
 
-        [Test]
-        public void registers_core_service()
+        [SetUp]
+        public new void SetUp()
         {
-            AssertLastEventIs("$projections-$master", "$projection-worker-started");
-            AssertLastEventJson("$projections-$master", new {Id___exists = ""});
+            WhenLoop();
+        }
+
+        protected override ManualQueue GiveInputQueue()
+        {
+            return new ManualQueue(_bus, _timeProvider);
         }
     }
 }
