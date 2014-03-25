@@ -37,6 +37,13 @@ namespace EventStore.Core.Tests.Helpers
                         Assert.Fail("{0}/{1} found, but it is explicitly forbidden", path, propertyName);
                     }
                 }
+                else if (propertyName.EndsWith("___exists"))
+                {
+                    if (!response.TryGetValue(propertyName.Substring(0, propertyName.Length - "___exists".Length), out vv))
+                    {
+                        Assert.Fail("{0}/{1} not found, but it is explicitly required", path, propertyName);
+                    }
+                }
                 else if (!response.TryGetValue(propertyName, out vv))
                 {
                     Assert.Fail("{0}/{1} not found in '{2}'", path, propertyName, response.ToString());

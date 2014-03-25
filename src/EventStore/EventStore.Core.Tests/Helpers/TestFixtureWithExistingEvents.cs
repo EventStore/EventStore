@@ -11,6 +11,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helpers
@@ -537,6 +538,29 @@ namespace EventStore.Core.Tests.Helpers
             Assert.IsNotEmpty(events, message + "The stream is empty.");
             var last = events[events.Count - 1];
             Assert.AreEqual(data,Encoding.UTF8.GetString(last.Data));
+        }
+
+        public void AssertLastEventJson<T>(string streamId, T json, string message = null, int skip = 0)
+        {
+            message = message ?? string.Format("Invalid last event in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            events = events.Take(events.Count - skip).ToList();
+            Assert.IsNotEmpty(events, message + "The stream is empty.");
+            var last = events[events.Count - 1];
+            Assert.IsTrue((last.Flags & PrepareFlags.IsJson) != 0);
+            HelperExtensions.AssertJson(json, last.Data.ParseJson<JObject>());
+        }
+
+        public void AssertLastEventIs(string streamId, string eventType, string message = null, int skip = 0)
+        {
+            message = message ?? string.Format("Invalid last event in the '{0}' stream. ", streamId);
+            List<EventRecord> events;
+            Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
+            events = events.Take(events.Count - skip).ToList();
+            Assert.IsNotEmpty(events, message + "The stream is empty.");
+            var last = events[events.Count - 1];
+            Assert.AreEqual(eventType, last.EventType);
         }
 
         public void AssertStreamTail(string streamId, params string[] data)

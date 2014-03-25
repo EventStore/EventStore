@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,51 +26,38 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+
 using System;
-using System.Collections.Generic;
-using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
-using EventStore.Core.Services.UserManagement;
-using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.projection_core_service_command_reader
 {
-    public class ProjectionCoreServiceCommandReader
-        : IHandle<ProjectionCoreServiceMessage.StartCore>, IHandle<ProjectionCoreServiceMessage.StopCore>
+    [TestFixture]
+    public class when_creating : TestFixtureWithExistingEvents
     {
-        private readonly IODispatcher _ioDispatcher;
-        private readonly string _coreServiceId;
+        private ProjectionCoreServiceCommandReader _commandReader;
+        private Exception _exception;
 
-        public ProjectionCoreServiceCommandReader(IODispatcher ioDispatcher)
+        [SetUp]
+        public new void When()
         {
-            _coreServiceId = Guid.NewGuid().ToString("N");
-            _ioDispatcher = ioDispatcher;
+            _exception = null;
+            try
+            {
+                _commandReader = new ProjectionCoreServiceCommandReader(_ioDispatcher);
+            }
+            catch (Exception ex)
+            {
+                _exception = ex;
+            }
         }
 
-        public void Handle(ProjectionCoreServiceMessage.StartCore message)
+        [Test]
+        public void it_can_be_created()
         {
-            _ioDispatcher.Perform(PerformStartCore());
-        }
-
-        private IEnumerable<IODispatcher.Step> PerformStartCore()
-        {
-
-            var events = new[]
-            {new Event(Guid.NewGuid(), "$projection-worker-started", true, "{\"id\":\"" + _coreServiceId + "\"}", null)};
-            ClientMessage.WriteEventsCompleted response = null;
-            yield return
-                _ioDispatcher.BeginWriteEvents(
-                    "$projections-$master",
-                    ExpectedVersion.Any,
-                    SystemAccount.Principal,
-                    events,
-                    r => response = r);
-        }
-
-        public void Handle(ProjectionCoreServiceMessage.StopCore message)
-        {
+            Assert.IsNotNull(_commandReader);
         }
     }
 }
