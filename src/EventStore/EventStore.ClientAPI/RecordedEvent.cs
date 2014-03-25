@@ -45,17 +45,26 @@ namespace EventStore.ClientAPI
         public DateTime Created;
 
 #if DEBUG
+        /// <summary>
+        /// Shows the event data interpreted as a UTF8-encoded string.
+        /// 
+        /// NOTE: This is only available in DEBUG builds of the client API.
+        /// </summary>
         public string DebugDataView
         {
             get { return Encoding.UTF8.GetString(Data); }
         }
 
+        /// <summary>
+        /// Shows the event metadata interpreted as a UTF8-encoded string.
+        /// 
+        /// NOTE: This is only available in DEBUG builds of the client API.
+        /// </summary>
         public string DebugMetadataView
         {
             get { return Encoding.UTF8.GetString(Metadata); }
         }
 #endif
-
 
         internal RecordedEvent(ClientMessage.EventRecord systemRecord)
         {
