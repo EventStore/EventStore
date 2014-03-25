@@ -63,7 +63,6 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly ITimeProvider _timeProvider;
         private readonly RunProjections _runProjections;
         private readonly bool _initializeSystemProjections;
-        private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
         private readonly Dictionary<Guid, string> _projectionsMap;
 
@@ -107,7 +106,6 @@ namespace EventStore.Projections.Core.Services.Management
                     publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
 
 
-            _projectionStateHandlerFactory = new ProjectionStateHandlerFactory();
             _projections = new Dictionary<string, ManagedProjection>();
             _projectionsMap = new Dictionary<Guid, string>();
             _publishEnvelope = new PublishEnvelope(_inputQueue, crossThread: true);
@@ -755,7 +753,7 @@ namespace EventStore.Projections.Core.Services.Management
             var enabledToRun = IsProjectionEnabledToRunByMode(name);
             var managedProjectionInstance = new ManagedProjection(
                 queue, projectionCorrelationId, projectionId, name, enabledToRun, _logger, _writeDispatcher,
-                _readDispatcher, _inputQueue, _publisher, _projectionStateHandlerFactory, _timeProvider,
+                _readDispatcher, _inputQueue, _publisher, _timeProvider,
                 _timeoutSchedulers[queueIndex], isSlave, slaveResultsPublisher, slaveMasterCorrelationId);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);

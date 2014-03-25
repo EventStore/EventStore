@@ -9,26 +9,27 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCoreService : IHandle<ProjectionCoreServiceMessage.StartCore>,
-                                         IHandle<ProjectionCoreServiceMessage.StopCore>,
-                                         IHandle<ProjectionCoreServiceMessage.CoreTick>,
-                                         IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
-                                         IHandle<CoreProjectionManagementMessage.CreatePrepared>,
-                                         IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
-                                         IHandle<CoreProjectionManagementMessage.Dispose>,
-                                         IHandle<CoreProjectionManagementMessage.Start>,
-                                         IHandle<CoreProjectionManagementMessage.LoadStopped>,
-                                         IHandle<CoreProjectionManagementMessage.Stop>,
-                                         IHandle<CoreProjectionManagementMessage.Kill>,
-                                         IHandle<CoreProjectionManagementMessage.GetState>,
-                                        IHandle<CoreProjectionManagementMessage.GetResult>,
-                                         IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
-                                        IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
-                                        IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
-                                        IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
-                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>,
-                                        IHandle<CoreProjectionProcessingMessage.Failed>,
-                                        IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
+    public class ProjectionCoreService
+        : IHandle<ProjectionCoreServiceMessage.StartCore>,
+            IHandle<ProjectionCoreServiceMessage.StopCore>,
+            IHandle<ProjectionCoreServiceMessage.CoreTick>,
+            IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
+            IHandle<CoreProjectionManagementMessage.CreatePrepared>,
+            IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
+            IHandle<CoreProjectionManagementMessage.Dispose>,
+            IHandle<CoreProjectionManagementMessage.Start>,
+            IHandle<CoreProjectionManagementMessage.LoadStopped>,
+            IHandle<CoreProjectionManagementMessage.Stop>,
+            IHandle<CoreProjectionManagementMessage.Kill>,
+            IHandle<CoreProjectionManagementMessage.GetState>,
+            IHandle<CoreProjectionManagementMessage.GetResult>,
+            IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
+            IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>,
+            IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
+            IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>,
+            IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>,
+            IHandle<CoreProjectionProcessingMessage.RestartRequested>,
+            IHandle<CoreProjectionProcessingMessage.Failed>
                                         
 
     {

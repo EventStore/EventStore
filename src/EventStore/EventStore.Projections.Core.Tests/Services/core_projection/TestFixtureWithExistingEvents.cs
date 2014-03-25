@@ -7,7 +7,6 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
@@ -22,7 +21,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ReaderSubscriptionDispatcher
             _subscriptionDispatcher;
 
-        protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
         private bool _ticksAreHandledImmediately;
         protected AwakeService AwakeService;
 

@@ -1,7 +1,6 @@
 using System;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
@@ -10,8 +9,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         EventStore.Core.Tests.Helpers.TestFixtureWithReadWriteDispatchers
     {
         protected ReaderSubscriptionDispatcher _subscriptionDispatcher;
-
-        protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
 
         [SetUp]
         public void SetUp()

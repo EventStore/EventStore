@@ -67,7 +67,6 @@ namespace EventStore.Projections.Core.Services.Management
 
 
         private readonly ILogger _logger;
-        private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly ITimeProvider _timeProvider;
         private readonly ISingletonTimeoutScheduler _timeoutScheduler;
         private readonly IPublisher _coreQueue;
@@ -100,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Management
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            IPublisher inputQueue, IPublisher output, ProjectionStateHandlerFactory projectionStateHandlerFactory,
+            IPublisher inputQueue, IPublisher output, 
             ITimeProvider timeProvider, ISingletonTimeoutScheduler timeoutScheduler = null, bool isSlave = false,
             IPublisher slaveResultsPublisher = null, Guid slaveMasterCorrelationId = default(Guid))
         {
@@ -119,7 +118,6 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher = readDispatcher;
             _inputQueue = inputQueue;
             _output = output;
-            _projectionStateHandlerFactory = projectionStateHandlerFactory;
             _timeProvider = timeProvider;
             _timeoutScheduler = timeoutScheduler;
             _isSlave = isSlave;
@@ -650,7 +648,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             var config = CreateDefaultProjectionConfiguration();
             DisposeCoreProjection();
-            BeginCreateAndPrepare(_projectionStateHandlerFactory, config, onPrepared);
+            BeginCreateAndPrepare(config, onPrepared);
         }
 
         private void CreatePrepared(Action onPrepared)
@@ -713,7 +711,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private void BeginCreateAndPrepare(
-            ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config, Action onPrepared)
+            ProjectionConfig config, Action onPrepared)
         {
             _onPrepared = _onStopped = () =>
             {
@@ -722,7 +720,6 @@ namespace EventStore.Projections.Core.Services.Management
                 if (onPrepared != null)
                     onPrepared();
             };
-            if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
             if (config == null) throw new ArgumentNullException("config");
 
             //TODO: which states are allowed here?
@@ -742,7 +739,7 @@ namespace EventStore.Projections.Core.Services.Management
                 IProjectionStateHandler stateHandler = null;
                 try
                 {
-                    stateHandler = handlerFactory.Create(
+                    stateHandler = new ProjectionStateHandlerFactory().Create(
                         HandlerType, Query, logger: s => _logger.Trace(s),
                         cancelCallbackFactory:
                             _timeoutScheduler == null
