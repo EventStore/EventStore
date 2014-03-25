@@ -172,7 +172,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     commitedPrepares.Add(prepare);
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                                 {
-                                    Commit(commitedPrepares, result.Eof, true, 0);
+                                    Commit(commitedPrepares, result.Eof, true, 0, false);
                                     commitedPrepares.Clear();
                                 }
                             }
@@ -227,14 +227,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !doingInit))
                 return eventNumber;  // already committed
             var shit = GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition).ToList();
-            return Commit(shit, isTfEof, doingInit, commit.FirstEventNumber);
+            return Commit(shit, isTfEof, doingInit, commit.FirstEventNumber, true);
         }
 
         public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof) {
-            return Commit(commitedPrepares, isTfEof, false, 0);
+            return Commit(commitedPrepares, isTfEof, false, 0, false);
         }
 
-        private int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool doingInit, int commitOffset)
+        private int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool doingInit, int commitOffset, bool isCommit)
         {
             int eventNumber = EventNumber.Invalid;
 
@@ -251,17 +251,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             foreach (var prepare in commitedPrepares)
             {
-                var isCommit = prepare.Flags.HasAllOf(PrepareFlags.IsCommitted);
                 if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
                     continue;
 
                 if (prepare.EventStreamId != streamId) 
                     throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
 
-                if (isCommit && (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !doingInit)))
+                if (!isCommit && (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !doingInit)))
                     continue;  // already committed
 
-                if(isCommit) {
+                if(!isCommit) {
                     eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
                 }
                 else {
