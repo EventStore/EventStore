@@ -251,16 +251,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             foreach (var prepare in commitedPrepares)
             {
+                var isCommit = prepare.Flags.HasAllOf(PrepareFlags.IsCommitted);
                 if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
                     continue;
 
                 if (prepare.EventStreamId != streamId) 
                     throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
 
-                if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !doingInit))
+                if (isCommit && (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !doingInit)))
                     continue;  // already committed
 
-                if(prepare.Flags.HasAllOf(PrepareFlags.IsCommitted)) {
+                if(isCommit) {
                     eventNumber = prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
                 }
                 else {
