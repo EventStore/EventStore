@@ -6,12 +6,12 @@ using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
-    public interface IIndexBackend
+    public interface IIndexCache
     {
         TFReaderLease BorrowReader();
 
-        IndexBackend.EventNumberCached TryGetStreamLastEventNumber(string streamId);
-        IndexBackend.MetadataCached TryGetStreamMetadata(string streamId);
+        IndexCache.EventNumberCached TryGetStreamLastEventNumber(string streamId);
+        IndexCache.MetadataCached TryGetStreamMetadata(string streamId);
 
         int? UpdateStreamLastEventNumber(int cacheVersion, string streamId, int? lastEventNumber);
         StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId, StreamMetadata metadata);
@@ -23,14 +23,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         SystemSettings GetSystemSettings();
     }
     
-    public class IndexBackend : IIndexBackend
+    public class IndexCache : IIndexCache
     {
         private readonly ObjectPool<ITransactionFileReader> _readers;
         private readonly ILRUCache<string, EventNumberCached> _streamLastEventNumberCache;
         private readonly ILRUCache<string, MetadataCached> _streamMetadataCache;
         private SystemSettings _systemSettings;
 
-        public IndexBackend(ObjectPool<ITransactionFileReader> readers,
+        public IndexCache(ObjectPool<ITransactionFileReader> readers,
                             int lastEventNumberCacheCapacity,
                             int metadataCacheCapacity)
         {
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return res.Metadata;
         }
 
-        int? IIndexBackend.SetStreamLastEventNumber(string streamId, int lastEventNumber)
+        int? IIndexCache.SetStreamLastEventNumber(string streamId, int lastEventNumber)
         {
             var res = _streamLastEventNumberCache.Put(streamId,
                                                       lastEventNumber,
@@ -89,7 +89,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return res.LastEventNumber;
         }
 
-        StreamMetadata IIndexBackend.SetStreamMetadata(string streamId, StreamMetadata metadata)
+        StreamMetadata IIndexCache.SetStreamMetadata(string streamId, StreamMetadata metadata)
         {
             var res = _streamMetadataCache.Put(streamId,
                                                metadata,

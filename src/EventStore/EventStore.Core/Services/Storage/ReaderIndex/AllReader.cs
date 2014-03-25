@@ -24,12 +24,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
     public class AllReader : IAllReader
     {
-        private readonly IIndexBackend _backend;
+        private readonly IIndexCache _cache;
 
-        public AllReader(IIndexBackend backend)
+        public AllReader(IIndexCache cache)
         {
-            Ensure.NotNull(backend, "backend");
-            _backend = backend;
+            Ensure.NotNull(cache, "backend");
+            _cache = cache;
         }
 
         public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount)
@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var prevPos = new TFPos(pos.CommitPosition, long.MaxValue);
             long count = 0;
             bool firstCommit = true;
-            using (var reader = _backend.BorrowReader())
+            using (var reader = _cache.BorrowReader())
             {
                 long nextCommitPos = pos.CommitPosition;
                 while (count < maxCount)
@@ -144,7 +144,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var prevPos = new TFPos(pos.CommitPosition, 0);
             long count = 0;
             bool firstCommit = true;            
-            using (var reader = _backend.BorrowReader())
+            using (var reader = _cache.BorrowReader())
             {
                 long nextCommitPostPos = pos.CommitPosition;
                 while (count < maxCount)
