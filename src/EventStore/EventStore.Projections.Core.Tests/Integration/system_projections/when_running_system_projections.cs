@@ -49,8 +49,7 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections
         {
             AssertStreamTail("$category-stream", "stream-1");
             AssertStreamTail("$category-test", "test-1", "test-2");
-            AssertStreamTail("$category-account", "account-01", "account-02");
-            AssertStreamTail("$category-account-000", "account-000-02");
+            AssertStreamTail("$category-account", "account-01", "account-02", "account-000-02");
         }
 
         [Test]
@@ -66,8 +65,7 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections
         {
             AssertStreamTail("$ce-stream", "1@account-01");
             AssertStreamTail("$ce-test", "0@test-1", "0@test-1");
-            AssertStreamTail("$ce-account", "0@account-01", "1@account-01", "0@account-02");
-            AssertStreamTail("$ce-account-000", "0@account-000-02");
+            AssertStreamTail("$ce-account", "0@account-01", "1@account-01", "0@account-02", "0@account-000-02");
         }
 
     }
