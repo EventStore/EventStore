@@ -54,8 +54,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_consumer);
 
             _processingQueues = GivenProcessingQueues();
+            IPublisher[] queues = _processingQueues.Select(v => v.Item1).ToArray();
             _manager = new ProjectionManager(
-                GetInputQueue(), GetInputQueue(), _processingQueues.Select(v => v.Item1).ToArray(), _timeProvider, RunProjections.All,
+                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues),
                 _initializeSystemProjections);
 
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);

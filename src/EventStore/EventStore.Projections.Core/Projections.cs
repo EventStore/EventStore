@@ -148,9 +148,11 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<AwakeServiceMessage.UnsubscribeAwake>(awakeReaderService);
 
 
+            IPublisher[] queues = _coreQueues.Cast<IPublisher>().ToArray();
+            var timeoutSchedulers = ProjectionManagerNode.CreateTimeoutSchedulers(queues);
             _projectionManagerNode = ProjectionManagerNode.Create(
                 db, _managerInputQueue, httpForwarder, httpServices, networkSendQueue,
-                _coreQueues.Cast<IPublisher>().ToArray(), runProjections);
+                queues, runProjections, timeoutSchedulers);
             _projectionManagerNode.SetupMessaging(_managerInputBus);
             {
                 var forwarder = new RequestResponseQueueForwarder(

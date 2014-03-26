@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public ProjectionManager(
             IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider,
-            RunProjections runProjections, bool initializeSystemProjections = true)
+            RunProjections runProjections, TimeoutScheduler[] timeoutSchedulers, bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Management
             _publisher = publisher;
             _queues = queues;
 
-            _timeoutSchedulers = CreateTimeoutSchedulers(queues);
+            _timeoutSchedulers = timeoutSchedulers;
 
             _timeProvider = timeProvider;
             _runProjections = runProjections;
@@ -109,14 +109,6 @@ namespace EventStore.Projections.Core.Services.Management
             _projections = new Dictionary<string, ManagedProjection>();
             _projectionsMap = new Dictionary<Guid, string>();
             _publishEnvelope = new PublishEnvelope(_inputQueue, crossThread: true);
-        }
-
-        private static TimeoutScheduler[] CreateTimeoutSchedulers(IPublisher[] queues)
-        {
-            var timeoutSchedulers = new TimeoutScheduler[queues.Length];
-            for (var i = 0; i < timeoutSchedulers.Length; i++)
-                timeoutSchedulers[i] = new TimeoutScheduler();
-            return timeoutSchedulers;
         }
 
         private void Start()

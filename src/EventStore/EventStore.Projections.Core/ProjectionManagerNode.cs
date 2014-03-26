@@ -16,13 +16,24 @@ namespace EventStore.Projections.Core
         private readonly RunProjections _runProjections;
         private readonly ProjectionManager _projectionManager;
         private readonly InMemoryBus _output;
+        private readonly TimeoutScheduler[] _timeoutSchedulers;
 
-        private ProjectionManagerNode(IPublisher inputQueue, IPublisher[] queues, RunProjections runProjections)
+        private ProjectionManagerNode(
+            IPublisher inputQueue,
+            IPublisher[] queues,
+            RunProjections runProjections,
+            TimeoutScheduler[] timeoutSchedulers)
         {
             _runProjections = runProjections;
             _output = new InMemoryBus("ProjectionManagerOutput");
+            _timeoutSchedulers = timeoutSchedulers;
             _projectionManager = new ProjectionManager(
-                inputQueue, _output, queues, new RealTimeProvider(), runProjections);
+                inputQueue,
+                _output,
+                queues,
+                new RealTimeProvider(),
+                runProjections,
+                _timeoutSchedulers);
         }
 
         public InMemoryBus Output
@@ -68,15 +79,23 @@ namespace EventStore.Projections.Core
 
         public static ProjectionManagerNode Create(
             TFChunkDb db, QueuedHandler inputQueue, IHttpForwarder httpForwarder, HttpService[] httpServices, IPublisher networkSendQueue,
-            IPublisher[] queues, RunProjections runProjections)
+            IPublisher[] queues, RunProjections runProjections, TimeoutScheduler[] timeoutSchedulers)
         {
-            var projectionManagerNode = new ProjectionManagerNode(inputQueue, queues, runProjections);
+            var projectionManagerNode = new ProjectionManagerNode(inputQueue, queues, runProjections, timeoutSchedulers);
             var projectionsController = new ProjectionsController(httpForwarder, inputQueue, networkSendQueue);
             foreach (var httpService in httpServices)
             {
                 httpService.SetupController(projectionsController);
             }
             return projectionManagerNode;
+        }
+
+        public static TimeoutScheduler[] CreateTimeoutSchedulers(IPublisher[] queues)
+        {
+            var timeoutSchedulers = new TimeoutScheduler[queues.Length];
+            for (var i = 0; i < timeoutSchedulers.Length; i++)
+                timeoutSchedulers[i] = new TimeoutScheduler();
+            return timeoutSchedulers;
         }
     }
 }

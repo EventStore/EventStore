@@ -44,8 +44,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             //TODO: this became an integration test - proper ProjectionCoreService and ProjectionManager testing is required as well
             _bus.Subscribe(_consumer);
 
+            IPublisher[] queues = GivenCoreQueues();
             _manager = new ProjectionManager(
-                GetInputQueue(), GetInputQueue(), GivenCoreQueues(), _timeProvider, RunProjections.All,
+                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues),
                 _initializeSystemProjections);
 
             IPublisher inputQueue = GetInputQueue();
