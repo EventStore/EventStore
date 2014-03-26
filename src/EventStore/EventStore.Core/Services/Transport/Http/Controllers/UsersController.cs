@@ -1,6 +1,7 @@
 ﻿using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Common.Log;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -12,6 +13,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
         private static readonly ICodec[] DefaultCodecs = new ICodec[] { Codec.Json, Codec.Xml };
+        private static readonly ILogger Log = LogManager.GetLoggerFor<CommunicationController>();
+
         public UsersController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
@@ -89,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var message = new UserManagementMessage.Create(
                         envelope, http.User, data.LoginName, data.FullName, data.Groups, data.Password);
                     Publish(message);
-                }, Console.WriteLine);
+                }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
 
         private void PutUser(HttpEntityManager http, UriTemplateMatch match)
@@ -104,7 +107,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var data = http.RequestCodec.From<PutUserData>(s);
                     var message = new UserManagementMessage.Update(envelope, http.User, login, data.FullName, data.Groups);
                     Publish(message);
-                }, Console.WriteLine);
+                }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
 
         private void DeleteUser(HttpEntityManager http, UriTemplateMatch match)
@@ -149,7 +152,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var data = http.RequestCodec.From<ResetPasswordData>(s);
                     var message = new UserManagementMessage.ResetPassword(envelope, http.User, login, data.NewPassword);
                     Publish(message);
-                }, Console.WriteLine);
+                }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
 
         private void PostCommandChangePassword(HttpEntityManager http, UriTemplateMatch match)
@@ -167,7 +170,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         Publish(message);
 
                     },
-                Console.WriteLine);
+                x => Log.DebugException(x, "Reply Text Content Failed."));
         }
 
         private SendToHttpEnvelope<T> CreateReplyEnvelope<T>(
