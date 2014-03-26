@@ -32,14 +32,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                     Envelope, _coreProjectionCorrelationId, "projection", new ProjectionVersion(1, 0, 0),
                     new ProjectionConfig(
                         SystemAccount.Principal, 0, 0, 1000, 1000, false, false, false, true, isSlaveProjection: true),
-                    GetInputQueue(), _coreProjectionCorrelationId, () => new FakeProjectionStateHandler(
+                    GetInputQueue(), _coreProjectionCorrelationId, (handlerType, query) => new FakeProjectionStateHandler(
                         configureBuilder: builder =>
                         {
                             builder.FromCatalogStream("catalog");
                             builder.AllEvents();
                             builder.SetByStream();
                             builder.SetLimitingCommitPosition(10000);
-                        }));
+                        }), typeof(FakeProjectionStateHandler).GetNativeHandlerName(), "");
             yield return Yield;
         }
     }

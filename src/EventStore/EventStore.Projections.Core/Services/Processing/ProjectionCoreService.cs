@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 //TODO: factory method can throw
-                IProjectionStateHandler stateHandler = message.HandlerFactory();
+                IProjectionStateHandler stateHandler = message.HandlerFactory(message.HandlerType, message.Query);
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(
                     name, stateHandler.GetSourceDefinition(), message.HandlerType, message.Query);
@@ -161,7 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 //TODO: factory method can throw!
-                IProjectionStateHandler stateHandler = message.HandlerFactory();
+                IProjectionStateHandler stateHandler = message.HandlerFactory(message.HandlerType, message.Query);
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition(), null, null);
                 var projectionVersion = message.Version;

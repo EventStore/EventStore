@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ParallelQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
-            Func<IProjectionStateHandler> handlerFactory, ProjectionConfig projectionConfig,
+            Func<string, string, IProjectionStateHandler> handlerFactory, ProjectionConfig projectionConfig,
             IQueryDefinition sourceDefinition, ProjectionNamesBuilder namesBuilder, ILogger logger,
             SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher)

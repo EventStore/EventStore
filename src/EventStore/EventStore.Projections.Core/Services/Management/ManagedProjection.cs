@@ -732,7 +732,7 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: load configuration from the definition
 
 
-            Func<IProjectionStateHandler> stateHandlerFactory = delegate
+            Func<string, string, IProjectionStateHandler> stateHandlerFactory = delegate(string handlerType, string query)
             {
                 // this delegate runs in the context of a projection core thread
                 // TODO: move this code to the projection core service as we may be in different processes in the future
@@ -740,7 +740,7 @@ namespace EventStore.Projections.Core.Services.Management
                 try
                 {
                     stateHandler = new ProjectionStateHandlerFactory().Create(
-                        HandlerType, Query, logger: s => _logger.Trace(s),
+                        handlerType, query, logger: s => _logger.Trace(s),
                         cancelCallbackFactory:
                             _timeoutScheduler == null
                                 ? (Action<int, Action>) null
@@ -763,7 +763,7 @@ namespace EventStore.Projections.Core.Services.Management
                 (Message) new CoreProjectionManagementMessage.CreateAndPrepareSlave(
                     new PublishEnvelope(_inputQueue), Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
-                    config, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory) :
+                    config, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory, HandlerType, Query) :
                 new CoreProjectionManagementMessage.CreateAndPrepare(
                     new PublishEnvelope(_inputQueue), Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),

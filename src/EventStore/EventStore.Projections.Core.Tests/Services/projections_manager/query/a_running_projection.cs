@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
                     _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);
                 _reader = readerAssignedMessage.ReaderId;
-
+                _consumer.HandledMessages.Clear();
                 yield return
                     (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                         _reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(),

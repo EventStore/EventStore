@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public ProjectionProcessingStrategy CreateProjectionProcessingStrategy(
             string name, ProjectionVersion projectionVersion, ProjectionNamesBuilder namesBuilder,
             IQueryDefinition sourceDefinition, ProjectionConfig projectionConfig,
-            Func<IProjectionStateHandler> handlerFactory, IProjectionStateHandler stateHandler)
+            Func<string, string, IProjectionStateHandler> handlerFactory, IProjectionStateHandler stateHandler)
         {
 
             if (!sourceDefinition.DisableParallelismOption && projectionConfig.StopOnEof && sourceDefinition.ByStreams

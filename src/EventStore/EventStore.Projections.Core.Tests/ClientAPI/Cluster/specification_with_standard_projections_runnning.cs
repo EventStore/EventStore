@@ -296,7 +296,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
     [TestFixture]
     public class TestTest : specification_with_standard_projections_runnning
     {
-        [Test]
+        [Test, Explicit]
         public void Test()
         {
             Assert.Inconclusive();
