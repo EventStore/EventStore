@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected ProjectionManager _manager;
         private bool _initializeSystemProjections;
-        protected Tuple<IBus, IPublisher, InMemoryBus>[] _processingQueues;
+        protected Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler>[] _processingQueues;
 
         protected override void Given1()
         {
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _processingQueues = GivenProcessingQueues();
             IPublisher[] queues = _processingQueues.Select(v => v.Item1).ToArray();
             _manager = new ProjectionManager(
-                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues),
+                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length),
                 _initializeSystemProjections);
 
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
@@ -89,18 +89,18 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
 
             foreach(var q in _processingQueues)
-                SetUpCoreServices(q.Item1, q.Item2, q.Item3);
+                SetUpCoreServices(q.Item1, q.Item2, q.Item3, q.Item4);
 
             //Given();
             WhenLoop();
         }
 
-        protected virtual Tuple<IBus, IPublisher, InMemoryBus>[] GivenProcessingQueues()
+        protected virtual Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler>[] GivenProcessingQueues()
         {
-            return new[] { Tuple.Create((IBus)_bus, GetInputQueue(), (InMemoryBus)null) };
+            return new[] { Tuple.Create((IBus)_bus, GetInputQueue(), (InMemoryBus)null, default(TimeoutScheduler)) };
         }
 
-        private void SetUpCoreServices(IBus bus, IPublisher inputQueue, InMemoryBus output_)
+        private void SetUpCoreServices(IBus bus, IPublisher inputQueue, InMemoryBus output_, ISingletonTimeoutScheduler timeoutScheduler)
         {
             var output = (output_ ?? inputQueue);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
             var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(ioDispatcher);
             var coreService = new ProjectionCoreService(
-                inputQueue, output, _subscriptionDispatcher, _timeProvider, ioDispatcher, spoolProcessingResponseDispatcher);
+                inputQueue, output, _subscriptionDispatcher, _timeProvider, ioDispatcher, spoolProcessingResponseDispatcher, timeoutScheduler);
 
             bus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(coreService);
             bus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(coreService);

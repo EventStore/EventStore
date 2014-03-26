@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -47,17 +48,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProcessingStrategySelector _processingStrategySelector;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
+        private readonly ISingletonTimeoutScheduler _timeoutScheduler;
 
 
         public ProjectionCoreService(
             IPublisher inputQueue, IPublisher publisher, ReaderSubscriptionDispatcher subscriptionDispatcher,
             ITimeProvider timeProvider, IODispatcher ioDispatcher,
-            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher)
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher, ISingletonTimeoutScheduler timeoutScheduler)
         {
             _inputQueue = inputQueue;
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
+            _timeoutScheduler = timeoutScheduler;
             _subscriptionDispatcher = subscriptionDispatcher;
             _timeProvider = timeProvider;
             _processingStrategySelector = new ProcessingStrategySelector(

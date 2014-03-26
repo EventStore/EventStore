@@ -13,6 +13,7 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Messaging;
+using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core
@@ -61,37 +62,69 @@ namespace EventStore.Projections.Core
         private QueuedHandler _managerInputQueue;
         private InMemoryBus _managerInputBus;
         private ProjectionManagerNode _projectionManagerNode;
+        private TimeoutScheduler[] _coreTimeoutSchedulers;
 
         public Projections(
-            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService, ITimeProvider timeProvider,
-            IHttpForwarder httpForwarder, HttpService[] httpServices, IPublisher networkSendQueue,
-            int projectionWorkerThreadCount, RunProjections runProjections)
+            TFChunkDb db,
+            QueuedHandler mainQueue,
+            ISubscriber mainBus,
+            TimerService timerService,
+            ITimeProvider timeProvider,
+            IHttpForwarder httpForwarder,
+            HttpService[] httpServices,
+            IPublisher networkSendQueue,
+            int projectionWorkerThreadCount,
+            RunProjections runProjections)
         {
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
             SetupMessaging(
-                db, mainQueue, mainBus, timerService, timeProvider, httpForwarder, httpServices, networkSendQueue,
+                db,
+                mainQueue,
+                mainBus,
+                timerService,
+                timeProvider,
+                httpForwarder,
+                httpServices,
+                networkSendQueue,
                 runProjections);
 
         }
 
         private void SetupMessaging(
-            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService, ITimeProvider timeProvider,
-            IHttpForwarder httpForwarder, HttpService[] httpServices, IPublisher networkSendQueue, RunProjections runProjections)
+            TFChunkDb db,
+            QueuedHandler mainQueue,
+            ISubscriber mainBus,
+            TimerService timerService,
+            ITimeProvider timeProvider,
+            IHttpForwarder httpForwarder,
+            HttpService[] httpServices,
+            IPublisher networkSendQueue,
+            RunProjections runProjections)
         {
             _coreQueues = new List<QueuedHandler>();
+            _coreTimeoutSchedulers = ProjectionManagerNode.CreateTimeoutSchedulers(_projectionWorkerThreadCount);
+
             _managerInputBus = new InMemoryBus("manager input bus");
             _managerInputQueue = new QueuedHandler(_managerInputBus, "Projections Master");
             while (_coreQueues.Count < _projectionWorkerThreadCount)
             {
                 var coreInputBus = new InMemoryBus("bus");
                 var coreQueue = new QueuedHandler(
-                    coreInputBus, "Projection Core #" + _coreQueues.Count, groupName: "Projection Core");
-                var projectionNode = new ProjectionWorkerNode(db, coreQueue, timeProvider, runProjections);
+                    coreInputBus,
+                    "Projection Core #" + _coreQueues.Count,
+                    groupName: "Projection Core");
+                var projectionNode = new ProjectionWorkerNode(
+                    db,
+                    coreQueue,
+                    timeProvider,
+                    _coreTimeoutSchedulers[_coreQueues.Count],
+                    runProjections);
                 projectionNode.SetupMessaging(coreInputBus);
 
 
                 var forwarder = new RequestResponseQueueForwarder(
-                    inputQueue: coreQueue, externalRequestQueue: mainQueue);
+                    inputQueue: coreQueue,
+                    externalRequestQueue: mainQueue);
                 // forwarded messages
                 projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEvent>(forwarder);
                 projectionNode.CoreOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
@@ -122,8 +155,7 @@ namespace EventStore.Projections.Core
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
 
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(mainQueue));
+                    projectionNode.CoreOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(mainQueue));
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(mainQueue));
 
@@ -139,7 +171,7 @@ namespace EventStore.Projections.Core
             }
 
             _managerInputBus.Subscribe(
-            Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
+                Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(_coreQueues.Cast<IPublisher>().ToArray()));
 
             var awakeReaderService = new AwakeService();
             mainBus.Subscribe<StorageMessage.EventCommitted>(awakeReaderService);
@@ -149,14 +181,20 @@ namespace EventStore.Projections.Core
 
 
             IPublisher[] queues = _coreQueues.Cast<IPublisher>().ToArray();
-            var timeoutSchedulers = ProjectionManagerNode.CreateTimeoutSchedulers(queues);
             _projectionManagerNode = ProjectionManagerNode.Create(
-                db, _managerInputQueue, httpForwarder, httpServices, networkSendQueue,
-                queues, runProjections, timeoutSchedulers);
+                db,
+                _managerInputQueue,
+                httpForwarder,
+                httpServices,
+                networkSendQueue,
+                queues,
+                runProjections,
+                _coreTimeoutSchedulers);
             _projectionManagerNode.SetupMessaging(_managerInputBus);
             {
                 var forwarder = new RequestResponseQueueForwarder(
-                    inputQueue: _managerInputQueue, externalRequestQueue: mainQueue);
+                    inputQueue: _managerInputQueue,
+                    externalRequestQueue: mainQueue);
                 _projectionManagerNode.Output.Subscribe<ClientMessage.ReadEvent>(forwarder);
                 _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
                 _projectionManagerNode.Output.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);

@@ -230,7 +230,7 @@ namespace EventStore.Core.Bus
                     {
                         Console.WriteLine("Waiting for IDLE state...");
                         counter++;
-                        if (counter > 10)
+                        if (counter > 50)
                             throw new ApplicationException("Infinite loop?");
                     }
                 }

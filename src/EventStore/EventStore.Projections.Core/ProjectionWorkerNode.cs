@@ -11,6 +11,7 @@ using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core
@@ -34,6 +35,7 @@ namespace EventStore.Projections.Core
             TFChunkDb db,
             QueuedHandler inputQueue,
             ITimeProvider timeProvider,
+            ISingletonTimeoutScheduler timeoutScheduler,
             RunProjections runProjections)
         {
             _runProjections = runProjections;
@@ -63,7 +65,8 @@ namespace EventStore.Projections.Core
                     _subscriptionDispatcher,
                     timeProvider,
                     _ioDispatcher,
-                    _spoolProcessingResponseDispatcher);
+                    _spoolProcessingResponseDispatcher,
+                    timeoutScheduler);
             }
         }
 

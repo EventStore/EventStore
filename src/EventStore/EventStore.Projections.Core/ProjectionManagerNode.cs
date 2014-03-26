@@ -90,9 +90,9 @@ namespace EventStore.Projections.Core
             return projectionManagerNode;
         }
 
-        public static TimeoutScheduler[] CreateTimeoutSchedulers(IPublisher[] queues)
+        public static TimeoutScheduler[] CreateTimeoutSchedulers(int count)
         {
-            var timeoutSchedulers = new TimeoutScheduler[queues.Length];
+            var timeoutSchedulers = new TimeoutScheduler[count];
             for (var i = 0; i < timeoutSchedulers.Length; i++)
                 timeoutSchedulers[i] = new TimeoutScheduler();
             return timeoutSchedulers;

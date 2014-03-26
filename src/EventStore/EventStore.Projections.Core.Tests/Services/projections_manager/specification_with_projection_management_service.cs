@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             IPublisher[] queues = GivenCoreQueues();
             _manager = new ProjectionManager(
-                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues),
+                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length),
                 _initializeSystemProjections);
 
             IPublisher inputQueue = GetInputQueue();

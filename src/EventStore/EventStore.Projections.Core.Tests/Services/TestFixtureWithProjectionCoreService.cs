@@ -11,6 +11,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
@@ -61,6 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _subscriptionDispatcher;
 
         private SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
+        private ISingletonTimeoutScheduler _timeoutScheduler;
 
         [SetUp]
         public void Setup()
@@ -74,9 +76,10 @@ namespace EventStore.Projections.Core.Tests.Services
             _subscriptionDispatcher =
                 new ReaderSubscriptionDispatcher(_bus);
             _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(_bus);
+            _timeoutScheduler = new TimeoutScheduler();
             _service = new ProjectionCoreService(
                 _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher,
-                _spoolProcessingResponseDispatcher);
+                _spoolProcessingResponseDispatcher, _timeoutScheduler);
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());

@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             using (
                 new ProjectionManager(
                     new FakePublisher(), new FakePublisher(), queues, _timeProvider,
-                    RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues)))
+                    RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
             {
             }
         }
@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             IPublisher[] queues = new IPublisher[] {new FakePublisher()};
             using (
                 new ProjectionManager(
-                    null, new FakePublisher(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues)))
+                    null, new FakePublisher(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
             {
             }
         }
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             IPublisher[] queues = new IPublisher[] {new FakePublisher()};
             using (
                 new ProjectionManager(
-                    new FakePublisher(), null, queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues)))
+                    new FakePublisher(), null, queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
             {
             }
         }
@@ -58,7 +58,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_queues_throws_argument_null_exception()
         {
-            using (new ProjectionManager(new FakePublisher(), new FakePublisher(), null, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(null)))
+            using (
+                new ProjectionManager(
+                    new FakePublisher(),
+                    new FakePublisher(),
+                    null,
+                    _timeProvider,
+                    RunProjections.All,
+                    ProjectionManagerNode.CreateTimeoutSchedulers(1)))
             {
             }
         }
@@ -68,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             IPublisher[] queues = new IPublisher[0];
             using (new ProjectionManager(
-                    new FakePublisher(), new FakePublisher(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues)))
+                    new FakePublisher(), new FakePublisher(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
             {
             }
         }
