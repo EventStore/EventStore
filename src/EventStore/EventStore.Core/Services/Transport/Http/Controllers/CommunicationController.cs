@@ -94,25 +94,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
         }
 
-        protected void RegisterTextBody(IHttpService service, string uriTemplate, string httpMethod,
-                                        Action<HttpEntityManager, string> action,
-                                        ICodec[] requestCodecs = null, ICodec[] responseCodecs = null)
-        {
-            Register(service, uriTemplate, httpMethod,
-                     (http, match) => http.ReadTextRequestAsync(action, e => Log.Debug("Error on reading request: {0}.", e.Message)),
-                     requestCodecs ?? DefaultCodecs, responseCodecs ?? DefaultCodecs);
-        }
-
-        protected void RegisterTextBody(IHttpService service, string uriTemplate, string httpMethod,
-                                        Action<HttpEntityManager, UriTemplateMatch, string> action,
-                                        ICodec[] requestCodecs = null, ICodec[] responseCodecs = null)
-        {
-            Register(service, uriTemplate, httpMethod,
-                     (http, match) => http.ReadTextRequestAsync((manager, s) => action(manager, match, s),
-                                                                e => Log.Debug("Error on reading request: {0}.", e.Message)),
-                     requestCodecs ?? DefaultCodecs, responseCodecs ?? DefaultCodecs);
-        }
-
         protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod,
                                         Action<HttpEntityManager, UriTemplateMatch> action)
         {
