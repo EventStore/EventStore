@@ -739,20 +739,14 @@ namespace EventStore.Projections.Core.Services.Management
                 IProjectionStateHandler stateHandler = null;
                 try
                 {
-                    stateHandler = new ProjectionStateHandlerFactory().Create(
-                        handlerType, query, logger: s => _logger.Trace(s),
-                        cancelCallbackFactory:
-                            _timeoutScheduler == null
-                                ? (Action<int, Action>) null
-                                : _timeoutScheduler.Schedule);
-                    return stateHandler;
+                    return ProjectionCoreService.CreateStateHandler(_timeoutScheduler, _logger, handlerType, query);
                 }
                 catch (Exception ex)
                 {
                     SetFaulted(
                         string.Format(
                             "Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}",
-                            HandlerType, Query, ex.Message), ex);
+                            handlerType, query, ex.Message), ex);
                     if (stateHandler != null)
                         stateHandler.Dispose();
                     throw;
@@ -767,7 +761,7 @@ namespace EventStore.Projections.Core.Services.Management
                 new CoreProjectionManagementMessage.CreateAndPrepare(
                     new PublishEnvelope(_inputQueue), Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
-                    config, HandlerType, Query, stateHandlerFactory);
+                    config, HandlerType, Query);
 
             //note: set runnign before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;

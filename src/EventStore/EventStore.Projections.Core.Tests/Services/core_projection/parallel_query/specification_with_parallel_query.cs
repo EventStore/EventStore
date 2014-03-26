@@ -45,7 +45,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                 _projectionName,
                 _version,
                 GivenProjectionStateHandler(),
-                (handlerType, query) => GivenProjectionStateHandler(),
                 _projectionConfig,
                 ProjectionSourceDefinition.From(
                     _projectionName,

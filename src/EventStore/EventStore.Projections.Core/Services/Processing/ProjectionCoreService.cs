@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing
             IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>,
             IHandle<CoreProjectionProcessingMessage.RestartRequested>,
             IHandle<CoreProjectionProcessingMessage.Failed>
-                                        
+
 
     {
         private readonly IPublisher _publisher;
@@ -107,7 +107,12 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 //TODO: factory method can throw
-                IProjectionStateHandler stateHandler = message.HandlerFactory(message.HandlerType, message.Query);
+                var stateHandler = CreateStateHandler(
+                    _timeoutScheduler,
+                    _logger,
+                    message.HandlerType,
+                    message.Query);
+
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(
                     name, stateHandler.GetSourceDefinition(), message.HandlerType, message.Query);
@@ -117,7 +122,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
                     name, projectionVersion, namesBuilder,
-                    sourceDefinition, projectionConfig, message.HandlerFactory, stateHandler);
+                    sourceDefinition, projectionConfig, stateHandler);
 
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
@@ -144,7 +149,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);
 
                 var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
-                    name, projectionVersion, namesBuilder, sourceDefinition, projectionConfig, null, null);
+                    name, projectionVersion, namesBuilder, sourceDefinition, projectionConfig, null);
 
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
@@ -163,8 +168,12 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                //TODO: factory method can throw!
-                IProjectionStateHandler stateHandler = message.HandlerFactory(message.HandlerType, message.Query);
+                var stateHandler = CreateStateHandler(
+                    _timeoutScheduler,
+                    _logger,
+                    message.HandlerType,
+                    message.Query);
+                    
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition(), null, null);
                 var projectionVersion = message.Version;
@@ -290,19 +299,20 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_projections.TryGetValue(message.CoreProjectionCorrelationId, out projection))
                 projection.Handle(message);
         }
-    }
 
-    public class ProjectionManagerException : Exception
-    {
-        public ProjectionManagerException(Exception innerException, string message, params object[] args): base(string.Format(message, args), innerException)
+        public static IProjectionStateHandler CreateStateHandler(
+            ISingletonTimeoutScheduler singletonTimeoutScheduler,
+            ILogger logger,
+            string handlerType,
+            string query)
         {
-            
-        }
-
-        public ProjectionManagerException(string message, params object[] args)
-            : base(string.Format(message, args), null)
-        {
-
+            var stateHandler = new ProjectionStateHandlerFactory().Create(
+                handlerType,
+                query,
+                logger: logger.Trace,
+                cancelCallbackFactory:
+                    singletonTimeoutScheduler == null ? (Action<int, Action>) null : singletonTimeoutScheduler.Schedule);
+            return stateHandler;
         }
     }
 }

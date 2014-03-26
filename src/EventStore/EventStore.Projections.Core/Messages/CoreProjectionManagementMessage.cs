@@ -348,13 +348,12 @@ namespace EventStore.Projections.Core.Messages
             private readonly ProjectionConfig _config;
             private readonly string _handlerType;
             private readonly string _query;
-            private readonly Func<string, string, IProjectionStateHandler> _handlerFactory;
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
             public CreateAndPrepare(
                 IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
-                string handlerType, string query, Func<string, string, IProjectionStateHandler> handlerFactory)
+                string handlerType, string query)
                 : base(projectionId)
             {
                 _envelope = envelope;
@@ -363,17 +362,11 @@ namespace EventStore.Projections.Core.Messages
                 _config = config;
                 _handlerType = handlerType;
                 _query = query;
-                _handlerFactory = handlerFactory;
             }
 
             public ProjectionConfig Config
             {
                 get { return _config; }
-            }
-
-            public Func<string, string, IProjectionStateHandler> HandlerFactory
-            {
-                get { return _handlerFactory; }
             }
 
             public string Name
@@ -415,7 +408,6 @@ namespace EventStore.Projections.Core.Messages
             private readonly IPublisher _resultsPublisher;
             private readonly Guid _masterCoreProjectionId;
             private readonly ProjectionConfig _config;
-            private readonly Func<string, string, IProjectionStateHandler> _handlerFactory;
             private readonly string _handlerType;
             private readonly string _query;
             private readonly string _name;
@@ -447,7 +439,6 @@ namespace EventStore.Projections.Core.Messages
                 _config = config;
                 _resultsPublisher = resultsPublisher;
                 _masterCoreProjectionId = masterCoreProjectionId;
-                _handlerFactory = handlerFactory;
                 _handlerType = handlerType;
                 _query = query;
             }
@@ -455,11 +446,6 @@ namespace EventStore.Projections.Core.Messages
             public ProjectionConfig Config
             {
                 get { return _config; }
-            }
-
-            public Func<string, string, IProjectionStateHandler> HandlerFactory
-            {
-                get { return _handlerFactory; }
             }
 
             public string Name
