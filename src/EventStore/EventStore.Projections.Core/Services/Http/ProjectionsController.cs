@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Http
                      HttpMethod.Delete, OnProjectionDelete, Codec.NoCodecs, SupportedCodecs);
             Register(service, "/projection/{name}/statistics",
                      HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs, SupportedCodecs);
-            RegisterTextBody(service, "/projections/read-events",
+            Register(service, "/projections/read-events",
                      HttpMethod.Post, OnProjectionsReadEvents, SupportedCodecs, SupportedCodecs);
             Register(service, "/projection/{name}/state?partition={partition}",
                      HttpMethod.Get, OnProjectionStateGet, Codec.NoCodecs, SupportedCodecs);
@@ -298,20 +298,32 @@ namespace EventStore.Projections.Core.Services.Http
             public int? MaxEvents { get; set; }
         }
 
-        private void OnProjectionsReadEvents(HttpEntityManager http, UriTemplateMatch match, string body)
+        private void OnProjectionsReadEvents(HttpEntityManager http, UriTemplateMatch match)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
 
-            var bodyParsed = body.ParseJson<ReadEventsBody>();
-            var fromPosition = CheckpointTag.FromJson(new JTokenReader(bodyParsed.Position), new ProjectionVersion(0, 0, 0));
-
             var envelope = new SendToHttpEnvelope<FeedReaderMessage.FeedPage>(
                 _networkSendQueue, http, FeedPageFormatter, FeedPageConfigurator, ErrorsEnvelope(http));
 
-            Publish(
-                new FeedReaderMessage.ReadPage(
-                    Guid.NewGuid(), envelope, http.User, bodyParsed.Query, fromPosition.Tag, bodyParsed.MaxEvents ?? 10));
+            http.ReadTextRequestAsync(
+                (o, body) =>
+                    {
+                        var bodyParsed = body.ParseJson<ReadEventsBody>();
+                        var fromPosition = CheckpointTag.FromJson(
+                            new JTokenReader(bodyParsed.Position), new ProjectionVersion(0, 0, 0));
+
+
+                        Publish(
+                            new FeedReaderMessage.ReadPage(
+                                Guid.NewGuid(),
+                                envelope,
+                                http.User,
+                                bodyParsed.Query,
+                                fromPosition.Tag,
+                                bodyParsed.MaxEvents ?? 10));
+                    },
+                Console.WriteLine);
         }
 
         private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode)

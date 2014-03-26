@@ -2,6 +2,7 @@
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
@@ -10,7 +11,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
-
+        private static readonly ICodec[] DefaultCodecs = new ICodec[] { Codec.Json, Codec.Xml };
         public UsersController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
@@ -23,13 +24,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
             RegisterUrlBased(service, "/users/$current", HttpMethod.Get, GetCurrentUser);
-            RegisterTextBody(service, "/users/", HttpMethod.Post, PostUser);
-            RegisterTextBody(service, "/users/{login}", HttpMethod.Put, PutUser);
+            Register(service, "/users/", HttpMethod.Post, PutUser, DefaultCodecs, DefaultCodecs);
+            Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
             RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, PostCommandEnable);
             RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, PostCommandDisable);
-            RegisterTextBody(service, "/users/{login}/command/reset-password", HttpMethod.Post, PostCommandResetPassword);
-            RegisterTextBody(service, "/users/{login}/command/change-password", HttpMethod.Post, PostCommandChangePassword);
+            Register(service, "/users/{login}/command/reset-password", HttpMethod.Post, PostCommandResetPassword, DefaultCodecs, DefaultCodecs);
+            Register(service, "/users/{login}/command/change-password", HttpMethod.Post, PostCommandChangePassword, DefaultCodecs, DefaultCodecs);
         }
 
         private void GetUsers(HttpEntityManager http, UriTemplateMatch match)
@@ -68,7 +69,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(message);
         }
 
-        private void PostUser(HttpEntityManager http, string s)
+        private void PostUser(HttpEntityManager http)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
@@ -81,21 +82,29 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                        MakeUrl(http, "/users/" + Uri.EscapeDataString(result.LoginName)))
                                    : configuration;
                     });
-            var data = http.RequestCodec.From<PostUserData>(s);
-            var message = new UserManagementMessage.Create(
-                envelope, http.User, data.LoginName, data.FullName, data.Groups, data.Password);
-            Publish(message);
+            http.ReadTextRequestAsync(
+                (o, s) =>
+                {
+                    var data = http.RequestCodec.From<PostUserData>(s);
+                    var message = new UserManagementMessage.Create(
+                        envelope, http.User, data.LoginName, data.FullName, data.Groups, data.Password);
+                    Publish(message);
+                }, Console.WriteLine);
         }
 
-        private void PutUser(HttpEntityManager http, UriTemplateMatch match, string s)
+        private void PutUser(HttpEntityManager http, UriTemplateMatch match)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
-            var login = match.BoundVariables["login"];
-            var data = http.RequestCodec.From<PutUserData>(s);
-            var message = new UserManagementMessage.Update(envelope, http.User, login, data.FullName, data.Groups);
-            Publish(message);
+            http.ReadTextRequestAsync(
+                (o, s) =>
+                {
+                    var login = match.BoundVariables["login"];
+                    var data = http.RequestCodec.From<PutUserData>(s);
+                    var message = new UserManagementMessage.Update(envelope, http.User, login, data.FullName, data.Groups);
+                    Publish(message);
+                }, Console.WriteLine);
         }
 
         private void DeleteUser(HttpEntityManager http, UriTemplateMatch match)
@@ -128,27 +137,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(message);
         }
 
-        private void PostCommandResetPassword(HttpEntityManager http, UriTemplateMatch match, string s)
+        private void PostCommandResetPassword(HttpEntityManager http, UriTemplateMatch match)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
-            var login = match.BoundVariables["login"];
-            var data = http.RequestCodec.From<ResetPasswordData>(s);
-            var message = new UserManagementMessage.ResetPassword(envelope, http.User, login, data.NewPassword);
-            Publish(message);
+            http.ReadTextRequestAsync(
+                (o, s) =>
+                {
+                    var login = match.BoundVariables["login"];
+                    var data = http.RequestCodec.From<ResetPasswordData>(s);
+                    var message = new UserManagementMessage.ResetPassword(envelope, http.User, login, data.NewPassword);
+                    Publish(message);
+                }, Console.WriteLine);
         }
 
-        private void PostCommandChangePassword(HttpEntityManager http, UriTemplateMatch match, string s)
+        private void PostCommandChangePassword(HttpEntityManager http, UriTemplateMatch match)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
             var envelope = CreateReplyEnvelope<UserManagementMessage.UpdateResult>(http);
-            var login = match.BoundVariables["login"];
-            var data = http.RequestCodec.From<ChangePasswordData>(s);
-            var message = new UserManagementMessage.ChangePassword(
-                envelope, http.User, login, data.CurrentPassword, data.NewPassword);
-            Publish(message);
+            http.ReadTextRequestAsync(
+                (o, s) =>
+                    {
+                        var login = match.BoundVariables["login"];
+                        var data = http.RequestCodec.From<ChangePasswordData>(s);
+                        var message = new UserManagementMessage.ChangePassword(
+                            envelope, http.User, login, data.CurrentPassword, data.NewPassword);
+                        Publish(message);
+
+                    },
+                Console.WriteLine);
         }
 
         private SendToHttpEnvelope<T> CreateReplyEnvelope<T>(

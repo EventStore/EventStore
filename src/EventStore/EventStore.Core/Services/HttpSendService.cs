@@ -149,7 +149,6 @@ namespace EventStore.Core.Services
             var fwReq = (HttpWebRequest)WebRequest.Create(forwardUri);
 
             fwReq.Method = srcReq.HttpMethod;
-
             // Copy unrestricted headers (including cookies, if any)
             foreach (var headerKey in srcReq.Headers.AllKeys)
             {
@@ -174,7 +173,6 @@ namespace EventStore.Core.Services
                         break;
                 }
             }
-
             // Copy content (if content body is allowed)
             if (!string.Equals(srcReq.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
@@ -190,13 +188,12 @@ namespace EventStore.Core.Services
                             ForwardReplyFailed(manager);
                             return;
                         }
-
                         new AsyncStreamCopier<object>(
                             srcReq.InputStream,
                             t.Result,
                             t.Result,
                             copier =>
-                            {
+                                {
                                 var fwReqStream = (Stream)copier.AsyncState;
                                 if (copier.Error != null)
                                 {
