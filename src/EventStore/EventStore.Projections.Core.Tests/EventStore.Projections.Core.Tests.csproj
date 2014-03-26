@@ -338,7 +338,9 @@
     <Compile Include="Services\projections_manager\TestFixtureWithProjectionCoreAndManagementServices.cs" />
     <Compile Include="Services\projections_manager\specification_with_projection_management_service.cs" />
     <Compile Include="Services\projection_core_service_command_reader\specification_with_projection_core_service_command_reader.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\specification_with_projection_core_service_command_reader_started.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_creating.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_a_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_starting.cs" />
     <Compile Include="Services\v8\v8_internals.cs" />
     <Compile Include="Services\v8\when_compiling_v8_projection.cs" />
