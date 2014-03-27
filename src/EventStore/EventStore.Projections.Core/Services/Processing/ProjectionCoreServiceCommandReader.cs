@@ -114,9 +114,29 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (command)
             {
                 case "$start":
+                {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<StartCommand>();
                     _publisher.Publish(new CoreProjectionManagementMessage.Start(Guid.ParseExact(commandBody.Id, "N")));
                     break;
+                }
+                case "$stop":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<StopCommand>();
+                    _publisher.Publish(new CoreProjectionManagementMessage.Stop(Guid.ParseExact(commandBody.Id, "N")));
+                    break;
+                }
+                case "$kill":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<KillCommand>();
+                    _publisher.Publish(new CoreProjectionManagementMessage.Kill(Guid.ParseExact(commandBody.Id, "N")));
+                    break;
+                }
+                case "$dispose":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<DisposeCommand>();
+                    _publisher.Publish(new CoreProjectionManagementMessage.Dispose(Guid.ParseExact(commandBody.Id, "N")));
+                    break;
+                }
                 default:
                     throw new Exception("Unknown command: " + command);
             }
@@ -127,8 +147,22 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = true;
         }
 
-
         private class StartCommand
+        {
+            public string Id { get; set; }
+        }
+
+        private class StopCommand
+        {
+            public string Id { get; set; }
+        }
+
+        private class KillCommand
+        {
+            public string Id { get; set; }
+        }
+
+        private class DisposeCommand
         {
             public string Id { get; set; }
         }

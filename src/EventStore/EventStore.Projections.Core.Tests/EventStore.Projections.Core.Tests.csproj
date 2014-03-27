@@ -341,7 +341,10 @@
     <Compile Include="Services\projection_core_service_command_reader\specification_with_projection_core_service_command_reader_started.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_creating.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_a_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_dispose_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_kill_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_start_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_stop_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_two_commands.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_starting.cs" />
     <Compile Include="Services\v8\v8_internals.cs" />
