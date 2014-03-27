@@ -19,4 +19,6 @@ namespace EventStore.Common.Streams
         }
     }
 #endif
+
+    class A {}//at least one thing needs to be in the namespace or else mono will not emit it
 }
