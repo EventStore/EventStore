@@ -880,8 +880,15 @@ namespace EventStore.Projections.Core.Services.Management
             var stopOnEof = _persistedState.Mode <= ProjectionMode.OneTime;
 
             var projectionConfig = new ProjectionConfig(
-                _runAs, checkpointHandledThreshold, checkpointUnhandledBytesThreshold, pendingEventsThreshold,
-                maxWriteBatchLength, emitEventEnabled, checkpointsEnabled, createTempStreams, stopOnEof,
+                _runAs,
+                checkpointHandledThreshold,
+                checkpointUnhandledBytesThreshold,
+                pendingEventsThreshold,
+                maxWriteBatchLength,
+                emitEventEnabled,
+                checkpointsEnabled,
+                createTempStreams,
+                stopOnEof,
                 isSlaveProjection: false);
             return projectionConfig;
         }

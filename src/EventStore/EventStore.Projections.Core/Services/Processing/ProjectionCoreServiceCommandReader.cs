@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -165,6 +166,47 @@ namespace EventStore.Projections.Core.Services.Processing
         private class DisposeCommand
         {
             public string Id { get; set; }
+        }
+
+
+        public class PersistedProjectionConfig
+        {
+            public string RunAs;
+            public string[] RunAsRoles;
+            public int CheckpointHandledThreshold;
+            public int CheckpointUnhandledBytesThreshold;
+            public int PendingEventsThreshold;
+            public int MaxWriteBatchLength;
+            public bool EmitEventEnabled;
+            public bool CheckpointsEnabled;
+            public bool CreateTempStreams;
+            public bool StopOnEof;
+            public bool IsSlaveProjection;
+
+            public ProjectionConfig ToConfig()
+            {
+                return new ProjectionConfig(
+                    new OpenGenericPrincipal(RunAs, RunAsRoles),
+                    CheckpointHandledThreshold,
+                    CheckpointUnhandledBytesThreshold,
+                    PendingEventsThreshold,
+                    MaxWriteBatchLength,
+                    EmitEventEnabled,
+                    CheckpointsEnabled,
+                    CreateTempStreams,
+                    StopOnEof,
+                    IsSlaveProjection);
+            }
+        }
+
+        private class CreatePreparedCommand
+        {
+            public PersistedProjectionConfig Config;
+            public ProjectionSourceDefinition SourceDefinition;
+            public ProjectionVersion Version;
+            public string HandlerType;
+            public string Query;
+            public string Name;
         }
     }
 }
