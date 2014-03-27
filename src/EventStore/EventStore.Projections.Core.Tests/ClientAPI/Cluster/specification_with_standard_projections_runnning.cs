@@ -299,7 +299,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         [Test, Explicit]
         public void Test()
         {
-            Assert.Inconclusive();
+            PostProjection(@"fromStream('$user-admin').outputState()");
+
+            AssertStreamTail("$projections-test-projection-result", "ResultUpdated:{}");
         }
     }
 }

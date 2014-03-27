@@ -224,17 +224,23 @@ namespace EventStore.Core.Bus
             var counter = 0;
             lock (_notifyLock)
             {
-                while (_nonIdle > 0 || _length > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
-                       || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent()
-                       || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0))
+                var successes = 0;
+                while (successes < 2)
                 {
-                    if (!Monitor.Wait(_notifyLock, 100))
+                    while (_nonIdle > 0 || _length > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
+                           || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent()
+                           || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0))
                     {
-                        Console.WriteLine("Waiting for IDLE state...");
-                        counter++;
-                        if (counter > 50)
-                            throw new ApplicationException("Infinite loop?");
+                        if (!Monitor.Wait(_notifyLock, 100))
+                        {
+                            Console.WriteLine("Waiting for IDLE state...");
+                            counter++;
+                            if (counter > 50)
+                                throw new ApplicationException("Infinite loop?");
+                        }
                     }
+                    Thread.Sleep(10);
+                    successes++;
                 }
             }
 #endif
