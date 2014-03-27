@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             _nodes[2].Start();
 
             WaitHandle.WaitAll(new[] { _nodes[0].StartedEvent, _nodes[1].StartedEvent, _nodes[2].StartedEvent });
-            QueueStatsCollector.WaitIdle();
+            QueueStatsCollector.WaitIdle(waitForNonEmptyTf: true);
             _conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
             _conn.Connect();
 

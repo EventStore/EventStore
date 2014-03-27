@@ -218,13 +218,15 @@ namespace EventStore.Core.Bus
 #endif
 
         [Conditional("DEBUG")]
-        public static void WaitIdle()
+        public static void WaitIdle(bool waitForNonEmptyTf = false)
         {
 #if DEBUG
             var counter = 0;
             lock (_notifyLock)
             {
-                while (_nonIdle > 0 || _length > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1) || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent())
+                while (_nonIdle > 0 || _length > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
+                       || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent()
+                       || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0))
                 {
                     if (!Monitor.Wait(_notifyLock, 100))
                     {
