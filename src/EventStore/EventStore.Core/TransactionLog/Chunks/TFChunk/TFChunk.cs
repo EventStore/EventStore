@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Streams;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
@@ -377,20 +378,27 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
             Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
-
+#if  __MonoCS__
             using (var reader = AcquireReader())
             {
+                reader.Stream.Seek(0, SeekOrigin.Begin);
+                var stream = reader.Stream;
+#else
+            using (var reader = UnbufferedFileReadStream.Open(_filename))
+            {
+                var stream = reader;
+#endif
                 var footer = _chunkFooter;
 
                 byte[] hash;
                 using (var md5 = MD5.Create())
                 {
-                    reader.Stream.Seek(0, SeekOrigin.Begin);
+                    
                     // hash header and data
-                    MD5Hash.ContinuousHashFor(md5, reader.Stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
+                    MD5Hash.ContinuousHashFor(md5, stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
                     // hash mapping and footer except MD5 hash sum which should always be last
                     MD5Hash.ContinuousHashFor(md5, 
-                                              reader.Stream,
+                                              stream,
                                               ChunkHeader.Size + footer.PhysicalDataSize,
                                               footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
