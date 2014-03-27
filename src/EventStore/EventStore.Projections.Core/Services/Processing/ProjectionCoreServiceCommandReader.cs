@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -40,12 +41,18 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionCoreServiceCommandReader
         : IHandle<ProjectionCoreServiceMessage.StartCore>, IHandle<ProjectionCoreServiceMessage.StopCore>
     {
+        private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly string _coreServiceId;
+        private bool _stopped;
 
-        public ProjectionCoreServiceCommandReader(IODispatcher ioDispatcher)
+        public ProjectionCoreServiceCommandReader(IPublisher publisher, IODispatcher ioDispatcher)
         {
+            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
+
             _coreServiceId = Guid.NewGuid().ToString("N");
+            _publisher = publisher;
             _ioDispatcher = ioDispatcher;
         }
 
@@ -67,10 +74,63 @@ namespace EventStore.Projections.Core.Services.Processing
                     SystemAccount.Principal,
                     events,
                     r => response = r);
+
+            var from = 0;
+            while (!_stopped)
+            {
+                var eof = false;
+                var subscribeFrom = default(TFPos);
+                do
+                {
+                    yield return
+                        _ioDispatcher.BeginReadForward(
+                            "$projections-$" + _coreServiceId,
+                            from,
+                            10,
+                            false,
+                            SystemAccount.Principal,
+                            completed =>
+                            {
+                                from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
+                                eof = completed.IsEndOfStream;
+                                // subscribeFrom is only used if eof
+                                subscribeFrom = new TFPos(
+                                    completed.TfLastCommitPosition,
+                                    completed.TfLastCommitPosition);
+                                foreach (var e in completed.Events)
+                                    PublishCommand(e);
+                            });
+
+
+                } while (!eof);
+                yield return
+                    _ioDispatcher.BeginSubscribeAwake("$projections-$" + _coreServiceId, subscribeFrom, message => { });
+            }
+        }
+
+        private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        {
+            var command = resolvedEvent.Event.EventType;
+            switch (command)
+            {
+                case "$start":
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<StartCommand>();
+                    _publisher.Publish(new CoreProjectionManagementMessage.Start(Guid.ParseExact(commandBody.Id, "N")));
+                    break;
+                default:
+                    throw new Exception("Unknown command: " + command);
+            }
         }
 
         public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
+            _stopped = true;
+        }
+
+
+        private class StartCommand
+        {
+            public string Id { get; set; }
         }
     }
 }

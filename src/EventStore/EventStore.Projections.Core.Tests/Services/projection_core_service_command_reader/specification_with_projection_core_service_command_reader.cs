@@ -43,8 +43,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
         {
             base.Given();
             AllWritesSucceed();
+            NoOtherStreams();
 
-            _commandReader = new ProjectionCoreServiceCommandReader(_ioDispatcher);
+            _commandReader = new ProjectionCoreServiceCommandReader(_bus, _ioDispatcher);
 
             _bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_commandReader);
             _bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_commandReader);

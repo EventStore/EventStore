@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
             if (runProjections >= RunProjections.System)
             {
-                _projectionCoreServiceCommandReader = new ProjectionCoreServiceCommandReader(_ioDispatcher);
+                _projectionCoreServiceCommandReader = new ProjectionCoreServiceCommandReader(publisher, _ioDispatcher);
                 _projectionCoreService = new ProjectionCoreService(
                     inputQueue,
                     publisher,

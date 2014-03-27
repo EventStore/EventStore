@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -36,7 +37,13 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
     {
         protected override IEnumerable<WhenStep> When()
         {
-            yield return CreateWriteEvent("$projections-$@" + _serviceId, "$command", "{}", null, true);
+            yield return
+                CreateWriteEvent(
+                    "$projections-$" + _serviceId,
+                    "$start",
+                    "{\"id\":\"" + Guid.NewGuid().ToString("N") + "\"}",
+                    null,
+                    true);
         }
 
         [Test]
