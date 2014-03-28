@@ -341,6 +341,7 @@
     <Compile Include="Services\projection_core_service_command_reader\specification_with_projection_core_service_command_reader_started.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_creating.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_a_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_create_and_prepare_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_create_prepared_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_dispose_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_kill_command.cs" />

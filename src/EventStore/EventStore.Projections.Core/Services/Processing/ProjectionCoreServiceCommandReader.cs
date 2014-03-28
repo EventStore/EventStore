@@ -128,6 +128,19 @@ namespace EventStore.Projections.Core.Services.Processing
                                 commandBody.Query));
                         break;
                     }
+                case "$create-and-prepare":
+                    {
+                        var commandBody = resolvedEvent.Event.Data.ParseJson<CreateAndPrepareCommand>();
+                        _publisher.Publish(
+                            new CoreProjectionManagementMessage.CreateAndPrepare(
+                                Guid.ParseExact(commandBody.Id, "N"),
+                                commandBody.Name,
+                                commandBody.Version,
+                                commandBody.Config.ToConfig(),
+                                commandBody.HandlerType,
+                                commandBody.Query));
+                        break;
+                    }
                 case "$start":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<StartCommand>();
@@ -218,6 +231,16 @@ namespace EventStore.Projections.Core.Services.Processing
             public string Id { get; set; }
             public PersistedProjectionConfig Config;
             public ProjectionSourceDefinition SourceDefinition;
+            public ProjectionVersion Version;
+            public string HandlerType;
+            public string Query;
+            public string Name;
+        }
+
+        private class CreateAndPrepareCommand
+        {
+            public string Id { get; set; }
+            public PersistedProjectionConfig Config;
             public ProjectionVersion Version;
             public string HandlerType;
             public string Query;
