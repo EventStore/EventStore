@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var command = resolvedEvent.Event.EventType;
             switch (command)
             {
-                case "$create-prepapred":
+                case "$create-prepared":
                     {
                         var commandBody = resolvedEvent.Event.Data.ParseJson<CreatePreparedCommand>();
                         _publisher.Publish(

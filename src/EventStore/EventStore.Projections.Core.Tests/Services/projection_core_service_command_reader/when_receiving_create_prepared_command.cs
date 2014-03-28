@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
             yield return
                 CreateWriteEvent(
                     "$projections-$" + _serviceId,
-                    "$create-prepapred",
+                    "$create-prepared",
                     @"{
                         ""id"":""" + _projectionId.ToString("N") + @""",
                           ""config"":{
