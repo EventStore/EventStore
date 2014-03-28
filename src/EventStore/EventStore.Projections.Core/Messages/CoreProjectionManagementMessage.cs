@@ -344,19 +344,16 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            private readonly IEnvelope _envelope;
             private readonly ProjectionConfig _config;
             private readonly string _handlerType;
             private readonly string _query;
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
-            public CreateAndPrepare(
-                IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
+            public CreateAndPrepare(Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
                 string handlerType, string query)
                 : base(projectionId)
             {
-                _envelope = envelope;
                 _name = name;
                 _version = version;
                 _config = config;
@@ -372,11 +369,6 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public ProjectionVersion Version
@@ -404,7 +396,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return TypeId; }
             }
 
-            private readonly IEnvelope _envelope;
             private readonly IPublisher _resultsPublisher;
             private readonly Guid _masterCoreProjectionId;
             private readonly ProjectionConfig _config;
@@ -413,9 +404,7 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
-            public CreateAndPrepareSlave(
-                IEnvelope envelope,
-                Guid projectionId,
+            public CreateAndPrepareSlave(Guid projectionId,
                 string name,
                 ProjectionVersion version,
                 ProjectionConfig config,
@@ -426,14 +415,12 @@ namespace EventStore.Projections.Core.Messages
                 string query)
                 : base(projectionId)
             {
-                if (envelope == null) throw new ArgumentNullException("envelope");
                 if (name == null) throw new ArgumentNullException("name");
                 if (config == null) throw new ArgumentNullException("config");
                 if (resultsPublisher == null) throw new ArgumentNullException("resultsPublisher");
                 if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
                 if (handlerType == null) throw new ArgumentNullException("handlerType");
                 if (query == null) throw new ArgumentNullException("query");
-                _envelope = envelope;
                 _name = name;
                 _version = version;
                 _config = config;
@@ -451,11 +438,6 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public ProjectionVersion Version
@@ -489,7 +471,6 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            private readonly IEnvelope _envelope;
             private readonly ProjectionConfig _config;
             private readonly IQuerySources _sourceDefinition;
             private readonly string _handlerType;
@@ -497,8 +478,7 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
-            public CreatePrepared(
-                IEnvelope envelope, Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
+            public CreatePrepared(Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
                 IQuerySources sourceDefinition, string handlerType, string query)
                 : base(projectionId)
             {
@@ -507,7 +487,6 @@ namespace EventStore.Projections.Core.Messages
                 if (sourceDefinition == null) throw new ArgumentNullException("sourceDefinition");
                 if (handlerType == null) throw new ArgumentNullException("handlerType");
                 if (query == null) throw new ArgumentNullException("query");
-                _envelope = envelope;
                 _name = name;
                 _version = version;
                 _config = config;
@@ -524,11 +503,6 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public IQuerySources SourceDefinition

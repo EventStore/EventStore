@@ -754,12 +754,10 @@ namespace EventStore.Projections.Core.Services.Management
             };
 
             var createProjectionMessage = _isSlave ? 
-                (Message) new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-                    new PublishEnvelope(_inputQueue), Id, _name, 
+                (Message) new CoreProjectionManagementMessage.CreateAndPrepareSlave(Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
                     config, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory, HandlerType, Query) :
-                new CoreProjectionManagementMessage.CreateAndPrepare(
-                    new PublishEnvelope(_inputQueue), Id, _name, 
+                new CoreProjectionManagementMessage.CreateAndPrepare(Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
                     config, HandlerType, Query);
 
@@ -787,8 +785,7 @@ namespace EventStore.Projections.Core.Services.Management
                     "The projection cannot be loaded as stopped as it was stored in the old format.  Update the projection query text to force prepare");
 
             var createProjectionMessage =
-                new CoreProjectionManagementMessage.CreatePrepared(
-                    new PublishEnvelope(_inputQueue), Id, _name,
+                new CoreProjectionManagementMessage.CreatePrepared(Id, _name,
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 1),
                     config, _persistedState.SourceDefinition, HandlerType, Query);
 

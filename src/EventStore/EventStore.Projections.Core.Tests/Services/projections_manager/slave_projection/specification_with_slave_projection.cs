@@ -28,8 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
             yield return
-                new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-                    Envelope, _coreProjectionCorrelationId, "projection", new ProjectionVersion(1, 0, 0),
+                new CoreProjectionManagementMessage.CreateAndPrepareSlave(_coreProjectionCorrelationId, "projection", new ProjectionVersion(1, 0, 0),
                     new ProjectionConfig(
                         SystemAccount.Principal, 0, 0, 1000, 1000, false, false, false, true, isSlaveProjection: true),
                     GetInputQueue(), _coreProjectionCorrelationId, (handlerType, query) => new FakeProjectionStateHandler(

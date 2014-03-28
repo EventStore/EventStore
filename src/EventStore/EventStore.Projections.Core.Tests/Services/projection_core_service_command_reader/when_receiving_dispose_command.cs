@@ -24,11 +24,11 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
         }
 
         [Test]
-        public void publishes_projection_start_message()
+        public void publishes_projection_dispose_message()
         {
-            var start = HandledMessages.OfType<CoreProjectionManagementMessage.Dispose>().LastOrDefault();
-            Assert.IsNotNull(start);
-            Assert.AreEqual(_projectionId, start.ProjectionId);
+            var dispose = HandledMessages.OfType<CoreProjectionManagementMessage.Dispose>().LastOrDefault();
+            Assert.IsNotNull(dispose);
+            Assert.AreEqual(_projectionId, dispose.ProjectionId);
         }
     }
 }

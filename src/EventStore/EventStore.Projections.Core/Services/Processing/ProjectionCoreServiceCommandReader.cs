@@ -114,6 +114,20 @@ namespace EventStore.Projections.Core.Services.Processing
             var command = resolvedEvent.Event.EventType;
             switch (command)
             {
+                case "$create-prepapred":
+                    {
+                        var commandBody = resolvedEvent.Event.Data.ParseJson<CreatePreparedCommand>();
+                        _publisher.Publish(
+                            new CoreProjectionManagementMessage.CreatePrepared(
+                                Guid.ParseExact(commandBody.Id, "N"),
+                                commandBody.Name,
+                                commandBody.Version,
+                                commandBody.Config.ToConfig(),
+                                commandBody.SourceDefinition,
+                                commandBody.HandlerType,
+                                commandBody.Query));
+                        break;
+                    }
                 case "$start":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<StartCommand>();
@@ -201,6 +215,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private class CreatePreparedCommand
         {
+            public string Id { get; set; }
             public PersistedProjectionConfig Config;
             public ProjectionSourceDefinition SourceDefinition;
             public ProjectionVersion Version;

@@ -126,13 +126,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.Prepared(
                         message.ProjectionId, sourceDefinition, slaveProjections));
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
@@ -153,13 +153,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.Prepared(
                         message.ProjectionId, sourceDefinition, slaveProjections));
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
@@ -183,13 +183,13 @@ namespace EventStore.Projections.Core.Services.Processing
                         name, projectionVersion, sourceDefinition, projectionConfig, stateHandler,
                         message.ResultsPublisher, message.MasterCoreProjectionId, this);
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.Prepared(
                         message.ProjectionId, sourceDefinition, slaveProjections: null));
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
