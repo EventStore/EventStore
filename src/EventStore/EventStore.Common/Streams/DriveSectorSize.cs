@@ -14,7 +14,7 @@ namespace EventStore.Common.Streams
         {
             uint size = 512; // sector size in bytes. 
             uint toss;       // ignored outputs
-            WinApi.GetDiskFre eSpace(Path.GetPathRoot(path), out toss, out size, out toss, out toss);
+            WinApi.GetDiskFreeSpace(Path.GetPathRoot(path), out toss, out size, out toss, out toss);
             return size;
         }
     }
