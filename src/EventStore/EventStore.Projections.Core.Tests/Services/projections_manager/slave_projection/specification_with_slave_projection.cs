@@ -46,7 +46,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                         true,
                         isSlaveProjection: true),
                     _masterWorkerId,
-                    GetInputQueue(),
                     _coreProjectionCorrelationId,
                     (handlerType, query) => new FakeProjectionStateHandler(
                         configureBuilder: builder =>

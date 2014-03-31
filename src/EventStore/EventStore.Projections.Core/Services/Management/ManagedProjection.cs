@@ -90,7 +90,6 @@ namespace EventStore.Projections.Core.Services.Management
         //TODO: slave (extract into derived class)
 
         private readonly bool _isSlave;
-        private readonly IPublisher _slaveResultsPublisher;
         private readonly Guid _slaveMasterWorkerId;
         private readonly Guid _slaveMasterCorrelationId;
         private Guid _slaveProjectionSubscriptionId;
@@ -132,7 +131,6 @@ namespace EventStore.Projections.Core.Services.Management
             _timeProvider = timeProvider;
             _timeoutScheduler = timeoutScheduler;
             _isSlave = isSlave;
-            _slaveResultsPublisher = slaveResultsPublisher;
             _slaveMasterWorkerId = slaveMasterWorkerId;
             _slaveMasterCorrelationId = slaveMasterCorrelationId;
             _getStateDispatcher =
@@ -771,13 +769,25 @@ namespace EventStore.Projections.Core.Services.Management
                 }
             };
 
-            var createProjectionMessage = _isSlave ? 
-                (Message) new CoreProjectionManagementMessage.CreateAndPrepareSlave(Id, _name, 
+            var createProjectionMessage = _isSlave
+                ? (Message)
+                    new CoreProjectionManagementMessage.CreateAndPrepareSlave(
+                        Id,
+                        _name,
+                        new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
+                        config,
+                        _slaveMasterWorkerId,
+                        _slaveMasterCorrelationId,
+                        stateHandlerFactory,
+                        HandlerType,
+                        Query)
+                : new CoreProjectionManagementMessage.CreateAndPrepare(
+                    Id,
+                    _name,
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
-                    config, _slaveMasterWorkerId, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory, HandlerType, Query) :
-                new CoreProjectionManagementMessage.CreateAndPrepare(Id, _name, 
-                    new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
-                    config, HandlerType, Query);
+                    config,
+                    HandlerType,
+                    Query);
 
             //note: set runnign before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;

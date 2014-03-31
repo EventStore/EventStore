@@ -42,8 +42,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
         protected override ProjectionProcessingStrategy GivenProjectionProcessingStrategy()
         {
             return new SlaveQueryProcessingStrategy(
-                _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-                _workerId, GetInputQueue(), _projectionCorrelationId, _subscriptionDispatcher);
+                _projectionName,
+                _version,
+                _stateHandler,
+                _projectionConfig,
+                _stateHandler.GetSourceDefinition(),
+                null,
+                _workerId,
+                GetInputQueue(),
+                _projectionCorrelationId,
+                _subscriptionDispatcher);
         }
 
         protected override void Given()

@@ -6,15 +6,13 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class SlaveResultWriter : IResultWriter
     {
-        private readonly IPublisher _resultsPublisher;
         private readonly Guid _workerId;
         private readonly Guid _masterCoreProjectionId;
+        private readonly IPublisher _resultsPublisher;
 
-        public SlaveResultWriter(IPublisher resultsPublisher, Guid workerId, Guid masterCoreProjectionId)
+        public SlaveResultWriter(Guid workerId, IPublisher publisher, Guid masterCoreProjectionId)
         {
-            if (resultsPublisher == null) throw new ArgumentNullException("resultsPublisher");
-
-            _resultsPublisher = resultsPublisher;
+            _resultsPublisher = publisher;
             _workerId = workerId;
             _masterCoreProjectionId = masterCoreProjectionId;
         }

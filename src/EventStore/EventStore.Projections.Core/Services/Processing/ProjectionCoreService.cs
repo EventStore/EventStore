@@ -194,7 +194,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         projectionConfig,
                         stateHandler,
                         message.MasterWorkerId,
-                        message.ResultsPublisher,
+                        _publisher, 
                         message.MasterCoreProjectionId,
                         this);
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);

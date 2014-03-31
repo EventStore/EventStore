@@ -11,20 +11,31 @@ namespace EventStore.Projections.Core.Services.Processing
     public class SlaveQueryProcessingStrategy : DefaultProjectionProcessingStrategy
     {
         private readonly Guid _workerId;
-        private readonly IPublisher _resultsPublisher;
         private readonly Guid _masterCoreProjectionId;
+        private readonly IPublisher _publisher;
 
         public SlaveQueryProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
-            ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-            Guid workerId, IPublisher resultsPublisher, Guid masterCoreProjectionId,
+            string name,
+            ProjectionVersion projectionVersion,
+            IProjectionStateHandler stateHandler,
+            ProjectionConfig projectionConfig,
+            IQuerySources sourceDefinition,
+            ILogger logger,
+            Guid workerId,
+            IPublisher publisher,
+            Guid masterCoreProjectionId,
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(
-                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger,
+                name,
+                projectionVersion,
+                stateHandler,
+                projectionConfig,
+                sourceDefinition,
+                logger,
                 subscriptionDispatcher)
         {
             _workerId = workerId;
-            _resultsPublisher = resultsPublisher;
+            _publisher = publisher;
             _masterCoreProjectionId = masterCoreProjectionId;
         }
 
@@ -76,7 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
             IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
             ProjectionNamesBuilder namingBuilder)
         {
-            return new SlaveResultWriter(_resultsPublisher, _workerId, _masterCoreProjectionId);
+            return new SlaveResultWriter(_workerId, _publisher, _masterCoreProjectionId);
         }
 
         protected override ICoreProjectionCheckpointManager CreateCheckpointManager(

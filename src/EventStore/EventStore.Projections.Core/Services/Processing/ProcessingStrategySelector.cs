@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionConfig projectionConfig,
             IProjectionStateHandler stateHandler,
             Guid workerId,
-            IPublisher resultsEnvelope,
+            IPublisher publisher,
             Guid masterCoreProjectionId,
             ProjectionCoreService projectionCoreService)
         {
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 sourceDefinition,
                 projectionCoreService.Logger,
                 workerId,
-                resultsEnvelope,
+                publisher,
                 masterCoreProjectionId,
                 _subscriptionDispatcher);
         }

@@ -396,7 +396,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return TypeId; }
             }
 
-            private readonly IPublisher _resultsPublisher;
             private readonly Guid _masterCoreProjectionId;
             private readonly ProjectionConfig _config;
             private readonly Guid _masterWorkerId;
@@ -410,7 +409,6 @@ namespace EventStore.Projections.Core.Messages
                 ProjectionVersion version,
                 ProjectionConfig config,
                 Guid masterMasterWorkerId,
-                IPublisher resultsPublisher,
                 Guid masterCoreProjectionId,
                 Func<string, string, IProjectionStateHandler> handlerFactory,
                 string handlerType,
@@ -419,7 +417,6 @@ namespace EventStore.Projections.Core.Messages
             {
                 if (name == null) throw new ArgumentNullException("name");
                 if (config == null) throw new ArgumentNullException("config");
-                if (resultsPublisher == null) throw new ArgumentNullException("resultsPublisher");
                 if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
                 if (handlerType == null) throw new ArgumentNullException("handlerType");
                 if (query == null) throw new ArgumentNullException("query");
@@ -427,7 +424,6 @@ namespace EventStore.Projections.Core.Messages
                 _version = version;
                 _config = config;
                 _masterWorkerId = masterMasterWorkerId;
-                _resultsPublisher = resultsPublisher;
                 _masterCoreProjectionId = masterCoreProjectionId;
                 _handlerType = handlerType;
                 _query = query;
@@ -446,11 +442,6 @@ namespace EventStore.Projections.Core.Messages
             public ProjectionVersion Version
             {
                 get { return _version; }
-            }
-
-            public IPublisher ResultsPublisher
-            {
-                get { return _resultsPublisher; }
             }
 
             public Guid MasterCoreProjectionId
