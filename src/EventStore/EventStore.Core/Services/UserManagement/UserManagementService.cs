@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.UserManagement
                                          IHandle<UserManagementMessage.Delete>,
                                          IHandle<SystemMessage.BecomeMaster>
     {
-        public const string UserUpdated = "$UserUpdated";
+        public const string UserUpdated = "$UserUpdated";  
         public const string PasswordChanged = "$PasswordChanged";
         public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
         private readonly IPublisher _publisher;

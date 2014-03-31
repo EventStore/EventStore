@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -336,5 +337,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     singletonTimeoutScheduler == null ? (Action<int, Action>) null : singletonTimeoutScheduler.Schedule);
             return stateHandler;
         }
+
     }
 }

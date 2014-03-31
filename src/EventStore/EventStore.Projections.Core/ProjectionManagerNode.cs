@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -6,6 +8,7 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Http;
 using EventStore.Projections.Core.Services.Management;
 
@@ -20,7 +23,7 @@ namespace EventStore.Projections.Core
 
         private ProjectionManagerNode(
             IPublisher inputQueue,
-            IPublisher[] queues,
+            IDictionary<Guid, IPublisher> queues,
             RunProjections runProjections,
             TimeoutScheduler[] timeoutSchedulers)
         {
@@ -72,14 +75,21 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_projectionManager);
+                mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManager);
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);
         }
 
         public static ProjectionManagerNode Create(
-            TFChunkDb db, QueuedHandler inputQueue, IHttpForwarder httpForwarder, HttpService[] httpServices, IPublisher networkSendQueue,
-            IPublisher[] queues, RunProjections runProjections, TimeoutScheduler[] timeoutSchedulers)
+            TFChunkDb db,
+            QueuedHandler inputQueue,
+            IHttpForwarder httpForwarder,
+            HttpService[] httpServices,
+            IPublisher networkSendQueue,
+            IDictionary<Guid, IPublisher> queues,
+            RunProjections runProjections,
+            TimeoutScheduler[] timeoutSchedulers)
         {
             var projectionManagerNode = new ProjectionManagerNode(inputQueue, queues, runProjections, timeoutSchedulers);
             var projectionsController = new ProjectionsController(httpForwarder, inputQueue, networkSendQueue);

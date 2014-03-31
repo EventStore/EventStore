@@ -420,6 +420,8 @@ namespace EventStore.Projections.Core.Messages
                 if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
                 if (handlerType == null) throw new ArgumentNullException("handlerType");
                 if (query == null) throw new ArgumentNullException("query");
+                if (masterMasterWorkerId == Guid.Empty)
+                    throw new ArgumentException("Must not be empty", "masterMasterWorkerId");
                 _name = name;
                 _version = version;
                 _config = config;

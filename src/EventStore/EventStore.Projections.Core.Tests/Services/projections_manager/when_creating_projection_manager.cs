@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
@@ -24,11 +25,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test]
         public void it_can_be_created()
         {
-            IPublisher[] queues = new IPublisher[] {new FakePublisher()};
+            var queues = new Dictionary<Guid, IPublisher> {{Guid.NewGuid(), new FakePublisher()}};
             using (
                 new ProjectionManager(
                     new FakePublisher(), new FakePublisher(), queues, _timeProvider,
-                    RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
+                    RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count)))
             {
             }
         }
@@ -36,10 +37,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void main_queue_throws_argument_null_exception()
         {
-            IPublisher[] queues = new IPublisher[] {new FakePublisher()};
+            var queues = new Dictionary<Guid, IPublisher> {{Guid.NewGuid(), new FakePublisher()}};
             using (
                 new ProjectionManager(
-                    null, new FakePublisher(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
+                    null, new FakePublisher(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count)))
             {
             }
         }
@@ -47,10 +48,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            IPublisher[] queues = new IPublisher[] {new FakePublisher()};
+            var queues = new Dictionary<Guid, IPublisher> {{Guid.NewGuid(), new FakePublisher()}};
             using (
                 new ProjectionManager(
-                    new FakePublisher(), null, queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
+                    new FakePublisher(), null, queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count)))
             {
             }
         }
@@ -73,9 +74,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_queues_throws_argument_exception()
         {
-            IPublisher[] queues = new IPublisher[0];
-            using (new ProjectionManager(
-                    new FakePublisher(), new FakePublisher(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length)))
+            var queues = new Dictionary<Guid, IPublisher>();
+            using (
+                new ProjectionManager(
+                    new FakePublisher(),
+                    new FakePublisher(),
+                    queues,
+                    _timeProvider,
+                    RunProjections.All,
+                    ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count)))
             {
             }
         }

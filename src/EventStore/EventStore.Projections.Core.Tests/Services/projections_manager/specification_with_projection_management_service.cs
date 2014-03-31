@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -6,6 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
@@ -44,9 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             //TODO: this became an integration test - proper ProjectionCoreService and ProjectionManager testing is required as well
             _bus.Subscribe(_consumer);
 
-            IPublisher[] queues = GivenCoreQueues();
+            var queues = GivenCoreQueues();
             _manager = new ProjectionManager(
-                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length),
+                GetInputQueue(),
+                GetInputQueue(),
+                queues,
+                _timeProvider,
+                RunProjections.All,
+                ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count),
                 _initializeSystemProjections);
 
             IPublisher inputQueue = GetInputQueue();
@@ -80,6 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
+            _bus.Subscribe<PartitionProcessingResultBase>(_manager);
 
             _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
@@ -99,6 +108,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             WhenLoop();
         }
 
-        protected abstract IPublisher[] GivenCoreQueues();
+        protected abstract Dictionary<Guid, IPublisher> GivenCoreQueues();
     }
 }

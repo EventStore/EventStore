@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
@@ -19,9 +20,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         private new ITimeProvider _timeProvider;
         private ProjectionManager _manager;
+        private Guid _workerId;
 
         protected override void Given()
         {
+            _workerId = Guid.NewGuid();
             ExistingEvent("$projections-$all", "$ProjectionCreated", null, "projection1");
             ExistingEvent(
                 "$projections-projection1", "$ProjectionUpdated", null,
@@ -33,8 +36,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void setup()
         {
             _timeProvider = new FakeTimeProvider();
-            IPublisher[] queues = new IPublisher[] {_bus};
-            _manager = new ProjectionManager(_bus, _bus, queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length));
+            var queues = new Dictionary<Guid, IPublisher>{{_workerId, _bus}};
+            _manager = new ProjectionManager(
+                _bus,
+                _bus,
+                queues,
+                _timeProvider,
+                RunProjections.All,
+                ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count));
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));

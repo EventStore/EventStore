@@ -102,6 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionProcessingStrategy = projectionProcessingStrategy;
             _projectionCorrelationId = projectionCorrelationId;
             _inputQueue = inputQueue;
+            _workerId = workerId;
             _runAs = runAs;
             _name = effectiveProjectionName;
             _version = version;

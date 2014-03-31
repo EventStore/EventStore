@@ -26,7 +26,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected ProjectionManager _manager;
         private bool _initializeSystemProjections;
         protected Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] _processingQueues;
-        private Guid _workerId;
 
         protected override void Given1()
         {
@@ -55,9 +54,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_consumer);
 
             _processingQueues = GivenProcessingQueues();
-            IPublisher[] queues = _processingQueues.Select(v => v.Item1).ToArray();
+            var queues = _processingQueues.ToDictionary(v => v.Item5, v => (IPublisher)v.Item1);
             _manager = new ProjectionManager(
-                GetInputQueue(), GetInputQueue(), queues, _timeProvider, RunProjections.All, ProjectionManagerNode.CreateTimeoutSchedulers(queues.Length),
+                GetInputQueue(),
+                GetInputQueue(),
+                queues,
+                _timeProvider,
+                RunProjections.All,
+                ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count),
                 _initializeSystemProjections);
 
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
@@ -87,6 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
+            _bus.Subscribe<PartitionProcessingResultBase>(_manager);
 
 
             foreach(var q in _processingQueues)
@@ -140,7 +145,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
             var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(output, ioDispatcher);
             var coreService = new ProjectionCoreService(
-                _workerId,
+                workerId,
                 inputQueue,
                 output,
                 _subscriptionDispatcher,
@@ -210,6 +215,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.ControlMessage>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<PartitionProcessingResultBase>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<Message>(inputQueue)); // forward all
 
                 var forwarder = new RequestResponseQueueForwarder(

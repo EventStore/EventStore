@@ -20,11 +20,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected Guid _masterCorrelationId;
         protected Guid _masterWorkerId;
 
-        protected override IPublisher[] GivenCoreQueues()
+        protected override Dictionary<Guid, IPublisher> GivenCoreQueues()
         {
             _coreQueue1 = new FakePublisher();
             _coreQueue2 = new FakePublisher();
-            return new[] { _coreQueue1, _coreQueue2 };
+            return new Dictionary<Guid, IPublisher> {{Guid.NewGuid(), _coreQueue1}, {Guid.NewGuid(), _coreQueue2}};
         }
 
         protected override void Given()

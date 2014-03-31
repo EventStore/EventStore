@@ -15,6 +15,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -49,7 +50,8 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.ResultReport>,
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
                                      IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
-                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>
+                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
+        IHandle<PartitionProcessingResultBase>
     {
 
         public const int ProjectionQueryId = -2;
@@ -59,6 +61,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
         private readonly IPublisher[] _queues;
+        private readonly IDictionary<Guid, IPublisher> _queueMap;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly ITimeProvider _timeProvider;
         private readonly RunProjections _runProjections;
@@ -79,17 +82,18 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly PublishEnvelope _publishEnvelope;
 
         public ProjectionManager(
-            IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider,
+            IPublisher inputQueue, IPublisher publisher, IDictionary<Guid, IPublisher> queueMap, ITimeProvider timeProvider,
             RunProjections runProjections, TimeoutScheduler[] timeoutSchedulers, bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
-            if (queues == null) throw new ArgumentNullException("queues");
-            if (queues.Length == 0) throw new ArgumentException("At least one queue is required", "queues");
+            if (queueMap == null) throw new ArgumentNullException("queueMap");
+            if (queueMap.Count == 0) throw new ArgumentException("At least one queue is required", "queueMap");
 
             _inputQueue = inputQueue;
             _publisher = publisher;
-            _queues = queues;
+            _queues = queueMap.Values.ToArray();
+            _queueMap = queueMap;
 
             _timeoutSchedulers = timeoutSchedulers;
 
@@ -922,5 +926,13 @@ namespace EventStore.Projections.Core.Services.Management
                 message.MasterCorrelationId);
         }
 
+        public void Handle(PartitionProcessingResultBase message)
+        {
+            IPublisher worker;
+            if (_queueMap.TryGetValue(message.WorkerId, out worker))
+                worker.Publish(message);
+            else
+                _logger.Info("Cannot find a worker with ID: " + message.WorkerId);
+        }
     }
 }
