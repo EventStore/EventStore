@@ -1,5 +1,5 @@
 #!/bin/sh
-notify-send "Auto Started" "" -i $PWD/images/circleWIN.png -t 1000
+notify-send "Auto Started" "" -i $PWD/tools/autotest-images/circleWIN.png -t 1000
 while true
 do
       if [ ! -z $(inotifywait --recursive -qre modify --format "%w%f" ./ | grep -v -f includes) ]
@@ -11,12 +11,12 @@ do
                ./run_tests.sh -m /opt/mono -x LongRunning 
                 if [ $? -eq 0 ]
                 then
-                      notify-send "Passed" "Tests Passed" -i $PWD/images/circleWIN.png -t 1000
+                      notify-send "Passed" "Tests Passed" -i $PWD/tools/autotest-images/circleWIN.png -t 1000
                 else
-                      notify-send "Failed" "Tests Failed" -i $PWD/images/circleFAIL.png -t 1000
+                      notify-send "Failed" "Tests Failed" -i $PWD/tools/autotest-images/circleFAIL.png -t 1000
                 fi
             else
-                notify-send "Failed" "Build Failed" -i $PWD/images/circleFAIL.png -t 1000
+                notify-send "Failed" "Build Failed" -i $PWD/tools/autotest-images/circleFAIL.png -t 1000
           fi 
       fi
 done
