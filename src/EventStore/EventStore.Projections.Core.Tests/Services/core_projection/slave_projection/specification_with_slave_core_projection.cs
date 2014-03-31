@@ -12,6 +12,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
     public abstract class specification_with_slave_core_projection : TestFixtureWithCoreProjectionStarted
     {
         protected Guid _eventId;
+        protected Guid _workerId;
 
         protected override bool GivenIsSlaveProjection()
         {
@@ -42,12 +43,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
         {
             return new SlaveQueryProcessingStrategy(
                 _projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-                GetInputQueue(), _projectionCorrelationId, _subscriptionDispatcher);
+                _workerId, GetInputQueue(), _projectionCorrelationId, _subscriptionDispatcher);
         }
 
         protected override void Given()
         {
             _eventId = Guid.NewGuid();
+            _workerId = Guid.NewGuid();
             _checkpointHandledThreshold = 0;
             _checkpointUnhandledBytesThreshold = 0;
 

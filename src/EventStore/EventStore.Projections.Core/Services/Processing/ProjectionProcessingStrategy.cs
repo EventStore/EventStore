@@ -22,8 +22,14 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public CoreProjection Create(
-            Guid projectionCorrelationId, IPublisher inputQueue, IPrincipal runAs, IPublisher publisher,
-            IODispatcher ioDispatcher, ReaderSubscriptionDispatcher subscriptionDispatcher, ITimeProvider timeProvider)
+            Guid projectionCorrelationId,
+            IPublisher inputQueue,
+            Guid workerId,
+            IPrincipal runAs,
+            IPublisher publisher,
+            IODispatcher ioDispatcher,
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            ITimeProvider timeProvider)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             //if (runAs == null) throw new ArgumentNullException("runAs");
@@ -35,15 +41,30 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var coreProjectionCheckpointWriter =
                 new CoreProjectionCheckpointWriter(
-                    namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion,
+                    namingBuilder.MakeCheckpointStreamName(),
+                    ioDispatcher,
+                    _projectionVersion,
                     namingBuilder.EffectiveProjectionName);
 
             var partitionStateCache = new PartitionStateCache();
 
             return new CoreProjection(
-                this, _projectionVersion, projectionCorrelationId, inputQueue, runAs, publisher, ioDispatcher,
-                subscriptionDispatcher, _logger, namingBuilder, coreProjectionCheckpointWriter, partitionStateCache,
-                namingBuilder.EffectiveProjectionName, timeProvider, GetIsSlaveProjection());
+                this,
+                _projectionVersion,
+                projectionCorrelationId,
+                inputQueue,
+                workerId,
+                runAs,
+                publisher,
+                ioDispatcher,
+                subscriptionDispatcher,
+                _logger,
+                namingBuilder,
+                coreProjectionCheckpointWriter,
+                partitionStateCache,
+                namingBuilder.EffectiveProjectionName,
+                timeProvider,
+                GetIsSlaveProjection());
         }
 
         protected abstract IQuerySources GetSourceDefinition();

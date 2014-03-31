@@ -34,6 +34,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
     {
+        private readonly Guid _workerId;
         private readonly IPublisher _publisher;
         private readonly IPublisher _inputQueue;
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
@@ -52,10 +53,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public ProjectionCoreService(
-            IPublisher inputQueue, IPublisher publisher, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher,
-            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher, ISingletonTimeoutScheduler timeoutScheduler)
+            Guid workerId,
+            IPublisher inputQueue,
+            IPublisher publisher,
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            ITimeProvider timeProvider,
+            IODispatcher ioDispatcher,
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
+            ISingletonTimeoutScheduler timeoutScheduler)
         {
+            _workerId = workerId;
             _inputQueue = inputQueue;
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
@@ -64,7 +71,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptionDispatcher = subscriptionDispatcher;
             _timeProvider = timeProvider;
             _processingStrategySelector = new ProcessingStrategySelector(
-                _subscriptionDispatcher, _spoolProcessingResponseDispatcher);
+                _subscriptionDispatcher,
+                _spoolProcessingResponseDispatcher);
         }
 
         public ILogger Logger
@@ -168,29 +176,37 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                var stateHandler = CreateStateHandler(
-                    _timeoutScheduler,
-                    _logger,
-                    message.HandlerType,
-                    message.Query);
-                    
+                var stateHandler = CreateStateHandler(_timeoutScheduler, _logger, message.HandlerType, message.Query);
+
                 string name = message.Name;
-                var sourceDefinition = ProjectionSourceDefinition.From(name, stateHandler.GetSourceDefinition(), null, null);
+                var sourceDefinition = ProjectionSourceDefinition.From(
+                    name,
+                    stateHandler.GetSourceDefinition(),
+                    null,
+                    null);
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config.SetIsSlave();
                 var projectionProcessingStrategy =
                     _processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
-                        name, projectionVersion, sourceDefinition, projectionConfig, stateHandler,
-                        message.ResultsPublisher, message.MasterCoreProjectionId, this);
+                        name,
+                        projectionVersion,
+                        sourceDefinition,
+                        projectionConfig,
+                        stateHandler,
+                        message.MasterWorkerId,
+                        message.ResultsPublisher,
+                        message.MasterCoreProjectionId,
+                        this);
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
                     new CoreProjectionManagementMessage.Prepared(
-                        message.ProjectionId, sourceDefinition, slaveProjections: null));
+                        message.ProjectionId,
+                        sourceDefinition,
+                        slaveProjections: null));
             }
             catch (Exception ex)
             {
-                _publisher.Publish(
-                    new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
+                _publisher.Publish(new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
 
@@ -198,7 +214,13 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid projectionCorrelationId, IPrincipal runAs, ProjectionProcessingStrategy processingStrategy)
         {
             var projection = processingStrategy.Create(
-                projectionCorrelationId, _inputQueue, runAs, _publisher, _ioDispatcher, _subscriptionDispatcher,
+                projectionCorrelationId,
+                _inputQueue,
+                _workerId,
+                runAs,
+                _publisher,
+                _ioDispatcher,
+                _subscriptionDispatcher,
                 _timeProvider);
             _projections.Add(projectionCorrelationId, projection);
         }

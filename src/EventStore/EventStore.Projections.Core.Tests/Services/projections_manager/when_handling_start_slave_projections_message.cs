@@ -17,7 +17,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected FakePublisher _coreQueue2;
         private string _masterProjectionName;
         private SlaveProjectionDefinitions _slaveProjectionDefinitions;
-        private Guid _masterCorrelationId;
+        protected Guid _masterCorrelationId;
+        protected Guid _masterWorkerId;
 
         protected override IPublisher[] GivenCoreQueues()
         {
@@ -31,6 +32,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             base.Given();
             _masterProjectionName = "master-projection";
             _masterCorrelationId = Guid.NewGuid();
+            _masterWorkerId = Guid.NewGuid();
             _slaveProjectionDefinitions =
                 new SlaveProjectionDefinitions(
                     new SlaveProjectionDefinitions.Definition(
@@ -45,8 +47,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             yield return
                 new ProjectionManagementMessage.StartSlaveProjections(
-                    Envelope, ProjectionManagementMessage.RunAs.System, _masterProjectionName,
-                    _slaveProjectionDefinitions, GetInputQueue(), _masterCorrelationId);
+                    Envelope,
+                    ProjectionManagementMessage.RunAs.System,
+                    _masterProjectionName,
+                    _slaveProjectionDefinitions,
+                    _masterWorkerId,
+                    GetInputQueue(),
+                    _masterCorrelationId);
         }
 
         private static string StateHandlerFactory()

@@ -788,18 +788,25 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly string _name;
             private readonly SlaveProjectionDefinitions _slaveProjections;
+            private readonly Guid _masterWorkerId;
             private readonly IPublisher _resultsPublisher;
             private readonly Guid _masterCorrelationId;
 
             public StartSlaveProjections(
-                IEnvelope envelope, RunAs runAs, string name, SlaveProjectionDefinitions slaveProjections,
-                IPublisher resultsPublisher, Guid masterCorrelationId)
+                IEnvelope envelope,
+                RunAs runAs,
+                string name,
+                SlaveProjectionDefinitions slaveProjections,
+                Guid masterWorkerId,
+                IPublisher resultsPublisher,
+                Guid masterCorrelationId)
                 : base(envelope, runAs)
             {
                 _name = name;
                 _slaveProjections = slaveProjections;
                 _resultsPublisher = resultsPublisher;
                 _masterCorrelationId = masterCorrelationId;
+                _masterWorkerId = masterWorkerId;
             }
 
             public string Name
@@ -820,6 +827,11 @@ namespace EventStore.Projections.Core.Messages
             public Guid MasterCorrelationId
             {
                 get { return _masterCorrelationId; }
+            }
+
+            public Guid MasterWorkerId
+            {
+                get { return _masterWorkerId; }
             }
         }
 

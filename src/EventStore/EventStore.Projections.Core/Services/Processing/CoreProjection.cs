@@ -44,6 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IPublisher _publisher;
 
         private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
+        private readonly Guid _workerId;
         internal readonly Guid _projectionCorrelationId;
         private readonly IPublisher _inputQueue;
         private readonly IPrincipal _runAs;
@@ -77,10 +78,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public CoreProjection(
-            ProjectionProcessingStrategy projectionProcessingStrategy, ProjectionVersion version,
-            Guid projectionCorrelationId, IPublisher inputQueue, IPrincipal runAs, IPublisher publisher, IODispatcher ioDispatcher,
-            ReaderSubscriptionDispatcher subscriptionDispatcher, ILogger logger, ProjectionNamesBuilder namingBuilder, CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
-            PartitionStateCache partitionStateCache, string effectiveProjectionName, ITimeProvider timeProvider, bool isSlaveProjection)
+            ProjectionProcessingStrategy projectionProcessingStrategy,
+            ProjectionVersion version,
+            Guid projectionCorrelationId,
+            IPublisher inputQueue,
+            Guid workerId,
+            IPrincipal runAs,
+            IPublisher publisher,
+            IODispatcher ioDispatcher,
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            ILogger logger,
+            ProjectionNamesBuilder namingBuilder,
+            CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
+            PartitionStateCache partitionStateCache,
+            string effectiveProjectionName,
+            ITimeProvider timeProvider,
+            bool isSlaveProjection)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
@@ -103,13 +116,24 @@ namespace EventStore.Projections.Core.Services.Processing
             _coreProjectionCheckpointWriter = coreProjectionCheckpointWriter;
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
-                publisher, projectionCorrelationId, partitionStateCache, UpdateStatistics, this, namingBuilder,
-                timeProvider, ioDispatcher, coreProjectionCheckpointWriter);
+                publisher,
+                projectionCorrelationId,
+                partitionStateCache,
+                UpdateStatistics,
+                this,
+                namingBuilder,
+                timeProvider,
+                ioDispatcher,
+                coreProjectionCheckpointWriter);
 
 
             //NOTE: currently assuming the first checkpoint manager to be able to load any state
             _checkpointReader = new CoreProjectionCheckpointReader(
-                publisher, _projectionCorrelationId, ioDispatcher, namingBuilder.MakeCheckpointStreamName(), _version,
+                publisher,
+                _projectionCorrelationId,
+                ioDispatcher,
+                namingBuilder.MakeCheckpointStreamName(),
+                _version,
                 useCheckpoints);
             _enrichStatistics = projectionProcessingStrategy.EnrichStatistics;
             GoToState(State.Initial);
@@ -477,9 +501,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStartSlaveProjectionsRequested()
         {
-            _publisher.Publish(new ProjectionManagementMessage.StartSlaveProjections(
-                        new PublishEnvelope(_inputQueue), new ProjectionManagementMessage.RunAs(_runAs), _name,
-                        _projectionProcessingStrategy.GetSlaveProjections(), _inputQueue, _projectionCorrelationId));
+            _publisher.Publish(
+                new ProjectionManagementMessage.StartSlaveProjections(
+                    new PublishEnvelope(_inputQueue),
+                    new ProjectionManagementMessage.RunAs(_runAs),
+                    _name,
+                    _projectionProcessingStrategy.GetSlaveProjections(),
+                    _workerId,
+                    _inputQueue,
+                    _projectionCorrelationId));
 
         }
 

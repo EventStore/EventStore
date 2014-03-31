@@ -26,6 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected ProjectionConfig _projectionConfig;
         protected ProjectionVersion _version;
         protected string _projectionName;
+        protected Guid _workerId;
 
         protected override void Given1()
         {
@@ -44,6 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
             _stateHandler = GivenProjectionStateHandler();
             _firstWriteCorrelationId = Guid.NewGuid();
+            _workerId = Guid.NewGuid();
             _projectionCorrelationId = Guid.NewGuid();
             _projectionConfig = GivenProjectionConfig();
             var projectionProcessingStrategy = GivenProjectionProcessingStrategy();
@@ -62,7 +64,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected virtual CoreProjection GivenCoreProjection(ProjectionProcessingStrategy projectionProcessingStrategy)
         {
             return projectionProcessingStrategy.Create(
-                _projectionCorrelationId, _bus, SystemAccount.Principal, _bus, _ioDispatcher, _subscriptionDispatcher,
+                _projectionCorrelationId,
+                _bus,
+                _workerId,
+                SystemAccount.Principal,
+                _bus,
+                _ioDispatcher,
+                _subscriptionDispatcher,
                 _timeProvider);
         }
 

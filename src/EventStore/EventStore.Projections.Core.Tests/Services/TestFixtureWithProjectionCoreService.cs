@@ -63,6 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services
 
         private SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
         private ISingletonTimeoutScheduler _timeoutScheduler;
+        protected Guid _workerId;
 
         [SetUp]
         public void Setup()
@@ -77,8 +78,9 @@ namespace EventStore.Projections.Core.Tests.Services
                 new ReaderSubscriptionDispatcher(_bus);
             _spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(_bus);
             _timeoutScheduler = new TimeoutScheduler();
+            _workerId = Guid.NewGuid();
             _service = new ProjectionCoreService(
-                _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher,
+                _workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher,
                 _spoolProcessingResponseDispatcher, _timeoutScheduler);
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             _bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());

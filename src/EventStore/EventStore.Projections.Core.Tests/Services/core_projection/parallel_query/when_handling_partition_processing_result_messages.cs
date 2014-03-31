@@ -12,10 +12,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
     [TestFixture]
     class when_handling_partition_processing_result_messages : specification_with_parallel_query
     {
+        protected Guid _workerId;
+
         protected override void Given()
         {
             base.Given();
             _eventId = Guid.NewGuid();
+            _workerId = Guid.NewGuid();
         }
 
         protected override void When()
@@ -35,13 +38,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
             var spoolRequests = HandledMessages.OfType<ReaderSubscriptionManagement.SpoolStreamReading>().ToArray();
 
             _bus.Publish(
-                new PartitionProcessingResult(
-                    spoolRequests[0].CorrelationId, spoolRequests[0].SubscriptionId, "account-00", Guid.Empty,
+                new PartitionProcessingResult(_workerId, spoolRequests[0].SubscriptionId, "account-00", Guid.Empty,
                     CheckpointTag.FromByStreamPosition(0, "", 0, "account-00", int.MaxValue, 10000),
                     "{\"data\":1}"));
             _bus.Publish(
-                new PartitionProcessingResult(
-                    spoolRequests[1].CorrelationId, spoolRequests[1].SubscriptionId, "account-01", Guid.Empty,
+                new PartitionProcessingResult(_workerId, spoolRequests[1].SubscriptionId, "account-01", Guid.Empty,
                     CheckpointTag.FromByStreamPosition(0, "", 1, "account-01", int.MaxValue, 10000),
                     "{\"data\":2}"));
         }

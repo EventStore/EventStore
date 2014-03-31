@@ -63,7 +63,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 "projection", version, projectionStateHandler, _projectionConfig,
                 projectionStateHandler.GetSourceDefinition(), null, _subscriptionDispatcher);
             _coreProjection = projectionProcessingStrategy.Create(
-                Guid.NewGuid(), _bus, SystemAccount.Principal, _bus, _ioDispatcher, _subscriptionDispatcher,
+                Guid.NewGuid(),
+                _bus,
+                Guid.NewGuid(),
+                SystemAccount.Principal,
+                _bus,
+                _ioDispatcher,
+                _subscriptionDispatcher,
                 new RealTimeProvider());
             _coreProjection.Start();
         }

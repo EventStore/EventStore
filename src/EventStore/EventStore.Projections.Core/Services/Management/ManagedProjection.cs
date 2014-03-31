@@ -91,17 +91,28 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly bool _isSlave;
         private readonly IPublisher _slaveResultsPublisher;
+        private readonly Guid _slaveMasterWorkerId;
         private readonly Guid _slaveMasterCorrelationId;
         private Guid _slaveProjectionSubscriptionId;
 
         public ManagedProjection(
-            IPublisher coreQueue, Guid id, int projectionId, string name, bool enabledToRun, ILogger logger,
+            IPublisher coreQueue,
+            Guid id,
+            int projectionId,
+            string name,
+            bool enabledToRun,
+            ILogger logger,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            IPublisher inputQueue, IPublisher output, 
-            ITimeProvider timeProvider, ISingletonTimeoutScheduler timeoutScheduler = null, bool isSlave = false,
-            IPublisher slaveResultsPublisher = null, Guid slaveMasterCorrelationId = default(Guid))
+            IPublisher inputQueue,
+            IPublisher output,
+            ITimeProvider timeProvider,
+            ISingletonTimeoutScheduler timeoutScheduler = null,
+            bool isSlave = false,
+            Guid slaveMasterWorkerId = default(Guid),
+            IPublisher slaveResultsPublisher = null,
+            Guid slaveMasterCorrelationId = default(Guid))
         {
             if (coreQueue == null) throw new ArgumentNullException("coreQueue");
             if (id == Guid.Empty) throw new ArgumentException("id");
@@ -122,15 +133,22 @@ namespace EventStore.Projections.Core.Services.Management
             _timeoutScheduler = timeoutScheduler;
             _isSlave = isSlave;
             _slaveResultsPublisher = slaveResultsPublisher;
+            _slaveMasterWorkerId = slaveMasterWorkerId;
             _slaveMasterCorrelationId = slaveMasterCorrelationId;
             _getStateDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
-                    coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+                    coreQueue,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_inputQueue));
             _getResultDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>(
-                    coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+                    coreQueue,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_inputQueue));
             _lastAccessed = _timeProvider.Now;
         }
 
@@ -756,7 +774,7 @@ namespace EventStore.Projections.Core.Services.Management
             var createProjectionMessage = _isSlave ? 
                 (Message) new CoreProjectionManagementMessage.CreateAndPrepareSlave(Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
-                    config, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory, HandlerType, Query) :
+                    config, _slaveMasterWorkerId, _slaveResultsPublisher, _slaveMasterCorrelationId, stateHandlerFactory, HandlerType, Query) :
                 new CoreProjectionManagementMessage.CreateAndPrepare(Id, _name, 
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
                     config, HandlerType, Query);

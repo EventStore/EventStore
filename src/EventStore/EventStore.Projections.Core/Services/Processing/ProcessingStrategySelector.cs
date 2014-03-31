@@ -79,13 +79,27 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public ProjectionProcessingStrategy CreateSlaveProjectionProcessingStrategy(
-            string name, ProjectionVersion projectionVersion, ProjectionSourceDefinition sourceDefinition,
-            ProjectionConfig projectionConfig, IProjectionStateHandler stateHandler, IPublisher resultsEnvelope,
-            Guid masterCoreProjectionId, ProjectionCoreService projectionCoreService)
+            string name,
+            ProjectionVersion projectionVersion,
+            ProjectionSourceDefinition sourceDefinition,
+            ProjectionConfig projectionConfig,
+            IProjectionStateHandler stateHandler,
+            Guid workerId,
+            IPublisher resultsEnvelope,
+            Guid masterCoreProjectionId,
+            ProjectionCoreService projectionCoreService)
         {
             return new SlaveQueryProcessingStrategy(
-                name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, projectionCoreService.Logger,
-                resultsEnvelope, masterCoreProjectionId, _subscriptionDispatcher);
+                name,
+                projectionVersion,
+                stateHandler,
+                projectionConfig,
+                sourceDefinition,
+                projectionCoreService.Logger,
+                workerId,
+                resultsEnvelope,
+                masterCoreProjectionId,
+                _subscriptionDispatcher);
         }
     }
 }

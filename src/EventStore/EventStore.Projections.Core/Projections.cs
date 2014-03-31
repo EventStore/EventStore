@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Options;
@@ -114,6 +115,7 @@ namespace EventStore.Projections.Core
                     "Projection Core #" + _coreQueues.Count,
                     groupName: "Projection Core");
                 var projectionNode = new ProjectionWorkerNode(
+                    Guid.NewGuid(),
                     db,
                     coreQueue,
                     timeProvider,

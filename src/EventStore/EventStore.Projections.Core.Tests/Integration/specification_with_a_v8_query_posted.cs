@@ -36,15 +36,26 @@ namespace EventStore.Projections.Core.Tests.Integration
             _startSystemProjections = GivenStartSystemProjections();
         }
 
-        protected override Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler>[] GivenProcessingQueues()
+        protected override Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] GivenProcessingQueues()
         {
             var buses = new IBus[] {new InMemoryBus("1"), new InMemoryBus("2")};
-            var outBuses = new[] { new InMemoryBus("o1"), new InMemoryBus("o2") };
-            _otherQueues = new ManualQueue[] { new ManualQueue(buses[0], _timeProvider), new ManualQueue(buses[1], _timeProvider) };
+            var outBuses = new[] {new InMemoryBus("o1"), new InMemoryBus("o2")};
+            _otherQueues = new ManualQueue[]
+            {new ManualQueue(buses[0], _timeProvider), new ManualQueue(buses[1], _timeProvider)};
             return new[]
             {
-                Tuple.Create(buses[0], (IPublisher) _otherQueues[0], outBuses[0], default(TimeoutScheduler)),
-                Tuple.Create(buses[1], (IPublisher) _otherQueues[1], outBuses[1], default(TimeoutScheduler))
+                Tuple.Create(
+                    buses[0],
+                    (IPublisher) _otherQueues[0],
+                    outBuses[0],
+                    default(TimeoutScheduler),
+                    Guid.NewGuid()),
+                Tuple.Create(
+                    buses[1],
+                    (IPublisher) _otherQueues[1],
+                    outBuses[1],
+                    default(TimeoutScheduler),
+                    Guid.NewGuid())
             };
         }
 

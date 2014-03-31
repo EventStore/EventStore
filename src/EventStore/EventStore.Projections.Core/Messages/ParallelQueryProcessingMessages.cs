@@ -15,13 +15,13 @@ namespace EventStore.Projections.Core.Messages
                 get { return TypeId; }
             }
 
-            protected readonly Guid _correlationId;
+            private readonly Guid _workerId;
             protected readonly Guid _subscriptionId;
             protected readonly string _partition;
 
-            protected PartitionProcessingResultBase(Guid correlationId, Guid subscriptionId, string partition)
+            protected PartitionProcessingResultBase(Guid workerId, Guid subscriptionId, string partition)
             {
-                _correlationId = correlationId;
+                _workerId = workerId;
                 _subscriptionId = subscriptionId;
                 _partition = partition;
             }
@@ -31,14 +31,14 @@ namespace EventStore.Projections.Core.Messages
                 get { return _partition; }
             }
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
-
             public Guid SubscriptionId
             {
                 get { return _subscriptionId; }
+            }
+
+            public Guid WorkerId
+            {
+                get { return _workerId; }
             }
         }
 
@@ -56,9 +56,13 @@ namespace EventStore.Projections.Core.Messages
             private readonly CheckpointTag _position;
 
             public PartitionProcessingResult(
-                Guid correlationId, Guid subscriptionId, string partition, Guid causedByGuid, CheckpointTag position,
+                Guid workerId,
+                Guid subscriptionId,
+                string partition,
+                Guid causedByGuid,
+                CheckpointTag position,
                 string result)
-                : base(correlationId, subscriptionId, partition)
+                : base(workerId, subscriptionId, partition)
             {
                 _causedByGuid = causedByGuid;
                 _position = position;
@@ -93,8 +97,8 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly int _size;
 
-            public PartitionMeasured(Guid correlationId, Guid subscriptionId, string partition, int size)
-                : base(correlationId, subscriptionId, partition)
+            public PartitionMeasured(Guid workerId, Guid subscriptionId, string partition, int size)
+                : base(workerId, subscriptionId, partition)
             {
                 _size = size;
             }
@@ -117,8 +121,8 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly float _progress;
 
-            public PartitionProcessingProgress(Guid correlationId, Guid subscriptionId, float progress)
-                : base(correlationId, subscriptionId, null)
+            public PartitionProcessingProgress(Guid workerId, Guid subscriptionId, float progress)
+                : base(workerId, subscriptionId, null)
             {
                 _progress = progress;
             }

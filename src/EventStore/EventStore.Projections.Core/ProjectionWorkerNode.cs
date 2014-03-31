@@ -1,4 +1,5 @@
-﻿using EventStore.Common.Options;
+﻿using System;
+using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Common.Utils;
 using EventStore.Core.Helpers;
@@ -32,6 +33,7 @@ namespace EventStore.Projections.Core
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 
         public ProjectionWorkerNode(
+            Guid workerId,
             TFChunkDb db,
             QueuedHandler inputQueue,
             ITimeProvider timeProvider,
@@ -60,6 +62,7 @@ namespace EventStore.Projections.Core
             {
                 _projectionCoreServiceCommandReader = new ProjectionCoreServiceCommandReader(publisher, _ioDispatcher);
                 _projectionCoreService = new ProjectionCoreService(
+                    workerId,
                     inputQueue,
                     publisher,
                     _subscriptionDispatcher,

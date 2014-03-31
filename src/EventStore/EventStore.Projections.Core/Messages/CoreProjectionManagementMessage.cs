@@ -399,6 +399,7 @@ namespace EventStore.Projections.Core.Messages
             private readonly IPublisher _resultsPublisher;
             private readonly Guid _masterCoreProjectionId;
             private readonly ProjectionConfig _config;
+            private readonly Guid _masterWorkerId;
             private readonly string _handlerType;
             private readonly string _query;
             private readonly string _name;
@@ -408,6 +409,7 @@ namespace EventStore.Projections.Core.Messages
                 string name,
                 ProjectionVersion version,
                 ProjectionConfig config,
+                Guid masterMasterWorkerId,
                 IPublisher resultsPublisher,
                 Guid masterCoreProjectionId,
                 Func<string, string, IProjectionStateHandler> handlerFactory,
@@ -424,6 +426,7 @@ namespace EventStore.Projections.Core.Messages
                 _name = name;
                 _version = version;
                 _config = config;
+                _masterWorkerId = masterMasterWorkerId;
                 _resultsPublisher = resultsPublisher;
                 _masterCoreProjectionId = masterCoreProjectionId;
                 _handlerType = handlerType;
@@ -463,6 +466,11 @@ namespace EventStore.Projections.Core.Messages
             public string Query
             {
                 get { return _query; }
+            }
+
+            public Guid MasterWorkerId
+            {
+                get { return _masterWorkerId; }
             }
         }
 

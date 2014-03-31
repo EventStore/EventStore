@@ -10,18 +10,20 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class SlaveQueryProcessingStrategy : DefaultProjectionProcessingStrategy
     {
+        private readonly Guid _workerId;
         private readonly IPublisher _resultsPublisher;
         private readonly Guid _masterCoreProjectionId;
 
         public SlaveQueryProcessingStrategy(
             string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
             ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-            IPublisher resultsPublisher, Guid masterCoreProjectionId,
+            Guid workerId, IPublisher resultsPublisher, Guid masterCoreProjectionId,
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(
                 name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger,
                 subscriptionDispatcher)
         {
+            _workerId = workerId;
             _resultsPublisher = resultsPublisher;
             _masterCoreProjectionId = masterCoreProjectionId;
         }
@@ -74,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
             IEmittedEventWriter emittedEventWriter, CheckpointTag zeroCheckpointTag,
             ProjectionNamesBuilder namingBuilder)
         {
-            return new SlaveResultWriter(_resultsPublisher, _masterCoreProjectionId);
+            return new SlaveResultWriter(_resultsPublisher, _workerId, _masterCoreProjectionId);
         }
 
         protected override ICoreProjectionCheckpointManager CreateCheckpointManager(

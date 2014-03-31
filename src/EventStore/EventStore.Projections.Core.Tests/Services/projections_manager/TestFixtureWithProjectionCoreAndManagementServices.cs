@@ -25,7 +25,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected ProjectionManager _manager;
         private bool _initializeSystemProjections;
-        protected Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler>[] _processingQueues;
+        protected Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] _processingQueues;
+        private Guid _workerId;
 
         protected override void Given1()
         {
@@ -89,42 +90,64 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
 
             foreach(var q in _processingQueues)
-                SetUpCoreServices(q.Item1, q.Item2, q.Item3, q.Item4);
+                SetUpCoreServices(q.Item5, q.Item1, q.Item2, q.Item3, q.Item4);
 
             //Given();
             WhenLoop();
         }
 
-        protected virtual Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler>[] GivenProcessingQueues()
+        protected virtual Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] GivenProcessingQueues()
         {
-            return new[] { Tuple.Create((IBus)_bus, GetInputQueue(), (InMemoryBus)null, default(TimeoutScheduler)) };
+            return new[]
+            {Tuple.Create((IBus) _bus, GetInputQueue(), (InMemoryBus) null, default(TimeoutScheduler), Guid.NewGuid())};
         }
 
-        private void SetUpCoreServices(IBus bus, IPublisher inputQueue, InMemoryBus output_, ISingletonTimeoutScheduler timeoutScheduler)
+        private void SetUpCoreServices(
+            Guid workerId,
+            IBus bus,
+            IPublisher inputQueue,
+            InMemoryBus output_,
+            ISingletonTimeoutScheduler timeoutScheduler)
         {
             var output = (output_ ?? inputQueue);
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             var readerService = new EventReaderCoreService(
-                output, _ioDispatcher, 10, writerCheckpoint, runHeadingReader: true);
+                output,
+                _ioDispatcher,
+                10,
+                writerCheckpoint,
+                runHeadingReader: true);
             _subscriptionDispatcher = new ReaderSubscriptionDispatcher(inputQueue);
             var spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(GetInputQueue());
 
-            bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
-            bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
+            bus.Subscribe(
+                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
+            bus.Subscribe(
+                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
-            bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
+            bus.Subscribe(
+                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
-            bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
+            bus.Subscribe(
+                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
-            bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
+            bus.Subscribe(
+                _subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
             bus.Subscribe(spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
 
             var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
             var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(output, ioDispatcher);
             var coreService = new ProjectionCoreService(
-                inputQueue, output, _subscriptionDispatcher, _timeProvider, ioDispatcher, spoolProcessingResponseDispatcher, timeoutScheduler);
+                _workerId,
+                inputQueue,
+                output,
+                _subscriptionDispatcher,
+                _timeProvider,
+                ioDispatcher,
+                spoolProcessingResponseDispatcher,
+                timeoutScheduler);
 
             bus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(coreService);
             bus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(coreService);
@@ -190,7 +213,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 output_.Subscribe(Forwarder.Create<Message>(inputQueue)); // forward all
 
                 var forwarder = new RequestResponseQueueForwarder(
-                    inputQueue: inputQueue, externalRequestQueue: GetInputQueue());
+                    inputQueue: inputQueue,
+                    externalRequestQueue: GetInputQueue());
                 // forwarded messages
                 output_.Subscribe<ClientMessage.ReadEvent>(forwarder);
                 output_.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
