@@ -156,6 +156,17 @@ namespace EventStore.Projections.Core.Services.Processing
                                 commandBody.Query));
                         break;
                     }
+                case "$spool-stream-reading":
+                    {
+                        var commandBody = resolvedEvent.Event.Data.ParseJson<SpoolStreamReadingCommand>();
+                        _publisher.Publish(
+                            new ReaderSubscriptionManagement.SpoolStreamReadingCore(
+                                Guid.ParseExact(commandBody.SubscriptionId, "N"),
+                                commandBody.StreamId,
+                                commandBody.CatalogSequenceNumber,
+                                commandBody.LimitingCommitPosition));
+                        break;
+                    }
                 case "$start":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<StartCommand>();
@@ -244,22 +255,22 @@ namespace EventStore.Projections.Core.Services.Processing
         private class CreatePreparedCommand
         {
             public string Id { get; set; }
-            public PersistedProjectionConfig Config;
-            public ProjectionSourceDefinition SourceDefinition;
-            public ProjectionVersion Version;
-            public string HandlerType;
-            public string Query;
-            public string Name;
+            public PersistedProjectionConfig Config { get; set; }
+            public ProjectionSourceDefinition SourceDefinition { get; set; }
+            public ProjectionVersion Version { get; set; }
+            public string HandlerType { get; set; }
+            public string Query { get; set; }
+            public string Name { get; set; }
         }
 
         private class CreateAndPrepareCommand
         {
             public string Id { get; set; }
-            public PersistedProjectionConfig Config;
-            public ProjectionVersion Version;
-            public string HandlerType;
-            public string Query;
-            public string Name;
+            public PersistedProjectionConfig Config { get; set; }
+            public ProjectionVersion Version { get; set; }
+            public string HandlerType { get; set; }
+            public string Query { get; set; }
+            public string Name { get; set; }
         }
 
         private class CreateAndPrepareSlaveCommand
@@ -267,11 +278,19 @@ namespace EventStore.Projections.Core.Services.Processing
             public string Id { get; set; }
             public string MasterCoreProjectionId { get; set; }
             public string MasterWorkerId { get; set; }
-            public PersistedProjectionConfig Config;
-            public ProjectionVersion Version;
-            public string HandlerType;
-            public string Query;
-            public string Name;
+            public PersistedProjectionConfig Config { get; set; }
+            public ProjectionVersion Version { get; set; }
+            public string HandlerType { get; set; }
+            public string Query { get; set; }
+            public string Name { get; set; }
+        }
+
+        private class SpoolStreamReadingCommand
+        {
+            public string SubscriptionId { get; set; }
+            public string StreamId { get; set; }
+            public int CatalogSequenceNumber { get; set; }
+            public long LimitingCommitPosition { get; set; }
         }
     }
 }
