@@ -62,14 +62,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 CompleteProcessing(position);
             else
                 _loadBalancer.ScheduleTask(
-                    streamId, (streamId_, workerIndex) =>
+                    streamId,
+                    (streamId_, workerIndex) =>
                     {
                         var channel = channelGroup[workerIndex];
                         _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
                             channel.PublishEnvelope,
                             new ReaderSubscriptionManagement.SpoolStreamReading(
-                                channel.SubscriptionId, _correlationId, streamId_, resolvedEvent.PositionSequenceNumber,
-                                _limitingCommitPosition), this);
+                                channel.WorkerId,
+                                channel.SubscriptionId,
+                                _correlationId,
+                                streamId_,
+                                resolvedEvent.PositionSequenceNumber,
+                                _limitingCommitPosition),
+                            this);
                     });
         }
 

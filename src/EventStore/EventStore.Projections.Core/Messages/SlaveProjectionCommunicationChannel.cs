@@ -10,11 +10,17 @@ namespace EventStore.Projections.Core.Messages
         private readonly Guid _subscriptionId;
         private readonly IPublisher _publishEnvelope;
         private readonly string _managedProjectionName;
+        private readonly Guid _workerId;
 
         public SlaveProjectionCommunicationChannel(
-            string managedProjectionName, Guid coreProjectionId, Guid subscriptionId, IPublisher publishEnvelope)
+            string managedProjectionName,
+            Guid workerId,
+            Guid coreProjectionId,
+            Guid subscriptionId,
+            IPublisher publishEnvelope)
         {
             _managedProjectionName = managedProjectionName;
+            _workerId = workerId;
             _coreProjectionId = coreProjectionId;
             _subscriptionId = subscriptionId;
             _publishEnvelope = publishEnvelope;
@@ -38,6 +44,11 @@ namespace EventStore.Projections.Core.Messages
         public string ManagedProjectionName
         {
             get { return _managedProjectionName; }
+        }
+
+        public Guid WorkerId
+        {
+            get { return _workerId; }
         }
     }
 }

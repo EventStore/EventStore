@@ -75,7 +75,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 yield return
-                    new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000);
+                    new ReaderSubscriptionManagement.SpoolStreamReading(
+                        _subscriptionId,
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        "test-stream",
+                        0,
+                        10000);
             }
 
             [Test]
@@ -110,8 +116,20 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 yield return
                     new WhenStep(
-                        new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000),
-                        new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream2", 1, 10000));
+                        new ReaderSubscriptionManagement.SpoolStreamReading(
+                            _subscriptionId,
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            "test-stream",
+                            0,
+                            10000),
+                        new ReaderSubscriptionManagement.SpoolStreamReading(
+                            _subscriptionId,
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            "test-stream2",
+                            1,
+                            10000));
             }
 
             [Test]
@@ -146,16 +164,32 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                 var fromZeroPosition = CheckpointTag.FromByStreamPosition(0, "", -1, null, -1, 10000);
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
-                        _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
+                        _subscriptionId,
+                        fromZeroPosition,
+                        _readerStrategy,
+                        _readerSubscriptionOptions);
                 yield return
-                    new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000);
+                    new ReaderSubscriptionManagement.SpoolStreamReading(
+                        _subscriptionId,
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        "test-stream",
+                        0,
+                        10000);
                 yield return Yield;
 
                 Assert.AreEqual(
-                    2, HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().Count());
+                    2,
+                    HandledMessages.OfType<EventReaderSubscriptionMessage.CommittedEventReceived>().Count());
 
                 yield return
-                    new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream2", 1, 10000);
+                    new ReaderSubscriptionManagement.SpoolStreamReading(
+                        _subscriptionId,
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        "test-stream2",
+                        1,
+                        10000);
             }
 
             [Test]
@@ -193,8 +227,20 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);
                 yield return
                     new WhenStep(
-                        new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream", 0, 10000),
-                        new ReaderSubscriptionManagement.SpoolStreamReading(_subscriptionId, Guid.NewGuid(), "test-stream2", 1, 10000),
+                        new ReaderSubscriptionManagement.SpoolStreamReading(
+                            _subscriptionId,
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            "test-stream",
+                            0,
+                            10000),
+                        new ReaderSubscriptionManagement.SpoolStreamReading(
+                            _subscriptionId,
+                            Guid.NewGuid(),
+                            Guid.NewGuid(),
+                            "test-stream2",
+                            1,
+                            10000),
                         new ReaderSubscriptionManagement.CompleteSpooledStreamReading(_subscriptionId));
             }
 

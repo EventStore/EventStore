@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
-        private readonly IPublisher[] _queues;
+        private readonly Tuple<Guid, IPublisher> [] _queues;
         private readonly IDictionary<Guid, IPublisher> _queueMap;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly ITimeProvider _timeProvider;
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             _inputQueue = inputQueue;
             _publisher = publisher;
-            _queues = queueMap.Values.ToArray();
+            _queues = queueMap.Select(v => Tuple.Create(v.Key, v.Value)).ToArray();
             _queueMap = queueMap;
 
             _timeoutSchedulers = timeoutSchedulers;
@@ -119,9 +119,10 @@ namespace EventStore.Projections.Core.Services.Management
         {
             foreach (var queue in _queues)
             {
-                queue.Publish(new Messages.ReaderCoreServiceMessage.StartReader());
+                var queuePublisher = queue.Item2;
+                queuePublisher.Publish(new Messages.ReaderCoreServiceMessage.StartReader());
                 if (_runProjections >= RunProjections.System)
-                    queue.Publish(new ProjectionCoreServiceMessage.StartCore());
+                    queuePublisher.Publish(new ProjectionCoreServiceMessage.StartCore());
             }
             if (_runProjections >= RunProjections.System)
                 StartExistingProjections(
@@ -156,9 +157,10 @@ namespace EventStore.Projections.Core.Services.Management
             _started = false;
             foreach (var queue in _queues)
             {
-                queue.Publish(new ProjectionCoreServiceMessage.StopCore());
+                var queuePublisher = queue.Item2;
+                queuePublisher.Publish(new ProjectionCoreServiceMessage.StopCore());
                 if (_runProjections >= RunProjections.System)
-                    queue.Publish(new Messages.ReaderCoreServiceMessage.StopReader());
+                    queuePublisher.Publish(new Messages.ReaderCoreServiceMessage.StopReader());
             }
 
             _writeDispatcher.CancelAll();
@@ -771,8 +773,9 @@ namespace EventStore.Projections.Core.Services.Management
             var queue = _queues[queueIndex];
             _lastUsedQueue++;
             var enabledToRun = IsProjectionEnabledToRunByMode(name);
+            var queuePublisher = queue.Item2;
             var managedProjectionInstance = new ManagedProjection(
-                queue,
+                queuePublisher,
                 projectionCorrelationId,
                 projectionId,
                 name,
@@ -852,8 +855,9 @@ namespace EventStore.Projections.Core.Services.Management
                         var resultArray = new SlaveProjectionCommunicationChannel[1];
                         result.Add(g.Name, resultArray);
                         counter++;
+                        int queueIndex = GetNextQueueIndex();
                         CINP(
-                            message, @group, resultArray, GetNextQueueIndex(), 0,
+                            message, @group, resultArray, queueIndex, 0,
                             () => CheckSlaveProjectionsStarted(message, ref counter, result));
                         break;
                     }
@@ -911,11 +915,15 @@ namespace EventStore.Projections.Core.Services.Management
                 this,
                 managedProjection =>
                 {
+                    var queuePublisher = _queues[queueIndex].Item2;
+                    var queueWorkerId = _queues[queueIndex].Item1;
+
                     resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
                         slaveProjectionName,
+                        queueWorkerId,
                         projectionCorrelationId,
                         managedProjection.SlaveProjectionSubscriptionId,
-                        _queues[queueIndex]);
+                        queuePublisher);
                     completed();
                 },
                 projectionCorrelationId,
