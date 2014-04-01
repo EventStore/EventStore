@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
 using System.Linq;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
@@ -33,7 +32,6 @@ namespace EventStore.ClientAPI.Core
                                             TimeSpan gossipTimeout)
         {
             Ensure.NotNull(log, "log");
-            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
 
             _log = log;
             _clusterDns = clusterDns;
