@@ -110,6 +110,8 @@
     <Compile Include="Common\Utils\Json.cs" />
     <Compile Include="ClientClosedEventArgs.cs" />
     <Compile Include="ConnectionSettings.cs" />
+    <Compile Include="DnsClusterSettingsBuilder.cs" />
+    <Compile Include="GossipSeedClusterSettingsBuilder.cs" />
     <Compile Include="ConnectionSettingsBuilder.cs" />
     <Compile Include="ClusterSettings.cs" />
     <Compile Include="ClusterSettingsBuilder.cs" />
