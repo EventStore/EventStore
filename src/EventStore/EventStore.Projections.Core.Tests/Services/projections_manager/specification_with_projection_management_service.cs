@@ -89,6 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
             _bus.Subscribe<PartitionProcessingResultBase>(_manager);
+            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_manager);
 
             _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);

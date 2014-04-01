@@ -26,20 +26,29 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _correlationId;
         private readonly bool _definesCatalogTransform;
         private CheckpointTag _completedAtPosition;
+        private readonly IPublisher _publisher;
 
         public SpoolStreamProcessingWorkItem(
-            ISpoolStreamWorkItemContainer container, IResultWriter resultWriter,
-            ParallelProcessingLoadBalancer loadBalancer, EventReaderSubscriptionMessage.CommittedEventReceived message,
+            ISpoolStreamWorkItemContainer container,
+            IPublisher publisher,
+            IResultWriter resultWriter,
+            ParallelProcessingLoadBalancer loadBalancer,
+            EventReaderSubscriptionMessage.CommittedEventReceived message,
             SlaveProjectionCommunicationChannels slaves,
-            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher, long limitingCommitPosition,
-            Guid subscriptionId, Guid correlationId, bool definesCatalogTransform)
+            SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
+            long limitingCommitPosition,
+            Guid subscriptionId,
+            Guid correlationId,
+            bool definesCatalogTransform)
             : base(Guid.NewGuid())
         {
+            if (publisher == null) throw new ArgumentNullException("publisher");
             if (resultWriter == null) throw new ArgumentNullException("resultWriter");
             if (slaves == null) throw new ArgumentNullException("slaves");
             if (spoolProcessingResponseDispatcher == null)
                 throw new ArgumentNullException("spoolProcessingResponseDispatcher");
             _container = container;
+            _publisher = publisher;
             _resultWriter = resultWriter;
             _loadBalancer = loadBalancer;
             _message = message;
@@ -67,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         var channel = channelGroup[workerIndex];
                         _spoolRequestId = _spoolProcessingResponseDispatcher.PublishSubscribe(
-                            channel.PublishEnvelope,
+                            _publisher,
                             new ReaderSubscriptionManagement.SpoolStreamReading(
                                 channel.WorkerId,
                                 channel.SubscriptionId,

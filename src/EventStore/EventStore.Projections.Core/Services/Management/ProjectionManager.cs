@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
                                      IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
                                      IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
-        IHandle<PartitionProcessingResultBase>
+        IHandle<PartitionProcessingResultBase>, IHandle<ReaderSubscriptionManagement.SpoolStreamReading>
     {
 
         public const int ProjectionQueryId = -2;
@@ -936,11 +936,29 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(PartitionProcessingResultBase message)
         {
+            DispatchWorkerMessage(message, message.WorkerId);
+        }
+
+        public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
+        {
+            DispatchWorkerMessage(
+                new ReaderSubscriptionManagement.SpoolStreamReadingCore(
+                    message.WorkerId,
+                    message.SubscriptionId,
+                    message.CorrelationId,
+                    message.StreamId,
+                    message.CatalogSequenceNumber,
+                    message.LimitingCommitPosition),
+                message.WorkerId);
+        }
+
+        private void DispatchWorkerMessage(Message message, Guid workerId)
+        {
             IPublisher worker;
-            if (_queueMap.TryGetValue(message.WorkerId, out worker))
+            if (_queueMap.TryGetValue(workerId, out worker))
                 worker.Publish(message);
             else
-                _logger.Info("Cannot find a worker with ID: " + message.WorkerId);
+                _logger.Info("Cannot find a worker with ID: " + workerId);
         }
     }
 }

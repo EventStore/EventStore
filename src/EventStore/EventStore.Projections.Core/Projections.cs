@@ -158,6 +158,8 @@ namespace EventStore.Projections.Core
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<PartitionProcessingResultBase>(_managerInputQueue));
                     projectionNode.CoreOutput.Subscribe(
+                        Forwarder.Create<ReaderSubscriptionManagement.SpoolStreamReading>(_managerInputQueue));
+                    projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
 
                     projectionNode.CoreOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(mainQueue));

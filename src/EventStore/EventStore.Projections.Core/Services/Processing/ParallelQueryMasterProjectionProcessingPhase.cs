@@ -77,8 +77,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 var eventTag = message.CheckpointTag;
                 var correlationId = Guid.NewGuid();
                 var committedEventWorkItem = new SpoolStreamProcessingWorkItem(
-                    this, _resultWriter, _loadBalancer, message, _slaves, _spoolProcessingResponseDispatcher,
-                    _subscriptionStartedAtLastCommitPosition, _currentSubscriptionId, correlationId,
+                    this,
+                    _publisher,
+                    _resultWriter,
+                    _loadBalancer,
+                    message,
+                    _slaves,
+                    _spoolProcessingResponseDispatcher,
+                    _subscriptionStartedAtLastCommitPosition,
+                    _currentSubscriptionId,
+                    correlationId,
                     _stateHandler.GetSourceDefinition().DefinesCatalogTransform);
                 _spoolProcessingWorkItems.Add(correlationId, committedEventWorkItem);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);

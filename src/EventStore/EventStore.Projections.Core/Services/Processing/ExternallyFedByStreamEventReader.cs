@@ -11,7 +11,7 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ExternallyFedByStreamEventReader : EventReader,
-        IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
+        IHandle<ReaderSubscriptionManagement.SpoolStreamReadingCore>,
         IHandle<ReaderSubscriptionManagement.CompleteSpooledStreamReading>
     {
         private readonly IODispatcher _ioDispatcher;
@@ -189,7 +189,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: consider passing phase from outside instead of using 0 (above)
         }
 
-        public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
+        public void Handle(ReaderSubscriptionManagement.SpoolStreamReadingCore message)
         {
             EnsureLimitingCommitPositionSet(message.LimitingCommitPosition);
             BeginReadStreamLength(message.StreamId);
