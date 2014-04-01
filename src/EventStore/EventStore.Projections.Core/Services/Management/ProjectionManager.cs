@@ -942,9 +942,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
         {
             DispatchWorkerMessage(
-                new ReaderSubscriptionManagement.SpoolStreamReadingCore(
-                    message.WorkerId,
-                    message.SubscriptionId,
+                new ReaderSubscriptionManagement.SpoolStreamReadingCore(message.SubscriptionId,
                     message.CorrelationId,
                     message.StreamId,
                     message.CatalogSequenceNumber,

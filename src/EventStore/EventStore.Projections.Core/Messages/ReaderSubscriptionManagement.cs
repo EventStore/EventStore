@@ -169,27 +169,18 @@ namespace EventStore.Projections.Core.Messages
                 get { return _limitingCommitPosition; }
             }
 
-            public Guid WorkerId
-            {
-                get { return _workerId; }
-            }
-
-            private readonly Guid _workerId;
             public readonly Guid SubscriptionId;
             private readonly Guid _correlationId;
             public readonly string StreamId;
             public readonly int CatalogSequenceNumber;
             private readonly long _limitingCommitPosition;
 
-            public SpoolStreamReadingCore(
-                Guid workerId,
-                Guid subscriptionId,
+            public SpoolStreamReadingCore(Guid subscriptionId,
                 Guid correlationId,
                 string streamId,
                 int catalogSequenceNumber,
                 long limitingCommitPosition)
             {
-                _workerId = workerId;
                 SubscriptionId = subscriptionId;
                 _correlationId = correlationId;
                 StreamId = streamId;
