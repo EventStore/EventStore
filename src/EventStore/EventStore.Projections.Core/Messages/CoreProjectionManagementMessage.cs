@@ -306,25 +306,17 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly ProjectionSourceDefinition _sourceDefinition;
-            private readonly SlaveProjectionDefinitions _slaveProjections;
 
             public Prepared(
-                Guid projectionId, ProjectionSourceDefinition sourceDefinition,
-                SlaveProjectionDefinitions slaveProjections)
+                Guid projectionId, ProjectionSourceDefinition sourceDefinition)
                 : base(projectionId)
             {
                 _sourceDefinition = sourceDefinition;
-                _slaveProjections = slaveProjections;
             }
 
             public ProjectionSourceDefinition SourceDefinition
             {
                 get { return _sourceDefinition; }
-            }
-
-            public SlaveProjectionDefinitions SlaveProjections
-            {
-                get { return _slaveProjections; }
             }
         }
 

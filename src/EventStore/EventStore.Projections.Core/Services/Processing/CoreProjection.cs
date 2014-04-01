@@ -150,7 +150,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager.Start(startFrom);
         }
 
-        internal void UpdateStatistics()
+        private void UpdateStatistics()
         {
             var info = new ProjectionStatistics();
             GetStatistics(info);

@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
             _mp.Handle(
                 new CoreProjectionManagementMessage.Prepared(
-                    _coreProjectionId, projectionSourceDefinition, null));
+                    _coreProjectionId, projectionSourceDefinition));
             yield break;
         }
 

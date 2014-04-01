@@ -132,11 +132,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     name, projectionVersion, namesBuilder,
                     sourceDefinition, projectionConfig, stateHandler);
 
-                var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
                     new CoreProjectionManagementMessage.Prepared(
-                        message.ProjectionId, sourceDefinition, slaveProjections));
+                        message.ProjectionId, sourceDefinition));
             }
             catch (Exception ex)
             {
@@ -159,11 +158,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
                     name, projectionVersion, namesBuilder, sourceDefinition, projectionConfig, null);
 
-                var slaveProjections = projectionProcessingStrategy.GetSlaveProjections();
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
                     new CoreProjectionManagementMessage.Prepared(
-                        message.ProjectionId, sourceDefinition, slaveProjections));
+                        message.ProjectionId, sourceDefinition));
             }
             catch (Exception ex)
             {
@@ -201,8 +199,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(
                     new CoreProjectionManagementMessage.Prepared(
                         message.ProjectionId,
-                        sourceDefinition,
-                        slaveProjections: null));
+                        sourceDefinition));
             }
             catch (Exception ex)
             {
