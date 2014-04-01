@@ -191,17 +191,6 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class UpdateStatistics : CoreProjectionManagementMessage
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public UpdateStatistics(Guid projectionId)
-                : base(projectionId)
-            {
-            }
-        }
-
         public abstract class DataReportBase : CoreProjectionManagementMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

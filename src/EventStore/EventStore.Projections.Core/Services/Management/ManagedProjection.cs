@@ -200,7 +200,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         public ProjectionStatistics GetStatistics()
         {
-            _coreQueue.Publish(new CoreProjectionManagementMessage.UpdateStatistics(Id));
             ProjectionStatistics status;
             if (_lastReceivedStatistics == null)
             {
