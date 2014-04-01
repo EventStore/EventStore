@@ -167,6 +167,12 @@ namespace EventStore.Projections.Core.Services.Processing
                                 commandBody.LimitingCommitPosition));
                         break;
                     }
+                case "$load-stopped":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson <LoadStoppedCommand>();
+                        _publisher.Publish(new CoreProjectionManagementMessage.LoadStopped(Guid.ParseExact(commandBody.Id, "N")));
+                        break;
+                    }
                 case "$start":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<StartCommand>();
@@ -199,6 +205,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
             _stopped = true;
+        }
+
+        private class LoadStoppedCommand
+        {
+            public string Id { get; set; }
         }
 
         private class StartCommand

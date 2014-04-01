@@ -26,7 +26,29 @@ namespace EventStore.Projections.Core.Messages
             get { return _projectionIdId; }
         }
 
-        public class Stopped : CoreProjectionManagementMessage
+        public class CoreProjectionManagementStatusMessage : CoreProjectionManagementMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public CoreProjectionManagementStatusMessage(Guid projectionId)
+                : base(projectionId)
+            {
+            }
+        }
+
+        public class CoreProjectionManagementControlMessage : CoreProjectionManagementMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public CoreProjectionManagementControlMessage(Guid projectionId)
+                : base(projectionId)
+            {
+            }
+        }
+
+        public class Stopped : CoreProjectionManagementStatusMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -45,7 +67,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Started : CoreProjectionManagementMessage
+        public class Started : CoreProjectionManagementStatusMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -56,7 +78,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Faulted : CoreProjectionManagementMessage
+        public class Faulted : CoreProjectionManagementStatusMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -75,7 +97,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Start : CoreProjectionManagementMessage
+        public class Start : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -88,7 +110,7 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
-        public class LoadStopped : CoreProjectionManagementMessage
+        public class LoadStopped : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -99,7 +121,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Stop : CoreProjectionManagementMessage
+        public class Stop : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -110,7 +132,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Kill : CoreProjectionManagementMessage
+        public class Kill : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -121,7 +143,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class GetState : CoreProjectionManagementMessage
+        public class GetState : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -156,7 +178,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class GetResult : CoreProjectionManagementMessage
+        public class GetResult : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -191,7 +213,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public abstract class DataReportBase : CoreProjectionManagementMessage
+        public abstract class DataReportBase : CoreProjectionManagementStatusMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -277,7 +299,7 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
-        public class StatisticsReport : CoreProjectionManagementMessage
+        public class StatisticsReport : CoreProjectionManagementStatusMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -296,7 +318,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Prepared : CoreProjectionManagementMessage
+        public class Prepared : CoreProjectionManagementStatusMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -320,7 +342,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class CreateAndPrepare : CoreProjectionManagementMessage
+        public class CreateAndPrepare : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -368,7 +390,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class CreateAndPrepareSlave : CoreProjectionManagementMessage
+        public class CreateAndPrepareSlave : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -446,7 +468,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class CreatePrepared : CoreProjectionManagementMessage
+        public class CreatePrepared : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -506,7 +528,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class Dispose : CoreProjectionManagementMessage
+        public class Dispose : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -517,7 +539,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public sealed class SlaveProjectionReaderAssigned : CoreProjectionManagementMessage
+        public sealed class SlaveProjectionReaderAssigned : CoreProjectionManagementStatusMessage
         {
             private readonly Guid _subscriptionId;
             private readonly Guid _readerId;
