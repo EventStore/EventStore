@@ -102,11 +102,6 @@ namespace EventStore.Projections.Core.Messages
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
-
             public long LimitingCommitPosition
             {
                 get { return _limitingCommitPosition; }
@@ -119,7 +114,6 @@ namespace EventStore.Projections.Core.Messages
 
             private readonly Guid _workerId;
             public readonly Guid SubscriptionId;
-            private readonly Guid _correlationId;
             public readonly string StreamId;
             public readonly int CatalogSequenceNumber;
             private readonly long _limitingCommitPosition;
@@ -127,14 +121,12 @@ namespace EventStore.Projections.Core.Messages
             public SpoolStreamReading(
                 Guid workerId,
                 Guid subscriptionId,
-                Guid correlationId,
                 string streamId,
                 int catalogSequenceNumber,
                 long limitingCommitPosition)
             {
                 _workerId = workerId;
                 SubscriptionId = subscriptionId;
-                _correlationId = correlationId;
                 StreamId = streamId;
                 CatalogSequenceNumber = catalogSequenceNumber;
                 _limitingCommitPosition = limitingCommitPosition;
@@ -159,30 +151,23 @@ namespace EventStore.Projections.Core.Messages
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
-
             public long LimitingCommitPosition
             {
                 get { return _limitingCommitPosition; }
             }
 
             public readonly Guid SubscriptionId;
-            private readonly Guid _correlationId;
             public readonly string StreamId;
             public readonly int CatalogSequenceNumber;
             private readonly long _limitingCommitPosition;
 
-            public SpoolStreamReadingCore(Guid subscriptionId,
-                Guid correlationId,
+            public SpoolStreamReadingCore(
+                Guid subscriptionId,
                 string streamId,
                 int catalogSequenceNumber,
                 long limitingCommitPosition)
             {
                 SubscriptionId = subscriptionId;
-                _correlationId = correlationId;
                 StreamId = streamId;
                 CatalogSequenceNumber = catalogSequenceNumber;
                 _limitingCommitPosition = limitingCommitPosition;

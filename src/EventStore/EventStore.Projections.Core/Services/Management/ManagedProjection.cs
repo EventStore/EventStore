@@ -748,27 +748,6 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: load configuration from the definition
 
 
-            Func<string, string, IProjectionStateHandler> stateHandlerFactory = delegate(string handlerType, string query)
-            {
-                // this delegate runs in the context of a projection core thread
-                // TODO: move this code to the projection core service as we may be in different processes in the future
-                IProjectionStateHandler stateHandler = null;
-                try
-                {
-                    return ProjectionCoreService.CreateStateHandler(_timeoutScheduler, _logger, handlerType, query);
-                }
-                catch (Exception ex)
-                {
-                    SetFaulted(
-                        string.Format(
-                            "Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}",
-                            handlerType, query, ex.Message), ex);
-                    if (stateHandler != null)
-                        stateHandler.Dispose();
-                    throw;
-                }
-            };
-
             var createProjectionMessage = _isSlave
                 ? (Message)
                     new CoreProjectionManagementMessage.CreateAndPrepareSlave(
@@ -778,7 +757,6 @@ namespace EventStore.Projections.Core.Services.Management
                         config,
                         _slaveMasterWorkerId,
                         _slaveMasterCorrelationId,
-                        stateHandlerFactory,
                         HandlerType,
                         Query)
                 : new CoreProjectionManagementMessage.CreateAndPrepare(

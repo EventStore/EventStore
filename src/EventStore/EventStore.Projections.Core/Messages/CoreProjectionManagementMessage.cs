@@ -410,14 +410,12 @@ namespace EventStore.Projections.Core.Messages
                 ProjectionConfig config,
                 Guid masterMasterWorkerId,
                 Guid masterCoreProjectionId,
-                Func<string, string, IProjectionStateHandler> handlerFactory,
                 string handlerType,
                 string query)
                 : base(projectionId)
             {
                 if (name == null) throw new ArgumentNullException("name");
                 if (config == null) throw new ArgumentNullException("config");
-                if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
                 if (handlerType == null) throw new ArgumentNullException("handlerType");
                 if (query == null) throw new ArgumentNullException("query");
                 if (masterMasterWorkerId == Guid.Empty)

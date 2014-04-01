@@ -80,7 +80,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             new ReaderSubscriptionManagement.SpoolStreamReading(
                                 channel.WorkerId,
                                 channel.SubscriptionId,
-                                _correlationId,
                                 streamId_,
                                 resolvedEvent.PositionSequenceNumber,
                                 _limitingCommitPosition),

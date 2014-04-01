@@ -47,14 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                         isSlaveProjection: true),
                     _masterWorkerId,
                     _coreProjectionCorrelationId,
-                    (handlerType, query) => new FakeProjectionStateHandler(
-                        configureBuilder: builder =>
-                        {
-                            builder.FromCatalogStream("catalog");
-                            builder.AllEvents();
-                            builder.SetByStream();
-                            builder.SetLimitingCommitPosition(10000);
-                        }),
+                    //(handlerType, query) => new FakeProjectionStateHandler(
+                    //    configureBuilder: builder =>
+                    //    {
+                    //        builder.FromCatalogStream("catalog");
+                    //        builder.AllEvents();
+                    //        builder.SetByStream();
+                    //        builder.SetLimitingCommitPosition(10000);
+                    //    }),
                     typeof (FakeProjectionStateHandler).GetNativeHandlerName(),
                     "");
             yield return Yield;
@@ -102,7 +102,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             _subscriptionId = readerAssigned.SubscriptionId;
             yield return
                 new ReaderSubscriptionManagement.SpoolStreamReadingCore(_subscriptionId,
-                    Guid.NewGuid(),
                     "test-stream",
                     0,
                     10000);
@@ -140,7 +139,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             _subscriptionId = readerAssigned.SubscriptionId;
             yield return
                 new ReaderSubscriptionManagement.SpoolStreamReadingCore(_subscriptionId,
-                    Guid.NewGuid(),
                     "test-stream",
                     0,
                     10000);
@@ -180,19 +178,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             _subscriptionId = readerAssigned.SubscriptionId;
             yield return
                 new ReaderSubscriptionManagement.SpoolStreamReadingCore(_subscriptionId,
-                    Guid.NewGuid(),
                     "test-stream",
                     0,
                     10000);
             yield return
                 new ReaderSubscriptionManagement.SpoolStreamReadingCore(_subscriptionId,
-                    Guid.NewGuid(),
                     "test-stream2",
                     1,
                     10000);
             yield return
                 new ReaderSubscriptionManagement.SpoolStreamReadingCore(_subscriptionId,
-                    Guid.NewGuid(),
                     "test-stream3",
                     2,
                     10000);

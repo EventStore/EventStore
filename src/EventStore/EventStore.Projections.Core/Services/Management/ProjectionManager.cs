@@ -943,7 +943,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             DispatchWorkerMessage(
                 new ReaderSubscriptionManagement.SpoolStreamReadingCore(message.SubscriptionId,
-                    message.CorrelationId,
                     message.StreamId,
                     message.CatalogSequenceNumber,
                     message.LimitingCommitPosition),
