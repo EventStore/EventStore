@@ -406,9 +406,9 @@ else
         buildJS1
         buildEventStore
     else
-        [[ -f src/EventStore/libs/libv8.so ]] || exitWithError "Cannot find libv8.so - in src/EventStore/libs/libv8.so so cannot do a quick build!"
-        [[ -f src/EventStore/libs/libicui18n.so ]] || exitWithError "Cannot find libicui18n.so - in src/EventStore/libs/libicui18n.so so cannot do a quick build!"
-        [[ -f src/EventStore/libs/libjs1.so ]] || exitWithError "Cannot find libjs1.so - at src/EventStore/libs/libjs1.so so cannot do a quick build!"
+        [[ -f src/EventStore/libs/libv8.so ]] || [[ -f src/EventStore/libs/libv8.dylib ]] || exitWithError "Cannot find libv8.[so|dylib] - in src/EventStore/libs/ so cannot do a quick build!"
+        [[ -f src/EventStore/libs/libicui18n.so ]] || [[ -f src/EventStore/libs/libicui18n.dylib ]] || exitWithError "Cannot find libicui18n.[so|dylib] - in src/EventStore/libs/ so cannot do a quick build!"
+        [[ -f src/EventStore/libs/libjs1.so ]] || [[ -f src/EventStore/libs/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/EventStore/libs/ so cannot do a quick build!"
 
         buildEventStore
     fi
