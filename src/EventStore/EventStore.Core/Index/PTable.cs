@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Streams;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -175,37 +176,49 @@ namespace EventStore.Core.Index
         {
             var sw = Stopwatch.StartNew();
             Log.Trace("Verifying file hash of PTable '{0}' started...", Path.GetFileName(Filename));
-
+#if  __MonoCS__
             var workItem = GetWorkItem();
-            try
+            var stream = workItem.Stream;
+            try {
+#else
+            using (var stream = UnbufferedFileReadStream.Open(_filename))
             {
-                workItem.Stream.Position = 0;
-                var hash = MD5Hash.GetHashFor(workItem.Stream, 0, workItem.Stream.Length - MD5Size);
+#endif
+                //stream.Position = 0;
+                var hash = MD5Hash.GetHashFor(stream, 0, stream.Length - MD5Size);
 
                 var fileHash = new byte[MD5Size];
-                workItem.Stream.Read(fileHash, 0, MD5Size);
-                
+                stream.Read(fileHash, 0, MD5Size);
+
                 if (hash == null)
                     throw new CorruptIndexException(new HashValidationException("Calculated MD5 hash is null!"));
                 if (fileHash.Length != hash.Length)
-                    throw new CorruptIndexException(new HashValidationException(
-                        string.Format("Hash sizes differ! FileHash({0}): {1}, hash({2}): {3}.",
-                                      fileHash.Length, BitConverter.ToString(fileHash),
-                                      hash.Length, BitConverter.ToString(hash))));
+                    throw new CorruptIndexException(
+                        new HashValidationException(
+                            string.Format(
+                                "Hash sizes differ! FileHash({0}): {1}, hash({2}): {3}.",
+                                fileHash.Length,
+                                BitConverter.ToString(fileHash),
+                                hash.Length,
+                                BitConverter.ToString(hash))));
 
                 for (int i = 0; i < fileHash.Length; i++)
                 {
                     if (fileHash[i] != hash[i])
-                        throw new CorruptIndexException(new HashValidationException(
-                            string.Format("Hashes are different! FileHash: {0}, hash: {1}.",
-                                          BitConverter.ToString(fileHash), BitConverter.ToString(hash))));
+                        throw new CorruptIndexException(
+                            new HashValidationException(
+                                string.Format(
+                                    "Hashes are different! FileHash: {0}, hash: {1}.",
+                                    BitConverter.ToString(fileHash),
+                                    BitConverter.ToString(hash))));
                 }
             }
+#if __MonoCS__            
             finally
             {
                 ReturnWorkItem(workItem);
             }
-
+#endif
             Log.Trace("Verifying file hash of PTable '{0}' ({1} entries) done in {2}.", Path.GetFileName(Filename), Count, sw.Elapsed);
         }
 

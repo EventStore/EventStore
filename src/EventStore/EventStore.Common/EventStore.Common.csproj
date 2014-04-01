@@ -20,6 +20,7 @@
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <WarningLevel>4</WarningLevel>
     <DefineConstants>
     </DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -82,6 +84,9 @@
     <Compile Include="Options\OptsHelper.cs" />
     <Compile Include="Options\RunProjectionsTypeConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Streams\DriveSectorSize.cs" />
+    <Compile Include="Streams\UnbufferedFileReadStream.cs" />
+    <Compile Include="Streams\WinApi.cs" />
     <Compile Include="Utils\Application.cs" />
     <Compile Include="Utils\FileStreamExtensions.cs" />
     <Compile Include="Utils\Empty.cs" />
@@ -102,6 +107,7 @@
   <ItemGroup>
     <None Include="Log\NLog.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <PreBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PreBuildEvent>

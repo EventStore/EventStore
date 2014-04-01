@@ -50,6 +50,7 @@ namespace EventStore.Core.Tests
                                     MiniNode.StartingTime.Elapsed, TimeSpan.FromTicks(MiniNode.StartingTime.Elapsed.Ticks/runCount),
                                     MiniNode.StoppingTime.Elapsed, TimeSpan.FromTicks(MiniNode.StoppingTime.Elapsed.Ticks/runCount),
                                     MiniNode.RunCount);
+
             Console.WriteLine(msg);
             LogManager.Finish();
         }

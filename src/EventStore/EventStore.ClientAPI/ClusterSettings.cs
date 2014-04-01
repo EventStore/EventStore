@@ -40,7 +40,29 @@ namespace EventStore.ClientAPI
         /// </summary>
         public TimeSpan GossipTimeout;
 
-        internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int externalGossipPort, IPEndPoint[] gossipSeeds, TimeSpan gossipTimeout)
+        /// <summary>
+        /// Used if we're connecting with gossip seeds
+        /// </summary>
+        /// <param name="gossipSeeds">Endpoints for seeding gossip</param>
+        /// <param name="maxDiscoverAttempts">Maximum number of attempts to discover the cluster</param>
+        /// <param name="gossipTimeout">Timeout for cluster gossip</param>
+        internal ClusterSettings(IPEndPoint[] gossipSeeds, int maxDiscoverAttempts, TimeSpan gossipTimeout)
+        {
+            ClusterDns = "";
+            MaxDiscoverAttempts = maxDiscoverAttempts;
+            ExternalGossipPort = 0;
+            GossipTimeout = gossipTimeout;
+            GossipSeeds = gossipSeeds;
+        }
+
+        /// <summary>
+        /// Used if we're discovering via DNS
+        /// </summary>
+        /// <param name="clusterDns">The DNS name to use for discovering endpoints</param>
+        /// <param name="maxDiscoverAttempts">The maximum number of attempts for discovering endpoints</param>
+        /// <param name="externalGossipPort">The well-known endpoint on which cluster managers are running</param>
+        /// <param name="gossipTimeout">Timeout for cluster gossip</param>
+        internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int externalGossipPort, TimeSpan gossipTimeout)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
             if (maxDiscoverAttempts < -1)
@@ -51,7 +73,7 @@ namespace EventStore.ClientAPI
             MaxDiscoverAttempts = maxDiscoverAttempts;
             ExternalGossipPort = externalGossipPort;
             GossipTimeout = gossipTimeout;
-            GossipSeeds = gossipSeeds;
+            GossipSeeds = new IPEndPoint[0];
         }
     }
 }

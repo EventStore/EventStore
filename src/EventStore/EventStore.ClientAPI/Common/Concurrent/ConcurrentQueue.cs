@@ -106,7 +106,7 @@
             }
         }
 
-        public bool IsSynchronized
+        public bool IsSynch ronized
         {
             get { return false; }
         }
