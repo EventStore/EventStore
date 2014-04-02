@@ -69,7 +69,6 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly ILogger _logger;
         private readonly ITimeProvider _timeProvider;
         private readonly ISingletonTimeoutScheduler _timeoutScheduler;
-        private readonly IPublisher _coreQueue;
         private readonly Guid _workerId;
         private readonly Guid _id;
         private readonly int _projectionId;
@@ -97,7 +96,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         public ManagedProjection(
             Guid workerId,
-            IPublisher coreQueue,
             Guid id,
             int projectionId,
             string name,
@@ -114,12 +112,11 @@ namespace EventStore.Projections.Core.Services.Management
             Guid slaveMasterWorkerId = default(Guid),
             Guid slaveMasterCorrelationId = default(Guid))
         {
-            if (coreQueue == null) throw new ArgumentNullException("coreQueue");
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
             if (output == null) throw new ArgumentNullException("output");
             if (name == "") throw new ArgumentException("name");
-            _coreQueue = coreQueue;
+            _workerId = workerId;
             _id = id;
             _projectionId = projectionId;
             _name = name;
@@ -137,14 +134,14 @@ namespace EventStore.Projections.Core.Services.Management
             _getStateDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
-                    coreQueue,
+                    output, 
                     v => v.CorrelationId,
                     v => v.CorrelationId,
                     new PublishEnvelope(_inputQueue));
             _getResultDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>(
-                    coreQueue,
+                    output, 
                     v => v.CorrelationId,
                     v => v.CorrelationId,
                     new PublishEnvelope(_inputQueue));
@@ -686,19 +683,19 @@ namespace EventStore.Projections.Core.Services.Management
                         completed();
                 };
             _state = ManagedProjectionState.Starting;
-            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(Id, _workerId));
+            _output.Publish(new CoreProjectionManagementMessage.Start(Id, _workerId));
         }
 
         private void LoadStopped(Action onLoaded)
         {
             _onStopped = onLoaded;
             _state = ManagedProjectionState.LoadingState;
-            _coreQueue.Publish(new CoreProjectionManagementMessage.LoadStopped(Id, _workerId));
+            _output.Publish(new CoreProjectionManagementMessage.LoadStopped(Id, _workerId));
         }
 
         private void DisposeCoreProjection()
         {
-            _coreQueue.Publish(new CoreProjectionManagementMessage.Dispose(Id, _workerId));
+            _output.Publish(new CoreProjectionManagementMessage.Dispose(Id, _workerId));
         }
 
         /// <summary>
@@ -771,7 +768,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             //note: set runnign before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;
-            _coreQueue.Publish(createProjectionMessage);
+            _output.Publish(createProjectionMessage);
         }
 
         private void BeginCreatePrepared(ProjectionConfig config, Action onPrepared)
@@ -804,7 +801,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             //note: set running before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;
-            _coreQueue.Publish(createProjectionMessage);
+            _output.Publish(createProjectionMessage);
         }
 
         private void Stop(Action completed)
@@ -830,7 +827,7 @@ namespace EventStore.Projections.Core.Services.Management
                 case ManagedProjectionState.Starting:
                     _state = ManagedProjectionState.Stopping;
                     _onStopped = completed;
-                    _coreQueue.Publish(new CoreProjectionManagementMessage.Stop(Id, _workerId));
+                    _output.Publish(new CoreProjectionManagementMessage.Stop(Id, _workerId));
                     break;
                 default:
                     throw new NotSupportedException();
@@ -855,13 +852,13 @@ namespace EventStore.Projections.Core.Services.Management
                             Enum.GetName(typeof (ManagedProjectionState), _state)));
                 case ManagedProjectionState.Stopping:
                     _onStopped = completed;
-                    _coreQueue.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
+                    _output.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
                     return;
                 case ManagedProjectionState.Running:
                 case ManagedProjectionState.Starting:
                     _state = ManagedProjectionState.Stopping;
                     _onStopped = completed;
-                    _coreQueue.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
+                    _output.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
                     break;
                 default:
                     throw new NotSupportedException();

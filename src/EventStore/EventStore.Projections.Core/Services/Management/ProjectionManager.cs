@@ -859,7 +859,6 @@ namespace EventStore.Projections.Core.Services.Management
             var queuePublisher = queue.Item2;
             var managedProjectionInstance = new ManagedProjection(
                 workerId,
-                queuePublisher,
                 projectionCorrelationId,
                 projectionId,
                 name,

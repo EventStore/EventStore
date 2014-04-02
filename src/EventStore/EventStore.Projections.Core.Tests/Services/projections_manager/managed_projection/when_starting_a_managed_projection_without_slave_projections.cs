@@ -43,7 +43,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _timeProvider = new FakeTimeProvider();
             _mp = new ManagedProjection(
                 Guid.NewGuid(),
-                _bus,
                 Guid.NewGuid(),
                 1,
                 "name",

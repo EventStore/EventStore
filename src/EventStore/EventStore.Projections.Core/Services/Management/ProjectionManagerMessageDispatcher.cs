@@ -9,7 +9,9 @@ using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 namespace EventStore.Projections.Core.Services.Management
 {
     public class ProjectionManagerMessageDispatcher
-        : IHandle<PartitionProcessingResultBase>, IHandle<ReaderSubscriptionManagement.SpoolStreamReading>
+        : IHandle<PartitionProcessingResultBase>,
+            IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
+            IHandle<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
         private readonly IDictionary<Guid, IPublisher> _queueMap;
@@ -33,6 +35,11 @@ namespace EventStore.Projections.Core.Services.Management
                     message.CatalogSequenceNumber,
                     message.LimitingCommitPosition),
                 message.WorkerId);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.CoreProjectionManagementControlMessage message)
+        {
+            DispatchWorkerMessage(message, message.WorkerId);
         }
 
         private void DispatchWorkerMessage(Message message, Guid workerId)

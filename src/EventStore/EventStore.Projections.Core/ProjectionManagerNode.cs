@@ -79,6 +79,8 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_projectionManager);
                 mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManagerMessageDispatcher);
                 mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerMessageDispatcher);
+                mainBus.Subscribe<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>(
+                    _projectionManagerMessageDispatcher);
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);

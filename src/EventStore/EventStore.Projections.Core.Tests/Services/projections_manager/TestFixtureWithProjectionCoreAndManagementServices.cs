@@ -93,9 +93,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
-            _bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);
-            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
 
+            if (GetInputQueue() != _processingQueues.First().Item2)
+            {
+                _bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);
+                _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
+                _bus.Subscribe<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>(
+                    _managerMessageDispatcher);
+            }
 
             foreach(var q in _processingQueues)
                 SetUpCoreServices(q.Item5, q.Item1, q.Item2, q.Item3, q.Item4);

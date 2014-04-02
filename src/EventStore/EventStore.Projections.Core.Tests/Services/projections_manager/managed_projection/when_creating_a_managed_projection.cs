@@ -24,7 +24,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             new ManagedProjection(
                 Guid.NewGuid(),
-                _bus,
                 Guid.Empty,
                 1,
                 "name",
@@ -42,7 +41,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             new ManagedProjection(
                 Guid.NewGuid(),
-                _bus,
                 Guid.Empty,
                 1,
                 "name",
@@ -60,7 +58,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             new ManagedProjection(
                 Guid.NewGuid(),
-                _bus,
                 Guid.NewGuid(),
                 1,
                 null,
@@ -78,7 +75,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             new ManagedProjection(
                 Guid.NewGuid(),
-                _bus,
                 Guid.NewGuid(),
                 1,
                 null,
@@ -96,7 +92,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             new ManagedProjection(
                 Guid.NewGuid(),
-                _bus,
                 Guid.NewGuid(),
                 1,
                 "",
@@ -114,7 +109,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             new ManagedProjection(
                 Guid.NewGuid(),
-                _bus,
                 Guid.NewGuid(),
                 1,
                 "",
