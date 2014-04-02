@@ -271,6 +271,12 @@ namespace EventStore.Core.Helpers
             Perform(actionsEnumerator);
         }
 
+        public void Perform(params Step[] actions)
+        {
+            var actionsEnumerator = ((IEnumerable<Step>)actions).GetEnumerator();
+            Perform(actionsEnumerator);
+        }
+
         private void Perform(IEnumerator<Step> actions)
         {
             if (actions.MoveNext())
@@ -347,6 +353,7 @@ namespace EventStore.Core.Helpers
             PerformWithRetry(
                 handler,
                 steps,
+                expectedVersion == ExpectedVersion.Any,
                 TimeSpan.FromMilliseconds(100),
                 action =>
                     WriteEvents(
@@ -365,6 +372,7 @@ namespace EventStore.Core.Helpers
             PerformWithRetry(
                 handler,
                 steps,
+                expectedVersion == ExpectedVersion.Any,
                 TimeSpan.FromMilliseconds(100),
                 action =>
                     DeleteStream(
@@ -376,12 +384,16 @@ namespace EventStore.Core.Helpers
         }
 
         private void PerformWithRetry<T>(
-            Action<T> handler, IEnumerator<Step> steps, TimeSpan timeout, Action<Action<T, OperationResult>> action)
+            Action<T> handler,
+            IEnumerator<Step> steps,
+            bool retryExpectedVersion,
+            TimeSpan timeout,
+            Action<Action<T, OperationResult>> action)
         {
             action(
                 (response, result) =>
                 {
-                    if (ShouldRetry(result))
+                    if (ShouldRetry(result, retryExpectedVersion))
                     {
                         Delay(
                             timeout,
@@ -389,7 +401,7 @@ namespace EventStore.Core.Helpers
                             {
                                 if (timeout < TimeSpan.FromSeconds(10))
                                     timeout += timeout;
-                                PerformWithRetry(handler, steps, timeout, action);
+                                PerformWithRetry(handler, steps, retryExpectedVersion, timeout, action);
                             });
                     }
                     else
@@ -400,7 +412,7 @@ namespace EventStore.Core.Helpers
                 });
         }
 
-        private bool ShouldRetry(OperationResult result)
+        private bool ShouldRetry(OperationResult result, bool retryExpectedVersion)
         {
             switch (result)
             {
@@ -408,6 +420,8 @@ namespace EventStore.Core.Helpers
                 case OperationResult.ForwardTimeout:
                 case OperationResult.PrepareTimeout:
                     return true;
+                case OperationResult.WrongExpectedVersion:
+                    return retryExpectedVersion;
                 default:
                     return false;
             }
