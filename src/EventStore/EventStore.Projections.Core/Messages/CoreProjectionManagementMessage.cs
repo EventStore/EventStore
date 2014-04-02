@@ -158,10 +158,9 @@ namespace EventStore.Projections.Core.Messages
             private readonly Guid _correlationId;
             private readonly string _partition;
 
-            public GetState(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition, Guid workerId)
+            public GetState(Guid correlationId, Guid projectionId, string partition, Guid workerId)
                 : base(projectionId, workerId)
             {
-                if (envelope == null) throw new ArgumentNullException("envelope");
                 if (partition == null) throw new ArgumentNullException("partition");
                 _correlationId = correlationId;
                 _partition = partition;
@@ -186,10 +185,9 @@ namespace EventStore.Projections.Core.Messages
             private readonly Guid _correlationId;
             private readonly string _partition;
 
-            public GetResult(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition, Guid workerId)
+            public GetResult(Guid correlationId, Guid projectionId, string partition, Guid workerId)
                 : base(projectionId, workerId)
             {
-                if (envelope == null) throw new ArgumentNullException("envelope");
                 if (partition == null) throw new ArgumentNullException("partition");
                 _correlationId = correlationId;
                 _partition = partition;

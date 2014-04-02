@@ -207,6 +207,28 @@ namespace EventStore.Projections.Core.Services.Processing
                         new CoreProjectionManagementMessage.Dispose(Guid.ParseExact(commandBody.Id, "N"), Guid.Empty));
                     break;
                 }
+                case "$get-state":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<GetStateCommand>();
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.GetState(
+                            Guid.ParseExact(commandBody.CorrelationId, "N"),
+                            Guid.ParseExact(commandBody.Id, "N"),
+                            commandBody.Partition,
+                            Guid.Empty));
+                    break;
+                }
+                case "$get-result":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<GetResultCommand>();
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.GetResult(
+                            Guid.ParseExact(commandBody.CorrelationId, "N"),
+                            Guid.ParseExact(commandBody.Id, "N"),
+                            commandBody.Partition,
+                            Guid.Empty));
+                    break;
+                }
                 default:
                     throw new Exception("Unknown command: " + command);
             }
@@ -352,6 +374,20 @@ namespace EventStore.Projections.Core.Services.Processing
             public string StreamId { get; set; }
             public int CatalogSequenceNumber { get; set; }
             public long LimitingCommitPosition { get; set; }
+        }
+
+        public sealed class GetStateCommand
+        {
+            public string Id { get; set; }
+            public string CorrelationId { get; set; }
+            public string Partition { get; set; }
+        }
+
+        public sealed class GetResultCommand
+        {
+            public string Id { get; set; }
+            public string CorrelationId { get; set; }
+            public string Partition { get; set; }
         }
     }
 }

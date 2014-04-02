@@ -254,8 +254,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (_state >= ManagedProjectionState.Stopped)
             {
                 _getResultDispatcher.Publish(
-                    new CoreProjectionManagementMessage.GetResult(
-                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), Id, message.Partition, _workerId),
+                    new CoreProjectionManagementMessage.GetResult(Guid.NewGuid(), Id, message.Partition, _workerId),
                     m =>
                     message.Envelope.ReplyWith(
                         new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result, m.Position)));
@@ -980,8 +979,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (_state >= ManagedProjectionState.Stopped)
             {
                 _getStateDispatcher.Publish(
-                    new CoreProjectionManagementMessage.GetState(
-                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), Id, message.Partition, _workerId),
+                    new CoreProjectionManagementMessage.GetState(Guid.NewGuid(), Id, message.Partition, _workerId),
                     m =>
                     message.Envelope.ReplyWith(
                         new ProjectionManagementMessage.ProjectionState(_name, m.Partition, m.State, m.Position)));

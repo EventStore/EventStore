@@ -355,6 +355,8 @@
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_create_and_prepare_slave_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_create_prepared_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_dispose_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_get_result_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_get_state_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_kill_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_load_stopped_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_spool_stream_reading_command.cs" />
