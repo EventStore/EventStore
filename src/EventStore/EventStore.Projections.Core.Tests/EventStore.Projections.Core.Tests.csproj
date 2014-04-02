@@ -319,6 +319,7 @@
     <Compile Include="Services\partition_state_cache\when_unlocking_part_of_cached_states.cs" />
     <Compile Include="Services\projections_manager\bi_state\a_new_posted_projection.cs" />
     <Compile Include="Services\projections_manager\command_writer\specification_with_projection_manager_command_writer.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_create_and_prepare_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_create_prepared_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_dispose_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_kill_message.cs" />
