@@ -1,14 +1,19 @@
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public sealed class WriteQueryEofProjectionProcessingPhase : WriteQueryResultProjectionProcessingPhaseBase
     {
         public WriteQueryEofProjectionProcessingPhase(
-            int phase, string resultStream, ICoreProjectionForProcessingPhase coreProjection,
-            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager,
+            IPublisher publisher,
+            int phase,
+            string resultStream,
+            ICoreProjectionForProcessingPhase coreProjection,
+            PartitionStateCache stateCache,
+            ICoreProjectionCheckpointManager checkpointManager,
             IEmittedEventWriter emittedEventWriter)
-            : base(phase, resultStream, coreProjection, stateCache, checkpointManager, emittedEventWriter)
+            : base(publisher, phase, resultStream, coreProjection, stateCache, checkpointManager, emittedEventWriter)
         {
         }
 

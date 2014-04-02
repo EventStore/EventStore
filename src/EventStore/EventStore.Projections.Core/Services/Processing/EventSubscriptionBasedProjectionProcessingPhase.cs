@@ -213,13 +213,13 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var getStateWorkItem = new GetStateWorkItem(
-                    message.Envelope, message.CorrelationId, message.ProjectionId, this, message.Partition);
+                    _publisher, message.CorrelationId, message.ProjectionId, this, message.Partition);
                 _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
                 ProcessEvent();
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.StateReport(
                         message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null,
                         exception: ex));
@@ -232,13 +232,13 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var getResultWorkItem = new GetResultWorkItem(
-                    message.Envelope, message.CorrelationId, message.ProjectionId, this, message.Partition);
+                    _publisher, message.CorrelationId, message.ProjectionId, this, message.Partition);
                 _processingQueue.EnqueueOutOfOrderTask(getResultWorkItem);
                 ProcessEvent();
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.ResultReport(
                         message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null,
                         exception: ex));

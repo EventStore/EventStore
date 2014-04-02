@@ -155,7 +155,6 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            private readonly IEnvelope _envelope;
             private readonly Guid _correlationId;
             private readonly string _partition;
 
@@ -164,14 +163,8 @@ namespace EventStore.Projections.Core.Messages
             {
                 if (envelope == null) throw new ArgumentNullException("envelope");
                 if (partition == null) throw new ArgumentNullException("partition");
-                _envelope = envelope;
                 _correlationId = correlationId;
                 _partition = partition;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public string Partition
@@ -190,7 +183,6 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            private readonly IEnvelope _envelope;
             private readonly Guid _correlationId;
             private readonly string _partition;
 
@@ -199,14 +191,8 @@ namespace EventStore.Projections.Core.Messages
             {
                 if (envelope == null) throw new ArgumentNullException("envelope");
                 if (partition == null) throw new ArgumentNullException("partition");
-                _envelope = envelope;
                 _correlationId = correlationId;
                 _partition = partition;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
             }
 
             public string Partition

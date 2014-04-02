@@ -69,7 +69,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 GetUseCheckpoints(), false, _sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
             var writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
-                1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2,
+                publisher,
+                1,
+                namingBuilder.GetResultStreamName(),
+                coreProjection,
+                partitionStateCache,
+                checkpointManager2,
                 checkpointManager2);
             return new[] {firstPhase, writeResultsPhase};
         }

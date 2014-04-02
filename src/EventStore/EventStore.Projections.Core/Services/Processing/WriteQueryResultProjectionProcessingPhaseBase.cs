@@ -1,24 +1,30 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class WriteQueryResultProjectionProcessingPhaseBase : IProjectionProcessingPhase
     {
-        private int _phase;
-        protected string _resultStream;
-        private ICoreProjectionForProcessingPhase _coreProjection;
-        protected PartitionStateCache _stateCache;
-        protected ICoreProjectionCheckpointManager _checkpointManager;
+        private readonly IPublisher _publisher;
+        private readonly int _phase;
+        protected readonly string _resultStream;
+        private readonly ICoreProjectionForProcessingPhase _coreProjection;
+        protected readonly PartitionStateCache _stateCache;
+        protected readonly ICoreProjectionCheckpointManager _checkpointManager;
         protected readonly IEmittedEventWriter _emittedEventWriter;
         private bool _subscribed;
         private PhaseState _projectionState;
 
         public WriteQueryResultProjectionProcessingPhaseBase(
-            int phase, string resultStream, ICoreProjectionForProcessingPhase coreProjection,
-            PartitionStateCache stateCache, ICoreProjectionCheckpointManager checkpointManager,
+            IPublisher publisher,
+            int phase,
+            string resultStream,
+            ICoreProjectionForProcessingPhase coreProjection,
+            PartitionStateCache stateCache,
+            ICoreProjectionCheckpointManager checkpointManager,
             IEmittedEventWriter emittedEventWriter)
         {
             if (resultStream == null) throw new ArgumentNullException("resultStream");
@@ -28,6 +34,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (emittedEventWriter == null) throw new ArgumentNullException("emittedEventWriter");
             if (string.IsNullOrEmpty(resultStream)) throw new ArgumentException("resultStream");
 
+            _publisher = publisher;
             _phase = phase;
             _resultStream = resultStream;
             _coreProjection = coreProjection;
@@ -49,18 +56,25 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var state = _stateCache.TryGetPartitionState(message.Partition);
             var stateString = state != null ? state.State : null;
-            message.Envelope.ReplyWith(
+            _publisher.Publish(
                 new CoreProjectionManagementMessage.StateReport(
-                    message.CorrelationId, message.CorrelationId, message.Partition, state: stateString, position: null));
+                    message.CorrelationId,
+                    message.CorrelationId,
+                    message.Partition,
+                    state: stateString,
+                    position: null));
         }
 
         public void Handle(CoreProjectionManagementMessage.GetResult message)
         {
             var state = _stateCache.TryGetPartitionState(message.Partition);
             var resultString = state != null ? state.Result : null;
-            message.Envelope.ReplyWith(
+            _publisher.Publish(
                 new CoreProjectionManagementMessage.ResultReport(
-                    message.CorrelationId, message.CorrelationId, message.Partition, result: resultString,
+                    message.CorrelationId,
+                    message.CorrelationId,
+                    message.Partition,
+                    result: resultString,
                     position: null));
 
         }
@@ -97,8 +111,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var writeEofResults = WriteEofEvent(phaseCheckpointTag);
 
-            _emittedEventWriter.EventsEmitted(
-                writeResults.Concat(writeEofResults).ToArray(), Guid.Empty, null);
+            _emittedEventWriter.EventsEmitted(writeResults.Concat(writeEofResults).ToArray(), Guid.Empty, null);
 
             _checkpointManager.EventProcessed(phaseCheckpointTag, 100.0f);
             _coreProjection.CompletePhase();
@@ -110,7 +123,14 @@ namespace EventStore.Projections.Core.Services.Processing
             yield return
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        _resultStream, Guid.NewGuid(), "$Eof", true, null, null, phaseCheckpointTag, null),
+                        _resultStream,
+                        Guid.NewGuid(),
+                        "$Eof",
+                        true,
+                        null,
+                        null,
+                        phaseCheckpointTag,
+                        null),
                     streamMetadata);
         }
 

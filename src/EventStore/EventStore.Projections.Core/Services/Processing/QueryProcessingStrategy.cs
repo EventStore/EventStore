@@ -61,11 +61,21 @@ namespace EventStore.Projections.Core.Services.Processing
             if (GetProducesRunningResults()
                 || !string.IsNullOrEmpty(_sourceDefinition.CatalogStream) && _sourceDefinition.ByStreams)
                 writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
-                    1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2,
+                    publisher,
+                    1,
+                    namingBuilder.GetResultStreamName(),
+                    coreProjection,
+                    partitionStateCache,
+                    checkpointManager2,
                     checkpointManager2);
             else
                 writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
-                    1, namingBuilder.GetResultStreamName(), coreProjection, partitionStateCache, checkpointManager2,
+                    publisher,
+                    1,
+                    namingBuilder.GetResultStreamName(),
+                    coreProjection,
+                    partitionStateCache,
+                    checkpointManager2,
                     checkpointManager2);
 
             return new[] {firstPhase, writeResultsPhase};

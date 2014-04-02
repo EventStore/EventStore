@@ -1,12 +1,12 @@
 using System;
-using EventStore.Core.Messaging;
+using EventStore.Core.Bus;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     abstract class GetDataWorkItemBase : WorkItem
     {
+        protected readonly IPublisher _publisher;
         protected readonly string _partition;
-        protected readonly IEnvelope _envelope;
         protected Guid _correlationId;
         protected Guid _projectionId;
         private readonly IProjectionPhaseStateManager _projection;
@@ -14,13 +14,16 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointTag _lastProcessedCheckpointTag;
 
         protected GetDataWorkItemBase(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseStateManager projection, string partition)
+            IPublisher publisher,
+            Guid correlationId,
+            Guid projectionId,
+            IProjectionPhaseStateManager projection,
+            string partition)
             : base(null)
         {
-            if (envelope == null) throw new ArgumentNullException("envelope");
             if (partition == null) throw new ArgumentNullException("partition");
+            _publisher = publisher;
             _partition = partition;
-            _envelope = envelope;
             _correlationId = correlationId;
             _projectionId = projectionId;
             _projection = projection;
@@ -35,7 +38,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _lastProcessedCheckpointTag = _projection.LastProcessedEventPosition;
             _projection.BeginGetPartitionStateAt(
-                _partition, _lastProcessedCheckpointTag, LoadCompleted, lockLoaded: false);
+                _partition,
+                _lastProcessedCheckpointTag,
+                LoadCompleted,
+                lockLoaded: false);
         }
 
         private void LoadCompleted(PartitionState state)

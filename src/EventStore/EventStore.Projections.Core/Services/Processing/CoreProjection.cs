@@ -241,7 +241,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_state == State.LoadStateRequested || _state == State.StateLoaded)
             {
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.StateReport(
                         message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null,
                         exception: new Exception("Not yet available")));
@@ -259,7 +259,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_state == State.LoadStateRequested || _state == State.StateLoaded)
             {
-                message.Envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.ResultReport(
                         message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null,
                         exception: new Exception("Not yet available")));

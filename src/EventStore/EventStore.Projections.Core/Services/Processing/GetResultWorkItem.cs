@@ -1,5 +1,5 @@
 using System;
-using EventStore.Core.Messaging;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -7,22 +7,33 @@ namespace EventStore.Projections.Core.Services.Processing
     class GetResultWorkItem : GetDataWorkItemBase
     {
         public GetResultWorkItem(
-            IEnvelope envelope, Guid correlationId, Guid projectionId, IProjectionPhaseStateManager projection,
+            IPublisher publisher,
+            Guid correlationId,
+            Guid projectionId,
+            IProjectionPhaseStateManager projection,
             string partition)
-            : base(envelope, correlationId, projectionId, projection, partition)
+            : base(publisher, correlationId, projectionId, projection, partition)
         {
         }
 
         protected override void Reply(PartitionState state, CheckpointTag checkpointTag)
         {
             if (state == null)
-                _envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.ResultReport(
-                        _correlationId, _projectionId, _partition, null, checkpointTag));
+                        _correlationId,
+                        _projectionId,
+                        _partition,
+                        null,
+                        checkpointTag));
             else
-                _envelope.ReplyWith(
+                _publisher.Publish(
                     new CoreProjectionManagementMessage.ResultReport(
-                        _correlationId, _projectionId, _partition, state.Result, checkpointTag));
+                        _correlationId,
+                        _projectionId,
+                        _partition,
+                        state.Result,
+                        checkpointTag));
         }
     }
 }
