@@ -178,6 +178,7 @@
     <Compile Include="Projections.cs" />
     <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
     <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
+    <Compile Include="Services\Management\CommandWriter.cs" />
     <Compile Include="Services\Management\ManagedProjection.cs" />
     <Compile Include="Services\Management\ManagedProjectionState.cs" />
     <Compile Include="Services\Management\ProjectionManagerCommandWriter.cs" />

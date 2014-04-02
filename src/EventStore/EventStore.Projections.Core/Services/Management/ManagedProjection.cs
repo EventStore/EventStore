@@ -798,7 +798,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _name,
                 new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 1),
                 config,
-                _persistedState.SourceDefinition,
+                QuerySourcesDefinition.From(_persistedState.SourceDefinition),
                 HandlerType,
                 Query);
 

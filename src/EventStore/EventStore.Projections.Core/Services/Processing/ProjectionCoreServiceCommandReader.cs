@@ -217,33 +217,54 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = true;
         }
 
-        internal class LoadStoppedCommand
+        public class LoadStoppedCommand
         {
             public string Id { get; set; }
         }
 
-        internal class StartCommand
+        public class StartCommand
         {
             public string Id { get; set; }
         }
 
-        internal class StopCommand
+        public class StopCommand
         {
             public string Id { get; set; }
         }
 
-        internal class KillCommand
+        public class KillCommand
         {
             public string Id { get; set; }
         }
 
-        internal class DisposeCommand
+        public class DisposeCommand
         {
             public string Id { get; set; }
         }
 
+        public struct PersistedProjectionVersion
+        {
+            public int Id;
+            public int Epoch;
+            public int Version;
 
-        public class PersistedProjectionConfig
+            public static implicit operator ProjectionVersion(PersistedProjectionVersion source)
+            {
+                return new ProjectionVersion(source.Id, source.Epoch, source.Version);
+            }
+
+            public static implicit operator PersistedProjectionVersion(ProjectionVersion source)
+            {
+                return new PersistedProjectionVersion
+                {
+                    Epoch = source.Epoch,
+                    Id = source.ProjectionId,
+                    Version = source.Version
+                };
+            }
+        }
+
+        public sealed class PersistedProjectionConfig
         {
             public string RunAs;
             public string[] RunAsRoles;
@@ -292,40 +313,40 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        internal class CreatePreparedCommand
+        public class CreatePreparedCommand
         {
             public string Id { get; set; }
             public PersistedProjectionConfig Config { get; set; }
-            public ProjectionSourceDefinition SourceDefinition { get; set; }
-            public ProjectionVersion Version { get; set; }
+            public QuerySourcesDefinition SourceDefinition { get; set; }
+            public PersistedProjectionVersion Version { get; set; }
             public string HandlerType { get; set; }
             public string Query { get; set; }
             public string Name { get; set; }
         }
 
-        internal class CreateAndPrepareCommand
+        public class CreateAndPrepareCommand
         {
             public string Id { get; set; }
             public PersistedProjectionConfig Config { get; set; }
-            public ProjectionVersion Version { get; set; }
+            public PersistedProjectionVersion Version { get; set; }
             public string HandlerType { get; set; }
             public string Query { get; set; }
             public string Name { get; set; }
         }
 
-        internal class CreateAndPrepareSlaveCommand
+        public class CreateAndPrepareSlaveCommand
         {
             public string Id { get; set; }
             public string MasterCoreProjectionId { get; set; }
             public string MasterWorkerId { get; set; }
             public PersistedProjectionConfig Config { get; set; }
-            public ProjectionVersion Version { get; set; }
+            public PersistedProjectionVersion Version { get; set; }
             public string HandlerType { get; set; }
             public string Query { get; set; }
             public string Name { get; set; }
         }
 
-        internal class SpoolStreamReadingCommand
+        public class SpoolStreamReadingCommand
         {
             public string SubscriptionId { get; set; }
             public string StreamId { get; set; }

@@ -482,7 +482,7 @@ namespace EventStore.Projections.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly ProjectionConfig _config;
-            private readonly ProjectionSourceDefinition _sourceDefinition;
+            private readonly QuerySourcesDefinition _sourceDefinition;
             private readonly string _handlerType;
             private readonly string _query;
             private readonly string _name;
@@ -494,7 +494,7 @@ namespace EventStore.Projections.Core.Messages
                 string name,
                 ProjectionVersion version,
                 ProjectionConfig config,
-                ProjectionSourceDefinition sourceDefinition,
+                QuerySourcesDefinition sourceDefinition,
                 string handlerType,
                 string query)
                 : base(projectionId, workerId)
@@ -522,7 +522,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _name; }
             }
 
-            public ProjectionSourceDefinition SourceDefinition
+            public QuerySourcesDefinition SourceDefinition
             {
                 get { return _sourceDefinition; }
             }

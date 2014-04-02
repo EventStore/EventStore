@@ -1,5 +1,4 @@
-﻿using System;
-using EventStore.Core.Bus;
+﻿using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -16,6 +15,13 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionManagementMessage.Kill>,
             IHandle<CoreProjectionManagementMessage.Dispose>
     {
+        private readonly ICommandWriter _commandWriter;
+
+        public ProjectionManagerCommandWriter(ICommandWriter commandWriter)
+        {
+            _commandWriter = commandWriter;
+        }
+
         public void Handle(CoreProjectionManagementMessage.CreatePrepared message)
         {
             var command = new ProjectionCoreServiceCommandReader.CreatePreparedCommand
@@ -25,15 +31,10 @@ namespace EventStore.Projections.Core.Services.Management
                 Id = message.ProjectionId.ToString("N"),
                 Name = message.Name,
                 Query = message.Query,
-                SourceDefinition =
-                    ProjectionSourceDefinition.From(
-                        message.Name,
-                        message.SourceDefinition,
-                        message.HandlerType,
-                        message.Query),
+                SourceDefinition = QuerySourcesDefinition.From(message.SourceDefinition),
                 Version = message.Version
             };
-            PublishCommand("$create-prepared", message.WorkerId, command);
+            _commandWriter.PublishCommand("$create-prepared", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.CreateAndPrepare message)
@@ -47,7 +48,7 @@ namespace EventStore.Projections.Core.Services.Management
                 Query = message.Query,
                 Version = message.Version,
             };
-            PublishCommand("$create-and-prepare", message.WorkerId, command);
+            _commandWriter.PublishCommand("$create-and-prepare", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.CreateAndPrepareSlave message)
@@ -63,7 +64,7 @@ namespace EventStore.Projections.Core.Services.Management
                 MasterCoreProjectionId = message.MasterCoreProjectionId.ToString("N"),
                 MasterWorkerId = message.MasterWorkerId.ToString("N")
             };
-            PublishCommand("$create-and-prepare-slave", message.WorkerId, command);
+            _commandWriter.PublishCommand("$create-and-prepare-slave", message.WorkerId, command);
         }
 
         public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
@@ -75,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Management
                 StreamId = message.StreamId,
                 SubscriptionId = message.SubscriptionId.ToString("N")
             };
-            PublishCommand("$spool-stream-reading", message.WorkerId, command);
+            _commandWriter.PublishCommand("$spool-stream-reading", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.LoadStopped message)
@@ -84,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 Id = message.ProjectionId.ToString("N")
             };
-            PublishCommand("$load-stopped", message.WorkerId, command);
+            _commandWriter.PublishCommand("$load-stopped", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.Start message)
@@ -93,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 Id = message.ProjectionId.ToString("N")
             };
-            PublishCommand("$start", message.WorkerId, command);
+            _commandWriter.PublishCommand("$start", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.Stop message)
@@ -102,7 +103,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 Id = message.ProjectionId.ToString("N")
             };
-            PublishCommand("$stop", message.WorkerId, command);
+            _commandWriter.PublishCommand("$stop", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.Kill message)
@@ -111,7 +112,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 Id = message.ProjectionId.ToString("N")
             };
-            PublishCommand("$kill", message.WorkerId, command);
+            _commandWriter.PublishCommand("$kill", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)
@@ -120,13 +121,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 Id = message.ProjectionId.ToString("N")
             };
-            PublishCommand("$dispose", message.WorkerId, command);
+            _commandWriter.PublishCommand("$dispose", message.WorkerId, command);
         }
-
-        private void PublishCommand(string command, Guid workerId, object body)
-        {
-            throw new System.NotImplementedException();
-        }
-
     }
 }
