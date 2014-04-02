@@ -13,7 +13,9 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionManagementMessage.Start>,
             IHandle<CoreProjectionManagementMessage.Stop>,
             IHandle<CoreProjectionManagementMessage.Kill>,
-            IHandle<CoreProjectionManagementMessage.Dispose>
+            IHandle<CoreProjectionManagementMessage.Dispose>,
+            IHandle<CoreProjectionManagementMessage.GetState>,
+            IHandle<CoreProjectionManagementMessage.GetResult>
     {
         private readonly ICommandWriter _commandWriter;
 
@@ -122,6 +124,28 @@ namespace EventStore.Projections.Core.Services.Management
                 Id = message.ProjectionId.ToString("N")
             };
             _commandWriter.PublishCommand("$dispose", message.WorkerId, command);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.GetState message)
+        {
+            var command = new ProjectionCoreServiceCommandReader.GetStateCommand
+            {
+                Id = message.ProjectionId.ToString("N"),
+                CorrelationId = message.CorrelationId.ToString("N"),
+                Partition =  message.Partition
+            };
+            _commandWriter.PublishCommand("$get-state", message.WorkerId, command);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.GetResult message)
+        {
+            var command = new ProjectionCoreServiceCommandReader.GetResultCommand
+            {
+                Id = message.ProjectionId.ToString("N"),
+                CorrelationId = message.CorrelationId.ToString("N"),
+                Partition = message.Partition
+            };
+            _commandWriter.PublishCommand("$get-result", message.WorkerId, command);
         }
     }
 }

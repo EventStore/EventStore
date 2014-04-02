@@ -323,6 +323,8 @@
     <Compile Include="Services\projections_manager\command_writer\when_handling_create_and_prepare_slave_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_create_prepared_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_dispose_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_get_result_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_get_state_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_kill_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_load_stopped_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_spool_stream_reading_message.cs" />
