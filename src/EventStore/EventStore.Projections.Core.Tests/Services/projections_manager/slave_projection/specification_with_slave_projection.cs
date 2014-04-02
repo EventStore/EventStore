@@ -31,6 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
             yield return
                 new CoreProjectionManagementMessage.CreateAndPrepareSlave(
+                    Guid.NewGuid(), 
                     _coreProjectionCorrelationId,
                     "projection",
                     new ProjectionVersion(1, 0, 0),
@@ -67,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         protected override IEnumerable<WhenStep> When()
         {
             foreach (var m in base.When()) yield return m;
-            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId, Guid.NewGuid());
         }
 
         [Test]
@@ -95,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         protected override IEnumerable<WhenStep> When()
         {
             foreach (var m in base.When()) yield return m;
-            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId, Guid.NewGuid());
             var readerAssigned =
                 HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
             Assert.IsNotNull(readerAssigned);
@@ -132,7 +133,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         protected override IEnumerable<WhenStep> When()
         {
             foreach (var m in base.When()) yield return m;
-            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId, Guid.NewGuid());
             var readerAssigned =
                 HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
             Assert.IsNotNull(readerAssigned);
@@ -171,7 +172,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         protected override IEnumerable<WhenStep> When()
         {
             foreach (var m in base.When()) yield return m;
-            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId);
+            yield return new CoreProjectionManagementMessage.Start(_coreProjectionCorrelationId, Guid.NewGuid());
             var readerAssigned =
                 HandledMessages.OfType<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>().LastOrDefault();
             Assert.IsNotNull(readerAssigned);

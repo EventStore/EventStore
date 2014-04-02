@@ -120,6 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _publisher.Publish(
                             new CoreProjectionManagementMessage.CreatePrepared(
                                 Guid.ParseExact(commandBody.Id, "N"),
+                                Guid.Empty,
                                 commandBody.Name,
                                 commandBody.Version,
                                 commandBody.Config.ToConfig(),
@@ -134,6 +135,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _publisher.Publish(
                             new CoreProjectionManagementMessage.CreateAndPrepare(
                                 Guid.ParseExact(commandBody.Id, "N"),
+                                Guid.Empty,
                                 commandBody.Name,
                                 commandBody.Version,
                                 commandBody.Config.ToConfig(),
@@ -147,6 +149,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _publisher.Publish(
                             new CoreProjectionManagementMessage.CreateAndPrepareSlave(
                                 Guid.ParseExact(commandBody.Id, "N"),
+                                Guid.Empty,
                                 commandBody.Name,
                                 commandBody.Version,
                                 commandBody.Config.ToConfig(),
@@ -170,31 +173,38 @@ namespace EventStore.Projections.Core.Services.Processing
                 case "$load-stopped":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson <LoadStoppedCommand>();
-                        _publisher.Publish(new CoreProjectionManagementMessage.LoadStopped(Guid.ParseExact(commandBody.Id, "N")));
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.LoadStopped(
+                            Guid.ParseExact(commandBody.Id, "N"),
+                            Guid.Empty));
                         break;
                     }
                 case "$start":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<StartCommand>();
-                    _publisher.Publish(new CoreProjectionManagementMessage.Start(Guid.ParseExact(commandBody.Id, "N")));
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.Start(Guid.ParseExact(commandBody.Id, "N"), Guid.Empty));
                     break;
                 }
                 case "$stop":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<StopCommand>();
-                    _publisher.Publish(new CoreProjectionManagementMessage.Stop(Guid.ParseExact(commandBody.Id, "N")));
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.Stop(Guid.ParseExact(commandBody.Id, "N"), Guid.Empty));
                     break;
                 }
                 case "$kill":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<KillCommand>();
-                    _publisher.Publish(new CoreProjectionManagementMessage.Kill(Guid.ParseExact(commandBody.Id, "N")));
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.Kill(Guid.ParseExact(commandBody.Id, "N"), Guid.Empty));
                     break;
                 }
                 case "$dispose":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<DisposeCommand>();
-                    _publisher.Publish(new CoreProjectionManagementMessage.Dispose(Guid.ParseExact(commandBody.Id, "N")));
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.Dispose(Guid.ParseExact(commandBody.Id, "N"), Guid.Empty));
                     break;
                 }
                 default:
@@ -207,27 +217,27 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = true;
         }
 
-        private class LoadStoppedCommand
+        internal class LoadStoppedCommand
         {
             public string Id { get; set; }
         }
 
-        private class StartCommand
+        internal class StartCommand
         {
             public string Id { get; set; }
         }
 
-        private class StopCommand
+        internal class StopCommand
         {
             public string Id { get; set; }
         }
 
-        private class KillCommand
+        internal class KillCommand
         {
             public string Id { get; set; }
         }
 
-        private class DisposeCommand
+        internal class DisposeCommand
         {
             public string Id { get; set; }
         }
@@ -247,6 +257,25 @@ namespace EventStore.Projections.Core.Services.Processing
             public bool StopOnEof;
             public bool IsSlaveProjection;
 
+            public PersistedProjectionConfig()
+            {
+            }
+
+            public PersistedProjectionConfig(ProjectionConfig config)
+            {
+                RunAs = config.RunAs.Identity.Name;
+                RunAsRoles = ((OpenGenericPrincipal) config.RunAs).Roles;
+                CheckpointHandledThreshold = config.CheckpointHandledThreshold;
+                CheckpointUnhandledBytesThreshold = config.CheckpointUnhandledBytesThreshold;
+                PendingEventsThreshold = config.PendingEventsThreshold;
+                MaxWriteBatchLength = config.MaxWriteBatchLength;
+                EmitEventEnabled = config.EmitEventEnabled;
+                CheckpointsEnabled = config.CheckpointsEnabled;
+                CreateTempStreams = config.CreateTempStreams;
+                StopOnEof = config.StopOnEof;
+                IsSlaveProjection = config.IsSlaveProjection;
+            }
+
             public ProjectionConfig ToConfig()
             {
                 return new ProjectionConfig(
@@ -263,7 +292,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private class CreatePreparedCommand
+        internal class CreatePreparedCommand
         {
             public string Id { get; set; }
             public PersistedProjectionConfig Config { get; set; }
@@ -274,7 +303,7 @@ namespace EventStore.Projections.Core.Services.Processing
             public string Name { get; set; }
         }
 
-        private class CreateAndPrepareCommand
+        internal class CreateAndPrepareCommand
         {
             public string Id { get; set; }
             public PersistedProjectionConfig Config { get; set; }
@@ -284,7 +313,7 @@ namespace EventStore.Projections.Core.Services.Processing
             public string Name { get; set; }
         }
 
-        private class CreateAndPrepareSlaveCommand
+        internal class CreateAndPrepareSlaveCommand
         {
             public string Id { get; set; }
             public string MasterCoreProjectionId { get; set; }
@@ -296,7 +325,7 @@ namespace EventStore.Projections.Core.Services.Processing
             public string Name { get; set; }
         }
 
-        private class SpoolStreamReadingCommand
+        internal class SpoolStreamReadingCommand
         {
             public string SubscriptionId { get; set; }
             public string StreamId { get; set; }

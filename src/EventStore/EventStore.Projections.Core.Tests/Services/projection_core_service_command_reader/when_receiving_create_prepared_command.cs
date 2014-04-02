@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_core_service_command_reader
@@ -91,31 +92,32 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
             Assert.AreEqual(true, createPrepared.Config.CreateTempStreams);
             Assert.AreEqual(false, createPrepared.Config.StopOnEof);
             Assert.AreEqual(false, createPrepared.Config.IsSlaveProjection);
-            Assert.IsNotNull(createPrepared.SourceDefinition);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.AllEvents);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.AllStreams);
-            Assert.AreEqual(true, createPrepared.SourceDefinition.ByStreams);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.ByCustomPartitions);
-            Assert.That(new[] {"account"}.SequenceEqual(createPrepared.SourceDefinition.Categories));
-            Assert.That(new[] {"added", "removed"}.SequenceEqual(createPrepared.SourceDefinition.Events));
-            Assert.That(new string[] {}.SequenceEqual(createPrepared.SourceDefinition.Streams));
-            Assert.AreEqual("", createPrepared.SourceDefinition.CatalogStream);
-            Assert.AreEqual(100000, createPrepared.SourceDefinition.LimitingCommitPosition);
-            Assert.AreEqual("ResultStreamName", createPrepared.SourceDefinition.ResultStreamNameOption);
+            var projectionSourceDefinition = createPrepared.SourceDefinition as IQuerySources;
+            Assert.IsNotNull(projectionSourceDefinition);
+            Assert.AreEqual(false, projectionSourceDefinition.AllEvents);
+            Assert.AreEqual(false, projectionSourceDefinition.AllStreams);
+            Assert.AreEqual(true, projectionSourceDefinition.ByStreams);
+            Assert.AreEqual(false, projectionSourceDefinition.ByCustomPartitions);
+            Assert.That(new[] {"account"}.SequenceEqual(projectionSourceDefinition.Categories));
+            Assert.That(new[] {"added", "removed"}.SequenceEqual(projectionSourceDefinition.Events));
+            Assert.That(new string[] {}.SequenceEqual(projectionSourceDefinition.Streams));
+            Assert.AreEqual("", projectionSourceDefinition.CatalogStream);
+            Assert.AreEqual(100000, projectionSourceDefinition.LimitingCommitPosition);
+            Assert.AreEqual("ResultStreamName", projectionSourceDefinition.ResultStreamNameOption);
             Assert.AreEqual(
                 "PartitionResultStreamNamePattern",
-                createPrepared.SourceDefinition.PartitionResultStreamNamePatternOption);
-            Assert.AreEqual("ForceProjectionName", createPrepared.SourceDefinition.ForceProjectionNameOption);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.ReorderEventsOption);
-            Assert.AreEqual(0, createPrepared.SourceDefinition.ProcessingLagOption);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.IsBiState);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.DefinesStateTransform);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.DefinesCatalogTransform);
-            Assert.AreEqual(true, createPrepared.SourceDefinition.ProducesResults);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.DefinesFold);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.HandlesDeletedNotifications);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.IncludeLinksOption);
-            Assert.AreEqual(false, createPrepared.SourceDefinition.DisableParallelismOption);
+                projectionSourceDefinition.PartitionResultStreamNamePatternOption);
+            Assert.AreEqual("ForceProjectionName", projectionSourceDefinition.ForceProjectionNameOption);
+            Assert.AreEqual(false, projectionSourceDefinition.ReorderEventsOption);
+            Assert.AreEqual(0, projectionSourceDefinition.ProcessingLagOption);
+            Assert.AreEqual(false, projectionSourceDefinition.IsBiState);
+            Assert.AreEqual(false, projectionSourceDefinition.DefinesStateTransform);
+            Assert.AreEqual(false, projectionSourceDefinition.DefinesCatalogTransform);
+            Assert.AreEqual(true, projectionSourceDefinition.ProducesResults);
+            Assert.AreEqual(false, projectionSourceDefinition.DefinesFold);
+            Assert.AreEqual(false, projectionSourceDefinition.HandlesDeletedNotifications);
+            Assert.AreEqual(false, projectionSourceDefinition.IncludeLinksOption);
+            Assert.AreEqual(false, projectionSourceDefinition.DisableParallelismOption);
         }
     }
 }

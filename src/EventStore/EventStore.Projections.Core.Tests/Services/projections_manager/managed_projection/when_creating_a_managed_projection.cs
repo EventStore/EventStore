@@ -23,7 +23,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         public void empty_guid_throws_invali_argument_exception()
         {
             new ManagedProjection(
-                _bus, Guid.Empty, 1, "name", true, null, _writeDispatcher, _readDispatcher, _bus, _bus, 
+                Guid.NewGuid(),
+                _bus,
+                Guid.Empty,
+                1,
+                "name",
+                true,
+                null,
+                _writeDispatcher,
+                _readDispatcher,
+                _bus,
+                _bus,
                 _timeProvider);
         }
 
@@ -31,7 +41,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         public void empty_guid_throws_invali_argument_exception2()
         {
             new ManagedProjection(
-                _bus, Guid.Empty, 1, "name", true, null, _writeDispatcher, _readDispatcher, _bus, _bus, 
+                Guid.NewGuid(),
+                _bus,
+                Guid.Empty,
+                1,
+                "name",
+                true,
+                null,
+                _writeDispatcher,
+                _readDispatcher,
+                _bus,
+                _bus,
                 _timeProvider);
         }
 
@@ -39,7 +59,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         public void null_name_throws_argument_null_exception()
         {
             new ManagedProjection(
-                _bus, Guid.NewGuid(), 1, null, true, null, _writeDispatcher, _readDispatcher, _bus, _bus, 
+                Guid.NewGuid(),
+                _bus,
+                Guid.NewGuid(),
+                1,
+                null,
+                true,
+                null,
+                _writeDispatcher,
+                _readDispatcher,
+                _bus,
+                _bus,
                 _timeProvider);
         }
 
@@ -47,7 +77,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         public void null_name_throws_argument_null_exception2()
         {
             new ManagedProjection(
-                _bus, Guid.NewGuid(), 1, null, true, null, _writeDispatcher, _readDispatcher, _bus, _bus, 
+                Guid.NewGuid(),
+                _bus,
+                Guid.NewGuid(),
+                1,
+                null,
+                true,
+                null,
+                _writeDispatcher,
+                _readDispatcher,
+                _bus,
+                _bus,
                 _timeProvider);
         }
 
@@ -55,7 +95,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         public void empty_name_throws_argument_exception()
         {
             new ManagedProjection(
-                _bus, Guid.NewGuid(), 1, "", true, null, _writeDispatcher, _readDispatcher, _bus, _bus, 
+                Guid.NewGuid(),
+                _bus,
+                Guid.NewGuid(),
+                1,
+                "",
+                true,
+                null,
+                _writeDispatcher,
+                _readDispatcher,
+                _bus,
+                _bus,
                 _timeProvider);
         }
 
@@ -63,7 +113,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         public void empty_name_throws_argument_exception2()
         {
             new ManagedProjection(
-                _bus, Guid.NewGuid(), 1, "", true, null, _writeDispatcher, _readDispatcher, _bus, _bus, 
+                Guid.NewGuid(),
+                _bus,
+                Guid.NewGuid(),
+                1,
+                "",
+                true,
+                null,
+                _writeDispatcher,
+                _readDispatcher,
+                _bus,
+                _bus,
                 _timeProvider);
         }
     }

@@ -39,12 +39,19 @@ namespace EventStore.Projections.Core.Messages
 
         public class CoreProjectionManagementControlMessage : CoreProjectionManagementMessage
         {
+            private readonly Guid _workerId;
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public CoreProjectionManagementControlMessage(Guid projectionId)
+            public Guid WorkerId
+            {
+                get { return _workerId; }
+            }
+
+            public CoreProjectionManagementControlMessage(Guid projectionId, Guid workerId)
                 : base(projectionId)
             {
+                _workerId = workerId;
             }
         }
 
@@ -102,8 +109,8 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Start(Guid projectionId)
-                : base(projectionId)
+            public Start(Guid projectionId, Guid workerId)
+                : base(projectionId, workerId)
             {
             }
 
@@ -115,8 +122,8 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public LoadStopped(Guid correlationId)
-                : base(correlationId)
+            public LoadStopped(Guid correlationId, Guid workerId)
+                : base(correlationId, workerId)
             {
             }
         }
@@ -126,8 +133,8 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Stop(Guid projectionId)
-                : base(projectionId)
+            public Stop(Guid projectionId, Guid workerId)
+                : base(projectionId, workerId)
             {
             }
         }
@@ -137,8 +144,8 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Kill(Guid projectionId)
-                : base(projectionId)
+            public Kill(Guid projectionId, Guid workerId)
+                : base(projectionId, workerId)
             {
             }
         }
@@ -152,8 +159,8 @@ namespace EventStore.Projections.Core.Messages
             private readonly Guid _correlationId;
             private readonly string _partition;
 
-            public GetState(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition)
-                : base(projectionId)
+            public GetState(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition, Guid workerId)
+                : base(projectionId, workerId)
             {
                 if (envelope == null) throw new ArgumentNullException("envelope");
                 if (partition == null) throw new ArgumentNullException("partition");
@@ -187,8 +194,8 @@ namespace EventStore.Projections.Core.Messages
             private readonly Guid _correlationId;
             private readonly string _partition;
 
-            public GetResult(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition)
-                : base(projectionId)
+            public GetResult(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition, Guid workerId)
+                : base(projectionId, workerId)
             {
                 if (envelope == null) throw new ArgumentNullException("envelope");
                 if (partition == null) throw new ArgumentNullException("partition");
@@ -353,9 +360,9 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
-            public CreateAndPrepare(Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
+            public CreateAndPrepare(Guid projectionId, Guid workerId, string name, ProjectionVersion version, ProjectionConfig config,
                 string handlerType, string query)
-                : base(projectionId)
+                : base(projectionId, workerId)
             {
                 _name = name;
                 _version = version;
@@ -408,6 +415,7 @@ namespace EventStore.Projections.Core.Messages
             private readonly ProjectionVersion _version;
 
             public CreateAndPrepareSlave(Guid projectionId,
+                Guid workerId,
                 string name,
                 ProjectionVersion version,
                 ProjectionConfig config,
@@ -415,7 +423,7 @@ namespace EventStore.Projections.Core.Messages
                 Guid masterCoreProjectionId,
                 string handlerType,
                 string query)
-                : base(projectionId)
+                : base(projectionId, workerId)
             {
                 if (name == null) throw new ArgumentNullException("name");
                 if (config == null) throw new ArgumentNullException("config");
@@ -474,15 +482,22 @@ namespace EventStore.Projections.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly ProjectionConfig _config;
-            private readonly IQuerySources _sourceDefinition;
+            private readonly ProjectionSourceDefinition _sourceDefinition;
             private readonly string _handlerType;
             private readonly string _query;
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
-            public CreatePrepared(Guid projectionId, string name, ProjectionVersion version, ProjectionConfig config,
-                IQuerySources sourceDefinition, string handlerType, string query)
-                : base(projectionId)
+            public CreatePrepared(
+                Guid projectionId,
+                Guid workerId,
+                string name,
+                ProjectionVersion version,
+                ProjectionConfig config,
+                ProjectionSourceDefinition sourceDefinition,
+                string handlerType,
+                string query)
+                : base(projectionId, workerId)
             {
                 if (name == null) throw new ArgumentNullException("name");
                 if (config == null) throw new ArgumentNullException("config");
@@ -507,7 +522,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _name; }
             }
 
-            public IQuerySources SourceDefinition
+            public ProjectionSourceDefinition SourceDefinition
             {
                 get { return _sourceDefinition; }
             }
@@ -533,8 +548,8 @@ namespace EventStore.Projections.Core.Messages
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public Dispose(Guid projectionId)
-                : base(projectionId)
+            public Dispose(Guid projectionId, Guid workerId)
+                : base(projectionId, workerId)
             {
             }
         }
