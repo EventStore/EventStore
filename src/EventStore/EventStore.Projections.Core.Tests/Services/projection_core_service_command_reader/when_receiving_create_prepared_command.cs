@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
                          ""sourceDefinition"":{
                              ""allEvents"":false,   
                              ""allStreams"":false,
-                             ""byStream"":true,
+                             ""byStreams"":true,
                              ""byCustomPartitions"":false,
                              ""categories"":[""account""],
                              ""events"":[""added"",""removed""],
@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
                              ""options"":{
                                  ""resultStreamName"":""ResultStreamName"",
                                  ""partitionResultStreamNamePattern"":""PartitionResultStreamNamePattern"",
-                                 ""forceProjectionName"":""ForceProjectionName"",
+                                 ""$forceProjectionName"":""ForceProjectionName"",
                                  ""reorderEvents"":false,
                                  ""processingLag"":0,
                                  ""isBiState"":false,
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
                                  ""producesResults"":true,
                                  ""definesFold"":false,
                                  ""handlesDeletedNotifications"":false,
-                                 ""includeLinks"":false,
+                                 ""$includeLinks"":false,
                                  ""disableParallelism"":false,
                              },
                          },

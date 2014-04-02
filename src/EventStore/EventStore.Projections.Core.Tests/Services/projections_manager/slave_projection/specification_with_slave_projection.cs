@@ -31,8 +31,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
             yield return
                 new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-                    Guid.NewGuid(), 
                     _coreProjectionCorrelationId,
+                    Guid.NewGuid(),
                     "projection",
                     new ProjectionVersion(1, 0, 0),
                     new ProjectionConfig(

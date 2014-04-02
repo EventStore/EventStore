@@ -85,8 +85,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
             Assert.AreEqual(_config.RunAs.Identity.Name, command.Config.RunAs);
             Assert.AreEqual(_config.StopOnEof, command.Config.StopOnEof);
 
-            Assert.AreEqual(_masterCoreProjectionId, command.MasterCoreProjectionId);
-            Assert.AreEqual(_masterWorkerId, command.MasterWorkerId);
+            Assert.AreEqual(_masterCoreProjectionId.ToString("N"), command.MasterCoreProjectionId);
+            Assert.AreEqual(_masterWorkerId.ToString("N"), command.MasterWorkerId);
         }
     }
 }
