@@ -110,7 +110,6 @@ namespace EventStore.Projections.Core.Services.Management
             ISingletonTimeoutScheduler timeoutScheduler = null,
             bool isSlave = false,
             Guid slaveMasterWorkerId = default(Guid),
-            IPublisher slaveResultsPublisher = null,
             Guid slaveMasterCorrelationId = default(Guid))
         {
             if (coreQueue == null) throw new ArgumentNullException("coreQueue");

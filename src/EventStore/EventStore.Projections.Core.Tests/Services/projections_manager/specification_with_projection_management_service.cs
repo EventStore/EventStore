@@ -17,6 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     public abstract class specification_with_projection_management_service : TestFixtureWithExistingEvents
     {
         protected ProjectionManager _manager;
+        protected ProjectionManagerMessageDispatcher _managerMessageDispatcher;
         private bool _initializeSystemProjections;
         protected AwakeService AwakeService;
 
@@ -48,6 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_consumer);
 
             var queues = GivenCoreQueues();
+            _managerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
             _manager = new ProjectionManager(
                 GetInputQueue(),
                 GetInputQueue(),
@@ -88,8 +90,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
-            _bus.Subscribe<PartitionProcessingResultBase>(_manager);
-            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_manager);
+            _bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);
+            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
 
             _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);

@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core
     {
         private readonly RunProjections _runProjections;
         private readonly ProjectionManager _projectionManager;
+        private readonly ProjectionManagerMessageDispatcher _projectionManagerMessageDispatcher;
         private readonly InMemoryBus _output;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
 
@@ -30,6 +31,7 @@ namespace EventStore.Projections.Core
             _runProjections = runProjections;
             _output = new InMemoryBus("ProjectionManagerOutput");
             _timeoutSchedulers = timeoutSchedulers;
+            _projectionManagerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
             _projectionManager = new ProjectionManager(
                 inputQueue,
                 _output,
@@ -75,8 +77,8 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_projectionManager);
-                mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManager);
-                mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManager);
+                mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManagerMessageDispatcher);
+                mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerMessageDispatcher);
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);

@@ -50,8 +50,8 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.ResultReport>,
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>, 
                                      IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
-                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
-        IHandle<PartitionProcessingResultBase>, IHandle<ReaderSubscriptionManagement.SpoolStreamReading>
+                                     IHandle<ProjectionManagementMessage.RegisterSystemProjection>
+        
     {
 
         public const int ProjectionQueryId = -2;
@@ -93,7 +93,6 @@ namespace EventStore.Projections.Core.Services.Management
             _inputQueue = inputQueue;
             _publisher = publisher;
             _queues = queueMap.Select(v => Tuple.Create(v.Key, v.Value)).ToArray();
-            _queueMap = queueMap;
 
             _timeoutSchedulers = timeoutSchedulers;
 
@@ -668,14 +667,14 @@ namespace EventStore.Projections.Core.Services.Management
                 BeginWriteProjectionRegistration(
                     message.Name,
                     projectionId =>
-                        new NewProjectionInitializer(
+                        new ProjectionManager.NewProjectionInitializer(
                             projectionId, message.Name, message.Mode, message.HandlerType, message.Query,
                             message.Enabled, message.EmitEnabled, message.CheckpointsEnabled, message.EnableRunAs,
                             message.RunAs).CreateAndInitializeNewProjection(
                                 this, completed, Guid.NewGuid(), GetNextQueueIndex()));
             }
             else
-                new NewProjectionInitializer(
+                new ProjectionManager.NewProjectionInitializer(
                     ProjectionQueryId, message.Name, message.Mode, message.HandlerType, message.Query, message.Enabled,
                     message.EmitEnabled, message.CheckpointsEnabled, message.EnableRunAs, message.RunAs)
                     .CreateAndInitializeNewProjection(this, completed, Guid.NewGuid(), GetNextQueueIndex());
@@ -789,7 +788,6 @@ namespace EventStore.Projections.Core.Services.Management
                 _timeoutSchedulers[queueIndex],
                 isSlave,
                 slaveMasterWorkerId,
-                slaveResultsPublisher,
                 slaveMasterCorrelationId);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
@@ -900,7 +898,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             var projectionCorrelationId = Guid.NewGuid();
             var slaveProjectionName = message.Name + "-" + @group.Name + "-" + queueIndex;
-            var initializer = new NewProjectionInitializer(
+            var initializer = new ProjectionManager.NewProjectionInitializer(
                 ProjectionQueryId,
                 slaveProjectionName,
                 @group.Mode,
@@ -934,28 +932,5 @@ namespace EventStore.Projections.Core.Services.Management
                 message.MasterCorrelationId);
         }
 
-        public void Handle(PartitionProcessingResultBase message)
-        {
-            DispatchWorkerMessage(message, message.WorkerId);
-        }
-
-        public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
-        {
-            DispatchWorkerMessage(
-                new ReaderSubscriptionManagement.SpoolStreamReadingCore(message.SubscriptionId,
-                    message.StreamId,
-                    message.CatalogSequenceNumber,
-                    message.LimitingCommitPosition),
-                message.WorkerId);
-        }
-
-        private void DispatchWorkerMessage(Message message, Guid workerId)
-        {
-            IPublisher worker;
-            if (_queueMap.TryGetValue(workerId, out worker))
-                worker.Publish(message);
-            else
-                _logger.Info("Cannot find a worker with ID: " + workerId);
-        }
     }
 }

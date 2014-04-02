@@ -24,6 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     public abstract class TestFixtureWithProjectionCoreAndManagementServices : TestFixtureWithExistingEvents
     {
         protected ProjectionManager _manager;
+        protected ProjectionManagerMessageDispatcher _managerMessageDispatcher;
         private bool _initializeSystemProjections;
         protected Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] _processingQueues;
 
@@ -55,6 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _processingQueues = GivenProcessingQueues();
             var queues = _processingQueues.ToDictionary(v => v.Item5, v => (IPublisher)v.Item1);
+            _managerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
             _manager = new ProjectionManager(
                 GetInputQueue(),
                 GetInputQueue(),
@@ -91,8 +93,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
-            _bus.Subscribe<PartitionProcessingResultBase>(_manager);
-            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_manager);
+            _bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);
+            _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
 
 
             foreach(var q in _processingQueues)
