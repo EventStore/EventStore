@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             queue.Busy = true;
             var events = queue.Items.Select(CreateEvent).ToArray();
+            queue.Items.Clear();
             var streamId = "$projections-$" + workerId.ToString("N");
             _ioDispatcher.Perform(
                 _ioDispatcher.BeginWriteEvents(
@@ -51,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Management
                     events,
                     completed =>
                     {
+                        queue.Busy = false;
                         if (completed.Result != OperationResult.Success)
                         {
                             var message = string.Format(
@@ -61,7 +63,6 @@ namespace EventStore.Projections.Core.Services.Management
                             throw new Exception(message);
                         }
 
-                        queue.Busy = false;
                         if (queue.Items.Count > 0)
                             EmitEvents(queue, workerId);
                         else

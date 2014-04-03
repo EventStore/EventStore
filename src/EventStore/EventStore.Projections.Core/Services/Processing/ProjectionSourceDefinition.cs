@@ -166,5 +166,44 @@ namespace EventStore.Projections.Core.Services.Processing
         public string HandlerType { get; private set; }
 
         public string Query { get; private set; }
+
+        protected bool Equals(ProjectionSourceDefinition other)
+        {
+            return AllEvents.Equals(other.AllEvents) && AllStreams.Equals(other.AllStreams)
+                   && ByStream.Equals(other.ByStream) && ByCustomPartitions.Equals(other.ByCustomPartitions)
+                   && Equals(Categories, other.Categories) && Equals(Events, other.Events)
+                   && Equals(Streams, other.Streams) && string.Equals(CatalogStream, other.CatalogStream)
+                   && LimitingCommitPosition == other.LimitingCommitPosition && Equals(Options, other.Options)
+                   && string.Equals(PartitionCatalogStream, other.PartitionCatalogStream)
+                   && string.Equals(PartitionResultCatalogStream, other.PartitionResultCatalogStream);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((ProjectionSourceDefinition) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = AllEvents.GetHashCode();
+                hashCode = (hashCode*397) ^ AllStreams.GetHashCode();
+                hashCode = (hashCode*397) ^ ByStream.GetHashCode();
+                hashCode = (hashCode*397) ^ ByCustomPartitions.GetHashCode();
+                hashCode = (hashCode*397) ^ (Categories != null ? Categories.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (Events != null ? Events.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (Streams != null ? Streams.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (CatalogStream != null ? CatalogStream.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ LimitingCommitPosition.GetHashCode();
+                hashCode = (hashCode*397) ^ (Options != null ? Options.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (PartitionCatalogStream != null ? PartitionCatalogStream.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (PartitionResultCatalogStream != null ? PartitionResultCatalogStream.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
     }
 }

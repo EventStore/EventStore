@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -45,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
             AllWritesSucceed();
             NoOtherStreams();
 
-            _commandReader = new ProjectionCoreServiceCommandReader(_bus, _ioDispatcher);
+            _commandReader = new ProjectionCoreServiceCommandReader(_bus, _ioDispatcher, Guid.NewGuid().ToString("N"));
 
             _bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_commandReader);
             _bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_commandReader);

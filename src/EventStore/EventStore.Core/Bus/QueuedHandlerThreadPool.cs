@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Bus
 {
@@ -89,7 +90,7 @@ namespace EventStore.Core.Bus
                 while (!_stop && _queue.TryDequeue(out msg))
                 {
 #if DEBUG
-                    _queueStats.Dequeued();
+                    _queueStats.Dequeued(msg);
 #endif
                     try
                     {

@@ -180,11 +180,14 @@
     <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
     <Compile Include="Services\Management\CommandWriter.cs" />
     <Compile Include="Services\Management\ICommandWriter.cs" />
+    <Compile Include="Services\Management\IResponseWriter.cs" />
     <Compile Include="Services\Management\ManagedProjection.cs" />
     <Compile Include="Services\Management\ManagedProjectionState.cs" />
+    <Compile Include="Services\Management\ProjectionCoreResponseWriter.cs" />
     <Compile Include="Services\Management\ProjectionManagerCommandWriter.cs" />
     <Compile Include="Services\Management\ProjectionManagerMessageDispatcher.cs" />
     <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
+    <Compile Include="Services\Management\ResponseWriter.cs" />
     <Compile Include="Services\Management\TimeoutScheduler.cs" />
     <Compile Include="Services\Processing\AllStreamsCatalogEventReader.cs" />
     <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />

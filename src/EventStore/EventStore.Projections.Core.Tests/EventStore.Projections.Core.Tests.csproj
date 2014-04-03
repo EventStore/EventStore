@@ -159,6 +159,9 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\specification_with_projection_manager_command_writer.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_faulted_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_prepared_message.cs" />
     <Compile Include="Services\core_projection\another_epoch\when_loading_an_existing_projection.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_prerecording_event_order.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithMultiStreamCheckpointManager.cs" />
@@ -366,6 +369,10 @@
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_stop_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_two_commands.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_starting.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_slave_projection_reader_assigned_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_started_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_statistics_report_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_stopped_message.cs" />
     <Compile Include="Services\v8\v8_internals.cs" />
     <Compile Include="Services\v8\when_compiling_v8_projection.cs" />
     <Compile Include="Services\v8\when_defining_a_v8_projection.cs" />

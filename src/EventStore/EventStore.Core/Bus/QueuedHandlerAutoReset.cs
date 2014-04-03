@@ -120,7 +120,7 @@ namespace EventStore.Core.Bus
                     {
                         _queueStats.EnterBusy();
 #if DEBUG
-                        _queueStats.Dequeued();
+                        _queueStats.Dequeued(msg);
 #endif
 
                         iterationsCount = 0;

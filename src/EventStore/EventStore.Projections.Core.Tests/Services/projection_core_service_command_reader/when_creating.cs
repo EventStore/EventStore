@@ -46,7 +46,10 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
             _exception = null;
             try
             {
-                _commandReader = new ProjectionCoreServiceCommandReader(_bus, _ioDispatcher);
+                _commandReader = new ProjectionCoreServiceCommandReader(
+                    _bus,
+                    _ioDispatcher,
+                    Guid.NewGuid().ToString("N"));
             }
             catch (Exception ex)
             {

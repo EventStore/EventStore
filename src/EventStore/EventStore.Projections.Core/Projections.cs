@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
@@ -36,12 +37,26 @@ namespace EventStore.Projections.Core
         }
 
         public void Register(
-            TFChunkDb db, QueuedHandler mainQueue, ISubscriber mainBus, TimerService timerService,
-            ITimeProvider timeProvider, IHttpForwarder httpForwarder, HttpService[] httpServices, IPublisher networkSendService)
+            TFChunkDb db,
+            QueuedHandler mainQueue,
+            ISubscriber mainBus,
+            TimerService timerService,
+            ITimeProvider timeProvider,
+            IHttpForwarder httpForwarder,
+            HttpService[] httpServices,
+            IPublisher networkSendService)
         {
             _projections = new EventStore.Projections.Core.Projections(
-                db, mainQueue, mainBus, timerService, timeProvider, httpForwarder, httpServices, networkSendService,
-                projectionWorkerThreadCount: _projectionWorkerThreadCount, runProjections: _runProjections);
+                db,
+                mainQueue,
+                mainBus,
+                timerService,
+                timeProvider,
+                httpForwarder,
+                httpServices,
+                networkSendService,
+                projectionWorkerThreadCount: _projectionWorkerThreadCount,
+                runProjections: _runProjections);
         }
 
         public void Start()
@@ -197,6 +212,7 @@ namespace EventStore.Projections.Core
                 queues.ToDictionary(v => v.Key, v => (IPublisher)v.Value),
                 runProjections,
                 coreTimeoutSchedulers);
+
             _projectionManagerNode.SetupMessaging(_managerInputBus);
             {
                 var forwarder = new RequestResponseQueueForwarder(

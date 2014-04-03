@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net.Configuration;
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.TransactionLog.Checkpoint;
 
@@ -198,6 +199,7 @@ namespace EventStore.Core.Bus
         private static ICheckpoint[] _writerCheckpoint = new ICheckpoint[3];
         private static ICheckpoint[] _chaserCheckpoint = new ICheckpoint[3];
         private static int _length;
+        public static bool DumpMessages;
 
         public static void InitializeIdleDetection(bool enable = true)
         {
@@ -284,10 +286,14 @@ namespace EventStore.Core.Bus
         }
 
         [Conditional("DEBUG")]
-        public void Dequeued()
+        public void Dequeued(Message msg)
         {
 #if DEBUG            
             Interlocked.Decrement(ref _length);
+            if (DumpMessages)
+            {
+                Console.WriteLine(msg.GetType().Namespace + "." + msg.GetType().Name);
+            }
 #endif
         }
     }    

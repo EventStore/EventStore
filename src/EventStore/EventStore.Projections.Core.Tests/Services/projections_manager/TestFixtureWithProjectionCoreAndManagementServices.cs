@@ -151,7 +151,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe(spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
 
             var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
-            var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(output, ioDispatcher);
+            var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(
+                output,
+                ioDispatcher,
+                workerId.ToString("N"));
+
             var coreService = new ProjectionCoreService(
                 workerId,
                 inputQueue,

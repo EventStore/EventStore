@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
@@ -47,12 +48,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _coreServiceId;
         private bool _stopped;
 
-        public ProjectionCoreServiceCommandReader(IPublisher publisher, IODispatcher ioDispatcher)
+        public ProjectionCoreServiceCommandReader(IPublisher publisher, IODispatcher ioDispatcher, string workerId)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
 
-            _coreServiceId = Guid.NewGuid().ToString("N");
+            _coreServiceId = workerId;
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
         }
@@ -85,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     yield return
                         _ioDispatcher.BeginReadForward(
-                            "$projections-$" + _coreServiceId,
+                             "$projections-$" + _coreServiceId,
                             from,
                             10,
                             false,
@@ -307,7 +308,10 @@ namespace EventStore.Projections.Core.Services.Processing
             public PersistedProjectionConfig(ProjectionConfig config)
             {
                 RunAs = config.RunAs.Identity.Name;
-                RunAsRoles = ((OpenGenericPrincipal) config.RunAs).Roles;
+                RunAsRoles = config.RunAs == SystemAccount.Principal
+                    ? new string[0]
+                    : ((OpenGenericPrincipal) config.RunAs).Roles;
+
                 CheckpointHandledThreshold = config.CheckpointHandledThreshold;
                 CheckpointUnhandledBytesThreshold = config.CheckpointUnhandledBytesThreshold;
                 PendingEventsThreshold = config.PendingEventsThreshold;
@@ -321,17 +325,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
             public ProjectionConfig ToConfig()
             {
-                return new ProjectionConfig(
-                    new OpenGenericPrincipal(RunAs, RunAsRoles),
-                    CheckpointHandledThreshold,
-                    CheckpointUnhandledBytesThreshold,
-                    PendingEventsThreshold,
-                    MaxWriteBatchLength,
-                    EmitEventEnabled,
-                    CheckpointsEnabled,
-                    CreateTempStreams,
-                    StopOnEof,
-                    IsSlaveProjection);
+                return
+                    new ProjectionConfig(
+                        (RunAs == SystemAccount.Principal.Identity.Name)
+                            ? (IPrincipal) SystemAccount.Principal
+                            : new OpenGenericPrincipal(RunAs, RunAsRoles),
+                        CheckpointHandledThreshold,
+                        CheckpointUnhandledBytesThreshold,
+                        PendingEventsThreshold,
+                        MaxWriteBatchLength,
+                        EmitEventEnabled,
+                        CheckpointsEnabled,
+                        CreateTempStreams,
+                        StopOnEof,
+                        IsSlaveProjection);
             }
         }
 

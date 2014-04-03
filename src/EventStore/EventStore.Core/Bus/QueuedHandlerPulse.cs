@@ -108,7 +108,7 @@ namespace EventStore.Core.Bus
 
                     _queueStats.EnterBusy();
 #if DEBUG
-                    _queueStats.Dequeued();
+                    _queueStats.Dequeued(msg);
 #endif
 
                     var cnt = _queue.Count;

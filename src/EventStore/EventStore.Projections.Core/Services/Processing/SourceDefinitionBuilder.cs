@@ -307,5 +307,46 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public bool DisableParallelism { get; set; }
+
+        protected bool Equals(QuerySourceOptions other)
+        {
+            return string.Equals(ResultStreamName, other.ResultStreamName)
+                   && string.Equals(PartitionResultStreamNamePattern, other.PartitionResultStreamNamePattern)
+                   && string.Equals(ForceProjectionName, other.ForceProjectionName)
+                   && ReorderEvents.Equals(other.ReorderEvents) && ProcessingLag == other.ProcessingLag
+                   && IsBiState.Equals(other.IsBiState) && DefinesStateTransform.Equals(other.DefinesStateTransform)
+                   && DefinesCatalogTransform.Equals(other.DefinesCatalogTransform)
+                   && ProducesResults.Equals(other.ProducesResults) && DefinesFold.Equals(other.DefinesFold)
+                   && HandlesDeletedNotifications.Equals(other.HandlesDeletedNotifications)
+                   && IncludeLinks.Equals(other.IncludeLinks);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((QuerySourceOptions) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = (ResultStreamName != null ? ResultStreamName.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (PartitionResultStreamNamePattern != null ? PartitionResultStreamNamePattern.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (ForceProjectionName != null ? ForceProjectionName.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ ReorderEvents.GetHashCode();
+                hashCode = (hashCode*397) ^ ProcessingLag;
+                hashCode = (hashCode*397) ^ IsBiState.GetHashCode();
+                hashCode = (hashCode*397) ^ DefinesStateTransform.GetHashCode();
+                hashCode = (hashCode*397) ^ DefinesCatalogTransform.GetHashCode();
+                hashCode = (hashCode*397) ^ ProducesResults.GetHashCode();
+                hashCode = (hashCode*397) ^ DefinesFold.GetHashCode();
+                hashCode = (hashCode*397) ^ HandlesDeletedNotifications.GetHashCode();
+                hashCode = (hashCode*397) ^ IncludeLinks.GetHashCode();
+                return hashCode;
+            }
+        }
     }
 }

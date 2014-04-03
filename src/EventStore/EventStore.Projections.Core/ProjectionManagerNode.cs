@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
@@ -16,22 +18,30 @@ namespace EventStore.Projections.Core
 {
     public class ProjectionManagerNode
     {
+        private readonly IODispatcher _ioDispatcher;
         private readonly RunProjections _runProjections;
         private readonly ProjectionManager _projectionManager;
         private readonly ProjectionManagerMessageDispatcher _projectionManagerMessageDispatcher;
         private readonly InMemoryBus _output;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
+        private CommandWriter _commandWriter;
+        private ProjectionManagerCommandWriter _projectionManagerCommadnWriter;
 
         private ProjectionManagerNode(
             IPublisher inputQueue,
+            IODispatcher ioDispatcher,
             IDictionary<Guid, IPublisher> queues,
             RunProjections runProjections,
-            TimeoutScheduler[] timeoutSchedulers)
+            TimeoutScheduler[] timeoutSchedulers,
+            InMemoryBus output)
         {
+            _ioDispatcher = ioDispatcher;
             _runProjections = runProjections;
-            _output = new InMemoryBus("ProjectionManagerOutput");
+            _output = output;
             _timeoutSchedulers = timeoutSchedulers;
             _projectionManagerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
+            _commandWriter = new CommandWriter(ioDispatcher);
+            _projectionManagerCommadnWriter = new ProjectionManagerCommandWriter(_commandWriter);
             _projectionManager = new ProjectionManager(
                 inputQueue,
                 _output,
@@ -79,11 +89,31 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_projectionManager);
                 mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManagerMessageDispatcher);
                 mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerMessageDispatcher);
-                mainBus.Subscribe<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>(
-                    _projectionManagerMessageDispatcher);
+                /*mainBus.Subscribe<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>(
+                    _projectionManagerMessageDispatcher);*/
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);
+
+            mainBus.Subscribe(_ioDispatcher.Awaker);
+            mainBus.Subscribe(_ioDispatcher.BackwardReader);
+            mainBus.Subscribe(_ioDispatcher.ForwardReader);
+            mainBus.Subscribe(_ioDispatcher.StreamDeleter);
+            mainBus.Subscribe(_ioDispatcher.Writer);
+            mainBus.Subscribe(_ioDispatcher);
+
+            mainBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepareSlave>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Kill>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Dispose>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.GetState>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<CoreProjectionManagementMessage.GetResult>(_projectionManagerCommadnWriter);
+
         }
 
         public static ProjectionManagerNode Create(
@@ -96,7 +126,16 @@ namespace EventStore.Projections.Core
             RunProjections runProjections,
             TimeoutScheduler[] timeoutSchedulers)
         {
-            var projectionManagerNode = new ProjectionManagerNode(inputQueue, queues, runProjections, timeoutSchedulers);
+            var output = new InMemoryBus("ProjectionManagerOutput");
+            var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
+
+            var projectionManagerNode = new ProjectionManagerNode(
+                inputQueue,
+                ioDispatcher,
+                queues,
+                runProjections,
+                timeoutSchedulers, output);
+
             var projectionsController = new ProjectionsController(httpForwarder, inputQueue, networkSendQueue);
             foreach (var httpService in httpServices)
             {
