@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
                 Mode = ProjectionMode.OneTime,
                 PartitionsCached = 123,
                 Name = "name",
-                Position = CheckpointTag.FromPosition(0, 1000, 900),
+                Position = CheckpointTag.FromPosition(0, 1000, 900).ToString(),
                 Progress = 100,
                 ProjectionId = 1234,
                 ReadsInProgress = 2,
@@ -68,7 +68,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             Assert.AreEqual(_statistics.BufferedEvents, command.Statistcs.BufferedEvents);
             Assert.AreEqual(_statistics.CheckpointStatus, command.Statistcs.CheckpointStatus);
             Assert.AreEqual(_statistics.CoreProcessingTime, command.Statistcs.CoreProcessingTime);
-            Assert.AreEqual(_statistics.Definition, command.Statistcs.Definition);
             Assert.AreEqual(_statistics.EffectiveName, command.Statistcs.EffectiveName);
             Assert.AreEqual(_statistics.Enabled, command.Statistcs.Enabled);
             Assert.AreEqual(_statistics.Epoch, command.Statistcs.Epoch);
@@ -92,6 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
                 _statistics.WritePendingEventsBeforeCheckpoint,
                 command.Statistcs.WritePendingEventsBeforeCheckpoint);
             Assert.AreEqual(_statistics.WritesInProgress, command.Statistcs.WritesInProgress);
+            Assert.AreEqual(_statistics.Definition, command.Statistcs.Definition);
         }
     }
 }

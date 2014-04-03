@@ -167,6 +167,18 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string Query { get; private set; }
 
+        private bool Equals(string[] a, string[] b)
+        {
+            bool aEmpty = (a == null || a.Length == 0);
+            bool bEmpty = (b == null || b.Length == 0);
+            if (aEmpty && bEmpty)
+                return true;
+            if (aEmpty || bEmpty)
+                return false;
+            return a.SequenceEqual(b);
+
+        }
+
         protected bool Equals(ProjectionSourceDefinition other)
         {
             return AllEvents.Equals(other.AllEvents) && AllStreams.Equals(other.AllStreams)
@@ -194,9 +206,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 hashCode = (hashCode*397) ^ AllStreams.GetHashCode();
                 hashCode = (hashCode*397) ^ ByStream.GetHashCode();
                 hashCode = (hashCode*397) ^ ByCustomPartitions.GetHashCode();
-                hashCode = (hashCode*397) ^ (Categories != null ? Categories.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (Events != null ? Events.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (Streams != null ? Streams.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ (CatalogStream != null ? CatalogStream.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ LimitingCommitPosition.GetHashCode();
                 hashCode = (hashCode*397) ^ (Options != null ? Options.GetHashCode() : 0);

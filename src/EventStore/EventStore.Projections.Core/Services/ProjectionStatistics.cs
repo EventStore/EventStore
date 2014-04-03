@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services
 
         public ProjectionMode Mode { get; set; }
 
-        public CheckpointTag Position { get; set; }
+        public string Position { get; set; }
 
         public float Progress { get; set; }
 

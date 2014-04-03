@@ -131,7 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public virtual void GetStatistics(ProjectionStatistics info)
         {
-            info.Position = _lastProcessedEventPosition.LastTag;
+            info.Position = _lastProcessedEventPosition.LastTag.ToString();
             info.Progress = _lastProcessedEventProgress;
             info.LastCheckpoint = _lastCompletedCheckpointPosition != null
                                       ? _lastCompletedCheckpointPosition.ToString()
