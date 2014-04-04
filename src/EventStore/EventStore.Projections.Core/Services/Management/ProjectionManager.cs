@@ -125,6 +125,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void Start()
         {
+            _publisher.Publish(new ProjectionManagementMessage.Starting());
             foreach (var queue in _queues)
             {
                 var queuePublisher = queue.Item2;
