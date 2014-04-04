@@ -583,7 +583,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void WriteTo(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, JToken>> extraMetaData, JsonTextWriter jsonWriter)
+        public void WriteTo(ProjectionVersion projectionVersion, IEnumerable<KeyValuePair<string, JToken>> extraMetaData, JsonWriter jsonWriter)
         {
             jsonWriter.WriteStartObject();
             if (projectionVersion.ProjectionId > 0)
@@ -658,16 +658,17 @@ namespace EventStore.Projections.Core.Services.Processing
             jsonWriter.WriteEndObject();
         }
 
-        private static void WriteVersion(ProjectionVersion projectionVersion, JsonTextWriter jsonWriter)
+        private static void WriteVersion(ProjectionVersion projectionVersion, JsonWriter jsonWriter)
         {
             jsonWriter.WriteValue(
                 projectionVersion.ProjectionId + ":" + projectionVersion.Epoch + ":" + projectionVersion.Version + ":"
                 + Projections.VERSION);
         }
 
-        public static CheckpointTagVersion FromJson(JsonReader reader, ProjectionVersion current)
+        public static CheckpointTagVersion FromJson(JsonReader reader, ProjectionVersion current, bool skipStartObject = false)
         {
-            Check(reader.Read(), reader);
+            if (!skipStartObject)
+                Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
             long? commitPosition = null;
             long? preparePosition = null;
@@ -831,6 +832,26 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!read)
                 throw new Exception("Invalid JSON");
+        }
+    }
+
+
+    public class CheckpointTagJsonConverter : JsonConverter
+    {
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var checkpointTag = (CheckpointTag) value;
+            checkpointTag.WriteTo(default(ProjectionVersion), null, writer);
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            return CheckpointTag.FromJson(reader, default(ProjectionVersion), skipStartObject: true).Tag;
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof (CheckpointTag);
         }
     }
 }

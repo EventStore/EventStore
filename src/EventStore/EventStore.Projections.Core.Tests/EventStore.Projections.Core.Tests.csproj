@@ -376,8 +376,10 @@
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_stop_command.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_receiving_two_commands.cs" />
     <Compile Include="Services\projection_core_service_command_reader\when_starting.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_result_report_message.cs" />
     <Compile Include="Services\projection_core_service_response_writer\when_handling_slave_projection_reader_assigned_message.cs" />
     <Compile Include="Services\projection_core_service_response_writer\when_handling_started_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_state_report_message.cs" />
     <Compile Include="Services\projection_core_service_response_writer\when_handling_statistics_report_message.cs" />
     <Compile Include="Services\projection_core_service_response_writer\when_handling_stopped_message.cs" />
     <Compile Include="Services\v8\v8_internals.cs" />

@@ -1,6 +1,7 @@
 ﻿using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using Newtonsoft.Json;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -10,7 +11,9 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
             IHandle<CoreProjectionManagementMessage.Started>,
             IHandle<CoreProjectionManagementMessage.StatisticsReport>,
-            IHandle<CoreProjectionManagementMessage.Stopped>
+            IHandle<CoreProjectionManagementMessage.Stopped>,
+            IHandle<CoreProjectionManagementMessage.StateReport>,
+            IHandle<CoreProjectionManagementMessage.ResultReport>
     {
         private readonly IResponseWriter _writer;
 
@@ -79,6 +82,32 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishCommand("$stopped", command);
         }
 
+        public void Handle(CoreProjectionManagementMessage.StateReport message)
+        {
+            var command = new ProjectionCoreResponseWriter.StateReport
+            {
+                Id = message.ProjectionId.ToString("N"),
+                State = message.State,
+                CorrelationId = message.CorrelationId.ToString("N"),
+                Position = message.Position,
+                Partition = message.Partition
+            };
+            _writer.PublishCommand("$state", command);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.ResultReport message)
+        {
+            var command = new ProjectionCoreResponseWriter.ResultReport
+            {
+                Id = message.ProjectionId.ToString("N"),
+                Result = message.Result,
+                CorrelationId = message.CorrelationId.ToString("N"),
+                Position = message.Position,
+                Partition = message.Partition
+            };
+            _writer.PublishCommand("$result", command);
+        }
+
         public class Faulted
         {
             public string Id { get; set; }
@@ -113,6 +142,28 @@ namespace EventStore.Projections.Core.Services.Management
         {
             public string Id { get; set; }
             public bool Completed { get; set; }
+        }
+
+        public class StateReport
+        {
+            public string Id { get; set; }
+            public string CorrelationId { get; set; }
+            public string State { get; set; }
+            public string Partition { get; set; }
+
+            [JsonConverter(typeof(CheckpointTagJsonConverter))]
+            public CheckpointTag Position { get; set; }
+        }
+
+        public class ResultReport
+        {
+            public string Id { get; set; }
+            public string CorrelationId { get; set; }
+            public string Result { get; set; }
+            public string Partition { get; set; }
+
+            [JsonConverter(typeof(CheckpointTagJsonConverter))]
+            public CheckpointTag Position { get; set; }
         }
     }
 }
