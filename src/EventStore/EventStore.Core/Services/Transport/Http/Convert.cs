@@ -1,9 +1,11 @@
 using System;
+using System.Globalization;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -61,6 +63,9 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetAuthor(AtomSpecs.Author);
             feed.SetHeadOfStream(headOfStream); //TODO AN: remove this ?
             feed.SetSelfUrl(self);
+            //TODO AN: remove this ?
+            if (headOfStream) //NOTE: etag workaround - to be fixed with better http handling model
+                feed.SetETag(Configure.GetPositionETag(msg.LastEventNumber, ContentType.AtomJson));
 
             var prevEventNumber = Math.Min(msg.FromEventNumber, msg.LastEventNumber) + 1;
             var nextEventNumber = msg.FromEventNumber - msg.MaxCount;
