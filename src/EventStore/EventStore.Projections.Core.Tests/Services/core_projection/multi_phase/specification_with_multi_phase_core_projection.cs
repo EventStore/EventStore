@@ -73,9 +73,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             }
 
             public override IProjectionProcessingPhase[] CreateProcessingPhases(
-                IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
-                Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-                ITimeProvider timeProvider, IODispatcher ioDispatcher,
+                IPublisher publisher,
+                IPublisher inputQueue,
+                Guid projectionCorrelationId,
+                PartitionStateCache partitionStateCache,
+                Action updateStatistics,
+                CoreProjection coreProjection,
+                ProjectionNamesBuilder namingBuilder,
+                ITimeProvider timeProvider,
+                IODispatcher ioDispatcher,
                 CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             {
                 return new IProjectionProcessingPhase[] {_phase1, _phase2};

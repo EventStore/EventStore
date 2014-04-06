@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
-            IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
+            IPublisher publisher, IPublisher inputQueue, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
             PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
             IProjectionProcessingPhase firstPhase)
         {

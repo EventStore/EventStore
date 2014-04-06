@@ -56,17 +56,35 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
-            IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
-            PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
+            IPublisher publisher,
+            IPublisher inputQueue,
+            Guid projectionCorrelationId,
+            ProjectionNamesBuilder namingBuilder,
+            PartitionStateCache partitionStateCache,
+            CoreProjection coreProjection,
+            IODispatcher ioDispatcher,
             IProjectionProcessingPhase firstPhase)
         {
             var coreProjectionCheckpointWriter =
                 new CoreProjectionCheckpointWriter(
-                    namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
+                    namingBuilder.MakeCheckpointStreamName(),
+                    ioDispatcher,
+                    _projectionVersion,
+                    _name);
             var checkpointManager2 = new DefaultCheckpointManager(
-                publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
-                _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder,
-                GetUseCheckpoints(), false, _sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
+                publisher,
+                projectionCorrelationId,
+                _projectionVersion,
+                _projectionConfig.RunAs,
+                ioDispatcher,
+                _projectionConfig,
+                _name,
+                new PhasePositionTagger(1),
+                namingBuilder,
+                GetUseCheckpoints(),
+                false,
+                _sourceDefinition.DefinesFold,
+                coreProjectionCheckpointWriter);
 
             var writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
                 publisher,
@@ -76,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 partitionStateCache,
                 checkpointManager2,
                 checkpointManager2);
+
             return new[] {firstPhase, writeResultsPhase};
         }
 
@@ -91,15 +110,36 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected override IProjectionProcessingPhase CreateFirstProcessingPhase(
-            IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
-            Action updateStatistics, CoreProjection coreProjection, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager checkpointManager,
-            IReaderStrategy readerStrategy, IResultWriter resultWriter)
+            IPublisher publisher,
+            IPublisher inputQueue,
+            Guid projectionCorrelationId,
+            PartitionStateCache partitionStateCache,
+            Action updateStatistics,
+            CoreProjection coreProjection,
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            CheckpointTag zeroCheckpointTag,
+            ICoreProjectionCheckpointManager checkpointManager,
+            IReaderStrategy readerStrategy,
+            IResultWriter resultWriter)
         {
             return new ParallelQueryMasterProjectionProcessingPhase(
-                coreProjection, projectionCorrelationId, publisher, _projectionConfig, updateStatistics, _stateHandler,
-                partitionStateCache, _name, _logger, zeroCheckpointTag, checkpointManager, subscriptionDispatcher,
-                readerStrategy, resultWriter, _projectionConfig.CheckpointsEnabled, this.GetStopOnEof(),
+                coreProjection,
+                projectionCorrelationId,
+                publisher,
+                inputQueue,
+                _projectionConfig,
+                updateStatistics,
+                _stateHandler,
+                partitionStateCache,
+                _name,
+                _logger,
+                zeroCheckpointTag,
+                checkpointManager,
+                subscriptionDispatcher,
+                readerStrategy,
+                resultWriter,
+                _projectionConfig.CheckpointsEnabled,
+                this.GetStopOnEof(),
                 _spoolProcessingResponseDispatcher);
         }
 

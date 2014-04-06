@@ -2,7 +2,6 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
@@ -65,8 +64,13 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
-            IPublisher publisher, Guid projectionCorrelationId, ProjectionNamesBuilder namingBuilder,
-            PartitionStateCache partitionStateCache, CoreProjection coreProjection, IODispatcher ioDispatcher,
+            IPublisher publisher,
+            IPublisher inputQueue,
+            Guid projectionCorrelationId,
+            ProjectionNamesBuilder namingBuilder,
+            PartitionStateCache partitionStateCache,
+            CoreProjection coreProjection,
+            IODispatcher ioDispatcher,
             IProjectionProcessingPhase firstPhase)
         {
             return new[] {firstPhase};

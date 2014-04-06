@@ -10,6 +10,7 @@ namespace EventStore.Projections.Core.Services.Management
         Prepared,
         Stopped,
         Completed,
+        Aborted,
         Faulted,
         Starting,
         LoadingState,

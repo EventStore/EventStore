@@ -25,16 +25,43 @@ namespace EventStore.Projections.Core.Services.Processing
         private SlaveProjectionCommunicationChannels _slaves;
 
         public ParallelQueryMasterProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
-            ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler stateHandler,
-            PartitionStateCache partitionStateCache, string name, ILogger logger, CheckpointTag zeroCheckpointTag,
-            ICoreProjectionCheckpointManager checkpointManager, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool checkpointsEnabled, bool stopOnEof,
+            CoreProjection coreProjection,
+            Guid projectionCorrelationId,
+            IPublisher publisher,
+            IPublisher inputQueue,
+            ProjectionConfig projectionConfig,
+            Action updateStatistics,
+            IProjectionStateHandler stateHandler,
+            PartitionStateCache partitionStateCache,
+            string name,
+            ILogger logger,
+            CheckpointTag zeroCheckpointTag,
+            ICoreProjectionCheckpointManager checkpointManager,
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            IReaderStrategy readerStrategy,
+            IResultWriter resultWriter,
+            bool checkpointsEnabled,
+            bool stopOnEof,
             SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher)
             : base(
-                publisher, coreProjection, projectionCorrelationId, checkpointManager, projectionConfig, name, logger,
-                zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics, subscriptionDispatcher,
-                readerStrategy, checkpointsEnabled, stopOnEof, orderedPartitionProcessing: true, isBiState: false)
+                publisher,
+                inputQueue,
+                coreProjection,
+                projectionCorrelationId,
+                checkpointManager,
+                projectionConfig,
+                name,
+                logger,
+                zeroCheckpointTag,
+                partitionStateCache,
+                resultWriter,
+                updateStatistics,
+                subscriptionDispatcher,
+                readerStrategy,
+                checkpointsEnabled,
+                stopOnEof,
+                orderedPartitionProcessing: true,
+                isBiState: false)
         {
             _stateHandler = stateHandler;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;

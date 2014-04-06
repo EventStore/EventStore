@@ -237,7 +237,7 @@ namespace EventStore.Core.Bus
                         {
                             Console.WriteLine("Waiting for IDLE state...");
                             counter++;
-                            if (counter > 50)
+                            if (counter > 150)
                                 throw new ApplicationException("Infinite loop?");
                         }
                     }
@@ -252,14 +252,14 @@ namespace EventStore.Core.Bus
         private static bool AreCheckpointsDifferent(int index)
         {
             return _writerCheckpoint[index] != null && _chaserCheckpoint[index] != null
-                   && _writerCheckpoint[index].Read() != _chaserCheckpoint[index].Read();
+                   && _writerCheckpoint[index].ReadNonFlushed() != _chaserCheckpoint[index].Read();
         }
 
         private static bool AnyCheckpointsDifferent()
         {
-            long c1 = _writerCheckpoint[0] != null ? _writerCheckpoint[0].Read() : -1;
-            long c2 = _writerCheckpoint[1] != null ? _writerCheckpoint[1].Read() : -1;
-            long c3 = _writerCheckpoint[2] != null ? _writerCheckpoint[2].Read() : -1;
+            long c1 = _writerCheckpoint[0] != null ? _writerCheckpoint[0].ReadNonFlushed() : -1;
+            long c2 = _writerCheckpoint[1] != null ? _writerCheckpoint[1].ReadNonFlushed() : -1;
+            long c3 = _writerCheckpoint[2] != null ? _writerCheckpoint[2].ReadNonFlushed() : -1;
 
             return (c2 != -1 && c1 != c2) || (c2 != -1 && c3 != -1 && c2 != c3);
         }

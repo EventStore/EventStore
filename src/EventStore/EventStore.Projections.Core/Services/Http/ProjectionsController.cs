@@ -202,7 +202,8 @@ namespace EventStore.Projections.Core.Services.Http
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.Enable(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
+            var name = match.BoundVariables["name"];
+            Publish(new ProjectionManagementMessage.Enable(envelope, name, GetRunAs(http, match)));
         }
 
         private void OnProjectionCommandReset(HttpEntityManager http, UriTemplateMatch match)

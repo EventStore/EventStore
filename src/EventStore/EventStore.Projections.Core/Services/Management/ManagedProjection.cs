@@ -278,7 +278,12 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            Abort(() => DoDisable(message.Envelope, message.Name));
+            Abort(
+                () =>
+                {
+                    _state = ManagedProjectionState.Aborted;
+                    DoDisable(message.Envelope, message.Name);
+                });
         }
 
         public void Handle(ProjectionManagementMessage.Enable message)
@@ -287,23 +292,22 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             if (Enabled
                 && !(_state == ManagedProjectionState.Completed || _state == ManagedProjectionState.Faulted
-                     || _state == ManagedProjectionState.Loaded || _state == ManagedProjectionState.Prepared
-                     || _state == ManagedProjectionState.Stopped))
+                     || _state == ManagedProjectionState.Aborted || _state == ManagedProjectionState.Loaded
+                     || _state == ManagedProjectionState.Prepared || _state == ManagedProjectionState.Stopped))
             {
-                message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.OperationFailed("Invalid state"));
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Invalid state"));
                 return;
             }
             if (!Enabled)
                 Enable();
             Action completed = () =>
-                {
-                    if (_state == ManagedProjectionState.Prepared)
-                        StartOrLoadStopped(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
-                    else
-                        message.Envelope.ReplyWith(
-                            new ProjectionManagementMessage.Updated(message.Name));
-                };
+            {
+                if (_state == ManagedProjectionState.Prepared)
+                    StartOrLoadStopped(
+                        () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+                else
+                    message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
+            };
             UpdateProjectionVersion();
             Prepare(() => BeginWrite(completed));
         }
@@ -809,6 +813,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 case ManagedProjectionState.Stopped:
                 case ManagedProjectionState.Completed:
+                case ManagedProjectionState.Aborted:
                 case ManagedProjectionState.Faulted:
                 case ManagedProjectionState.Loaded:
                     if (completed != null) completed();
@@ -839,6 +844,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 case ManagedProjectionState.Stopped:
                 case ManagedProjectionState.Completed:
+                case ManagedProjectionState.Aborted:
                 case ManagedProjectionState.Faulted:
                 case ManagedProjectionState.Loaded:
                     if (completed != null) completed();

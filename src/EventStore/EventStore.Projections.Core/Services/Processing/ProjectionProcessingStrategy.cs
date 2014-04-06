@@ -77,9 +77,15 @@ namespace EventStore.Projections.Core.Services.Processing
         public abstract void EnrichStatistics(ProjectionStatistics info);
 
         public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
-            IPublisher publisher, Guid projectionCorrelationId, PartitionStateCache partitionStateCache,
-            Action updateStatistics, CoreProjection coreProjection, ProjectionNamesBuilder namingBuilder,
-            ITimeProvider timeProvider, IODispatcher ioDispatcher,
+            IPublisher publisher,
+            IPublisher inputQueue,
+            Guid projectionCorrelationId,
+            PartitionStateCache partitionStateCache,
+            Action updateStatistics,
+            CoreProjection coreProjection,
+            ProjectionNamesBuilder namingBuilder,
+            ITimeProvider timeProvider,
+            IODispatcher ioDispatcher,
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter);
 
         public abstract SlaveProjectionDefinitions GetSlaveProjections();

@@ -14,7 +14,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
         private readonly int _pendingEventsThreshold;
-        private readonly Action _updateStatistics;
 
         private CheckpointTag _lastEnqueuedEventTag;
         private bool _justInitialized;
@@ -27,24 +26,24 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public CoreProjectionQueue(
-            Guid projectionCorrelationId, IPublisher publisher, int pendingEventsThreshold,
-            bool orderedPartitionProcessing, Action updateStatistics = null)
+            Guid projectionCorrelationId,
+            IPublisher publisher,
+            int pendingEventsThreshold,
+            bool orderedPartitionProcessing)
         {
             _queuePendingEvents =
                 new StagedProcessingQueue(
                     new[]
                     {
-                        true /* record event order - async with ordered output*/, 
-                        true /* get state partition - ordered as it may change correlation id - sync */, 
-                        false /* load foreach state - async- unordered completion*/, 
-                        orderedPartitionProcessing /* process Js - unordered/ordered - inherently unordered/ordered completion*/, 
-                        true /* write emits - ordered - async ordered completion*/, 
-                        false /* complete item */ 
+                        true /* record event order - async with ordered output*/, true
+                        /* get state partition - ordered as it may change correlation id - sync */, false
+                        /* load foreach state - async- unordered completion*/, orderedPartitionProcessing
+                        /* process Js - unordered/ordered - inherently unordered/ordered completion*/, true
+                        /* write emits - ordered - async ordered completion*/, false /* complete item */
                     });
             _publisher = publisher;
             _projectionCorrelationId = projectionCorrelationId;
             _pendingEventsThreshold = pendingEventsThreshold;
-            _updateStatistics = updateStatistics;
         }
 
         public bool IsRunning
@@ -87,7 +86,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _subscriptionPaused = false;
             _unsubscribed = false;
-            _lastReportedStatisticsTimeStamp = default(DateTime);
             _unsubscribed = false;
             _subscriptionId = Guid.Empty;
 
@@ -137,7 +135,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
         private bool _unsubscribed;
         private Guid _subscriptionId;
         private bool _isRunning;
@@ -150,11 +147,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_subscriptionPaused && _queuePendingEvents.Count < _pendingEventsThreshold / 2)
                 ResumeSubscription();
 
-            if (_updateStatistics != null
-                && ((_queuePendingEvents.Count == 0)
-                    || (DateTime.UtcNow - _lastReportedStatisticsTimeStamp).TotalMilliseconds > 500))
-                _updateStatistics();
-            _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
             return processed;
         }
 

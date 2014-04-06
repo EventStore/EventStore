@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void GetStatistics(ProjectionStatistics info)
         {
-            info.Position = _lastProcessedEventPosition.LastTag.ToString();
+            info.Position = (_lastProcessedEventPosition.LastTag ?? (object)"").ToString();
             info.Progress = _lastProcessedEventProgress;
             info.LastCheckpoint = _lastCompletedCheckpointPosition != null
                 ? _lastCompletedCheckpointPosition.ToString()

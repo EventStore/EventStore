@@ -2,7 +2,10 @@ using System;
 using System.Diagnostics.Contracts;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messaging;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -18,6 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IProjectionPhaseStateManager
     {
         protected readonly IPublisher _publisher;
+        private readonly IPublisher _inputQueue;
         protected readonly ICoreProjectionForProcessingPhase _coreProjection;
         protected readonly Guid _projectionCorrelationId;
         protected readonly ICoreProjectionCheckpointManager _checkpointManager;
@@ -39,15 +43,31 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly bool _stopOnEof;
         private readonly bool _isBiState;
 
+        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
+        private readonly Action _updateStatistics;
+
         protected EventSubscriptionBasedProjectionProcessingPhase(
-            IPublisher publisher, ICoreProjectionForProcessingPhase coreProjection, Guid projectionCorrelationId,
-            ICoreProjectionCheckpointManager checkpointManager, ProjectionConfig projectionConfig, string projectionName,
-            ILogger logger, CheckpointTag zeroCheckpointTag, PartitionStateCache partitionStateCache,
-            IResultWriter resultWriter, Action updateStatistics, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, bool useCheckpoints, bool stopOnEof, bool orderedPartitionProcessing,
+            IPublisher publisher,
+            IPublisher inputQueue,
+            ICoreProjectionForProcessingPhase coreProjection,
+            Guid projectionCorrelationId,
+            ICoreProjectionCheckpointManager checkpointManager,
+            ProjectionConfig projectionConfig,
+            string projectionName,
+            ILogger logger,
+            CheckpointTag zeroCheckpointTag,
+            PartitionStateCache partitionStateCache,
+            IResultWriter resultWriter,
+            Action updateStatistics,
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            IReaderStrategy readerStrategy,
+            bool useCheckpoints,
+            bool stopOnEof,
+            bool orderedPartitionProcessing,
             bool isBiState)
         {
             _publisher = publisher;
+            _inputQueue = inputQueue;
             _coreProjection = coreProjection;
             _projectionCorrelationId = projectionCorrelationId;
             _checkpointManager = checkpointManager;
@@ -57,9 +77,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _zeroCheckpointTag = zeroCheckpointTag;
             _partitionStateCache = partitionStateCache;
             _resultWriter = resultWriter;
+            _updateStatistics = updateStatistics;
             _processingQueue = new CoreProjectionQueue(
-                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, orderedPartitionProcessing,
-                updateStatistics);
+                projectionCorrelationId,
+                publisher,
+                projectionConfig.PendingEventsThreshold,
+                orderedPartitionProcessing);
             _processingQueue.EnsureTickPending += EnsureTickPending;
             _subscriptionDispatcher = subscriptionDispatcher;
             _readerStrategy = readerStrategy;
@@ -67,6 +90,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopOnEof = stopOnEof;
             _isBiState = isBiState;
             _progressResultWriter = new ProgressResultWriter(this, _resultWriter);
+            _inutQueueEnvelope = new PublishEnvelope(_inputQueue);
         }
 
         public void UnlockAndForgetBefore(CheckpointTag checkpointTag)
@@ -111,6 +135,23 @@ namespace EventStore.Projections.Core.Services.Processing
         public void ProcessEvent()
         {
             _processingQueue.ProcessEvent();
+            EnsureUpdateStatisticksTickPending();
+        }
+
+        private void EnsureUpdateStatisticksTickPending()
+        {
+            _publisher.Publish(
+                TimerMessage.Schedule.Create(
+                    _updateInterval,
+                    _inutQueueEnvelope,
+                    new UnwrapEnvelopeMessage(UpdateStatistics)));
+        }
+
+        public void UpdateStatistics()
+        {
+            if (_updateStatistics != null)
+                _updateStatistics();
+            _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
         }
 
         public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
@@ -361,6 +402,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // this can be old checkpoint
             var adjustedCheckpointTag = _readerStrategy.PositionTagger.AdjustTag(checkpointTag);
             _processingQueue.InitializeQueue(adjustedCheckpointTag);
+            _lastReportedStatisticsTimeStamp = default(DateTime);
         }
 
         public int GetBufferedEventCount()
@@ -559,9 +601,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _wasReaderAssigned = false;
 
         protected long _subscriptionStartedAtLastCommitPosition;
+        private PublishEnvelope _inutQueueEnvelope;
+        private TimeSpan _updateInterval = TimeSpan.FromMilliseconds(250);
 
         public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
         {
+            // this is possible hen aborting
+            if (_state != PhaseState.Starting)
+                return;
             if (_wasReaderAssigned)
                 return;
             _wasReaderAssigned = true;

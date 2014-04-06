@@ -25,17 +25,46 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public EventProcessingProjectionProcessingPhase(
-            CoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
-            ProjectionConfig projectionConfig, Action updateStatistics, IProjectionStateHandler projectionStateHandler,
-            PartitionStateCache partitionStateCache, bool definesStateTransform, string projectionName, ILogger logger,
-            CheckpointTag zeroCheckpointTag, ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
-            StatePartitionSelector statePartitionSelector, ReaderSubscriptionDispatcher subscriptionDispatcher,
-            IReaderStrategy readerStrategy, IResultWriter resultWriter, bool useCheckpoints, bool stopOnEof,
-            bool isBiState, bool orderedPartitionProcessing)
+            CoreProjection coreProjection,
+            Guid projectionCorrelationId,
+            IPublisher publisher,
+            IPublisher inputQueue,
+            ProjectionConfig projectionConfig,
+            Action updateStatistics,
+            IProjectionStateHandler projectionStateHandler,
+            PartitionStateCache partitionStateCache,
+            bool definesStateTransform,
+            string projectionName,
+            ILogger logger,
+            CheckpointTag zeroCheckpointTag,
+            ICoreProjectionCheckpointManager coreProjectionCheckpointManager,
+            StatePartitionSelector statePartitionSelector,
+            ReaderSubscriptionDispatcher subscriptionDispatcher,
+            IReaderStrategy readerStrategy,
+            IResultWriter resultWriter,
+            bool useCheckpoints,
+            bool stopOnEof,
+            bool isBiState,
+            bool orderedPartitionProcessing)
             : base(
-                publisher, coreProjection, projectionCorrelationId, coreProjectionCheckpointManager, projectionConfig,
-                projectionName, logger, zeroCheckpointTag, partitionStateCache, resultWriter, updateStatistics,
-                subscriptionDispatcher, readerStrategy, useCheckpoints, stopOnEof, orderedPartitionProcessing, isBiState)
+                publisher,
+                inputQueue,
+                coreProjection,
+                projectionCorrelationId,
+                coreProjectionCheckpointManager,
+                projectionConfig,
+                projectionName,
+                logger,
+                zeroCheckpointTag,
+                partitionStateCache,
+                resultWriter,
+                updateStatistics,
+                subscriptionDispatcher,
+                readerStrategy,
+                useCheckpoints,
+                stopOnEof,
+                orderedPartitionProcessing,
+                isBiState)
         {
 
             _projectionStateHandler = projectionStateHandler;

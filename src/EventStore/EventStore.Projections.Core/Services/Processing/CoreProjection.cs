@@ -118,6 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
                 publisher,
+                inputQueue, 
                 projectionCorrelationId,
                 partitionStateCache,
                 UpdateStatistics,
