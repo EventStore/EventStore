@@ -31,6 +31,8 @@ namespace EventStore.Projections.Core
         private readonly IODispatcher _ioDispatcher;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
+        private ResponseWriter _responseWriter;
+        private ProjectionCoreResponseWriter _coreResponseWriter;
 
         public ProjectionWorkerNode(
             Guid workerId,
@@ -74,6 +76,9 @@ namespace EventStore.Projections.Core
                     _ioDispatcher,
                     _spoolProcessingResponseDispatcher,
                     timeoutScheduler);
+
+                _responseWriter = new ResponseWriter(_ioDispatcher);
+                _coreResponseWriter = new ProjectionCoreResponseWriter(_responseWriter);
             }
         }
 
@@ -151,6 +156,15 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionMeasured>(_eventReaderCoreService);
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_eventReaderCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)
+
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.Faulted>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.Prepared>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.Started>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.Stopped>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_coreResponseWriter);
 
         }
     }
