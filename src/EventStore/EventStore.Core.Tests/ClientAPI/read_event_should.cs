@@ -102,6 +102,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual("test-stream", res.Stream);
             Assert.AreEqual(-1, res.EventNumber);
             Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
+            Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.CreatedEpoch);
         }
     }
 }
