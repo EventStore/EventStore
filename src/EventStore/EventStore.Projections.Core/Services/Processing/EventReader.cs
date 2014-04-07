@@ -105,7 +105,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ReaderSubscriptionMessage.EventReaderPartitionEof(EventReaderCorrelationId, partition, preTagged));
         }
 
-        protected void SendPartitionDeleted(
+        protected void SendPartitionDeleted_WhenReadingDataStream(
             string partition, int? lastEventNumber, TFPos? deletedLinkOrEventPosition, TFPos? deletedEventPosition, string positionStreamId,
             int? positionEventNumber, CheckpointTag preTagged = null)
         {

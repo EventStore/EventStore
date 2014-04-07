@@ -128,12 +128,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 case ReadStreamResult.NoStream:
                     _dataNextSequenceNumber = int.MaxValue;
                     if (completed.LastEventNumber >= 0)
-                        SendPartitionDeleted(_dataStreamName, -1, null, null, null, null);
+                        SendPartitionDeleted_WhenReadingDataStream(_dataStreamName, -1, null, null, null, null);
                     PauseOrContinueProcessing();
                     break;
                 case ReadStreamResult.StreamDeleted:
                     _dataNextSequenceNumber = int.MaxValue;
-                    SendPartitionDeleted(_dataStreamName, -1, null, null, null, null);
+                    SendPartitionDeleted_WhenReadingDataStream(_dataStreamName, -1, null, null, null, null);
                     PauseOrContinueProcessing();
                     break;
                 case ReadStreamResult.Success:

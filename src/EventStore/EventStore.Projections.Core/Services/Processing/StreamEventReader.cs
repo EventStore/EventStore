@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
                     PauseOrContinueProcessing();
                     SendIdle();
-                    SendPartitionDeleted(_streamName, -1, null, null, null, null);
+                    SendPartitionDeleted_WhenReadingDataStream(_streamName, -1, null, null, null, null);
                     SendEof();
                     break;
                 case ReadStreamResult.NoStream:
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     PauseOrContinueProcessing();
                     SendIdle();
                     if (message.LastEventNumber >= 0)
-                        SendPartitionDeleted(_streamName, message.LastEventNumber, null, null, null, null);
+                        SendPartitionDeleted_WhenReadingDataStream(_streamName, message.LastEventNumber, null, null, null, null);
                     SendEof();
                     break;
                 case ReadStreamResult.Success:

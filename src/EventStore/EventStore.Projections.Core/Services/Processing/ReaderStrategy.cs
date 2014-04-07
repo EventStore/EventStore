@@ -202,6 +202,8 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotSupportedException();
         }
 
+        //TODO: clean up $deleted event notification vs $streamDeleted event
+
         private EventFilter CreateEventFilter()
         {
             if (_allStreams && _events != null && _events.Count >= 1)

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -170,11 +171,15 @@ namespace EventStore.Projections.Core.Services.Processing
             bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
                 resolvedEvent, out deletedPartitionStreamId);
 
+            if (isDeletedStreamEvent)
+                Trace.WriteLine("******");
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
-                    EventReaderCorrelationId, resolvedEvent,
+                    EventReaderCorrelationId,
+                    resolvedEvent,
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
-                    100.0f*positionEvent.LogPosition/lastCommitPosition, source: this.GetType()));
+                    100.0f*positionEvent.LogPosition/lastCommitPosition,
+                    source: this.GetType()));
             if (isDeletedStreamEvent)
                 _publisher.Publish(
                     new ReaderSubscriptionMessage.EventReaderPartitionDeleted(
