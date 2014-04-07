@@ -112,7 +112,8 @@ namespace EventStore.Projections.Core.Services.Management
                     _publisher.Publish(
                         new CoreProjectionManagementMessage.StatisticsReport(
                             Guid.ParseExact(commandBody.Id, "N"),
-                            commandBody.Statistcs));
+                            commandBody.Statistcs,
+                            -1));
                     break;
                 }
                 case "$stopped":

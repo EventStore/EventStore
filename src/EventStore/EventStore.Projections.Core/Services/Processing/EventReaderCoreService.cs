@@ -109,9 +109,9 @@ namespace EventStore.Projections.Core.Services.Processing
             var distibutionPointCorrelationId = Guid.NewGuid();
             var eventReader = projectionSubscription.CreatePausedEventReader(
                 _publisher, _ioDispatcher, distibutionPointCorrelationId);
-            _logger.Trace(
-                "The '{0}' projection subscribed to the '{1}' distribution point", subscriptionId,
-                distibutionPointCorrelationId);
+//            _logger.Trace(
+//                "The '{0}' projection subscribed to the '{1}' distribution point", subscriptionId,
+//                distibutionPointCorrelationId);
             _eventReaders.Add(distibutionPointCorrelationId, eventReader);
             _subscriptionEventReaders.Add(subscriptionId, distibutionPointCorrelationId);
             _eventReaderSubscriptions.Add(distibutionPointCorrelationId, subscriptionId);
@@ -133,9 +133,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventReaderSubscriptions.Remove(eventReaderId);
                 _publisher.Publish(
                     new EventReaderSubscriptionMessage.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
-                _logger.Trace(
-                    "The '{0}' subscription has unsubscribed (reader: {1})", message.SubscriptionId,
-                    eventReaderId);
+//                _logger.Trace(
+//                    "The '{0}' subscription has unsubscribed (reader: {1})", message.SubscriptionId,
+//                    eventReaderId);
             }
 
             _pausedSubscriptions.Remove(message.SubscriptionId);
@@ -303,13 +303,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
                 return false;
 
-            if (message.Data == null)
-            {
-                _logger.Trace(
-                    "The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'",
-                    projectionId, message.SafeTransactionFileReaderJoinPosition);
-            }
-
+//            if (message.Data == null)
+//            {
+//                _logger.Trace(
+//                    "The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'",
+//                    projectionId, message.SafeTransactionFileReaderJoinPosition);
+//            }
+                
             Guid eventReaderId = message.CorrelationId;
             _eventReaders[eventReaderId].Dispose();
             _eventReaders.Remove(eventReaderId);

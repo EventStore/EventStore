@@ -140,14 +140,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnsureUpdateStatisticksTickPending()
         {
+            if (_updateStatisticsTicketPending)
+                return;
+            _updateStatisticsTicketPending = true;
             _publisher.Publish(
                 TimerMessage.Schedule.Create(
                     _updateInterval,
                     _inutQueueEnvelope,
-                    new UnwrapEnvelopeMessage(UpdateStatistics)));
+                    new UnwrapEnvelopeMessage(MarkTicketReceivedAndUpdateStatistics)));
         }
 
-        public void UpdateStatistics()
+        private void MarkTicketReceivedAndUpdateStatistics()
+        {
+            _updateStatisticsTicketPending = false;
+            UpdateStatistics();
+        }
+
+        private void UpdateStatistics()
         {
             if (_updateStatistics != null)
                 _updateStatistics();
@@ -601,8 +610,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _wasReaderAssigned = false;
 
         protected long _subscriptionStartedAtLastCommitPosition;
-        private PublishEnvelope _inutQueueEnvelope;
-        private TimeSpan _updateInterval = TimeSpan.FromMilliseconds(250);
+        private readonly PublishEnvelope _inutQueueEnvelope;
+        private readonly TimeSpan _updateInterval = TimeSpan.FromMilliseconds(250);
+        private bool _updateStatisticsTicketPending;
 
         public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
         {

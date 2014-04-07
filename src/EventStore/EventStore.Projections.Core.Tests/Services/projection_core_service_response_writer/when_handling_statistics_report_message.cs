@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
 
         protected override void When()
         {
-            _sut.Handle(new CoreProjectionManagementMessage.StatisticsReport(_projectionId, _statistics));
+            _sut.Handle(new CoreProjectionManagementMessage.StatisticsReport(_projectionId, _statistics, 0));
         }
 
         [Test]

@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Security.Principal;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -74,6 +76,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Action<ProjectionStatistics> _enrichStatistics;
 
         private SlaveProjectionCommunicationChannels _slaveProjections;
+        private int _statisticsSequentialNumber;
+        private bool _disposed;
         //NOTE: this is only for slave projections (TBD)
 
 
@@ -153,10 +157,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void UpdateStatistics()
         {
+            if (_disposed)
+                return;
+            int sequentialNumber = _statisticsSequentialNumber++;
             var info = new ProjectionStatistics();
             GetStatistics(info);
             _publisher.Publish(
-                new CoreProjectionManagementMessage.StatisticsReport(_projectionCorrelationId, info));
+                new CoreProjectionManagementMessage.StatisticsReport(_projectionCorrelationId, info, sequentialNumber));
         }
 
         public void Start()
@@ -629,6 +636,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Dispose()
         {
+            _disposed = true;
             EnsureUnsubscribed();
             StopSlaveProjections();
             if (_projectionProcessingPhase != null)

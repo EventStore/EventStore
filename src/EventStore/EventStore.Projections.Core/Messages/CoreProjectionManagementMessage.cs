@@ -296,16 +296,23 @@ namespace EventStore.Projections.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly ProjectionStatistics _statistics;
+            private readonly int _sequentialNumber;
 
-            public StatisticsReport(Guid projectionId, ProjectionStatistics statistics)
+            public StatisticsReport(Guid projectionId, ProjectionStatistics statistics, int sequentialNumber)
                 : base(projectionId)
             {
                 _statistics = statistics;
+                _sequentialNumber = sequentialNumber;
             }
 
             public ProjectionStatistics Statistics
             {
                 get { return _statistics; }
+            }
+
+            public int SequentialNumber
+            {
+                get { return _sequentialNumber; }
             }
         }
 

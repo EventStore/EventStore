@@ -176,9 +176,9 @@ namespace EventStore.Projections.Core.Services.Processing
             // if first available event commit position is before the safe TF (prepare) position - join
             if (_subscribeFromPosition.CommitPosition <= fromTransactionFilePosition)
             {
-                _logger.Trace(
-                    "The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId,
-                    fromTransactionFilePosition);
+//                _logger.Trace(
+//                    "The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId,
+//                    fromTransactionFilePosition);
                 DispatchRecentMessagesTo(readerSubscription, fromTransactionFilePosition);
                 AddSubscriber(projectionId, readerSubscription);
                 return true;
@@ -192,9 +192,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_headSubscribers.ContainsKey(projectionId))
                 throw new InvalidOperationException(
                     string.Format("Projection '{0}' has not been subscribed", projectionId));
-            _logger.Trace(
-                "The '{0}' subscription has unsubscribed from the '{1}' heading distribution point", projectionId,
-                _eventReaderId);
+//            _logger.Trace(
+//                "The '{0}' subscription has unsubscribed from the '{1}' heading distribution point", projectionId,
+//                _eventReaderId);
             _headSubscribers.Remove(projectionId);
         }
 
@@ -247,9 +247,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription)
         {
-            _logger.Trace(
-                "The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId,
-                _eventReaderId);
+//            _logger.Trace(
+//                "The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId,
+//                _eventReaderId);
             _headSubscribers.Add(publishWithCorrelationId, subscription);
             if (_headEventReaderPaused)
             {

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
