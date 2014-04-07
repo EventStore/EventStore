@@ -76,7 +76,7 @@ namespace EventStore.Padmin
                 var port = int.Parse(config["http-port"]);
                 var endPoint = new IPEndPoint(ip, port);
 
-                var manager = new ProjectionsManager(new ConsoleLogger(), endPoint);
+                var manager = new ProjectionsManager(new ConsoleLogger(), endPoint, TimeSpan.FromMilliseconds(5000));
                 Execute(manager, args);
                 return true;
             }

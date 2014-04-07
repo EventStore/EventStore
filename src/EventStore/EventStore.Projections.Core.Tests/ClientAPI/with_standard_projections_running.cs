@@ -48,11 +48,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                 Assert.AreEqual(1, slice.Events.Length);
 
             }
-        }
 
-        [TestFixture]
-        public class when_hard_deleting_stream : when_deleting_stream_base
-        {
             protected override void When()
             {
                 base.When();
@@ -64,30 +60,62 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                     "cat-1", r1.NextExpectedVersion, _admin,
                     new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
 
-                _conn.DeleteStream("cat-1", r2.NextExpectedVersion, true, _admin);
+                _conn.DeleteStream("cat-1", r2.NextExpectedVersion, GivenDeleteHardDeleteStreamMode(), _admin);
                 QueueStatsCollector.WaitIdle();
+                if (!GivenStandardProjectionsRunning())
+                {
+                    EnableStandardProjections();
+                    WaitIdle();
+                }
+            }
+
+            protected abstract bool GivenDeleteHardDeleteStreamMode();
+        }
+
+        [TestFixture]
+        public class when_hard_deleting_stream : when_deleting_stream_base
+        {
+            protected override bool GivenDeleteHardDeleteStreamMode()
+            {
+                return true;
             }
         }
 
         [TestFixture]
         public class when_soft_deleting_stream : when_deleting_stream_base
         {
-            protected override void When()
+            protected override bool GivenDeleteHardDeleteStreamMode()
             {
-                base.When();
-                var r1 = _conn.AppendToStream(
-                    "cat-1", ExpectedVersion.NoStream, _admin,
-                    new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
-
-                var r2 = _conn.AppendToStream(
-                    "cat-1", r1.NextExpectedVersion, _admin,
-                    new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
-
-                _conn.DeleteStream("cat-1", r2.NextExpectedVersion, false, _admin);
-                QueueStatsCollector.WaitIdle();
+                return false;
             }
-
         }
 
+        [TestFixture]
+        public class when_hard_deleting_stream_and_starting_standard_projections : when_deleting_stream_base
+        {
+            protected override bool GivenDeleteHardDeleteStreamMode()
+            {
+                return true;
+            }
+
+            protected override bool GivenStandardProjectionsRunning()
+            {
+                return false;
+            }
+        }
+
+        [TestFixture]
+        public class when_soft_deleting_stream_and_starting_standard_projections : when_deleting_stream_base
+        {
+            protected override bool GivenDeleteHardDeleteStreamMode()
+            {
+                return false;
+            }
+
+            protected override bool GivenStandardProjectionsRunning()
+            {
+                return false;
+            }
+        }
     }
 }

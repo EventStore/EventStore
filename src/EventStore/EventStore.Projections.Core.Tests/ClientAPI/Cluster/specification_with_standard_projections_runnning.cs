@@ -93,7 +93,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             _conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
             _conn.Connect();
 
-            _manager = new ProjectionsManager(new ConsoleLogger(), _nodes[0].ExternalHttpEndPoint);
+            _manager = new ProjectionsManager(
+                new ConsoleLogger(),
+                _nodes[0].ExternalHttpEndPoint,
+                TimeSpan.FromMilliseconds(10000));
+
             if (GivenStandardProjectionsRunning())
                 EnableStandardProjections();
             QueueStatsCollector.WaitIdle();

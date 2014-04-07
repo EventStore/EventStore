@@ -11,9 +11,11 @@ namespace EventStore.ClientAPI
     internal class ProjectionsClient
     {
         private readonly HttpAsyncClient _client;
+        private readonly TimeSpan _operationTimeout;
 
-        public ProjectionsClient(ILogger log)
+        public ProjectionsClient(ILogger log, TimeSpan operationTimeout)
         {
+            _operationTimeout = operationTimeout;
             _client = new HttpAsyncClient(log);
         }
 
@@ -93,7 +95,7 @@ namespace EventStore.ClientAPI
             var source = new TaskCompletionSource<string>();
             _client.Get(url,
                         userCredentials,
-                        TimeSpan.FromMilliseconds(5000),
+                        _operationTimeout,
                         response =>
                         {
                             if (response.HttpStatusCode == expectedCode)
@@ -115,7 +117,7 @@ namespace EventStore.ClientAPI
             var source = new TaskCompletionSource<string>();
             _client.Delete(url,
                            userCredentials,
-                           TimeSpan.FromMilliseconds(5000),
+                           _operationTimeout,
                            response =>
                            {
                                if (response.HttpStatusCode == expectedCode)
@@ -139,7 +141,7 @@ namespace EventStore.ClientAPI
                         content,
                         "application/json",
                         userCredentials,
-                        TimeSpan.FromMilliseconds(5000),
+                        _operationTimeout,
                         response =>
                         {
                             if (response.HttpStatusCode == expectedCode)
@@ -162,7 +164,7 @@ namespace EventStore.ClientAPI
             _client.Post(url,
                          content,
                          "application/json",
-                         TimeSpan.FromMilliseconds(5000),
+                         _operationTimeout,
                          userCredentials,
                          response =>
                          {

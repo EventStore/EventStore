@@ -39,7 +39,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
             _conn.Connect();
 
-            _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint);
+            _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, TimeSpan.FromMilliseconds(10000));
+            WaitIdle();
             if (GivenStandardProjectionsRunning())
                 EnableStandardProjections();
             QueueStatsCollector.WaitIdle();

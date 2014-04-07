@@ -42,6 +42,7 @@ fromCategory('stream').foreachStream().when({
         [Test, Category("Network")]
         public void receives_deleted_notification()
         {
+            DumpStream("$ce-stream");
             AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"a\":0,\"deleted\":1}");
         }
     }

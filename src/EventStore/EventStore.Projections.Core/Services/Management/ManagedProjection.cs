@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core.Services.Management
             _projectionId = projectionId;
             _name = name;
             _enabledToRun = enabledToRun;
-            _logger = logger;
+            _logger = logger ?? LogManager.GetLoggerFor<ManagedProjection>();
             _writeDispatcher = writeDispatcher;
             _readDispatcher = readDispatcher;
             _inputQueue = inputQueue;
@@ -185,6 +185,12 @@ namespace EventStore.Projections.Core.Services.Management
         public Guid Id
         {
             get { return _id; }
+        }
+
+        private void SetState(ManagedProjectionState value)
+        {
+            _logger.Trace("MP: {0} {1} => {2}", _name, _state, value);
+            _state = value;
         }
 
         public void Dispose()
@@ -282,7 +288,7 @@ namespace EventStore.Projections.Core.Services.Management
             Abort(
                 () =>
                 {
-                    _state = ManagedProjectionState.Aborted;
+                    SetState(ManagedProjectionState.Aborted);
                     DoDisable(message.Envelope, message.Name);
                 });
         }
@@ -375,7 +381,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Started message)
         {
-            _state = ManagedProjectionState.Running;
+            SetState(ManagedProjectionState.Running);
             if (_onStarted != null)
             {
                 var action = _onStarted;
@@ -386,7 +392,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
-            _state = message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped;
+            SetState(message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped);
             OnStoppedOrFaulted();
         }
 
@@ -419,12 +425,12 @@ namespace EventStore.Projections.Core.Services.Management
             _persistedState.SourceDefinition = message.SourceDefinition;
             if (_state == ManagedProjectionState.Preparing)
             {
-                _state = ManagedProjectionState.Prepared;
+                SetState(ManagedProjectionState.Prepared);
                 OnPrepared();
             }
             else
             {
-                _logger.Trace("Received prepared without being prepared");
+                _logger.Trace("MP: {0} Received prepared without being prepared.  Actual state is: " + _state, _name);
             }
         }
 
@@ -489,7 +495,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void InitializeExisting(string name)
         {
-            _state = ManagedProjectionState.Loading;
+            SetState(ManagedProjectionState.Loading);
             BeginLoad(name);
         }
 
@@ -517,7 +523,7 @@ namespace EventStore.Projections.Core.Services.Management
 
                 LoadPersistedState(persistedState);
                 //TODO: encapsulate this into managed projection
-                _state = ManagedProjectionState.Loaded;
+                SetState(ManagedProjectionState.Loaded);
                 if (Enabled && _enabledToRun)
                 {
                     if (Mode >= ProjectionMode.Continuous)
@@ -528,7 +534,7 @@ namespace EventStore.Projections.Core.Services.Management
                 return;
             }
 
-            _state = ManagedProjectionState.Creating;
+            SetState(ManagedProjectionState.Creating);
 
             _logger.Trace(
                 "Projection manager did not find any projection configuration records in the {0} stream.  Projection stays in CREATING state",
@@ -616,7 +622,7 @@ namespace EventStore.Projections.Core.Services.Management
                 return;
             }
             var oldState = _state;
-            _state = ManagedProjectionState.Writing;
+            SetState(ManagedProjectionState.Writing);
             var managedProjectionSerializedState = _persistedState.ToJsonBytes();
             var eventStreamId = "$projections-" + _name;
             var corrId = Guid.NewGuid();
@@ -643,7 +649,7 @@ namespace EventStore.Projections.Core.Services.Management
                 if (writtenEventNumber != (_persistedState.Version ?? writtenEventNumber))
                     throw new Exception("Projection version and event number mismatch");
                 _lastWrittenVersion = (_persistedState.Version ?? writtenEventNumber);
-                _state = completedState;
+                SetState(completedState);
                 if (completed != null) completed();
                 return;
             }
@@ -686,14 +692,14 @@ namespace EventStore.Projections.Core.Services.Management
                     if (completed != null)
                         completed();
                 };
-            _state = ManagedProjectionState.Starting;
+            SetState(ManagedProjectionState.Starting);
             _output.Publish(new CoreProjectionManagementMessage.Start(Id, _workerId));
         }
 
         private void LoadStopped(Action onLoaded)
         {
             _onStopped = onLoaded;
-            _state = ManagedProjectionState.LoadingState;
+            SetState(ManagedProjectionState.LoadingState);
             _output.Publish(new CoreProjectionManagementMessage.LoadStopped(Id, _workerId));
         }
 
@@ -743,7 +749,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (_state >= ManagedProjectionState.Preparing)
             {
                 DisposeCoreProjection();
-                _state = ManagedProjectionState.Loaded;
+                SetState(ManagedProjectionState.Loaded);
             }
 
             //TODO: load configuration from the definition
@@ -771,7 +777,7 @@ namespace EventStore.Projections.Core.Services.Management
                     Query);
 
             //note: set runnign before start as coreProjection.start() can respond with faulted
-            _state = ManagedProjectionState.Preparing;
+            SetState(ManagedProjectionState.Preparing);
             _output.Publish(createProjectionMessage);
         }
 
@@ -784,7 +790,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (_state >= ManagedProjectionState.Preparing)
             {
                 DisposeCoreProjection();
-                _state = ManagedProjectionState.Loaded;
+                SetState(ManagedProjectionState.Loaded);
             }
 
             //TODO: load configuration from the definition
@@ -804,7 +810,7 @@ namespace EventStore.Projections.Core.Services.Management
                 Query);
 
             //note: set running before start as coreProjection.start() can respond with faulted
-            _state = ManagedProjectionState.Preparing;
+            SetState(ManagedProjectionState.Preparing);
             _output.Publish(createProjectionMessage);
         }
 
@@ -830,7 +836,7 @@ namespace EventStore.Projections.Core.Services.Management
                     return;
                 case ManagedProjectionState.Running:
                 case ManagedProjectionState.Starting:
-                    _state = ManagedProjectionState.Stopping;
+                    SetState(ManagedProjectionState.Stopping);
                     _onStopped = completed;
                     _output.Publish(new CoreProjectionManagementMessage.Stop(Id, _workerId));
                     break;
@@ -862,7 +868,7 @@ namespace EventStore.Projections.Core.Services.Management
                     return;
                 case ManagedProjectionState.Running:
                 case ManagedProjectionState.Starting:
-                    _state = ManagedProjectionState.Stopping;
+                    SetState(ManagedProjectionState.Stopping);
                     _onStopped = completed;
                     _output.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
                     break;
@@ -877,7 +883,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _logger.ErrorException(ex, "The '{0}' projection faulted due to '{1}'", _name, reason);
             else
                 _logger.Error("The '{0}' projection faulted due to '{1}'", _name, reason);
-            _state = ManagedProjectionState.Faulted;
+            SetState(ManagedProjectionState.Faulted);
             _faultedReason = reason;
         }
 

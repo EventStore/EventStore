@@ -86,7 +86,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _connections = new IEventStoreConnection[connections];
 
             Log.Info("Projection manager points to {0}.", _nodeConnection);
-            _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.HttpPort));
+            _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.HttpPort), TimeSpan.FromMilliseconds(5000));
 
             _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>>
             {

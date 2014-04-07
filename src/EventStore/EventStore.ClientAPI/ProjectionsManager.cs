@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -19,12 +20,13 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="log">An instance of <see cref="ILogger"/> to use for logging.</param>
         /// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
-        public ProjectionsManager(ILogger log, IPEndPoint httpEndPoint)
+        /// <param name="operationTimeout"></param>
+        public ProjectionsManager(ILogger log, IPEndPoint httpEndPoint, TimeSpan operationTimeout)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
-            _client = new ProjectionsClient(log);
+            _client = new ProjectionsClient(log, operationTimeout);
             _httpEndPoint = httpEndPoint;
         }
 

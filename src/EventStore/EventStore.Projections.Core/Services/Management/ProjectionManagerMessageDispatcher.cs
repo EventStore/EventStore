@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.CoreProjectionManagementControlMessage message)
         {
-            //DispatchWorkerMessage(message, message.WorkerId);
+            DispatchWorkerMessage(message, message.WorkerId);
         }
 
         private void DispatchWorkerMessage(Message message, Guid workerId)
