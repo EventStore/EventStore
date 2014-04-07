@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
             RegisterUrlBased(service, "/users/$current", HttpMethod.Get, GetCurrentUser);
-            Register(service, "/users/", HttpMethod.Post, PutUser, DefaultCodecs, DefaultCodecs);
+            Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs);
             Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
             RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, PostCommandEnable);
@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(message);
         }
 
-        private void PostUser(HttpEntityManager http)
+        private void PostUser(HttpEntityManager http, UriTemplateMatch match)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
