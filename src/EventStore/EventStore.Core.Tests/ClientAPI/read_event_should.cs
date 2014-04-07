@@ -90,6 +90,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual("test-stream", res.Stream);
             Assert.AreEqual(0, res.EventNumber);
             Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
+            Assert.AreNotEqual(0, res.Event.Value.OriginalEvent.CreatedEpoch);
         }
 
         [Test, Category("Network")]
@@ -102,7 +103,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual("test-stream", res.Stream);
             Assert.AreEqual(-1, res.EventNumber);
             Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
-            Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.CreatedEpoch);
+            Assert.AreNotEqual(0, res.Event.Value.OriginalEvent.CreatedEpoch);
         }
     }
 }
