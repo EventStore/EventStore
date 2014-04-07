@@ -31,6 +31,7 @@ message EventRecord {
 	required bytes data = 7;
 	optional bytes metadata = 8;
 	optional int64 created = 9;
+	optional int64 created_epoch = 10;
 }
 
 message ResolvedIndexedEvent {

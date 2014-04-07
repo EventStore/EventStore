@@ -81,9 +81,12 @@ namespace EventStore.Core.Messages
     [ProtoMember(9, IsRequired = false, Name=@"created", DataFormat = DataFormat.TwosComplement)]
     public readonly long? Created;
   
+    [ProtoMember(10, IsRequired = false, Name=@"created_epoch", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CreatedEpoch;
+  
     private EventRecord() {}
   
-    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created)
+    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created, long? createdEpoch)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
@@ -94,6 +97,7 @@ namespace EventStore.Core.Messages
         Data = data;
         Metadata = metadata;
         Created = created;
+        CreatedEpoch = createdEpoch;
     }
   }
   
