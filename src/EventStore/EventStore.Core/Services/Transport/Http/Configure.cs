@@ -275,7 +275,7 @@ namespace EventStore.Core.Services.Transport.Http
             return InternalServerError();
         }
 
-        private static string GetPositionETag(long position, string contentType)
+        public static string GetPositionETag(long position, string contentType)
         {
             return string.Format("{0}{1}{2}", position, AtomController.ETagSeparator, contentType.GetHashCode());
         }

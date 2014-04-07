@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
@@ -34,7 +33,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Endpoints for seeding gossip if not using DNS.
         /// </summary>
-        public readonly IPEndPoint[] GossipSeeds;
+        public readonly GossipSeed[] GossipSeeds;
         /// <summary>
         /// Timeout for cluster gossip.
         /// </summary>
@@ -46,7 +45,7 @@ namespace EventStore.ClientAPI
         /// <param name="gossipSeeds">Endpoints for seeding gossip</param>
         /// <param name="maxDiscoverAttempts">Maximum number of attempts to discover the cluster</param>
         /// <param name="gossipTimeout">Timeout for cluster gossip</param>
-        internal ClusterSettings(IPEndPoint[] gossipSeeds, int maxDiscoverAttempts, TimeSpan gossipTimeout)
+        internal ClusterSettings(GossipSeed[] gossipSeeds, int maxDiscoverAttempts, TimeSpan gossipTimeout)
         {
             ClusterDns = "";
             MaxDiscoverAttempts = maxDiscoverAttempts;
@@ -73,7 +72,7 @@ namespace EventStore.ClientAPI
             MaxDiscoverAttempts = maxDiscoverAttempts;
             ExternalGossipPort = externalGossipPort;
             GossipTimeout = gossipTimeout;
-            GossipSeeds = new IPEndPoint[0];
+            GossipSeeds = new GossipSeed[0];
         }
     }
 }

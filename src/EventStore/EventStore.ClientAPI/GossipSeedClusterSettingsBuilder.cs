@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 
 namespace EventStore.ClientAPI
@@ -9,17 +10,36 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class GossipSeedClusterSettingsBuilder
     {
-        private IPEndPoint[] _gossipSeeds;
+        private GossipSeed[] _gossipSeeds;
         private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
         private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
 
         /// <summary>
         /// Sets gossip seed endpoints for the client.
+        /// 
+        /// If the server requires a specific Host header to be sent as part of the gossip
+        /// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
         /// </summary>
-        /// <param name="gossipSeeds">IPEndPoints representing the endpoints of nodes from which to seed gossip.</param>
+        /// <param name="gossipSeeds"><see cref="IPEndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
         /// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
         /// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
         public GossipSeedClusterSettingsBuilder SetGossipSeedEndPoints(params IPEndPoint[] gossipSeeds)
+        {
+            if (gossipSeeds == null || gossipSeeds.Length == 0)
+                throw new ArgumentException("Empty FakeDnsEntries collection.");
+
+            _gossipSeeds = gossipSeeds.Select(x => new GossipSeed(x)).ToArray();
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets gossip seed endpoints for the client.
+        /// </summary>
+        /// <param name="gossipSeeds"><see cref="GossipSeed"/>s representing the endpoints of nodes from which to seed gossip.</param>
+        /// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
+        public GossipSeedClusterSettingsBuilder SetGossipSeedEndPoints(params GossipSeed[] gossipSeeds)
         {
             if (gossipSeeds == null || gossipSeeds.Length == 0)
                 throw new ArgumentException("Empty FakeDnsEntries collection.");
