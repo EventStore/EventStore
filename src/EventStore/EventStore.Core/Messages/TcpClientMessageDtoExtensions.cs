@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 
 namespace EventStore.Core.Messages
 {
@@ -35,6 +36,7 @@ namespace EventStore.Core.Messages
                 Data = eventRecord.Data;
                 Created = eventRecord.TimeStamp.ToBinary();
                 Metadata = eventRecord.Metadata;
+                CreatedEpoch = (long) (eventRecord.TimeStamp - new DateTime (1970, 1, 1)).TotalMilliseconds;
             }
         }
 
