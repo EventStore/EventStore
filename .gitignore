@@ -10,6 +10,7 @@ ipch/
 *.s
 *.sdf
 *.opensdf
+*.VisualState.xml
 *.DotSettings
 *.DotSettings.user
 *.DotSettings.personal/Logs
