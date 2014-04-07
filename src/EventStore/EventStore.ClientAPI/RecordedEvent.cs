@@ -44,6 +44,11 @@ namespace EventStore.ClientAPI
         /// </summary>
         public DateTime Created;
 
+        /// <summary>
+        /// A long representing the milliseconds since the epoch when the was created in the system
+        /// </summary>
+        public long CreatedEpoch;
+
 #if DEBUG
         /// <summary>
         /// Shows the event data interpreted as a UTF8-encoded string.
@@ -74,8 +79,12 @@ namespace EventStore.ClientAPI
             EventNumber = systemRecord.EventNumber;
 
             EventType = systemRecord.EventType;
-            if (systemRecord.Created.HasValue)
+            if (systemRecord.Created.HasValue) {
                 Created = DateTime.FromBinary(systemRecord.Created.Value);
+            }
+            if(systemRecord.CreatedEpoch.HasValue) {
+                CreatedEpoch = systemRecord.CreatedEpoch.Value;
+            }
             Data = systemRecord.Data ?? Empty.ByteArray;
             Metadata = systemRecord.Metadata ?? Empty.ByteArray;
         }
