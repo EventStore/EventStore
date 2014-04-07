@@ -18,7 +18,7 @@ namespace EventStore.ClientAPI.Core
         private readonly string _clusterDns;
         private readonly int _maxDiscoverAttempts;
         private readonly int _managerExternalHttpPort;
-        private readonly IPEndPoint[] _gossipSeeds;
+        private readonly GossipSeed[] _gossipSeeds;
 
         private readonly HttpAsyncClient _client;
         private ClusterMessages.MemberInfoDto[] _oldGossip;
@@ -28,7 +28,7 @@ namespace EventStore.ClientAPI.Core
                                             string clusterDns,
                                             int maxDiscoverAttempts, 
                                             int managerExternalHttpPort,
-                                            IPEndPoint[] gossipSeeds,
+                                            GossipSeed[] gossipSeeds,
                                             TimeSpan gossipTimeout)
         {
             Ensure.NotNull(log, "log");
@@ -94,17 +94,17 @@ namespace EventStore.ClientAPI.Core
             return null;
         }
 
-        private IPEndPoint[] GetGossipCandidatesFromDns()
+        private GossipSeed[] GetGossipCandidatesFromDns()
         {
             //_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
-            IPEndPoint[] endpoints;
+            GossipSeed[] endpoints;
             if(_gossipSeeds != null && _gossipSeeds.Length > 0)
             {
                 endpoints = _gossipSeeds;
             } 
             else
             {
-                endpoints = ResolveDns(_clusterDns).Select(x => new IPEndPoint(x, _managerExternalHttpPort)).ToArray();
+                endpoints = ResolveDns(_clusterDns).Select(x => new GossipSeed(new IPEndPoint(x, _managerExternalHttpPort))).ToArray();
             }
             
             RandomShuffle(endpoints, 0, endpoints.Length-1);
@@ -127,7 +127,7 @@ namespace EventStore.ClientAPI.Core
             return addresses;
         }
 
-        private IPEndPoint[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip, IPEndPoint failedTcpEndPoint)
+        private GossipSeed[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip, IPEndPoint failedTcpEndPoint)
         {
             //_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromOldGossip, failedTcpEndPoint: {0}.", failedTcpEndPoint);
             var gossipCandidates = failedTcpEndPoint == null 
@@ -138,17 +138,17 @@ namespace EventStore.ClientAPI.Core
             return ArrangeGossipCandidates(gossipCandidates);
         }
 
-        private IPEndPoint[] ArrangeGossipCandidates(ClusterMessages.MemberInfoDto[] members)
+        private GossipSeed[] ArrangeGossipCandidates(ClusterMessages.MemberInfoDto[] members)
         {
-            var result = new IPEndPoint[members.Length];
+            var result = new GossipSeed[members.Length];
             int i = -1;
             int j = members.Length;
             for (int k = 0; k < members.Length; ++k)
             {
                 if (members[k].State == ClusterMessages.VNodeState.Manager)
-                    result[--j] = new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp), members[k].ExternalHttpPort);
+                    result[--j] = new GossipSeed(new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp), members[k].ExternalHttpPort));
                 else
-                    result[++i] = new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp), members[k].ExternalHttpPort);
+                    result[++i] = new GossipSeed(new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp), members[k].ExternalHttpPort));
             }
             RandomShuffle(result, 0, i); // shuffle nodes
             RandomShuffle(result, j, members.Length - 1); // shuffle managers
@@ -170,14 +170,14 @@ namespace EventStore.ClientAPI.Core
             }
         }
 
-        private ClusterMessages.ClusterInfoDto TryGetGossipFrom(IPEndPoint endPoint)
+        private ClusterMessages.ClusterInfoDto TryGetGossipFrom(GossipSeed endPoint)
         {
             //_log.Debug("ClusterDnsEndPointDiscoverer: Trying to get gossip from [{0}].", endPoint);
 
             ClusterMessages.ClusterInfoDto result = null;
             var completed = new ManualResetEventSlim(false);
 
-            var url = endPoint.ToHttpUrl("/gossip?format=json");
+            var url = endPoint.EndPoint.ToHttpUrl("/gossip?format=json");
             _client.Get(
                 url,
                 null,
@@ -205,7 +205,7 @@ namespace EventStore.ClientAPI.Core
                 {
                     //_log.Info("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e.Message);
                     completed.Set();
-                });
+                }, endPoint.HostHeader);
 
             completed.Wait();
             return result;

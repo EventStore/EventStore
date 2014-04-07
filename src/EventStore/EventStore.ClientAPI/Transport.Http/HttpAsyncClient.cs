@@ -46,13 +46,14 @@ namespace EventStore.ClientAPI.Transport.Http
         }
 
         public void Get(string url, UserCredentials userCredentials, TimeSpan timeout,
-                        Action<HttpResponse> onSuccess, Action<Exception> onException)
+                        Action<HttpResponse> onSuccess, Action<Exception> onException,
+                        string hostHeader = "")
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Get, url, userCredentials, timeout, onSuccess, onException);
+            Receive(HttpMethod.Get, url, userCredentials, timeout, onSuccess, onException, hostHeader);
         }
 
         public void Post(string url, string body, string contentType, TimeSpan timeout, UserCredentials userCredentials,
@@ -90,7 +91,7 @@ namespace EventStore.ClientAPI.Transport.Http
         }
 
         private void Receive(string method, string url, UserCredentials userCredentials, TimeSpan timeout, 
-                             Action<HttpResponse> onSuccess, Action<Exception> onException)
+                             Action<HttpResponse> onSuccess, Action<Exception> onException, string hostHeader = "")
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
             request.Method = method;
@@ -103,6 +104,9 @@ namespace EventStore.ClientAPI.Transport.Http
 #endif
             if (userCredentials != null)
                 AddAuthenticationHeader(request, userCredentials);
+
+            if (!string.IsNullOrWhiteSpace(hostHeader))
+                request.Host = hostHeader;
 
             var result = request.BeginGetResponse(ResponseAcquired, new ClientOperationState(_log, request, onSuccess, onException));
             ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle, TimeoutCallback, request,
