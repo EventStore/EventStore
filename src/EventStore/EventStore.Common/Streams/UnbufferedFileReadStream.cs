@@ -131,9 +131,14 @@ namespace EventStore.Common.Streams
 
         protected override void Dispose(bool disposing)
         {
-            if(_disposed) return;
-            if(_fileHandle == IntPtr.Zero) return;
-            if(!WinApi.CloseHandle(_fileHandle)) { throw new Win32Exception(); }
+            if(_disposed)
+                return;
+
+            if (!_fileHandle.IsClosed)
+                _fileHandle.Close();
+
+            _disposed = true;
+            
             base.Dispose(disposing);
         }
     }
