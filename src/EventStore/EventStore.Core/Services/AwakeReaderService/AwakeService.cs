@@ -53,6 +53,8 @@ namespace EventStore.Core.Services.AwakeReaderService
 
         public void Handle(AwakeServiceMessage.SubscribeAwake message)
         {
+            //TODO: consider buffering last 10 events to avoid race condition
+            // when someone writes before we subscribe forcing us to resubscribe
             if (message.From < _lastPosition)
             {
                 message.Envelope.ReplyWith(message.ReplyWithMessage);

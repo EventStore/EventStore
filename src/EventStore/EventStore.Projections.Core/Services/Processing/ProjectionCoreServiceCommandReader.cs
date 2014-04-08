@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -43,6 +44,8 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionCoreServiceCommandReader
         : IHandle<ProjectionCoreServiceMessage.StartCore>, IHandle<ProjectionCoreServiceMessage.StopCore>
     {
+        private const string _projectionsControlStream = "$projections-$control";
+        private const string _projectionsMasterStream = "$projections-$master";
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly string _coreServiceId;
@@ -61,21 +64,106 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
             _ioDispatcher.Perform(PerformStartCore());
+            _ioDispatcher.Perform(PerformControl());
+        }
+
+        private IEnumerable<IODispatcher.Step> PerformControl()
+        {
+            ClientMessage.ReadStreamEventsBackwardCompleted readResult = null;
+            yield return
+                _ioDispatcher.BeginReadBackward(
+                    _projectionsControlStream,
+                    -1,
+                    1,
+                    false,
+                    SystemAccount.Principal,
+                    completed => readResult = completed);
+
+
+            int fromEventNumber;
+
+            if (readResult.Result == ReadStreamResult.NoStream)
+            {
+                fromEventNumber = 0;
+            }
+            else
+            {
+                if (readResult.Result != ReadStreamResult.Success)
+                    throw new Exception("Cannot start control reader. Read result: " + readResult.Result);
+
+                fromEventNumber = readResult.LastEventNumber + 1;
+            }
+
+            Trace.WriteLine("Starting read control from: " + fromEventNumber);
+
+            //TODO: handle shutdown here and in other readers
+            long subscribeFrom = 0;
+            while (true)
+            {
+                var advancedForward = false;
+                do
+                {
+                    ClientMessage.ReadStreamEventsForwardCompleted readResultForward = null;
+                    yield return
+                        _ioDispatcher.BeginReadForward(
+                            _projectionsControlStream,
+                            fromEventNumber,
+                            1,
+                            false,
+                            SystemAccount.Principal,
+                            completed => readResultForward = completed);
+                    Trace.WriteLine("Control stream read forward result: " + readResultForward.Result);
+
+                    if (readResultForward.Result != ReadStreamResult.Success
+                        && readResultForward.Result != ReadStreamResult.NoStream)
+                        throw new Exception("Control reader failed. Read result: " + readResultForward.Result);
+                    if (readResultForward.Events != null && readResultForward.Events.Length > 0)
+                    {
+                        advancedForward = fromEventNumber != readResultForward.NextEventNumber;
+                        fromEventNumber = readResultForward.NextEventNumber;
+                        subscribeFrom = readResultForward.TfLastCommitPosition;
+                        break;
+                    }
+                    if (readResultForward.Result == ReadStreamResult.Success)
+                        subscribeFrom = readResultForward.TfLastCommitPosition;
+                    Trace.WriteLine("Awaiting control stream");
+
+                    yield return
+                        _ioDispatcher.BeginSubscribeAwake(
+                            _projectionsControlStream,
+                            new TFPos(subscribeFrom, subscribeFrom),
+                            message => { });
+                    Trace.WriteLine("Control stream await completed");
+
+                } while (true);
+
+
+                if (advancedForward)
+                {
+                    var events = new[]
+                    {
+                        new Event(
+                            Guid.NewGuid(),
+                            "$projection-worker-started",
+                            true,
+                            "{\"id\":\"" + _coreServiceId + "\"}",
+                            null)
+                    };
+                    ClientMessage.WriteEventsCompleted response = null;
+                    yield return
+                        _ioDispatcher.BeginWriteEvents(
+                            _projectionsMasterStream,
+                            ExpectedVersion.Any,
+                            SystemAccount.Principal,
+                            events,
+                            r => response = r);
+                    Trace.WriteLine("Worker registered: " + response.Result);
+                }
+            }
         }
 
         private IEnumerable<IODispatcher.Step> PerformStartCore()
         {
-
-            var events = new[]
-            {new Event(Guid.NewGuid(), "$projection-worker-started", true, "{\"id\":\"" + _coreServiceId + "\"}", null)};
-            ClientMessage.WriteEventsCompleted response = null;
-            yield return
-                _ioDispatcher.BeginWriteEvents(
-                    "$projections-$master",
-                    ExpectedVersion.Any,
-                    SystemAccount.Principal,
-                    events,
-                    r => response = r);
 
             var from = 0;
             while (!_stopped)

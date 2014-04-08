@@ -10,6 +10,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Management
 {
+    //TODO: response reader must start before Manager (otherwise misses first responses at least in case with pre-registered workers)
     public class ProjectionManagerResponseReader : IHandle<ProjectionManagementMessage.Starting>
     {
         private readonly IPublisher _publisher;
@@ -32,17 +33,20 @@ namespace EventStore.Projections.Core.Services.Management
 
         private IEnumerable<IODispatcher.Step> PerformStartReader()
         {
-            ClientMessage.ReadStreamEventsBackwardCompleted response = null;
+            ClientMessage.WriteEventsCompleted writeResult = null;
             yield return
-                _ioDispatcher.BeginReadBackward(
-                    "$projections-$master",
-                    -1,
-                    1,
-                    false,
+                _ioDispatcher.BeginWriteEvents(
+                    "$projections-$control",
+                    ExpectedVersion.Any,
                     SystemAccount.Principal,
-                    completed => response = completed);
+                    new[] { new Event(Guid.NewGuid(), "$response-reader-started", true, "{}", null) },
+                    completed => writeResult = completed);
 
-            var from = response.LastEventNumber + 1;
+            if (writeResult.Result != OperationResult.Success)
+                throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
+
+
+            var from = writeResult.LastEventNumber;
 
             while (!_stopped)
             {
@@ -80,6 +84,10 @@ namespace EventStore.Projections.Core.Services.Management
             var command = resolvedEvent.Event.EventType;
             switch (command)
             {
+                case "$response-reader-started":
+                    break;
+                case "$projection-worker-started":
+                    break;
                 case "$prepared":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Prepared>();
