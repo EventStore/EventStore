@@ -93,6 +93,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, PermRedirect, AtomCodecs, AtomCodecs);
 
             Register(http, "/streams/{stream}/metadata?embed={embed}", HttpMethod.Get, GetMetastreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/{stream}/metadata/?embed={embed}", HttpMethod.Get, PermRedirect, Codec.NoCodecs, AtomCodecs);
             Register(http, "/streams/{stream}/metadata/{event}?embed={embed}", HttpMethod.Get, GetMetastreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             Register(http, "/streams/{stream}/metadata/{event}/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
