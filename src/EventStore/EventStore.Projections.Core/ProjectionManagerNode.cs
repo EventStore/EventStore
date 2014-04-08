@@ -26,6 +26,7 @@ namespace EventStore.Projections.Core
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private CommandWriter _commandWriter;
         private ProjectionManagerCommandWriter _projectionManagerCommadnWriter;
+        private ProjectionManagerResponseReader _projectionManagerResponseReader;
 
         private ProjectionManagerNode(
             IPublisher inputQueue,
@@ -42,6 +43,7 @@ namespace EventStore.Projections.Core
             _projectionManagerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
             _commandWriter = new CommandWriter(ioDispatcher);
             _projectionManagerCommadnWriter = new ProjectionManagerCommandWriter(_commandWriter);
+            _projectionManagerResponseReader = new ProjectionManagerResponseReader(_output, _ioDispatcher);
             _projectionManager = new ProjectionManager(
                 inputQueue,
                 _output,
@@ -89,6 +91,8 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_projectionManager);
                 mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManagerMessageDispatcher);
                 mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerMessageDispatcher);
+
+                mainBus.Subscribe<ProjectionManagementMessage.Starting>(_projectionManagerResponseReader);
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);

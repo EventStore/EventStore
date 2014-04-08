@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core
 
                 if (runProjections >= RunProjections.System)
                 {
-                    projectionNode.CoreOutput.Subscribe(
+/*                    projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.StateReport>(_managerInputQueue));
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.ResultReport>(_managerInputQueue));
@@ -170,6 +170,9 @@ namespace EventStore.Projections.Core
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(
                             _managerInputQueue));
+                    */
+
+
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<PartitionProcessingResultBase>(_managerInputQueue));
                     projectionNode.CoreOutput.Subscribe(

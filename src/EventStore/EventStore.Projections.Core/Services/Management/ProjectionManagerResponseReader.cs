@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Management
                     SystemAccount.Principal,
                     completed => response = completed);
 
-            var from = response.LastEventNumber;
+            var from = response.LastEventNumber + 1;
 
             while (!_stopped)
             {
