@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -7,7 +8,6 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -152,6 +152,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
+
+            if (message.Data.IsStreamDeletedEvent)
+            {
+                Trace.WriteLine("REC DEL for " + _subscriptions[projectionId].Tag);
+            }
+
             if (TrySubscribeHeadingEventReader(message, projectionId))
                 return;
             if (message.Data != null) // means notification about the end of the stream/source

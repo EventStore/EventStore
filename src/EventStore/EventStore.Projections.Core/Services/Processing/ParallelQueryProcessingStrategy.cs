@@ -102,11 +102,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_catalogStreamName == SystemStreams.AllStream)
             {
-                return new ParallelQueryAllStreamsMasterReaderStrategy(
-                    0, SystemAccount.Principal, timeProvider);
+                return new ParallelQueryAllStreamsMasterReaderStrategy(_name, 0, SystemAccount.Principal, timeProvider);
             }
             return new ParallelQueryMasterReaderStrategy(
-                0, SystemAccount.Principal, timeProvider, _catalogStreamName);
+                _name,
+                0,
+                SystemAccount.Principal,
+                timeProvider,
+                _catalogStreamName);
         }
 
         protected override IProjectionProcessingPhase CreateFirstProcessingPhase(

@@ -59,7 +59,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
                     Options = new QuerySourcesDefinitionOptions { }
                 };
                 _readerStrategy = new ParallelQueryAllStreamsMasterReaderStrategy(
-                    0, SystemAccount.Principal, _timeProvider);
+                    "test",
+                    0,
+                    SystemAccount.Principal,
+                    _timeProvider);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
                     checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: true,
                     stopAfterNEvents: null);

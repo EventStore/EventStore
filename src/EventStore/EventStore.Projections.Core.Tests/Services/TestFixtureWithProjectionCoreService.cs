@@ -102,7 +102,13 @@ namespace EventStore.Projections.Core.Tests.Services
             var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), stopOnEof: false, runAs: null);
+            return ReaderStrategy.Create(
+                "test",
+                0,
+                result.Build(),
+                new RealTimeProvider(),
+                stopOnEof: false,
+                runAs: null);
         }
 
         protected static ResolvedEvent CreateEvent()

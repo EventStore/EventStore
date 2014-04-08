@@ -42,7 +42,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                         AllEvents = true,
                         Options = new QuerySourcesDefinitionOptions {ReorderEvents = true, ProcessingLag = 100}
                     };
-                _readerStrategy = ReaderStrategy.Create(0, _sourceDefinition, _timeProvider, stopOnEof: false, runAs: null);
+                _readerStrategy = ReaderStrategy.Create(
+                    "test",
+                    0,
+                    _sourceDefinition,
+                    _timeProvider,
+                    stopOnEof: false,
+                    runAs: null);
+
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
                     checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: false,
                     stopAfterNEvents: null);

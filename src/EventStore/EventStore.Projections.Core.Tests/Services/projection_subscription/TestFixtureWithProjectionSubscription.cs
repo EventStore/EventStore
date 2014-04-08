@@ -63,8 +63,13 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected virtual IReaderSubscription CreateProjectionSubscription()
         {
             return new ReaderSubscription(
-                _bus, _projectionCorrelationId, _readerStrategy.PositionTagger.MakeZeroCheckpointTag(), _readerStrategy,
-                _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
+                "Test Subscription",
+                _bus,
+                _projectionCorrelationId,
+                _readerStrategy.PositionTagger.MakeZeroCheckpointTag(),
+                _readerStrategy,
+                _checkpointUnhandledBytesThreshold,
+                _checkpointProcessedEventsThreshold);
         }
 
         protected virtual void Given()
@@ -89,7 +94,12 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             IQuerySources sources = readerBuilder.Build();
             ITimeProvider timeProvider = new RealTimeProvider();
             var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(
-                0, sources, timeProvider, stopOnEof: false, runAs: config.RunAs);
+                "test",
+                0,
+                sources,
+                timeProvider,
+                stopOnEof: false,
+                runAs: config.RunAs);
             return readerStrategy;
         }
     }

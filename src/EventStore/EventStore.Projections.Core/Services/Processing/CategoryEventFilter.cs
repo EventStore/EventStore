@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _categoryStream = "$ce-" + category;
         }
 
-        public override bool DeletedNotificationPasses(string positionStreamId)
+        protected override bool DeletedNotificationPasses(string positionStreamId)
         {
             return _categoryStream == positionStreamId;
         }

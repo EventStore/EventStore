@@ -9,6 +9,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ExternallyFedReaderStrategy : IReaderStrategy
     {
+        private readonly string _tag;
         private readonly int _phase;
         private readonly IPrincipal _runAs;
         private readonly ITimeProvider _timeProvider;
@@ -16,14 +17,20 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTagger _positionTagger;
 
         public ExternallyFedReaderStrategy(
-            int phase, IPrincipal runAs, ITimeProvider timeProvider, long limitingCommitPosition)
+            string tag,
+            int phase,
+            IPrincipal runAs,
+            ITimeProvider timeProvider,
+            long limitingCommitPosition)
         {
+            _tag = tag;
             _phase = phase;
             _runAs = runAs;
             _timeProvider = timeProvider;
             _eventFilter = new BypassingEventFilter();
             _positionTagger = new PreTaggedPositionTagger(
-                phase, CheckpointTag.FromByStreamPosition(phase, "", -1, null, -1, limitingCommitPosition));
+                phase,
+                CheckpointTag.FromByStreamPosition(phase, "", -1, null, -1, limitingCommitPosition));
         }
 
         public bool IsReadingOrderRepeatable
@@ -46,9 +53,14 @@ namespace EventStore.Projections.Core.Services.Processing
             ReaderSubscriptionOptions readerSubscriptionOptions)
         {
             return new ReaderSubscription(
-                publisher, subscriptionId, fromCheckpointTag, this,
+                _tag,
+                publisher,
+                subscriptionId,
+                fromCheckpointTag,
+                this,
                 readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
-                readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof,
+                readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                readerSubscriptionOptions.StopOnEof,
                 readerSubscriptionOptions.StopAfterNEvents);
         }
 

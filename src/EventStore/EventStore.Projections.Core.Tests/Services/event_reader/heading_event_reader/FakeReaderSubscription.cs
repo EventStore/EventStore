@@ -108,6 +108,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _receivedNotAuthorizedNotifications.Add(message);
         }
 
+        public string Tag
+        {
+            get { return "FakeReaderSubscription"; }
+        }
+
         public IEventReader CreatePausedEventReader(
             IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId)
         {

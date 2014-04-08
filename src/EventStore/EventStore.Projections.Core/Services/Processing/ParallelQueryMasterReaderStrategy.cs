@@ -9,15 +9,17 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryMasterReaderStrategy : IReaderStrategy
     {
+        private readonly string _tag;
         private readonly IPrincipal _runAs;
         private readonly ITimeProvider _timeProvider;
         private readonly string _catalogStream;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
 
-        public ParallelQueryMasterReaderStrategy(
+        public ParallelQueryMasterReaderStrategy(string tag,
             int phase, IPrincipal runAs, ITimeProvider timeProvider, string catalogStream)
         {
+            _tag = tag;
             _runAs = runAs;
             _timeProvider = timeProvider;
             _catalogStream = catalogStream;
@@ -45,9 +47,14 @@ namespace EventStore.Projections.Core.Services.Processing
             ReaderSubscriptionOptions readerSubscriptionOptions)
         {
             return new ReaderSubscription(
-                publisher, subscriptionId, fromCheckpointTag, this,
+                _tag,
+                publisher,
+                subscriptionId,
+                fromCheckpointTag,
+                this,
                 readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
-                readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof,
+                readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                readerSubscriptionOptions.StopOnEof,
                 readerSubscriptionOptions.StopAfterNEvents);
         }
 

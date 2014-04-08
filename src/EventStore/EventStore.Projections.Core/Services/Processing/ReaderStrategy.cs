@@ -29,16 +29,32 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTagger _positionTagger;
         private readonly ITimeProvider _timeProvider;
 
+        private readonly string _tag;
         private readonly int _phase;
 
         public static IReaderStrategy CreateExternallyFedReaderStrategy(
-            int phase, ITimeProvider timeProvider, IPrincipal runAs, long limitingCommitPosition)
+            string tag,
+            int phase,
+            ITimeProvider timeProvider,
+            IPrincipal runAs,
+            long limitingCommitPosition)
         {
-            var readerStrategy = new ExternallyFedReaderStrategy(phase, runAs, timeProvider, limitingCommitPosition);
+            var readerStrategy = new ExternallyFedReaderStrategy(
+                tag,
+                phase,
+                runAs,
+                timeProvider,
+                limitingCommitPosition);
             return readerStrategy;
         }
 
-        public static IReaderStrategy Create(int phase, IQuerySources sources, ITimeProvider timeProvider, bool stopOnEof, IPrincipal runAs)
+        public static IReaderStrategy Create(
+            string tag,
+            int phase,
+            IQuerySources sources,
+            ITimeProvider timeProvider,
+            bool stopOnEof,
+            IPrincipal runAs)
         {
             if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams()
                 && string.IsNullOrEmpty(sources.CatalogStream))
@@ -54,7 +70,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
 
             if (sources.ByStreams && sources.HasStreams())
-                throw new InvalidOperationException("foreachStream projections are not supported on stream based sources");
+                throw new InvalidOperationException(
+                    "foreachStream projections are not supported on stream based sources");
 
             if ((sources.HasStreams() || sources.AllStreams) && !string.IsNullOrEmpty(sources.CatalogStream))
                 throw new InvalidOperationException("catalogStream cannot be used with streams or allStreams");
@@ -85,17 +102,40 @@ namespace EventStore.Projections.Core.Services.Processing
                     "Deleted stream notifications are only supported with foreachStream()");
 
             var readerStrategy = new ReaderStrategy(
-                phase, sources.AllStreams, sources.Categories, sources.Streams, sources.AllEvents,
-                sources.IncludeLinksOption, sources.Events, sources.HandlesDeletedNotifications, sources.CatalogStream,
-                sources.ProcessingLagOption, sources.ReorderEventsOption, runAs, timeProvider);
+                tag,
+                phase,
+                sources.AllStreams,
+                sources.Categories,
+                sources.Streams,
+                sources.AllEvents,
+                sources.IncludeLinksOption,
+                sources.Events,
+                sources.HandlesDeletedNotifications,
+                sources.CatalogStream,
+                sources.ProcessingLagOption,
+                sources.ReorderEventsOption,
+                runAs,
+                timeProvider);
             return readerStrategy;
         }
 
         private ReaderStrategy(
-            int phase, bool allStreams, string[] categories, string[] streams, bool allEvents, bool includeLinks,
-            string[] events, bool includeStreamDeletedNotification, string catalogStream, int? processingLag, bool reorderEvents, IPrincipal runAs,
+            string tag,
+            int phase,
+            bool allStreams,
+            string[] categories,
+            string[] streams,
+            bool allEvents,
+            bool includeLinks,
+            string[] events,
+            bool includeStreamDeletedNotification,
+            string catalogStream,
+            int? processingLag,
+            bool reorderEvents,
+            IPrincipal runAs,
             ITimeProvider timeProvider)
         {
+            _tag = tag;
             _phase = phase;
             _allStreams = allStreams;
             _categories = categories != null && categories.Length > 0 ? new HashSet<string>(categories) : null;
@@ -147,7 +187,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     readerSubscriptionOptions.CheckpointProcessedEventsThreshold, _processingLag,
                     readerSubscriptionOptions.StopOnEof, readerSubscriptionOptions.StopAfterNEvents);
             else
-                return new ReaderSubscription(
+                return new ReaderSubscription(_tag,
                     publisher, subscriptionId, fromCheckpointTag, this,
                     readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
                     readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof,

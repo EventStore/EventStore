@@ -31,8 +31,13 @@ namespace EventStore.Projections.Core.Services.Processing
                        && (!isStreamDeletedEvent || _includeDeletedStreamEvents));
         }
 
-        public abstract bool DeletedNotificationPasses(string positionStreamId);
+        protected abstract bool DeletedNotificationPasses(string positionStreamId);
         public abstract bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType);
         public abstract string GetCategory(string positionStreamId);
+
+        public bool PassesDeleteNotification(string positionStreamId)
+        {
+            return !_includeDeletedStreamEvents && DeletedNotificationPasses(positionStreamId);
+        }
     }
 }

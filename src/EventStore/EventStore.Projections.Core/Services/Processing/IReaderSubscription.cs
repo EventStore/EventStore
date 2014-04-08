@@ -14,6 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                                IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
                                                IHandle<ReaderSubscriptionMessage.EventReaderNotAuthorized>
     {
+        string Tag { get; }
         IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId);
     }
 }

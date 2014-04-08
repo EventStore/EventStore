@@ -8,14 +8,19 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ParallelQueryAllStreamsMasterReaderStrategy : IReaderStrategy
     {
+        private readonly string _tag;
         private readonly IPrincipal _runAs;
         private readonly ITimeProvider _timeProvider;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
 
         public ParallelQueryAllStreamsMasterReaderStrategy(
-            int phase, IPrincipal runAs, ITimeProvider timeProvider)
+            string tag,
+            int phase,
+            IPrincipal runAs,
+            ITimeProvider timeProvider)
         {
+            _tag = tag;
             _runAs = runAs;
             _timeProvider = timeProvider;
             _eventFilter = new StreamEventFilter("$streams", true, null);
@@ -42,9 +47,14 @@ namespace EventStore.Projections.Core.Services.Processing
             ReaderSubscriptionOptions readerSubscriptionOptions)
         {
             return new ReaderSubscription(
-                publisher, subscriptionId, fromCheckpointTag, this,
+                _tag,
+                publisher,
+                subscriptionId,
+                fromCheckpointTag,
+                this,
                 readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
-                readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof,
+                readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                readerSubscriptionOptions.StopOnEof,
                 readerSubscriptionOptions.StopAfterNEvents);
         }
 

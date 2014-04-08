@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _includeLinks = includeLinks;
         }
 
-        public override bool DeletedNotificationPasses(string positionStreamId)
+        protected override bool DeletedNotificationPasses(string positionStreamId)
         {
             return true;
         }

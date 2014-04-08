@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _streamId = streamId;
         }
 
-        public override bool DeletedNotificationPasses(string positionStreamId)
+        protected override bool DeletedNotificationPasses(string positionStreamId)
         {
             return positionStreamId == _streamId;
         }

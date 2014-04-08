@@ -7,7 +7,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
         }
 
-        public override bool DeletedNotificationPasses(string positionStreamId)
+        protected override bool DeletedNotificationPasses(string positionStreamId)
         {
             return true;
         }

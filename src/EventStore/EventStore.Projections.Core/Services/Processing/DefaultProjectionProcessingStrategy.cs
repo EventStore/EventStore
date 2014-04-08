@@ -98,7 +98,12 @@ namespace EventStore.Projections.Core.Services.Processing
         protected virtual IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
             return ReaderStrategy.Create(
-                0, _sourceDefinition, timeProvider, _projectionConfig.StopOnEof, _projectionConfig.RunAs);
+                _name,
+                0,
+                _sourceDefinition,
+                timeProvider,
+                _projectionConfig.StopOnEof,
+                _projectionConfig.RunAs);
         }
 
         protected abstract IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder);

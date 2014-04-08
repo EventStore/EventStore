@@ -7,7 +7,7 @@ namespace EventStore.Projections.Core.Standard
 {
     public static class StreamDeletedHelper
     {
-        public static bool IsStreamDeletedEvent(ResolvedEvent resolvedEvent, out string deletedPartitionStreamId)
+        public static bool IsStreamDeletedEventOrLinkToStreamDeletedEvent(ResolvedEvent resolvedEvent, out string deletedPartitionStreamId)
         {
             bool isDeletedStreamEvent;
             if (resolvedEvent.IsLinkToDeletedStreamTombstone)

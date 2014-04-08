@@ -84,7 +84,11 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
             return new ExternallyFedReaderStrategy(
-                0, _projectionConfig.RunAs, timeProvider, _sourceDefinition.LimitingCommitPosition ?? long.MinValue);
+                _name,
+                0,
+                _projectionConfig.RunAs,
+                timeProvider,
+                _sourceDefinition.LimitingCommitPosition ?? long.MinValue);
         }
 
         protected override IResultWriter CreateFirstPhaseResultWriter(

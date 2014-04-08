@@ -40,7 +40,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
             var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), stopOnEof: false, runAs: null);
+            return ReaderStrategy.Create(
+                "test",
+                0,
+                result.Build(),
+                new RealTimeProvider(),
+                stopOnEof: false,
+                runAs: null);
         }
     }
 }

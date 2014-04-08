@@ -15,25 +15,39 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         public void it_can_be_created()
         {
             new ReaderSubscription(
-                new FakePublisher(), Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1),
+                "Test Subscription",
+                new FakePublisher(),
+                Guid.NewGuid(),
+                CheckpointTag.FromPosition(0, 0, -1),
                 CreateReaderStrategy(),
-                1000, 2000);
+                1000,
+                2000);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            new ReaderSubscription(null,
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1),
-                CreateReaderStrategy(), 1000, 2000);
+            new ReaderSubscription(
+                "Test Subscription",
+                null,
+                Guid.NewGuid(),
+                CheckpointTag.FromPosition(0, 0, -1),
+                CreateReaderStrategy(),
+                1000,
+                2000);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_checkpoint_strategy_throws_argument_null_exception()
         {
-            new ReaderSubscription(new FakePublisher(),
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, 0, -1), 
-                null, 1000, 2000);
+            new ReaderSubscription(
+                "Test Subscription",
+                new FakePublisher(),
+                Guid.NewGuid(),
+                CheckpointTag.FromPosition(0, 0, -1),
+                null,
+                1000,
+                2000);
         }
 
         private IReaderStrategy CreateReaderStrategy()
@@ -41,7 +55,13 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var result = new SourceDefinitionBuilder();
             result.FromAll();
             result.AllEvents();
-            return ReaderStrategy.Create(0, result.Build(), new RealTimeProvider(), stopOnEof: false, runAs: null);
+            return ReaderStrategy.Create(
+                "test",
+                0,
+                result.Build(),
+                new RealTimeProvider(),
+                stopOnEof: false,
+                runAs: null);
         }
     }
 }

@@ -168,11 +168,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
                 return;
 
-            bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEvent(
+            bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEventOrLinkToStreamDeletedEvent(
                 resolvedEvent, out deletedPartitionStreamId);
 
-            if (isDeletedStreamEvent)
-                Trace.WriteLine("******");
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
                     EventReaderCorrelationId,

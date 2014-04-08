@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _streams = new HashSet<string>(from eventType in events select "$et-" + eventType);
         }
 
-        public override bool DeletedNotificationPasses(string positionStreamId)
+        protected override bool DeletedNotificationPasses(string positionStreamId)
         {
             return true;
         }
