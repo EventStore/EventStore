@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public IIndexWriter IndexWriter { get { return _indexWriter; } }
         public IIndexCommitter IndexCommitter { get { return _indexCommitter; } }
 
-        private readonly IIndexCache _indexCache;
+        private readonly IIndexBackend _indexBackend;
         private readonly IIndexReader _indexReader;
         private readonly IIndexWriter _indexWriter;
         private readonly IIndexCommitter _indexCommitter;
@@ -41,12 +41,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
-            _indexCache = new IndexCache(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
-            _indexReader = new IndexReader(_indexCache, hasher, tableIndex, metastreamMetadata);
-            var writer = new IndexWriter(bus, tableIndex, hasher, _indexCache, _indexReader, additionalCommitChecks);
-            _indexWriter = writer;
-            _indexCommitter = writer;
-            _allReader = new AllReader(_indexCache);
+            _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
+            _indexReader = new IndexReader(_indexBackend, hasher, tableIndex, metastreamMetadata);
+            _indexWriter = new IndexWriter(_indexBackend, _indexReader);
+            _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, hasher, additionalCommitChecks);
+            _allReader = new AllReader(_indexBackend);
         }
 
         void IReadIndex.Init(long buildToPosition)

@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private bool IsFull()
         {
-            return _queue.Count >= _maxCachedEntries 
+            return _queue.Count >= _maxCachedEntries
                    || (_currentSize > _maxDataSize && _queue.Count > 0);
         }
 
