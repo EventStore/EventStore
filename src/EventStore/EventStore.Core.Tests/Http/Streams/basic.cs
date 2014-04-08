@@ -300,10 +300,9 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl(TestStream + "/metadata/"), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl(TestStream + "/metadata"), _response.Headers[HttpResponseHeader.Location]);
             }
         }
-
 
 
         [TestFixture, Category("LongRunning")]

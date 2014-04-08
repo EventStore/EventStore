@@ -185,6 +185,7 @@
     <Compile Include="NodeSubsystems.cs" />
     <Compile Include="Services\Storage\ReaderIndex\AllReader.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IIndexCache.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexBackend.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexCommitter.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReader.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamAccessType.cs" />

@@ -10,17 +10,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         void Init(long buildToPosition);
         ReadIndexStats GetStatistics();
-        
+
         IndexReadEventResult ReadEvent(string streamId, int eventNumber);
         IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
         IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
-        
-        /// <summary>d
+        /// <summary>
         /// Returns event records in the sequence they were committed into TF.
         /// Positions is specified as pre-positions (pointer at the beginning of the record).
         /// </summary>
         IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
-        
         /// <summary>
         /// Returns event records in the reverse sequence they were committed into TF.
         /// Positions is specified as post-positions (pointer after the end of record).
