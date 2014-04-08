@@ -14,6 +14,7 @@ namespace EventStore.Common.Streams
         private int _positionOffset;
         private readonly byte[] _buffer;
         private int _dataBuffered;
+        private bool _disposed;
 
         private UnbufferedFileReadStream(string filename)
         {
@@ -130,6 +131,9 @@ namespace EventStore.Common.Streams
 
         protected override void Dispose(bool disposing)
         {
+            if(_disposed) return;
+            if(_fileHandle == IntPtr.Zero) return;
+            if(!WinApi.CloseHandle(_fileHandle)) { throw new Win32Exception(); }
             base.Dispose(disposing);
         }
     }
