@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
-using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -18,7 +16,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             public readonly TFPos Position;
 
-            public Item(TFPos position)
+            protected Item(TFPos position)
             {
                 Position = position;
             }
@@ -28,7 +26,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private class CommittedEventItem : Item
         {
-            public readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
+            private readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
 
             public CommittedEventItem(ReaderSubscriptionMessage.CommittedEventDistributed message)
                 : base(message.Data.Position)
@@ -39,6 +37,15 @@ namespace EventStore.Projections.Core.Services.Processing
             public override void Handle(IReaderSubscription subscription)
             {
                 subscription.Handle(Message);
+            }
+
+            public override string ToString()
+            {
+                return string.Format(
+                    "{0} : {2}@{1}",
+                    Message.Data.EventType,
+                    Message.Data.PositionStreamId,
+                    Message.Data.PositionSequenceNumber);
             }
         }
 
@@ -65,8 +72,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<Guid, IReaderSubscription> _headSubscribers =
             new Dictionary<Guid, IReaderSubscription>();
 
-        private bool _headEventReaderPaused;
-
         private Guid _eventReaderId;
 
         private bool _started;
@@ -86,15 +91,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 return false;
             if (message.Data == null)
                 return true;
+
             ValidateEventOrder(message);
 
             CacheRecentMessage(message);
             DistributeMessage(message);
-            if (_headSubscribers.Count == 0 && !_headEventReaderPaused)
-            {
-//                _headEventReader.Pause();
-//                _headEventReaderPaused = true;
-            }
             return true;
         }
 
@@ -109,11 +110,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
             CacheRecentMessage(message);
             DistributeMessage(message);
-            if (_headSubscribers.Count == 0 && !_headEventReaderPaused)
-            {
-                //                _headEventReader.Pause();
-                //                _headEventReaderPaused = true;
-            }
             return true;
         }
 
@@ -226,23 +222,27 @@ namespace EventStore.Projections.Core.Services.Processing
         private void CacheRecentMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             _lastMessages.Enqueue(new CommittedEventItem(message));
-            if (_lastMessages.Count > _eventCacheSize)
-            {
-                _lastMessages.Dequeue();
-            }
-            var lastAvailableCommittedevent = _lastMessages.Peek();
-            _subscribeFromPosition = lastAvailableCommittedevent.Position;
+            CleanUpCache();
         }
 
         private void CacheRecentMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
         {
             _lastMessages.Enqueue(new PartitionDeletedItem(message));
+            CleanUpCache();
+        }
+
+        private void CleanUpCache()
+        {
             if (_lastMessages.Count > _eventCacheSize)
             {
-                _lastMessages.Dequeue();
+                var removed = _lastMessages.Dequeue();
+                // as we may have multiple items at the same position it is important to 
+                // remove them together as we may subscribe in the middle otherwise
+                while (_lastMessages.Count > 0 && _lastMessages.Peek().Position == removed.Position)
+                    _lastMessages.Dequeue();
             }
-            var lastAvailableCommittedevent = _lastMessages.Peek();
-            _subscribeFromPosition = lastAvailableCommittedevent.Position;
+            var lastAvailableCommittedEvent = _lastMessages.Peek();
+            _subscribeFromPosition = lastAvailableCommittedEvent.Position;
         }
 
         private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription)
@@ -251,11 +251,6 @@ namespace EventStore.Projections.Core.Services.Processing
 //                "The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId,
 //                _eventReaderId);
             _headSubscribers.Add(publishWithCorrelationId, subscription);
-            if (_headEventReaderPaused)
-            {
-                _headEventReaderPaused = false;
-                //_headEventReader.Resume();
-            }
         }
 
         private void EnsureStarted()
