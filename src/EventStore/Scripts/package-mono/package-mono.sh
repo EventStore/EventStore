@@ -86,7 +86,7 @@ if [[ $OS == "Darwin" ]] ; then
     fi
 
     isysroot=${sdkpath:6}
-    ES_COMPILE_FLAGS="-liconv -framework CoreFoundation -isysroot $isysroot -I $MONOPREFIX/include/mono-2.0 -Wall"
+    ES_COMPILE_FLAGS="-lobjc -liconv -framework CoreFoundation -isysroot $isysroot -I $MONOPREFIX/include/mono-2.0 -Wall"
 
     writeLog "Using MacOS Compile Flags: $ES_COMPILE_FLAGS"
 fi
