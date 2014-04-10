@@ -230,6 +230,9 @@ namespace EventStore.Projections.Core
                 _projectionManagerNode.Output.Subscribe(Forwarder.Create<Message>(_managerInputQueue));
 
                 _projectionManagerNode.Output.Subscribe<TimerMessage.Schedule>(timerService);
+                _projectionManagerNode.Output.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(mainQueue));
+                _projectionManagerNode.Output.Subscribe(
+                    Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(mainQueue));
 
                 // self forward all
 

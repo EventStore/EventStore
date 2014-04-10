@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -44,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Management
             Busy = true;
             var events = Items.Select(CreateEvent).ToArray();
             Items.Clear();
-            var streamId = "$projections-$master";
+            var streamId = ProjectionNamesBuilder._projectionsMasterStream;
             _ioDispatcher.Perform(
                 _ioDispatcher.BeginWriteEvents(
                     streamId,

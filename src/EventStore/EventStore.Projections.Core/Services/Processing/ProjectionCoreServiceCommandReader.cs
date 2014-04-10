@@ -44,8 +44,6 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionCoreServiceCommandReader
         : IHandle<ProjectionCoreServiceMessage.StartCore>, IHandle<ProjectionCoreServiceMessage.StopCore>
     {
-        private const string _projectionsControlStream = "$projections-$control";
-        private const string _projectionsMasterStream = "$projections-$master";
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly string _coreServiceId;
@@ -72,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ClientMessage.ReadStreamEventsBackwardCompleted readResult = null;
             yield return
                 _ioDispatcher.BeginReadBackward(
-                    _projectionsControlStream,
+                    ProjectionNamesBuilder._projectionsControlStream,
                     -1,
                     1,
                     false,
@@ -106,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     ClientMessage.ReadStreamEventsForwardCompleted readResultForward = null;
                     yield return
                         _ioDispatcher.BeginReadForward(
-                            _projectionsControlStream,
+                            ProjectionNamesBuilder._projectionsControlStream,
                             fromEventNumber,
                             1,
                             false,
@@ -130,7 +128,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                     yield return
                         _ioDispatcher.BeginSubscribeAwake(
-                            _projectionsControlStream,
+                            ProjectionNamesBuilder._projectionsControlStream,
                             new TFPos(subscribeFrom, subscribeFrom),
                             message => { });
                     Trace.WriteLine("Control stream await completed");
@@ -149,10 +147,11 @@ namespace EventStore.Projections.Core.Services.Processing
                             "{\"id\":\"" + _coreServiceId + "\"}",
                             null)
                     };
+                    Trace.WriteLine("Registering worker " + _coreServiceId);
                     ClientMessage.WriteEventsCompleted response = null;
                     yield return
                         _ioDispatcher.BeginWriteEvents(
-                            _projectionsMasterStream,
+                            ProjectionNamesBuilder._projectionsMasterStream,
                             ExpectedVersion.Any,
                             SystemAccount.Principal,
                             events,

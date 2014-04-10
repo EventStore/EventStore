@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -7,6 +8,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -34,9 +36,10 @@ namespace EventStore.Projections.Core.Services.Management
         private IEnumerable<IODispatcher.Step> PerformStartReader()
         {
             ClientMessage.WriteEventsCompleted writeResult = null;
+            Trace.WriteLine("Writing $response-reader-started");
             yield return
                 _ioDispatcher.BeginWriteEvents(
-                    "$projections-$control",
+                    ProjectionNamesBuilder._projectionsControlStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
                     new[] { new Event(Guid.NewGuid(), "$response-reader-started", true, "{}", null) },
@@ -45,6 +48,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (writeResult.Result != OperationResult.Success)
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
+            Trace.WriteLine("$response-reader-started has been written");
 
             var from = writeResult.LastEventNumber;
 
@@ -54,40 +58,59 @@ namespace EventStore.Projections.Core.Services.Management
                 var subscribeFrom = default(TFPos);
                 do
                 {
+                    Trace.WriteLine("Reading " + ProjectionNamesBuilder._projectionsMasterStream);
                     yield return
                         _ioDispatcher.BeginReadForward(
-                            "$projections-$master",
+                            ProjectionNamesBuilder._projectionsMasterStream,
                             from,
                             10,
                             false,
                             SystemAccount.Principal,
                             completed =>
                             {
-                                from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
-                                eof = completed.IsEndOfStream;
-                                // subscribeFrom is only used if eof
-                                subscribeFrom = new TFPos(
-                                    completed.TfLastCommitPosition,
-                                    completed.TfLastCommitPosition);
-                                foreach (var e in completed.Events)
-                                    PublishCommand(e);
+                                Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
+                                if (completed.Result == ReadStreamResult.Success
+                                    || completed.Result == ReadStreamResult.NoStream)
+                                {
+                                    from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
+                                    eof = completed.IsEndOfStream;
+                                    // subscribeFrom is only used if eof
+                                    subscribeFrom = new TFPos(
+                                        completed.TfLastCommitPosition,
+                                        completed.TfLastCommitPosition);
+                                    if (completed.Result == ReadStreamResult.Success)
+                                    {
+                                        foreach (var e in completed.Events)
+                                            PublishCommand(e);
+                                    }
+                                }
                             });
 
 
                 } while (!eof);
-                yield return _ioDispatcher.BeginSubscribeAwake("$projections-$master", subscribeFrom, message => { });
+                Trace.WriteLine("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
+                yield return _ioDispatcher.BeginSubscribeAwake(ProjectionNamesBuilder._projectionsMasterStream, subscribeFrom, message => { });
+                Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " await completed");
             }
         }
 
         private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
+            Trace.WriteLine("Response received: " + command);
             switch (command)
             {
                 case "$response-reader-started":
                     break;
                 case "$projection-worker-started":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.ProjectionWorkerStarted>();
+                    _publisher.Publish(
+                        new CoreProjectionManagementMessage.ProjectionWorkerStarted(
+                            Guid.ParseExact(commandBody.Id, "N")));
                     break;
+                    break;
+                }
                 case "$prepared":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Prepared>();

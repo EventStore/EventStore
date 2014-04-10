@@ -3,7 +3,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionNamesBuilder 
+    public class ProjectionNamesBuilder
     {
 
         public static class StandardProjections
@@ -58,11 +58,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private string GetPartitionResultStreamName(string partitionName)
         {
-            return
-                String.Format(GetPartitionResultStreamNamePattern(), partitionName);
+            return String.Format(GetPartitionResultStreamNamePattern(), partitionName);
         }
 
-        public string GetResultStreamName ()
+        public string GetResultStreamName()
         {
             return _resultStreamName;
         }
@@ -70,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public string GetPartitionResultStreamNamePattern()
         {
             return _sources.PartitionResultStreamNamePatternOption
-                    ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix;
+                   ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix;
         }
 
         private const string ProjectionsStreamPrefix = "$projections-";
@@ -93,8 +92,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public string MakePartitionResultStreamName(string statePartition)
         {
             return String.IsNullOrEmpty(statePartition)
-                       ? GetResultStreamName()
-                       : GetPartitionResultStreamName(statePartition);
+                ? GetResultStreamName()
+                : GetPartitionResultStreamName(statePartition);
         }
 
         public string MakePartitionCheckpointStreamName(string statePartition)
@@ -102,7 +101,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (String.IsNullOrEmpty(statePartition))
                 throw new InvalidOperationException("Root partition cannot have a partition checkpoint stream");
 
-            return ProjectionsStreamPrefix + EffectiveProjectionName + "-" + statePartition + ProjectionCheckpointStreamSuffix;
+            return ProjectionsStreamPrefix + EffectiveProjectionName + "-" + statePartition
+                   + ProjectionCheckpointStreamSuffix;
         }
 
 
@@ -120,5 +120,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return CategoryCatalogStreamNamePrefix + category;
         }
+
+        public const string _projectionsControlStream = "$projections-$control";
+        public const string _projectionsMasterStream = "$projections-$master";
     }
 }

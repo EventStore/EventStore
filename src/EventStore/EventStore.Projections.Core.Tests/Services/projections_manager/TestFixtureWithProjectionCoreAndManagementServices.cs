@@ -76,6 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.ProjectionWorkerStarted>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Post>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.UpdateQuery>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.GetQuery>(_manager);
@@ -223,6 +224,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.Prepared>(GetInputQueue()));
                 output_.Subscribe(
                     Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.ProjectionWorkerStarted>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.ControlMessage>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(GetInputQueue()));

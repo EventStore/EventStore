@@ -46,7 +46,8 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionManagementMessage.ResultReport>,
             IHandle<CoreProjectionManagementMessage.StatisticsReport>,
             IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
-            IHandle<ProjectionManagementMessage.RegisterSystemProjection>
+            IHandle<ProjectionManagementMessage.RegisterSystemProjection>, 
+            IHandle<CoreProjectionManagementMessage.ProjectionWorkerStarted>
 
     {
 
@@ -1043,5 +1044,14 @@ namespace EventStore.Projections.Core.Services.Management
                 message.MasterCorrelationId);
         }
 
+        public void Handle(CoreProjectionManagementMessage.ProjectionWorkerStarted message)
+        {
+            RebalanceWork();
+        }
+
+        private void RebalanceWork()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

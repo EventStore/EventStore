@@ -165,5 +165,12 @@ namespace EventStore.Projections.Core.Services.Management
             [JsonConverter(typeof(CheckpointTagJsonConverter))]
             public CheckpointTag Position { get; set; }
         }
+
+        public class ProjectionWorkerStarted
+        {
+            public string Id { get; set; }
+        }
+
+
     }
 }
