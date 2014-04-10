@@ -1051,7 +1051,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void RebalanceWork()
         {
-            throw new NotImplementedException();
+            //
         }
     }
 }

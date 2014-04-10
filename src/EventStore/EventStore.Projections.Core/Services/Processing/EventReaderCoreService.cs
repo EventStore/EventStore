@@ -153,11 +153,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
 
-            if (message.Data.IsStreamDeletedEvent)
-            {
-                Trace.WriteLine("REC DEL for " + _subscriptions[projectionId].Tag);
-            }
-
             if (TrySubscribeHeadingEventReader(message, projectionId))
                 return;
             if (message.Data != null) // means notification about the end of the stream/source
