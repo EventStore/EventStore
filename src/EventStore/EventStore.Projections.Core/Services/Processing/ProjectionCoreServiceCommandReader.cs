@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -96,47 +97,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
             //TODO: handle shutdown here and in other readers
             long subscribeFrom = 0;
+            var doWriteRegistration = true;
             while (true)
             {
-                var advancedForward = false;
-                do
-                {
-                    ClientMessage.ReadStreamEventsForwardCompleted readResultForward = null;
-                    yield return
-                        _ioDispatcher.BeginReadForward(
-                            ProjectionNamesBuilder._projectionsControlStream,
-                            fromEventNumber,
-                            1,
-                            false,
-                            SystemAccount.Principal,
-                            completed => readResultForward = completed);
-                    Trace.WriteLine("Control stream read forward result: " + readResultForward.Result);
-
-                    if (readResultForward.Result != ReadStreamResult.Success
-                        && readResultForward.Result != ReadStreamResult.NoStream)
-                        throw new Exception("Control reader failed. Read result: " + readResultForward.Result);
-                    if (readResultForward.Events != null && readResultForward.Events.Length > 0)
-                    {
-                        advancedForward = fromEventNumber != readResultForward.NextEventNumber;
-                        fromEventNumber = readResultForward.NextEventNumber;
-                        subscribeFrom = readResultForward.TfLastCommitPosition;
-                        break;
-                    }
-                    if (readResultForward.Result == ReadStreamResult.Success)
-                        subscribeFrom = readResultForward.TfLastCommitPosition;
-                    Trace.WriteLine("Awaiting control stream");
-
-                    yield return
-                        _ioDispatcher.BeginSubscribeAwake(
-                            ProjectionNamesBuilder._projectionsControlStream,
-                            new TFPos(subscribeFrom, subscribeFrom),
-                            message => { });
-                    Trace.WriteLine("Control stream await completed");
-
-                } while (true);
-
-
-                if (advancedForward)
+                if (doWriteRegistration)
                 {
                     var events = new[]
                     {
@@ -158,6 +122,43 @@ namespace EventStore.Projections.Core.Services.Processing
                             r => response = r);
                     Trace.WriteLine("Worker registered: " + response.Result);
                 }
+                do
+                {
+                    ClientMessage.ReadStreamEventsForwardCompleted readResultForward = null;
+                    yield return
+                        _ioDispatcher.BeginReadForward(
+                            ProjectionNamesBuilder._projectionsControlStream,
+                            fromEventNumber,
+                            1,
+                            false,
+                            SystemAccount.Principal,
+                            completed => readResultForward = completed);
+                    Trace.WriteLine("Control stream read forward result: " + readResultForward.Result);
+
+                    if (readResultForward.Result != ReadStreamResult.Success
+                        && readResultForward.Result != ReadStreamResult.NoStream)
+                        throw new Exception("Control reader failed. Read result: " + readResultForward.Result);
+                    if (readResultForward.Events != null && readResultForward.Events.Length > 0)
+                    {
+                        doWriteRegistration = readResultForward.Events.Any(v => v.Event.EventType == "$response-reader-started");
+                        fromEventNumber = readResultForward.NextEventNumber;
+                        subscribeFrom = readResultForward.TfLastCommitPosition;
+                        break;
+                    }
+                    if (readResultForward.Result == ReadStreamResult.Success)
+                        subscribeFrom = readResultForward.TfLastCommitPosition;
+                    Trace.WriteLine("Awaiting control stream");
+
+                    yield return
+                        _ioDispatcher.BeginSubscribeAwake(
+                            ProjectionNamesBuilder._projectionsControlStream,
+                            new TFPos(subscribeFrom, subscribeFrom),
+                            message => { });
+                    Trace.WriteLine("Control stream await completed");
+
+                } while (true);
+
+
             }
         }
 

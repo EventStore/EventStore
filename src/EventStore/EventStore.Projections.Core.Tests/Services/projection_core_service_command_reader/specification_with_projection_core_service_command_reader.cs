@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -50,6 +51,11 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
 
             _bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_commandReader);
             _bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_commandReader);
+        }
+
+        protected override IEnumerable<WhenStep> PreWhen()
+        {
+            yield return CreateWriteEvent("$projections-$control", "$response-reader-started", "{}");
         }
 
         [SetUp]

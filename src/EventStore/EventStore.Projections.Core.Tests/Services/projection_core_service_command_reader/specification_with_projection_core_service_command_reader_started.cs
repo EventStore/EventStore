@@ -29,6 +29,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -42,8 +43,12 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
 
         protected override IEnumerable<WhenStep> PreWhen()
         {
+            foreach (var m in base.PreWhen()) yield return m;
             yield return new ProjectionCoreServiceMessage.StartCore();
-            var lastEvent = _streams["$projections-$master"].Last();
+            List<EventRecord> stream;
+            _streams.TryGetValue("$projections-$master", out stream);
+            Assume.That(stream != null);
+            var lastEvent = stream.Last();
             var parsed = lastEvent.Data.ParseJson<JObject>();
             _serviceId = (string)((JValue) parsed.GetValue("id")).Value;
             Assume.That(!string.IsNullOrEmpty(_serviceId));
