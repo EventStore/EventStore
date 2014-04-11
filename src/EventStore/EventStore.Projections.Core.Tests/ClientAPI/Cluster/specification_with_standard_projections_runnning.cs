@@ -297,7 +297,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         }
     }
 
-    [TestFixture]
+    [TestFixture, Explicit]
     public class TestTest : specification_with_standard_projections_runnning
     {
         [Test, Explicit]
@@ -305,7 +305,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         {
             PostProjection(@"fromStream('$user-admin').outputState()");
 
-            AssertStreamTail("$projections-test-projection-result", "ResultUpdated:{}");
+            AssertStreamTail("$projections-test-projection-result", "Result:{}");
         }
     }
 }
