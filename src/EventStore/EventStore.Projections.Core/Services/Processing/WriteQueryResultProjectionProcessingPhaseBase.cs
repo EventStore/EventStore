@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var state = _stateCache.TryGetPartitionState(message.Partition);
             var stateString = state != null ? state.State : null;
             _publisher.Publish(
-                new CoreProjectionManagementMessage.StateReport(
+                new CoreProjectionStatusMessage.StateReport(
                     message.CorrelationId,
                     message.CorrelationId,
                     message.Partition,
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var state = _stateCache.TryGetPartitionState(message.Partition);
             var resultString = state != null ? state.Result : null;
             _publisher.Publish(
-                new CoreProjectionManagementMessage.ResultReport(
+                new CoreProjectionStatusMessage.ResultReport(
                     message.CorrelationId,
                     message.CorrelationId,
                     message.Partition,

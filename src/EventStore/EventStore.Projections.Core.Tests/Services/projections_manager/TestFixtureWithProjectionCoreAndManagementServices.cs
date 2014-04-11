@@ -68,15 +68,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Started>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Stopped>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Prepared>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Faulted>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.StateReport>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Started>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Stopped>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Prepared>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Faulted>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.StateReport>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.ResultReport>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.ProjectionWorkerStarted>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Post>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.UpdateQuery>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.GetQuery>(_manager);
@@ -215,16 +215,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             if (output_ != null)
             {
                 bus.Subscribe(new UnwrapEnvelopeHandler());
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.StateReport>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.ResultReport>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.StatisticsReport>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.Started>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.Stopped>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.Faulted>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.Prepared>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.StateReport>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.ResultReport>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.StatisticsReport>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.Started>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.Stopped>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.Faulted>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.Prepared>(GetInputQueue()));
                 output_.Subscribe(
                     Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<CoreProjectionManagementMessage.ProjectionWorkerStarted>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.ProjectionWorkerStarted>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.ControlMessage>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(GetInputQueue()));

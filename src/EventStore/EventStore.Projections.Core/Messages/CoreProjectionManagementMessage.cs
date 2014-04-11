@@ -1,15 +1,11 @@
 using System;
-using System.Security.Principal;
-using System.Text;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public abstract class CoreProjectionManagementMessage : Message
+    public abstract partial class CoreProjectionManagementMessage : Message
     {
         private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
         public override int MsgTypeId { get { return TypeId; } }
@@ -24,17 +20,6 @@ namespace EventStore.Projections.Core.Messages
         public Guid ProjectionId
         {
             get { return _projectionIdId; }
-        }
-
-        public class CoreProjectionManagementStatusMessage : CoreProjectionManagementMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public CoreProjectionManagementStatusMessage(Guid projectionId)
-                : base(projectionId)
-            {
-            }
         }
 
         public class CoreProjectionManagementControlMessage : CoreProjectionManagementMessage
@@ -52,55 +37,6 @@ namespace EventStore.Projections.Core.Messages
                 : base(projectionId)
             {
                 _workerId = workerId;
-            }
-        }
-
-        public class Stopped : CoreProjectionManagementStatusMessage
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private bool _completed;
-
-            public Stopped(Guid projectionId, bool completed)
-                : base(projectionId)
-            {
-                _completed = completed;
-            }
-
-            public bool Completed
-            {
-                get { return _completed; }
-            }
-        }
-
-        public class Started : CoreProjectionManagementStatusMessage
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public Started(Guid projectionId)
-                : base(projectionId)
-            {
-            }
-        }
-
-        public class Faulted : CoreProjectionManagementStatusMessage
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _faultedReason;
-
-            public Faulted(Guid projectionId, string faultedReason)
-                : base(projectionId)
-            {
-                _faultedReason = faultedReason;
-            }
-
-            public string FaultedReason
-            {
-                get { return _faultedReason; }
             }
         }
 
@@ -201,163 +137,6 @@ namespace EventStore.Projections.Core.Messages
             public Guid CorrelationId
             {
                 get { return _correlationId; }
-            }
-        }
-
-        public abstract class DataReportBase : CoreProjectionManagementStatusMessage
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly Guid _correlationId;
-            private readonly Exception _exception;
-            private readonly string _partition;
-            private readonly CheckpointTag _position;
-
-            protected DataReportBase(
-                Guid correlationId, Guid projectionId, string partition, CheckpointTag position,
-                Exception exception = null)
-                : base(projectionId)
-            {
-                _correlationId = correlationId;
-                _exception = exception;
-                _partition = partition;
-                _position = position;
-            }
-
-            public string Partition
-            {
-                get { return _partition; }
-            }
-
-            public Exception Exception
-            {
-                get { return _exception; }
-            }
-
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
-
-            public CheckpointTag Position
-            {
-                get { return _position; }
-            }
-        }
-
-        public class StateReport : DataReportBase
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _state;
-
-            public StateReport(
-                Guid correlationId, Guid projectionId, string partition, string state, CheckpointTag position,
-                Exception exception = null)
-                : base(correlationId, projectionId, partition, position, exception)
-            {
-                _state = state;
-            }
-
-            public string State
-            {
-                get { return _state; }
-            }
-
-        }
-
-        public class ResultReport : DataReportBase
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _result;
-
-            public ResultReport(
-                Guid correlationId, Guid projectionId, string partition, string result, CheckpointTag position,
-                Exception exception = null)
-                : base(correlationId, projectionId, partition, position, exception)
-            {
-                _result = result;
-            }
-
-            public string Result
-            {
-                get { return _result; }
-            }
-
-        }
-
-        public class StatisticsReport : CoreProjectionManagementStatusMessage
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly ProjectionStatistics _statistics;
-            private readonly int _sequentialNumber;
-
-            public StatisticsReport(Guid projectionId, ProjectionStatistics statistics, int sequentialNumber)
-                : base(projectionId)
-            {
-                _statistics = statistics;
-                _sequentialNumber = sequentialNumber;
-            }
-
-            public ProjectionStatistics Statistics
-            {
-                get { return _statistics; }
-            }
-
-            public int SequentialNumber
-            {
-                get { return _sequentialNumber; }
-            }
-        }
-
-        public class Prepared : CoreProjectionManagementStatusMessage
-        {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-            public override int MsgTypeId
-            {
-                get { return TypeId; }
-            }
-
-            private readonly ProjectionSourceDefinition _sourceDefinition;
-
-            public Prepared(
-                Guid projectionId, ProjectionSourceDefinition sourceDefinition)
-                : base(projectionId)
-            {
-                _sourceDefinition = sourceDefinition;
-            }
-
-            public ProjectionSourceDefinition SourceDefinition
-            {
-                get { return _sourceDefinition; }
-            }
-        }
-
-        public class ProjectionWorkerStarted : Message
-        {
-            private readonly Guid _workerId;
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-            public override int MsgTypeId
-            {
-                get { return TypeId; }
-            }
-
-            public ProjectionWorkerStarted(Guid workerId)
-            {
-                _workerId = workerId;
-            }
-
-            public Guid WorkerId
-            {
-                get { return _workerId; }
             }
         }
 
@@ -566,7 +345,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public sealed class SlaveProjectionReaderAssigned : CoreProjectionManagementStatusMessage
+        public sealed class SlaveProjectionReaderAssigned : CoreProjectionStatusMessage
         {
             private readonly Guid _subscriptionId;
             private readonly Guid _readerId;

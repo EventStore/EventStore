@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void should_not_publish_started_message()
         {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<CoreProjectionStatusMessage.Started>().Count());
         }
     }
 }

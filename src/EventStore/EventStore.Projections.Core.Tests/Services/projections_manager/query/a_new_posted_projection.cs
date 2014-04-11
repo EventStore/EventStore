@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             [Test]
             public void publishes_faulted_message()
             {
-                Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Faulted>().Count());
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionStatusMessage.Faulted>().Count());
             }
 
             [Test]

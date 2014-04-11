@@ -134,13 +134,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.Prepared(
+                    new CoreProjectionStatusMessage.Prepared(
                         message.ProjectionId, sourceDefinition));
             }
             catch (Exception ex)
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
+                    new CoreProjectionStatusMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
 
@@ -160,13 +160,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.Prepared(
+                    new CoreProjectionStatusMessage.Prepared(
                         message.ProjectionId, sourceDefinition));
             }
             catch (Exception ex)
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
+                    new CoreProjectionStatusMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
 
@@ -197,13 +197,13 @@ namespace EventStore.Projections.Core.Services.Processing
                         this);
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.Prepared(
+                    new CoreProjectionStatusMessage.Prepared(
                         message.ProjectionId,
                         sourceDefinition));
             }
             catch (Exception ex)
             {
-                _publisher.Publish(new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
+                _publisher.Publish(new CoreProjectionStatusMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
 

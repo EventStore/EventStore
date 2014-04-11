@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
 
         protected override void When()
         {
-            _sut.Handle(new CoreProjectionManagementMessage.Stopped(_projectionId, _completed));
+            _sut.Handle(new CoreProjectionStatusMessage.Stopped(_projectionId, _completed));
         }
 
         [Test]

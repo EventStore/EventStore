@@ -64,15 +64,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             var ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Started>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Stopped>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Prepared>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.Faulted>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.StateReport>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Started>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Stopped>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Prepared>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.Faulted>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.StateReport>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.ResultReport>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_manager);
-            _bus.Subscribe<CoreProjectionManagementMessage.ProjectionWorkerStarted>(_manager);
+            _bus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(_manager);
             
             _bus.Subscribe<ProjectionManagementMessage.Post>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.UpdateQuery>(_manager);

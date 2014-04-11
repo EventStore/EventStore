@@ -270,9 +270,8 @@ namespace EventStore.Projections.Core.Services.Processing
             catch (Exception ex)
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.StateReport(
-                        message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null,
-                        exception: ex));
+                    new CoreProjectionStatusMessage.StateReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null));
                 _coreProjection.SetFaulted(ex);
             }
         }
@@ -289,9 +288,8 @@ namespace EventStore.Projections.Core.Services.Processing
             catch (Exception ex)
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.ResultReport(
-                        message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null,
-                        exception: ex));
+                    new CoreProjectionStatusMessage.ResultReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null));
                 _coreProjection.SetFaulted(ex);
             }
         }

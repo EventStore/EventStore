@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
 
         protected override void When()
         {
-            _sut.Handle(new CoreProjectionManagementMessage.Prepared(_projectionId, _definition));
+            _sut.Handle(new CoreProjectionStatusMessage.Prepared(_projectionId, _definition));
         }
 
         [Test]

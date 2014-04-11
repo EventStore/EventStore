@@ -81,15 +81,15 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.Started>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.Stopped>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.Faulted>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.Prepared>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.Started>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.Faulted>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.Prepared>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.StateReport>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.ResultReport>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_projectionManager);
-                mainBus.Subscribe<CoreProjectionManagementMessage.ProjectionWorkerStarted>(_projectionManager);
+                mainBus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(_projectionManager);
                 mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManagerMessageDispatcher);
                 mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerMessageDispatcher);
                 mainBus.Subscribe<ProjectionManagementMessage.Starting>(_projectionManagerResponseReader);            }

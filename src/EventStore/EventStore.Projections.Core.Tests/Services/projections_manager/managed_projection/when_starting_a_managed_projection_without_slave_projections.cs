@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _projectionName, sourceDefinition, message.HandlerType, message.Query);
 
             _mp.Handle(
-                new CoreProjectionManagementMessage.Prepared(
+                new CoreProjectionStatusMessage.Prepared(
                     _coreProjectionId, projectionSourceDefinition));
             yield break;
         }

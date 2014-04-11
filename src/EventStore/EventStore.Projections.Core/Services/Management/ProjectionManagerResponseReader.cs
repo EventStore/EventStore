@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.ProjectionWorkerStarted>();
                     _publisher.Publish(
-                        new CoreProjectionManagementMessage.ProjectionWorkerStarted(
+                        new CoreProjectionStatusMessage.ProjectionWorkerStarted(
                             Guid.ParseExact(commandBody.Id, "N")));
                     break;
                     break;
@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Prepared>();
                     _publisher.Publish(
-                        new CoreProjectionManagementMessage.Prepared(
+                        new CoreProjectionStatusMessage.Prepared(
                             Guid.ParseExact(commandBody.Id, "N"),
                             commandBody.SourceDefinition));
                     break;
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Faulted>();
                     _publisher.Publish(
-                        new CoreProjectionManagementMessage.Faulted(
+                        new CoreProjectionStatusMessage.Faulted(
                             Guid.ParseExact(commandBody.Id, "N"),
                             commandBody.FaultedReason));
                     break;
@@ -133,7 +133,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Started>();
                     _publisher.Publish(
-                        new CoreProjectionManagementMessage.Started(Guid.ParseExact(commandBody.Id, "N")));
+                        new CoreProjectionStatusMessage.Started(Guid.ParseExact(commandBody.Id, "N")));
                     break;
                 }
                 case "$statistics-report":
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Services.Management
                     var commandBody =
                         resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.StatisticsReport>();
                     _publisher.Publish(
-                        new CoreProjectionManagementMessage.StatisticsReport(
+                        new CoreProjectionStatusMessage.StatisticsReport(
                             Guid.ParseExact(commandBody.Id, "N"),
                             commandBody.Statistcs,
                             -1));
@@ -151,9 +151,33 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Stopped>();
                     _publisher.Publish(
-                        new CoreProjectionManagementMessage.Stopped(
+                        new CoreProjectionStatusMessage.Stopped(
                             Guid.ParseExact(commandBody.Id, "N"),
                             commandBody.Completed));
+                    break;
+                }
+                case "$state":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.StateReport>();
+                    _publisher.Publish(
+                        new CoreProjectionStatusMessage.StateReport(
+                            Guid.ParseExact(commandBody.CorrelationId, "N"),
+                            Guid.ParseExact(commandBody.Id, "N"),
+                            commandBody.Partition,
+                            commandBody.State,
+                            commandBody.Position));
+                    break;
+                }
+                case "$result":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.ResultReport>();
+                    _publisher.Publish(
+                        new CoreProjectionStatusMessage.ResultReport(
+                            Guid.ParseExact(commandBody.CorrelationId, "N"),
+                            Guid.ParseExact(commandBody.Id, "N"),
+                            commandBody.Partition,
+                            commandBody.Result,
+                            commandBody.Position));
                     break;
                 }
                 default:

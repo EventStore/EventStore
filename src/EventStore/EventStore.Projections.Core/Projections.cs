@@ -4,19 +4,16 @@ using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Messaging;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core

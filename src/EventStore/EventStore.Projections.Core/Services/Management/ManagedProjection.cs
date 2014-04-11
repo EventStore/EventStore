@@ -58,12 +58,12 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly
             RequestResponseDispatcher
-                <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>
+                <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>
             _getStateDispatcher;
 
         private readonly
             RequestResponseDispatcher
-                <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>
+                <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
             _getResultDispatcher;
 
 
@@ -134,14 +134,14 @@ namespace EventStore.Projections.Core.Services.Management
             _slaveMasterCorrelationId = slaveMasterCorrelationId;
             _getStateDispatcher =
                 new RequestResponseDispatcher
-                    <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
                     output, 
                     v => v.CorrelationId,
                     v => v.CorrelationId,
                     new PublishEnvelope(_inputQueue));
             _getResultDispatcher =
                 new RequestResponseDispatcher
-                    <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>(
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
                     output, 
                     v => v.CorrelationId,
                     v => v.CorrelationId,
@@ -379,7 +379,7 @@ namespace EventStore.Projections.Core.Services.Management
             Stop(() => DoDelete(message));
         }
 
-        public void Handle(CoreProjectionManagementMessage.Started message)
+        public void Handle(CoreProjectionStatusMessage.Started message)
         {
             SetState(ManagedProjectionState.Running);
             if (_onStarted != null)
@@ -390,7 +390,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.Stopped message)
+        public void Handle(CoreProjectionStatusMessage.Stopped message)
         {
             SetState(message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped);
             OnStoppedOrFaulted();
@@ -408,7 +408,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (stopCompleted != null) stopCompleted();
         }
 
-        public void Handle(CoreProjectionManagementMessage.Faulted message)
+        public void Handle(CoreProjectionStatusMessage.Faulted message)
         {
             SetFaulted(message.FaultedReason);
             if (_state == ManagedProjectionState.Preparing)
@@ -420,7 +420,7 @@ namespace EventStore.Projections.Core.Services.Management
             OnStoppedOrFaulted();
         }
 
-        public void Handle(CoreProjectionManagementMessage.Prepared message)
+        public void Handle(CoreProjectionStatusMessage.Prepared message)
         {
             _persistedState.SourceDefinition = message.SourceDefinition;
             if (_state == ManagedProjectionState.Preparing)
@@ -434,17 +434,17 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.StateReport message)
+        public void Handle(CoreProjectionStatusMessage.StateReport message)
         {
             _getStateDispatcher.Handle(message);
         }
 
-        public void Handle(CoreProjectionManagementMessage.ResultReport message)
+        public void Handle(CoreProjectionStatusMessage.ResultReport message)
         {
             _getResultDispatcher.Handle(message);
         }
 
-        public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
+        public void Handle(CoreProjectionStatusMessage.StatisticsReport message)
         {
             _lastReceivedStatistics = message.Statistics;
         }

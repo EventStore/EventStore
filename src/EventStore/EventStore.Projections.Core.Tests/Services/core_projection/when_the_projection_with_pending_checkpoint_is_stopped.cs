@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual(
                 1,
                 _writeEventHandler.HandledMessages.Count(v => v.Events.Any(e => e.EventType == "$ProjectionCheckpoint")));
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Stopped>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionStatusMessage.Stopped>().Count());
         }
     }
 }

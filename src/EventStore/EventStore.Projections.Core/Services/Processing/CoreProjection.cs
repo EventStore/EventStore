@@ -163,7 +163,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var info = new ProjectionStatistics();
             GetStatistics(info);
             _publisher.Publish(
-                new CoreProjectionManagementMessage.StatisticsReport(_projectionCorrelationId, info, sequentialNumber));
+                new CoreProjectionStatusMessage.StatisticsReport(_projectionCorrelationId, info, sequentialNumber));
         }
 
         public void Start()
@@ -250,9 +250,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_state == State.LoadStateRequested || _state == State.StateLoaded)
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.StateReport(
-                        message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null,
-                        exception: new Exception("Not yet available")));
+                    new CoreProjectionStatusMessage.StateReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, state: null, position: null));
                 return;
             }
 
@@ -268,9 +267,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_state == State.LoadStateRequested || _state == State.StateLoaded)
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.ResultReport(
-                        message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null,
-                        exception: new Exception("Not yet available")));
+                    new CoreProjectionStatusMessage.ResultReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null));
                 return;
             }
 
@@ -547,7 +545,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
+                    new CoreProjectionStatusMessage.Started(_projectionCorrelationId));
                 _projectionProcessingPhase.ProcessEvent();
             }
             catch (Exception ex)
@@ -565,7 +563,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             EnsureUnsubscribed();
             StopSlaveProjections(); 
-            _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId, _completed));
+            _publisher.Publish(new CoreProjectionStatusMessage.Stopped(_projectionCorrelationId, _completed));
         }
 
         private void EnterFaultedStopping()
@@ -578,7 +576,7 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureUnsubscribed();
             StopSlaveProjections(); 
             _publisher.Publish(
-                new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
+                new CoreProjectionStatusMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
         private void EnterCompletingPhase()

@@ -6,14 +6,14 @@ using Newtonsoft.Json;
 namespace EventStore.Projections.Core.Services.Management
 {
     public sealed class ProjectionCoreResponseWriter
-        : IHandle<CoreProjectionManagementMessage.Faulted>,
-            IHandle<CoreProjectionManagementMessage.Prepared>,
+        : IHandle<CoreProjectionStatusMessage.Faulted>,
+            IHandle<CoreProjectionStatusMessage.Prepared>,
             IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
-            IHandle<CoreProjectionManagementMessage.Started>,
-            IHandle<CoreProjectionManagementMessage.StatisticsReport>,
-            IHandle<CoreProjectionManagementMessage.Stopped>,
-            IHandle<CoreProjectionManagementMessage.StateReport>,
-            IHandle<CoreProjectionManagementMessage.ResultReport>
+            IHandle<CoreProjectionStatusMessage.Started>,
+            IHandle<CoreProjectionStatusMessage.StatisticsReport>,
+            IHandle<CoreProjectionStatusMessage.Stopped>,
+            IHandle<CoreProjectionStatusMessage.StateReport>,
+            IHandle<CoreProjectionStatusMessage.ResultReport>
     {
         private readonly IResponseWriter _writer;
 
@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer = responseWriter;
         }
 
-        public void Handle(CoreProjectionManagementMessage.Faulted message)
+        public void Handle(CoreProjectionStatusMessage.Faulted message)
         {
             var command = new ProjectionCoreResponseWriter.Faulted
             {
@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishCommand("$faulted", command);
         }
 
-        public void Handle(CoreProjectionManagementMessage.Prepared message)
+        public void Handle(CoreProjectionStatusMessage.Prepared message)
         {
             var command = new ProjectionCoreResponseWriter.Prepared
             {
@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishCommand("$slave-projection-reader-assigned", command);
         }
 
-        public void Handle(CoreProjectionManagementMessage.Started message)
+        public void Handle(CoreProjectionStatusMessage.Started message)
         {
             var command = new ProjectionCoreResponseWriter.Started
             {
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishCommand("$started", command);
         }
 
-        public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
+        public void Handle(CoreProjectionStatusMessage.StatisticsReport message)
         {
             var command = new ProjectionCoreResponseWriter.StatisticsReport
             {
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishCommand("$statistics-report", command);
         }
 
-        public void Handle(CoreProjectionManagementMessage.Stopped message)
+        public void Handle(CoreProjectionStatusMessage.Stopped message)
         {
             var command = new ProjectionCoreResponseWriter.Stopped
             {
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishCommand("$stopped", command);
         }
 
-        public void Handle(CoreProjectionManagementMessage.StateReport message)
+        public void Handle(CoreProjectionStatusMessage.StateReport message)
         {
             var command = new ProjectionCoreResponseWriter.StateReport
             {
@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishCommand("$state", command);
         }
 
-        public void Handle(CoreProjectionManagementMessage.ResultReport message)
+        public void Handle(CoreProjectionStatusMessage.ResultReport message)
         {
             var command = new ProjectionCoreResponseWriter.ResultReport
             {

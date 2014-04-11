@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (state == null)
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.ResultReport(
+                    new CoreProjectionStatusMessage.ResultReport(
                         _correlationId,
                         _projectionId,
                         _partition,
@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         checkpointTag));
             else
                 _publisher.Publish(
-                    new CoreProjectionManagementMessage.ResultReport(
+                    new CoreProjectionStatusMessage.ResultReport(
                         _correlationId,
                         _projectionId,
                         _partition,

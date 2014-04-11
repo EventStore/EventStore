@@ -156,6 +156,7 @@
     <Compile Include="EventReaders\Feeds\FeedReaderService.cs" />
     <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
     <Compile Include="Messages\CoreProjectionProcessingMessage.cs" />
+    <Compile Include="Messages\CoreProjectionStatusMessage.cs" />
     <Compile Include="Messages\EventReaders\Feeds\FeedReaderMessage.cs" />
     <Compile Include="Messages\ICoreProjection.cs" />
     <Compile Include="Messages\IProjectionCheckpointManager.cs" />

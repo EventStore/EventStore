@@ -157,14 +157,14 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_eventReaderCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)
 
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.Faulted>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.Prepared>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionStatusMessage.Faulted>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionStatusMessage.Prepared>(_coreResponseWriter);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.Started>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.Stopped>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionStatusMessage.Started>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionStatusMessage.Stopped>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionStatusMessage.StateReport>(_coreResponseWriter);
+            coreInputBus.Subscribe<CoreProjectionStatusMessage.ResultReport>(_coreResponseWriter);
 
         }
     }

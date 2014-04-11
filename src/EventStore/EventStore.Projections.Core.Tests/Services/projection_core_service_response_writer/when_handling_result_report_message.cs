@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
         protected override void When()
         {
             _sut.Handle(
-                new CoreProjectionManagementMessage.ResultReport(
+                new CoreProjectionStatusMessage.ResultReport(
                     _correlationId,
                     _projectionId,
                     _partition,

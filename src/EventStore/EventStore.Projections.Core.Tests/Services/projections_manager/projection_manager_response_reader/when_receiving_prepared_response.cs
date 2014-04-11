@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
         public void publishes_prepared_message()
         {
             var createPrepared =
-                HandledMessages.OfType<CoreProjectionManagementMessage.Prepared>().LastOrDefault();
+                HandledMessages.OfType<CoreProjectionStatusMessage.Prepared>().LastOrDefault();
             Assert.IsNotNull(createPrepared);
             Assert.AreEqual(_projectionId, createPrepared.ProjectionId);
             var projectionSourceDefinition = createPrepared.SourceDefinition as IQuerySources;

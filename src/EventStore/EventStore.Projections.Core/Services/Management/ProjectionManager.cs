@@ -38,16 +38,16 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
             IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
             IHandle<ProjectionManagementMessage.Internal.Deleted>,
-            IHandle<CoreProjectionManagementMessage.Started>,
-            IHandle<CoreProjectionManagementMessage.Stopped>,
-            IHandle<CoreProjectionManagementMessage.Faulted>,
-            IHandle<CoreProjectionManagementMessage.Prepared>,
-            IHandle<CoreProjectionManagementMessage.StateReport>,
-            IHandle<CoreProjectionManagementMessage.ResultReport>,
-            IHandle<CoreProjectionManagementMessage.StatisticsReport>,
+            IHandle<CoreProjectionStatusMessage.Started>,
+            IHandle<CoreProjectionStatusMessage.Stopped>,
+            IHandle<CoreProjectionStatusMessage.Faulted>,
+            IHandle<CoreProjectionStatusMessage.Prepared>,
+            IHandle<CoreProjectionStatusMessage.StateReport>,
+            IHandle<CoreProjectionStatusMessage.ResultReport>,
+            IHandle<CoreProjectionStatusMessage.StatisticsReport>,
             IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
             IHandle<ProjectionManagementMessage.RegisterSystemProjection>, 
-            IHandle<CoreProjectionManagementMessage.ProjectionWorkerStarted>
+            IHandle<CoreProjectionStatusMessage.ProjectionWorkerStarted>
 
     {
 
@@ -406,7 +406,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.Started message)
+        public void Handle(CoreProjectionStatusMessage.Started message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
@@ -416,7 +416,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.Stopped message)
+        public void Handle(CoreProjectionStatusMessage.Stopped message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
@@ -426,7 +426,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.Faulted message)
+        public void Handle(CoreProjectionStatusMessage.Faulted message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
@@ -436,7 +436,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.Prepared message)
+        public void Handle(CoreProjectionStatusMessage.Prepared message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
@@ -446,7 +446,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.StateReport message)
+        public void Handle(CoreProjectionStatusMessage.StateReport message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
@@ -456,7 +456,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.ResultReport message)
+        public void Handle(CoreProjectionStatusMessage.ResultReport message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
@@ -466,7 +466,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
+        public void Handle(CoreProjectionStatusMessage.StatisticsReport message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
@@ -1044,7 +1044,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.MasterCorrelationId);
         }
 
-        public void Handle(CoreProjectionManagementMessage.ProjectionWorkerStarted message)
+        public void Handle(CoreProjectionStatusMessage.ProjectionWorkerStarted message)
         {
             RebalanceWork();
         }
