@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Management
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.StatisticsReport(
                             Guid.ParseExact(commandBody.Id, "N"),
-                            commandBody.Statistcs,
+                            commandBody.Statistics,
                             -1));
                     break;
                 }

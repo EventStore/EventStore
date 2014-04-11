@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Management
             var command = new ProjectionCoreResponseWriter.StatisticsReport
             {
                 Id = message.ProjectionId.ToString("N"),
-                Statistcs = message.Statistics
+                Statistics = message.Statistics
             };
             _writer.PublishCommand("$statistics-report", command);
         }
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Services.Management
         public class StatisticsReport
         {
             public string Id { get; set; }
-            public ProjectionStatistics Statistcs { get; set; }
+            public ProjectionStatistics Statistics { get; set; }
         }
 
         public class Stopped

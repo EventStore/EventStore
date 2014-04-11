@@ -131,7 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void EnrichStatistics(ProjectionStatistics info)
         {
             //TODO: get rid of this cast
-            info.Definition = _sourceDefinition as ProjectionSourceDefinition;
+            info.ResultStreamName = _sourceDefinition.ResultStreamNameOption;
         }
 
         protected virtual ICoreProjectionCheckpointManager CreateCheckpointManager(

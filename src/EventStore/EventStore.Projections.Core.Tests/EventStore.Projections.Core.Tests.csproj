@@ -169,6 +169,7 @@
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_result_report_response.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_started_response.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_state_report_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_statistics_report_response.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_stopped_response.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_starting.cs" />
     <Compile Include="Services\projection_core_service_response_writer\specification_with_projection_manager_command_writer.cs" />

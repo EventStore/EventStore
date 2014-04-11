@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services
 
         public string EffectiveName { get; set; }
 
-        public ProjectionSourceDefinition Definition { get; set; }
+        public string ResultStreamName { get; set; }
 
         public long CoreProcessingTime { get; set; }
 
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services
                    && WritePendingEventsAfterCheckpoint == other.WritePendingEventsAfterCheckpoint
                    && PartitionsCached == other.PartitionsCached && ReadsInProgress == other.ReadsInProgress
                    && WritesInProgress == other.WritesInProgress && string.Equals(EffectiveName, other.EffectiveName)
-                   && Equals(Definition, other.Definition) && CoreProcessingTime == other.CoreProcessingTime;
+                   && string.Equals(ResultStreamName, other.ResultStreamName) && CoreProcessingTime == other.CoreProcessingTime;
         }
 
         public override bool Equals(object obj)
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Services
                 hashCode = (hashCode*397) ^ ReadsInProgress;
                 hashCode = (hashCode*397) ^ WritesInProgress;
                 hashCode = (hashCode*397) ^ (EffectiveName != null ? EffectiveName.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (Definition != null ? Definition.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (ResultStreamName != null ? ResultStreamName.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ CoreProcessingTime.GetHashCode();
                 return hashCode;
             }

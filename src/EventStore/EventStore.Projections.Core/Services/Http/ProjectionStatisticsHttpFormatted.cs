@@ -32,10 +32,8 @@ namespace EventStore.Projections.Core.Services.Http
             this.StateUrl = makeAbsoluteUrl(statusLocalUrl + "/state");
             this.ResultUrl = makeAbsoluteUrl(statusLocalUrl + "/result");
             this.QueryUrl = makeAbsoluteUrl(statusLocalUrl + "/query?config=yes");
-            if (source.Definition != null && !string.IsNullOrEmpty(source.Definition.ResultStreamName))
-                this.ResultStreamUrl =
-                    makeAbsoluteUrl("/streams/" + Uri.EscapeDataString(source.Definition.ResultStreamName));
-
+            if (!string.IsNullOrEmpty(source.ResultStreamName))
+                this.ResultStreamUrl = makeAbsoluteUrl("/streams/" + Uri.EscapeDataString(source.ResultStreamName));
             this.DisableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/disable");
             this.EnableCommandUrl = makeAbsoluteUrl(statusLocalUrl + "/command/enable");
         }
