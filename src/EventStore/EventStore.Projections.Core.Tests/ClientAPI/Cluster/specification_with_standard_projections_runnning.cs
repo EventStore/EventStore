@@ -41,12 +41,15 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
                 int internalTcp, int internalTcpSec, int internalHttp, int externalTcp,
                 int externalTcpSec, int externalHttp)
             {
-                InternalTcp = new IPEndPoint(IPAddress.Loopback, internalTcp);
-                InternalTcpSec = new IPEndPoint(IPAddress.Loopback, internalTcpSec);
-                InternalHttp = new IPEndPoint(IPAddress.Loopback, internalHttp);
-                ExternalTcp = new IPEndPoint(IPAddress.Loopback, externalTcp);
-                ExternalTcpSec = new IPEndPoint(IPAddress.Loopback, externalTcpSec);
-                ExternalHttp = new IPEndPoint(IPAddress.Loopback, externalHttp);
+                var testIp = Environment.GetEnvironmentVariable("ES-TESTIP");
+
+                var address = string.IsNullOrEmpty(testIp) ? IPAddress.Loopback : IPAddress.Parse(testIp);
+                InternalTcp = new IPEndPoint(address, internalTcp);
+                InternalTcpSec = new IPEndPoint(address, internalTcpSec);
+                InternalHttp = new IPEndPoint(address, internalHttp);
+                ExternalTcp = new IPEndPoint(address, externalTcp);
+                ExternalTcpSec = new IPEndPoint(address, externalTcpSec);
+                ExternalHttp = new IPEndPoint(address, externalHttp);
             }
         }
 
