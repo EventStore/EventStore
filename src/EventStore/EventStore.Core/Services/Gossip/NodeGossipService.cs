@@ -18,13 +18,15 @@ namespace EventStore.Core.Services.Gossip
 
         public NodeGossipService(IPublisher bus,
                                  IGossipSeedSource gossipSeedSource,
-								 VNodeInfo nodeInfo,
+								                 VNodeInfo nodeInfo,
                                  ICheckpoint writerCheckpoint,
                                  ICheckpoint chaserCheckpoint,
                                  IEpochManager epochManager,
                                  Func<long> getLastCommitPosition,
-                                 int nodePriority)
-                : base(bus, gossipSeedSource, nodeInfo)
+                                 int nodePriority,
+                                 TimeSpan interval,
+                                 TimeSpan allowedTimeDifference)
+                : base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference)
         {
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");

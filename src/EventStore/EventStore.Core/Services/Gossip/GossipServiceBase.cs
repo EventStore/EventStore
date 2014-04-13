@@ -24,16 +24,16 @@ namespace EventStore.Core.Services.Gossip
                                               IHandle<SystemMessage.VNodeConnectionEstablished>
     {
         private static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
-        private static readonly TimeSpan GossipInterval = TimeSpan.FromMilliseconds(1000);
         private static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
-        private static readonly TimeSpan AllowedTimeDifference = TimeSpan.FromMinutes(30);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<GossipServiceBase>();
 
         protected readonly VNodeInfo NodeInfo;
         protected VNodeState CurrentRole = VNodeState.Initializing;
         protected VNodeInfo CurrentMaster;
+        private readonly TimeSpan GossipInterval = TimeSpan.FromMilliseconds(1000);
+        private readonly TimeSpan AllowedTimeDifference = TimeSpan.FromMinutes(30);
 
         private readonly IPublisher _bus;
         private readonly IEnvelope _publishEnvelope;
@@ -45,7 +45,9 @@ namespace EventStore.Core.Services.Gossip
 
         protected GossipServiceBase(IPublisher bus, 
                                     IGossipSeedSource gossipSeedSource,
-                                    VNodeInfo nodeInfo)
+                                    VNodeInfo nodeInfo,
+                                    TimeSpan gossipInterval,
+                                    TimeSpan allowedTimeDifference)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(gossipSeedSource, "gossipSeedSource");
@@ -55,7 +57,8 @@ namespace EventStore.Core.Services.Gossip
             _publishEnvelope = new PublishEnvelope(bus);
             _gossipSeedSource = gossipSeedSource;
             NodeInfo = nodeInfo;
-
+            GossipInterval = gossipInterval;
+            AllowedTimeDifference = allowedTimeDifference;
             _state = GossipState.Startup;
         }
 
