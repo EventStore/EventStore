@@ -213,7 +213,17 @@ namespace EventStore.Core.Util
         /*
          *  CLUSTER OPTIONS
          */
+        public const string GossipAllowedDifferenceMsCmd = "gossip-allowed-time-difference-ms=";
+        public const string GossipAllowedDifferenceMsEnv = "GOSSIP_ALLOWED_TIME_DIFFERENCE_MS";
+        public const string GossipAllowedDifferenceMsJson = "gossipAllowedTimeDifferenceMs";
+        public const string GossipAllowedDifferenceMsDescr = "The amount of drift between nodes allowed before gossip is rejected.";
+        public const int GossipAllowedDifferenceMsDefault = 50;
 
+        public const string GossipIntervalMsCmd = "gossip-interval-ms=";
+        public const string GossipIntervalMsEnv = "GOSSIP_INTERVAL_MS";
+        public const string GossipIntervalMsJson = "gossipIntervalMs";
+        public const string GossipIntervalMsDescr = "The interval nodes should try to gossip with each other.";
+        public const int GossipIntervalMsDefault = 1000;
 
         public const string AdminOnExtCmd = "admin-on-ext";
         public const string AdminOnExtEnv = "ADMIN_ON_EXT";

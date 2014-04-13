@@ -402,7 +402,7 @@ namespace EventStore.Core
             // GOSSIP
             var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, _nodeInfo, db.Config.WriterCheckpoint,
 											   db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastCommitPosition,
-                                               vNodeSettings.NodePriority);
+                                               vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference);
             _mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
             _mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
             _mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
