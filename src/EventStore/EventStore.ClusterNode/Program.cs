@@ -195,7 +195,9 @@ namespace EventStore.ClusterNode
 	                                        TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
 											options.NodePriority, authenticationProviderFactory, options.DisableScavengeMerging,
                                             options.AdminOnExt, options.StatsOnExt, options.GossipOnExt,
-                                            new TimeSpan(options.GossipIntervalMs), new TimeSpan(options.GossipAllowedDifferenceMs));
+                                            new TimeSpan(options.GossipIntervalMs),
+                                            new TimeSpan(options.GossipAllowedDifferenceMs),
+                                            new TimeSpan(options.GossipTimeoutMs));
         }
 
 	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)

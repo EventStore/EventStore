@@ -23,11 +23,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private readonly IPublisher _networkSendQueue;
         private readonly HttpAsyncClient _client = new HttpAsyncClient();
-
-        public GossipController(IPublisher publisher, IPublisher networkSendQueue)
+        private readonly TimeSpan _gossipTimeout;
+        
+        public GossipController(IPublisher publisher, IPublisher networkSendQueue, TimeSpan gossipTimeout)
             : base(publisher)
         {
             _networkSendQueue = networkSendQueue;
+            _gossipTimeout = gossipTimeout;
         }
 
         protected override void SubscribeCore(IHttpService service)
@@ -54,7 +56,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 url,
                 Codec.Json.To(new ClusterInfoDto(message.ClusterInfo, message.ServerEndPoint)),
                 Codec.Json.ContentType,
-                TimeSpan.FromMilliseconds(500), //TODO GFY make this configurable
+                _gossipTimeout, 
                 response =>
                 {
                     if (response.HttpStatusCode != HttpStatusCode.OK)
