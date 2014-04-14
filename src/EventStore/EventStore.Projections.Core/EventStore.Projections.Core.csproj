@@ -184,6 +184,7 @@
     <Compile Include="Services\Management\IResponseWriter.cs" />
     <Compile Include="Services\Management\ManagedProjection.cs" />
     <Compile Include="Services\Management\ManagedProjectionState.cs" />
+    <Compile Include="Services\Management\ProjectionBalancer.cs" />
     <Compile Include="Services\Management\ProjectionCoreResponseWriter.cs" />
     <Compile Include="Services\Management\ProjectionManagerResponseReader.cs" />
     <Compile Include="Services\Management\ProjectionManagerCommandWriter.cs" />

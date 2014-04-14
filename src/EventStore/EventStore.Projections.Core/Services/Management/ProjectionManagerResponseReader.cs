@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Management
                                     }
                                 }
                             });
-
+                     
 
                 } while (!eof);
                 Trace.WriteLine("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
@@ -122,7 +122,6 @@ namespace EventStore.Projections.Core.Services.Management
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.ProjectionWorkerStarted(
                             Guid.ParseExact(commandBody.Id, "N")));
-                    break;
                     break;
                 }
                 case "$prepared":
