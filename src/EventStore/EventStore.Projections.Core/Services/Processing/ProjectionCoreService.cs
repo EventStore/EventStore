@@ -122,15 +122,20 @@ namespace EventStore.Projections.Core.Services.Processing
                     message.Query);
 
                 string name = message.Name;
-                var sourceDefinition = ProjectionSourceDefinition.From(
-                    name, stateHandler.GetSourceDefinition(), message.HandlerType, message.Query);
+                var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
                 var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);
 
                 var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
-                    name, projectionVersion, namesBuilder,
-                    sourceDefinition, projectionConfig, stateHandler);
+                    name,
+                    projectionVersion,
+                    namesBuilder,
+                    sourceDefinition,
+                    projectionConfig,
+                    stateHandler,
+                    message.HandlerType,
+                    message.Query);
 
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
@@ -149,14 +154,20 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var name = message.Name;
-                var sourceDefinition = ProjectionSourceDefinition.From(
-                    name, message.SourceDefinition, message.HandlerType, message.Query);
+                var sourceDefinition = ProjectionSourceDefinition.From(message.SourceDefinition);
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
                 var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);
 
                 var projectionProcessingStrategy = _processingStrategySelector.CreateProjectionProcessingStrategy(
-                    name, projectionVersion, namesBuilder, sourceDefinition, projectionConfig, null);
+                    name,
+                    projectionVersion,
+                    namesBuilder,
+                    sourceDefinition,
+                    projectionConfig,
+                    null,
+                    message.HandlerType,
+                    message.Query);
 
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
                 _publisher.Publish(
@@ -177,11 +188,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var stateHandler = CreateStateHandler(_timeoutScheduler, _logger, message.HandlerType, message.Query);
 
                 string name = message.Name;
-                var sourceDefinition = ProjectionSourceDefinition.From(
-                    name,
-                    stateHandler.GetSourceDefinition(),
-                    null,
-                    null);
+                var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config.SetIsSlave();
                 var projectionProcessingStrategy =

@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             builder.IncludeEvent("e2");
             builder.SetByStream();
             builder.SetResultStreamNameOption("result-stream");
-            _definition = ProjectionSourceDefinition.From("name", builder, "JS", "query");
+            _definition = ProjectionSourceDefinition.From(builder);
         }
 
         protected override void When()

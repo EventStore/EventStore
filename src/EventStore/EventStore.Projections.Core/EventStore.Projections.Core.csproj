@@ -267,6 +267,7 @@
     <Compile Include="Services\Processing\EventReaderCoreService.cs" />
     <Compile Include="Services\Processing\EventProcessingProjectionProcessingPhase.cs" />
     <Compile Include="Services\Processing\EventSubscriptionBasedProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\ProjectionOutputConfig.cs" />
     <Compile Include="Services\Processing\ProjectionProcessingStrategy.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
     <Compile Include="Services\Processing\ReaderSubscriptionBase.cs" />

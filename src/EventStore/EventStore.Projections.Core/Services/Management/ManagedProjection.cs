@@ -243,8 +243,20 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Read, _runAs, message)) return;
 
             var emitEnabled = _persistedState.EmitEnabled ?? false;
+
+            var projectionOutputConfig = new ProjectionOutputConfig
+            {
+                ResultStreamName =
+                    new ProjectionNamesBuilder(_name, _persistedState.SourceDefinition).GetResultStreamName()
+            };
+
             message.Envelope.ReplyWith(
-                new ProjectionManagementMessage.ProjectionQuery(_name, Query, emitEnabled, _persistedState.SourceDefinition));
+                new ProjectionManagementMessage.ProjectionQuery(
+                    _name,
+                    Query,
+                    emitEnabled,
+                    _persistedState.SourceDefinition,
+                    projectionOutputConfig));
         }
 
         public void Handle(ProjectionManagementMessage.UpdateQuery message)

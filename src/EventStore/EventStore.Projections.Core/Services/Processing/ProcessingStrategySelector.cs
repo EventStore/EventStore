@@ -23,9 +23,9 @@ namespace EventStore.Projections.Core.Services.Processing
             string name,
             ProjectionVersion projectionVersion,
             ProjectionNamesBuilder namesBuilder,
-            IQueryDefinition sourceDefinition,
+            IQuerySources sourceDefinition,
             ProjectionConfig projectionConfig,
-            IProjectionStateHandler stateHandler)
+            IProjectionStateHandler stateHandler, string handlerType, string query)
         {
 
             if (!sourceDefinition.DisableParallelismOption && projectionConfig.StopOnEof && sourceDefinition.ByStreams
@@ -37,6 +37,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     stateHandler,
                     projectionConfig,
                     sourceDefinition,
+                    handlerType,
+                    query,
                     namesBuilder,
                     _logger,
                     _spoolProcessingResponseDispatcher,
@@ -52,6 +54,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     stateHandler,
                     projectionConfig,
                     sourceDefinition,
+                    handlerType,
+                    query,
                     namesBuilder,
                     _logger,
                     _spoolProcessingResponseDispatcher,
@@ -81,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public ProjectionProcessingStrategy CreateSlaveProjectionProcessingStrategy(
             string name,
             ProjectionVersion projectionVersion,
-            ProjectionSourceDefinition sourceDefinition,
+            IQuerySources sourceDefinition,
             ProjectionConfig projectionConfig,
             IProjectionStateHandler stateHandler,
             Guid workerId,

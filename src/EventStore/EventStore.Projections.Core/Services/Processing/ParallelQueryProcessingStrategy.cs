@@ -13,27 +13,36 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly IProjectionStateHandler _stateHandler;
         private new readonly ProjectionConfig _projectionConfig;
-        private new readonly IQueryDefinition _sourceDefinition;
+        private new readonly IQuerySources _sourceDefinition;
         private readonly ProjectionNamesBuilder _namesBuilder;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
         private readonly string _catalogStreamName;
+        private readonly string _handlerType;
+        private readonly string _query;
 
         public ParallelQueryProcessingStrategy(
             string name,
             ProjectionVersion projectionVersion,
             IProjectionStateHandler stateHandler,
             ProjectionConfig projectionConfig,
-            IQueryDefinition sourceDefinition,
+            IQuerySources sourceDefinition,
+            string handlerType,
+            string query,
             ProjectionNamesBuilder namesBuilder,
             ILogger logger,
             SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
             ReaderSubscriptionDispatcher subscriptionDispatcher)
             : base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher)
         {
+            if (string.IsNullOrEmpty(handlerType)) throw new ArgumentNullException("handlerType");
+            if (string.IsNullOrEmpty(query)) throw new ArgumentNullException("query");
+
             _stateHandler = stateHandler;
             _projectionConfig = projectionConfig;
             _sourceDefinition = sourceDefinition;
+            _handlerType = handlerType;
+            _query = query;
             _namesBuilder = namesBuilder;
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
             if (_sourceDefinition.CatalogStream == SystemStreams.AllStream)
@@ -180,7 +189,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return
                 new SlaveProjectionDefinitions(
                     new SlaveProjectionDefinitions.Definition(
-                        "slave", _sourceDefinition.HandlerType, _sourceDefinition.Query,
+                        "slave", _handlerType, _query,
                         SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread, ProjectionMode.Transient,
                         _projectionConfig.EmitEventEnabled, _projectionConfig.CheckpointsEnabled,
                         runAs: new ProjectionManagementMessage.RunAs(_projectionConfig.RunAs), enableRunAs: true));

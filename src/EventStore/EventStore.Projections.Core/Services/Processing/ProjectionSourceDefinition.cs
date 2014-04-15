@@ -5,7 +5,7 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     [DataContract]
-    public class ProjectionSourceDefinition : IQuerySources, IQueryDefinition
+    public class ProjectionSourceDefinition : IQuerySources
     {
         [DataMember]
         public bool AllEvents { get; set; }
@@ -105,27 +105,13 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return Options != null ? Options.IsBiState : false; }
         }
 
-        [DataMember]
-        public string ResultStreamName { get; set; }
-
-        [DataMember]
-        public string PartitionResultStreamNamePattern { get; set; }
-
-        [DataMember]
-        public string PartitionCatalogStream { get; set; }
-
-        [DataMember]
-        public string PartitionResultCatalogStream { get; set; }
-
         bool IQuerySources.ByStreams
         {
             get { return ByStream; }
         }
 
-        public static ProjectionSourceDefinition From(
-            string name, IQuerySources sources, string handlerType, string query)
+        public static ProjectionSourceDefinition From(IQuerySources sources)
         {
-            var namingBuilder = new ProjectionNamesBuilder(name, sources);
             return new ProjectionSourceDefinition
             {
                 AllEvents = sources.AllEvents,
@@ -154,18 +140,8 @@ namespace EventStore.Projections.Core.Services.Processing
                         ReorderEvents = sources.ReorderEventsOption,
                         ResultStreamName = sources.ResultStreamNameOption,
                     },
-                ResultStreamName = namingBuilder.GetResultStreamName(),
-                PartitionResultStreamNamePattern = namingBuilder.GetPartitionResultStreamNamePattern(),
-                PartitionResultCatalogStream = namingBuilder.GetPartitionResultCatalogStreamName(),
-                PartitionCatalogStream = namingBuilder.GetPartitionCatalogStreamName(),
-                HandlerType = handlerType,
-                Query = query
             };
         }
-
-        public string HandlerType { get; private set; }
-
-        public string Query { get; private set; }
 
         private bool Equals(string[] a, string[] b)
         {
@@ -185,9 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
                    && ByStream.Equals(other.ByStream) && ByCustomPartitions.Equals(other.ByCustomPartitions)
                    && Equals(Categories, other.Categories) && Equals(Events, other.Events)
                    && Equals(Streams, other.Streams) && string.Equals(CatalogStream, other.CatalogStream)
-                   && LimitingCommitPosition == other.LimitingCommitPosition && Equals(Options, other.Options)
-                   && string.Equals(PartitionCatalogStream, other.PartitionCatalogStream)
-                   && string.Equals(PartitionResultCatalogStream, other.PartitionResultCatalogStream);
+                   && LimitingCommitPosition == other.LimitingCommitPosition && Equals(Options, other.Options);
         }
 
         public override bool Equals(object obj)
@@ -209,8 +183,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 hashCode = (hashCode*397) ^ (CatalogStream != null ? CatalogStream.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ LimitingCommitPosition.GetHashCode();
                 hashCode = (hashCode*397) ^ (Options != null ? Options.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (PartitionCatalogStream != null ? PartitionCatalogStream.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (PartitionResultCatalogStream != null ? PartitionResultCatalogStream.GetHashCode() : 0);
                 return hashCode;
             }
         }

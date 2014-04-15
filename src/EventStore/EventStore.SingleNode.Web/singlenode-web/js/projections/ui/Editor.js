@@ -133,8 +133,9 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             if (controls.emit)
                 controls.emit.attr("checked", source.emitEnabled);
             var anyResults = false;
+            var resultStreamName;
             if (controls.result_stream) {
-                var resultStreamName = source.definition.resultStreamName;
+                resultStreamName = source.outputConfig.resultStreamName;
                 if (resultStreamName) {
                     controls.result_stream.attr("href", "/streams/" + resultStreamName);
                     controls.result_stream.show();
@@ -145,8 +146,7 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             }
 
             if (controls.result_stream_container) {
-
-                var resultStreamName = source.definition.resultStreamName;
+                resultStreamName = source.outputConfig.resultStreamName;
                 if (resultStreamName) {
                     var templateJs = '/web/es/js/atom/FeedElement.html';
 

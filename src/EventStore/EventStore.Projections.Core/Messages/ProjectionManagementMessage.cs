@@ -681,13 +681,15 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _query;
             private readonly bool _emitEnabled;
             private readonly ProjectionSourceDefinition _definition;
+            private readonly ProjectionOutputConfig _outputConfig;
 
-            public ProjectionQuery(string name, string query, bool emitEnabled, ProjectionSourceDefinition definition)
+            public ProjectionQuery(string name, string query, bool emitEnabled, ProjectionSourceDefinition definition, ProjectionOutputConfig outputConfig)
             {
                 _name = name;
                 _query = query;
                 _emitEnabled = emitEnabled;
                 _definition = definition;
+                _outputConfig = outputConfig;
             }
 
             public string Name
@@ -708,6 +710,11 @@ namespace EventStore.Projections.Core.Messages
             public ProjectionSourceDefinition Definition
             {
                 get { return _definition; }
+            }
+
+            public ProjectionOutputConfig OutputConfig
+            {
+                get { return _outputConfig; }
             }
         }
 

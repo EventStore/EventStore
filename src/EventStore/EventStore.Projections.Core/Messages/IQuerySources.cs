@@ -47,12 +47,6 @@ namespace EventStore.Projections.Core.Messages
         long? LimitingCommitPosition { get; }
     }
 
-    public interface IQueryDefinition : IQuerySources
-    {
-        string HandlerType { get; }
-        string Query { get; }
-    }
-
     public static class QuerySourcesExtensions
     {
         public static bool HasStreams(this IQuerySources sources)
