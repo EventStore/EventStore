@@ -710,18 +710,10 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new NotSupportedException("Unsupported error code received");
         }
 
-        private void Prepare(Action onPrepared)
+        private void Prepare(ProjectionConfig config, Message prepareMessage)
         {
-            var config = CreateDefaultProjectionConfiguration();
             DisposeCoreProjection();
-            BeginCreateAndPrepare(config, onPrepared);
-        }
-
-        private void CreatePrepared(Action onPrepared)
-        {
-            var config = CreateDefaultProjectionConfiguration();
-            DisposeCoreProjection();
-            BeginCreatePrepared(config, onPrepared);
+            BeginCreate(config, prepareMessage);
         }
 
         private void Start(Action completed)
@@ -776,28 +768,22 @@ namespace EventStore.Projections.Core.Services.Management
             Deleted = true;
         }
 
-        private void BeginCreateAndPrepare(
-            ProjectionConfig config, Action onPrepared)
+        private void BeginCreate(ProjectionConfig config, Message createandPrepapreMessage)
         {
-            _onPrepared = _onStopped = () =>
-            {
-                _onStopped = null;
-                _onPrepared = null;
-                if (onPrepared != null)
-                    onPrepared();
-            };
+            _onPrepared = __OnPrepared;
             if (config == null) throw new ArgumentNullException("config");
-
-            //TODO: which states are allowed here?
             if (_state >= ManagedProjectionState.Preparing)
             {
                 DisposeCoreProjection();
                 SetState(ManagedProjectionState.Loaded);
             }
+            //note: set runnign before start as coreProjection.start() can respond with faulted
+            SetState(ManagedProjectionState.Preparing);
+            _output.Publish(createandPrepapreMessage);
+        }
 
-            //TODO: load configuration from the definition
-
-
+        private Message CreateCreateAndPrepareProjectionMessage(ProjectionConfig config)
+        {
             var createProjectionMessage = _isSlave
                 ? (Message)
                     new CoreProjectionManagementMessage.CreateAndPrepareSlave(
@@ -812,32 +798,17 @@ namespace EventStore.Projections.Core.Services.Management
                         Query)
                 : new CoreProjectionManagementMessage.CreateAndPrepare(
                     Id,
-                    _workerId, 
+                    _workerId,
                     _name,
                     new ProjectionVersion(_projectionId, _persistedState.Epoch ?? 0, _persistedState.Version ?? 0),
                     config,
                     HandlerType,
                     Query);
-
-            //note: set runnign before start as coreProjection.start() can respond with faulted
-            SetState(ManagedProjectionState.Preparing);
-            _output.Publish(createProjectionMessage);
+            return createProjectionMessage;
         }
 
-        private void BeginCreatePrepared(ProjectionConfig config, Action onPrepared)
+        private CoreProjectionManagementMessage.CreatePrepared CreateBeginCreatePreparedMessage(ProjectionConfig config)
         {
-            _onPrepared = onPrepared;
-            if (config == null) throw new ArgumentNullException("config");
-
-            //TODO: which states are allowed here?
-            if (_state >= ManagedProjectionState.Preparing)
-            {
-                DisposeCoreProjection();
-                SetState(ManagedProjectionState.Loaded);
-            }
-
-            //TODO: load configuration from the definition
-
             if (_persistedState.SourceDefinition == null)
                 throw new Exception(
                     "The projection cannot be loaded as stopped as it was stored in the old format.  Update the projection query text to force prepare");
@@ -851,10 +822,7 @@ namespace EventStore.Projections.Core.Services.Management
                 QuerySourcesDefinition.From(_persistedState.SourceDefinition),
                 HandlerType,
                 Query);
-
-            //note: set running before start as coreProjection.start() can respond with faulted
-            SetState(ManagedProjectionState.Preparing);
-            _output.Publish(createProjectionMessage);
+            return createProjectionMessage;
         }
 
         private void Stop(Action completed)
@@ -1003,10 +971,13 @@ namespace EventStore.Projections.Core.Services.Management
                 __OnPrepared();
                 return;
             }
-            if (!(Enabled && _enabledToRun) && !_pendingPersistedState)
-                CreatePrepared(__OnPrepared);
-            else
-                Prepare(__OnPrepared);
+            var config = CreateDefaultProjectionConfiguration();
+
+            var prepareMessage = !(Enabled && _enabledToRun) && !_pendingPersistedState
+                ? CreateBeginCreatePreparedMessage(config)
+                : CreateCreateAndPrepareProjectionMessage(config);
+
+            Prepare(config, prepareMessage);
         }
 
         private void __OnPrepared()
