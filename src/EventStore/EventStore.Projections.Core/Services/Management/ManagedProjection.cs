@@ -45,7 +45,6 @@ namespace EventStore.Projections.Core.Services.Management
             public SerializedRunAs RunAs { get; set; }
         }
 
-        private readonly IPublisher _inputQueue;
         private readonly IPublisher _output;
 
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
@@ -69,7 +68,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly ILogger _logger;
         private readonly ITimeProvider _timeProvider;
-        private readonly ISingletonTimeoutScheduler _timeoutScheduler;
         private readonly Guid _workerId;
         private readonly Guid _id;
         private readonly int _projectionId;
@@ -107,7 +105,6 @@ namespace EventStore.Projections.Core.Services.Management
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            IPublisher inputQueue,
             IPublisher output,
             ITimeProvider timeProvider,
             RequestResponseDispatcher<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>
@@ -115,7 +112,6 @@ namespace EventStore.Projections.Core.Services.Management
             RequestResponseDispatcher
                 <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
                 getResultDispatcher,
-            ISingletonTimeoutScheduler timeoutScheduler = null,
             bool isSlave = false,
             Guid slaveMasterWorkerId = default(Guid),
             Guid slaveMasterCorrelationId = default(Guid))
@@ -134,10 +130,8 @@ namespace EventStore.Projections.Core.Services.Management
             _logger = logger ?? LogManager.GetLoggerFor<ManagedProjection>();
             _writeDispatcher = writeDispatcher;
             _readDispatcher = readDispatcher;
-            _inputQueue = inputQueue;
             _output = output;
             _timeProvider = timeProvider;
-            _timeoutScheduler = timeoutScheduler;
             _isSlave = isSlave;
             _slaveMasterWorkerId = slaveMasterWorkerId;
             _slaveMasterCorrelationId = slaveMasterCorrelationId;
@@ -234,6 +228,44 @@ namespace EventStore.Projections.Core.Services.Management
             return status;
         }
 
+        public void Handle(ProjectionManagementMessage.GetState message)
+        {
+            _lastAccessed = _timeProvider.Now;
+            if (_state >= ManagedProjectionState.Stopped)
+            {
+                _getStateDispatcher.Publish(
+                    new CoreProjectionManagementMessage.GetState(Guid.NewGuid(), Id, message.Partition, _workerId),
+                    m =>
+                        message.Envelope.ReplyWith(
+                            new ProjectionManagementMessage.ProjectionState(_name, m.Partition, m.State, m.Position)));
+            }
+            else
+            {
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.ProjectionState(
+                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
+            }
+        }
+
+        public void Handle(ProjectionManagementMessage.GetResult message)
+        {
+            _lastAccessed = _timeProvider.Now;
+            if (_state >= ManagedProjectionState.Stopped)
+            {
+                _getResultDispatcher.Publish(
+                    new CoreProjectionManagementMessage.GetResult(Guid.NewGuid(), Id, message.Partition, _workerId),
+                    m =>
+                        message.Envelope.ReplyWith(
+                            new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result, m.Position)));
+            }
+            else
+            {
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.ProjectionResult(
+                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
+            }
+        }
+
         public void Handle(ProjectionManagementMessage.GetQuery message)
         {
             _lastAccessed = _timeProvider.Now;
@@ -264,47 +296,17 @@ namespace EventStore.Projections.Core.Services.Management
             _prepared = false;
             DuUpdateQuery1(message);
             UpdateProjectionVersion();
-            Stop(() =>
-            {
-                IEnvelope envelope = message.Envelope;
-                string name = message.Name;
-                __DoUpdateQuery(() => Reply(envelope, name));
-            });
-        }
-
-        public void Handle(ProjectionManagementMessage.GetResult message)
-        {
-            _lastAccessed = _timeProvider.Now;
-            if (_state >= ManagedProjectionState.Stopped)
-            {
-                _getResultDispatcher.Publish(
-                    new CoreProjectionManagementMessage.GetResult(Guid.NewGuid(), Id, message.Partition, _workerId),
-                    m =>
-                    message.Envelope.ReplyWith(
-                        new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result, m.Position)));
-            }
-            else
-            {
-                message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.ProjectionResult(
-                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
-            }
+            Stop(() => __DoUpdateQuery(() => Reply(message.Envelope, message.Name)));
         }
 
         public void Handle(ProjectionManagementMessage.Disable message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            IEnvelope envelope = message.Envelope;
-            if (DoDisable1(envelope))
+            if (DoDisable1(message.Envelope))
             {
                 UpdateProjectionVersion();
-                Stop(
-                    () =>
-                    {
-                        string name = message.Name;
-                        __DoUpdateQuery(() => Reply(envelope, name));
-                    });
+                Stop(() => __DoUpdateQuery(() => Reply(message.Envelope, message.Name)));
             }
         }
 
@@ -317,11 +319,9 @@ namespace EventStore.Projections.Core.Services.Management
                 () =>
                 {
                     SetState(ManagedProjectionState.Aborted);
-                    IEnvelope envelope = message.Envelope;
-                    if (DoDisable1(envelope))
+                    if (DoDisable1(message.Envelope))
                     {
-                        string name = message.Name;
-                        __DoUpdateQuery(() => Reply(envelope, name));
+                        __DoUpdateQuery(() => Reply(message.Envelope, message.Name));
                     }
                 });
         }
@@ -341,10 +341,8 @@ namespace EventStore.Projections.Core.Services.Management
             if (!Enabled)
                 Enable();
             _pendingPersistedState = true;
-            IEnvelope envelope = message.Envelope;
-            string name = message.Name;
             UpdateProjectionVersion();
-            __DoUpdateQuery(() => Reply(envelope, name));
+            __DoUpdateQuery(() => Reply(message.Envelope, message.Name));
         }
 
         public void Handle(ProjectionManagementMessage.SetRunAs message)
@@ -359,21 +357,16 @@ namespace EventStore.Projections.Core.Services.Management
             _prepared = false;
             DoSetRunAs1(message);
             UpdateProjectionVersion();
-            Stop(() =>
-            {
-                IEnvelope envelope = message.Envelope;
-                string name = message.Name;
-                __DoUpdateQuery(() => Reply(envelope, name));
-            });
+            Stop(() => __DoUpdateQuery(() => Reply(message.Envelope, message.Name)));
         }
 
-        private void DoSetRunAs1(ProjectionManagementMessage.SetRunAs message)
+        public void Handle(ProjectionManagementMessage.Delete message)
         {
-            _persistedState.RunAs = message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set
-                ? SerializePrincipal(message.RunAs)
-                : null;
-            _runAs = DeserializePrincipal(_persistedState.RunAs);
-            _pendingPersistedState = true;
+            _lastAccessed = _timeProvider.Now;
+            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
+            DoDelete1();
+            UpdateProjectionVersion();
+            Stop(() => __DoUpdateQuery(() => Reply(message.Envelope, message.Name)));
         }
 
         public void Handle(ProjectionManagementMessage.Reset message)
@@ -383,38 +376,28 @@ namespace EventStore.Projections.Core.Services.Management
             _prepared = false;
             DoReset1();
             UpdateProjectionVersion();
-            Stop(() =>
+            Stop(() => __DoUpdateQuery(() => Reply(message.Envelope, message.Name)));
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
+        {
+            //TODO: configurable expiration
+            if (IsExpiredProjection())
             {
-                IEnvelope envelope = message.Envelope;
-                string name = message.Name;
-                __DoUpdateQuery(() => Reply(envelope, name));
-            });
-        }
+                if (_state == ManagedProjectionState.Creating)
+                {
+                    // NOTE: workaround for stop not working on creating state (just ignore them)
+                    return;
+                }
 
-        private void DoReset1()
-        {
-            _pendingPersistedState = true;
-            ResetProjection();
-        }
-
-        private void ResetProjection()
-        {
-            UpdateProjectionVersion(force: true);
-            _persistedState.Epoch = _persistedState.Version;
-        }
-
-        public void Handle(ProjectionManagementMessage.Delete message)
-        {
-            _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            DoDelete1();
-            UpdateProjectionVersion();
-            Stop(() =>
-            {
-                IEnvelope envelope = message.Envelope;
-                string name = message.Name;
-                __DoUpdateQuery(() => Reply(envelope, name));
-            });
+                Handle(
+                    new ProjectionManagementMessage.Delete(
+                        new NoopEnvelope(),
+                        _name,
+                        ProjectionManagementMessage.RunAs.System,
+                        false,
+                        false));
+            }
         }
 
         public void Handle(CoreProjectionStatusMessage.Started message)
@@ -432,18 +415,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             SetState(message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped);
             OnStoppedOrFaulted();
-        }
-
-        private void OnStoppedOrFaulted()
-        {
-            FireStoppedOrFaulted();
-        }
-
-        private void FireStoppedOrFaulted()
-        {
-            var stopCompleted = _onStopped;
-            _onStopped = null;
-            if (stopCompleted != null) stopCompleted();
         }
 
         public void Handle(CoreProjectionStatusMessage.Faulted message)
@@ -477,25 +448,42 @@ namespace EventStore.Projections.Core.Services.Management
             _lastReceivedStatistics = message.Statistics;
         }
 
-        public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
+        public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)
         {
-            //TODO: configurable expiration
-            if (IsExpiredProjection())
-            {
-                if (_state == ManagedProjectionState.Creating)
-                {
-                    // NOTE: workaround for stop not working on creating state (just ignore them)
-                    return;
-                }
+            _slaveProjectionSubscriptionId = message.SubscriptionId;
+        }
 
-                Handle(
-                    new ProjectionManagementMessage.Delete(
-                        new NoopEnvelope(),
-                        _name,
-                        ProjectionManagementMessage.RunAs.System,
-                        false,
-                        false));
-            }
+        private void DoSetRunAs1(ProjectionManagementMessage.SetRunAs message)
+        {
+            _persistedState.RunAs = message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set
+                ? SerializePrincipal(message.RunAs)
+                : null;
+            _runAs = DeserializePrincipal(_persistedState.RunAs);
+            _pendingPersistedState = true;
+        }
+
+        private void DoReset1()
+        {
+            _pendingPersistedState = true;
+            ResetProjection();
+        }
+
+        private void ResetProjection()
+        {
+            UpdateProjectionVersion(force: true);
+            _persistedState.Epoch = _persistedState.Version;
+        }
+
+        private void OnStoppedOrFaulted()
+        {
+            FireStoppedOrFaulted();
+        }
+
+        private void FireStoppedOrFaulted()
+        {
+            var stopCompleted = _onStopped;
+            _onStopped = null;
+            if (stopCompleted != null) stopCompleted();
         }
 
         private bool IsExpiredProjection()
@@ -997,30 +985,6 @@ namespace EventStore.Projections.Core.Services.Management
                 _persistedState.Version++;
             else if (force)
                 throw new ApplicationException("Internal error: projection definition must be saved before forced updating version");
-        }
-
-        public void Handle(ProjectionManagementMessage.GetState message)
-        {
-            _lastAccessed = _timeProvider.Now;
-            if (_state >= ManagedProjectionState.Stopped)
-            {
-                _getStateDispatcher.Publish(
-                    new CoreProjectionManagementMessage.GetState(Guid.NewGuid(), Id, message.Partition, _workerId),
-                    m =>
-                    message.Envelope.ReplyWith(
-                        new ProjectionManagementMessage.ProjectionState(_name, m.Partition, m.State, m.Position)));
-            }
-            else
-            {
-                message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.ProjectionState(
-                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
-            }
-        }
-
-        public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)
-        {
-            _slaveProjectionSubscriptionId = message.SubscriptionId;
         }
     }
 

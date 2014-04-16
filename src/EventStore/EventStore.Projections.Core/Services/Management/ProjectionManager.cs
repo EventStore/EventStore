@@ -879,12 +879,10 @@ namespace EventStore.Projections.Core.Services.Management
                 _logger,
                 _writeDispatcher,
                 _readDispatcher,
-                _inputQueue,
                 _publisher,
                 _timeProvider,
                 _getStateDispatcher,
                 _getResultDispatcher,
-                _timeoutSchedulers[queueIndex],
                 isSlave,
                 slaveMasterWorkerId,
                 slaveMasterCorrelationId);

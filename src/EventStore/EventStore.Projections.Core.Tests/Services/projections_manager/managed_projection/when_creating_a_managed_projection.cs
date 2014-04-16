@@ -58,7 +58,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _writeDispatcher,
                 _readDispatcher,
                 _bus,
-                _bus,
                 _timeProvider,
                 _getStateDispatcher,
                 _getResultDispatcher);
@@ -76,7 +75,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 null,
                 _writeDispatcher,
                 _readDispatcher,
-                _bus,
                 _bus,
                 _timeProvider,
                 new RequestResponseDispatcher
@@ -106,7 +104,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _writeDispatcher,
                 _readDispatcher,
                 _bus,
-                _bus,
                 _timeProvider,
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
@@ -134,7 +131,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 null,
                 _writeDispatcher,
                 _readDispatcher,
-                _bus,
                 _bus,
                 _timeProvider,
                 new RequestResponseDispatcher
@@ -164,7 +160,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _writeDispatcher,
                 _readDispatcher,
                 _bus,
-                _bus,
                 _timeProvider,
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
@@ -192,7 +187,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 null,
                 _writeDispatcher,
                 _readDispatcher,
-                _bus,
                 _bus,
                 _timeProvider,
                 new RequestResponseDispatcher
