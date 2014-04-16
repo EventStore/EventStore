@@ -95,6 +95,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly Guid _slaveMasterCorrelationId;
         private Guid _slaveProjectionSubscriptionId;
         private bool _prepared;
+        private bool _pendingPersistedState;
 
         public ManagedProjection(
             Guid workerId,
@@ -344,6 +345,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             if (!Enabled)
                 Enable();
+            _pendingPersistedState = true;
             IEnvelope envelope = message.Envelope;
             string name = message.Name;
             UpdateProjectionVersion();
@@ -376,6 +378,7 @@ namespace EventStore.Projections.Core.Services.Management
                 ? SerializePrincipal(message.RunAs)
                 : null;
             _runAs = DeserializePrincipal(_persistedState.RunAs);
+            _pendingPersistedState = true;
         }
 
         public void Handle(ProjectionManagementMessage.Reset message)
@@ -395,6 +398,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void DoReset1()
         {
+            _pendingPersistedState = true;
             ResetProjection();
         }
 
@@ -518,7 +522,8 @@ namespace EventStore.Projections.Core.Services.Management
         {
             LoadPersistedState(persistedState);
             UpdateProjectionVersion();
-            Prepare(() => BeginWrite(() => StartOrLoadStopped(completed)));
+            _pendingPersistedState = true;
+            __DoUpdateQuery(completed);
         }
 
         public static SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
@@ -566,13 +571,8 @@ namespace EventStore.Projections.Core.Services.Management
                 LoadPersistedState(persistedState);
                 //TODO: encapsulate this into managed projection
                 SetState(ManagedProjectionState.Loaded);
-                if (Enabled && _enabledToRun)
-                {
-                    if (Mode >= ProjectionMode.Continuous)
-                        Prepare(() => Start(() => { }));
-                }
-                else
-                    CreatePrepared(() => LoadStopped(() => { }));
+                _pendingPersistedState = false;
+                __DoUpdateQuery(() => { });
                 return;
             }
 
@@ -687,6 +687,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (message.Result == OperationResult.Success)
             {
                 _logger.Info("'{0}' projection source has been written", _name);
+                _pendingPersistedState = false;
                 var writtenEventNumber = message.FirstEventNumber;
                 if (writtenEventNumber != (_persistedState.Version ?? writtenEventNumber))
                     throw new Exception("Projection version and event number mismatch");
@@ -973,6 +974,7 @@ namespace EventStore.Projections.Core.Services.Management
             _persistedState.HandlerType = message.HandlerType ?? HandlerType;
             _persistedState.Query = message.Query;
             _persistedState.EmitEnabled = message.EmitEnabled ?? _persistedState.EmitEnabled;
+            _pendingPersistedState = true;
             if (_state == ManagedProjectionState.Completed)
             {
                 ResetProjection();
@@ -987,17 +989,32 @@ namespace EventStore.Projections.Core.Services.Management
                 return false;
             }
             Disable();
+            _pendingPersistedState = true;
             return true;
         }
 
+        private Action _lastOnCompleted;
+
         private void __DoUpdateQuery(Action completed)
         {
+            _lastOnCompleted = completed;
             if (_prepared)
             {
-                BeginWrite(() => StartOrLoadStopped(completed));
+                __OnPrepared();
                 return;
             }
-            Prepare(() => BeginWrite(() => StartOrLoadStopped(completed)));
+            if (!(Enabled && _enabledToRun) && !_pendingPersistedState)
+                CreatePrepared(__OnPrepared);
+            else
+                Prepare(__OnPrepared);
+        }
+
+        private void __OnPrepared()
+        {
+            if (_pendingPersistedState)
+                BeginWrite(() => StartOrLoadStopped(_lastOnCompleted));
+            else
+                StartOrLoadStopped(_lastOnCompleted);
         }
 
         private void Reply(IEnvelope envelope, string name)
@@ -1015,6 +1032,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (Enabled)
                 Disable();
             Delete();
+            _pendingPersistedState = true;
         }
 
         private void UpdateProjectionVersion(bool force = false)
