@@ -1,6 +1,9 @@
 ﻿using System;
+using EventStore.Core.Bus;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 using TestFixtureWithReadWriteDispatchers = EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithReadWriteDispatchers;
@@ -12,10 +15,33 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
     {
         private new ITimeProvider _timeProvider;
 
+        private
+            RequestResponseDispatcher<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>
+            _getStateDispatcher;
+
+        private
+            RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
+            _getResultDispatcher;
+
         [SetUp]
         public void setup()
         {
             _timeProvider = new FakeTimeProvider();
+            _getStateDispatcher =
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus));
+            _getResultDispatcher =
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus));
         }
 
 
@@ -33,7 +59,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _readDispatcher,
                 _bus,
                 _bus,
-                _timeProvider);
+                _timeProvider,
+                _getStateDispatcher,
+                _getResultDispatcher);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -50,7 +78,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _readDispatcher,
                 _bus,
                 _bus,
-                _timeProvider);
+                _timeProvider,
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)),
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -67,7 +107,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _readDispatcher,
                 _bus,
                 _bus,
-                _timeProvider);
+                _timeProvider,
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)),
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -84,7 +136,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _readDispatcher,
                 _bus,
                 _bus,
-                _timeProvider);
+                _timeProvider,
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)),
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)));
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -101,7 +165,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _readDispatcher,
                 _bus,
                 _bus,
-                _timeProvider);
+                _timeProvider,
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)),
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)));
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -118,7 +194,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _readDispatcher,
                 _bus,
                 _bus,
-                _timeProvider);
+                _timeProvider,
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)),
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                    _bus,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)));
         }
     }
 }

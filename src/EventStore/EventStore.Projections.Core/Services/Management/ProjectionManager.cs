@@ -80,6 +80,15 @@ namespace EventStore.Projections.Core.Services.Management
         private bool _started;
         private readonly PublishEnvelope _publishEnvelope;
 
+        private readonly
+            RequestResponseDispatcher<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>
+            _getStateDispatcher;
+
+        private readonly
+            RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
+            _getResultDispatcher;
+
         public ProjectionManager(
             IPublisher inputQueue,
             IPublisher publisher,
@@ -122,6 +131,18 @@ namespace EventStore.Projections.Core.Services.Management
             _projections = new Dictionary<string, ManagedProjection>();
             _projectionsMap = new Dictionary<Guid, string>();
             _publishEnvelope = new PublishEnvelope(_inputQueue, crossThread: true);
+            _getStateDispatcher = new RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                _publisher, 
+                v => v.CorrelationId,
+                v => v.CorrelationId,
+                new PublishEnvelope(_inputQueue));
+            _getResultDispatcher = new RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                _publisher, 
+                v => v.CorrelationId,
+                v => v.CorrelationId,
+                new PublishEnvelope(_inputQueue));
         }
 
         private void Start()
@@ -448,22 +469,12 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionStatusMessage.StateReport message)
         {
-            string name;
-            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
-            {
-                var projection = _projections[name];
-                projection.Handle(message);
-            }
+            _getStateDispatcher.Handle(message);
         }
 
         public void Handle(CoreProjectionStatusMessage.ResultReport message)
         {
-            string name;
-            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
-            {
-                var projection = _projections[name];
-                projection.Handle(message);
-            }
+            _getResultDispatcher.Handle(message);
         }
 
         public void Handle(CoreProjectionStatusMessage.StatisticsReport message)
@@ -871,10 +882,13 @@ namespace EventStore.Projections.Core.Services.Management
                 _inputQueue,
                 _publisher,
                 _timeProvider,
+                _getStateDispatcher,
+                _getResultDispatcher,
                 _timeoutSchedulers[queueIndex],
                 isSlave,
                 slaveMasterWorkerId,
                 slaveMasterCorrelationId);
+
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
             return managedProjectionInstance;

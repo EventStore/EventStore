@@ -110,6 +110,11 @@ namespace EventStore.Projections.Core.Services.Management
             IPublisher inputQueue,
             IPublisher output,
             ITimeProvider timeProvider,
+            RequestResponseDispatcher<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>
+                getStateDispatcher,
+            RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
+                getResultDispatcher,
             ISingletonTimeoutScheduler timeoutScheduler = null,
             bool isSlave = false,
             Guid slaveMasterWorkerId = default(Guid),
@@ -118,6 +123,8 @@ namespace EventStore.Projections.Core.Services.Management
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
             if (output == null) throw new ArgumentNullException("output");
+            if (getStateDispatcher == null) throw new ArgumentNullException("getStateDispatcher");
+            if (getResultDispatcher == null) throw new ArgumentNullException("getResultDispatcher");
             if (name == "") throw new ArgumentException("name");
             _workerId = workerId;
             _id = id;
@@ -134,20 +141,8 @@ namespace EventStore.Projections.Core.Services.Management
             _isSlave = isSlave;
             _slaveMasterWorkerId = slaveMasterWorkerId;
             _slaveMasterCorrelationId = slaveMasterCorrelationId;
-            _getStateDispatcher =
-                new RequestResponseDispatcher
-                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
-                    output, 
-                    v => v.CorrelationId,
-                    v => v.CorrelationId,
-                    new PublishEnvelope(_inputQueue));
-            _getResultDispatcher =
-                new RequestResponseDispatcher
-                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
-                    output, 
-                    v => v.CorrelationId,
-                    v => v.CorrelationId,
-                    new PublishEnvelope(_inputQueue));
+            _getStateDispatcher = getStateDispatcher;
+            _getResultDispatcher = getResultDispatcher;
             _lastAccessed = _timeProvider.Now;
         }
 
@@ -475,16 +470,6 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 _logger.Trace("MP: {0} Received prepared without being prepared.  Actual state is: " + _state, _name);
             }
-        }
-
-        public void Handle(CoreProjectionStatusMessage.StateReport message)
-        {
-            _getStateDispatcher.Handle(message);
-        }
-
-        public void Handle(CoreProjectionStatusMessage.ResultReport message)
-        {
-            _getResultDispatcher.Handle(message);
         }
 
         public void Handle(CoreProjectionStatusMessage.StatisticsReport message)

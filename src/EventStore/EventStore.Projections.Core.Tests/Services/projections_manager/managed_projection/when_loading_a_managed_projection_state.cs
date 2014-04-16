@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
@@ -31,7 +32,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _readDispatcher,
                 _bus,
                 _bus,
-                _timeProvider);
+                _timeProvider, new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _bus, 
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_bus)), new RequestResponseDispatcher
+                        <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                        _bus, 
+                        v => v.CorrelationId,
+                        v => v.CorrelationId,
+                        new PublishEnvelope(_bus)));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
