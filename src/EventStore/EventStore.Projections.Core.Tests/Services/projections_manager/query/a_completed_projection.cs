@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
                              .Projections.Single()
                              .Name);
                 Assert.AreEqual(
-                    ManagedProjectionState.Completed,
+                    ManagedProjectionState.Stopped,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()

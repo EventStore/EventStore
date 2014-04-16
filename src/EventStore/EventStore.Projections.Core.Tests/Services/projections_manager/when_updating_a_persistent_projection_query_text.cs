@@ -33,10 +33,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             yield return
                 (new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
-                    ProjectionManagementMessage.RunAs.System, "JS", @"fromAll(); on_any(function(){});log(1);",
+                    ProjectionManagementMessage.RunAs.System, "JS", @"fromAll(); on_any(function(){return {};});log(1);",
                     enabled: true, checkpointsEnabled: true, emitEnabled: true));
             // when
-            _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
+            _newProjectionSource = @"fromAll().when({a:function(){return {};}});log(2);";
             yield return
                 (new ProjectionManagementMessage.UpdateQuery(
                     new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System, "JS",
@@ -99,8 +99,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             Assert.AreEqual(
                 _projectionName,
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Name);
-            Assert.AreEqual(
+            Assert.AreEqual(// empty? why?
                 "", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
+        }
+
+        [Test, Category("v8")]
+        public void correct_query_has_been_prepared()
+        {
+            var lastPrepared = _consumer.HandledMessages.OfType<CoreProjectionStatusMessage.Prepared>().LastOrDefault();
+            Assert.IsNotNull(lastPrepared);
+            Assert.IsFalse(lastPrepared.SourceDefinition.AllEvents);
         }
     }
 }

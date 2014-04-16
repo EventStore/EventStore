@@ -267,7 +267,13 @@ namespace EventStore.Projections.Core.Services.Management
 
             _prepared = false;
             DuUpdateQuery1(message);
-            Stop(() => __DoUpdateQuery(message.Envelope, message.Name));
+            UpdateProjectionVersion();
+            Stop(() =>
+            {
+                IEnvelope envelope = message.Envelope;
+                string name = message.Name;
+                __DoUpdateQuery(() => Reply(envelope, name));
+            });
         }
 
         public void Handle(ProjectionManagementMessage.GetResult message)
@@ -295,20 +301,32 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             IEnvelope envelope = message.Envelope;
             if (DoDisable1(envelope))
-                Stop(() => __DoUpdateQuery(envelope, message.Name));
+            {
+                UpdateProjectionVersion();
+                Stop(
+                    () =>
+                    {
+                        string name = message.Name;
+                        __DoUpdateQuery(() => Reply(envelope, name));
+                    });
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Abort message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
+            UpdateProjectionVersion();
             Abort(
                 () =>
                 {
                     SetState(ManagedProjectionState.Aborted);
                     IEnvelope envelope = message.Envelope;
-                    if (DoDisable1(envelope)) 
-                        __DoUpdateQuery(envelope, message.Name);
+                    if (DoDisable1(envelope))
+                    {
+                        string name = message.Name;
+                        __DoUpdateQuery(() => Reply(envelope, name));
+                    }
                 });
         }
 
@@ -326,7 +344,10 @@ namespace EventStore.Projections.Core.Services.Management
             }
             if (!Enabled)
                 Enable();
-            __DoUpdateQuery(message.Envelope, message.Name);
+            IEnvelope envelope = message.Envelope;
+            string name = message.Name;
+            UpdateProjectionVersion();
+            __DoUpdateQuery(() => Reply(envelope, name));
         }
 
         public void Handle(ProjectionManagementMessage.SetRunAs message)
@@ -340,9 +361,12 @@ namespace EventStore.Projections.Core.Services.Management
 
             _prepared = false;
             DoSetRunAs1(message);
+            UpdateProjectionVersion();
             Stop(() =>
             {
-                __DoUpdateQuery(message.Envelope, message.Name);
+                IEnvelope envelope = message.Envelope;
+                string name = message.Name;
+                __DoUpdateQuery(() => Reply(envelope, name));
             });
         }
 
@@ -360,9 +384,12 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             _prepared = false;
             DoReset1();
+            UpdateProjectionVersion();
             Stop(() =>
             {
-                __DoUpdateQuery(message.Envelope, message.Name);
+                IEnvelope envelope = message.Envelope;
+                string name = message.Name;
+                __DoUpdateQuery(() => Reply(envelope, name));
             });
         }
 
@@ -382,7 +409,13 @@ namespace EventStore.Projections.Core.Services.Management
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             DoDelete1();
-            Stop(() => __DoUpdateQuery(message.Envelope, message.Name));
+            UpdateProjectionVersion();
+            Stop(() =>
+            {
+                IEnvelope envelope = message.Envelope;
+                string name = message.Name;
+                __DoUpdateQuery(() => Reply(envelope, name));
+            });
         }
 
         public void Handle(CoreProjectionStatusMessage.Started message)
@@ -957,15 +990,14 @@ namespace EventStore.Projections.Core.Services.Management
             return true;
         }
 
-        private void __DoUpdateQuery(IEnvelope envelope, string name)
+        private void __DoUpdateQuery(Action completed)
         {
-            UpdateProjectionVersion();
             if (_prepared)
             {
-                BeginWrite(() => StartOrLoadStopped(() => Reply(envelope, name)));
+                BeginWrite(() => StartOrLoadStopped(completed));
                 return;
             }
-            Prepare(() => BeginWrite(() => StartOrLoadStopped(() => Reply(envelope, name))));
+            Prepare(() => BeginWrite(() => StartOrLoadStopped(completed)));
         }
 
         private void Reply(IEnvelope envelope, string name)
