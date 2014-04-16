@@ -94,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly Guid _slaveMasterWorkerId;
         private readonly Guid _slaveMasterCorrelationId;
         private Guid _slaveProjectionSubscriptionId;
+        private bool _prepared;
 
         public ManagedProjection(
             Guid workerId,
@@ -264,6 +265,7 @@ namespace EventStore.Projections.Core.Services.Management
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
 
+            _prepared = false;
             DuUpdateQuery1(message);
             Stop(() => __DoUpdateQuery(message.Envelope, message.Name));
         }
@@ -293,7 +295,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             IEnvelope envelope = message.Envelope;
             if (DoDisable1(envelope))
-                Stop(() => __DoEnableDisable(envelope, message.Name));
+                Stop(() => __DoUpdateQuery(envelope, message.Name));
         }
 
         public void Handle(ProjectionManagementMessage.Abort message)
@@ -306,7 +308,7 @@ namespace EventStore.Projections.Core.Services.Management
                     SetState(ManagedProjectionState.Aborted);
                     IEnvelope envelope = message.Envelope;
                     if (DoDisable1(envelope)) 
-                        __DoEnableDisable(envelope, message.Name);
+                        __DoUpdateQuery(envelope, message.Name);
                 });
         }
 
@@ -324,7 +326,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             if (!Enabled)
                 Enable();
-            __DoEnableDisable(message.Envelope, message.Name);
+            __DoUpdateQuery(message.Envelope, message.Name);
         }
 
         public void Handle(ProjectionManagementMessage.SetRunAs message)
@@ -336,8 +338,12 @@ namespace EventStore.Projections.Core.Services.Management
                     message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set)) return;
 
 
+            _prepared = false;
             DoSetRunAs1(message);
-            Stop(() => __DoUpdateQuery(message.Envelope, message.Name));
+            Stop(() =>
+            {
+                __DoUpdateQuery(message.Envelope, message.Name);
+            });
         }
 
         private void DoSetRunAs1(ProjectionManagementMessage.SetRunAs message)
@@ -352,8 +358,12 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
+            _prepared = false;
             DoReset1();
-            Stop(() => __DoUpdateQuery(message.Envelope, message.Name));
+            Stop(() =>
+            {
+                __DoUpdateQuery(message.Envelope, message.Name);
+            });
         }
 
         private void DoReset1()
@@ -372,7 +382,7 @@ namespace EventStore.Projections.Core.Services.Management
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             DoDelete1();
-            Stop(() => __DoDelete(message));
+            Stop(() => __DoUpdateQuery(message.Envelope, message.Name));
         }
 
         public void Handle(CoreProjectionStatusMessage.Started message)
@@ -947,46 +957,25 @@ namespace EventStore.Projections.Core.Services.Management
             return true;
         }
 
-        private void __DoEnableDisable(IEnvelope envelope, string name)
-        {
-            Action completed = () =>
-            {
-                if (Enabled && _state == ManagedProjectionState.Prepared)
-                    StartOrLoadStopped(() => envelope.ReplyWith(new ProjectionManagementMessage.Updated(name)));
-                else
-                    envelope.ReplyWith(new ProjectionManagementMessage.Updated(name));
-            };
-            UpdateProjectionVersion();
-            if (Enabled)
-                Prepare(() => BeginWrite(completed));
-            else
-                BeginWrite(completed);
-        }
-
         private void __DoUpdateQuery(IEnvelope envelope, string name)
         {
             UpdateProjectionVersion();
-            Prepare(
-                () =>
-                    BeginWrite(
-                        () =>
-                            StartOrLoadStopped(
-                                () => envelope.ReplyWith(new ProjectionManagementMessage.Updated(name)))));
+            if (_prepared)
+            {
+                BeginWrite(() => StartOrLoadStopped(() => Reply(envelope, name)));
+                return;
+            }
+            Prepare(() => BeginWrite(() => StartOrLoadStopped(() => Reply(envelope, name))));
         }
 
-        private void __DoDelete(ProjectionManagementMessage.Delete message)
+        private void Reply(IEnvelope envelope, string name)
         {
-            UpdateProjectionVersion();
-            Action completed = () =>
+            envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
+            if (Deleted)
             {
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
                 DisposeCoreProjection();
                 _output.Publish(new ProjectionManagementMessage.Internal.Deleted(_name, Id));
-            };
-            if (Enabled)
-                Prepare(() => BeginWrite(completed));
-            else
-                BeginWrite(completed);
+            }
         }
 
         private void DoDelete1()
