@@ -571,10 +571,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var id = manager.HttpEntity.Request.Headers[SystemHeaders.EventId];
             if (id == null)
             {
-                includedId = new Guid();
+                includedId = Guid.Empty;
                 return true;
             }
-            return Guid.TryParse(id, out includedId) && includedId != new Guid();
+            return Guid.TryParse(id, out includedId) && includedId != Guid.Empty;
         }
 
 
@@ -649,8 +649,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var events = new Event[0];
                     try
                     {
-                        //TODO bring idIncluded to SmartParse
-                        events = AutoEventConverter.SmartParse(body, manager.RequestCodec);
+                        events = AutoEventConverter.SmartParse(body, manager.RequestCodec, idIncluded);
                     }
                     catch(Exception ex)
                     {
