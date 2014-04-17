@@ -77,6 +77,14 @@ namespace EventStore.Projections.Core.Services.Management
             // do nothing - may mean second pahse started
             //TODO: stop sending second Started
         }
+
+        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
+        {
+            if (message.Completed)
+                _managedProjection.SetState(ManagedProjectionState.Completed);
+            else 
+                base.Stopped(message);
+        }
     }
 
     class LoadingStateState : ManagedProjection.ManagedProjectionStateBase
@@ -225,7 +233,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             private void Unexpected(string message)
             {
-                _managedProjection.SetFaulted(message);
+                _managedProjection.SetFaulted(message + "in " + this.GetType().Name);
             }
 
             protected void SetFaulted(string reason)
