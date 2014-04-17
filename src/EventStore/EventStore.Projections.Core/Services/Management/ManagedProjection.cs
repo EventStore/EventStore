@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
         }
 
-        protected internal override void Stopped()
+        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
         {
             _managedProjection.SetState(ManagedProjectionState.Aborted);
             _managedProjection.StoppedOrReadyToStart();
@@ -45,9 +45,10 @@ namespace EventStore.Projections.Core.Services.Management
         {
         }
 
-        protected internal override void Stopped()
+        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
         {
-            _managedProjection.SetState(ManagedProjectionState.Stopped);
+            _managedProjection.SetState(
+                message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped);
             _managedProjection.StoppedOrReadyToStart();
         }
 
@@ -70,6 +71,12 @@ namespace EventStore.Projections.Core.Services.Management
         {
             SetFaulted(message.FaultedReason);
         }
+
+        protected internal override void Started()
+        {
+            // do nothing - may mean second pahse started
+            //TODO: stop sending second Started
+        }
     }
 
     class LoadingStateState : ManagedProjection.ManagedProjectionStateBase
@@ -79,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
         }
 
-        protected internal override void Stopped()
+        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
         {
             _managedProjection.SetState(ManagedProjectionState.Stopped);
             _managedProjection.StoppedOrReadyToStart();
@@ -231,7 +238,7 @@ namespace EventStore.Projections.Core.Services.Management
                 Unexpected("Unexpected 'STARTED' message");
             }
 
-            protected internal virtual void Stopped()
+            protected internal virtual void Stopped(CoreProjectionStatusMessage.Stopped message)
             {
                 Unexpected("Unexpected 'STOPPED' message");
             }
@@ -686,8 +693,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionStatusMessage.Stopped message)
         {
-            _stateHandler.Stopped();
-            SetState(message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped);
+            _stateHandler.Stopped(message);
             OnStoppedOrFaulted();
         }
 
@@ -948,7 +954,6 @@ namespace EventStore.Projections.Core.Services.Management
         private void Prepare(ProjectionConfig config, Message prepareMessage)
         {
             _logger.Trace("Request Prepare: {0} {1} ", _name, _state);
-            DisposeCoreProjection();
             BeginCreate(config, prepareMessage);
         }
 
@@ -1168,9 +1173,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void StartOrLoadStopped(Action completed)
         {
-            if ((_state == ManagedProjectionState.Stopped || _state == ManagedProjectionState.Aborted
-                 || _state == ManagedProjectionState.Completed || _state == ManagedProjectionState.Faulted) && Enabled
-                && _enabledToRun)
+            if ((_state == ManagedProjectionState.Stopped) && Enabled && _enabledToRun)
             {
                 Start(completed);
             }
@@ -1180,10 +1183,7 @@ namespace EventStore.Projections.Core.Services.Management
                     Start(completed);
                 else
                 {
-                    if (!_created)
-                        LoadStopped(completed);
-                    else if (completed != null)
-                        completed();
+                    LoadStopped(completed);
                 }
             }
             else if (completed != null)
