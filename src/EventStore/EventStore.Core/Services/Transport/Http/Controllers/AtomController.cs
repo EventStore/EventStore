@@ -36,6 +36,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
         private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom);
 
+        private static readonly ICodec[] AtomCodecsWithoutBatches = new[]
+                                                      {
+                                                          EventStoreJsonCodec,
+                                                          Codec.Xml,
+                                                          Codec.ApplicationXml,
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom),
+                                                          Codec.Json,
+                                                          Codec.EventXml,
+                                                          Codec.EventJson,
+                                                          Codec.EventsXml,
+                                                          Codec.EventsJson
+                                                      };
+
         private static readonly ICodec[] AtomCodecs = new[]
                                                       {
                                                           EventStoreJsonCodec,
@@ -76,6 +89,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             // STREAMS
             Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs);
             Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs);
+
+            Register(http, "/streams/{stream}/incoming/{guid}", HttpMethod.Post, PostEventsIdempotent, AtomCodecsWithoutBatches, AtomCodecsWithoutBatches);
 
             Register(http, "/streams/{stream}/", HttpMethod.Post, PermRedirect, AtomCodecs, AtomCodecs);
             Register(http, "/streams/{stream}/", HttpMethod.Delete, PermRedirect, Codec.NoCodecs, AtomCodecs);
@@ -131,6 +146,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string"));
                 return;
             }
+            Guid includedId;
+            if(!GetIncludedId(manager, out includedId)) {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
+                return;   
+            }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
@@ -145,7 +165,43 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, requireMaster, stream);
+            PostEntry(manager, expectedVersion, requireMaster, stream, includedId);
+        }
+
+        private void PostEventsIdempotent(HttpEntityManager manager, UriTemplateMatch match)
+        {
+            var stream = match.BoundVariables["stream"];
+            var guid = match.BoundVariables["guid"];
+            Guid id;
+            if(!Guid.TryParse(guid, out id)) {
+                SendBadRequest(manager, string.Format("Invalid request. Unable to parse guid"));
+                return;
+            }
+            if (stream.IsEmptyString())
+            {
+                SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string"));
+                return;
+            }
+            Guid includedId;
+            if(!GetIncludedId(manager, out includedId)) {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
+                return;   
+            }
+            int expectedVersion;
+            if (!GetExpectedVersion(manager, out expectedVersion))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
+                return;
+            }
+            bool requireMaster;
+            if (!GetRequireMaster(manager, out requireMaster))
+            {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+                return;
+            }
+            if (!requireMaster && _httpForwarder.ForwardRequest(manager))
+                return;
+            PostEntry(manager, expectedVersion, requireMaster, stream, includedId);
         }
 
         private void DeleteStream(HttpEntityManager manager, UriTemplateMatch match)
@@ -297,6 +353,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string and should not be metastream"));
                 return;
             }
+            Guid includedId;
+            if(!GetIncludedId(manager, out includedId)) {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
+                return;   
+            }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
@@ -311,7 +372,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, requireMaster, SystemStreams.MetastreamOf(stream));
+            PostEntry(manager, expectedVersion, requireMaster, SystemStreams.MetastreamOf(stream), includedId);
         }
 
         private void GetMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -505,6 +566,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return int.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.Any;
         }
 
+        private bool GetIncludedId(HttpEntityManager manager, out Guid includedId)
+        {
+            var id = manager.HttpEntity.Request.Headers[SystemHeaders.EventId];
+            if (id == null)
+            {
+                includedId = new Guid();
+                return true;
+            }
+            return Guid.TryParse(id, out includedId) && includedId != new Guid();
+        }
+
+
         private bool GetRequireMaster(HttpEntityManager manager, out bool requireMaster)
         {
             requireMaster = false;
@@ -568,7 +641,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return false;
         }
 
-        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream)
+        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream, Guid idIncluded)
         {
             manager.ReadTextRequestAsync(
                 (man, body) =>
@@ -576,6 +649,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var events = new Event[0];
                     try
                     {
+                        //TODO bring idIncluded to SmartParse
                         events = AutoEventConverter.SmartParse(body, manager.RequestCodec);
                     }
                     catch(Exception ex)
