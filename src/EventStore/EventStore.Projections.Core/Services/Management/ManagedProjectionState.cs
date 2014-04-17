@@ -13,8 +13,9 @@ namespace EventStore.Projections.Core.Services.Management
         Aborted,
         Faulted,
         Starting,
-        LoadingState,
+        LoadingStopped,
         Running,
         Stopping,
+        Aborting,
     }
 }

@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Principal;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
@@ -39,6 +40,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -49,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IODispatcher _ioDispatcher;
         private readonly string _coreServiceId;
         private bool _stopped;
+        private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreServiceCommandReader>();
 
         public ProjectionCoreServiceCommandReader(IPublisher publisher, IODispatcher ioDispatcher, string workerId)
         {
@@ -201,6 +204,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
+            _logger.Trace("RCVD: " + command + resolvedEvent.Event.Data.FromUtf8());
             switch (command)
             {
                 case "$create-prepared":
