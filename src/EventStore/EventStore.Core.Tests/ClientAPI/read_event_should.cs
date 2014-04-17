@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual("test-stream", res.Stream);
             Assert.AreEqual(5, res.EventNumber);
         }
-
+ 
         [Test, Category("Network")]
         public void return_existing_event()
         {

@@ -69,7 +69,7 @@ namespace EventStore.Core.Services.Transport.Http
             return dto;
         }
 
-        public static Event[] SmartParse(string request, ICodec sourceCodec)
+        public static Event[] SmartParse(string request, ICodec sourceCodec, Guid includedId)
         {
             var writeEvents = Load(request, sourceCodec);
             if (writeEvents.IsEmpty())
