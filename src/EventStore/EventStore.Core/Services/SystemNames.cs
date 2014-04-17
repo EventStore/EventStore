@@ -12,6 +12,7 @@ namespace EventStore.Core.Services
         public const string TrustedAuth = "ES-TrustedAuth";
         public const string ProjectionPosition = "ES-Position";
         public const string HardDelete = "ES-HardDelete";
+        public const string EventId = "ES-EventId";
     }
 
     public static class SystemStreams
