@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Http
             switch(sourceCodec.ContentType)
             {
                 case ContentType.Json:
-                    return LoadRawJson(request, includedId, includedType);
+                    return LoadRaw(request, true, includedId, includedType);
                 case ContentType.EventJson:
                 case ContentType.EventsJson:
                 case ContentType.AtomJson:
@@ -85,6 +85,7 @@ namespace EventStore.Core.Services.Transport.Http
                     return Parse(writeEvents);
 
                 case ContentType.Xml:
+                    return LoadRaw(request, false, includedId, includedType);
                 case ContentType.EventXml:
                 case ContentType.EventsXml:
                 case ContentType.ApplicationXml:
@@ -98,9 +99,9 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        private static Event[] LoadRawJson(string data, Guid includedId, string includedType) {
+        private static Event[] LoadRaw(string data, bool isJson, Guid includedId, string includedType) {
             var ret = new Event[1];
-            ret[0] = new Event(includedId, includedType, true, data, null);
+            ret[0] = new Event(includedId, includedType, isJson, data, null);
             return ret;
         }
 
