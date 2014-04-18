@@ -669,6 +669,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream, Guid idIncluded, string typeIncluded)
         {
+            //TODO GFY SHOULD WE MAKE THIS READ BYTE[] FOR RAW THEN CONVERT? AS OF NOW ITS ALL NO BOM UTF8
             manager.ReadTextRequestAsync(
                 (man, body) =>
                     {

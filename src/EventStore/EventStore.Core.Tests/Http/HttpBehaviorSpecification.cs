@@ -272,7 +272,7 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebRequest CreateJsonPostRequest<T>(
             string path, string method, T body, ICredentials credentials = null)
         {
-            var request = CreateRequest(path, "", method, "application/json", credentials);
+            var request = CreateRequest(path, "", method, "application/vnd.eventstore.events+json", credentials);
             request.GetRequestStream().WriteJson(body);
             return request;
         }
