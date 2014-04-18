@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
     }
 
     [TestFixture]
-    internal class when_writing_events_and_content_type_is_json : do_not_use_indentation_for_json
+    internal class when_writing_events_and_content_type_is_events_json : do_not_use_indentation_for_json
     {
         [Test]
         public void should_store_data_as_json_if_valid_and_metadata_as_string_if_not()
@@ -231,7 +231,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void should_do_its_best_at_preserving_data_format_with_multiple_events()
         {
-            var codec = Codec.EventsJson;
+            var codec = Codec.Json;
             var request = FakeRequest.GetJsonWrite(new[]
                                                    {
                                                            Tuple.Create(FakeRequest.JsonData, FakeRequest.JsonMetadata),
@@ -257,7 +257,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
     }
 
     [TestFixture]
-    internal class when_writing_events_and_content_type_is_xml : do_not_use_indentation_for_json
+    internal class when_writing_events_and_content_type_is_events_xml : do_not_use_indentation_for_json
     {
         [Test]
         public void should_convert_data_to_json_if_its_valid_xobject_and_metadata_as_string_if_its_not()
