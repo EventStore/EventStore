@@ -1001,7 +1001,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private static void CheckSlaveProjectionsStarted(
             ProjectionManagementMessage.StartSlaveProjections message,
-            ref int counter,
+            ref int counter, 
             Dictionary<string, SlaveProjectionCommunicationChannel[]> result)
         {
             counter--;

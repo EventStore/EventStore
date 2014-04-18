@@ -8,14 +8,14 @@ namespace EventStore.Projections.Core.Services.Management
         Preparing,
         Prepared,
         Writing,
-        Stopped,
-        Completed,
-        Aborted,
-        Faulted,
         Starting,
         LoadingStopped,
         Running,
         Stopping,
         Aborting,
+        Stopped,
+        Completed,
+        Aborted,
+        Faulted,
     }
 }

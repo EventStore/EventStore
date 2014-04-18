@@ -10,213 +10,13 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Management.ManagedProjectionStates;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Utils;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Management
 {
-
-    class AbortingState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public AbortingState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
-        {
-            _managedProjection.SetState(ManagedProjectionState.Aborted);
-            _managedProjection.StoppedOrReadyToStart();
-        }
-
-        protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
-        {
-            _managedProjection.SetState(ManagedProjectionState.Aborted);
-            _managedProjection.StoppedOrReadyToStart();
-        }
-
-    }
-
-    class StoppingState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public StoppingState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
-        {
-            _managedProjection.SetState(
-                message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped);
-            _managedProjection.StoppedOrReadyToStart();
-        }
-
-        protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
-        {
-            SetFaulted(message.FaultedReason);
-            _managedProjection.StoppedOrReadyToStart();
-        }
-
-    }
-
-    class RunningState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public RunningState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-        protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
-        {
-            SetFaulted(message.FaultedReason);
-        }
-
-        protected internal override void Started()
-        {
-            // do nothing - may mean second pahse started
-            //TODO: stop sending second Started
-        }
-
-        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
-        {
-            if (message.Completed)
-                _managedProjection.SetState(ManagedProjectionState.Completed);
-            else 
-                base.Stopped(message);
-        }
-    }
-
-    class LoadingStateState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public LoadingStateState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-        protected internal override void Stopped(CoreProjectionStatusMessage.Stopped message)
-        {
-            _managedProjection.SetState(ManagedProjectionState.Stopped);
-            _managedProjection.StoppedOrReadyToStart();
-        }
-
-        protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
-        {
-            SetFaulted(message.FaultedReason);
-            _managedProjection.StoppedOrReadyToStart();
-        }
-    }
-
-    class StartingState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public StartingState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-        protected internal override void Started()
-        {
-            _managedProjection.SetState(ManagedProjectionState.Running);
-            _managedProjection.StartCompleted();
-        }
-
-        protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
-        {
-            SetFaulted(message.FaultedReason);
-            _managedProjection.StartCompleted();
-        }
-
-    }
-
-    class FaultedState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public FaultedState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-    }
-
-    class AbortedState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public AbortedState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-    }
-
-    class CompletedState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public CompletedState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-    }
-
-    class StoppedState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public StoppedState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-    }
-
-    class WritingState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public WritingState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-    }
-
-    class PreparedState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public PreparedState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-    }
-
-    class PreparingState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public PreparingState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-        protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
-        {
-            SetFaulted(message.FaultedReason);
-            _managedProjection._persistedState.SourceDefinition = null;
-            _managedProjection.PrepareCompleted();
-        }
-
-        protected internal override void Prepared(CoreProjectionStatusMessage.Prepared message)
-        {
-            _managedProjection.SetState(ManagedProjectionState.Prepared);
-            _managedProjection._persistedState.SourceDefinition = message.SourceDefinition;
-            _managedProjection._prepared = true;
-            _managedProjection._created = true;
-            _managedProjection.PrepareCompleted();
-        }
-    }
-
-    class CreatingLoadingLoadedState : ManagedProjection.ManagedProjectionStateBase
-    {
-        public CreatingLoadingLoadedState(ManagedProjection managedProjection)
-            : base(managedProjection)
-        {
-        }
-
-    }
-
-
-
     /// <summary>
     /// managed projection controls start/stop/create/update/delete lifecycle of the projection. 
     /// </summary>
@@ -253,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             protected internal virtual void Faulted(CoreProjectionStatusMessage.Faulted message)
             {
-                Unexpected("Unexpected 'FAULTED' message");
+                Unexpected("Unexpected 'FAULTED' message"); 
             }
 
             protected internal virtual void Prepared(CoreProjectionStatusMessage.Prepared message)
@@ -517,7 +317,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.GetState message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (_state >= ManagedProjectionState.Stopped)
+            if (_state >= ManagedProjectionState.Running)
             {
                 _getStateDispatcher.Publish(
                     new CoreProjectionManagementMessage.GetState(Guid.NewGuid(), Id, message.Partition, _workerId),
@@ -536,7 +336,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.GetResult message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (_state >= ManagedProjectionState.Stopped)
+            if (_state >= ManagedProjectionState.Running)
             {
                 _getResultDispatcher.Publish(
                     new CoreProjectionManagementMessage.GetResult(Guid.NewGuid(), Id, message.Partition, _workerId),
@@ -702,13 +502,13 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionStatusMessage.Stopped message)
         {
             _stateHandler.Stopped(message);
-            OnStoppedOrFaulted();
+            FireStoppedOrFaulted();
         }
 
         public void Handle(CoreProjectionStatusMessage.Faulted message)
         {
             _stateHandler.Faulted(message);
-            OnStoppedOrFaulted();
+            FireStoppedOrFaulted();
         }
          
         public void Handle(CoreProjectionStatusMessage.Prepared message)
@@ -745,11 +545,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             UpdateProjectionVersion(force: true);
             _persistedState.Epoch = _persistedState.Version;
-        }
-
-        private void OnStoppedOrFaulted()
-        {
-            FireStoppedOrFaulted();
         }
 
         private void FireStoppedOrFaulted()
@@ -1130,6 +925,7 @@ namespace EventStore.Projections.Core.Services.Management
                             "Cannot stop a projection in the '{0}' state",
                             Enum.GetName(typeof (ManagedProjectionState), _state)));
                 case ManagedProjectionState.Stopping:
+                    SetState(ManagedProjectionState.Aborting);
                     _output.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
                     return;
                 case ManagedProjectionState.Aborting:
