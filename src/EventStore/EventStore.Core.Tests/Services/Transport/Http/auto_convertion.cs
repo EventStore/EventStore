@@ -151,14 +151,16 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var codec = Codec.Json;
             var request = FakeRequest.JsonData;
             var id = Guid.NewGuid();
-            var events = AutoEventConverter.SmartParse(request, codec, id);
+            var type = "EventType";
+            var events = AutoEventConverter.SmartParse(request, codec, id, type);
             Assert.NotNull(events);
             Assert.That(events.Length, Is.EqualTo(1));
 
             Assert.IsTrue(events[0].IsJson);
             Assert.AreEqual(events[0].EventId, id);
+            Assert.AreEqual(events[0].EventType, type);
             Assert.That(events[0].Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
-            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(null));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(string.Empty));
         }
     }
 
@@ -257,7 +259,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void should_do_its_best_at_preserving_data_format_with_multiple_events()
         {
-            var codec = Codec.Json;
+            var codec = Codec.EventsJson;
             var request = FakeRequest.GetJsonWrite(new[]
                                                    {
                                                            Tuple.Create(FakeRequest.JsonData, FakeRequest.JsonMetadata),
