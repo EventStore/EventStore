@@ -268,7 +268,7 @@ namespace EventStore.Core
             var pingController = new PingController();
             var statController = new StatController(monitoringQueue, _workersHandler);
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
-            var gossipController = new GossipController(_mainQueue, _workersHandler);
+            var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
             var electController = new ElectController(_mainQueue);
 
             // HTTP SENDERS
@@ -402,7 +402,7 @@ namespace EventStore.Core
             // GOSSIP
             var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, _nodeInfo, db.Config.WriterCheckpoint,
 											   db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastCommitPosition,
-                                               vNodeSettings.NodePriority);
+                                               vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference);
             _mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
             _mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
             _mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);

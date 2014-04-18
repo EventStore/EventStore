@@ -20,7 +20,6 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(response, "response");
 
             RequestedUrl = request.Url;
-
             Request = request;
             Response = response;
             User = user;

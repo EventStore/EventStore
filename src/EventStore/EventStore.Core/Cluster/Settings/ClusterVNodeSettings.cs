@@ -43,6 +43,10 @@ namespace EventStore.Core.Cluster.Settings
 	    public bool AdminOnPublic;
 	    public bool StatsOnPublic;
         public bool GossipOnPublic;
+        public readonly TimeSpan GossipInterval;
+        public readonly TimeSpan GossipAllowedTimeDifference;
+        public readonly TimeSpan GossipTimeout;
+
 	    public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 									IPEndPoint internalTcpEndPoint,
 									IPEndPoint internalSecureTcpEndPoint,
@@ -73,7 +77,10 @@ namespace EventStore.Core.Cluster.Settings
                                     bool disableScavengeMerging,
                                     bool adminOnPublic,
                                     bool statsOnPublic,
-                                    bool gossipOnPublic)
+                                    bool gossipOnPublic,
+                                    TimeSpan gossipInterval,
+                                    TimeSpan gossipAllowedTimeDifference,
+                                    TimeSpan gossipTimeout)
 		{
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -130,6 +137,9 @@ namespace EventStore.Core.Cluster.Settings
 	        AdminOnPublic = adminOnPublic;
 	        StatsOnPublic = statsOnPublic;
 	        GossipOnPublic = gossipOnPublic;
+	        GossipInterval = gossipInterval;
+	        GossipAllowedTimeDifference = gossipAllowedTimeDifference;
+	        GossipTimeout = gossipTimeout;
 		}
 
 		public override string ToString()

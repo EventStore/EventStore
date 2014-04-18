@@ -75,6 +75,10 @@ namespace EventStore.ClusterNode
 
         public bool UnsafeDisableFlushToDisk { get { return _helper.Get(() => UnsafeDisableFlushToDisk); } }
 
+        public int GossipIntervalMs { get {return  _helper.Get(() => GossipIntervalMs); } }
+        public int GossipAllowedDifferenceMs { get { return _helper.Get(() => GossipAllowedDifferenceMs); }}
+        public int GossipTimeoutMs { get { return _helper.Get(() => GossipTimeoutMs); }}
+
         private readonly OptsHelper _helper;
 
         public ClusterNodeOptions()
@@ -143,6 +147,10 @@ namespace EventStore.ClusterNode
             _helper.Register(() => GossipOnExt, Opts.GossipOnExtCmd, Opts.GossipOnExtEnv, Opts.GossipOnExtJson, Opts.GossipOnExtDefault, Opts.GossipOnExtDescr);
             _helper.Register(() => StatsOnExt, Opts.StatsOnExtCmd, Opts.StatsOnExtEnv, Opts.StatsOnExtJson, Opts.StatsOnExtDefault, Opts.StatsOnExtDescr);
             _helper.Register(() => AdminOnExt, Opts.AdminOnExtCmd, Opts.AdminOnExtEnv, Opts.AdminOnExtJson, Opts.AdminOnExtDefault, Opts.AdminOnExtDescr);
+            _helper.Register(() => GossipIntervalMs, Opts.GossipIntervalMsCmd, Opts.GossipIntervalMsEnv, Opts.GossipIntervalMsJson, Opts.GossipIntervalMsDefault, Opts.GossipIntervalMsDescr);
+            _helper.Register(() => GossipAllowedDifferenceMs, Opts.GossipAllowedDifferenceMsCmd, Opts.GossipAllowedDifferenceMsEnv, Opts.GossipAllowedDifferenceMsJson, Opts.GossipAllowedDifferenceMsDefault, Opts.GossipAllowedDifferenceMsDescr);
+            _helper.Register(() => GossipTimeoutMs, Opts.GossipTimeoutMsCmd, Opts.GossipTimeoutMsEnv, Opts.GossipTimeoutMsJson, Opts.GossipTimeoutMsDefault, Opts.GossipTimeoutMsDescr);
+
         }
 
         public bool Parse(params string[] args)
