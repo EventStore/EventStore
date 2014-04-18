@@ -188,6 +188,13 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
 
+        protected HttpWebResponse MakeRawJsonPut<T>(string path, T body, ICredentials credentials)
+        {
+            var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
+            var httpWebResponse = GetRequestResponse(request);
+            return httpWebResponse;
+        }
+
         protected HttpWebResponse MakeDelete(string path, ICredentials credentials = null)
         {
             var request = CreateRequest(path, "DELETE", credentials);
