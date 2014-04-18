@@ -12,6 +12,11 @@ using Newtonsoft.Json;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
 {
+    internal static class ByteArrayExtensions {
+        public static string AsString(this byte[] data) {
+            return Helper.UTF8NoBom.GetString(data ?? new byte[0]);
+        }
+    }
     internal static class FakeRequest
     {
         internal const string JsonData = "{\"field1\":\"value1\",\"field2\":\"value2\"}";
@@ -138,6 +143,27 @@ namespace EventStore.Core.Tests.Services.Transport.Http
     }
 
     [TestFixture]
+    internal class when_writing_events_and_content_type_is_json : do_not_use_indentation_for_json
+    {
+        [Test]
+        public void should_just_count_as_body_if_just_json()
+        {
+            var codec = Codec.Json;
+            var request = FakeRequest.JsonData;
+            var id = Guid.NewGuid();
+            var events = AutoEventConverter.SmartParse(request, codec, id);
+            Assert.NotNull(events);
+            Assert.That(events.Length, Is.EqualTo(1));
+
+            Assert.IsTrue(events[0].IsJson);
+            Assert.AreEqual(events[0].EventId, id);
+            Assert.That(events[0].Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(null));
+        }
+    }
+
+
+    [TestFixture]
     internal class when_writing_events_and_content_type_is_events_json : do_not_use_indentation_for_json
     {
         [Test]
@@ -154,12 +180,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
-            Assert.That(ToString(events[0].Data), Is.EqualTo(FakeRequest.JsonData));
-            Assert.That(ToString(events[0].Metadata), Is.EqualTo("metadata"));
+            Assert.That(events[0].Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo("metadata"));
 
             Assert.IsTrue(events[1].IsJson);
-            Assert.That(ToString(events[1].Data), Is.EqualTo(FakeRequest.JsonData2));
-            Assert.That(ToString(events[1].Metadata), Is.EqualTo("metadata2"));
+            Assert.That(events[1].Data.AsString(), Is.EqualTo(FakeRequest.JsonData2));
+            Assert.That(events[1].Metadata.AsString(), Is.EqualTo("metadata2"));
         }
 
         [Test]
@@ -176,12 +202,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
-            Assert.That(ToString(events[0].Data), Is.EqualTo("data"));
-            Assert.That(ToString(events[0].Metadata), Is.EqualTo(FakeRequest.JsonMetadata));
+            Assert.That(events[0].Data.AsString(), Is.EqualTo("data"));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata));
 
             Assert.IsTrue(events[1].IsJson);
-            Assert.That(ToString(events[1].Data), Is.EqualTo("data2"));
-            Assert.That(ToString(events[1].Metadata), Is.EqualTo(FakeRequest.JsonMetadata2));
+            Assert.That(events[1].Data.AsString(), Is.EqualTo("data2"));
+            Assert.That(events[1].Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata2));
         }
 
         [Test]
@@ -198,12 +224,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
-            Assert.That(ToString(events[0].Data), Is.EqualTo(FakeRequest.JsonData));
-            Assert.That(ToString(events[0].Metadata), Is.EqualTo(FakeRequest.JsonMetadata));
+            Assert.That(events[0].Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata));
 
             Assert.IsTrue(events[1].IsJson);
-            Assert.That(ToString(events[1].Data), Is.EqualTo(FakeRequest.JsonData2));
-            Assert.That(ToString(events[1].Metadata), Is.EqualTo(FakeRequest.JsonMetadata2));
+            Assert.That(events[1].Data.AsString(), Is.EqualTo(FakeRequest.JsonData2));
+            Assert.That(events[1].Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata2));
         }
 
         [Test]
@@ -220,12 +246,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsFalse(events[0].IsJson);
-            Assert.That(ToString(events[0].Data), Is.EqualTo("data"));
-            Assert.That(ToString(events[0].Metadata), Is.EqualTo("metadata"));
+            Assert.That(events[0].Data.AsString(), Is.EqualTo("data"));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo("metadata"));
 
             Assert.IsFalse(events[1].IsJson);
-            Assert.That(ToString(events[1].Data), Is.EqualTo("data2"));
-            Assert.That(ToString(events[1].Metadata), Is.EqualTo("metadata2"));
+            Assert.That(events[1].Data.AsString(), Is.EqualTo("data2"));
+            Assert.That(events[1].Metadata.AsString(), Is.EqualTo("metadata2"));
         }
 
         [Test]
@@ -242,17 +268,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
-            Assert.That(ToString(events[0].Data), Is.EqualTo(FakeRequest.JsonData));
-            Assert.That(ToString(events[0].Metadata), Is.EqualTo(FakeRequest.JsonMetadata));
+            Assert.That(events[0].Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata));
 
             Assert.IsFalse(events[1].IsJson);
-            Assert.That(ToString(events[1].Data), Is.EqualTo("data2"));
-            Assert.That(ToString(events[1].Metadata), Is.EqualTo("metadata2"));
-        }
-
-        private string ToString(byte[] bytes)
-        {
-            return Helper.UTF8NoBom.GetString(bytes ?? new byte[0]);
+            Assert.That(events[1].Data.AsString(), Is.EqualTo("data2"));
+            Assert.That(events[1].Metadata.AsString(), Is.EqualTo("metadata2"));
         }
     }
 
@@ -269,8 +290,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var converted = events.Single();
 
             Assert.That(converted.IsJson);
-            Assert.That(ToString(converted.Data), Is.EqualTo(FakeRequest.JsonData));
-            Assert.That(ToString(converted.Metadata), Is.EqualTo("metadata"));
+            Assert.That(converted.Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
+            Assert.That(converted.Metadata.AsString(), Is.EqualTo("metadata"));
         }
 
         [Test]
@@ -283,8 +304,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var converted = events.Single();
 
             Assert.That(converted.IsJson);
-            Assert.That(ToString(converted.Data), Is.EqualTo("data"));
-            Assert.That(ToString(converted.Metadata), Is.EqualTo(FakeRequest.JsonMetadata));
+            Assert.That(converted.Data.AsString(), Is.EqualTo("data"));
+            Assert.That(converted.Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata));
         }
 
         [Test]
@@ -297,8 +318,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var converted = events.Single();
 
             Assert.That(converted.IsJson);
-            Assert.That(ToString(converted.Data), Is.EqualTo(FakeRequest.JsonData));
-            Assert.That(ToString(converted.Metadata), Is.EqualTo(FakeRequest.JsonMetadata));
+            Assert.That(converted.Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
+            Assert.That(converted.Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata));
         }
 
         [Test]
@@ -311,8 +332,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var converted = events.Single();
 
             Assert.That(!converted.IsJson);
-            Assert.That(ToString(converted.Data), Is.EqualTo("data"));
-            Assert.That(ToString(converted.Metadata), Is.EqualTo("metadata"));
+            Assert.That(converted.Data.AsString(), Is.EqualTo("data"));
+            Assert.That(converted.Metadata.AsString(), Is.EqualTo("metadata"));
         }
 
         [Test]
@@ -329,18 +350,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
-            Assert.That(ToString(events[0].Data), Is.EqualTo(FakeRequest.JsonData));
-            Assert.That(ToString(events[0].Metadata), Is.EqualTo(FakeRequest.JsonMetadata));
+            Assert.That(events[0].Data.AsString(), Is.EqualTo(FakeRequest.JsonData));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(FakeRequest.JsonMetadata));
 
             Assert.IsFalse(events[1].IsJson);
-            Assert.That(ToString(events[1].Data), Is.EqualTo("data2"));
-            Assert.That(ToString(events[1].Metadata), Is.EqualTo("metadata2"));
-        }
-
-
-        private string ToString(byte[] bytes)
-        {
-            return Helper.UTF8NoBom.GetString(bytes ?? new byte[0]);
+            Assert.That(events[1].Data.AsString(), Is.EqualTo("data2"));
+            Assert.That(events[1].Metadata.AsString(), Is.EqualTo("metadata2"));
         }
     }
 
