@@ -13,6 +13,7 @@ namespace EventStore.Core.Services
         public const string ProjectionPosition = "ES-Position";
         public const string HardDelete = "ES-HardDelete";
         public const string EventId = "ES-EventId";
+        public const string EventType = "ES-EventType";
     }
 
     public static class SystemStreams

@@ -151,6 +151,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
                 return;   
             }
+            string includedType;
+            if(!GetIncludedType(manager, out includedType)) {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
+                return;   
+            }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
@@ -165,7 +170,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, requireMaster, stream, includedId);
+            PostEntry(manager, expectedVersion, requireMaster, stream, includedId, includedType);
         }
 
         private void PostEventsIdempotent(HttpEntityManager manager, UriTemplateMatch match)
@@ -187,6 +192,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
                 return;   
             }
+            string includedType;
+            if(!GetIncludedType(manager, out includedType)) {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
+                return;   
+            }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
@@ -201,7 +211,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, requireMaster, stream, includedId);
+            PostEntry(manager, expectedVersion, requireMaster, stream, includedId, includedType);
         }
 
         private void DeleteStream(HttpEntityManager manager, UriTemplateMatch match)
@@ -358,6 +368,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
                 return;   
             }
+            string includedType;
+            if(!GetIncludedType(manager, out includedType)) {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
+                return;   
+            }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
@@ -372,7 +387,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, requireMaster, SystemStreams.MetastreamOf(stream), includedId);
+            PostEntry(manager, expectedVersion, requireMaster, SystemStreams.MetastreamOf(stream), includedId, includedType);
         }
 
         private void GetMetastreamEvent(HttpEntityManager manager, UriTemplateMatch match)
@@ -576,6 +591,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             return Guid.TryParse(id, out includedId) && includedId != Guid.Empty;
         }
+        private bool GetIncludedType(HttpEntityManager manager, out string includedType)
+        {
+            var type = manager.HttpEntity.Request.Headers[SystemHeaders.EventType];
+            if (type == null)
+            {
+                includedType = null;
+                return true;
+            }
+            includedType = type;
+            return true;
+        }
 
 
         private bool GetRequireMaster(HttpEntityManager manager, out bool requireMaster)
@@ -641,7 +667,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return false;
         }
 
-        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream, Guid idIncluded)
+        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream, Guid idIncluded, string typeIncluded)
         {
             manager.ReadTextRequestAsync(
                 (man, body) =>
@@ -649,7 +675,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var events = new Event[0];
                     try
                     {
-                        events = AutoEventConverter.SmartParse(body, manager.RequestCodec, idIncluded);
+                        events = AutoEventConverter.SmartParse(body, manager.RequestCodec, idIncluded, typeIncluded);
                     }
                     catch(Exception ex)
                     {
