@@ -556,7 +556,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         }
 
         [Test]
-        public void should_return_string_data_and_string_metadata_if_both_were_written_as_string_using_json_write()
+        public void should_return_string_data_and_string_metadata_if_both_were_written_as_string_using_json_events_write()
         {
             var request = FakeRequest.GetJsonWrite("\"data\"", "\"metadata\"");
 
@@ -570,7 +570,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         }
 
         [Test]
-        public void should_return_string_data_and_string_metadata_if_both_were_written_as_string_using_xml_write()
+        public void should_return_string_data_and_string_metadata_if_both_were_written_as_string_using_xml_events_write()
         {
             var request = FakeRequest.GetXmlWrite("data", "metadata");
 
