@@ -150,14 +150,21 @@ namespace EventStore.Core.Tests.Http
 
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
         {
-            var request = CreateJsonPostRequest(path, "POST", body, credentials);
+            var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
+            var httpWebResponse = GetRequestResponse(request);
+            return httpWebResponse;
+        }
+
+        protected HttpWebResponse MakeRawJsonPost<T>(string path, T body, ICredentials credentials = null)
+        {
+            var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
 
         protected JObject MakeJsonPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null)
         {
-            var request = CreateJsonPostRequest(path, "POST", body, credentials);
+            var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
             _lastResponse = GetRequestResponse(request);
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
@@ -176,7 +183,7 @@ namespace EventStore.Core.Tests.Http
 
         protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials)
         {
-            var request = CreateJsonPostRequest(path, "PUT", body, credentials);
+            var request = CreateEventsJsonPostRequest(path, "PUT", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
@@ -276,10 +283,18 @@ namespace EventStore.Core.Tests.Http
             return index < 0 ? bytes.Length : index;
         }
 
-        protected HttpWebRequest CreateJsonPostRequest<T>(
+        protected HttpWebRequest CreateEventsJsonPostRequest<T>(
             string path, string method, T body, ICredentials credentials = null)
         {
             var request = CreateRequest(path, "", method, "application/vnd.eventstore.events+json", credentials);
+            request.GetRequestStream().WriteJson(body);
+            return request;
+        }
+
+        protected HttpWebRequest CreateRawJsonPostRequest<T>(
+            string path, string method, T body, ICredentials credentials = null)
+        {
+            var request = CreateRequest(path, "", method, "application/json", credentials);
             request.GetRequestStream().WriteJson(body);
             return request;
         }
