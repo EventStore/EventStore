@@ -164,6 +164,27 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         }
     }
 
+    [TestFixture]
+    internal class when_writing_events_and_content_type_is_xml 
+    {
+        [Test]
+        public void should_just_count_as_body_if_just_xml()
+        {
+            var codec = Codec.Xml;
+            var request = FakeRequest.XmlData;
+            var id = Guid.NewGuid();
+            var type = "EventType";
+            var events = AutoEventConverter.SmartParse(request, codec, id, type);
+            Assert.NotNull(events);
+            Assert.That(events.Length, Is.EqualTo(1));
+
+            Assert.IsFalse(events[0].IsJson);
+            Assert.AreEqual(events[0].EventId, id);
+            Assert.AreEqual(events[0].EventType, type);
+            Assert.That(events[0].Data.AsString(), Is.EqualTo(FakeRequest.XmlData));
+            Assert.That(events[0].Metadata.AsString(), Is.EqualTo(string.Empty));
+        }
+    }
 
     [TestFixture]
     internal class when_writing_events_and_content_type_is_events_json : do_not_use_indentation_for_json
