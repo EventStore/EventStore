@@ -152,7 +152,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;   
             }
             if(!manager.RequestCodec.HasEventIds && includedId == Guid.Empty) {
-                var uri = new Uri(match.RequestUri, Guid.NewGuid().ToString()).ToString();
+                var uri = new Uri(match.RequestUri, "incoming/" + Guid.NewGuid().ToString()).ToString();
                 var header = new []
                              {new KeyValuePair<string, string>("Location", uri)};
                 manager.ReplyTextContent("Forwarding to idempotent uri", HttpStatusCode.Moved, "", "", header, e => { });
