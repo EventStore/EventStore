@@ -7,6 +7,7 @@ namespace EventStore.Transport.Http.Codecs
     {
         public string ContentType { get { throw new NotSupportedException(); } }
         public Encoding Encoding { get { throw new NotSupportedException(); } }
+        public bool HasEventIds { get { return false; }}
 
         public bool CanParse(MediaType format)
         {

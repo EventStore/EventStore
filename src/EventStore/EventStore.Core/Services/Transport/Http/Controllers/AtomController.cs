@@ -34,14 +34,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
 
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
-        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom);
+        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom, false);
 
         private static readonly ICodec[] AtomCodecsWithoutBatches = new[]
                                                       {
                                                           EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom),
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false),
                                                           Codec.Json,
                                                           Codec.EventXml,
                                                           Codec.EventJson,
@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom),
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false),
                                                           Codec.Json,
                                                           Codec.EventXml,
                                                           Codec.EventJson,
@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   EventStoreJsonCodec,
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
-                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom),
+                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false),
                                                                   Codec.Json,
                                                                   Codec.EventXml,
                                                                   Codec.EventJson,
@@ -150,6 +150,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             if(!GetIncludedId(manager, out includedId)) {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
                 return;   
+            }
+            if(!manager.RequestCodec.HasEventIds && includedId == Guid.Empty) {
+                var uri = new Uri(match.RequestUri, Guid.NewGuid().ToString()).ToString();
+                var header = new []
+                             {new KeyValuePair<string, string>("Location", uri)};
+                manager.ReplyTextContent("Forwarding to idempotent uri", HttpStatusCode.Moved, "", "", header, e => { });
             }
             string includedType;
             if(!GetIncludedType(manager, out includedType)) {
@@ -791,7 +797,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         public string ContentType  { get { return "text/html"; } }
         public Encoding Encoding { get { return Helper.UTF8NoBom; } }
-
+        public bool HasEventIds { get { return false; }}
         public bool CanParse(MediaType format)
         {
             throw new NotImplementedException();

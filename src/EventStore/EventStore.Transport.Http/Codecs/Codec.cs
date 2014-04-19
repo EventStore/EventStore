@@ -11,16 +11,16 @@ namespace EventStore.Transport.Http.Codecs
 
         public static readonly JsonCodec Json = new JsonCodec();
         public static readonly XmlCodec Xml = new XmlCodec();
-        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml, Helper.UTF8NoBom);
-        public static readonly CustomCodec EventXml = new CustomCodec(Xml, ContentType.EventXml, Helper.UTF8NoBom);
-        public static readonly CustomCodec EventJson = new CustomCodec(Json, ContentType.EventJson, Helper.UTF8NoBom);
-        public static readonly CustomCodec EventsXml = new CustomCodec(Xml, ContentType.EventsXml, Helper.UTF8NoBom);
-        public static readonly CustomCodec EventsJson = new CustomCodec(Json, ContentType.EventsJson, Helper.UTF8NoBom);
+        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml, Helper.UTF8NoBom, false);
+        public static readonly CustomCodec EventXml = new CustomCodec(Xml, ContentType.EventXml, Helper.UTF8NoBom, true);
+        public static readonly CustomCodec EventJson = new CustomCodec(Json, ContentType.EventJson, Helper.UTF8NoBom, true);
+        public static readonly CustomCodec EventsXml = new CustomCodec(Xml, ContentType.EventsXml, Helper.UTF8NoBom, true);
+        public static readonly CustomCodec EventsJson = new CustomCodec(Json, ContentType.EventsJson, Helper.UTF8NoBom, true);
         public static readonly TextCodec Text = new TextCodec();
 
-        public static ICodec CreateCustom(ICodec codec, string contentType, Encoding encoding)
+        public static ICodec CreateCustom(ICodec codec, string contentType, Encoding encoding, bool hasEventIds)
         {
-            return new CustomCodec(codec, contentType, encoding);
+            return new CustomCodec(codec, contentType, encoding, hasEventIds);
         }
     }
 }
