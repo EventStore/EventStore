@@ -9,18 +9,20 @@ namespace EventStore.Transport.Http.Codecs
         public ICodec BaseCodec { get { return _codec; } }
         public string ContentType { get { return _contentType; } }
         public Encoding Encoding { get { return _encoding; } }
+        public bool HasEventIds { get { return _hasEventIds; }}
 
         private readonly ICodec _codec;
         private readonly string _contentType;
         private readonly string _type;
         private readonly string _subtype;
         private readonly Encoding _encoding;
+        private readonly bool _hasEventIds;
 
-        internal CustomCodec(ICodec codec, string contentType, Encoding encoding)
+        internal CustomCodec(ICodec codec, string contentType, Encoding encoding, bool hasEventIds)
         {
             Ensure.NotNull(codec, "codec");
             Ensure.NotNull(contentType, "contentType");
-
+            _hasEventIds = hasEventIds;
             _codec = codec;
             _contentType = contentType;
             _encoding = encoding;
