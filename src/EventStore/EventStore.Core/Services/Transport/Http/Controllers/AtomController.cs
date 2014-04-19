@@ -152,7 +152,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;   
             }
             if(!manager.RequestCodec.HasEventIds && includedId == Guid.Empty) {
-                var uri = new Uri(match.RequestUri, "incoming/" + Guid.NewGuid().ToString()).ToString();
+                var uri = new Uri(new Uri(match.RequestUri.ToString() + "/"), "incoming/" + Guid.NewGuid().ToString()).ToString();
                 var header = new []
                              {new KeyValuePair<string, string>("Location", uri)};
                 manager.ReplyTextContent("Forwarding to idempotent uri", HttpStatusCode.Moved, "", "", header, e => { });
@@ -193,11 +193,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string"));
                 return;
             }
-            Guid includedId;
-            if(!GetIncludedId(manager, out includedId)) {
-                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
-                return;   
-            }
             string includedType;
             if(!GetIncludedType(manager, out includedType)) {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
@@ -217,7 +212,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if (!requireMaster && _httpForwarder.ForwardRequest(manager))
                 return;
-            PostEntry(manager, expectedVersion, requireMaster, stream, includedId, includedType);
+            PostEntry(manager, expectedVersion, requireMaster, stream, id, includedType);
         }
 
         private void DeleteStream(HttpEntityManager manager, UriTemplateMatch match)
