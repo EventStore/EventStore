@@ -44,9 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false),
                                                           Codec.Json,
                                                           Codec.EventXml,
-                                                          Codec.EventJson,
-                                                          Codec.EventsXml,
-                                                          Codec.EventsJson
+                                                          Codec.EventJson
                                                       };
 
         private static readonly ICodec[] AtomCodecs = new[]
