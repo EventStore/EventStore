@@ -623,7 +623,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_projectionConfig.IsSlaveProjection)
                 _publisher.Publish(
                     new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
-                        _projectionCorrelationId, message.SubscriptionId, message.ReaderId));
+                        _projectionCorrelationId,
+                        message.SubscriptionId));
             _coreProjection.Subscribed();
         }
 

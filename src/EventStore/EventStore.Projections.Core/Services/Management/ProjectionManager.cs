@@ -489,11 +489,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)
         {
-            string name;
-            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
+            Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned> action;
+            if (_awaitingSlaveProjections.TryGetValue(message.ProjectionId, out action))
             {
-                var projection = _projections[name];
-                projection.Handle(message);
+                action(message);
             }
         }
 
@@ -950,6 +949,11 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new NotSupportedException("Unsupported error code received");
         }
 
+        private readonly Dictionary<Guid, Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>>
+            _awaitingSlaveProjections =
+                new Dictionary<Guid, Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>>();
+
+
         public void Handle(ProjectionManagementMessage.StartSlaveProjections message)
         {
             var result = new Dictionary<string, SlaveProjectionCommunicationChannel[]>();
@@ -1022,6 +1026,25 @@ namespace EventStore.Projections.Core.Services.Management
         {
             var projectionCorrelationId = Guid.NewGuid();
             var slaveProjectionName = message.Name + "-" + @group.Name + "-" + queueIndex;
+            _awaitingSlaveProjections.Add(
+                projectionCorrelationId,
+                assigned =>
+                {
+                    var queuePublisher = _queues[queueIndex].Item2;
+                    var queueWorkerId = _queues[queueIndex].Item1;
+
+                    resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
+                        slaveProjectionName,
+                        queueWorkerId,
+                        projectionCorrelationId,
+                        assigned.SubscriptionId,
+                        queuePublisher);
+                    completed();
+
+                    _awaitingSlaveProjections.Remove(projectionCorrelationId);
+                });
+
+
             var initializer = new ProjectionManager.NewProjectionInitializer(
                 ProjectionQueryId,
                 slaveProjectionName,
@@ -1037,16 +1060,6 @@ namespace EventStore.Projections.Core.Services.Management
                 this,
                 managedProjection =>
                 {
-                    var queuePublisher = _queues[queueIndex].Item2;
-                    var queueWorkerId = _queues[queueIndex].Item1;
-
-                    resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
-                        slaveProjectionName,
-                        queueWorkerId,
-                        projectionCorrelationId,
-                        managedProjection.SlaveProjectionSubscriptionId,
-                        queuePublisher);
-                    completed();
                 },
                 projectionCorrelationId,
                 queueIndex,

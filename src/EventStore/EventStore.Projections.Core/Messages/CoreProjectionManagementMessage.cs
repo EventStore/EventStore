@@ -8,7 +8,11 @@ namespace EventStore.Projections.Core.Messages
     public abstract partial class CoreProjectionManagementMessage : Message
     {
         private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-        public override int MsgTypeId { get { return TypeId; } }
+
+        public override int MsgTypeId
+        {
+            get { return TypeId; }
+        }
 
         private readonly Guid _projectionIdId;
 
@@ -26,7 +30,11 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly Guid _workerId;
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             public Guid WorkerId
             {
@@ -43,7 +51,11 @@ namespace EventStore.Projections.Core.Messages
         public class Start : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             public Start(Guid projectionId, Guid workerId)
                 : base(projectionId, workerId)
@@ -56,7 +68,11 @@ namespace EventStore.Projections.Core.Messages
         public class LoadStopped : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             public LoadStopped(Guid correlationId, Guid workerId)
                 : base(correlationId, workerId)
@@ -67,7 +83,11 @@ namespace EventStore.Projections.Core.Messages
         public class Stop : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             public Stop(Guid projectionId, Guid workerId)
                 : base(projectionId, workerId)
@@ -78,7 +98,11 @@ namespace EventStore.Projections.Core.Messages
         public class Kill : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             public Kill(Guid projectionId, Guid workerId)
                 : base(projectionId, workerId)
@@ -89,7 +113,11 @@ namespace EventStore.Projections.Core.Messages
         public class GetState : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly Guid _correlationId;
             private readonly string _partition;
@@ -116,7 +144,11 @@ namespace EventStore.Projections.Core.Messages
         public class GetResult : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly Guid _correlationId;
             private readonly string _partition;
@@ -143,7 +175,11 @@ namespace EventStore.Projections.Core.Messages
         public class CreateAndPrepare : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly ProjectionConfig _config;
             private readonly string _handlerType;
@@ -151,8 +187,14 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
-            public CreateAndPrepare(Guid projectionId, Guid workerId, string name, ProjectionVersion version, ProjectionConfig config,
-                string handlerType, string query)
+            public CreateAndPrepare(
+                Guid projectionId,
+                Guid workerId,
+                string name,
+                ProjectionVersion version,
+                ProjectionConfig config,
+                string handlerType,
+                string query)
                 : base(projectionId, workerId)
             {
                 _name = name;
@@ -205,7 +247,8 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly ProjectionVersion _version;
 
-            public CreateAndPrepareSlave(Guid projectionId,
+            public CreateAndPrepareSlave(
+                Guid projectionId,
                 Guid workerId,
                 string name,
                 ProjectionVersion version,
@@ -270,7 +313,11 @@ namespace EventStore.Projections.Core.Messages
         public class CreatePrepared : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly ProjectionConfig _config;
             private readonly QuerySourcesDefinition _sourceDefinition;
@@ -337,7 +384,11 @@ namespace EventStore.Projections.Core.Messages
         public class Dispose : CoreProjectionManagementControlMessage
         {
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             public Dispose(Guid projectionId, Guid workerId)
                 : base(projectionId, workerId)
@@ -348,25 +399,22 @@ namespace EventStore.Projections.Core.Messages
         public sealed class SlaveProjectionReaderAssigned : CoreProjectionStatusMessage
         {
             private readonly Guid _subscriptionId;
-            private readonly Guid _readerId;
             private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
 
-            public SlaveProjectionReaderAssigned(Guid projectionId, Guid subscriptionId, Guid readerId)
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
+
+            public SlaveProjectionReaderAssigned(Guid projectionId, Guid subscriptionId)
                 : base(projectionId)
             {
                 _subscriptionId = subscriptionId;
-                _readerId = readerId;
             }
 
             public Guid SubscriptionId
             {
                 get { return _subscriptionId; }
-            }
-
-            public Guid ReaderId
-            {
-                get { return _readerId; }
             }
         }
 

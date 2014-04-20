@@ -130,7 +130,6 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly bool _isSlave;
         private readonly Guid _slaveMasterWorkerId;
         private readonly Guid _slaveMasterCorrelationId;
-        private Guid _slaveProjectionSubscriptionId;
         internal bool _prepared;
         internal bool _created;
         private bool _pendingPersistedState;
@@ -205,12 +204,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             get { return _persistedState.Deleted; }
             private set { _persistedState.Deleted = value; }
-        }
-
-        //TODO: remove property. pass value back to completion routine
-        public Guid SlaveProjectionSubscriptionId
-        {
-            get { return _slaveProjectionSubscriptionId; }
         }
 
         public Guid Id
@@ -519,11 +512,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionStatusMessage.StatisticsReport message)
         {
             _lastReceivedStatistics = message.Statistics;
-        }
-
-        public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message)
-        {
-            _slaveProjectionSubscriptionId = message.SubscriptionId;
         }
 
         private void DoSetRunAs1(ProjectionManagementMessage.SetRunAs message)

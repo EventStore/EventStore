@@ -9,13 +9,11 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
     class when_handling_slave_projection_reader_assigned_message : specification_with_projection_core_service_response_writer
     {
         private Guid _projectionId;
-        private Guid _readerId;
         private Guid _subscriptionId;
         
         protected override void Given()
         {
             _projectionId = Guid.NewGuid();
-            _readerId = Guid.NewGuid();
             _subscriptionId = Guid.NewGuid();
         }
 
@@ -24,8 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             _sut.Handle(
                 new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
                     _projectionId,
-                    _subscriptionId,
-                    _readerId));
+                    _subscriptionId));
         }
 
         [Test]
@@ -34,7 +31,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             var command = AssertParsedSingleCommand<ProjectionCoreResponseWriter.SlaveProjectionReaderAssigned>("$slave-projection-reader-assigned");
             Assert.AreEqual(_projectionId.ToString("N"), command.Id);
             Assert.AreEqual(_subscriptionId.ToString("N"), command.SubscriptionId);
-            Assert.AreEqual(_readerId.ToString("N"), command.ReaderId);
         }
     }
 }

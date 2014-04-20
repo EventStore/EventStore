@@ -47,7 +47,6 @@ namespace EventStore.Projections.Core.Services.Management
             var command = new ProjectionCoreResponseWriter.SlaveProjectionReaderAssigned 
             {
                 Id = message.ProjectionId.ToString("N"),
-                ReaderId = message.ReaderId.ToString("N"),
                 SubscriptionId = message.SubscriptionId.ToString("N"),
             };
             _writer.PublishCommand("$slave-projection-reader-assigned", command);
@@ -123,7 +122,6 @@ namespace EventStore.Projections.Core.Services.Management
         public class SlaveProjectionReaderAssigned
         {
             public string Id { get; set; }
-            public string ReaderId { get; set; }
             public string SubscriptionId { get; set; }
         }
 
