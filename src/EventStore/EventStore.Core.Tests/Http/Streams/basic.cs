@@ -12,6 +12,29 @@ namespace EventStore.Core.Tests.Http.Streams
 {
     namespace basic
     {
+/*        [TestFixture]
+        public class when_posting_an_event_as_raw_xml_without_eventtype : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeXmlPost(
+                    TestStream,
+                    new {A="1", B="3", C="5"});
+            }
+
+            [Test]
+            public void returns_created_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+*/
         [TestFixture]
         public class when_posting_an_event_as_raw_json_without_eventtype : HttpBehaviorSpecification
         {
@@ -24,7 +47,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _response = MakeJsonPost(
-                    TestStream + "/incoming/" + Guid.NewGuid().ToString(),
+                    TestStream,
                     new {A="1", B="3", C="5"});
             }
 
@@ -83,7 +106,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
 
         [TestFixture]
-        public class when_posting_an_event_to_idempotent_uri_without_event_id : HttpBehaviorSpecification
+        public class when_posting_an_event_in_json_to_idempotent_uri_without_event_id : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
 
