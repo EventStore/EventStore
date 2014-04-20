@@ -9,7 +9,7 @@ namespace EventStore.Transport.Http
         bool CanParse(MediaType format);
         bool SuitableForResponse(MediaType component);
         bool HasEventIds {get;}
-        
+        bool HasEventTypes {get;}        
         T From<T>(string text);
         string To<T>(T value);
     }

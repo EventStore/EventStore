@@ -34,14 +34,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
 
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
-        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom, false);
+        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom, false, false);
 
         private static readonly ICodec[] AtomCodecsWithoutBatches = new[]
                                                       {
                                                           EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false),
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                           Codec.Json
                                                       };
 
@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false),
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                           Codec.Json,
                                                           Codec.EventXml,
                                                           Codec.EventJson,
@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   EventStoreJsonCodec,
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
-                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false),
+                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                                   Codec.Json,
                                                                   Codec.EventXml,
                                                                   Codec.EventJson,
@@ -789,6 +789,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public string ContentType  { get { return "text/html"; } }
         public Encoding Encoding { get { return Helper.UTF8NoBom; } }
         public bool HasEventIds { get { return false; }}
+        public bool HasEventTypes { get { return false; }}
+        
         public bool CanParse(MediaType format)
         {
             throw new NotImplementedException();

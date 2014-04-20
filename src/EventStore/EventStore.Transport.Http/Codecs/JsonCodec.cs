@@ -42,6 +42,7 @@ namespace EventStore.Transport.Http.Codecs
         public string ContentType { get { return Http.ContentType.Json; } }
         public Encoding Encoding { get { return Helper.UTF8NoBom; } }
         public bool HasEventIds { get { return false; }}
+        public bool HasEventTypes { get { return false; }}
 
         public bool CanParse(MediaType format)
         {
