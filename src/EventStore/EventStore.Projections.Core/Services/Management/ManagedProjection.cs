@@ -553,7 +553,7 @@ namespace EventStore.Projections.Core.Services.Management
             UpdateProjectionVersion();
             _pendingPersistedState = true;
             SetLastReplyEnvelope(replyEnvelope);
-            __DoUpdateQuery();
+            PrepareWriteStartOrLoadStopped();
         }
 
         public static SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
@@ -603,7 +603,7 @@ namespace EventStore.Projections.Core.Services.Management
                 SetState(ManagedProjectionState.Loaded);
                 _pendingPersistedState = false;
                 SetLastReplyEnvelope(null);
-                __DoUpdateQuery();
+                PrepareWriteStartOrLoadStopped();
                 return;
             }
 
@@ -675,7 +675,7 @@ namespace EventStore.Projections.Core.Services.Management
             return new OpenGenericPrincipal(new GenericIdentity(runAs.Name), runAs.Roles);
         }
 
-        internal void PrepareCompleted()
+        internal void WriteStartOrLoadStopped()
         {
             if (_pendingPersistedState)
                 BeginWrite();
@@ -955,11 +955,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void StartOrLoadStopped()
         {
-            if ((_state == ManagedProjectionState.Stopped) && Enabled && _enabledToRun)
-            {
-                Start();
-            }
-            else if (_state == ManagedProjectionState.Prepared)
+            if (_state == ManagedProjectionState.Prepared)
             {
                 if (Enabled && _enabledToRun)
                     Start();
@@ -968,8 +964,11 @@ namespace EventStore.Projections.Core.Services.Management
                     LoadStopped();
                 }
             }
-            else
+            else if (_state == ManagedProjectionState.Aborted || _state == ManagedProjectionState.Completed
+                     || _state == ManagedProjectionState.Faulted || _state == ManagedProjectionState.Stopped)
                 Reply();
+            else
+                throw new Exception();
         }
 
 
@@ -997,17 +996,17 @@ namespace EventStore.Projections.Core.Services.Management
             return true;
         }
 
-        private void __DoUpdateQuery()
+        private void PrepareWriteStartOrLoadStopped()
         {
             if (_state == ManagedProjectionState.Prepared)
             {
-                PrepareCompleted();
+                WriteStartOrLoadStopped();
                 return;
             }
 
             if (_prepared && _created && !(Enabled && _enabledToRun))
             {
-                PrepareCompleted();
+                WriteStartOrLoadStopped();
                 return;
             }
 
@@ -1050,7 +1049,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void StoppedOrReadyToStart()
         {
-            __DoUpdateQuery();
+            PrepareWriteStartOrLoadStopped();
         }
     }
 
