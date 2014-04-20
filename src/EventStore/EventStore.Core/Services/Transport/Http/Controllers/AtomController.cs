@@ -142,6 +142,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid request. Stream must be non-empty string"));
                 return;
             }
+            string includedType;
+            if(!GetIncludedType(manager, out includedType)) {
+                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
+                return;   
+            }
+            if(!manager.RequestCodec.HasEventTypes && includedType == null) {
+                SendBadRequest(manager, "Must include an event type with the request either in body or as ES-EventType header.");
+            }
             Guid includedId;
             if(!GetIncludedId(manager, out includedId)) {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
@@ -152,11 +160,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 var header = new []
                              {new KeyValuePair<string, string>("Location", uri)};
                 manager.ReplyTextContent("Forwarding to idempotent uri", HttpStatusCode.Moved, "", "", header, e => { });
-            }
-            string includedType;
-            if(!GetIncludedType(manager, out includedType)) {
-                SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
-                return;   
             }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))

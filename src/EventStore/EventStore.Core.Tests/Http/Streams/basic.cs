@@ -23,13 +23,9 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                var request = CreateRequest(TestStream, "", "POST", "application/json");
-                request.AllowAutoRedirect = false;
-                var data = "{A : \"1\", B:\"3\", C:\"5\" }";
-                var bytes = Encoding.UTF8.GetBytes(data);
-                request.ContentLength = data.Length;
-                request.GetRequestStream().Write(bytes, 0, data.Length);
-                _response = (HttpWebResponse) request.GetResponse();
+                _response = MakeJsonPost(
+                    TestStream + "/incoming/" + Guid.NewGuid().ToString(),
+                    new {A="1", B="3", C="5"});
             }
 
             [Test]
@@ -38,7 +34,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
             }
         }
-        
+
         [TestFixture]
         public class when_posting_an_event_to_idempotent_uri_as_events_array : HttpBehaviorSpecification
         {

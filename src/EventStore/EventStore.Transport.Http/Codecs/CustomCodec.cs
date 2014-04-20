@@ -24,6 +24,7 @@ namespace EventStore.Transport.Http.Codecs
         {
             Ensure.NotNull(codec, "codec");
             Ensure.NotNull(contentType, "contentType");
+            _hasEventTypes = hasEventTypes;
             _hasEventIds = hasEventIds;
             _codec = codec;
             _contentType = contentType;
