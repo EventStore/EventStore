@@ -134,6 +134,9 @@ namespace EventStore.Projections.Core.Services.Management
         internal bool _created;
         private bool _pendingPersistedState;
 
+        private ManagedProjectionStateBase _stateHandler;
+        private IEnvelope _lastReplyEnvelope;
+
         public ManagedProjection(
             Guid workerId,
             Guid id,
@@ -537,9 +540,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void FireStoppedOrFaulted()
         {
-            var stopCompleted = _onStopped;
-            _onStopped = null;
-            if (stopCompleted != null) stopCompleted();
+            Reply();
         }
 
         private bool IsExpiredProjection()
@@ -547,12 +548,13 @@ namespace EventStore.Projections.Core.Services.Management
             return Mode == ProjectionMode.Transient && !_isSlave && _lastAccessed.AddMinutes(5) < _timeProvider.Now;
         }
 
-        public void InitializeNew(Action completed, PersistedState persistedState)
+        public void InitializeNew(PersistedState persistedState, IEnvelope replyEnvelope)
         {
             LoadPersistedState(persistedState);
             UpdateProjectionVersion();
             _pendingPersistedState = true;
-            __DoUpdateQuery(completed);
+            SetLastReplyEnvelope(replyEnvelope);
+            __DoUpdateQuery();
         }
 
         public static SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
@@ -601,7 +603,8 @@ namespace EventStore.Projections.Core.Services.Management
                 //TODO: encapsulate this into managed projection
                 SetState(ManagedProjectionState.Loaded);
                 _pendingPersistedState = false;
-                __DoUpdateQuery(() => { });
+                SetLastReplyEnvelope(null);
+                __DoUpdateQuery();
                 return;
             }
 
@@ -676,9 +679,9 @@ namespace EventStore.Projections.Core.Services.Management
         internal void PrepareCompleted()
         {
             if (_pendingPersistedState)
-                BeginWrite(() => StartOrLoadStopped(_lastOnCompleted));
+                BeginWrite();
             else
-                StartOrLoadStopped(_lastOnCompleted);
+                StartOrLoadStopped();
         }
 
         internal void StartCompleted()
@@ -686,13 +689,13 @@ namespace EventStore.Projections.Core.Services.Management
             __OnStarted();
         }
 
-        private void BeginWrite(Action completed)
+        private void BeginWrite()
         {
             if (Mode == ProjectionMode.Transient)
             {
                 //TODO: move to common completion procedure
                 _lastWrittenVersion = _persistedState.Version ?? -1;
-                completed();
+                StartOrLoadStopped();
                 return;
             }
             var oldState = _state;
@@ -705,11 +708,11 @@ namespace EventStore.Projections.Core.Services.Management
                     corrId, corrId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "$ProjectionUpdated", true, managedProjectionSerializedState, Empty.ByteArray),
                     SystemAccount.Principal),
-                m => WriteCompleted(m, oldState, completed, eventStreamId));
+                m => WriteCompleted(m, oldState, eventStreamId));
         }
 
         private void WriteCompleted(
-            ClientMessage.WriteEventsCompleted message, ManagedProjectionState completedState, Action completed,
+            ClientMessage.WriteEventsCompleted message, ManagedProjectionState completedState,
             string eventStreamId)
         {
             if (_state != ManagedProjectionState.Writing)
@@ -725,7 +728,7 @@ namespace EventStore.Projections.Core.Services.Management
                     throw new Exception("Projection version and event number mismatch");
                 _lastWrittenVersion = (_persistedState.Version ?? writtenEventNumber);
                 SetState(completedState);
-                if (completed != null) completed();
+                StartOrLoadStopped();
                 return;
             }
             _logger.Info(
@@ -736,7 +739,7 @@ namespace EventStore.Projections.Core.Services.Management
                 || message.Result == OperationResult.WrongExpectedVersion)
             {
                 _logger.Info("Retrying write projection source for {0}", _name);
-                BeginWrite(completed);
+                BeginWrite();
             }
             else
                 throw new NotSupportedException("Unsupported error code received");
@@ -748,11 +751,8 @@ namespace EventStore.Projections.Core.Services.Management
             BeginCreate(config, prepareMessage);
         }
 
-        private Action _lastStartCompleted;
-
-        private void Start(Action completed)
+        private void Start()
         {
-            _lastStartCompleted = completed;
             if (!Enabled)
                 throw new InvalidOperationException("Projection is disabled");
             SetState(ManagedProjectionState.Starting);
@@ -761,13 +761,11 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void __OnStarted()
         {
-            if (_lastStartCompleted != null)
-                _lastStartCompleted();
+            Reply();
         }
 
-        private void LoadStopped(Action onLoaded)
+        private void LoadStopped()
         {
-            _onStopped = onLoaded;
             SetState(ManagedProjectionState.LoadingStopped);
             _output.Publish(new CoreProjectionManagementMessage.LoadStopped(Id, _workerId));
         }
@@ -963,23 +961,23 @@ namespace EventStore.Projections.Core.Services.Management
             return projectionConfig;
         }
 
-        private void StartOrLoadStopped(Action completed)
+        private void StartOrLoadStopped()
         {
             if ((_state == ManagedProjectionState.Stopped) && Enabled && _enabledToRun)
             {
-                Start(completed);
+                Start();
             }
             else if (_state == ManagedProjectionState.Prepared || _state == ManagedProjectionState.Writing)
             {
                 if (Enabled && _enabledToRun)
-                    Start(completed);
+                    Start();
                 else
                 {
-                    LoadStopped(completed);
+                    LoadStopped();
                 }
             }
-            else if (completed != null)
-                completed();
+            else 
+                Reply();
         }
 
 
@@ -1007,13 +1005,8 @@ namespace EventStore.Projections.Core.Services.Management
             return true;
         }
 
-        private Action _lastOnCompleted;
-        private ManagedProjectionStateBase _stateHandler;
-        private IEnvelope _lastReplyEnvelope;
-
-        private void __DoUpdateQuery(Action completed)
+        private void __DoUpdateQuery()
         {
-            _lastOnCompleted = completed;
             if (_state == ManagedProjectionState.Prepared)
             {
                 PrepareCompleted();
@@ -1065,7 +1058,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void StoppedOrReadyToStart()
         {
-            __DoUpdateQuery(Reply);
+            __DoUpdateQuery();
         }
     }
 
