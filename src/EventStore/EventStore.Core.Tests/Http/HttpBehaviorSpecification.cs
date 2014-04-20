@@ -150,9 +150,15 @@ namespace EventStore.Core.Tests.Http
 
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
         {
-            var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
+            var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
+        }
+
+        protected HttpWebResponse MakeArrayEventsPost<T>(string path, T body, ICredentials credentials=null) {
+            var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
+            var response = GetRequestResponse(request);
+            return response;
         }
 
         protected HttpWebResponse MakeRawJsonPost<T>(string path, T body, ICredentials credentials = null)
