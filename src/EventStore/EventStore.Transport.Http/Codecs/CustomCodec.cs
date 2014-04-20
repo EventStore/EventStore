@@ -10,6 +10,7 @@ namespace EventStore.Transport.Http.Codecs
         public string ContentType { get { return _contentType; } }
         public Encoding Encoding { get { return _encoding; } }
         public bool HasEventIds { get { return _hasEventIds; }}
+        public bool HasEventTypes { get { return _hasEventTypes; }}
 
         private readonly ICodec _codec;
         private readonly string _contentType;
@@ -17,8 +18,9 @@ namespace EventStore.Transport.Http.Codecs
         private readonly string _subtype;
         private readonly Encoding _encoding;
         private readonly bool _hasEventIds;
+        private readonly bool _hasEventTypes;
 
-        internal CustomCodec(ICodec codec, string contentType, Encoding encoding, bool hasEventIds)
+        internal CustomCodec(ICodec codec, string contentType, Encoding encoding, bool hasEventIds, bool hasEventTypes)
         {
             Ensure.NotNull(codec, "codec");
             Ensure.NotNull(contentType, "contentType");
