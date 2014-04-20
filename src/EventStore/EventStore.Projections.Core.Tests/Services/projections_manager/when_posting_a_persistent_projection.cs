@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, true));
             Assert.AreEqual(
-                ManagedProjectionState.Writing,
+                ManagedProjectionState.Prepared,
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0].
                     MasterStatus);
         }

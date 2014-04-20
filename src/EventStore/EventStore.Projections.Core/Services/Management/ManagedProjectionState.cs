@@ -7,7 +7,6 @@ namespace EventStore.Projections.Core.Services.Management
         Loaded,
         Preparing,
         Prepared,
-        Writing,
         Starting,
         LoadingStopped,
         Running,

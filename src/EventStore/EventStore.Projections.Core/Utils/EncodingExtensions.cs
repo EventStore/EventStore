@@ -13,5 +13,10 @@ namespace EventStore.Projections.Core.Utils
         {
             return Helper.UTF8NoBom.GetBytes(self);
         }
+
+        public static string Apply(this string format, params object[] args)
+        {
+            return string.Format(format, args);
+        }
     }
 }

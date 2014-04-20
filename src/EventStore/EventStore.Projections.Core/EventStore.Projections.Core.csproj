@@ -196,7 +196,6 @@
     <Compile Include="Services\Management\ManagedProjectionStates\StartingState.cs" />
     <Compile Include="Services\Management\ManagedProjectionStates\StoppedState.cs" />
     <Compile Include="Services\Management\ManagedProjectionStates\StoppingState.cs" />
-    <Compile Include="Services\Management\ManagedProjectionStates\WritingState.cs" />
     <Compile Include="Services\Management\ProjectionBalancer.cs" />
     <Compile Include="Services\Management\ProjectionCoreResponseWriter.cs" />
     <Compile Include="Services\Management\ProjectionManagerResponseReader.cs" />
