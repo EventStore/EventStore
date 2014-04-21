@@ -203,7 +203,7 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void When()
             {
-                _response = MakeJsonPut("/users/test1", new {FullName = "Updated Full Name"}, _admin);
+                _response = MakeRawJsonPut("/users/test1", new {FullName = "Updated Full Name"}, _admin);
             }
 
             [Test]

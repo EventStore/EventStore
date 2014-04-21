@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Http
         public override void TestFixtureSetUp()
         {
 #if !__MonoCS__
-            EventStore.Common.Utils.Helper.EatException(() => _dumpResponse = CreateDumpResponse());
+            EventStore.Common.Utils.Helper.EatException(() => _dumpResponse = CreateDumIpResponse());
             EventStore.Common.Utils.Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
             EventStore.Common.Utils.Helper.EatException(() => _dumpRequest = CreateDumpRequest());
             EventStore.Common.Utils.Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
@@ -202,7 +202,7 @@ namespace EventStore.Core.Tests.Http
         }
 
 
-        protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials)
+        protected HttpWebResponse MakeEventsJsonPut<T>(string path, T body, ICredentials credentials)
         {
             var request = CreateEventsJsonPostRequest(path, "PUT", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
