@@ -42,6 +42,95 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+        [TestFixture]
+        class when_posting_to_idempotent_guid_id_then_as_array : HttpBehaviorSpecificationOfSuccessfulCreateEvent
+        {
+            private Guid _eventId;
+
+            protected override void Given()
+            {
+                _eventId = Guid.NewGuid();
+                PostEvent();
+            }
+
+            protected override void When()
+            {
+                _response = MakeArrayEventsPost(
+                    TestStream,
+                    new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
+            }
+
+            private void PostEvent() {
+                var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST", "application/json");
+                request.Headers.Add("ES-EventType", "SomeType");
+                request.AllowAutoRedirect = false;
+                var data = "{a : \"1\"}";
+                var bytes = Encoding.UTF8.GetBytes(data);
+                request.ContentLength = data.Length;
+                request.GetRequestStream().Write(bytes, 0, data.Length);
+                _response = GetRequestResponse(request);
+            }
+        }
+
+        [TestFixture]
+        class when_posting_to_idempotent_guid_id_twice : HttpBehaviorSpecificationOfSuccessfulCreateEvent
+        {
+            private Guid _eventId;
+
+            protected override void Given()
+            {
+                _eventId = Guid.NewGuid();
+                PostEvent();
+            }
+
+            protected override void When()
+            {
+                PostEvent();
+            }
+
+            private void PostEvent() {
+                var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST", "application/json");
+                request.Headers.Add("ES-EventType", "SomeType");
+                request.AllowAutoRedirect = false;
+                var data = "{a : \"1\"}";
+                var bytes = Encoding.UTF8.GetBytes(data);
+                request.ContentLength = data.Length;
+                request.GetRequestStream().Write(bytes, 0, data.Length);
+                _response = GetRequestResponse(request);
+            }
+        }
+
+
+        [TestFixture]
+        class when_posting_to_idempotent_guid_id_three_times : HttpBehaviorSpecificationOfSuccessfulCreateEvent
+        {
+            private Guid _eventId;
+
+            protected override void Given()
+            {
+                _eventId = Guid.NewGuid();
+                PostEvent();
+                PostEvent();
+            }
+
+            protected override void When()
+            {
+                PostEvent();
+            }
+
+            private void PostEvent() {
+                var request = CreateRequest(TestStream + "/incoming/" + _eventId.ToString(), "", "POST", "application/json");
+                request.Headers.Add("ES-EventType", "SomeType");
+                request.AllowAutoRedirect = false;
+                var data = "{a : \"1\"}";
+                var bytes = Encoding.UTF8.GetBytes(data);
+                request.ContentLength = data.Length;
+                request.GetRequestStream().Write(bytes, 0, data.Length);
+                _response = GetRequestResponse(request);
+            }
+        }
+
+
         [TestFixture, Category("LongRunning")]
         class when_posting_an_event_once_raw_once_with_array : HttpBehaviorSpecificationOfSuccessfulCreateEvent
         {
@@ -71,7 +160,6 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.GetRequestStream().Write(bytes, 0, data.Length);
                 _response = GetRequestResponse(request);
             }
-
         }
 
 
