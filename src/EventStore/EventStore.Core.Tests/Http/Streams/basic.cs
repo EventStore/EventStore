@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] {new {EventId = Guid.NewGuid(), Data = new {A = "1"}}});
             }
@@ -258,7 +258,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                var request = CreateRequest(TestStream + "/", "", "POST", "application/json", null);
+                var request = CreateRequest(TestStream + "/", "", "POST", "application/vnd.eventstore.events+json", null);
                 request.AllowAutoRedirect = false;
                 request.GetRequestStream()
                     .WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
@@ -541,7 +541,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] { new { EventId = Guid.NewGuid(), Data = new { A = "1" } } });
             }
@@ -564,7 +564,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[]
                     {
@@ -608,7 +608,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[]
                         {
@@ -643,7 +643,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void Given()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
                 Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
