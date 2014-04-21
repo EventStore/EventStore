@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Collections.Concurrent;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -15,6 +16,8 @@ namespace EventStore.TestClient.Commands
     {
         public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>]]]"; } }
         public string Keyword { get { return "WRFL"; } }
+
+        private RequestMonitor _monitor = new RequestMonitor();
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
@@ -83,6 +86,7 @@ namespace EventStore.TestClient.Commands
                         }
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
+                        _monitor.EndOperation(pkg.CorrelationId);
                         switch(dto.Result)
                         {
                             case TcpClientMessageDto.OperationResult.Success:
@@ -133,6 +137,7 @@ namespace EventStore.TestClient.Commands
                 {
                     for (int j = 0; j < count; ++j)
                     {
+                        var corrid = Guid.NewGuid();
                         var write = new TcpClientMessageDto.WriteEvents(
                             streams[rnd.Next(streamsCnt)],
                             ExpectedVersion.Any,
@@ -145,7 +150,8 @@ namespace EventStore.TestClient.Commands
                                                                  Common.Utils.Helper.UTF8NoBom.GetBytes("{ \"METADATA\" : \"" + new string('$', 100) + "\"}"))
                             },
                             false);
-                        var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
+                        var package = new TcpPackage(TcpCommand.WriteEvents, corrid, write.Serialize());
+                        _monitor.StartOperation(corrid);
                         client.EnqueueSend(package.AsByteArray());
 
                         var localSent = Interlocked.Increment(ref sent);
@@ -183,7 +189,7 @@ namespace EventStore.TestClient.Commands
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt), failuresRate);
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-c{1}-r{2}-st{3}-s{4}-reqPerSec", Keyword, clientsCnt, requestsCnt, streamsCnt, size), (int)reqPerSec);
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-c{1}-r{2}-st{3}-s{4}-failureSuccessRate", Keyword, clientsCnt, requestsCnt, streamsCnt, size), failuresRate);
-
+            _monitor.GetMeasurementDetails();
             if (Interlocked.Read(ref succ) != requestsCnt)
                 context.Fail(reason: "There were errors or not all requests completed.");
             else

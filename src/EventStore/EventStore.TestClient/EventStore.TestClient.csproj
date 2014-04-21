@@ -109,6 +109,7 @@
     <Compile Include="Commands\WriteHttpProcessor.cs" />
     <Compile Include="Commands\WriteLongTermProcessor.cs" />
     <Compile Include="Commands\WriteProcessor.cs" />
+    <Compile Include="Commands\RequestMonitor.cs" />
     <Compile Include="ConsoleTable.cs" />
     <Compile Include="ICmdProcessor.cs" />
     <Compile Include="PerfUtils.cs" />
