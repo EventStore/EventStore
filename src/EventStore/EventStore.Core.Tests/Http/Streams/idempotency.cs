@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void Given()
             {
                 _eventId = Guid.NewGuid();
-                var response1 = MakeJsonPost(
+                var response1 = MakeArrayEventsPost(
                     TestStream,
                     new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
                 Assert.AreEqual(HttpStatusCode.Created, response1.StatusCode);
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
             }
@@ -73,11 +73,11 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void Given()
             {
                 _eventId = Guid.NewGuid();
-                var response1 = MakeJsonPost(
+                var response1 = MakeArrayEventsPost(
                     TestStream,
                     new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
                 Assert.AreEqual(HttpStatusCode.Created, response1.StatusCode);
-                var response2 = MakeJsonPost(
+                var response2 = MakeArrayEventsPost(
                     TestStream,
                     new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
                 Assert.AreEqual(HttpStatusCode.Created, response2.StatusCode);
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] { new { EventId = _eventId, EventType = "event-type", Data = new { A = "1" } } });
             }

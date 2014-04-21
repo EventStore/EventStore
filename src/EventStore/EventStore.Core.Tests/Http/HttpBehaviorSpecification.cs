@@ -207,7 +207,7 @@ namespace EventStore.Core.Tests.Http
         }
 
 
-        protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials)
+        protected HttpWebResponse MakeEventsJsonPut<T>(string path, T body, ICredentials credentials)
         {
             var request = CreateEventsJsonPostRequest(path, "PUT", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
@@ -422,8 +422,5 @@ namespace EventStore.Core.Tests.Http
             var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
             return debugExpression.Compile();
         }
-    // System.Text.Helper.UTF8NoBom.GetString(((System.Net.ConnectStream)(_response.CoreResponseData.m_ConnectStream)).m_ReadBuffer) // m_ReadOffset
-    // System.Text.Helper.UTF8NoBom.GetString(((System.Net.HttpWebRequest)(request))._WriteBuffer)
-    // ((System.Net.ConnectStream)(request._SubmitWriteStream)).BufferedData.headChunk.Buffer
     }
 }

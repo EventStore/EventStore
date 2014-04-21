@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using EventStore.Core.Services;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -144,6 +145,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
                 var response = MakeJsonPost(
                     "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                Console.WriteLine("done with json post");
                 response = MakeDelete("/users/test1", _admin);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             }
