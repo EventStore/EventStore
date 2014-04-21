@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
 
         protected string PostMetadata(StreamMetadata metadata)
         {
-            var response = MakeJsonPost(
+            var response = MakeArrayEventsPost(
                 TestMetadataStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = metadata}});
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             return response.Headers[HttpResponseHeader.Location];
