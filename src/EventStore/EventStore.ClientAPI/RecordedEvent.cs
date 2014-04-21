@@ -40,6 +40,11 @@ namespace EventStore.ClientAPI
         public readonly byte[] Metadata;
 
         /// <summary>
+        /// Indicates whether the content is internally marked as json
+        /// </summary>
+        public readonly bool IsJson;
+
+        /// <summary>
         /// A datetime representing when this event was created in the system
         /// </summary>
         public DateTime Created;
@@ -48,6 +53,7 @@ namespace EventStore.ClientAPI
         /// A long representing the milliseconds since the epoch when the was created in the system
         /// </summary>
         public long CreatedEpoch;
+
 
 #if DEBUG
         /// <summary>
@@ -87,6 +93,7 @@ namespace EventStore.ClientAPI
             }
             Data = systemRecord.Data ?? Empty.ByteArray;
             Metadata = systemRecord.Metadata ?? Empty.ByteArray;
+            IsJson = systemRecord.DataContentType == 1;
         }
     }
 }
