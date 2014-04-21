@@ -47,6 +47,16 @@ namespace EventStore.Core.Services.Storage
             {
                 ThreadPool.QueueUserWorkItem(_ => Scavenge(message));
             }
+            else 
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ScavengeDatabaseCompleted(message.CorrelationId, 
+                                                                ClientMessage.ScavengeDatabase.ScavengeResult.InProgress,
+                                                                "Scavenge already in progress.", 
+                                                                TimeSpan.FromMilliseconds(0),
+                                                                0)
+                    );
+            }
         }
 
         private void Scavenge(ClientMessage.ScavengeDatabase message)
