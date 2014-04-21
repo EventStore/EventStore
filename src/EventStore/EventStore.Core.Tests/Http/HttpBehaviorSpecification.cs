@@ -170,6 +170,25 @@ namespace EventStore.Core.Tests.Http
 
         protected JObject MakeJsonPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null)
         {
+            var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
+            _lastResponse = GetRequestResponse(request);
+            var memoryStream = new MemoryStream();
+            _lastResponse.GetResponseStream().CopyTo(memoryStream);
+            var bytes = memoryStream.ToArray();
+            _lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
+            try
+            {
+                return _lastResponseBody.ParseJson<JObject>();
+            }
+            catch (JsonException ex)
+            {
+                _lastJsonException = ex;
+                return default(JObject);
+            }
+        }
+
+        protected JObject MakeJsonEventsPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null)
+        {
             var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
             _lastResponse = GetRequestResponse(request);
             var memoryStream = new MemoryStream();
@@ -186,6 +205,7 @@ namespace EventStore.Core.Tests.Http
                 return default(JObject);
             }
         }
+
 
         protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials)
         {
