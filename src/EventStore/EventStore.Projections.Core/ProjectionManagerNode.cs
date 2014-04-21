@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core
         private readonly ProjectionManagerMessageDispatcher _projectionManagerMessageDispatcher;
         private readonly InMemoryBus _output;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
-        private CommandWriter _commandWriter;
+        private MultiStreamMessageWriter _commandWriter;
         private ProjectionManagerCommandWriter _projectionManagerCommadnWriter;
         private ProjectionManagerResponseReader _projectionManagerResponseReader;
 
@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core
             _output = output;
             _timeoutSchedulers = timeoutSchedulers;
             _projectionManagerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
-            _commandWriter = new CommandWriter(ioDispatcher);
+            _commandWriter = new MultiStreamMessageWriter(ioDispatcher);
             _projectionManagerCommadnWriter = new ProjectionManagerCommandWriter(_commandWriter);
             _projectionManagerResponseReader = new ProjectionManagerResponseReader(_output, _ioDispatcher);
             _projectionManager = new ProjectionManager(

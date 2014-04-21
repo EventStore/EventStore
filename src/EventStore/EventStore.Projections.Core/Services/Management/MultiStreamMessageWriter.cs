@@ -10,19 +10,19 @@ using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Projections.Core.Services.Management
 {
-    public sealed class CommandWriter : ICommandWriter
+    public sealed class MultiStreamMessageWriter : IMultiStreamMessageWriter
     {
         private readonly IODispatcher _ioDispatcher;
-        private readonly ILogger _logger = LogManager.GetLoggerFor<CommandWriter>();
+        private readonly ILogger _logger = LogManager.GetLoggerFor<MultiStreamMessageWriter>();
 
         private readonly Dictionary<Guid, Queue> _queues = new Dictionary<Guid, Queue>();
 
-        public CommandWriter(IODispatcher ioDispatcher)
+        public MultiStreamMessageWriter(IODispatcher ioDispatcher)
         {
             _ioDispatcher = ioDispatcher;
         }
 
-        public void PublishCommand(string command, Guid workerId, object body)
+        public void PublishResponse(string command, Guid workerId, object body)
         {
             Queue queue;
             if (!_queues.TryGetValue(workerId, out queue))

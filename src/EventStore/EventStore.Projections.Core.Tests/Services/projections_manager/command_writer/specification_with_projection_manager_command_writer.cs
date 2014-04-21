@@ -10,7 +10,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
     {
         protected ProjectionManagerCommandWriter _sut;
         protected List<Tuple<string, Guid, object>> _publishedCommands;
-        private ICommandWriter _writer;
+        private IMultiStreamMessageWriter _writer;
 
         [SetUp]
         public void SetUp()
@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
 
         protected abstract void When();
 
-        class FakeWriter : ICommandWriter
+        class FakeWriter : IMultiStreamMessageWriter
         {
             private readonly specification_with_projection_manager_command_writer _container;
 
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
                 _container = container;
             }
 
-            public void PublishCommand(string command, Guid workerId, object body)
+            public void PublishResponse(string command, Guid workerId, object body)
             {
                 _container.PublishCommand(command, workerId, body);
             }
