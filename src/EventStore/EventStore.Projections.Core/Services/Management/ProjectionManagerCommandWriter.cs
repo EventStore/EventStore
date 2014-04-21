@@ -1,5 +1,6 @@
 ﻿using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Commands;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -26,9 +27,9 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.CreatePrepared message)
         {
-            var command = new ProjectionCoreServiceCommandReader.CreatePreparedCommand
+            var command = new CreatePreparedCommand
             {
-                Config = new ProjectionCoreServiceCommandReader.PersistedProjectionConfig(message.Config),
+                Config = new PersistedProjectionConfig(message.Config),
                 HandlerType = message.HandlerType,
                 Id = message.ProjectionId.ToString("N"),
                 Name = message.Name,
@@ -41,9 +42,9 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.CreateAndPrepare message)
         {
-            var command = new ProjectionCoreServiceCommandReader.CreateAndPrepareCommand
+            var command = new CreateAndPrepareCommand
             {
-                Config = new ProjectionCoreServiceCommandReader.PersistedProjectionConfig(message.Config),
+                Config = new PersistedProjectionConfig(message.Config),
                 HandlerType = message.HandlerType,
                 Id = message.ProjectionId.ToString("N"),
                 Name = message.Name,
@@ -55,9 +56,9 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.CreateAndPrepareSlave message)
         {
-            var command = new ProjectionCoreServiceCommandReader.CreateAndPrepareSlaveCommand
+            var command = new CreateAndPrepareSlaveCommand
             {
-                Config = new ProjectionCoreServiceCommandReader.PersistedProjectionConfig(message.Config),
+                Config = new PersistedProjectionConfig(message.Config),
                 HandlerType = message.HandlerType,
                 Id = message.ProjectionId.ToString("N"),
                 Name = message.Name,
@@ -71,7 +72,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
         {
-            var command = new ProjectionCoreServiceCommandReader.SpoolStreamReadingCommand
+            var command = new SpoolStreamReadingCommand
             {
                 CatalogSequenceNumber = message.CatalogSequenceNumber,
                 LimitingCommitPosition = message.LimitingCommitPosition,
@@ -83,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.LoadStopped message)
         {
-            var command = new ProjectionCoreServiceCommandReader.LoadStoppedCommand
+            var command = new LoadStoppedCommand
             {
                 Id = message.ProjectionId.ToString("N")
             };
@@ -92,7 +93,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Start message)
         {
-            var command = new ProjectionCoreServiceCommandReader.StartCommand
+            var command = new StartCommand
             {
                 Id = message.ProjectionId.ToString("N")
             };
@@ -101,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Stop message)
         {
-            var command = new ProjectionCoreServiceCommandReader.StopCommand
+            var command = new StopCommand
             {
                 Id = message.ProjectionId.ToString("N")
             };
@@ -110,7 +111,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Kill message)
         {
-            var command = new ProjectionCoreServiceCommandReader.KillCommand
+            var command = new KillCommand
             {
                 Id = message.ProjectionId.ToString("N")
             };
@@ -119,7 +120,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)
         {
-            var command = new ProjectionCoreServiceCommandReader.DisposeCommand
+            var command = new DisposeCommand
             {
                 Id = message.ProjectionId.ToString("N")
             };
@@ -128,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
-            var command = new ProjectionCoreServiceCommandReader.GetStateCommand
+            var command = new GetStateCommand
             {
                 Id = message.ProjectionId.ToString("N"),
                 CorrelationId = message.CorrelationId.ToString("N"),
@@ -139,7 +140,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.GetResult message)
         {
-            var command = new ProjectionCoreServiceCommandReader.GetResultCommand
+            var command = new GetResultCommand
             {
                 Id = message.ProjectionId.ToString("N"),
                 CorrelationId = message.CorrelationId.ToString("N"),

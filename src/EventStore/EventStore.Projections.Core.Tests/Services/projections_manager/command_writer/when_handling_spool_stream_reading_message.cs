@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Commands;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -27,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
         public void publishes_spool_stream_reading_command()
         {
             var command =
-                AssertParsedSingleCommand<ProjectionCoreServiceCommandReader.SpoolStreamReadingCommand>(
+                AssertParsedSingleCommand<SpoolStreamReadingCommand>(
                     "$spool-stream-reading",
                     _workerId);
             

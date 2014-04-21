@@ -8,6 +8,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Responses;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -118,7 +119,7 @@ namespace EventStore.Projections.Core.Services.Management
                     break;
                 case "$projection-worker-started":
                 {
-                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.ProjectionWorkerStarted>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionWorkerStarted>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.ProjectionWorkerStarted(
                             Guid.ParseExact(commandBody.Id, "N")));
@@ -126,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
                 case "$prepared":
                 {
-                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Prepared>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<Prepared>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.Prepared(
                             Guid.ParseExact(commandBody.Id, "N"),
@@ -135,7 +136,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
                 case "$faulted":
                 {
-                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Faulted>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<Faulted>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.Faulted(
                             Guid.ParseExact(commandBody.Id, "N"),
@@ -144,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
                 case "$started":
                 {
-                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Started>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<Started>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.Started(Guid.ParseExact(commandBody.Id, "N")));
                     break;
@@ -152,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Management
                 case "$statistics-report":
                 {
                     var commandBody =
-                        resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.StatisticsReport>();
+                        resolvedEvent.Event.Data.ParseJson<StatisticsReport>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.StatisticsReport(
                             Guid.ParseExact(commandBody.Id, "N"),
@@ -162,7 +163,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
                 case "$stopped":
                 {
-                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.Stopped>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<Stopped>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.Stopped(
                             Guid.ParseExact(commandBody.Id, "N"),
@@ -171,7 +172,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
                 case "$state":
                 {
-                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.StateReport>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<StateReport>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.StateReport(
                             Guid.ParseExact(commandBody.CorrelationId, "N"),
@@ -183,7 +184,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
                 case "$result":
                 {
-                    var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionCoreResponseWriter.ResultReport>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<ResultReport>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.ResultReport(
                             Guid.ParseExact(commandBody.CorrelationId, "N"),

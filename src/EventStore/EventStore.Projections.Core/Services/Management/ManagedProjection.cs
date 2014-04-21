@@ -394,7 +394,7 @@ namespace EventStore.Projections.Core.Services.Management
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             SetLastReplyEnvelope(message.Envelope);
-            if (DoDisable1(message.Envelope))
+            if (DoDisable(message.Envelope))
             {
                 UpdateProjectionVersion();
                 StopUnlessPreparedOrLoaded();
@@ -407,7 +407,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             UpdateProjectionVersion();
             SetLastReplyEnvelope(message.Envelope);
-            if (DoDisable1(message.Envelope))
+            if (DoDisable(message.Envelope))
                 Abort();
         }
 
@@ -451,7 +451,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            DoDelete1();
+            DoDelete();
             UpdateProjectionVersion();
             SetLastReplyEnvelope(message.Envelope);
             StopUnlessPreparedOrLoaded();
@@ -783,16 +783,6 @@ namespace EventStore.Projections.Core.Services.Management
             Enabled = true;
         }
 
-        /// <summary>
-        /// Disables managed projection, but does not automatically stop it
-        /// </summary>
-        private void Disable()
-        {
-            if (!Enabled)
-                throw new InvalidOperationException("Projection is not enabled");
-            Enabled = false;
-        }
-
         private void BeginCreate(ProjectionConfig config, Message createandPrepapreMessage)
         {
             if (config == null) throw new ArgumentNullException("config");
@@ -984,14 +974,14 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        private bool DoDisable1(IEnvelope envelope)
+        private bool DoDisable(IEnvelope envelope)
         {
             if (!Enabled)
             {
                 envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Not enabled"));
                 return false;
             }
-            Disable();
+            Enabled = false;
             _pendingPersistedState = true;
             return true;
         }
@@ -1031,10 +1021,9 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        private void DoDelete1()
+        private void DoDelete()
         {
-            if (Enabled)
-                Disable();
+            Enabled = false;
             Deleted = true;
             _pendingPersistedState = true;
         }

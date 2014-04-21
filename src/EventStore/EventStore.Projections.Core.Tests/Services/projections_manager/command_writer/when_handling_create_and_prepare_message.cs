@@ -1,6 +1,7 @@
 ﻿using System;
 using EventStore.Core.Authentication;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Commands;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -58,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
         public void publishes_create_and_prepare_command()
         {
             var command =
-                AssertParsedSingleCommand<ProjectionCoreServiceCommandReader.CreateAndPrepareCommand>(
+                AssertParsedSingleCommand<CreateAndPrepareCommand>(
                     "$create-and-prepare",
                     _workerId);
             Assert.AreEqual(_projectionId.ToString("N"), command.Id);
@@ -66,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
             Assert.AreEqual(_projectionName, command.Name);
             Assert.AreEqual(_query, command.Query);
             Assert.AreEqual(
-                (ProjectionCoreServiceCommandReader.PersistedProjectionVersion) _projectionVersion,
+                (PersistedProjectionVersion) _projectionVersion,
                 command.Version);
             Assert.AreEqual(_config.CheckpointHandledThreshold, command.Config.CheckpointHandledThreshold);
             Assert.AreEqual(_config.CheckpointUnhandledBytesThreshold, command.Config.CheckpointUnhandledBytesThreshold);

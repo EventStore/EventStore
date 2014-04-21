@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Commands;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -25,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
         [Test]
         public void publishes_load_stopped_command()
         {
-            var command = AssertParsedSingleCommand<ProjectionCoreServiceCommandReader.LoadStoppedCommand>(
+            var command = AssertParsedSingleCommand<LoadStoppedCommand>(
                 "$load-stopped",
                 _workerId);
             Assert.AreEqual(_projectionId.ToString("N"), command.Id);

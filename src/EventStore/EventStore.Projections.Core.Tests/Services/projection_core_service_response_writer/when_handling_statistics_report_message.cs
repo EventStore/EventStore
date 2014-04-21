@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Responses;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -54,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
         [Test]
         public void publishes_statistics_report_response()
         {
-            var command = AssertParsedSingleCommand<ProjectionCoreResponseWriter.StatisticsReport>("$statistics-report");
+            var command = AssertParsedSingleCommand<StatisticsReport>("$statistics-report");
             Assert.AreEqual(_projectionId.ToString("N"), command.Id);
             Assert.AreEqual(_statistics.BufferedEvents, command.Statistics.BufferedEvents);
             Assert.AreEqual(_statistics.CheckpointStatus, command.Statistics.CheckpointStatus);

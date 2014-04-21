@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Commands;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -30,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
         [Test]
         public void publishes_get_state_command()
         {
-            var command = AssertParsedSingleCommand<ProjectionCoreServiceCommandReader.GetResultCommand>(
+            var command = AssertParsedSingleCommand<GetResultCommand>(
                 "$get-result",
                 _workerId);
             Assert.AreEqual(_projectionId.ToString("N"), command.Id);

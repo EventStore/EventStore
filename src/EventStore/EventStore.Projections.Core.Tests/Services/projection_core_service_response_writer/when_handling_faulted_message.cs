@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages.Persisted.Responses;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
@@ -25,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
         [Test]
         public void publishes_faulted_response()
         {
-            var command = AssertParsedSingleCommand<ProjectionCoreResponseWriter.Faulted>("$faulted");
+            var command = AssertParsedSingleCommand<Faulted>("$faulted");
             Assert.AreEqual(_projectionId.ToString("N"), command.Id);
             Assert.AreEqual(_faultedReason, command.FaultedReason);
 
