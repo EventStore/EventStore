@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected string PostEvent(int i)
             {
-                var response = MakeJsonPost(
+                var response = MakeArrayEventsPost(
                     TestStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {Number = i}}});
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 return response.Headers[HttpResponseHeader.Location];

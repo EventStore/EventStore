@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
                                   .SetReadRole("")
                                   .SetWriteRole("other");
                 var jsonMetadata = metadata.AsJsonString();
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestMetadataStream,
                     new[]
                         {
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
                 var httpWebRequest = (HttpWebRequest)request2;
                 httpWebRequest.ConnectionGroupName = TestStream;
                 httpWebRequest.Method = "POST";
-                httpWebRequest.ContentType = "application/json";
+                httpWebRequest.ContentType = "application/vnd.eventstore.events+json";
                 httpWebRequest.UseDefaultCredentials = false;
                 httpWebRequest.Headers.Add("ES-TrustedAuth", "root; admin, other");
                 httpWebRequest.GetRequestStream()

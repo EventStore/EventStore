@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
 
         protected string PostEvent(int i)
         {
-            var response = MakeJsonPost(
+            var response = MakeArrayEventsPost(
                 TestStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {Number = i}}});
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             return response.Headers[HttpResponseHeader.Location];
@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
 
         protected HttpWebResponse PostEvent<T>(T data, ICredentials credentials = null)
         {
-            return MakeJsonPost(
+            return MakeArrayEventsPost(
                 TestStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = data}}, credentials);
         }
 
