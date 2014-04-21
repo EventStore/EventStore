@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 var bytes = Encoding.UTF8.GetBytes(data);
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
-                _response = (HttpWebResponse) request.GetResponse();
+                _response = GetRequestResponse(request);
             }
 
             [Test]
@@ -164,7 +164,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 var bytes = Encoding.UTF8.GetBytes(data);
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
-                _response = (HttpWebResponse) request.GetResponse();
+                _response = GetRequestResponse(request);
             }
 
             [Test]
