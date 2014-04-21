@@ -12,10 +12,12 @@ namespace EventStore.ClientAPI
         /// a link event.
         /// </summary>
         public readonly RecordedEvent Event;
+        
         /// <summary>
         /// The link event if this <see cref="ResolvedEvent"/> is a link event.
         /// </summary>
         public readonly RecordedEvent Link;
+        
         /// <summary>
         /// Returns the event that was read or which triggered the subscription.
         /// 
@@ -24,6 +26,7 @@ namespace EventStore.ClientAPI
         /// Event.
         /// </summary>
         public RecordedEvent OriginalEvent { get { return Link ?? Event; } }
+
         /// <summary>
         /// Indicates whether this <see cref="ResolvedEvent"/> is a resolved link
         /// event.
@@ -34,10 +37,12 @@ namespace EventStore.ClientAPI
         /// The logical position of the <see cref="OriginalEvent"/>.
         /// </summary>
         public readonly Position? OriginalPosition;
+
         /// <summary>
         /// The stream name of the <see cref="OriginalEvent" />.
         /// </summary>
         public string OriginalStreamId { get { return OriginalEvent.EventStreamId; } }
+        
         /// <summary>
         /// The event number in the stream of the <see cref="OriginalEvent"/>.
         /// </summary>

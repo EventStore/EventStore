@@ -36,6 +36,9 @@ namespace EventStore.Core.Messages
                 Data = eventRecord.Data;
                 Created = eventRecord.TimeStamp.ToBinary();
                 Metadata = eventRecord.Metadata;
+                var isJson = eventRecord.IsJson;
+                DataContentType = isJson ? 1 : 0;
+                MetadataContentType = isJson ? 1 : 0;
                 CreatedEpoch = (long) (eventRecord.TimeStamp - new DateTime (1970, 1, 1)).TotalMilliseconds;
             }
         }

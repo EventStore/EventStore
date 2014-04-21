@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.AppendToStream("test-stream",
                                  -1, 
                                  new EventData(_eventId0, "event0", false, new byte[3], new byte[2]),
-                                 new EventData(_eventId1, "event1", false, new byte[7], new byte[10]));
+                                 new EventData(_eventId1, "event1", true, new byte[7], new byte[10]));
             _conn.DeleteStream("deleted-stream", -1, hardDelete: true);
         }
 
@@ -91,6 +91,15 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(0, res.EventNumber);
             Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
             Assert.AreNotEqual(0, res.Event.Value.OriginalEvent.CreatedEpoch);
+        }
+
+        [Test, Category("Network")]
+        public void retrieve_the_is_json_flag_properly() {
+            var res = _conn.ReadEvent("test-stream", 1, false);
+
+            Assert.AreEqual(EventReadStatus.Success, res.Status);
+            Assert.AreEqual(res.Event.Value.OriginalEvent.EventId, _eventId1);
+            Assert.IsTrue(res.Event.Value.OriginalEvent.IsJson);
         }
 
         [Test, Category("Network")]
