@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void Given()
             {
-                var response = MakeJsonPost(
+                var response = MakeRawJsonPost(
                     "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 Console.WriteLine("done with json post");
