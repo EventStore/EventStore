@@ -11,19 +11,23 @@ namespace EventStore.ClientAPI
         /// The ID of the event, used as part of the idempotent write check.
         /// </summary>
         public readonly Guid EventId;
+        
         /// <summary>
         /// The name of the event type. It is strongly recommended that these
         /// use lowerCamelCase if projections are to be used.
         /// </summary>
         public readonly string Type;
+        
         /// <summary>
         /// Flag indicating whether the data and metadata are JSON.
         /// </summary>
         public readonly bool IsJson;
+        
         /// <summary>
         /// The raw bytes of the event data.
         /// </summary>
         public readonly byte[] Data;
+
         /// <summary>
         /// The raw bytes of the event metadata.
         /// </summary>

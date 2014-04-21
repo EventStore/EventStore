@@ -8,8 +8,11 @@ namespace EventStore.Core.Data
 {
     public class EventRecord : IEquatable<EventRecord>
     {
-        public readonly int EventNumber;
+        public bool IsJson {
+            get { return (Flags & PrepareFlags.IsJson) == PrepareFlags.IsJson; }
+        }
 
+        public readonly int EventNumber;
         public readonly long LogPosition;
         public readonly Guid CorrelationId;
         public readonly Guid EventId;
@@ -36,6 +39,7 @@ namespace EventStore.Core.Data
             EventStreamId = prepare.EventStreamId;
             ExpectedVersion = prepare.ExpectedVersion;
             TimeStamp = prepare.TimeStamp;
+
             Flags = prepare.Flags;
             EventType = prepare.EventType ?? string.Empty;
             Data = prepare.Data ?? Empty.ByteArray;
