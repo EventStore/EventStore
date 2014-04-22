@@ -28,21 +28,55 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "catalog", 0, "catalog", 0, false, new TFPos(120, 110), _eventId, "$@", false, "account-00", ""),
-                    tag0, _subscriptionId, 0));
+                        "catalog",
+                        0,
+                        "catalog",
+                        0,
+                        false,
+                        new TFPos(120, 110),
+                        _eventId,
+                        "$@",
+                        false,
+                        "account-00",
+                        ""),
+                    tag0,
+                    _subscriptionId,
+                    0));
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
                     new ResolvedEvent(
-                        "catalog", 1, "catalog", 1, false, new TFPos(220, 210), Guid.NewGuid(), "$@", false,
-                        "account-01", ""), tag1, _subscriptionId, 1));
+                        "catalog",
+                        1,
+                        "catalog",
+                        1,
+                        false,
+                        new TFPos(220, 210),
+                        Guid.NewGuid(),
+                        "$@",
+                        false,
+                        "account-01",
+                        ""),
+                    tag1,
+                    _subscriptionId,
+                    1));
             var spoolRequests = HandledMessages.OfType<ReaderSubscriptionManagement.SpoolStreamReading>().ToArray();
 
             _bus.Publish(
-                new PartitionProcessingResult(_workerId, spoolRequests[0].SubscriptionId, "account-00", Guid.Empty,
+                new PartitionProcessingResult(
+                    _workerId,
+                    _masterProjectionId,
+                    spoolRequests[0].SubscriptionId,
+                    "account-00",
+                    Guid.Empty,
                     CheckpointTag.FromByStreamPosition(0, "", 0, "account-00", int.MaxValue, 10000),
                     "{\"data\":1}"));
             _bus.Publish(
-                new PartitionProcessingResult(_workerId, spoolRequests[1].SubscriptionId, "account-01", Guid.Empty,
+                new PartitionProcessingResult(
+                    _workerId,
+                    _masterProjectionId,
+                    spoolRequests[1].SubscriptionId,
+                    "account-01",
+                    Guid.Empty,
                     CheckpointTag.FromByStreamPosition(0, "", 1, "account-01", int.MaxValue, 10000),
                     "{\"data\":2}"));
         }

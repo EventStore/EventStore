@@ -39,6 +39,15 @@ namespace EventStore.ClientAPI
             return SendPost(endPoint.ToHttpUrl("/projections/onetime?type=JS"), query, userCredentials, HttpStatusCode.Created);
         }
 
+        public Task CreateTransient(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
+        {
+            return SendPost(
+                endPoint.ToHttpUrl("/projections/transient?name={0}&type=JS", name),
+                query,
+                userCredentials,
+                HttpStatusCode.Created);
+        }
+
         public Task CreateContinuous(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
         {
             return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1", name), 

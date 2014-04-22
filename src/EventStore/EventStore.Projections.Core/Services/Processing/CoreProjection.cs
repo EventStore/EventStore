@@ -9,6 +9,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
+using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -44,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProjectionVersion _version;
 
         private readonly IPublisher _publisher;
+        private readonly IODispatcher _ioDispatcher;
 
         private readonly ProjectionProcessingStrategy _projectionProcessingStrategy;
         private readonly Guid _workerId;
@@ -78,6 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private SlaveProjectionCommunicationChannels _slaveProjections;
         private int _statisticsSequentialNumber;
         private bool _disposed;
+        private MasterCoreProjectionResponseReader _masterProjectionResponseReader;
         //NOTE: this is only for slave projections (TBD)
 
 
@@ -113,6 +116,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopOnEof = projectionProcessingStrategy.GetStopOnEof();
             _logger = logger ?? LogManager.GetLoggerFor<CoreProjection>();
             _publisher = publisher;
+            _ioDispatcher = ioDispatcher;
             _partitionStateCache = partitionStateCache;
             _requiresRootPartition = projectionProcessingStrategy.GetRequiresRootPartition();
             _isSlaveProjection = isSlaveProjection;
@@ -368,6 +372,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void StopSlaveProjections()
         {
+            if (_masterProjectionResponseReader != null)
+                _masterProjectionResponseReader.Stop();
             //TODO: encapsulate into StopSlaveProjections message?
             var slaveProjections = _slaveProjections;
             if (slaveProjections != null)
@@ -509,6 +515,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStartSlaveProjectionsRequested()
         {
+            _masterProjectionResponseReader = new MasterCoreProjectionResponseReader(
+                _publisher,
+                _ioDispatcher,
+                _workerId,
+                _projectionCorrelationId);
+            _masterProjectionResponseReader.Start();
             _publisher.Publish(
                 new ProjectionManagementMessage.StartSlaveProjections(
                     new PublishEnvelope(_inputQueue),

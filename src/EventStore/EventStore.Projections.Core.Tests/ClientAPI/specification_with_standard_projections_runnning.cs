@@ -50,10 +50,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
         private void CreateNode()
         {
-            _projections = new ProjectionsSubsystem(1, runProjections: RunProjections.All);
+            var projectionWorkerThreadCount = GivenWorkerThreadCount();
+            _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: RunProjections.All);
             _node = new MiniNode(
                 PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] {_projections});
             _node.Start();
+        }
+
+        protected virtual int GivenWorkerThreadCount()
+        {
+            return 1;
         }
 
         [TearDown]
@@ -231,6 +237,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         protected void PostProjection(string query)
         {
             _manager.CreateContinuous("test-projection", query, _admin);
+            WaitIdle();
+        }
+
+        protected void PostQuery(string query)
+        {
+            _manager.CreateTransient("query", query, _admin);
             WaitIdle();
         }
     }

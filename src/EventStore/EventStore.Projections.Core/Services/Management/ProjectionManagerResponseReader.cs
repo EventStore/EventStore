@@ -194,6 +194,15 @@ namespace EventStore.Projections.Core.Services.Management
                             commandBody.Position));
                     break;
                 }
+                case "$slave-projection-reader-assigned":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<SlaveProjectionReaderAssigned>();
+                    _publisher.Publish(
+                        new CoreProjectionStatusMessage.SlaveProjectionReaderAssigned(
+                            Guid.ParseExact(commandBody.Id, "N"),
+                            Guid.ParseExact(commandBody.SubscriptionId, "N")));
+                    break;
+                }
                 default:
                     throw new Exception("Unknown response: " + command);
             }

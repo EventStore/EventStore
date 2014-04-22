@@ -22,12 +22,20 @@ namespace EventStore.Projections.Core.Services.Processing
             string correlationId)
         {
             _resultsPublisher.Publish(
-                new PartitionProcessingResult(_workerId, subscriptionId, partition, causedByGuid, causedBy, resultBody));
+                new PartitionProcessingResult(
+                    _workerId,
+                    _masterCoreProjectionId,
+                    subscriptionId,
+                    partition,
+                    causedByGuid,
+                    causedBy,
+                    resultBody));
         }
 
         public void WritePartitionMeasured(Guid subscriptionId, string partition, int size)
         {
-            _resultsPublisher.Publish(new PartitionMeasured(_workerId, subscriptionId, partition, size));
+            _resultsPublisher.Publish(
+                new PartitionMeasured(_workerId, _masterCoreProjectionId, subscriptionId, partition, size));
         }
 
         public void WriteRunningResult(EventProcessedResult result)
@@ -49,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void WriteProgress(Guid subscriptionId, float progress)
         {
             _resultsPublisher.Publish(
-                new PartitionProcessingProgress(_workerId, subscriptionId, progress));
+                new PartitionProcessingProgress(_workerId, _masterCoreProjectionId, subscriptionId, progress));
         }
     }
 }

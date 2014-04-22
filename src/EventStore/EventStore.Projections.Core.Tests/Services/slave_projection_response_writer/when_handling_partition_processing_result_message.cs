@@ -10,6 +10,7 @@ namespace EventStore.Projections.Core.Tests.Services.slave_projection_response_w
     class when_handling_partition_processing_result_message : specification_with_slave_projection_response_writer
     {
         private Guid _workerId;
+        private Guid _masterProjectionId;
         private Guid _subscriptionId;
         private string _partition;
         private Guid _causedBy;
@@ -19,6 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services.slave_projection_response_w
         protected override void Given()
         {
             _workerId = Guid.NewGuid();
+            _masterProjectionId = Guid.NewGuid();
             _subscriptionId = Guid.NewGuid();
             _partition = "partition";
             _causedBy = Guid.NewGuid();
@@ -29,13 +31,21 @@ namespace EventStore.Projections.Core.Tests.Services.slave_projection_response_w
         protected override void When()
         {
             _sut.Handle(
-                new PartitionProcessingResult(_workerId, _subscriptionId, _partition, _causedBy, _position, _result));
+                new PartitionProcessingResult(
+                    _workerId,
+                    _masterProjectionId,
+                    _subscriptionId,
+                    _partition,
+                    _causedBy,
+                    _position,
+                    _result));
         }
 
         [Test]
         public void publishes_partition_processing_result_response()
         {
-            var body = AssertParsedSingleResponse<PartitionProcessingResultResponse>("$result", _subscriptionId);
+            var body = AssertParsedSingleResponse<PartitionProcessingResultResponse>("$result", _masterProjectionId);
+            Assert.AreEqual(_subscriptionId.ToString("N"), body.SubscriptionId);
             Assert.AreEqual(_partition, body.Partition);
             Assert.AreEqual(_causedBy.ToString("N"), body.CausedBy);
             Assert.AreEqual(_position, body.Position);

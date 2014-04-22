@@ -204,6 +204,7 @@
     <Compile Include="Projections.cs" />
     <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
     <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
+    <Compile Include="Services\Management\MasterCoreProjectionResponseReader.cs" />
     <Compile Include="Services\Management\MultiStreamMessageWriter.cs" />
     <Compile Include="Services\Management\IMultiStreamMessageWriter.cs" />
     <Compile Include="Services\Management\IResponseWriter.cs" />

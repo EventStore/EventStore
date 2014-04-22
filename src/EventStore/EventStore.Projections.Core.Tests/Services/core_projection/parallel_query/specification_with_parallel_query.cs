@@ -12,6 +12,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
     public abstract class specification_with_parallel_query : TestFixtureWithCoreProjectionStarted
     {
         protected Guid _eventId;
+        protected Guid _masterProjectionId;
         protected Guid _slave1;
         protected Guid _slave2;
 
@@ -61,6 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
 
             _bus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
 
+            _masterProjectionId = Guid.NewGuid();
             _slave1 = Guid.NewGuid();
             _slave2 = Guid.NewGuid();
 

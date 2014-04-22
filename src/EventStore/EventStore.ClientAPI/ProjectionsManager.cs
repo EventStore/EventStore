@@ -122,6 +122,30 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Synchronously creates a one-time query.
+        /// </summary>
+        /// <param name="query">The JavaScript source code for the query.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
+        public void CreateTransient(string name, string query, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+            CreateTransientAsync(name, query, userCredentials).Wait();
+        }
+
+        /// <summary>
+        /// Asynchronously creates a one-time query.
+        /// </summary>
+        /// <param name="query">The JavaScript source code for the query.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
+        public Task CreateTransientAsync(string name, string query, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+            return _client.CreateTransient(_httpEndPoint, name, query, userCredentials);
+        }
+
+        /// <summary>
         /// Synchronously creates a continuous projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>

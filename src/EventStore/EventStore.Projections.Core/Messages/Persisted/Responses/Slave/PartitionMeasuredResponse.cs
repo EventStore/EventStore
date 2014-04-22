@@ -2,6 +2,7 @@
 {
     public class PartitionMeasuredResponse
     {
+        public string SubscriptionId;
         public string Partition;
         public int Size;
     }

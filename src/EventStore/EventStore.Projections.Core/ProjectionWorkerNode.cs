@@ -32,7 +32,8 @@ namespace EventStore.Projections.Core
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
         private ResponseWriter _responseWriter;
-        private ProjectionCoreResponseWriter _coreResponseWriter;
+        private readonly ProjectionCoreResponseWriter _coreResponseWriter;
+        private readonly SlaveProjectionResponseWriter _slaveProjectionResponseWriter;
 
         public ProjectionWorkerNode(
             Guid workerId,
@@ -67,6 +68,9 @@ namespace EventStore.Projections.Core
                     _ioDispatcher,
                     workerId.ToString("N"));
 
+                var multiStreamWriter = new MultiStreamMessageWriter(_ioDispatcher);
+                _slaveProjectionResponseWriter = new SlaveProjectionResponseWriter(multiStreamWriter);
+
                 _projectionCoreService = new ProjectionCoreService(
                     workerId,
                     inputQueue,
@@ -85,6 +89,11 @@ namespace EventStore.Projections.Core
         public InMemoryBus CoreOutput
         {
             get { return _coreOutput; }
+        }
+
+        public SlaveProjectionResponseWriter SlaveProjectionResponseWriter
+        {
+            get { return _slaveProjectionResponseWriter; }
         }
 
         public void SetupMessaging(IBus coreInputBus)

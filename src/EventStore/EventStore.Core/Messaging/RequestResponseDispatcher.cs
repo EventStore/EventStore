@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Bus;
 
 namespace EventStore.Core.Messaging
@@ -14,15 +15,20 @@ namespace EventStore.Core.Messaging
         private readonly Func<TRequest, Guid> _getRequestCorrelationId;
         private readonly Func<TResponse, Guid> _getResponseCorrelationId;
         private readonly IEnvelope _defaultReplyEnvelope;
+        private readonly Func<Guid, Message> _cancelMessageFactory;
 
         public RequestResponseDispatcher(
-            IPublisher publisher, Func<TRequest, Guid> getRequestCorrelationId,
-            Func<TResponse, Guid> getResponseCorrelationId, IEnvelope defaultReplyEnvelope)
+            IPublisher publisher,
+            Func<TRequest, Guid> getRequestCorrelationId,
+            Func<TResponse, Guid> getResponseCorrelationId,
+            IEnvelope defaultReplyEnvelope,
+            Func<Guid, Message> cancelMessageFactory = null)
         {
             _publisher = publisher;
             _getRequestCorrelationId = getRequestCorrelationId;
             _getResponseCorrelationId = getResponseCorrelationId;
             _defaultReplyEnvelope = defaultReplyEnvelope;
+            _cancelMessageFactory = cancelMessageFactory;
         }
 
         public Guid Publish(TRequest request, Action<TResponse> action)
@@ -67,14 +73,24 @@ namespace EventStore.Core.Messaging
 
         public void Cancel(Guid requestId)
         {
+            if (_cancelMessageFactory != null)
+                _publisher.Publish(_cancelMessageFactory(requestId));
             lock (_map)
                 _map.Remove(requestId);
         }
 
         public void CancelAll()
         {
+            Guid[] ids = null;
             lock (_map)
+            {
                 _map.Clear();
+                if (_cancelMessageFactory != null)
+                    ids = _map.Keys.ToArray();
+            }
+            if (ids != null)
+                foreach (var id in ids)
+                    _publisher.Publish(_cancelMessageFactory(id));
         }
     }
 }

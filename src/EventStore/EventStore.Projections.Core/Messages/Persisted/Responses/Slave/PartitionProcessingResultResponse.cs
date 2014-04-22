@@ -5,6 +5,7 @@ namespace EventStore.Projections.Core.Messages.Persisted.Responses.Slave
 {
     public class PartitionProcessingResultResponse
     {
+        public string SubscriptionId;
         public string Partition;
         public string CausedBy;
 

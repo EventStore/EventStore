@@ -2,6 +2,7 @@
 {
     public class PartitionProcessingProgressResponse
     {
+        public string SubscriptionId;
         public string Partition;
         public float Progress;
     }

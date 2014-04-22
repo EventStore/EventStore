@@ -14,6 +14,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Messaging;
+using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core
@@ -136,7 +137,6 @@ namespace EventStore.Projections.Core
                     runProjections);
                 projectionNode.SetupMessaging(coreInputBus);
 
-
                 var forwarder = new RequestResponseQueueForwarder(
                     inputQueue: coreQueue,
                     externalRequestQueue: mainQueue);
@@ -170,12 +170,23 @@ namespace EventStore.Projections.Core
                     */
 
 
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<PartitionProcessingResultBase>(_managerInputQueue));
+                    projectionNode.CoreOutput.Subscribe<PartitionMeasured>(projectionNode.SlaveProjectionResponseWriter);
+                    projectionNode.CoreOutput.Subscribe<PartitionProcessingProgress>(projectionNode.SlaveProjectionResponseWriter);
+                    projectionNode.CoreOutput.Subscribe<PartitionProcessingResult>(projectionNode.SlaveProjectionResponseWriter);
+
+//                    projectionNode.CoreOutput.Subscribe(
+//                        Forwarder.Create<PartitionProcessingResultBase>(_managerInputQueue));
+
+
+                    //TODO: remove
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<ReaderSubscriptionManagement.SpoolStreamReading>(_managerInputQueue));
+                    //TODO: remove
                     projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<ProjectionManagementMessage.ControlMessage>(_managerInputQueue));
+                        Forwarder.Create<ProjectionManagementMessage.Delete>(_managerInputQueue));
+                    //TODO: remove
+                    projectionNode.CoreOutput.Subscribe(
+                        Forwarder.Create<ProjectionManagementMessage.StartSlaveProjections>(_managerInputQueue));
 
                     projectionNode.CoreOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(mainQueue));
                     projectionNode.CoreOutput.Subscribe(

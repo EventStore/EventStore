@@ -69,8 +69,8 @@ namespace EventStore.Core.Helpers
                     publisher,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
-                    envelope);
-
+                    envelope,
+                    cancelMessageFactory: requestId => new AwakeServiceMessage.UnsubscribeAwake(requestId));
         }
 
         public Guid ReadBackward(
@@ -221,9 +221,13 @@ namespace EventStore.Core.Helpers
                 action);
         }
 
-        public void SubscribeAwake(string streamId, TFPos from, Action<IODispatcherDelayedMessage> action)
+        public void SubscribeAwake(
+            string streamId,
+            TFPos from,
+            Action<IODispatcherDelayedMessage> action,
+            Guid? correlationId = null)
         {
-            var corrId = Guid.NewGuid();
+            var corrId = correlationId ?? Guid.NewGuid();
             Awaker.Publish(
                 new AwakeServiceMessage.SubscribeAwake(
                     Awaker.Envelope,
@@ -232,6 +236,11 @@ namespace EventStore.Core.Helpers
                     from,
                     new IODispatcherDelayedMessage(corrId, null)),
                 action);
+        }
+
+        public void UnsubscribeAwake(Guid correlationId)
+        {
+            Awaker.Cancel(correlationId);
         }
 
         public void UpdateStreamAcl(
@@ -334,7 +343,11 @@ namespace EventStore.Core.Helpers
               return steps => DeleteStreamWithRetry(streamId, expectedVersion, hardDelete, principal, handler, steps);
         }
 
-        public Step BeginSubscribeAwake(string streamId, TFPos from, Action<IODispatcherDelayedMessage> handler)
+        public Step BeginSubscribeAwake(
+            string streamId,
+            TFPos from,
+            Action<IODispatcherDelayedMessage> handler,
+            Guid? correlationId = null)
         {
             return steps => SubscribeAwake(
                 streamId,
@@ -343,7 +356,8 @@ namespace EventStore.Core.Helpers
                 {
                     handler(message);
                     Perform(steps);
-                });
+                },
+                correlationId);
         }
 
         private void WriteEventsWithRetry(
