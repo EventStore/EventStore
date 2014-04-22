@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            _logger.Trace("RCVD: " + command + resolvedEvent.Event.Data.FromUtf8());
+            _logger.Trace("RCVD: " + command);
             switch (command)
             {
                 case "$create-prepared":

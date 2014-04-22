@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Management
             _ioDispatcher = ioDispatcher;
             _workerId = workerId;
             _masterProjectionId = masterProjectionId;
-            _streamId = "$projections-" + masterProjectionId.ToString("N");
+            _streamId = "$projections-$" + masterProjectionId.ToString("N");
         }
 
         public void Start()
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Management
                         new PartitionMeasured(
                             _workerId,
                             _masterProjectionId,
-                            Guid.ParseExact("N", body.SubscriptionId),
+                            Guid.ParseExact(body.SubscriptionId, "N"),
                             body.Partition,
                             body.Size));
                     break;
@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core.Services.Management
                         new PartitionProcessingProgress(
                             _workerId,
                             _masterProjectionId,
-                            Guid.ParseExact("N", body.SubscriptionId),
+                            Guid.ParseExact(body.SubscriptionId, "N"),
                             body.Progress));
                     break;
                 }
@@ -133,9 +133,9 @@ namespace EventStore.Projections.Core.Services.Management
                         new PartitionProcessingResult(
                             _workerId,
                             _masterProjectionId,
-                            Guid.ParseExact("N", body.SubscriptionId), 
+                            Guid.ParseExact(body.SubscriptionId, "N"), 
                             body.Partition,
-                            Guid.ParseExact("N", body.CausedBy),
+                            Guid.ParseExact(body.CausedBy, "N"),
                             body.Position,
                             body.Result));
                     break;
