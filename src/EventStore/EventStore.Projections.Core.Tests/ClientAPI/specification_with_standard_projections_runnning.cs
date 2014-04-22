@@ -140,9 +140,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);
         }
 
-        protected static void WaitIdle()
+        protected static void WaitIdle(int multiplier = 1)
         {
-            QueueStatsCollector.WaitIdle();
+            QueueStatsCollector.WaitIdle(multiplier: multiplier);
         }
 
         [Conditional("DEBUG")]

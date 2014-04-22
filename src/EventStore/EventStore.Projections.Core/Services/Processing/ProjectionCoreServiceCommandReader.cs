@@ -122,14 +122,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                     if (readResultForward.Result == ReadStreamResult.Success)
                         subscribeFrom = readResultForward.TfLastCommitPosition;
-                    Trace.WriteLine("Awaiting control stream");
+                    //Trace.WriteLine("Awaiting control stream");
 
                     yield return
                         _ioDispatcher.BeginSubscribeAwake(
                             ProjectionNamesBuilder._projectionsControlStream,
                             new TFPos(subscribeFrom, subscribeFrom),
                             message => { });
-                    Trace.WriteLine("Control stream await completed");
+                    //Trace.WriteLine("Control stream await completed");
 
                 } while (true);
 

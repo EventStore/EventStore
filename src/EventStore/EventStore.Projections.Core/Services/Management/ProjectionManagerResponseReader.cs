@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Management
                 var subscribeFrom = default(TFPos);
                 do
                 {
-                    Trace.WriteLine("Reading " + ProjectionNamesBuilder._projectionsMasterStream);
+                    //Trace.WriteLine("Reading " + ProjectionNamesBuilder._projectionsMasterStream);
                     yield return
                         _ioDispatcher.BeginReadForward(
                             ProjectionNamesBuilder._projectionsMasterStream,
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Services.Management
                             SystemAccount.Principal,
                             completed =>
                             {
-                                Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
+                                //Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
                                 if (completed.Result == ReadStreamResult.Success
                                     || completed.Result == ReadStreamResult.NoStream)
                                 {
@@ -99,20 +99,22 @@ namespace EventStore.Projections.Core.Services.Management
                                             PublishCommand(e);
                                     }
                                 }
+                                else
+                                    Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
                             });
                      
 
                 } while (!eof);
-                Trace.WriteLine("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
+                //Trace.WriteLine("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
                 yield return _ioDispatcher.BeginSubscribeAwake(ProjectionNamesBuilder._projectionsMasterStream, subscribeFrom, message => { });
-                Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " await completed");
+                //Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " await completed");
             }
         }
 
         private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            Trace.WriteLine("Response received: " + command);
+            //Trace.WriteLine("Response received: " + command);
             switch (command)
             {
                 case "$response-reader-starting":

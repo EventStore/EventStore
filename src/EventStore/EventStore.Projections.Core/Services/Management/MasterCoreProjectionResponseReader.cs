@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Services.Management
                 var subscribeFrom = default(TFPos);
                 do
                 {
-                    Trace.WriteLine("Reading " + _streamId);
+                    //Trace.WriteLine("Reading " + _streamId);
                     yield return
                         _ioDispatcher.BeginReadForward(
                             _streamId,
@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Management
                             SystemAccount.Principal,
                             completed =>
                             {
-                                Trace.WriteLine(_streamId + " read completed: " + completed.Result);
+                                //Trace.WriteLine(_streamId + " read completed: " + completed.Result);
                                 if (completed.Result == ReadStreamResult.Success
                                     || completed.Result == ReadStreamResult.NoStream)
                                 {
@@ -85,14 +85,16 @@ namespace EventStore.Projections.Core.Services.Management
                                             PublishCommand(e);
                                     }
                                 }
+                                else
+                                    Trace.WriteLine(_streamId + " read completed: " + completed.Result);
                             });
 
 
                 } while (!eof);
-                Trace.WriteLine("Awaiting " + _streamId);
+                //Trace.WriteLine("Awaiting " + _streamId);
                 _lastAwakeCorrelationId = Guid.NewGuid();
                 yield return _ioDispatcher.BeginSubscribeAwake(_streamId, subscribeFrom, message => { }, _lastAwakeCorrelationId);
-                Trace.WriteLine(_streamId + " await completed");
+                //Trace.WriteLine(_streamId + " await completed");
             }
             // unlikely we can ever get here, but still possible - do nothing
         }
@@ -100,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void PublishCommand(ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            Trace.WriteLine("Response received: " + command);
+            //Trace.WriteLine("Response received: " + command);
             switch (command)
             {
                 case "$measured":

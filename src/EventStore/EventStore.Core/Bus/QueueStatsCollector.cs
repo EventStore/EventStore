@@ -220,7 +220,7 @@ namespace EventStore.Core.Bus
 #endif
 
         [Conditional("DEBUG")]
-        public static void WaitIdle(bool waitForNonEmptyTf = false)
+        public static void WaitIdle(bool waitForNonEmptyTf = false, int multiplier = 1)
         {
 #if DEBUG
             var counter = 0;
@@ -237,7 +237,7 @@ namespace EventStore.Core.Bus
                         {
                             Console.WriteLine("Waiting for IDLE state...");
                             counter++;
-                            if (counter > 150)
+                            if (counter > 150 * multiplier)
                                 throw new ApplicationException("Infinite loop?");
                         }
                     }
