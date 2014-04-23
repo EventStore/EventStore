@@ -1,8 +1,7 @@
 ﻿using System;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -20,6 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 Guid.NewGuid(),
                 CheckpointTag.FromPosition(0, 0, -1),
                 CreateReaderStrategy(),
+                new FakeTimeProvider(),
                 1000,
                 2000);
         }
@@ -33,6 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 Guid.NewGuid(),
                 CheckpointTag.FromPosition(0, 0, -1),
                 CreateReaderStrategy(),
+                new FakeTimeProvider(),
                 1000,
                 2000);
         }
@@ -45,6 +46,21 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 new FakePublisher(),
                 Guid.NewGuid(),
                 CheckpointTag.FromPosition(0, 0, -1),
+                null,
+                new FakeTimeProvider(),
+                1000,
+                2000);
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void null_time_provider_throws_argument_null_exception()
+        {
+            new ReaderSubscription(
+                "Test Subscription",
+                new FakePublisher(),
+                Guid.NewGuid(),
+                CheckpointTag.FromPosition(0, 0, -1),
+                CreateReaderStrategy(),
                 null,
                 1000,
                 2000);

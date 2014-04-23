@@ -1,5 +1,6 @@
 using System;
 using EventStore.Core.Bus;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -12,6 +13,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid subscriptionId,
             CheckpointTag @from,
             IReaderStrategy readerStrategy,
+            ITimeProvider timeProvider,
             long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold,
             bool stopOnEof = false,
@@ -21,6 +23,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 subscriptionId,
                 @from,
                 readerStrategy,
+                timeProvider,
                 checkpointUnhandledBytesThreshold,
                 checkpointProcessedEventsThreshold,
                 stopOnEof,

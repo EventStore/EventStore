@@ -139,7 +139,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 case ReadStreamResult.Success:
                     foreach (var e in completed.Events)
                     {
-                        DeliverEvent(e, 17.7f);
+                        DeliverEvent(e, 19.9f);
                         if (CheckEnough())
                             return;
                     }

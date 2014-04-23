@@ -182,15 +182,27 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_reorderEvents)
                 return new EventReorderingReaderSubscription(
-                    publisher, subscriptionId, fromCheckpointTag, this,
+                    publisher,
+                    subscriptionId,
+                    fromCheckpointTag,
+                    this,
+                    _timeProvider,
                     readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
-                    readerSubscriptionOptions.CheckpointProcessedEventsThreshold, _processingLag,
-                    readerSubscriptionOptions.StopOnEof, readerSubscriptionOptions.StopAfterNEvents);
+                    readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                    _processingLag,
+                    readerSubscriptionOptions.StopOnEof,
+                    readerSubscriptionOptions.StopAfterNEvents);
             else
-                return new ReaderSubscription(_tag,
-                    publisher, subscriptionId, fromCheckpointTag, this,
+                return new ReaderSubscription(
+                    _tag,
+                    publisher,
+                    subscriptionId,
+                    fromCheckpointTag,
+                    this,
+                    _timeProvider, 
                     readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
-                    readerSubscriptionOptions.CheckpointProcessedEventsThreshold, readerSubscriptionOptions.StopOnEof,
+                    readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                    readerSubscriptionOptions.StopOnEof,
                     readerSubscriptionOptions.StopAfterNEvents);
         }
 

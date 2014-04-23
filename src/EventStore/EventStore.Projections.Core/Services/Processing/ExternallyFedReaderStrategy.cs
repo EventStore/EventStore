@@ -58,6 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 subscriptionId,
                 fromCheckpointTag,
                 this,
+                _timeProvider, 
                 readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
                 readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
                 readerSubscriptionOptions.StopOnEof,

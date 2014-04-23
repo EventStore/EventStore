@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Bus;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -14,12 +15,26 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int _processingLagMs;
 
         public EventReorderingReaderSubscription(
-            IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
-            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, int processingLagMs,
-            bool stopOnEof = false, int? stopAfterNEvents = null)
+            IPublisher publisher,
+            Guid subscriptionId,
+            CheckpointTag @from,
+            IReaderStrategy readerStrategy,
+            ITimeProvider timeProvider,
+            long? checkpointUnhandledBytesThreshold,
+            int? checkpointProcessedEventsThreshold,
+            int processingLagMs,
+            bool stopOnEof = false,
+            int? stopAfterNEvents = null)
             : base(
-                publisher, subscriptionId, @from, readerStrategy, checkpointUnhandledBytesThreshold,
-                checkpointProcessedEventsThreshold, stopOnEof, stopAfterNEvents)
+                publisher,
+                subscriptionId,
+                @from,
+                readerStrategy,
+                timeProvider,
+                checkpointUnhandledBytesThreshold,
+                checkpointProcessedEventsThreshold,
+                stopOnEof,
+                stopAfterNEvents)
         {
             _processingLagMs = processingLagMs;
         }

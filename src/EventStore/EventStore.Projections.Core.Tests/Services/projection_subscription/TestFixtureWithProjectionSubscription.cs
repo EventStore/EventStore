@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<EventReaderSubscriptionMessage.PartitionMeasured> _partitionMeasuredHandler;
         protected TestHandler<EventReaderSubscriptionMessage.PartitionDeleted> _partitionDeletedHandler;
         protected IReaderSubscription _subscription;
+        protected ITimeProvider _timeProvider;
         protected IEventReader ForkedReader;
         protected InMemoryBus _bus;
         protected Action<SourceDefinitionBuilder> _source = null;
@@ -36,6 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _checkpointProcessedEventsThreshold = 2000;
             Given();
             _bus = new InMemoryBus("bus");
+            _timeProvider = new RealTimeProvider();
             _projectionCorrelationId = Guid.NewGuid();
             _eventHandler = new TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived>();
             _checkpointHandler = new TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested>();
@@ -68,6 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 _projectionCorrelationId,
                 _readerStrategy.PositionTagger.MakeZeroCheckpointTag(),
                 _readerStrategy,
+                _timeProvider,
                 _checkpointUnhandledBytesThreshold,
                 _checkpointProcessedEventsThreshold);
         }

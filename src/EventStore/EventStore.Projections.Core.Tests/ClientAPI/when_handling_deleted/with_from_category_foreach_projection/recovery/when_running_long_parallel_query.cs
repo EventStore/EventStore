@@ -1,4 +1,8 @@
-﻿using NUnit.Framework;
+﻿using System.Diagnostics;
+using System.Linq;
+using EventStore.ClientAPI;
+using EventStore.Core.Data;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_category_foreach_projection.recovery
 {
@@ -42,6 +46,36 @@ fromCategory('stream').foreachStream().when({
             AssertStreamTail("$projections-query-stream-1-result", "Result:{\"a\":10}");
             AssertStreamTail("$projections-query-stream-2-result", "Result:{\"a\":10}");
             AssertStreamTail("$projections-query-stream-35-result", "Result:{\"a\":10}");
+            DumpStreams();
+        }
+
+        private void DumpStreams()
+        {
+            var result = _conn.ReadAllEventsForward(Position.Start, 10000, false, _admin);
+            var top = result.Events.GroupBy(v => v.OriginalStreamId)
+                .Select(v => new {v.Key, Count = v.Count()})
+                .OrderByDescending(v => v.Count);
+            foreach (var s in top.Take(50))
+            {
+                Trace.WriteLine(s.Count.ToString("0000") + " - " + s.Key);
+            }
+
+            Trace.WriteLine("==============");
+
+            var topE = result.Events.GroupBy(v => v.Event.EventType)
+                .Select(v => new {v.Key, Count = v.Count(), Events = v})
+                .OrderByDescending(v => v.Count);
+            foreach (
+                var e in
+                    topE)
+                Trace.WriteLine(e.Count.ToString("0000") + " - " + e.Key);
+
+            Trace.WriteLine("==============");
+
+            foreach (var s in topE.Take(2))
+            {
+                    Dump(">>> " + s.Key, s.Key, s.Events.Take(75).ToArray());
+            }
         }
     }
 }

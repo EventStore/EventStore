@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projection_subscription;
 using NUnit.Framework;
@@ -11,9 +12,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
     {
         protected int _timeBetweenEvents;
         protected int _processingLagMs;
+        protected ITimeProvider _timeProvider;
 
         protected override void Given()
         {
+            _timeProvider = new RealTimeProvider();
             _timeBetweenEvents = 1100;
             _processingLagMs = 500;
             base.Given();
@@ -33,6 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 _projectionCorrelationId, 
                 CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"a", ExpectedVersion.NoStream}, {"b", ExpectedVersion.NoStream}}),
                 _readerStrategy,
+                _timeProvider,
                 _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold, _processingLagMs);
         }
     }

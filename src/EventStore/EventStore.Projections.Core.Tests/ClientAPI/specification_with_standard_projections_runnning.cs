@@ -219,7 +219,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
         }
 
-        private void Dump(string message, string streamId, ResolvedEvent[] resultEvents)
+        protected void Dump(string message, string streamId, ResolvedEvent[] resultEvents)
         {
             var actual = resultEvents.Aggregate(
                 "", (a, v) => a + ", " + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugDataView);

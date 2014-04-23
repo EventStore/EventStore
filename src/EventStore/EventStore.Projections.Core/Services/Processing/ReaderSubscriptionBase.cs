@@ -2,6 +2,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -11,6 +12,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingReaderSubscription>();
         private readonly IPublisher _publisher;
         private readonly IReaderStrategy _readerStrategy;
+        private readonly ITimeProvider _timeProvider;
         private readonly long? _checkpointUnhandledBytesThreshold;
         private readonly int? _checkpointProcessedEventsThreshold;
         private readonly bool _stopOnEof;
@@ -25,16 +27,24 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _subscriptionId;
         private bool _eofReached;
         protected string _tag;
+        private DateTime _lastProgressPublished;
 
         protected ReaderSubscriptionBase(
-            IPublisher publisher, Guid subscriptionId, CheckpointTag @from, IReaderStrategy readerStrategy,
-            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof,
+            IPublisher publisher,
+            Guid subscriptionId,
+            CheckpointTag @from,
+            IReaderStrategy readerStrategy,
+            ITimeProvider timeProvider,
+            long? checkpointUnhandledBytesThreshold,
+            int? checkpointProcessedEventsThreshold,
+            bool stopOnEof,
             int? stopAfterNEvents)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
             _publisher = publisher;
             _readerStrategy = readerStrategy;
+            _timeProvider = timeProvider;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
             _stopOnEof = stopOnEof;
@@ -58,15 +68,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
-            var roundedProgress = (float) Math.Round(message.Progress, 2);
+            var roundedProgress = (float) Math.Round(message.Progress, 1);
             bool progressChanged = _progress != roundedProgress;
-            _progress = roundedProgress;
             if (
                 !_eventFilter.PassesSource(
                     message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType))
             {
                 if (progressChanged)
-                    PublishProgress();
+                    PublishProgress(roundedProgress, message);
                 return;
             }
 
@@ -117,7 +126,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     if (progressChanged)
-                        PublishProgress();
+                        PublishProgress(roundedProgress, message);
                 }
             }
             // initialize checkpointing based on first message 
@@ -125,11 +134,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
         }
 
-        private void PublishProgress()
+        private void PublishProgress(float roundedProgress, ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
-            _publisher.Publish(
-                new EventReaderSubscriptionMessage.ProgressChanged(
-                    _subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
+            var now = _timeProvider.Now;
+            if (now - _lastProgressPublished > TimeSpan.FromMilliseconds(500))
+            {
+                _lastProgressPublished = now;
+                _progress = roundedProgress;
+                _publisher.Publish(
+                    new EventReaderSubscriptionMessage.ProgressChanged(
+                        _subscriptionId,
+                        _positionTracker.LastTag,
+                        _progress,
+                        _subscriptionMessageSequenceNumber++));
+            }
         }
 
         protected void PublishPartitionDeleted(string partition, CheckpointTag deletePosition)

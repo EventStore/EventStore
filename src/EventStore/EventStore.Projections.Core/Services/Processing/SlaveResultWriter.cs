@@ -9,6 +9,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _workerId;
         private readonly Guid _masterCoreProjectionId;
         private readonly IPublisher _resultsPublisher;
+        private double _lastRoundedProgress;
 
         public SlaveResultWriter(Guid workerId, IPublisher publisher, Guid masterCoreProjectionId)
         {
@@ -56,8 +57,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void WriteProgress(Guid subscriptionId, float progress)
         {
-            _resultsPublisher.Publish(
-                new PartitionProcessingProgress(_workerId, _masterCoreProjectionId, subscriptionId, progress));
+            var roundedProgress = Math.Round(progress, 1);
+            if (roundedProgress != _lastRoundedProgress)
+            {
+                _lastRoundedProgress = roundedProgress;
+                _resultsPublisher.Publish(
+                    new PartitionProcessingProgress(_workerId, _masterCoreProjectionId, subscriptionId, progress));
+            }
         }
     }
 }
