@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
+            if (timeProvider == null) throw new ArgumentNullException("timeProvider");
             _publisher = publisher;
             _readerStrategy = readerStrategy;
             _timeProvider = timeProvider;

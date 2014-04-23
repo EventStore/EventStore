@@ -5,9 +5,9 @@ using EventStore.Projections.Core.Messages.Persisted.Responses.Slave;
 namespace EventStore.Projections.Core.Services.Management
 {
     public sealed class SlaveProjectionResponseWriter
-        : IHandle<PartitionMeasured>,
-            IHandle<PartitionProcessingProgress>,
-            IHandle<PartitionProcessingResult>
+        : IHandle<PartitionMeasuredOutput>,
+            IHandle<PartitionProcessingProgressOutput>,
+            IHandle<PartitionProcessingResultOutput>
     {
         private readonly IMultiStreamMessageWriter _writer;
 
@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer = writer;
         }
 
-        public void Handle(PartitionMeasured message)
+        public void Handle(PartitionMeasuredOutput message)
         {
             var command = new PartitionMeasuredResponse
             {
@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishResponse("$measured", message.MasterProjectionId, command);
         }
 
-        public void Handle(PartitionProcessingProgress message)
+        public void Handle(PartitionProcessingProgressOutput message)
         {
             var command = new PartitionProcessingProgressResponse
             {
@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writer.PublishResponse("$progress", message.MasterProjectionId, command);
         }
 
-        public void Handle(PartitionProcessingResult message)
+        public void Handle(PartitionProcessingResultOutput message)
         {
             var command = new PartitionProcessingResultResponse
             {

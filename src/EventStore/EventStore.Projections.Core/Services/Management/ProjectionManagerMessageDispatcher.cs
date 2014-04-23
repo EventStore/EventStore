@@ -11,7 +11,8 @@ namespace EventStore.Projections.Core.Services.Management
     public class ProjectionManagerMessageDispatcher
         : IHandle<PartitionProcessingResultBase>,
             IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
-            IHandle<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>
+            IHandle<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>,
+            IHandle<PartitionProcessingResultOutputBase>
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
         private readonly IDictionary<Guid, IPublisher> _queueMap;
@@ -49,6 +50,11 @@ namespace EventStore.Projections.Core.Services.Management
                 worker.Publish(message);
             else
                 _logger.Info("Cannot find a worker with ID: " + workerId);
+        }
+
+        public void Handle(PartitionProcessingResultOutputBase message)
+        {
+            DispatchWorkerMessage(message.AsInput(), message.WorkerId);
         }
     }
 }

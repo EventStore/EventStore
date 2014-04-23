@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         public void publishes_partition_result_message()
         {
             var results =
-                HandledMessages.OfType<PartitionProcessingResult>().ToArray();
+                HandledMessages.OfType<PartitionProcessingResultOutput>().ToArray();
             Assert.AreEqual(1, results.Length);
             var result = results[0];
             Assert.AreEqual("{\"data\":1}", result.Result);
@@ -149,7 +149,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         public void publishes_partition_result_message()
         {
             var results =
-                HandledMessages.OfType<PartitionProcessingResult>().ToArray();
+                HandledMessages.OfType<PartitionProcessingResultOutput>().ToArray();
             Assert.AreEqual(1, results.Length);
             var result = results[0];
             Assert.IsNull(result.Result);
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         public void publishes_partition_result_message()
         {
             var results =
-                HandledMessages.OfType<PartitionProcessingResult>().ToArray();
+                HandledMessages.OfType<PartitionProcessingResultOutput>().ToArray();
             Assert.AreEqual(3, results.Length);
             Assert.AreEqual("{\"data\":1}", results[0].Result);
             Assert.AreEqual("{\"data\":2}", results[1].Result);

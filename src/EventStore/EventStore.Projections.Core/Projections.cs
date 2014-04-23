@@ -170,9 +170,9 @@ namespace EventStore.Projections.Core
                     */
 
 
-                    projectionNode.CoreOutput.Subscribe<PartitionMeasured>(projectionNode.SlaveProjectionResponseWriter);
-                    projectionNode.CoreOutput.Subscribe<PartitionProcessingProgress>(projectionNode.SlaveProjectionResponseWriter);
-                    projectionNode.CoreOutput.Subscribe<PartitionProcessingResult>(projectionNode.SlaveProjectionResponseWriter);
+                    projectionNode.CoreOutput.Subscribe<PartitionMeasuredOutput>(projectionNode.SlaveProjectionResponseWriter);
+                    projectionNode.CoreOutput.Subscribe<PartitionProcessingProgressOutput>(projectionNode.SlaveProjectionResponseWriter);
+                    projectionNode.CoreOutput.Subscribe<PartitionProcessingResultOutput>(projectionNode.SlaveProjectionResponseWriter);
 
 //                    projectionNode.CoreOutput.Subscribe(
 //                        Forwarder.Create<PartitionProcessingResultBase>(_managerInputQueue));
@@ -196,7 +196,7 @@ namespace EventStore.Projections.Core
                 projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);
 
 
-                projectionNode.CoreOutput.Subscribe(Forwarder.CreateTracing<Message>(coreQueue, "FFF: ")); // forward all
+                projectionNode.CoreOutput.Subscribe(Forwarder.Create<Message>(coreQueue)); // forward all
 
                 coreInputBus.Subscribe(new UnwrapEnvelopeHandler());
 

@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Tests.Services.slave_projection_response_w
 
         protected override void When()
         {
-            _sut.Handle(new PartitionMeasured(_workerId, _masterProjectionId, _subscriptionId, _partition, _size));
+            _sut.Handle(new PartitionMeasuredOutput(_workerId, _masterProjectionId, _subscriptionId, _partition, _size));
         }
 
         [Test]

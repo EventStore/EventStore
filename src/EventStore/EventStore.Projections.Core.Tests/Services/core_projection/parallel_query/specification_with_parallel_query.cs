@@ -86,13 +86,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                             {
                                 new SlaveProjectionCommunicationChannel(
                                     "s1",
-                                    Guid.NewGuid(),
+                                    _workerId,
                                     Guid.Empty,
                                     _slave1,
                                     GetInputQueue()),
                                 new SlaveProjectionCommunicationChannel(
                                     "s2",
-                                    Guid.NewGuid(),
+                                    _workerId,
                                     Guid.Empty,
                                     _slave2,
                                     GetInputQueue())

@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 using EventStore.ClientAPI;
-using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_category_foreach_projection.recovery
@@ -17,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
         protected override void Given()
         {
             base.Given();
-            for (var i = 0; i <= 9; i++)
+            for (var i = 0; i <= 900; i++)
             {
                 for (var j = 0; j < 10; j++)
                 {

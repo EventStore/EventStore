@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.slave_projection_response_w
         protected override void When()
         {
             _sut.Handle(
-                new PartitionProcessingResult(
+                new PartitionProcessingResultOutput(
                     _workerId,
                     _masterProjectionId,
                     _subscriptionId,

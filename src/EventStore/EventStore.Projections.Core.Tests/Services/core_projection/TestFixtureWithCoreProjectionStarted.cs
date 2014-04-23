@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {

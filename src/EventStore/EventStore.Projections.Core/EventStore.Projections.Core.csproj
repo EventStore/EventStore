@@ -161,6 +161,7 @@
     <Compile Include="Messages\ICoreProjection.cs" />
     <Compile Include="Messages\IProjectionCheckpointManager.cs" />
     <Compile Include="Messages\IQuerySources.cs" />
+    <Compile Include="Messages\ParallelQueryProcessingOutputMessages.cs" />
     <Compile Include="Messages\ParallelQueryProcessingMessages.cs" />
     <Compile Include="Messages\Persisted\Commands\CreateAndPrepareCommand.cs" />
     <Compile Include="Messages\Persisted\Commands\CreateAndPrepareSlaveCommand.cs" />
