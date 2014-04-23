@@ -357,7 +357,9 @@ namespace EventStore.Projections.Core.Services.Management
             var projectionOutputConfig = new ProjectionOutputConfig
             {
                 ResultStreamName =
-                    new ProjectionNamesBuilder(_name, _persistedState.SourceDefinition).GetResultStreamName()
+                    _persistedState.SourceDefinition == null
+                        ? ""
+                        : new ProjectionNamesBuilder(_name, _persistedState.SourceDefinition).GetResultStreamName()
             };
 
             message.Envelope.ReplyWith(

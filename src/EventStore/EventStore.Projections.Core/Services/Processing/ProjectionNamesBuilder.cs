@@ -37,6 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ProjectionNamesBuilder(string name, IQuerySources sources)
         {
+            if (sources == null) throw new ArgumentNullException("sources");
             _name = name;
             _sources = sources;
             _partitionResultStreamNamePattern = _sources.PartitionResultStreamNamePatternOption
