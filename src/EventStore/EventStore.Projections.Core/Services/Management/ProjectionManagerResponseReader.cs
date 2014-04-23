@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Management
         private IEnumerable<IODispatcher.Step> PerformStartReader()
         {
             ClientMessage.WriteEventsCompleted writeResult = null;
-            Trace.WriteLine("Writing $response-reader-starting");
+//            Trace.WriteLine("Writing $response-reader-starting");
             yield return
                 _ioDispatcher.BeginWriteEvents(
                     ProjectionNamesBuilder._projectionsMasterStream,
@@ -50,10 +50,10 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
             var from = writeResult.LastEventNumber;
-            Trace.WriteLine("$response-reader-starting has been written. Starting event number is: " + from);
+//            Trace.WriteLine("$response-reader-starting has been written. Starting event number is: " + from);
 
 
-            Trace.WriteLine("Writing $response-reader-started");
+//            Trace.WriteLine("Writing $response-reader-started");
             yield return
                 _ioDispatcher.BeginWriteEvents(
                     ProjectionNamesBuilder._projectionsControlStream,
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (writeResult.Result != OperationResult.Success)
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
-            Trace.WriteLine("$response-reader-started has been written");
+//            Trace.WriteLine("$response-reader-started has been written");
 
             while (!_stopped)
             {

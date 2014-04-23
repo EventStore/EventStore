@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 fromEventNumber = readResult.LastEventNumber + 1;
             }
 
-            Trace.WriteLine("Starting read control from: " + fromEventNumber);
+//            Trace.WriteLine("Starting read control from: " + fromEventNumber);
 
             //TODO: handle shutdown here and in other readers
             long subscribeFrom = 0;
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             "{\"id\":\"" + _coreServiceId + "\"}",
                             null)
                     };
-                    Trace.WriteLine("Registering worker " + _coreServiceId);
+//                    Trace.WriteLine("Registering worker " + _coreServiceId);
                     ClientMessage.WriteEventsCompleted response = null;
                     yield return
                         _ioDispatcher.BeginWriteEvents(
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             SystemAccount.Principal,
                             events,
                             r => response = r);
-                    Trace.WriteLine("Worker registered: " + response.Result);
+//                    Trace.WriteLine("Worker registered: " + response.Result);
                 }
                 do
                 {
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             false,
                             SystemAccount.Principal,
                             completed => readResultForward = completed);
-                    Trace.WriteLine("Control stream read forward result: " + readResultForward.Result);
+                    //Trace.WriteLine("Control stream read forward result: " + readResultForward.Result);
 
                     if (readResultForward.Result != ReadStreamResult.Success
                         && readResultForward.Result != ReadStreamResult.NoStream)
@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            _logger.Trace("RCVD: " + command);
+//            _logger.Trace("RCVD: " + command);
             switch (command)
             {
                 case "$create-prepared":

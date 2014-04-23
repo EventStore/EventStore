@@ -218,7 +218,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         internal void SetState(ManagedProjectionState value)
         {
-            _logger.Trace("MP: {0} {1} => {2}", _name, _state, value);
+//            _logger.Trace("MP: {0} {1} => {2}", _name, _state, value);
             _state = value;
             switch (value)
             {
@@ -746,7 +746,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void Prepare(ProjectionConfig config, Message prepareMessage)
         {
-            _logger.Trace("Request Prepare: {0} {1} ", _name, _state);
+            //_logger.Trace("Request Prepare: {0} {1} ", _name, _state);
             BeginCreate(config, prepareMessage);
         }
 

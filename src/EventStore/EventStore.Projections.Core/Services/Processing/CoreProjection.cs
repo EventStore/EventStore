@@ -396,7 +396,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void GoToState(State state)
         {
-            _logger.Trace("CP: {0} {1} => {2}", _name, _state, state);
+//            _logger.Trace("CP: {0} {1} => {2}", _name, _state, state);
             var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
             var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
                               || _state == State.CompletingPhase;

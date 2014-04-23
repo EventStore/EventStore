@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Standard
                 throw new InvalidOperationException("Empty source expected");
             if (logger != null)
             {
-                logger("Index events by event type projection handler has been initialized");
+//                logger("Index events by event type projection handler has been initialized");
             }
             // we will need to declare event types we are interested in
             _indexStreamPrefix = "$et-";

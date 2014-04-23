@@ -22,9 +22,11 @@ namespace EventStore.Projections.Core.Standard
                 var separator = trimmedSource[0];
                 if (logger != null)
                 {
+/*
                     logger(
                         String.Format(
                             "Categorize stream projection handler has been initialized with separator: '{0}'", separator));
+*/
                 }
                 var extractor = new StreamCategoryExtractorByLastSeparator(separator);
                 return extractor;

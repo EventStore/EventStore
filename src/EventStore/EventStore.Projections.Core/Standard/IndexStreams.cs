@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Standard
                     "Cannot initialize categorize stream projection handler.  No source is allowed.");
             if (logger != null)
             {
-                logger(string.Format("Index streams projection handler has been initialized"));
+//                logger(string.Format("Index streams projection handler has been initialized"));
             }
         }
 
