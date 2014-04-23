@@ -104,7 +104,6 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_projectionManagerCommadnWriter);
             mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionManagerCommadnWriter);
             mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepareSlave>(_projectionManagerCommadnWriter);
-            mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerCommadnWriter);
             mainBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionManagerCommadnWriter);
             mainBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionManagerCommadnWriter);
             mainBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionManagerCommadnWriter);

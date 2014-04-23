@@ -1,5 +1,7 @@
 ﻿using EventStore.Core.Bus;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
+using EventStore.Projections.Core.Messages.Persisted.Commands;
 using EventStore.Projections.Core.Messages.Persisted.Responses.Slave;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -7,7 +9,8 @@ namespace EventStore.Projections.Core.Services.Management
     public sealed class SlaveProjectionResponseWriter
         : IHandle<PartitionMeasuredOutput>,
             IHandle<PartitionProcessingProgressOutput>,
-            IHandle<PartitionProcessingResultOutput>
+            IHandle<PartitionProcessingResultOutput>,
+            IHandle<ReaderSubscriptionManagement.SpoolStreamReading>
     {
         private readonly IMultiStreamMessageWriter _writer;
 
@@ -50,5 +53,18 @@ namespace EventStore.Projections.Core.Services.Management
             };
             _writer.PublishResponse("$result", message.MasterProjectionId, command);
         }
+
+        public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
+        {
+            var command = new SpoolStreamReadingCommand
+            {
+                CatalogSequenceNumber = message.CatalogSequenceNumber,
+                LimitingCommitPosition = message.LimitingCommitPosition,
+                StreamId = message.StreamId,
+                SubscriptionId = message.SubscriptionId.ToString("N")
+            };
+            _writer.PublishResponse("$spool-stream-reading", message.WorkerId, command);
+        }
+
     }
 }

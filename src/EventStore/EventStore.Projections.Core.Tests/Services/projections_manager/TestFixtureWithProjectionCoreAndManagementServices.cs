@@ -98,10 +98,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             if (GetInputQueue() != _processingQueues.First().Item2)
             {
                 _bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);
-                _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
                 _bus.Subscribe<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>(
                     _managerMessageDispatcher);
                 _bus.Subscribe<PartitionProcessingResultOutputBase>(_managerMessageDispatcher);
+                _bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
             }
 
             foreach(var q in _processingQueues)

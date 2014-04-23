@@ -9,7 +9,6 @@ namespace EventStore.Projections.Core.Services.Management
         : IHandle<CoreProjectionManagementMessage.CreatePrepared>,
             IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
             IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
-            IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
             IHandle<CoreProjectionManagementMessage.LoadStopped>,
             IHandle<CoreProjectionManagementMessage.Start>,
             IHandle<CoreProjectionManagementMessage.Stop>,
@@ -68,18 +67,6 @@ namespace EventStore.Projections.Core.Services.Management
                 MasterWorkerId = message.MasterWorkerId.ToString("N")
             };
             _commandWriter.PublishResponse("$create-and-prepare-slave", message.WorkerId, command);
-        }
-
-        public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message)
-        {
-            var command = new SpoolStreamReadingCommand
-            {
-                CatalogSequenceNumber = message.CatalogSequenceNumber,
-                LimitingCommitPosition = message.LimitingCommitPosition,
-                StreamId = message.StreamId,
-                SubscriptionId = message.SubscriptionId.ToString("N")
-            };
-            _commandWriter.PublishResponse("$spool-stream-reading", message.WorkerId, command);
         }
 
         public void Handle(CoreProjectionManagementMessage.LoadStopped message)

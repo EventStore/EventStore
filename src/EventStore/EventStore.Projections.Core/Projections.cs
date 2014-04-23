@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core
             var coreTimeoutSchedulers = ProjectionManagerNode.CreateTimeoutSchedulers(_projectionWorkerThreadCount);
 
             _managerInputBus = new InMemoryBus("manager input bus");
-            _managerInputQueue = new QueuedHandler(_managerInputBus, "Projections Master");
+             _managerInputQueue = new QueuedHandler(_managerInputBus, "Projections Master");
             while (_coreQueues.Count < _projectionWorkerThreadCount)
             {
                 var coreInputBus = new InMemoryBus("bus");
@@ -173,14 +173,14 @@ namespace EventStore.Projections.Core
                     projectionNode.CoreOutput.Subscribe<PartitionMeasuredOutput>(projectionNode.SlaveProjectionResponseWriter);
                     projectionNode.CoreOutput.Subscribe<PartitionProcessingProgressOutput>(projectionNode.SlaveProjectionResponseWriter);
                     projectionNode.CoreOutput.Subscribe<PartitionProcessingResultOutput>(projectionNode.SlaveProjectionResponseWriter);
+                    projectionNode.CoreOutput.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(projectionNode.SlaveProjectionResponseWriter);
 
 //                    projectionNode.CoreOutput.Subscribe(
 //                        Forwarder.Create<PartitionProcessingResultBase>(_managerInputQueue));
 
 
-                    //TODO: remove
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<ReaderSubscriptionManagement.SpoolStreamReading>(_managerInputQueue));
+//                    projectionNode.CoreOutput.Subscribe(
+//                        Forwarder.Create<ReaderSubscriptionManagement.SpoolStreamReading>(_managerInputQueue));
                     //TODO: remove
                     projectionNode.CoreOutput.Subscribe(
                         Forwarder.Create<ProjectionManagementMessage.Delete>(_managerInputQueue));

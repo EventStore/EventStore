@@ -347,7 +347,6 @@
     <Compile Include="Services\projections_manager\command_writer\when_handling_get_state_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_kill_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_load_stopped_message.cs" />
-    <Compile Include="Services\projections_manager\command_writer\when_handling_spool_stream_reading_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_start_message.cs" />
     <Compile Include="Services\projections_manager\command_writer\when_handling_stop_message.cs" />
     <Compile Include="Services\projections_manager\continuous\a_new_posted_projection.cs" />
@@ -394,6 +393,7 @@
     <Compile Include="Services\projection_core_service_response_writer\when_handling_stopped_message.cs" />
     <Compile Include="Services\slave_projection_response_writer\when_handling_partition_processing_result_message.cs" />
     <Compile Include="Services\slave_projection_response_writer\when_handling_partition_progress_message.cs" />
+    <Compile Include="Services\slave_projection_response_writer\when_handling_spool_stream_reading_message.cs" />
     <Compile Include="Services\v8\v8_internals.cs" />
     <Compile Include="Services\v8\when_compiling_v8_projection.cs" />
     <Compile Include="Services\v8\when_defining_a_v8_projection.cs" />
