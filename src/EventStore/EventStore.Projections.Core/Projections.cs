@@ -196,7 +196,7 @@ namespace EventStore.Projections.Core
                 projectionNode.CoreOutput.Subscribe<TimerMessage.Schedule>(timerService);
 
 
-                projectionNode.CoreOutput.Subscribe(Forwarder.Create<Message>(coreQueue)); // forward all
+                projectionNode.CoreOutput.Subscribe(Forwarder.CreateTracing<Message>(coreQueue, "FFF: ")); // forward all
 
                 coreInputBus.Subscribe(new UnwrapEnvelopeHandler());
 

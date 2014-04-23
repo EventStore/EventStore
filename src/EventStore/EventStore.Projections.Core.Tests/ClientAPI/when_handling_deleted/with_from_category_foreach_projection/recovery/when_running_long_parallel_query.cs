@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
         protected override void Given()
         {
             base.Given();
-            for (var i = 0; i <= 40; i++)
+            for (var i = 0; i <= 9; i++)
             {
                 for (var j = 0; j < 10; j++)
                 {
@@ -45,7 +45,7 @@ fromCategory('stream').foreachStream().when({
         {
             AssertStreamTail("$projections-query-stream-1-result", "Result:{\"a\":10}");
             AssertStreamTail("$projections-query-stream-2-result", "Result:{\"a\":10}");
-            AssertStreamTail("$projections-query-stream-35-result", "Result:{\"a\":10}");
+            AssertStreamTail("$projections-query-stream-3-result", "Result:{\"a\":10}");
             DumpStreams();
         }
 

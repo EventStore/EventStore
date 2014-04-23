@@ -1,4 +1,6 @@
-﻿using EventStore.Core.Bus;
+﻿using System;
+using System.Diagnostics;
+using EventStore.Core.Bus;
 
 namespace EventStore.Core.Messaging
 {
@@ -10,6 +12,11 @@ namespace EventStore.Core.Messaging
         public static IHandle<T> Create<T>(IPublisher to) where T : Message
         {
             return new F<T>(to);
+        }
+
+        public static IHandle<T> CreateTracing<T>(IPublisher to, string prefix) where T : Message
+        {
+            return new FTracing<T>(to, prefix);
         }
 
         /// <summary>
@@ -31,6 +38,24 @@ namespace EventStore.Core.Messaging
 
             public void Handle(T message)
             {
+                _to.Publish(message);
+            }
+        }
+
+        class FTracing<T> : IHandle<T> where T : Message
+        {
+            private readonly IPublisher _to;
+            private readonly string _prefix;
+
+            public FTracing(IPublisher to, string prefix)
+            {
+                _to = to;
+                _prefix = prefix;
+            }
+
+            public void Handle(T message)
+            {
+                Console.WriteLine(_prefix + message.GetType().Name);
                 _to.Publish(message);
             }
         }
