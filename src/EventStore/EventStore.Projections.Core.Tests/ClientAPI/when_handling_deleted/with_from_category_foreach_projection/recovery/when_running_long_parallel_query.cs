@@ -50,6 +50,7 @@ fromCategory('stream').foreachStream().when({
 
         private void DumpStreams()
         {
+#if DEBUG
             var result = _conn.ReadAllEventsForward(Position.Start, 10000, false, _admin);
             var top = result.Events.GroupBy(v => v.OriginalStreamId)
                 .Select(v => new {v.Key, Count = v.Count()})
@@ -70,11 +71,12 @@ fromCategory('stream').foreachStream().when({
                 Trace.WriteLine(e.Count.ToString("0000") + " - " + e.Key);
 
             Trace.WriteLine("==============");
-
+            
             foreach (var s in topE.Take(2))
             {
                     Dump(">>> " + s.Key, s.Key, s.Events.Take(75).ToArray());
             }
+#endif
         }
     }
 }
