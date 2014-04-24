@@ -52,7 +52,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _masterProjectionName,
                     _slaveProjectionDefinitions,
                     _masterWorkerId,
-                    GetInputQueue(),
                     _masterCorrelationId);
         }
 

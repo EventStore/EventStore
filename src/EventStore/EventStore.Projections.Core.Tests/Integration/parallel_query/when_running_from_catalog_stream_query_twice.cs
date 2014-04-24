@@ -69,7 +69,7 @@ fromStreamCatalog('catalog').foreachStream().when({
         public void state_becomes_completed()
         {
             _manager.Handle(
-                new ProjectionManagementMessage.GetStatistics(
+                new ProjectionManagementMessage.Command.GetStatistics(
                     new PublishEnvelope(_bus), null, _projectionName, false));
 
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());

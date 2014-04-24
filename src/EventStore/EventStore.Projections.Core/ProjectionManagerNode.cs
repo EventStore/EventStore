@@ -65,9 +65,9 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Command.Delete>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.GetStatistics>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.GetState>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.GetResult>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.GetState>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.GetResult>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Command.Disable>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Command.Enable>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Command.Abort>(_projectionManager);

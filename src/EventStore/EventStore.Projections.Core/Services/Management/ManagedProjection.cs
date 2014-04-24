@@ -309,7 +309,7 @@ namespace EventStore.Projections.Core.Services.Management
             return status;
         }
 
-        public void Handle(ProjectionManagementMessage.GetState message)
+        public void Handle(ProjectionManagementMessage.Command.GetState message)
         {
             _lastAccessed = _timeProvider.Now;
             if (_state >= ManagedProjectionState.Running)
@@ -328,7 +328,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionManagementMessage.GetResult message)
+        public void Handle(ProjectionManagementMessage.Command.GetResult message)
         {
             _lastAccessed = _timeProvider.Now;
             if (_state >= ManagedProjectionState.Running)
@@ -521,9 +521,9 @@ namespace EventStore.Projections.Core.Services.Management
         private void DoSetRunAs1(ProjectionManagementMessage.Command.SetRunAs message)
         {
             _persistedState.RunAs = message.Action == ProjectionManagementMessage.Command.SetRunAs.SetRemove.Set
-                ? SerializePrincipal(message.RunAs)
+                ? SerializedRunAs.SerializePrincipal(message.RunAs)
                 : null;
-            _runAs = DeserializePrincipal(_persistedState.RunAs);
+            _runAs = SerializedRunAs.DeserializePrincipal(_persistedState.RunAs);
             _pendingPersistedState = true;
         }
 
@@ -556,20 +556,6 @@ namespace EventStore.Projections.Core.Services.Management
             _pendingPersistedState = true;
             SetLastReplyEnvelope(replyEnvelope);
             PrepareWriteStartOrLoadStopped();
-        }
-
-        public static SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
-        {
-            if (runAs.Principal == null)
-                return null; // anonymous
-            if (runAs.Principal == SystemAccount.Principal)
-                return new SerializedRunAs {Name = "$system"};
-
-            var genericPrincipal = runAs.Principal as OpenGenericPrincipal;
-            if (genericPrincipal == null)
-                throw new ArgumentException(
-                    "OpenGenericPrincipal is the only supported principal type in projections", "runAs");
-            return new SerializedRunAs {Name = runAs.Principal.Identity.Name, Roles = genericPrincipal.Roles};
         }
 
         public void InitializeExisting(string name)
@@ -621,7 +607,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (persistedState.RunAs == null || string.IsNullOrEmpty(persistedState.RunAs.Name))
             {
                 _runAs = SystemAccount.Principal;
-                persistedState.RunAs = SerializePrincipal(ProjectionManagementMessage.RunAs.System);
+                persistedState.RunAs = SerializedRunAs.SerializePrincipal(ProjectionManagementMessage.RunAs.System);
             }
         }
 
@@ -663,18 +649,7 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new InvalidOperationException("LoadPersistedState is now allowed in this state");
 
             _persistedState = persistedState;
-            _runAs = DeserializePrincipal(persistedState.RunAs);
-        }
-
-        private IPrincipal DeserializePrincipal(SerializedRunAs runAs)
-        {
-            if (runAs == null)
-                return null;
-            if (runAs.Name == null)
-                return null;
-            if (runAs.Name == "$system") //TODO: make sure nobody else uses it
-                return SystemAccount.Principal;
-            return new OpenGenericPrincipal(new GenericIdentity(runAs.Name), runAs.Roles);
+            _runAs = SerializedRunAs.DeserializePrincipal(persistedState.RunAs);
         }
 
         internal void WriteStartOrLoadStopped()
@@ -1048,5 +1023,51 @@ namespace EventStore.Projections.Core.Services.Management
     {
         public string Name { get; set; }
         public string[] Roles { get; set; }
+
+        public static implicit operator SerializedRunAs(ProjectionManagementMessage.RunAs runAs)
+        {
+            return runAs == null ? null : SerializePrincipal(runAs);
+        }
+
+        public static implicit operator ProjectionManagementMessage.RunAs(SerializedRunAs runAs)
+        {
+            if (runAs == null)
+                return null;
+            if (runAs.Name == null)
+                return ProjectionManagementMessage.RunAs.Anonymous;
+            if (runAs.Name == "$system") //TODO: make sure nobody else uses it
+                return ProjectionManagementMessage.RunAs.System;
+            return
+                new ProjectionManagementMessage.RunAs(
+                    new OpenGenericPrincipal(new GenericIdentity(runAs.Name), runAs.Roles));
+        }
+
+        public static SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs)
+        {
+            if (runAs == null)
+                return null;
+            if (runAs.Principal == null)
+                return null; // anonymous
+            if (runAs.Principal == SystemAccount.Principal)
+                return new SerializedRunAs {Name = "$system"};
+
+            var genericPrincipal = runAs.Principal as OpenGenericPrincipal;
+            if (genericPrincipal == null)
+                throw new ArgumentException(
+                    "OpenGenericPrincipal is the only supported principal type in projections", "runAs");
+            return new SerializedRunAs {Name = runAs.Principal.Identity.Name, Roles = genericPrincipal.Roles};
+        }
+
+        public static IPrincipal DeserializePrincipal(SerializedRunAs runAs)
+        {
+            if (runAs == null)
+                return null;
+            if (runAs.Name == null)
+                return null;
+            if (runAs.Name == "$system") //TODO: make sure nobody else uses it
+                return SystemAccount.Principal;
+            return new OpenGenericPrincipal(new GenericIdentity(runAs.Name), runAs.Roles);
+        }
+
     }
 }

@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
                     Envelope, ProjectionMode.Continuous, _projectionName, ProjectionManagementMessage.RunAs.System, "js",
                     _projectionSource, enabled: true, checkpointsEnabled: true, emitEnabled: true);
             yield return Yield;
-            yield return new ProjectionManagementMessage.GetState(Envelope, _projectionName, "");
+            yield return new ProjectionManagementMessage.Command.GetState(Envelope, _projectionName, "");
         }
 
         protected override bool GivenStartSystemProjections()

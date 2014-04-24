@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     CheckpointsDisabled = !message.CheckpointsEnabled,
                     Epoch = -1,
                     Version = -1,
-                    RunAs = message.EnableRunAs ? ManagedProjection.SerializePrincipal(message.RunAs) : null,
+                    RunAs = message.EnableRunAs ? SerializedRunAs.SerializePrincipal(message.RunAs) : null,
                 },
                 null);
 

@@ -1,7 +1,6 @@
 using System;
 using System.Security.Principal;
 using System.Threading;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
@@ -197,7 +196,7 @@ namespace EventStore.Projections.Core.Messages
                 public enum SetRemove
                 {
                     Set,
-                    Rmeove
+                    Remove
                 };
 
                 private readonly string _name;
@@ -342,7 +341,6 @@ namespace EventStore.Projections.Core.Messages
                 private readonly string _name;
                 private readonly SlaveProjectionDefinitions _slaveProjections;
                 private readonly Guid _masterWorkerId;
-                private readonly IPublisher _resultsPublisher;
                 private readonly Guid _masterCorrelationId;
 
                 public StartSlaveProjections(
@@ -351,13 +349,11 @@ namespace EventStore.Projections.Core.Messages
                     string name,
                     SlaveProjectionDefinitions slaveProjections,
                     Guid masterWorkerId,
-                    IPublisher resultsPublisher,
                     Guid masterCorrelationId)
                     : base(envelope, runAs)
                 {
                     _name = name;
                     _slaveProjections = slaveProjections;
-                    _resultsPublisher = resultsPublisher;
                     _masterCorrelationId = masterCorrelationId;
                     _masterWorkerId = masterWorkerId;
                 }
@@ -372,11 +368,6 @@ namespace EventStore.Projections.Core.Messages
                     get { return _slaveProjections; }
                 }
 
-                public IPublisher ResultsPublisher
-                {
-                    get { return _resultsPublisher; }
-                }
-
                 public Guid MasterCorrelationId
                 {
                     get { return _masterCorrelationId; }
@@ -385,6 +376,115 @@ namespace EventStore.Projections.Core.Messages
                 public Guid MasterWorkerId
                 {
                     get { return _masterWorkerId; }
+                }
+            }
+
+            public class GetStatistics : Message
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly IEnvelope _envelope;
+                private readonly ProjectionMode? _mode;
+                private readonly string _name;
+                private readonly bool _includeDeleted;
+
+                public GetStatistics(IEnvelope envelope, ProjectionMode? mode, string name, bool includeDeleted)
+                {
+                    _envelope = envelope;
+                    _mode = mode;
+                    _name = name;
+                    _includeDeleted = includeDeleted;
+                }
+
+                public ProjectionMode? Mode
+                {
+                    get { return _mode; }
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public bool IncludeDeleted
+                {
+                    get { return _includeDeleted; }
+                }
+
+                public IEnvelope Envelope
+                {
+                    get { return _envelope; }
+                }
+            }
+
+            public class GetState : Message
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly IEnvelope _envelope;
+                private readonly string _name;
+                private readonly string _partition;
+
+                public GetState(IEnvelope envelope, string name, string partition)
+                {
+                    if (envelope == null) throw new ArgumentNullException("envelope");
+                    if (name == null) throw new ArgumentNullException("name");
+                    if (partition == null) throw new ArgumentNullException("partition");
+                    _envelope = envelope;
+                    _name = name;
+                    _partition = partition;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public IEnvelope Envelope
+                {
+                    get { return _envelope; }
+                }
+
+                public string Partition
+                {
+                    get { return _partition; }
+                }
+            }
+
+            public class GetResult : Message
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly IEnvelope _envelope;
+                private readonly string _name;
+                private readonly string _partition;
+
+                public GetResult(IEnvelope envelope, string name, string partition)
+                {
+                    if (envelope == null) throw new ArgumentNullException("envelope");
+                    if (name == null) throw new ArgumentNullException("name");
+                    if (partition == null) throw new ArgumentNullException("partition");
+                    _envelope = envelope;
+                    _name = name;
+                    _partition = partition;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public IEnvelope Envelope
+                {
+                    get { return _envelope; }
+                }
+
+                public string Partition
+                {
+                    get { return _partition; }
                 }
             }
         }
@@ -491,9 +591,9 @@ namespace EventStore.Projections.Core.Messages
 
                 //if (existingRunAs == null)
                 //    return true;
-                //if (message.RunAs.Principal == null
+                //if (message.RunAs1.Principal == null
                 //    || !string.Equals(
-                //        existingRunAs.Identity.Name, message.RunAs.Principal.Identity.Name,
+                //        existingRunAs.Identity.Name, message.RunAs1.Principal.Identity.Name,
                 //        StringComparison.OrdinalIgnoreCase))
                 //{
                 //    message.Envelope.ReplyWith(new NotAuthorized());
@@ -519,115 +619,6 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
-            }
-        }
-
-        public class GetStatistics : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly IEnvelope _envelope;
-            private readonly ProjectionMode? _mode;
-            private readonly string _name;
-            private readonly bool _includeDeleted;
-
-            public GetStatistics(IEnvelope envelope, ProjectionMode? mode, string name, bool includeDeleted)
-            {
-                _envelope = envelope;
-                _mode = mode;
-                _name = name;
-                _includeDeleted = includeDeleted;
-            }
-
-            public ProjectionMode? Mode
-            {
-                get { return _mode; }
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public bool IncludeDeleted
-            {
-                get { return _includeDeleted; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-        }
-
-        public class GetState : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly IEnvelope _envelope;
-            private readonly string _name;
-            private readonly string _partition;
-
-            public GetState(IEnvelope envelope, string name, string partition)
-            {
-                if (envelope == null) throw new ArgumentNullException("envelope");
-                if (name == null) throw new ArgumentNullException("name");
-                if (partition == null) throw new ArgumentNullException("partition");
-                _envelope = envelope;
-                _name = name;
-                _partition = partition;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-
-            public string Partition
-            {
-                get { return _partition; }
-            }
-        }
-
-        public class GetResult : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly IEnvelope _envelope;
-            private readonly string _name;
-            private readonly string _partition;
-
-            public GetResult(IEnvelope envelope, string name, string partition)
-            {
-                if (envelope == null) throw new ArgumentNullException("envelope");
-                if (name == null) throw new ArgumentNullException("name");
-                if (partition == null) throw new ArgumentNullException("partition");
-                _envelope = envelope;
-                _name = name;
-                _partition = partition;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-
-            public string Partition
-            {
-                get { return _partition; }
             }
         }
 

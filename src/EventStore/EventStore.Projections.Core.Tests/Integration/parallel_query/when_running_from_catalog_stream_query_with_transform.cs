@@ -44,7 +44,7 @@ fromStreamCatalog('catalog', function(ev) {log(JSON.stringify(ev)); return 'acco
         public void state_becomes_completed()
         {
             _manager.Handle(
-                new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, false));
+                new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, false));
 
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
             Assert.AreEqual(

@@ -57,9 +57,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                 yield return CreateWriteEvent("stream4", "type5", "{\"Data\": 9}");
                 yield return CreateWriteEvent("stream5", "type1", "{\"Data\": 10}");
                 yield return
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         Envelope, ProjectionMode.AllNonTransient, _projectionName, false);
-                yield return new ProjectionManagementMessage.GetState(Envelope, _projectionName, "");
+                yield return new ProjectionManagementMessage.Command.GetState(Envelope, _projectionName, "");
                 yield return
                     new ProjectionManagementMessage.Command.GetQuery(
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous);

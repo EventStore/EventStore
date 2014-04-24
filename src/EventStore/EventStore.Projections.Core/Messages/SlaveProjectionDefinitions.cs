@@ -1,5 +1,6 @@
 using System;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Messages
 {
@@ -13,90 +14,48 @@ namespace EventStore.Projections.Core.Messages
             OnePerThread
         }
 
-        public sealed class Definition
+        public class Definition
         {
-            private readonly string _name;
-            private readonly string _handlerType;
-            private readonly string _query;
-            private readonly SlaveProjectionRequestedNumber _requestedNumber;
-            private readonly ProjectionMode _mode;
-            private readonly bool _emitEnabled;
-            private readonly bool _checkpointsEnabled;
-            private readonly bool _enableRunAs;
-            private readonly ProjectionManagementMessage.RunAs _runAs;
-
             public Definition(
                 string name, string handlerType, string query, SlaveProjectionRequestedNumber requestedNumber,
                 ProjectionMode mode, bool emitEnabled, bool checkpointsEnabled, bool enableRunAs,
-                ProjectionManagementMessage.RunAs runAs)
+                SerializedRunAs runAs1)
             {
-                _name = name;
-                _handlerType = handlerType;
-                _query = query;
-                _requestedNumber = requestedNumber;
-                _runAs = runAs;
-                _enableRunAs = enableRunAs;
-                _checkpointsEnabled = checkpointsEnabled;
-                _emitEnabled = emitEnabled;
-                _mode = mode;
+                Name = name;
+                HandlerType = handlerType;
+                Query = query;
+                RequestedNumber = requestedNumber;
+                RunAs1 = runAs1;
+                EnableRunAs = enableRunAs;
+                CheckpointsEnabled = checkpointsEnabled;
+                EmitEnabled = emitEnabled;
+                Mode = mode;
             }
 
-            public string Name
-            {
-                get { return _name; }
-            }
+            public string Name;
 
-            public SlaveProjectionRequestedNumber RequestedNumber
-            {
-                get { return _requestedNumber; }
-            }
+            public SlaveProjectionRequestedNumber RequestedNumber;
 
-            public ProjectionMode Mode
-            {
-                get { return _mode; }
-            }
+            public ProjectionMode Mode;
 
-            public bool EmitEnabled
-            {
-                get { return _emitEnabled; }
-            }
+            public bool EmitEnabled;
 
-            public bool CheckpointsEnabled
-            {
-                get { return _checkpointsEnabled; }
-            }
+            public bool CheckpointsEnabled;
 
-            public bool EnableRunAs
-            {
-                get { return _enableRunAs; }
-            }
+            public bool EnableRunAs;
 
-            public ProjectionManagementMessage.RunAs RunAs
-            {
-                get { return _runAs; }
-            }
+            public SerializedRunAs RunAs1;
 
-            public string HandlerType
-            {
-                get { return _handlerType; }
-            }
+            public string HandlerType;
 
-            public string Query
-            {
-                get { return _query; }
-            }
+            public string Query;
         }
-
-        private readonly Definition[] _definitions;
 
         public SlaveProjectionDefinitions(params Definition[] definitions)
         {
-            _definitions = definitions;
+            Definitions = definitions;
         }
 
-        public Definition[] Definitions
-        {
-            get { return _definitions; }
-        }
+        public Definition[] Definitions;
     }
 }

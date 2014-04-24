@@ -26,9 +26,9 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<ProjectionManagementMessage.Command.UpdateQuery>,
             IHandle<ProjectionManagementMessage.Command.GetQuery>,
             IHandle<ProjectionManagementMessage.Command.Delete>,
-            IHandle<ProjectionManagementMessage.GetStatistics>,
-            IHandle<ProjectionManagementMessage.GetState>,
-            IHandle<ProjectionManagementMessage.GetResult>,
+            IHandle<ProjectionManagementMessage.Command.GetStatistics>,
+            IHandle<ProjectionManagementMessage.Command.GetState>,
+            IHandle<ProjectionManagementMessage.Command.GetResult>,
             IHandle<ProjectionManagementMessage.Command.Disable>,
             IHandle<ProjectionManagementMessage.Command.Enable>,
             IHandle<ProjectionManagementMessage.Command.Abort>,
@@ -325,7 +325,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (!_started)
                 return;
-            _logger.Info("Setting RunAs account for '{0}' projection", message.Name);
+            _logger.Info("Setting RunAs1 account for '{0}' projection", message.Name);
 
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -353,7 +353,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.GetStatistics message)
+        public void Handle(ProjectionManagementMessage.Command.GetStatistics message)
         {
             if (!_started)
                 return;
@@ -381,7 +381,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionManagementMessage.GetState message)
+        public void Handle(ProjectionManagementMessage.Command.GetState message)
         {
             if (!_started)
                 return;
@@ -392,7 +392,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.GetResult message)
+        public void Handle(ProjectionManagementMessage.Command.GetResult message)
         {
             if (!_started)
                 return;
@@ -829,7 +829,6 @@ namespace EventStore.Projections.Core.Services.Management
                 int queueIndex,
                 bool isSlave = false,
                 Guid slaveMasterWorkerId = default(Guid),
-                IPublisher slaveResultsPublisher = null,
                 Guid slaveMasterCorrelationId = default(Guid))
             {
                 var projection = projectionManager.CreateManagedProjectionInstance(
@@ -851,7 +850,7 @@ namespace EventStore.Projections.Core.Services.Management
                         CheckpointsDisabled = !_checkpointsEnabled,
                         Epoch = -1,
                         Version = -1,
-                        RunAs = _enableRunAs ? ManagedProjection.SerializePrincipal(_runAs) : null
+                        RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null
                     },
                     _replyEnvelope);
             }
@@ -1057,7 +1056,7 @@ namespace EventStore.Projections.Core.Services.Management
                 @group.EmitEnabled,
                 @group.CheckpointsEnabled,
                 @group.EnableRunAs,
-                @group.RunAs,
+                @group.RunAs1,
                 replyEnvelope: null);
 
             initializer.CreateAndInitializeNewProjection(
@@ -1066,7 +1065,6 @@ namespace EventStore.Projections.Core.Services.Management
                 queueIndex,
                 true,
                 message.MasterWorkerId,
-                message.ResultsPublisher,
                 message.MasterCorrelationId);
         }
 

@@ -529,7 +529,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     _name,
                     _projectionProcessingStrategy.GetSlaveProjections(),
                     _workerId,
-                    _inputQueue,
                     _projectionCorrelationId));
 
         }

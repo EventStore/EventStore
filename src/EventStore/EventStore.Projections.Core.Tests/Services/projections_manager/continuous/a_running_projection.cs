@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             public void the_projection_status_becomes_stopped_disabled()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             public void the_projection_status_remains_running_enabled()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -175,7 +175,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             public void the_projection_epoch_changes()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -202,7 +202,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             public void the_projection_status_is_enabled_running()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -254,7 +254,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             public void the_projection_epoch_changes()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -281,7 +281,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             public void the_projection_status_is_enabled_running()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());

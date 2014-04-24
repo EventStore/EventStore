@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
             {
                 foreach (var m in base.When()) yield return m;
                 yield return(
-                    new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));
+                    new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, ""));
             }
 
             [Test]

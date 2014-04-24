@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
             protected override IEnumerable<WhenStep> When()
             {
                 yield return
-                    new ProjectionManagementMessage.GetStatistics(Envelope, ProjectionMode.AllNonTransient, null, false)
+                    new ProjectionManagementMessage.Command.GetStatistics(Envelope, ProjectionMode.AllNonTransient, null, false)
                     ;
             }
 

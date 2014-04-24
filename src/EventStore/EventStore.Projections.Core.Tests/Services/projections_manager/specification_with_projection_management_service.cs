@@ -78,9 +78,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Command.Delete>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.GetStatistics>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.GetState>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.GetResult>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.GetState>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.GetResult>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Command.Disable>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Command.Enable>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Command.Abort>(_manager);

@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void it_cab_be_listed()
         {
             _manager.Handle(
-                new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, null, false));
+                new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, null, false));
 
             Assert.AreEqual(
                 1,
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void the_projection_status_can_be_retrieved()
         {
             _manager.Handle(
-                new ProjectionManagementMessage.GetStatistics(
+                new ProjectionManagementMessage.Command.GetStatistics(
                     new PublishEnvelope(_bus), null, _projectionName, false));
 
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, Category("v8")]
         public void the_projection_state_can_be_retrieved()
         {
-            _manager.Handle(new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));
+            _manager.Handle(new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, ""));
             _queue.Process();
 
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Count());

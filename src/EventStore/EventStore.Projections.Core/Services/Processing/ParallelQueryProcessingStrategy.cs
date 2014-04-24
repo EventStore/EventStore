@@ -192,7 +192,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         "slave", _handlerType, _query,
                         SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread, ProjectionMode.Transient,
                         _projectionConfig.EmitEventEnabled, _projectionConfig.CheckpointsEnabled,
-                        runAs: new ProjectionManagementMessage.RunAs(_projectionConfig.RunAs), enableRunAs: true));
+                        runAs1: new ProjectionManagementMessage.RunAs(_projectionConfig.RunAs), enableRunAs: true));
         }
     }
 

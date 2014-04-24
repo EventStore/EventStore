@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             {
                 foreach (var s in base.When()) yield return s;
                 yield return (
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
             }
 

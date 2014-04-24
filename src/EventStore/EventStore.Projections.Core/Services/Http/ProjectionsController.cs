@@ -237,7 +237,7 @@ namespace EventStore.Projections.Core.Services.Http
                     _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionStatisticsHttpFormatted(status.Projections[0], s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.GetStatistics(envelope, null, match.BoundVariables["name"], true));
+            Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, null, match.BoundVariables["name"], true));
         }
 
         private void OnProjectionDelete(HttpEntityManager http, UriTemplateMatch match)
@@ -265,7 +265,7 @@ namespace EventStore.Projections.Core.Services.Http
                     _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.GetStatistics(envelope, null, match.BoundVariables["name"], true));
+            Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, null, match.BoundVariables["name"], true));
         }
 
         private void OnProjectionStateGet(HttpEntityManager http, UriTemplateMatch match)
@@ -276,7 +276,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionState>(
                 _networkSendQueue, http, StateFormatter, StateConfigurator, ErrorsEnvelope(http));
             Publish(
-                new ProjectionManagementMessage.GetState(
+                new ProjectionManagementMessage.Command.GetState(
                     envelope, match.BoundVariables["name"], match.BoundVariables["partition"] ?? ""));
         }
 
@@ -288,7 +288,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionResult>(
                 _networkSendQueue, http, ResultFormatter, ResultConfigurator, ErrorsEnvelope(http));
             Publish(
-                new ProjectionManagementMessage.GetResult(
+                new ProjectionManagementMessage.Command.GetResult(
                     envelope, match.BoundVariables["name"], match.BoundVariables["partition"] ?? ""));
         }
 
@@ -337,7 +337,7 @@ namespace EventStore.Projections.Core.Services.Http
                     _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.GetStatistics(envelope, mode, null, true));
+            Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, mode, null, true));
         }
 
         private void ProjectionsPost(HttpEntityManager http, UriTemplateMatch match, ProjectionMode mode, string name)

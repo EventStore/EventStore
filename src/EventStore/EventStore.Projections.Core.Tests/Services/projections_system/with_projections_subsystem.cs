@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
             if (_startSystemProjections)
             {
                 yield return
-                    new ProjectionManagementMessage.GetStatistics(Envelope, ProjectionMode.AllNonTransient, null, false)
+                    new ProjectionManagementMessage.Command.GetStatistics(Envelope, ProjectionMode.AllNonTransient, null, false)
                     ;
                 var statistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Last();
                 foreach (var projection in statistics.Projections)

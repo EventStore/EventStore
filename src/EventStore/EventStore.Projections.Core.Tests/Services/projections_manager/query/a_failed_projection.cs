@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             public void the_projection_status_becomes_running()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             public void the_projection_status_becomes_faulted_disabled()
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -133,7 +133,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             public void the_projection_status_becomes_running_enabled() // as we restart
             {
                 _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
+                    new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
 
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());

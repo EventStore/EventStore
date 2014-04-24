@@ -161,6 +161,17 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_abort_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_disable_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_enable_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_query_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_result_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_state_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_statistics_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_post_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_reset_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_set_runas_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_start_slave_projections_command.cs" />
     <Compile Include="Services\slave_projection_response_writer\specification_with_slave_projection_response_writer.cs" />
     <Compile Include="Services\slave_projection_response_writer\when_handling_partition_measured_message.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\specification_with_projection_manager_response_reader.cs" />
