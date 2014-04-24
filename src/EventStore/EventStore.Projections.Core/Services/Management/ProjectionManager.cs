@@ -1014,6 +1014,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(
                     new ProjectionManagementMessage.SlaveProjectionsStarted(
                         message.MasterCorrelationId,
+                        message.MasterWorkerId,
                         new SlaveProjectionCommunicationChannels(result)));
         }
 
@@ -1037,9 +1038,7 @@ namespace EventStore.Projections.Core.Services.Management
                     resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
                         slaveProjectionName,
                         queueWorkerId,
-                        projectionCorrelationId,
-                        assigned.SubscriptionId,
-                        queuePublisher);
+                        assigned.SubscriptionId);
                     completed();
 
                     _awaitingSlaveProjections.Remove(projectionCorrelationId);

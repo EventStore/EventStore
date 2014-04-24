@@ -182,11 +182,11 @@ namespace EventStore.Projections.Core
 //                    projectionNode.CoreOutput.Subscribe(
 //                        Forwarder.Create<ReaderSubscriptionManagement.SpoolStreamReading>(_managerInputQueue));
                     //TODO: remove
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<ProjectionManagementMessage.Command.Delete>(_managerInputQueue));
+//                    projectionNode.CoreOutput.Subscribe(
+//                        Forwarder.Create<ProjectionManagementMessage.Command.Delete>(_managerInputQueue));
                     //TODO: remove
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<ProjectionManagementMessage.Command.StartSlaveProjections>(_managerInputQueue));
+//                    projectionNode.CoreOutput.Subscribe(
+//                        Forwarder.Create<ProjectionManagementMessage.Command.StartSlaveProjections>(_managerInputQueue));
 
                     projectionNode.CoreOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(mainQueue));
                     projectionNode.CoreOutput.Subscribe(

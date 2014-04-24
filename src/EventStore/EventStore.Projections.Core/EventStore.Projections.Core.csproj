@@ -173,6 +173,7 @@
     <Compile Include="Messages\Persisted\Commands\LoadStoppedCommand.cs" />
     <Compile Include="Messages\Persisted\Commands\PersistedProjectionConfig.cs" />
     <Compile Include="Messages\Persisted\Commands\PersistedProjectionVersion.cs" />
+    <Compile Include="Messages\Persisted\Commands\SlaveProjectionsStartedResponse.cs" />
     <Compile Include="Messages\Persisted\Commands\SpoolStreamReadingCommand.cs" />
     <Compile Include="Messages\Persisted\Commands\StartCommand.cs" />
     <Compile Include="Messages\Persisted\Commands\StopCommand.cs" />

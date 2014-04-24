@@ -174,6 +174,19 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<CoreProjectionStatusMessage.Stopped>(_coreResponseWriter);
             coreInputBus.Subscribe<CoreProjectionStatusMessage.StateReport>(_coreResponseWriter);
             coreInputBus.Subscribe<CoreProjectionStatusMessage.ResultReport>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Abort>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Delete>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Disable>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Enable>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetResult>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetState>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Post>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_coreResponseWriter);
+            coreInputBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_coreResponseWriter);
 
         }
     }

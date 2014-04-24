@@ -7,7 +7,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projection_core_service_command_reader
 {
     [TestFixture]
-    public class when_receiving_get_result_command : specification_with_projection_core_service_command_reader_started
+    public class when_receiving_slave_projections_started_response : specification_with_projection_core_service_command_reader_started
     {
         private Guid _projectionId;
         private Guid _correlationId;

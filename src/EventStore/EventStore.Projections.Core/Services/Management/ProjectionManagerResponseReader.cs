@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Responses;
@@ -203,6 +204,140 @@ namespace EventStore.Projections.Core.Services.Management
                         new CoreProjectionStatusMessage.SlaveProjectionReaderAssigned(
                             Guid.ParseExact(commandBody.Id, "N"),
                             Guid.ParseExact(commandBody.SubscriptionId, "N")));
+                    break;
+                }
+                case "$abort":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<AbortCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.Abort(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.RunAs));
+                    break;
+                }
+                case "$disable":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<DisableCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.Disable(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.RunAs));
+                    break;
+                }
+                case "$enable":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<EnableCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.Enable(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.RunAs));
+                    break;
+                }
+                case "$get-query":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<GetQueryCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.GetQuery(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.RunAs));
+                    break;
+                }
+                case "$get-result":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<GetResultCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.GetResult(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.Partition));
+                    break;
+                }
+                case "$get-state":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<GetStateCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.GetState(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.Partition));
+                    break;
+                }
+                case "$get-statistics":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<GetStatisticsCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.GetStatistics(
+                            new NoopEnvelope(),
+                            commandBody.Mode,
+                            commandBody.Name,
+                            commandBody.IncludeDeleted));
+                    break;
+                }
+                case "$post":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<PostCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.Post(
+                            new NoopEnvelope(),
+                            commandBody.Mode,
+                            commandBody.Name,
+                            commandBody.RunAs,
+                            commandBody.HandlerType,
+                            commandBody.Query,
+                            commandBody.Enabled,
+                            commandBody.CheckpointsEnabled,
+                            commandBody.EmitEnabled,
+                            commandBody.EnableRunAs));
+                    break;
+                }
+                case "$reset":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<ResetCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.Reset(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.RunAs));
+                    break;
+                }
+                case "$set-runas":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<SetRunAsCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.SetRunAs(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.RunAs,
+                            commandBody.SetRemove));
+                    break;
+                }
+                case "$start-slave-projections":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<StartSlaveProjectionsCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.StartSlaveProjections(
+                            new PublishEnvelope(_publisher),
+                            commandBody.RunAs,
+                            commandBody.Name,
+                            commandBody.SlaveProjections,
+                            Guid.ParseExact(commandBody.MasterWorkerId, "N"),
+                            Guid.ParseExact(commandBody.MasterCorrelationId, "N")));
+                    break;
+                }
+                case "$delete":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<DeleteCommand>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.Command.Delete(
+                            new NoopEnvelope(),
+                            commandBody.Name,
+                            commandBody.RunAs,
+                            commandBody.DeleteCheckpointStream,
+                            commandBody.DeleteStateStream));
                     break;
                 }
                 default:

@@ -846,14 +846,23 @@ namespace EventStore.Projections.Core.Messages
         public class SlaveProjectionsStarted : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
 
             private readonly Guid _coreProjectionCorrelationId;
+            private readonly Guid _workerId;
             private readonly SlaveProjectionCommunicationChannels _slaveProjections;
 
-            public SlaveProjectionsStarted(Guid coreProjectionCorrelationId, SlaveProjectionCommunicationChannels slaveProjections)
+            public SlaveProjectionsStarted(
+                Guid coreProjectionCorrelationId,
+                Guid workerId,
+                SlaveProjectionCommunicationChannels slaveProjections)
             {
                 _coreProjectionCorrelationId = coreProjectionCorrelationId;
+                _workerId = workerId;
                 _slaveProjections = slaveProjections;
             }
 
@@ -865,6 +874,11 @@ namespace EventStore.Projections.Core.Messages
             public SlaveProjectionCommunicationChannels SlaveProjections
             {
                 get { return _slaveProjections; }
+            }
+
+            public Guid WorkerId
+            {
+                get { return _workerId; }
             }
         }
     }
