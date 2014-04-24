@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
         protected override IEnumerable<WhenStep> When()
         {
             yield return
-                new ProjectionManagementMessage.Post(
+                new ProjectionManagementMessage.Command.Post(
                     Envelope, ProjectionMode.Continuous, _projectionName, ProjectionManagementMessage.RunAs.System, "js",
                     _projectionSource, enabled: true, checkpointsEnabled: true, emitEnabled: true);
             yield return Yield;

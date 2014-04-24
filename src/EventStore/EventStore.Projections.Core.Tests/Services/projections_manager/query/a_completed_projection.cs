@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
                 foreach (var m in base.When()) yield return m;
 
                 yield return
-                    (new ProjectionManagementMessage.Disable(
+                    (new ProjectionManagementMessage.Command.Disable(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             }
 
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             {
                 foreach (var m in base.When()) yield return m;
                 yield return
-                    (new ProjectionManagementMessage.Enable(
+                    (new ProjectionManagementMessage.Command.Enable(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             }
 

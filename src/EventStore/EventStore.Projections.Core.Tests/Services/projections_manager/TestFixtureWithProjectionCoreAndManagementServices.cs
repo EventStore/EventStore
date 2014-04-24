@@ -77,19 +77,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_manager);
             _bus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.Post>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.UpdateQuery>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.GetQuery>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.Delete>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.Post>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.Delete>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.GetStatistics>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.GetState>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.GetResult>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.Disable>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.Enable>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.Abort>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.SetRunAs>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.Reset>(_manager);
-            _bus.Subscribe<ProjectionManagementMessage.StartSlaveProjections>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.Disable>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.Enable>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.Abort>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.Reset>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
@@ -226,7 +226,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 output_.Subscribe(
                     Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.ProjectionWorkerStarted>(GetInputQueue()));
-                output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.ControlMessage>(GetInputQueue()));
+                output_.Subscribe(Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(GetInputQueue()));
                 output_.Subscribe(Forwarder.Create<PartitionProcessingResultBase>(GetInputQueue()));

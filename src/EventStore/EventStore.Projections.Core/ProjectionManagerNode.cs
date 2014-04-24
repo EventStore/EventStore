@@ -61,19 +61,19 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<SystemMessage.StateChangeMessage>(_projectionManager);
             if (_runProjections >= RunProjections.System)
             {
-                mainBus.Subscribe<ProjectionManagementMessage.Post>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.UpdateQuery>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.GetQuery>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.Delete>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.Delete>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.GetStatistics>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.GetState>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.GetResult>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.Disable>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.Enable>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.Abort>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.SetRunAs>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.Reset>(_projectionManager);
-                mainBus.Subscribe<ProjectionManagementMessage.StartSlaveProjections>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.Disable>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.Enable>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.Abort>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(_projectionManager);

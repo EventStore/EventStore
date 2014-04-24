@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             {
                 yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
                 yield return
-                    new ProjectionManagementMessage.Post(
+                    new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
                         new ProjectionManagementMessage.RunAs(_testUserPrincipal), "JS", _projectionBody, enabled: true,
                         checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             {
                 GetInputQueue()
                     .Publish(
-                        new ProjectionManagementMessage.GetQuery(
+                        new ProjectionManagementMessage.Command.GetQuery(
                             Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
                 _queue.Process();
 
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             {
                 GetInputQueue()
                     .Publish(
-                        new ProjectionManagementMessage.GetQuery(
+                        new ProjectionManagementMessage.Command.GetQuery(
                             Envelope, _projectionName, new ProjectionManagementMessage.RunAs(_testUserPrincipal)));
                 _queue.Process();
 
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             {
                 yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
                 yield return
-                    new ProjectionManagementMessage.Post(
+                    new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
                         ProjectionManagementMessage.RunAs.Anonymous, "JS", _projectionBody, enabled: true,
                         checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             {
                 yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
                 yield return
-                    new ProjectionManagementMessage.Post(
+                    new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
                         new ProjectionManagementMessage.RunAs(_testUserPrincipal), "JS", _projectionBody, enabled: true,
                         checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
@@ -149,9 +149,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             protected override IEnumerable<WhenStep> When()
             {
                 yield return
-                    new ProjectionManagementMessage.SetRunAs(
+                    new ProjectionManagementMessage.Command.SetRunAs(
                         Envelope, _projectionName, new ProjectionManagementMessage.RunAs(_testUserPrincipal2),
-                        ProjectionManagementMessage.SetRunAs.SetRemove.Set);
+                        ProjectionManagementMessage.Command.SetRunAs.SetRemove.Set);
             }
 
             [Test]
@@ -159,7 +159,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             {
                 GetInputQueue()
                     .Publish(
-                        new ProjectionManagementMessage.GetQuery(
+                        new ProjectionManagementMessage.Command.GetQuery(
                             Envelope, _projectionName, new ProjectionManagementMessage.RunAs(_testUserPrincipal2)));
                 _queue.Process();
 

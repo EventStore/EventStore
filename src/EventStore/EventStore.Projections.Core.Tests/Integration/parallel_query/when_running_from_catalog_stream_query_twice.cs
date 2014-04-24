@@ -40,20 +40,20 @@ fromStreamCatalog('catalog').foreachStream().when({
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
             yield return
-                (new ProjectionManagementMessage.Post(
+                (new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), _projectionMode, _projectionName,
                     ProjectionManagementMessage.RunAs.System, "JS",
                     _projectionSource, enabled: false, checkpointsEnabled: false,
                     emitEnabled: false));
             yield return
-                new ProjectionManagementMessage.Enable(
+                new ProjectionManagementMessage.Command.Enable(
                     Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
             yield return
                 new WhenStep(
-                    new ProjectionManagementMessage.UpdateQuery(
+                    new ProjectionManagementMessage.Command.UpdateQuery(
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.System, "JS", _projectionSource,
                         emitEnabled: false), 
-                    new ProjectionManagementMessage.Enable(
+                    new ProjectionManagementMessage.Command.Enable(
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.System));
         }
 

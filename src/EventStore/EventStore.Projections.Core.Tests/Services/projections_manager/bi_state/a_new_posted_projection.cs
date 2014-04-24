@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
             {
                 yield return(new SystemMessage.BecomeMaster(Guid.NewGuid()));
                 yield return
-                    (new ProjectionManagementMessage.Post(
+                    (new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
                         ProjectionManagementMessage.RunAs.System, "native:" + _fakeProjectionType.AssemblyQualifiedName,
                         _projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
                         "type", false, Helper.UTF8NoBom.GetBytes("1"), new byte[0], 100, 33.3f));
 
                 yield return
-                    new ProjectionManagementMessage.Disable(
+                    new ProjectionManagementMessage.Command.Disable(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
             }
 

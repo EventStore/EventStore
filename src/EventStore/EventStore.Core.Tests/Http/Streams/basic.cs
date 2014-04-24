@@ -60,7 +60,8 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var request = CreateRequest(TestStream + "/", "", "POST", "application/json", null);
                 request.AllowAutoRedirect = false;
-                request.GetRequestStream().WriteJson(new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } });
+                request.GetRequestStream()
+                    .WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
                 _response = (HttpWebResponse) request.GetResponse();
             }
 
@@ -244,7 +245,8 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var request = CreateRequest(TestStream + "/metadata/", "", "POST", "application/json", null);
                 request.AllowAutoRedirect = false;
-                request.GetRequestStream().WriteJson(new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } });
+                request.GetRequestStream()
+                    .WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
                 _response = (HttpWebResponse)request.GetResponse();
             }
 
@@ -365,9 +367,14 @@ namespace EventStore.Core.Tests.Http.Streams
                 _response = MakeJsonPost(
                     TestStream,
                     new[]
+                    {
+                        new
                         {
-                            new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1987-11-07T00:00:00.000+01:00"}},
-                        });
+                            EventId = Guid.NewGuid(),
+                            EventType = "event-type",
+                            Data = new {A = "1987-11-07T00:00:00.000+01:00"}
+                        },
+                    });
             }
 
             [Test]
@@ -471,7 +478,8 @@ namespace EventStore.Core.Tests.Http.Streams
 
 
         [TestFixture, Category("LongRunning")]
-        public class when_requesting_a_single_event_in_the_stream_as_event_json: HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_as_event_json
+            : HttpBehaviorSpecificationWithSingleEvent
         {
             private JObject _json;
 
@@ -489,7 +497,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_correct_body()
             {
-                HelperExtensions.AssertJson(new { Data = new {A = "1"}}, _json);
+                HelperExtensions.AssertJson(new {Data = new {A = "1"}}, _json);
             }
 
         }

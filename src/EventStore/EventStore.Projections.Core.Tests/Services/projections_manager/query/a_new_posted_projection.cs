@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             {
                 yield return(new SystemMessage.BecomeMaster(Guid.NewGuid()));
                 yield return
-                    (new ProjectionManagementMessage.Post(
+                    (new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
                         ProjectionManagementMessage.RunAs.System, "native:" + _fakeProjectionType.AssemblyQualifiedName,
                         _projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             {
                 foreach (var m in base.When()) yield return m;
                 yield return
-                    (new ProjectionManagementMessage.GetQuery(
+                    (new ProjectionManagementMessage.Command.GetQuery(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             }
 

@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
         protected override IEnumerable<WhenStep> When()
         {
-            ProjectionManagementMessage.Post message = new ProjectionManagementMessage.Post(
+            ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 Envelope, ProjectionMode.Transient, _projectionName, ProjectionManagementMessage.RunAs.System,
                 typeof(FakeForeachStreamProjection), "", true, false, false);
             _mp.InitializeNew(
@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         public void does_not_publish_start_slave_projections_message()
         {
             var startSlaveProjectionsMessage =
-                HandledMessages.OfType<ProjectionManagementMessage.StartSlaveProjections>().LastOrDefault();
+                HandledMessages.OfType<ProjectionManagementMessage.Command.StartSlaveProjections>().LastOrDefault();
             Assert.IsNull(startSlaveProjectionsMessage);
         }
 

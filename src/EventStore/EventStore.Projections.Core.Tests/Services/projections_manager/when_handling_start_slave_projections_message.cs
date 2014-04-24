@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             foreach (var m in base.When()) yield return m;
 
             yield return
-                new ProjectionManagementMessage.StartSlaveProjections(
+                new ProjectionManagementMessage.Command.StartSlaveProjections(
                     Envelope,
                     ProjectionManagementMessage.RunAs.System,
                     _masterProjectionName,

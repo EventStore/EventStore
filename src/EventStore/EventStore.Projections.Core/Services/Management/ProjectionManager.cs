@@ -22,19 +22,19 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<SystemMessage.StateChangeMessage>,
             IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
             IHandle<ClientMessage.WriteEventsCompleted>,
-            IHandle<ProjectionManagementMessage.Post>,
-            IHandle<ProjectionManagementMessage.UpdateQuery>,
-            IHandle<ProjectionManagementMessage.GetQuery>,
-            IHandle<ProjectionManagementMessage.Delete>,
+            IHandle<ProjectionManagementMessage.Command.Post>,
+            IHandle<ProjectionManagementMessage.Command.UpdateQuery>,
+            IHandle<ProjectionManagementMessage.Command.GetQuery>,
+            IHandle<ProjectionManagementMessage.Command.Delete>,
             IHandle<ProjectionManagementMessage.GetStatistics>,
             IHandle<ProjectionManagementMessage.GetState>,
             IHandle<ProjectionManagementMessage.GetResult>,
-            IHandle<ProjectionManagementMessage.Disable>,
-            IHandle<ProjectionManagementMessage.Enable>,
-            IHandle<ProjectionManagementMessage.Abort>,
-            IHandle<ProjectionManagementMessage.SetRunAs>,
-            IHandle<ProjectionManagementMessage.Reset>,
-            IHandle<ProjectionManagementMessage.StartSlaveProjections>,
+            IHandle<ProjectionManagementMessage.Command.Disable>,
+            IHandle<ProjectionManagementMessage.Command.Enable>,
+            IHandle<ProjectionManagementMessage.Command.Abort>,
+            IHandle<ProjectionManagementMessage.Command.SetRunAs>,
+            IHandle<ProjectionManagementMessage.Command.Reset>,
+            IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
             IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
             IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
             IHandle<ProjectionManagementMessage.Internal.Deleted>,
@@ -205,7 +205,7 @@ namespace EventStore.Projections.Core.Services.Management
             _projectionsMap.Clear();
         }
 
-        public void Handle(ProjectionManagementMessage.Post message)
+        public void Handle(ProjectionManagementMessage.Command.Post message)
         {
             if (!_started)
                 return;
@@ -237,7 +237,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionManagementMessage.Delete message)
+        public void Handle(ProjectionManagementMessage.Command.Delete message)
         {
             if (!_started)
                 return;
@@ -252,7 +252,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionManagementMessage.GetQuery message)
+        public void Handle(ProjectionManagementMessage.Command.GetQuery message)
         {
             if (!_started)
                 return;
@@ -263,7 +263,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.UpdateQuery message)
+        public void Handle(ProjectionManagementMessage.Command.UpdateQuery message)
         {
             if (!_started)
                 return;
@@ -279,7 +279,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message); // update query text
         }
 
-        public void Handle(ProjectionManagementMessage.Disable message)
+        public void Handle(ProjectionManagementMessage.Command.Disable message)
         {
             if (!_started)
                 return;
@@ -292,7 +292,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.Enable message)
+        public void Handle(ProjectionManagementMessage.Command.Enable message)
         {
             if (!_started)
                 return;
@@ -308,7 +308,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.Abort message)
+        public void Handle(ProjectionManagementMessage.Command.Abort message)
         {
             if (!_started)
                 return;
@@ -321,7 +321,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.SetRunAs message)
+        public void Handle(ProjectionManagementMessage.Command.SetRunAs message)
         {
             if (!_started)
                 return;
@@ -337,7 +337,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionManagementMessage.Reset message)
+        public void Handle(ProjectionManagementMessage.Command.Reset message)
         {
             if (!_started)
                 return;
@@ -529,7 +529,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (!_projections.ContainsKey(message.Name))
             {
                 Handle(
-                    new ProjectionManagementMessage.Post(
+                    new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_inputQueue),
                         ProjectionMode.Continuous,
                         message.Name,
@@ -719,7 +719,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             IEnvelope envelope = new NoopEnvelope();
 
-            var postMessage = new ProjectionManagementMessage.Post(
+            var postMessage = new ProjectionManagementMessage.Command.Post(
                 envelope,
                 ProjectionMode.Continuous,
                 name,
@@ -734,7 +734,7 @@ namespace EventStore.Projections.Core.Services.Management
             _publisher.Publish(postMessage);
         }
 
-        private void PostNewProjection(ProjectionManagementMessage.Post message, IEnvelope replyEnvelope)
+        private void PostNewProjection(ProjectionManagementMessage.Command.Post message, IEnvelope replyEnvelope)
         {
             if (message.Mode >= ProjectionMode.OneTime)
             {
@@ -956,7 +956,7 @@ namespace EventStore.Projections.Core.Services.Management
                 new Dictionary<Guid, Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>>();
 
 
-        public void Handle(ProjectionManagementMessage.StartSlaveProjections message)
+        public void Handle(ProjectionManagementMessage.Command.StartSlaveProjections message)
         {
             var result = new Dictionary<string, SlaveProjectionCommunicationChannel[]>();
             var counter = 0;
@@ -1006,7 +1006,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private static void CheckSlaveProjectionsStarted(
-            ProjectionManagementMessage.StartSlaveProjections message,
+            ProjectionManagementMessage.Command.StartSlaveProjections message,
             ref int counter, 
             Dictionary<string, SlaveProjectionCommunicationChannel[]> result)
         {
@@ -1019,7 +1019,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private void CINP(
-            ProjectionManagementMessage.StartSlaveProjections message,
+            ProjectionManagementMessage.Command.StartSlaveProjections message,
             SlaveProjectionDefinitions.Definition @group,
             SlaveProjectionCommunicationChannel[] resultArray,
             int queueIndex,

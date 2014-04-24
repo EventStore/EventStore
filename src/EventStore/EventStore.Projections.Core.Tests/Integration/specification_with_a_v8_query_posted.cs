@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Integration
 
         protected Message CreateQueryMessage(string name, string source)
         {
-            return new ProjectionManagementMessage.Post(
+            return new ProjectionManagementMessage.Command.Post(
                 new PublishEnvelope(_bus), ProjectionMode.Transient, name,
                 ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false,
                 emitEnabled: false);
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Integration
 
         protected Message CreateNewProjectionMessage(string name, string source)
         {
-            return new ProjectionManagementMessage.Post(
+            return new ProjectionManagementMessage.Command.Post(
                 new PublishEnvelope(_bus), ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
                 "JS", source, enabled: true, checkpointsEnabled: true, emitEnabled: true);
         }
@@ -89,19 +89,19 @@ namespace EventStore.Projections.Core.Tests.Integration
             if (_startSystemProjections)
             {
                 yield return
-                    new ProjectionManagementMessage.Enable(
+                    new ProjectionManagementMessage.Command.Enable(
                         Envelope, ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection,
                         ProjectionManagementMessage.RunAs.System);
                 yield return
-                    new ProjectionManagementMessage.Enable(
+                    new ProjectionManagementMessage.Command.Enable(
                         Envelope, ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
                         ProjectionManagementMessage.RunAs.System);
                 yield return
-                    new ProjectionManagementMessage.Enable(
+                    new ProjectionManagementMessage.Command.Enable(
                         Envelope, ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
                         ProjectionManagementMessage.RunAs.System);
                 yield return
-                    new ProjectionManagementMessage.Enable(
+                    new ProjectionManagementMessage.Command.Enable(
                         Envelope, ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection,
                         ProjectionManagementMessage.RunAs.System);
             }
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Tests.Integration
             foreach (var source in otherProjections)
             {
                 yield return
-                    (new ProjectionManagementMessage.Post(
+                    (new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), ProjectionMode.Continuous, "other_" + index,
                         ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true,
                         emitEnabled: true));
@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Integration
             if (!string.IsNullOrEmpty(_projectionSource))
             {
                 yield return
-                    (new ProjectionManagementMessage.Post(
+                    (new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
                         ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
                         checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));

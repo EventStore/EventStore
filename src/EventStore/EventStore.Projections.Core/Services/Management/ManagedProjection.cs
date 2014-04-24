@@ -347,7 +347,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionManagementMessage.GetQuery message)
+        public void Handle(ProjectionManagementMessage.Command.GetQuery message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Read, _runAs, message)) return;
@@ -371,7 +371,7 @@ namespace EventStore.Projections.Core.Services.Management
                     projectionOutputConfig));
         }
 
-        public void Handle(ProjectionManagementMessage.UpdateQuery message)
+        public void Handle(ProjectionManagementMessage.Command.UpdateQuery message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
@@ -391,7 +391,7 @@ namespace EventStore.Projections.Core.Services.Management
             _lastReplyEnvelope = envelope;
         }
 
-        public void Handle(ProjectionManagementMessage.Disable message)
+        public void Handle(ProjectionManagementMessage.Command.Disable message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
@@ -403,7 +403,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionManagementMessage.Abort message)
+        public void Handle(ProjectionManagementMessage.Command.Abort message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
@@ -413,7 +413,7 @@ namespace EventStore.Projections.Core.Services.Management
                 Abort();
         }
 
-        public void Handle(ProjectionManagementMessage.Enable message)
+        public void Handle(ProjectionManagementMessage.Command.Enable message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
@@ -433,13 +433,13 @@ namespace EventStore.Projections.Core.Services.Management
             StopUnlessPreparedOrLoaded();
         }
 
-        public void Handle(ProjectionManagementMessage.SetRunAs message)
+        public void Handle(ProjectionManagementMessage.Command.SetRunAs message)
         {
             _lastAccessed = _timeProvider.Now;
             if (
                 !ProjectionManagementMessage.RunAs.ValidateRunAs(
                     Mode, ReadWrite.Write, _runAs, message,
-                    message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set)) return;
+                    message.Action == ProjectionManagementMessage.Command.SetRunAs.SetRemove.Set)) return;
 
 
             _prepared = false;
@@ -449,7 +449,7 @@ namespace EventStore.Projections.Core.Services.Management
             StopUnlessPreparedOrLoaded();
         }
 
-        public void Handle(ProjectionManagementMessage.Delete message)
+        public void Handle(ProjectionManagementMessage.Command.Delete message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
@@ -459,7 +459,7 @@ namespace EventStore.Projections.Core.Services.Management
             StopUnlessPreparedOrLoaded();
         }
 
-        public void Handle(ProjectionManagementMessage.Reset message)
+        public void Handle(ProjectionManagementMessage.Command.Reset message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
@@ -482,7 +482,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
 
                 Handle(
-                    new ProjectionManagementMessage.Delete(
+                    new ProjectionManagementMessage.Command.Delete(
                         new NoopEnvelope(),
                         _name,
                         ProjectionManagementMessage.RunAs.System,
@@ -518,9 +518,9 @@ namespace EventStore.Projections.Core.Services.Management
             _lastReceivedStatistics = message.Statistics;
         }
 
-        private void DoSetRunAs1(ProjectionManagementMessage.SetRunAs message)
+        private void DoSetRunAs1(ProjectionManagementMessage.Command.SetRunAs message)
         {
-            _persistedState.RunAs = message.Action == ProjectionManagementMessage.SetRunAs.SetRemove.Set
+            _persistedState.RunAs = message.Action == ProjectionManagementMessage.Command.SetRunAs.SetRemove.Set
                 ? SerializePrincipal(message.RunAs)
                 : null;
             _runAs = DeserializePrincipal(_persistedState.RunAs);
@@ -964,7 +964,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
 
-        private void DuUpdateQuery1(ProjectionManagementMessage.UpdateQuery message)
+        private void DuUpdateQuery1(ProjectionManagementMessage.Command.UpdateQuery message)
         {
             _persistedState.HandlerType = message.HandlerType ?? HandlerType;
             _persistedState.Query = message.Query;

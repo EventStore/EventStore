@@ -1,5 +1,6 @@
 using System;
 using System.Security.Principal;
+using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -11,6 +12,382 @@ namespace EventStore.Projections.Core.Messages
 {
     public static class ProjectionManagementMessage
     {
+
+        public static class Command
+        {
+            public abstract class ControlMessage: Message
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly IEnvelope _envelope;
+                public readonly RunAs RunAs;
+
+                protected ControlMessage(IEnvelope envelope, RunAs runAs)
+                {
+                    _envelope = envelope;
+                    RunAs = runAs;
+                }
+
+                public IEnvelope Envelope
+                {
+                    get { return _envelope; }
+                }
+            }
+
+            public class Post : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly ProjectionMode _mode;
+                private readonly string _name;
+                private readonly string _handlerType;
+                private readonly string _query;
+                private readonly bool _enabled;
+                private readonly bool _checkpointsEnabled;
+                private readonly bool _emitEnabled;
+                private readonly bool _enableRunAs;
+
+                public Post(
+                    IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, string handlerType, string query,
+                    bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                    _handlerType = handlerType;
+                    _mode = mode;
+                    _query = query;
+                    _enabled = enabled;
+                    _checkpointsEnabled = checkpointsEnabled;
+                    _emitEnabled = emitEnabled;
+                    _enableRunAs = enableRunAs;
+                }
+
+                public Post(
+                    IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, Type handlerType, string query,
+                    bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                    _handlerType = "native:" + handlerType.Namespace + "." + handlerType.Name;
+                    _mode = mode;
+                    _query = query;
+                    _enabled = enabled;
+                    _checkpointsEnabled = checkpointsEnabled;
+                    _emitEnabled = emitEnabled;
+                    _enableRunAs = enableRunAs;
+                }
+                // shortcut for posting ad-hoc JS queries
+                public Post(IEnvelope envelope, RunAs runAs, string query, bool enabled)
+                    : base(envelope, runAs)
+                {
+                    _name = Guid.NewGuid().ToString("D");
+                    _handlerType = "JS";
+                    _mode = ProjectionMode.Transient;
+                    _query = query;
+                    _enabled = enabled;
+                    _checkpointsEnabled = false;
+                    _emitEnabled = false;
+                }
+
+                public ProjectionMode Mode
+                {
+                    get { return _mode; }
+                }
+
+                public string Query
+                {
+                    get { return _query; }
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public string HandlerType
+                {
+                    get { return _handlerType; }
+                }
+
+                public bool Enabled
+                {
+                    get { return _enabled; }
+                }
+
+                public bool EmitEnabled
+                {
+                    get { return _emitEnabled; }
+                }
+
+                public bool CheckpointsEnabled
+                {
+                    get { return _checkpointsEnabled; }
+                }
+
+                public bool EnableRunAs
+                {
+                    get { return _enableRunAs; }
+                }
+            }
+
+            public class Disable : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+
+                public Disable(IEnvelope envelope, string name, RunAs runAs)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+            }
+
+            public class Enable : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+
+                public Enable(IEnvelope envelope, string name, RunAs runAs)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+            }
+
+            public class Abort : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+
+                public Abort(IEnvelope envelope, string name, RunAs runAs)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+            }
+
+            public class SetRunAs : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                public enum SetRemove
+                {
+                    Set,
+                    Rmeove
+                };
+
+                private readonly string _name;
+                private readonly SetRemove _action;
+
+                public SetRunAs(IEnvelope envelope, string name, RunAs runAs, SetRemove action)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                    _action = action;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public SetRemove Action
+                {
+                    get { return _action; }
+                }
+            }
+
+            public class UpdateQuery : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+                private readonly string _handlerType;
+                private readonly string _query;
+                private readonly bool? _emitEnabled;
+
+                public UpdateQuery(
+                    IEnvelope envelope, string name, RunAs runAs, string handlerType, string query, bool? emitEnabled)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                    _handlerType = handlerType;
+                    _query = query;
+                    _emitEnabled = emitEnabled;
+                }
+
+                public string Query
+                {
+                    get { return _query; }
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public string HandlerType
+                {
+                    get { return _handlerType; }
+                }
+
+                public bool? EmitEnabled
+                {
+                    get { return _emitEnabled; }
+                }
+            }
+
+            public class Reset : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+
+                public Reset(IEnvelope envelope, string name, RunAs runAs)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+            }
+
+            public class Delete : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+                private readonly bool _deleteCheckpointStream;
+                private readonly bool _deleteStateStream;
+
+                public Delete(
+                    IEnvelope envelope, string name, RunAs runAs, bool deleteCheckpointStream, bool deleteStateStream)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                    _deleteCheckpointStream = deleteCheckpointStream;
+                    _deleteStateStream = deleteStateStream;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public bool DeleteCheckpointStream
+                {
+                    get { return _deleteCheckpointStream; }
+                }
+
+                public bool DeleteStateStream
+                {
+                    get { return _deleteStateStream; }
+                }
+            }
+
+            public class GetQuery : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+
+                public GetQuery(IEnvelope envelope, string name, RunAs runAs):
+                    base(envelope, runAs)
+                {
+                    _name = name;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+            }
+
+            public class StartSlaveProjections : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+                private readonly SlaveProjectionDefinitions _slaveProjections;
+                private readonly Guid _masterWorkerId;
+                private readonly IPublisher _resultsPublisher;
+                private readonly Guid _masterCorrelationId;
+
+                public StartSlaveProjections(
+                    IEnvelope envelope,
+                    RunAs runAs,
+                    string name,
+                    SlaveProjectionDefinitions slaveProjections,
+                    Guid masterWorkerId,
+                    IPublisher resultsPublisher,
+                    Guid masterCorrelationId)
+                    : base(envelope, runAs)
+                {
+                    _name = name;
+                    _slaveProjections = slaveProjections;
+                    _resultsPublisher = resultsPublisher;
+                    _masterCorrelationId = masterCorrelationId;
+                    _masterWorkerId = masterWorkerId;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public SlaveProjectionDefinitions SlaveProjections
+                {
+                    get { return _slaveProjections; }
+                }
+
+                public IPublisher ResultsPublisher
+                {
+                    get { return _resultsPublisher; }
+                }
+
+                public Guid MasterCorrelationId
+                {
+                    get { return _masterCorrelationId; }
+                }
+
+                public Guid MasterWorkerId
+                {
+                    get { return _masterWorkerId; }
+                }
+            }
+        }
 
         public class OperationFailed : Message
         {
@@ -92,7 +469,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _runAs; }
             }
 
-            public static bool ValidateRunAs(ProjectionMode mode, ReadWrite readWrite, IPrincipal existingRunAs, ControlMessage message, bool replace = false)
+            public static bool ValidateRunAs(ProjectionMode mode, ReadWrite readWrite, IPrincipal existingRunAs, Command.ControlMessage message, bool replace = false)
             {
                 if (mode > ProjectionMode.Transient && readWrite == ReadWrite.Write
                     && (message.RunAs == null || message.RunAs.Principal == null
@@ -125,325 +502,6 @@ namespace EventStore.Projections.Core.Messages
                 //return true;
             }
 
-        }
-
-        public abstract class ControlMessage: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly IEnvelope _envelope;
-            public readonly RunAs RunAs;
-
-            protected ControlMessage(IEnvelope envelope, RunAs runAs)
-            {
-                _envelope = envelope;
-                RunAs = runAs;
-            }
-
-            public IEnvelope Envelope
-            {
-                get { return _envelope; }
-            }
-        }
-
-        public class Post : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly ProjectionMode _mode;
-            private readonly string _name;
-            private readonly string _handlerType;
-            private readonly string _query;
-            private readonly bool _enabled;
-            private readonly bool _checkpointsEnabled;
-            private readonly bool _emitEnabled;
-            private readonly bool _enableRunAs;
-
-            public Post(
-                IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, string handlerType, string query,
-                bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
-                : base(envelope, runAs)
-            {
-                _name = name;
-                _handlerType = handlerType;
-                _mode = mode;
-                _query = query;
-                _enabled = enabled;
-                _checkpointsEnabled = checkpointsEnabled;
-                _emitEnabled = emitEnabled;
-                _enableRunAs = enableRunAs;
-            }
-
-            public Post(
-                IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, Type handlerType, string query,
-                bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
-                : base(envelope, runAs)
-            {
-                _name = name;
-                _handlerType = "native:" + handlerType.Namespace + "." + handlerType.Name;
-                _mode = mode;
-                _query = query;
-                _enabled = enabled;
-                _checkpointsEnabled = checkpointsEnabled;
-                _emitEnabled = emitEnabled;
-                _enableRunAs = enableRunAs;
-            }
-            // shortcut for posting ad-hoc JS queries
-            public Post(IEnvelope envelope, RunAs runAs, string query, bool enabled)
-                : base(envelope, runAs)
-            {
-                _name = Guid.NewGuid().ToString("D");
-                _handlerType = "JS";
-                _mode = ProjectionMode.Transient;
-                _query = query;
-                _enabled = enabled;
-                _checkpointsEnabled = false;
-                _emitEnabled = false;
-            }
-
-            public ProjectionMode Mode
-            {
-                get { return _mode; }
-            }
-
-            public string Query
-            {
-                get { return _query; }
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public string HandlerType
-            {
-                get { return _handlerType; }
-            }
-
-            public bool Enabled
-            {
-                get { return _enabled; }
-            }
-
-            public bool EmitEnabled
-            {
-                get { return _emitEnabled; }
-            }
-
-            public bool CheckpointsEnabled
-            {
-                get { return _checkpointsEnabled; }
-            }
-
-            public bool EnableRunAs
-            {
-                get { return _enableRunAs; }
-            }
-        }
-
-        public class Disable : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-
-            public Disable(IEnvelope envelope, string name, RunAs runAs)
-                : base(envelope, runAs)
-            {
-                _name = name;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-        }
-
-        public class Enable : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-
-            public Enable(IEnvelope envelope, string name, RunAs runAs)
-                : base(envelope, runAs)
-            {
-                _name = name;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-        }
-
-        public class Abort : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-
-            public Abort(IEnvelope envelope, string name, RunAs runAs)
-                : base(envelope, runAs)
-            {
-                _name = name;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-        }
-
-        public class SetRunAs : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public enum SetRemove
-            {
-                Set,
-                Rmeove
-            };
-
-            private readonly string _name;
-            private readonly SetRemove _action;
-
-            public SetRunAs(IEnvelope envelope, string name, RunAs runAs, SetRemove action)
-                : base(envelope, runAs)
-            {
-                _name = name;
-                _action = action;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public SetRemove Action
-            {
-                get { return _action; }
-            }
-        }
-
-        public class UpdateQuery : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-            private readonly string _handlerType;
-            private readonly string _query;
-            private readonly bool? _emitEnabled;
-
-            public UpdateQuery(
-                IEnvelope envelope, string name, RunAs runAs, string handlerType, string query, bool? emitEnabled)
-                : base(envelope, runAs)
-            {
-                _name = name;
-                _handlerType = handlerType;
-                _query = query;
-                _emitEnabled = emitEnabled;
-            }
-
-            public string Query
-            {
-                get { return _query; }
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public string HandlerType
-            {
-                get { return _handlerType; }
-            }
-
-            public bool? EmitEnabled
-            {
-                get { return _emitEnabled; }
-            }
-        }
-
-        public class Reset : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-
-            public Reset(IEnvelope envelope, string name, RunAs runAs)
-                : base(envelope, runAs)
-            {
-                _name = name;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-        }
-
-        public class Delete : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-            private readonly bool _deleteCheckpointStream;
-            private readonly bool _deleteStateStream;
-
-            public Delete(
-                IEnvelope envelope, string name, RunAs runAs, bool deleteCheckpointStream, bool deleteStateStream)
-                : base(envelope, runAs)
-            {
-                _name = name;
-                _deleteCheckpointStream = deleteCheckpointStream;
-                _deleteStateStream = deleteStateStream;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public bool DeleteCheckpointStream
-            {
-                get { return _deleteCheckpointStream; }
-            }
-
-            public bool DeleteStateStream
-            {
-                get { return _deleteStateStream; }
-            }
-        }
-
-        public class GetQuery : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-
-            public GetQuery(IEnvelope envelope, string name, RunAs runAs):
-                base(envelope, runAs)
-            {
-                _name = name;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
         }
 
         public class Updated : Message
@@ -792,60 +850,6 @@ namespace EventStore.Projections.Core.Messages
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-        }
-
-        public class StartSlaveProjections : ControlMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-
-            private readonly string _name;
-            private readonly SlaveProjectionDefinitions _slaveProjections;
-            private readonly Guid _masterWorkerId;
-            private readonly IPublisher _resultsPublisher;
-            private readonly Guid _masterCorrelationId;
-
-            public StartSlaveProjections(
-                IEnvelope envelope,
-                RunAs runAs,
-                string name,
-                SlaveProjectionDefinitions slaveProjections,
-                Guid masterWorkerId,
-                IPublisher resultsPublisher,
-                Guid masterCorrelationId)
-                : base(envelope, runAs)
-            {
-                _name = name;
-                _slaveProjections = slaveProjections;
-                _resultsPublisher = resultsPublisher;
-                _masterCorrelationId = masterCorrelationId;
-                _masterWorkerId = masterWorkerId;
-            }
-
-            public string Name
-            {
-                get { return _name; }
-            }
-
-            public SlaveProjectionDefinitions SlaveProjections
-            {
-                get { return _slaveProjections; }
-            }
-
-            public IPublisher ResultsPublisher
-            {
-                get { return _resultsPublisher; }
-            }
-
-            public Guid MasterCorrelationId
-            {
-                get { return _masterCorrelationId; }
-            }
-
-            public Guid MasterWorkerId
-            {
-                get { return _masterWorkerId; }
-            }
         }
 
         public class SlaveProjectionsStarted : Message

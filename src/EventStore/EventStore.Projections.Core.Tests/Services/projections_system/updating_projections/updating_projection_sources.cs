@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
             {
                 yield return CreateWriteEvent("stream1", "type1", "{\"Data\": 1}");
                 yield return
-                    new ProjectionManagementMessage.Post(
+                    new ProjectionManagementMessage.Command.Post(
                         Envelope, ProjectionMode.Continuous, _projectionName,
                         ProjectionManagementMessage.RunAs.System, "js", GivenOriginalSource(), true,
                         _checkpointsEnabled, _emitEnabled);
@@ -42,16 +42,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                 yield return CreateWriteEvent("stream3", "type3", "{\"Data\": 4}");
                 yield return CreateWriteEvent("stream3", "type1", "{\"Data\": 5}");
                 yield return
-                    new ProjectionManagementMessage.Disable(
+                    new ProjectionManagementMessage.Command.Disable(
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
                 yield return
-                    new ProjectionManagementMessage.UpdateQuery(
+                    new ProjectionManagementMessage.Command.UpdateQuery(
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.System, "js",
                         GivenUpdatedSource(), _emitEnabled);
                 yield return CreateWriteEvent("stream2", "type3", "{\"Data\": 6}");
                 yield return CreateWriteEvent("stream3", "type4", "{\"Data\": 7}");
                 yield return
-                    new ProjectionManagementMessage.Enable(
+                    new ProjectionManagementMessage.Command.Enable(
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
                 yield return CreateWriteEvent("stream3", "type4", "{\"Data\": 8}");
                 yield return CreateWriteEvent("stream4", "type5", "{\"Data\": 9}");
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                         Envelope, ProjectionMode.AllNonTransient, _projectionName, false);
                 yield return new ProjectionManagementMessage.GetState(Envelope, _projectionName, "");
                 yield return
-                    new ProjectionManagementMessage.GetQuery(
+                    new ProjectionManagementMessage.Command.GetQuery(
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous);
 
                 _allStatistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().LastOrDefault();

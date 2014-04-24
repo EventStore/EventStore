@@ -384,7 +384,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     foreach (var channel in group.Value)
                     {
                         _publisher.Publish(
-                            new ProjectionManagementMessage.Delete(
+                            new ProjectionManagementMessage.Command.Delete(
                                 new NoopEnvelope(), channel.ManagedProjectionName,
                                 ProjectionManagementMessage.RunAs.System, true, true));
                     }
@@ -523,7 +523,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionCorrelationId);
             _masterProjectionResponseReader.Start();
             _publisher.Publish(
-                new ProjectionManagementMessage.StartSlaveProjections(
+                new ProjectionManagementMessage.Command.StartSlaveProjections(
                     new PublishEnvelope(_inputQueue),
                     new ProjectionManagementMessage.RunAs(_runAs),
                     _name,

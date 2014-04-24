@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
                 {
                     if (projection.Status != "Running")
                         yield return
-                            new ProjectionManagementMessage.Enable(
+                            new ProjectionManagementMessage.Command.Enable(
                                 Envelope, projection.Name, ProjectionManagementMessage.RunAs.Anonymous);
                 }
             }

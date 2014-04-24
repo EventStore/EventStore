@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
             yield return
-                (new ProjectionManagementMessage.Post(
+                (new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionManagementMessage.RunAs.Anonymous,
                     @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }

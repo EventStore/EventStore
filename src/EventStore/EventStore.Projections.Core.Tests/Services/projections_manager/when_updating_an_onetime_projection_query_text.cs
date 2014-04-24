@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void the_projection_source_can_be_retrieved()
         {
             _manager.Handle(
-                new ProjectionManagementMessage.GetQuery(
+                new ProjectionManagementMessage.Command.GetQuery(
                     new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
             var projectionQuery =
@@ -68,14 +68,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
             yield return
-                (new ProjectionManagementMessage.Post(
+                (new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Transient, _projectionName,
                     ProjectionManagementMessage.RunAs.Anonymous, "JS", @"fromAll(); on_any(function(){});log(1);",
                     enabled: true, checkpointsEnabled: false, emitEnabled: false));
             // when
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
             yield return
-                (new ProjectionManagementMessage.UpdateQuery(
+                (new ProjectionManagementMessage.Command.UpdateQuery(
                     new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous, "JS",
                     _newProjectionSource, emitEnabled: null));
         }

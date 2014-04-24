@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionQuery = @"fromAll(); on_any(function(){});log(1);";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
             yield return
-                (new ProjectionManagementMessage.Post(
+                (new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionManagementMessage.RunAs.Anonymous, _projectionQuery,
                     enabled: true));
             _projectionName = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Single().Name;
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void the_projection_source_can_be_retrieved()
         {
             _manager.Handle(
-                new ProjectionManagementMessage.GetQuery(
+                new ProjectionManagementMessage.Command.GetQuery(
                     new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
             var projectionQuery = _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();

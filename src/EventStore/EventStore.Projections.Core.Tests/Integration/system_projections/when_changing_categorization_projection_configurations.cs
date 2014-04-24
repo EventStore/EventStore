@@ -22,19 +22,19 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections
             foreach (var e in base.When()) yield return e;
             string query = "first\r\n-";
             yield return
-                new ProjectionManagementMessage.UpdateQuery(
+                new ProjectionManagementMessage.Command.UpdateQuery(
                     Envelope, ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
                     ProjectionManagementMessage.RunAs.System, handlerType: null, query: query, emitEnabled: null);
             yield return
-                new ProjectionManagementMessage.UpdateQuery(
+                new ProjectionManagementMessage.Command.UpdateQuery(
                     Envelope, ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
                     ProjectionManagementMessage.RunAs.System, handlerType: null, query: query, emitEnabled: null);
             yield return
-                new ProjectionManagementMessage.Enable(
+                new ProjectionManagementMessage.Command.Enable(
                     Envelope, ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
                     ProjectionManagementMessage.RunAs.System);
             yield return
-                new ProjectionManagementMessage.Enable(
+                new ProjectionManagementMessage.Command.Enable(
                     Envelope, ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
                     ProjectionManagementMessage.RunAs.System);
         }

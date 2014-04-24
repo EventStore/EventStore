@@ -12,7 +12,21 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionStatusMessage.StatisticsReport>,
             IHandle<CoreProjectionStatusMessage.Stopped>,
             IHandle<CoreProjectionStatusMessage.StateReport>,
-            IHandle<CoreProjectionStatusMessage.ResultReport>
+            IHandle<CoreProjectionStatusMessage.ResultReport>,
+
+        IHandle<ProjectionManagementMessage.Command.Abort>,
+        IHandle<ProjectionManagementMessage.Command.Disable>,
+        IHandle<ProjectionManagementMessage.Command.Enable>,
+        IHandle<ProjectionManagementMessage.Command.GetQuery>,
+        IHandle<ProjectionManagementMessage.GetResult>,
+        IHandle<ProjectionManagementMessage.GetState>,
+        IHandle<ProjectionManagementMessage.GetStatistics>,
+        IHandle<ProjectionManagementMessage.Command.Post>,
+        IHandle<ProjectionManagementMessage.Command.Reset>,
+        IHandle<ProjectionManagementMessage.Command.SetRunAs>,
+        IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
+        IHandle<ProjectionManagementMessage.Command.UpdateQuery>,
+        IHandle<ProjectionManagementMessage.Command.Delete>
     {
         private readonly IResponseWriter _writer;
 

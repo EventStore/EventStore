@@ -167,7 +167,7 @@ namespace EventStore.Projections.Core.Services.Http
             else
                 envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionQuery>(
                     _networkSendQueue, http, QueryFormatter, QueryConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.GetQuery(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
+            Publish(new ProjectionManagementMessage.Command.GetQuery(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionQueryPut(HttpEntityManager http, UriTemplateMatch match)
@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Services.Http
             http.ReadTextRequestAsync(
                 (o, s) =>
                 Publish(
-                    new ProjectionManagementMessage.UpdateQuery(
+                    new ProjectionManagementMessage.Command.UpdateQuery(
                         envelope, match.BoundVariables["name"], GetRunAs(http, match), match.BoundVariables["type"], s, emitEnabled: emitEnabled)), Console.WriteLine);
         }
 
@@ -192,7 +192,7 @@ namespace EventStore.Projections.Core.Services.Http
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.Disable(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
+            Publish(new ProjectionManagementMessage.Command.Disable(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionCommandEnable(HttpEntityManager http, UriTemplateMatch match)
@@ -203,7 +203,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             var name = match.BoundVariables["name"];
-            Publish(new ProjectionManagementMessage.Enable(envelope, name, GetRunAs(http, match)));
+            Publish(new ProjectionManagementMessage.Command.Enable(envelope, name, GetRunAs(http, match)));
         }
 
         private void OnProjectionCommandReset(HttpEntityManager http, UriTemplateMatch match)
@@ -213,7 +213,7 @@ namespace EventStore.Projections.Core.Services.Http
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.Reset(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
+            Publish(new ProjectionManagementMessage.Command.Reset(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionCommandAbort(HttpEntityManager http, UriTemplateMatch match)
@@ -223,7 +223,7 @@ namespace EventStore.Projections.Core.Services.Http
 
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            Publish(new ProjectionManagementMessage.Abort(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
+            Publish(new ProjectionManagementMessage.Command.Abort(envelope, match.BoundVariables["name"], GetRunAs(http, match)));
         }
 
         private void OnProjectionStatusGet(HttpEntityManager http, UriTemplateMatch match)
@@ -248,7 +248,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             Publish(
-                new ProjectionManagementMessage.Delete(
+                new ProjectionManagementMessage.Command.Delete(
                     envelope, match.BoundVariables["name"], GetRunAs(http, match),
                     IsOn(match, "deleteCheckpointStream", false),
                     IsOn(match, "deleteStateStream", false)));
@@ -356,18 +356,18 @@ namespace EventStore.Projections.Core.Services.Http
             http.ReadTextRequestAsync(
                 (o, s) =>
                     {
-                        ProjectionManagementMessage.Post postMessage;
+                        ProjectionManagementMessage.Command.Post postMessage;
                         string handlerType = match.BoundVariables["type"] ?? "JS";
                         bool emitEnabled = IsOn(match, "emit", false);
                         bool checkpointsEnabled = mode >= ProjectionMode.Continuous || IsOn(match, "checkpoints", false);
                         bool enabled = IsOn(match, "enabled", def: true);
                         var runAs = GetRunAs(http, match);
                         if (mode <= ProjectionMode.OneTime && string.IsNullOrEmpty(name))
-                            postMessage = new ProjectionManagementMessage.Post(
+                            postMessage = new ProjectionManagementMessage.Command.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), runAs, handlerType, s, enabled: enabled,
                                 checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, enableRunAs: true);
                         else
-                            postMessage = new ProjectionManagementMessage.Post(
+                            postMessage = new ProjectionManagementMessage.Command.Post(
                                 envelope, mode, name, runAs, handlerType, s, enabled: enabled,
                                 checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, enableRunAs: true);
                         Publish(postMessage);

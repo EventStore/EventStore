@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 foreach (var m in base.When()) yield return m;
 
                 yield return
-                    (new ProjectionManagementMessage.Disable(
+                    (new ProjectionManagementMessage.Command.Disable(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
                 for (var i = 0; i < 50; i++)
                 {
@@ -167,7 +167,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 foreach (var m in base.When()) yield return m;
 
                 yield return
-                    (new ProjectionManagementMessage.Reset(
+                    (new ProjectionManagementMessage.Command.Reset(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
             }
 
@@ -239,10 +239,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             {
                 foreach (var m in base.When()) yield return m;
                 yield return
-                    (new ProjectionManagementMessage.Reset(
+                    (new ProjectionManagementMessage.Command.Reset(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
                 yield return
-                    (new ProjectionManagementMessage.Enable(
+                    (new ProjectionManagementMessage.Command.Enable(
                         new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
                 yield return
                     (ReaderSubscriptionMessage.CommittedEventDistributed.Sample(

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -44,12 +45,14 @@ namespace EventStore.Core.Tests.Http
 
             if (SetUpFixture._connection != null && SetUpFixture._node != null)
             {
+                Console.WriteLine("***** Already");
                 _tag = "_" + (++SetUpFixture._counter).ToString();
                 _node = SetUpFixture._node;
                 _connection = SetUpFixture._connection;
             }
             else
             {
+                Console.WriteLine("***** Configuring");
                 _tag = "_1";
                 _node = CreateMiniNode();
                 _node.Start();
