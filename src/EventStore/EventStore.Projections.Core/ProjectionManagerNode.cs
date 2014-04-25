@@ -23,8 +23,8 @@ namespace EventStore.Projections.Core
         private readonly InMemoryBus _output;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private MultiStreamMessageWriter _commandWriter;
-        private ProjectionManagerCommandWriter _projectionManagerCommadnWriter;
-        private ProjectionManagerResponseReader _projectionManagerResponseReader;
+        private readonly ProjectionManagerCommandWriter _projectionManagerCommadnWriter;
+        private readonly ProjectionManagerResponseReader _projectionManagerResponseReader;
 
         private ProjectionManagerNode(
             IPublisher inputQueue,
@@ -111,6 +111,7 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<CoreProjectionManagementMessage.Dispose>(_projectionManagerCommadnWriter);
             mainBus.Subscribe<CoreProjectionManagementMessage.GetState>(_projectionManagerCommadnWriter);
             mainBus.Subscribe<CoreProjectionManagementMessage.GetResult>(_projectionManagerCommadnWriter);
+            mainBus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(_projectionManagerCommadnWriter);
 
         }
 

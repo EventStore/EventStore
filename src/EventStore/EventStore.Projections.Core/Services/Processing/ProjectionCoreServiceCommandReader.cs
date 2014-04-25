@@ -294,6 +294,16 @@ namespace EventStore.Projections.Core.Services.Processing
                             Guid.Empty));
                     break;
                 }
+                case "$slave-projections-started":
+                {
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<SlaveProjectionsStartedResponse>();
+                    _publisher.Publish(
+                        new ProjectionManagementMessage.SlaveProjectionsStarted(
+                            Guid.ParseExact(commandBody.CorrelationId, "N"),
+                            Guid.Empty,
+                            commandBody.SlaveProjections));
+                    break;
+                }
                 default:
                     throw new Exception("Unknown command: " + command);
             }

@@ -1,7 +1,6 @@
 ﻿using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Commands;
-using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services.Management
 {
