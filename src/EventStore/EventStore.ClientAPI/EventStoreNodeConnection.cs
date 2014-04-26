@@ -51,11 +51,6 @@ namespace EventStore.ClientAPI
             _handler = new EventStoreConnectionLogicHandler(this, settings);
         }
 
-        public void Connect()
-        {
-            ConnectAsync().Wait();
-        }
-
         public Task ConnectAsync()
         {
             var source = new TaskCompletionSource<object>();
@@ -73,16 +68,6 @@ namespace EventStore.ClientAPI
             _handler.EnqueueMessage(new CloseConnectionMessage("Connection close requested by client.", null));
         }
 
-        public void DeleteStream(string stream, int expectedVersion, UserCredentials userCredentials = null)
-        {
-            DeleteStreamAsync(stream, expectedVersion, false, userCredentials).Wait();
-        }
-
-        public void DeleteStream(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
-        {
-            DeleteStreamAsync(stream, expectedVersion, hardDelete, userCredentials).Wait();
-        }
-
         public Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
@@ -96,27 +81,6 @@ namespace EventStore.ClientAPI
             EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.RequireMaster, 
                                                        stream, expectedVersion, hardDelete, userCredentials));
             return source.Task;
-        }
-
-        public WriteResult AppendToStream(string stream, int expectedVersion, params EventData[] events)
-        {
-// ReSharper disable RedundantArgumentDefaultValue
-// ReSharper disable RedundantCast
-            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events, null).Result;
-// ReSharper restore RedundantCast
-// ReSharper restore RedundantArgumentDefaultValue
-        }
-
-        public WriteResult AppendToStream(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
-        {
-// ReSharper disable RedundantCast
-            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials).Result;
-// ReSharper restore RedundantCast
-        }
-
-        public WriteResult AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
-        {
-            return  AppendToStreamAsync(stream, expectedVersion, events, userCredentials).Result;
         }
 
         public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
@@ -146,12 +110,6 @@ namespace EventStore.ClientAPI
                                                          stream, expectedVersion, events, userCredentials));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
-        }
-
-
-        public EventStoreTransaction StartTransaction(string stream, int expectedVersion, UserCredentials userCredentials = null)
-        {
-            return StartTransactionAsync(stream, expectedVersion, userCredentials).Result;
         }
 
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
@@ -193,10 +151,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public EventReadResult ReadEvent(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
-        {
-            return ReadEventAsync(stream, eventNumber, resolveLinkTos, userCredentials).Result;
-        }
 
         public Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
@@ -207,11 +161,6 @@ namespace EventStore.ClientAPI
                                                    _settings.RequireMaster, userCredentials);
             EnqueueOperation(operation);
             return source.Task;
-        }
-
-        public StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
-        {
-            return ReadStreamEventsForwardAsync(stream, start, count, resolveLinkTos, userCredentials).Result;
         }
 
         public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
@@ -227,11 +176,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
-        {
-            return ReadStreamEventsBackwardAsync(stream, start, count, resolveLinkTos, userCredentials).Result;
-        }
-
         public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -244,11 +188,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
-        {
-            return ReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, userCredentials).Result;
-        }
-
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
@@ -258,11 +197,6 @@ namespace EventStore.ClientAPI
                                                               resolveLinkTos, _settings.RequireMaster, userCredentials);
             EnqueueOperation(operation);
             return source.Task;
-        }
-
-        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
-        {
-            return ReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, userCredentials).Result;
         }
 
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
@@ -283,16 +217,6 @@ namespace EventStore.ClientAPI
                 Thread.Sleep(1);
             }
             _handler.EnqueueMessage(new StartOperationMessage(operation, _settings.MaxRetries, _settings.OperationTimeout));
-        }
-
-        public EventStoreSubscription SubscribeToStream(
-                string stream,
-                bool resolveLinkTos,
-                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null)
-        {
-            return SubscribeToStreamAsync(stream, resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials).Result;
         }
 
         public Task<EventStoreSubscription> SubscribeToStreamAsync(
@@ -331,15 +255,6 @@ namespace EventStore.ClientAPI
             return catchUpSubscription;
         }
 
-        public EventStoreSubscription SubscribeToAll(
-                bool resolveLinkTos,
-                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null)
-        {
-            return SubscribeToAllAsync(resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials).Result;
-        }
-
         public Task<EventStoreSubscription> SubscribeToAllAsync(
                 bool resolveLinkTos, 
                 Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
@@ -373,20 +288,9 @@ namespace EventStore.ClientAPI
             return catchUpSubscription;
         }
 
-
-        public WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
-        {
-            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials).Result;
-        }
-
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);
-        }
-
-        public WriteResult SetStreamMetadata(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
-        {
-            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata, userCredentials).Result;
         }
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
@@ -408,11 +312,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public StreamMetadataResult GetStreamMetadata(string stream, UserCredentials userCredentials = null)
-        {
-            return GetStreamMetadataAsync(stream, userCredentials).Result;
-        }
-
         public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null)
         {
             return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ContinueWith(t =>
@@ -425,11 +324,6 @@ namespace EventStore.ClientAPI
                 var metadata = StreamMetadata.FromJsonBytes(res.StreamMetadata);
                 return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, metadata);
             });
-        }
-
-        public RawStreamMetadataResult GetStreamMetadataAsRawBytes(string stream, UserCredentials userCredentials = null)
-        {
-            return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).Result;
         }
 
         public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null)
@@ -455,11 +349,6 @@ namespace EventStore.ClientAPI
                         throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", res.Status));
                 }
             });
-        }
-
-        public void SetSystemSettings(SystemSettings settings, UserCredentials userCredentials = null)
-        {
-            SetSystemSettingsAsync(settings, userCredentials).Wait();
         }
 
         public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null)

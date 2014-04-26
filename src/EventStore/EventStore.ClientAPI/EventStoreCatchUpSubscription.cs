@@ -164,9 +164,9 @@ namespace EventStore.ClientAPI
             RunSubscription();
         }
 
-        private void RunSubscription()
+        private async void RunSubscription()
         {
-            ThreadPool.QueueUserWorkItem(_ =>
+            ThreadPool.QueueUserWorkItem(async _ =>
             {
                 if (Verbose) Log.Debug("Catch-up Subscription to {0}: running...", IsSubscribedToAll ? "<all>" : StreamId);
 
@@ -183,8 +183,8 @@ namespace EventStore.ClientAPI
                     {
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: subscribing...", IsSubscribedToAll ? "<all>" : StreamId);
                         _subscription = _streamId == string.Empty
-                            ? _connection.SubscribeToAll(_resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials)
-                            : _connection.SubscribeToStream(_streamId, _resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials);
+                            ? await _connection.SubscribeToAllAsync(_resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials)
+                            : await _connection.SubscribeToStreamAsync(_streamId, _resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped, _userCredentials);
 
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: pulling events (if left)...", IsSubscribedToAll ? "<all>" : StreamId);
                         ReadEventsTill(_connection, _resolveLinkTos, _userCredentials, _subscription.LastCommitPosition, _subscription.LastEventNumber);
@@ -366,13 +366,13 @@ namespace EventStore.ClientAPI
         /// <param name="userCredentials">User credentials for the operation.</param>
         /// <param name="lastCommitPosition">The commit position to read until.</param>
         /// <param name="lastEventNumber">The event number to read until.</param>
-        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
+        protected override async void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
                                                UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             bool done;
             do
             {
-                AllEventsSlice slice = connection.ReadAllEventsForward(_nextReadPosition, ReadBatchSize, resolveLinkTos, userCredentials);
+                AllEventsSlice slice = await connection.ReadAllEventsForwardAsync(_nextReadPosition, ReadBatchSize, resolveLinkTos, userCredentials);
                 foreach (var e in slice.Events)
                 {
                     if (e.OriginalPosition == null) throw new Exception("Subscription event came up with no OriginalPosition.");
@@ -454,13 +454,13 @@ namespace EventStore.ClientAPI
         /// <param name="userCredentials">User credentials for the operation.</param>
         /// <param name="lastCommitPosition">The commit position to read until.</param>
         /// <param name="lastEventNumber">The event number to read until.</param>
-        protected override void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
+        protected override async void ReadEventsTill(IEventStoreConnection connection, bool resolveLinkTos, 
                                                UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             bool done;
             do
             {
-                var slice = connection.ReadStreamEventsForward(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos, userCredentials);
+                var slice = await connection.ReadStreamEventsForwardAsync(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos, userCredentials);
                 switch (slice.Status)
                 {
                     case SliceReadStatus.Success:
