@@ -17,18 +17,19 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.SetStreamMetadata("$all", -1,
+            _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword))
+            .Wait();
 
             _testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-            _conn.AppendToStream("stream", ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync("stream", ExpectedVersion.EmptyStream, _testEvents).Wait();
         }
 
         [Test, Category("LongRunning")]
         public void return_empty_slice_if_asked_to_read_from_start()
         {
-            var read = _conn.ReadAllEventsBackward(Position.Start, 1, false);
+            var read = _conn.ReadAllEventsBackwardAsync(Position.Start, 1, false).Result;
             Assert.That(read.IsEndOfStream, Is.True);
             Assert.That(read.Events.Length, Is.EqualTo(0));
         }
@@ -36,7 +37,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void return_partial_slice_if_not_enough_events()
         {
-            var read = _conn.ReadAllEventsBackward(Position.End, 30, false);
+            var read = _conn.ReadAllEventsBackwardAsync(Position.End, 30, false).Result;
             Assert.That(read.Events.Length, Is.LessThan(30));
             Assert.That(EventDataComparer.Equal(_testEvents.Reverse().ToArray(),
                                                 read.Events.Take(_testEvents.Length).Select(x => x.Event).ToArray()));
@@ -45,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void return_events_in_reversed_order_compared_to_written()
         {
-            var read = _conn.ReadAllEventsBackward(Position.End, _testEvents.Length, false);
+            var read = _conn.ReadAllEventsBackwardAsync(Position.End, _testEvents.Length, false).Result;
             Assert.That(EventDataComparer.Equal(_testEvents.Reverse().ToArray(), 
                                                 read.Events.Select(x => x.Event).ToArray()));
         }
@@ -57,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var position = Position.End;
             AllEventsSlice slice;
 
-            while (!(slice = _conn.ReadAllEventsBackward(position, 1, false)).IsEndOfStream)
+            while (!(slice = _conn.ReadAllEventsBackwardAsync(position, 1, false)).Result.IsEndOfStream)
             {
                 all.Add(slice.Events.Single().Event);
                 position = slice.NextPosition;
@@ -73,7 +74,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var position = Position.End;
             AllEventsSlice slice;
 
-            while (!(slice = _conn.ReadAllEventsBackward(position, 5, false)).IsEndOfStream)
+            while (!(slice = _conn.ReadAllEventsBackwardAsync(position, 5, false).Result).IsEndOfStream)
             {
                 all.AddRange(slice.Events.Select(x => x.Event));
                 position = slice.NextPosition;

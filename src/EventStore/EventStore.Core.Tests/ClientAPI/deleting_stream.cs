@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
             using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect();
+                connection.ConnectAsync().Wait();
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
             }
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_already_exists_should_success_when_passed_any_for_expected_version";
             using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect();
+                connection.ConnectAsync().Wait();
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "with_invalid_expected_version_should_fail";
             using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect();
+                connection.ConnectAsync().Wait();
 
                 var delete = connection.DeleteStreamAsync(stream, 1, hardDelete: true);
                 Assert.That(() => delete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_was_allready_deleted_should_fail";
             using (var connection = TestConnection.Create(_node.TcpEndPoint))
             {
-                connection.Connect();
+                connection.ConnectAsync().Wait();
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);

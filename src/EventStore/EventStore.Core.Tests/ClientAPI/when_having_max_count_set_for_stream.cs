@@ -23,9 +23,9 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
 
             _connection = TestConnection.Create(_node.TcpEndPoint);
-            _connection.Connect();
+            _connection.ConnectAsync().Wait();
 
-            _connection.SetStreamMetadata(Stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetMaxCount(3));
+            _connection.SetStreamMetadataAsync(Stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetMaxCount(3)).Wait();
 
             _testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent(data: x.ToString())).ToArray();
             _connection.AppendToStreamAsync(Stream, ExpectedVersion.EmptyStream, _testEvents).Wait();

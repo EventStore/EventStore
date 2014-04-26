@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             var result = 0;
             while (true)
             {
-                var slice = store.ReadStreamEventsForward(stream, result, SliceSize, false);
+                var slice = store.ReadStreamEventsForwardAsync(stream, result, SliceSize, false).Result;
                 result += slice.Events.Length;
                 if (slice.IsEndOfStream)
                     break;
