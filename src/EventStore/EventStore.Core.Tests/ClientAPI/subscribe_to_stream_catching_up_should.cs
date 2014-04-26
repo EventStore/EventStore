@@ -29,7 +29,6 @@ namespace EventStore.Core.Tests.ClientAPI
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-            _node.Shutdown();
             base.TestFixtureTearDown();
         }
 
@@ -51,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                (_, __, ___) => dropped.Signal());
 
                 Thread.Sleep(100); // give time for first pull phase
-                store.SubscribeToStream(stream, false, (s, x) => { }, (s, r, e) => { });
+                store.SubscribeToStreamAsync(stream, false, (s, x) => { }, (s, r, e) => { }).Wait();
                 Thread.Sleep(100);
                 Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
                 Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
@@ -77,7 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                _ => Log.Info("Live processing started."),
                                                                (_, __, ___) => dropped.Signal());
 
-                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+                store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
 
                 if (!appeared.Wait(Timeout))
                 {
@@ -115,7 +114,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                         _ => Log.Info("Live processing started."),
                                                        (x, y, z) => dropped2.Set());
 
-                store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+                store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
 
                 if (!appeared.Wait(Timeout))
                 {
@@ -169,7 +168,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
@@ -184,7 +183,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                (x, y, z) => dropped.Signal());
                 for (int i = 10; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -219,7 +218,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,
@@ -234,7 +233,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                (x, y, z) => dropped.Signal());
                 for (int i = 20; i < 30; ++i)
                 {
-                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -271,7 +270,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 20; ++i)
                 {
-                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 var subscription = store.SubscribeToStreamFrom(stream,

@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
 
             _connection = TestConnection.Create(_node.TcpEndPoint);
-            _connection.Connect();
+            _connection.ConnectAsync().Wait();
         }
 
         [TestFixtureTearDown]

@@ -30,10 +30,10 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
 
             _conn = TestConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
-            _conn.SetStreamMetadata("$all", -1,
+            _conn.ConnectAsync().Wait();
+            _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
         }
 
         [TearDown]
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
 
                 var dropped = new CountdownEvent(1);
                 var subscription = store.SubscribeToAllFrom(null,
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 var appeared = new ManualResetEventSlim(false);
                 var dropped = new CountdownEvent(1);
 
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
 
                 var events = new List<ResolvedEvent>();
                 var appeared = new CountdownEvent(20);
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 var subscription = store.SubscribeToAllFrom(null,
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             (x, y, z) => dropped.Signal());
                 for (int i = 10; i < 20; ++i)
                 {
-                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
 
                 var events = new List<ResolvedEvent>();
                 var appeared = new CountdownEvent(10);
@@ -161,7 +161,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
-                var allSlice = store.ReadAllEventsForward(Position.Start, 100, false);
+                var allSlice = store.ReadAllEventsForwardAsync(Position.Start, 100, false).Result;
                 var lastEvent = allSlice.Events.Last();
 
                 var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
@@ -180,7 +180,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 10; i < 20; ++i)
                 {
-                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
                 Log.Info("Waiting for events...");
                 if (!appeared.Wait(Timeout))
@@ -216,10 +216,10 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
-                var allSlice = store.ReadAllEventsForward(Position.Start, 100, false);
+                var allSlice = store.ReadAllEventsForwardAsync(Position.Start, 100, false).Result;
                 var lastEvent = allSlice.Events[allSlice.Events.Length - 2];
 
                 var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,

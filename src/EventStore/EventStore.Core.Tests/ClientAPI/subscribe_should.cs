@@ -34,13 +34,13 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                using (store.SubscribeToStream(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
-                    store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+                    store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
                     Assert.IsTrue(appeared.Wait(Timeout), "Event appeared countdown event timed out.");
                 }
             }
@@ -52,14 +52,14 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_allow_multiple_subscriptions_to_same_stream";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                using (store.SubscribeToStream(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
-                using (store.SubscribeToStream(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
-                    store.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+                    store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
                     Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
                 }
             }
@@ -71,10 +71,10 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_call_dropped_callback_after_unsubscribe_method_call";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
 
                 var dropped = new CountdownEvent(1);
-                using (var subscription = store.SubscribeToStream(stream, false, (s, x) => { }, (s, r, e) => dropped.Signal()))
+                using (var subscription = store.SubscribeToStreamAsync(stream, false, (s, x) => { }, (s, r, e) => dropped.Signal()).Result)
                 {
                     subscription.Unsubscribe();
                 }
@@ -88,13 +88,13 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_catch_created_and_deleted_events_as_well";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
 
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
-                using (store.SubscribeToStream(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
-                    store.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+                    store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
                     Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
                 }
             }

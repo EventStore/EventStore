@@ -25,10 +25,10 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
 
             _conn = TestConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
-            _conn.SetStreamMetadata("$all", -1,
+            _conn.ConnectAsync().Wait();
+            _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
         }
 
         [TearDown]
@@ -45,12 +45,12 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_to_all_should_allow_multiple_subscriptions";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
-                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
+                using (store.SubscribeToAllAsync(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToAllAsync(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
                     var create = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
                     Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
@@ -66,11 +66,11 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_to_all_should_catch_created_and_deleted_events_as_well";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                using (store.SubscribeToAll(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()))
+                using (store.SubscribeToAllAsync(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
                     var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                     Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
