@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -40,8 +40,8 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_start_on_non_existing_stream_with_correct_exp_ver_and_create_stream_on_commit";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
-                using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
+                store.ConnectAsync().Wait();
+                using (var transaction = store.StartTransactionAsyc(stream, ExpectedVersion.NoStream))
                 {
                     transaction.Write(new[] { TestEvent.NewTestEvent() });
                     Assert.AreEqual(0, transaction.Commit().NextExpectedVersion);
@@ -56,8 +56,8 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_start_on_non_existing_stream_with_exp_ver_any_and_create_stream_on_commit";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
-                using (var transaction = store.StartTransaction(stream, ExpectedVersion.Any))
+                store.ConnectAsync().Wait();
+                using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.Any))
                 {
                     transaction.Write(new[] {TestEvent.NewTestEvent()});
                     Assert.AreEqual(0, transaction.Commit().NextExpectedVersion);
@@ -70,10 +70,10 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_fail_to_commit_non_existing_stream_with_wrong_exp_ver()
         {
             const string stream = "should_fail_to_commit_non_existing_stream_with_wrong_exp_ver";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.Create(_node.TcpEndPoint).Result)
             {
-                store.Connect();
-                using (var transaction = store.StartTransaction(stream, 1))
+                store.ConnectAsync().Wait();
+                using (var transaction = store.StartTransactionAsync(stream, 1).Result)
                 {
                     transaction.Write(TestEvent.NewTestEvent());
                     Assert.That(() => transaction.Commit(),
@@ -88,10 +88,10 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_do_nothing_if_commits_no_events_to_empty_stream()
         {
             const string stream = "should_do_nothing_if_commits_no_events_to_empty_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = TestConnection.Create(_node.TcpEndPoint).Result)
             {
-                store.Connect();
-                using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
+                store.ConnectAsync().Wait();
+                using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.NoStream).Result)
                 {
                     Assert.AreEqual(-1, transaction.Commit().NextExpectedVersion);
                 }
@@ -127,9 +127,9 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
                 store.Connect();
-                using (var transaction = store.StartTransaction(stream, 100500))
+                using (var transaction = store.StartTransactionAsync(stream, 100500).Result)
                 {
-                    transaction.Write(TestEvent.NewTestEvent());
+                    transaction.WriteAsync(TestEvent.NewTestEvent());
                     Assert.That(() => transaction.Commit(),
                                 Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
                 }
@@ -155,7 +155,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     using (var store = TestConnection.Create(_node.TcpEndPoint))
                     {
                         store.Connect();
-                        using (var transaction = store.StartTransaction(stream, ExpectedVersion.Any))
+                        using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.Any).Result)
                         {
 
                             var writes = new List<Task>();
@@ -199,7 +199,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
                 store.Connect();
-                var slice = store.ReadStreamEventsForward(stream, 0, totalTranWrites + totalPlainWrites, false);
+                var slice = store.ReadStreamEventsForwardAsync(stream, 0, totalTranWrites + totalPlainWrites, false).Result;
                 Assert.That(slice.Events.Length, Is.EqualTo(totalTranWrites + totalPlainWrites));
 
                 Assert.That(slice.Events.Count(ent => Helper.UTF8NoBom.GetString(ent.Event.Metadata) == "trans write"),
@@ -217,9 +217,9 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
                 store.Connect();
-                using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
+                using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream).Result)
                 {
-                    store.AppendToStream(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
+                    store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()}).Wait();
                     transaction.Write(TestEvent.NewTestEvent());
                     Assert.That(() => transaction.Commit(),
                                 Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
@@ -234,9 +234,9 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
                 store.Connect();
-                using (var transaction = store.StartTransaction(stream, 0))
+                using (var transaction = store.StartTransactionAsync(stream, 0).Result)
                 {
-                    store.AppendToStream(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
+                    store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()}).Result;
                     transaction.Write(TestEvent.NewTestEvent());
                     Assert.AreEqual(1, transaction.Commit().NextExpectedVersion);
                 }
@@ -251,10 +251,10 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
                 store.Connect();
-                using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
+                using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream).Result)
                 {
                     transaction.Write(TestEvent.NewTestEvent());
-                    store.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+                    store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Result;
                     Assert.That(() => transaction.Commit(),
                                 Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
                 }
@@ -271,15 +271,15 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var e = new EventData(Guid.NewGuid(), "SomethingHappened", true, Helper.UTF8NoBom.GetBytes("{Value:42}"), null);
 
-                var transaction1 = store.StartTransaction(streamId, ExpectedVersion.Any);
+                var transaction1 = store.StartTransactionAsync(streamId, ExpectedVersion.Any).Result;
                 transaction1.Write(new[] {e});
                 Assert.AreEqual(0, transaction1.Commit().NextExpectedVersion);
 
-                var transaction2 = store.StartTransaction(streamId, ExpectedVersion.Any);
+                var transaction2 = store.StartTransactionAsync(streamId, ExpectedVersion.Any).Result;
                 transaction2.Write(new[] {e});
                 Assert.AreEqual(0, transaction2.Commit().NextExpectedVersion);
 
-                var res = store.ReadStreamEventsForward(streamId, 0, 100, false);
+                var res = store.ReadStreamEventsForwardAsync(streamId, 0, 100, false).Result;
                 Assert.AreEqual(1, res.Events.Length);
                 Assert.AreEqual(e.EventId, res.Events[0].Event.EventId);
             }

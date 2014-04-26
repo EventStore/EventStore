@@ -41,9 +41,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_empty_metadata_works";
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Create());
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Create()).Wait();
 
-            var meta = _connection.GetStreamMetadataAsRawBytes(stream);
+            var meta = _connection.GetStreamMetadataAsRawBytesAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -55,9 +55,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_metadata_few_times_returns_last_metadata_info";
             var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI
             metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), 24, TimeSpan.FromSeconds(0xDABACABAD));
             _connection.SetStreamMetadata(stream, 0, metadata);
 
-            meta = _connection.GetStreamMetadata(stream);
+            meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(1, meta.MetastreamVersion);
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void trying_to_set_metadata_with_wrong_expected_version_fails()
         {
             const string stream = "trying_to_set_metadata_with_wrong_expected_version_fails";
-            Assert.That(() => _connection.SetStreamMetadata(stream, 2, StreamMetadata.Create()),
+            Assert.That(() => _connection.SetStreamMetadataAsync(stream, 2, StreamMetadata.Create()).Result,
                               Throws.Exception.InstanceOf<AggregateException>()
                               .With.InnerException.InstanceOf<WrongExpectedVersionException>());
         }
@@ -93,9 +93,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_metadata_with_expected_version_any_works";
             var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-            _connection.SetStreamMetadata(stream, ExpectedVersion.Any, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadata).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -105,9 +105,9 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
 
             metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), 24, TimeSpan.FromSeconds(0xDABACABAD));
-            _connection.SetStreamMetadata(stream, ExpectedVersion.Any, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadata).Wait();
 
-            meta = _connection.GetStreamMetadata(stream);
+            meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(1, meta.MetastreamVersion);
@@ -122,9 +122,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_metadata_for_not_existing_stream_works";
             var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF),  10,TimeSpan.FromSeconds(0xABACABA));
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -139,12 +139,12 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_metadata_for_existing_stream_works";
 
-            _connection.AppendToStream(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+            _connection.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
 
             var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "getting_metadata_for_nonexisting_stream_returns_empty_stream_metadata";
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(-1, meta.MetastreamVersion);
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "$$getting_metadata_for_metastream_returns_correct_metadata";
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(-1, meta.MetastreamVersion);
@@ -190,11 +190,11 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "getting_metadata_for_deleted_stream_returns_empty_stream_metadata_and_signals_stream_deletion";
 
             var metadata = StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
 
-            _connection.DeleteStream(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+            _connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(true, meta.IsStreamDeleted);
             Assert.AreEqual(EventNumber.DeletedStream, meta.MetastreamVersion);
@@ -232,9 +232,9 @@ namespace EventStore.Core.Tests.ClientAPI
                                                            }
                                                       }");
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, rawMeta);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, rawMeta).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -286,9 +286,9 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                                                        ""subProperty"": 999
                                                                                                  }");
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -324,9 +324,9 @@ namespace EventStore.Core.Tests.ClientAPI
                                                     .SetDeleteRoles(new[] { "d1", "d2", "d3", "d4" })
                                                     .SetMetadataWriteRoles(new[] { "mw1", "mw2" });
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, metadata);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
@@ -352,9 +352,9 @@ namespace EventStore.Core.Tests.ClientAPI
                                                            }
                                                       }");
 
-            _connection.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, rawMeta);
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, rawMeta).Wait();
 
-            var meta = _connection.GetStreamMetadata(stream);
+            var meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);
             Assert.AreEqual(0, meta.MetastreamVersion);
