@@ -20,14 +20,14 @@ namespace EventStore.Core.Tests.ClientAPI
         public void read_event_respects_truncatebefore()
         {
             const string stream = "read_event_respects_truncatebefore";
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadEvent(stream, 1, false);
+            var res = _conn.ReadEventAsync(stream, 1, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
         }
@@ -36,11 +36,11 @@ namespace EventStore.Core.Tests.ClientAPI
         public void read_stream_forward_respects_truncatebefore()
         {
             const string stream = "read_stream_forward_respects_truncatebefore";
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(), 
@@ -51,11 +51,11 @@ namespace EventStore.Core.Tests.ClientAPI
         public void read_stream_backward_respects_truncatebefore()
         {
             const string stream = "read_stream_backward_respects_truncatebefore";
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            var res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
@@ -67,23 +67,23 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "after_setting_less_strict_truncatebefore_read_event_reads_more_events";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadEvent(stream, 1, false);
+            var res = _conn.ReadEventAsync(stream, 1, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(1));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(1)).Wait();
 
-            res = _conn.ReadEvent(stream, 0, false);
+            res = _conn.ReadEventAsync(stream, 0, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 1, false);
+            res = _conn.ReadEventAsync(stream, 1, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[1].EventId, res.Event.Value.OriginalEvent.EventId);
         }
@@ -93,23 +93,23 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "after_setting_more_strict_truncatebefore_read_event_reads_less_events";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadEvent(stream, 1, false);
+            var res = _conn.ReadEventAsync(stream, 1, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(3));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(3)).Wait();
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 3, false);
+            res = _conn.ReadEventAsync(stream, 3, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[3].EventId, res.Event.Value.OriginalEvent.EventId);
         }
@@ -119,23 +119,23 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "less_strict_max_count_doesnt_change_anything_for_event_read";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadEvent(stream, 1, false);
+            var res = _conn.ReadEventAsync(stream, 1, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4)).Wait();
 
-            res = _conn.ReadEvent(stream, 1, false);
+            res = _conn.ReadEventAsync(stream, 1, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
         }
@@ -145,23 +145,23 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "more_strict_max_count_gives_less_events_for_event_read";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadEvent(stream, 1, false);
+            var res = _conn.ReadEventAsync(stream, 1, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[2].EventId, res.Event.Value.OriginalEvent.EventId);
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2)).Wait();
 
-            res = _conn.ReadEvent(stream, 2, false);
+            res = _conn.ReadEventAsync(stream, 2, false).Result;
             Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 
-            res = _conn.ReadEvent(stream, 3, false);
+            res = _conn.ReadEventAsync(stream, 3, false).Result;
             Assert.AreEqual(EventReadStatus.Success, res.Status);
             Assert.AreEqual(_testEvents[3].EventId, res.Event.Value.OriginalEvent.EventId);
         }
@@ -172,19 +172,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "after_setting_less_strict_truncatebefore_read_stream_forward_reads_more_events";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(1));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(1)).Wait();
 
-            res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(4, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(1).Select(x => x.EventId).ToArray(),
@@ -196,19 +196,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "after_setting_more_strict_truncatebefore_read_stream_forward_reads_less_events";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(3));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(3)).Wait();
 
-            res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(2, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(3).Select(x => x.EventId).ToArray(),
@@ -220,19 +220,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "less_strict_max_count_doesnt_change_anything_for_stream_forward_read";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4)).Wait();
 
-            res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
@@ -244,19 +244,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "more_strict_max_count_gives_less_events_for_stream_forward_read";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2)).Wait();
 
-            res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(2, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(3).Select(x => x.EventId).ToArray(),
@@ -268,19 +268,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "after_setting_less_strict_truncatebefore_read_stream_backward_reads_more_events";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            var res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(1));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(1)).Wait();
 
-            res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(4, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(1).Select(x => x.EventId).ToArray(),
@@ -292,19 +292,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "after_setting_more_strict_truncatebefore_read_stream_backward_reads_less_events";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            var res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(3));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(3)).Wait();
 
-            res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Wait();
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(2, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(3).Select(x => x.EventId).ToArray(),
@@ -316,19 +316,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "less_strict_max_count_doesnt_change_anything_for_stream_backward_read";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            var res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(4)).Wait();
 
-            res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
@@ -340,19 +340,19 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "more_strict_max_count_gives_less_events_for_stream_backward_read";
 
-            _conn.AppendToStream(stream, ExpectedVersion.EmptyStream, _testEvents);
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
 
-            _conn.SetStreamMetadata(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2));
+            _conn.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Build().SetTruncateBefore(2)).Wait();
 
-            var res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            var res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
                             res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-            _conn.SetStreamMetadata(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2));
+            _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(2).SetMaxCount(2)).Wait();
 
-            res = _conn.ReadStreamEventsBackward(stream, -1, 100, false);
+            res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(2, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(3).Select(x => x.EventId).ToArray(),

@@ -16,32 +16,32 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             var settings = new SystemSettings(userStreamAcl: new StreamAcl(null, "user1", null, null, null),
                                               systemStreamAcl: new StreamAcl(null, "user1", null, null, null));
-            Connection.SetSystemSettings(settings, new UserCredentials("adm", "admpa$$"));
+            Connection.SetSystemSettingsAsync(settings, new UserCredentials("adm", "admpa$$")).Wait();
 
-            Connection.SetStreamMetadata("user-no-acl", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build(), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("user-w-diff", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRole("user2"), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("user-w-multiple", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRoles(new[] {"user1", "user2"}), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("user-w-restricted", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRoles(new string[0]), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("user-w-all", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRole(SystemRoles.All), new UserCredentials("adm", "admpa$$"));
+            Connection.SetStreamMetadataAsync("user-no-acl", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build(), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("user-w-diff", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRole("user2"), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("user-w-multiple", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRoles(new[] {"user1", "user2"}), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("user-w-restricted", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRoles(new string[0]), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("user-w-all", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRole(SystemRoles.All), new UserCredentials("adm", "admpa$$")).Wait();
 
-            Connection.SetStreamMetadata("user-r-restricted", ExpectedVersion.NoStream,
-                                        StreamMetadata.Build().SetReadRole("user1"), new UserCredentials("adm", "admpa$$"));
+            Connection.SetStreamMetadataAsync("user-r-restricted", ExpectedVersion.NoStream,
+                                        StreamMetadata.Build().SetReadRole("user1"), new UserCredentials("adm", "admpa$$")).Wait();
 
-            Connection.SetStreamMetadata("$sys-no-acl", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build(), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("$sys-w-diff", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRole("user2"), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("$sys-w-multiple", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRoles(new[] { "user1", "user2" }), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("$sys-w-restricted", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRoles(new string[0]), new UserCredentials("adm", "admpa$$"));
-            Connection.SetStreamMetadata("$sys-w-all", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build().SetWriteRole(SystemRoles.All), new UserCredentials("adm", "admpa$$"));
+            Connection.SetStreamMetadataAsync("$sys-no-acl", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build(), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("$sys-w-diff", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRole("user2"), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("$sys-w-multiple", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRoles(new[] { "user1", "user2" }), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("$sys-w-restricted", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRoles(new string[0]), new UserCredentials("adm", "admpa$$")).Wait();
+            Connection.SetStreamMetadataAsync("$sys-w-all", ExpectedVersion.NoStream,
+                                         StreamMetadata.Build().SetWriteRole(SystemRoles.All), new UserCredentials("adm", "admpa$$")).Wait();
         }
 
         [Test, Category("LongRunning"), Category("Network")]
