@@ -150,20 +150,5 @@ namespace EventStore.ClusterNode
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
         }
-
-        public ClusterNodeOptions Parse(params string[] args)
-        {
-            return EventStoreOptions.Parse<ClusterNodeOptions>(args);
-        }
-
-        public string DumpOptions()
-        {
-            return System.String.Empty;
-        }
-
-        public string GetUsage()
-        {
-            return EventStoreOptions.GetUsage<ClusterNodeOptions>();
-        }
     }
 }

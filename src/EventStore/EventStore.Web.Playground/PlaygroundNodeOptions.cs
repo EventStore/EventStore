@@ -37,20 +37,5 @@ namespace EventStore.Web.Playground
             WorkerThreads = Opts.WorkerThreadsDefault;
             HttpPrefixes = Opts.HttpPrefixesDefault;
         }
-
-        public PlaygroundNodeOptions Parse(params string[] args)
-        {
-            return EventStoreOptions.Parse<PlaygroundNodeOptions>(args);
-        }
-
-        public string DumpOptions()
-        {
-            return System.String.Empty;
-        }
-
-        public string GetUsage()
-        {
-            return EventStoreOptions.GetUsage<PlaygroundNodeOptions>();
-        }
     }
 }

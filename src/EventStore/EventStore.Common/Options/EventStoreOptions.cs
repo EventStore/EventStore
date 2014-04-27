@@ -8,8 +8,10 @@ namespace EventStore.Common.Options
 {
     public class EventStoreOptions
     {
+        private static List<Tuple<string, object>> parsedOptions;
         public static T Parse<T>(string[] args) where T : class, IOptions, new()
         {
+            parsedOptions = SetupOptionsForDumping<T>();
             if (args == null || args.Length == 0)
             {
                 var arguments = new T();
@@ -21,7 +23,7 @@ namespace EventStore.Common.Options
             {
                 var config = File.ReadAllText(commandLineArguments.Config);
                 var configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(config);
-                Merge<T>(configAsJson, commandLineArguments);
+                MergeFromConfiguration<T>(configAsJson, commandLineArguments);
             }
             commandLineArguments = SetEnvironmentVariables<T>(commandLineArguments);
             return commandLineArguments;
@@ -31,7 +33,18 @@ namespace EventStore.Common.Options
         {
             return PowerArgs.ArgUsage.GetUsage<T>();
         }
-        private static T Merge<T>(T argumentsFromConfig, T commandLineArguments) where T : IOptions, new()
+
+        private static List<Tuple<string, object>> SetupOptionsForDumping<T>()
+        {
+            var parsedOptions = new List<Tuple<string, object>>();
+            foreach (var property in typeof(T).GetProperties())
+            {
+                parsedOptions.Add(new Tuple<string, object>(property.Name, "default"));
+            }
+            return parsedOptions;
+        }
+
+        private static T MergeFromConfiguration<T>(T argumentsFromConfig, T commandLineArguments) where T : IOptions, new()
         {
             var instanceToUseForDefaultValueComparrison = new T();
             foreach (var property in typeof(T).GetProperties())
@@ -49,6 +62,7 @@ namespace EventStore.Common.Options
             }
             return commandLineArguments;
         }
+
         private static T SetEnvironmentVariables<T>(T eventStoreArguments) where T : class, IOptions, new()
         {
             var instanceToUseForDefaultValueComparrison = new T();

@@ -44,20 +44,5 @@ namespace EventStore.TestClient
             PingWindow = 2000;
             Force = false;
         }
-
-        public ClientOptions Parse(params string[] args)
-        {
-            return EventStoreOptions.Parse<ClientOptions>(args);
-        }
-
-        public string DumpOptions()
-        {
-            return System.String.Empty;
-        }
-
-        public string GetUsage()
-        {
-            return "Usage: EventStore.Client -i 127.0.0.1 -t 1113 -h 2113\n\n" + EventStoreOptions.GetUsage<ClientOptions>();
-        }
     }
 }
