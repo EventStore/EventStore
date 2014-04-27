@@ -213,23 +213,76 @@ namespace EventStore.Core
             return new X509Certificate2(path, password);
         }
 
-        protected static X509Certificate2 LoadCertificateFromStore(string storeName, string certName)
+        protected static X509Certificate2 LoadCertificateFromStore(string certificateStoreLocation, string certificateStoreName, string certificateSubjectName, string certificateThumbprint)
         {
-            var store = new X509Store(storeName);
-            try
+            X509Store store;
+
+            if (!string.IsNullOrWhiteSpace(certificateStoreLocation))
             {
-                store.Open(OpenFlags.OpenExistingOnly);
+                StoreLocation location;
+                if (!Enum.TryParse(certificateStoreLocation, out location))
+                    throw new Exception(string.Format("Couldn't find certificate store location '{0}'", certificateStoreLocation));
+
+                StoreName name;
+                if (!Enum.TryParse(certificateStoreName, out name))
+                    throw new Exception(string.Format("Couldn't find certificate store name '{0}'", certificateStoreName));
+
+                store = new X509Store(name, location);
+                
+                try
+                {
+                    store.Open(OpenFlags.OpenExistingOnly);
+                }
+                catch (Exception exc)
+                {
+                    throw new Exception(string.Format("Couldn't open certificate store '{0}' in location {1}'.", name, location), exc);
+                }
             }
-            catch (Exception exc)
+            else
             {
-                throw new Exception(string.Format("Couldn't open certificates store '{0}'.", storeName), exc);
+                StoreName name;
+                if (!Enum.TryParse(certificateStoreName, out name))
+                    throw new Exception(string.Format("Couldn't find certificate store name '{0}'", certificateStoreName));
+
+                store = new X509Store(name);
+
+                try
+                {
+                    store.Open(OpenFlags.OpenExistingOnly);
+                }
+                catch (Exception exc)
+                {
+                    throw new Exception(string.Format("Couldn't open certificate store '{0}'.", name), exc);
+                }
             }
-            foreach (var cert in store.Certificates)
+
+            if (!string.IsNullOrWhiteSpace(certificateThumbprint))
             {
-                if (cert.Subject == certName)
-                    return cert;
+                var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, certificateThumbprint, true);
+                if (certificates.Count == 0)
+                    throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.", certificateThumbprint));
+                
+                //Can this even happen?
+                if (certificates.Count > 1)
+                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+
+                return certificates[0];
             }
-            throw new ArgumentException(string.Format("Certificate '{0}' not found in storage '{1}'.", certName, storeName));
+            
+            if (!string.IsNullOrWhiteSpace(certificateSubjectName))
+            {
+                var certificates = store.Certificates.Find(X509FindType.FindBySubjectName, certificateSubjectName, true);
+                if (certificates.Count == 0)
+                    throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.", certificateThumbprint));
+
+                //Can this even happen?
+                if (certificates.Count > 1)
+                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+
+                return certificates[0];
+            }
+            
+            throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
         }
     }
 }

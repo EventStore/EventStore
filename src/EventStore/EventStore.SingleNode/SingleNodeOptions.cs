@@ -38,11 +38,14 @@ namespace EventStore.SingleNode
         public string[] HttpPrefixes { get { return _helper.Get(() => HttpPrefixes); } }
         public bool EnableTrustedAuth { get { return _helper.Get(() => EnableTrustedAuth); } }
 
-        public string CertificateStore { get { return _helper.Get(() => CertificateStore); } }
-        public string CertificateName { get { return _helper.Get(() => CertificateName); } }
+        public string CertificateStoreLocation { get { return _helper.Get(() => CertificateStoreLocation); } }
+        public string CertificateStoreName { get { return _helper.Get(() => CertificateStoreName); } }
+        public string CertificateSubjectName { get { return _helper.Get(() => CertificateSubjectName); } }
+        public string CertificateThumbprint { get { return _helper.Get(() => CertificateThumbprint); } }
+
         public string CertificateFile { get { return _helper.Get(() => CertificateFile); } }
         public string CertificatePassword { get { return _helper.Get(() => CertificatePassword); } }
-
+        
         public int PrepareTimeoutMs { get { return _helper.Get(() => PrepareTimeoutMs); } }
         public int CommitTimeoutMs { get { return _helper.Get(() => CommitTimeoutMs); } }
 
@@ -85,8 +88,11 @@ namespace EventStore.SingleNode
             _helper.RegisterArray(() => HttpPrefixes, Opts.HttpPrefixesCmd, Opts.HttpPrefixesEnv, ",", Opts.HttpPrefixesJson, Opts.HttpPrefixesDefault, Opts.HttpPrefixesDescr);
             _helper.Register(() => EnableTrustedAuth, Opts.EnableTrustedAuthCmd, Opts.EnableTrustedAuthEnv, Opts.EnableTrustedAuthJson, Opts.EnableTrustedAuthDefault, Opts.EnableTrustedAuthDescr);
 
-            _helper.RegisterRef(() => CertificateStore, Opts.CertificateStoreCmd, Opts.CertificateStoreEnv, Opts.CertificateStoreJson, Opts.CertificateStoreDefault, Opts.CertificateStoreDescr);
-            _helper.RegisterRef(() => CertificateName, Opts.CertificateNameCmd, Opts.CertificateNameEnv, Opts.CertificateNameJson, Opts.CertificateNameDefault, Opts.CertificateNameDescr);
+            _helper.RegisterRef(() => CertificateStoreLocation, Opts.CertificateStoreLocationCmd, Opts.CertificateStoreLocationEnv, Opts.CertificateStoreLocationJson, Opts.CertificateStoreLocationDefault, Opts.CertificateStoreLocationDescr);
+            _helper.RegisterRef(() => CertificateStoreName, Opts.CertificateStoreNameCmd, Opts.CertificateStoreNameEnv, Opts.CertificateStoreNameJson, Opts.CertificateStoreNameDefault, Opts.CertificateStoreNameDescr);
+            _helper.RegisterRef(() => CertificateSubjectName, Opts.CertificateSubjectNameCmd, Opts.CertificateSubjectNameEnv, Opts.CertificateSubjectNameJson, Opts.CertificateSubjectNameDefault, Opts.CertificateSubjectNameDescr);
+            _helper.RegisterRef(() => CertificateThumbprint, Opts.CertificateThumbprintCmd, Opts.CertificateThumbprintEnv, Opts.CertificateThumbprintJson, Opts.CertificateThumbprintDefault, Opts.CertificateThumbprintDescr);
+
             _helper.RegisterRef(() => CertificateFile, Opts.CertificateFileCmd, Opts.CertificateFileEnv, Opts.CertificateFileJson, Opts.CertificateFileDefault, Opts.CertificateFileDescr);
             _helper.RegisterRef(() => CertificatePassword, Opts.CertificatePasswordCmd, Opts.CertificatePasswordEnv, Opts.CertificatePasswordJson, Opts.CertificatePasswordDefault, Opts.CertificatePasswordDescr);
 

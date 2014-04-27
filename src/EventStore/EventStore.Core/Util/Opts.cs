@@ -159,18 +159,8 @@ namespace EventStore.Core.Util
         public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
         public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
 
-        public const string CertificateStoreCmd = "certificate-store=";
-        public const string CertificateStoreEnv = "CERTIFICATE_STORE";
-        public const string CertificateStoreJson = "certificateStore";
-        public const string CertificateStoreDescr = "The name of certificate store.";
-        public static readonly string CertificateStoreDefault = string.Empty;
 
-        public const string CertificateNameCmd = "certificate-name=";
-        public const string CertificateNameEnv = "CERTIFICATE_NAME";
-        public const string CertificateNameJson = "certificateName";
-        public const string CertificateNameDescr = "The name of certificate in store.";
-        public static readonly string CertificateNameDefault = string.Empty;
-
+        //Loading certificates from files
         public const string CertificateFileCmd = "certificate-file=";
         public const string CertificateFileEnv = "CERTIFICATE_FILE";
         public const string CertificateFileJson = "certificateFile";
@@ -183,6 +173,31 @@ namespace EventStore.Core.Util
         public const string CertificatePasswordDescr = "The password to certificate in file.";
         public static readonly string CertificatePasswordDefault = string.Empty;
 
+        //Loading certificates from a certificate store
+        public const string CertificateStoreLocationCmd = "certificate-store-location=";
+        public const string CertificateStoreLocationEnv = "CERTIFICATE_STORE_LOCATION";
+        public const string CertificateStoreLocationJson = "certificateStoreLocation";
+        public const string CertificateStoreLocationDescr = "The certificate store location name.";
+        public static readonly string CertificateStoreLocationDefault = string.Empty;
+
+        public const string CertificateStoreNameCmd = "certificate-store-name=";
+        public const string CertificateStoreNameEnv = "CERTIFICATE_STORE_NAME";
+        public const string CertificateStoreNameJson = "certificateStoreName";
+        public const string CertificateStoreNameDescr = "The certificate store name.";
+        public static readonly string CertificateStoreNameDefault = string.Empty;
+
+        public const string CertificateSubjectNameCmd = "certificate-subject-name=";
+        public const string CertificateSubjectNameEnv = "CERTIFICATE_SUBJECT_NAME";
+        public const string CertificateSubjectNameJson = "certificateSubjectName";
+        public const string CertificateSubjectNameDescr = "The certificate subject name.";
+        public static readonly string CertificateSubjectNameDefault = string.Empty;
+
+        public const string CertificateThumbprintCmd = "certificate-thumbprint=";
+        public const string CertificateThumbprintEnv = "CERTIFICATE_THUMBPRINT";
+        public const string CertificateThumbprintJson = "certificateThumbprint";
+        public const string CertificateThumbprintDescr = "The certificate fingerprint/thumbprint.";
+        public static readonly string CertificateThumbprintDefault = string.Empty;
+        
         /*
          *  SINGLE NODE OPTIONS
          */

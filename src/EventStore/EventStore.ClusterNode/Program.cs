@@ -154,8 +154,8 @@ namespace EventStore.ClusterNode
             X509Certificate2 certificate = null;
             if (options.InternalSecureTcpPort > 0 || options.ExternalSecureTcpPort > 0)
             {
-                if (options.CertificateStore.IsNotEmptyString())
-                    certificate = LoadCertificateFromStore(options.CertificateStore, options.CertificateName);
+                if (options.CertificateStoreName.IsNotEmptyString())
+                    certificate = LoadCertificateFromStore(options.CertificateStoreLocation, options.CertificateStoreName, options.CertificateSubjectName, options.CertificateThumbprint);
                 else if (options.CertificateFile.IsNotEmptyString())
                     certificate = LoadCertificateFromFile(options.CertificateFile, options.CertificatePassword);
                 else
