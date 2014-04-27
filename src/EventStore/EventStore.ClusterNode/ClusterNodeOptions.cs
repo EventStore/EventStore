@@ -7,84 +7,84 @@ namespace EventStore.ClusterNode
 {
     public class ClusterNodeOptions : IOptions
     {
-        public bool ShowHelp { get; protected set; }
-        public bool ShowVersion { get; protected set; }
-        public string LogsDir { get; protected set; }
-        public string Config { get; protected set; }
-        public string[] Defines { get; protected set; }
+        public bool ShowHelp { get; set; }
+        public bool ShowVersion { get; set; }
+        public string Logsdir { get; set; }
+        public string Config { get; set; }
+        public string[] Defines { get; set; }
 
-        public IPAddress InternalIp { get; protected set; }
-        public IPAddress ExternalIp { get; protected set; }
-        public int InternalHttpPort { get; protected set; }
-        public int ExternalHttpPort { get; protected set; }
-        public int InternalTcpPort { get; protected set; }
-        public int InternalSecureTcpPort { get; protected set; }
-        public int ExternalTcpPort { get; protected set; }
-        public int ExternalSecureTcpPort { get; protected set; }
-        public bool Force { get; protected set; }
-        public int ClusterSize { get; protected set; }
-        public int NodePriority { get; protected set; }
-        public double MinFlushDelayMs { get; protected set; }
+        public IPAddress InternalIp { get; set; }
+        public IPAddress ExternalIp { get; set; }
+        public int InternalHttpPort { get; set; }
+        public int ExternalHttpPort { get; set; }
+        public int InternalTcpPort { get; set; }
+        public int InternalSecureTcpPort { get; set; }
+        public int ExternalTcpPort { get; set; }
+        public int ExternalSecureTcpPort { get; set; }
+        public bool Force { get; set; }
+        public int ClusterSize { get; set; }
+        public int NodePriority { get; set; }
+        public double MinFlushDelayMs { get; set; }
 
-        public int CommitCount { get; protected set; }
-        public int PrepareCount { get; protected set; }
+        public int CommitCount { get; set; }
+        public int PrepareCount { get; set; }
 
-        public bool AdminOnExt { get; protected set; }
-        public bool StatsOnExt { get; protected set; }
-        public bool GossipOnExt { get; protected set; }
-        public bool DisableScavengeMerging { get; protected set; }
+        public bool AdminOnExt { get; set; }
+        public bool StatsOnExt { get; set; }
+        public bool GossipOnExt { get; set; }
+        public bool DisableScavengeMerging { get; set; }
 
-        public bool DiscoverViaDns { get; protected set; }
-        public string ClusterDns { get; protected set; }
-        public int ClusterGossipPort { get; protected set; }
-        public IPEndPoint[] GossipSeeds { get; protected set; }
+        public bool DiscoverViaDns { get; set; }
+        public string ClusterDns { get; set; }
+        public int ClusterGossipPort { get; set; }
+        public IPEndPoint[] GossipSeeds { get; set; }
 
-        public int StatsPeriodSec { get; protected set; }
-        public int CachedChunks { get; protected set; }
-        public long ChunksCacheSize { get; protected set; }
-        public int MaxMemTableSize { get; protected set; }
+        public int StatsPeriodSec { get; set; }
+        public int CachedChunks { get; set; }
+        public long ChunksCacheSize { get; set; }
+        public int MaxMemTableSize { get; set; }
 
 
-        public string DbPath { get; protected set; }
-        public bool InMemDb { get; protected set; }
-        public bool SkipDbVerify { get; protected set; }
-        public RunProjections RunProjections { get; protected set; }
-        public int ProjectionThreads { get; protected set; }
-        public int WorkerThreads { get; protected set; }
+        public string DbPath { get; set; }
+        public bool InMemDb { get; set; }
+        public bool SkipDbVerify { get; set; }
+        public RunProjections RunProjections { get; set; }
+        public int ProjectionThreads { get; set; }
+        public int WorkerThreads { get; set; }
 
-        public string[] HttpPrefixes { get; protected set; }
-        public bool EnableTrustedAuth { get; protected set; }
+        public string[] HttpPrefixes { get; set; }
+        public bool EnableTrustedAuth { get; set; }
 
-        public string CertificateStoreLocation { get; protected set; }
-        public string CertificateStoreName { get; protected set; }
-        public string CertificateSubjectName { get; protected set; }
-        public string CertificateThumbprint { get; protected set; }
+        public string CertificateStoreLocation { get; set; }
+        public string CertificateStoreName { get; set; }
+        public string CertificateSubjectName { get; set; }
+        public string CertificateThumbprint { get; set; }
 
-        public string CertificateFile { get; protected set; }
-        public string CertificatePassword { get; protected set; }
+        public string CertificateFile { get; set; }
+        public string CertificatePassword { get; set; }
 
-        public bool UseInternalSsl { get; protected set; }
-        public string SslTargetHost { get; protected set; }
-        public bool SslValidateServer { get; protected set; }
+        public bool UseInternalSsl { get; set; }
+        public string SslTargetHost { get; set; }
+        public bool SslValidateServer { get; set; }
 
-        public string AuthenticationType { get; protected set; }
-        public string AuthenticationConfigFile { get; protected set; }
+        public string AuthenticationType { get; set; }
+        public string AuthenticationConfigFile { get; set; }
 
-        public int PrepareTimeoutMs { get; protected set; }
-        public int CommitTimeoutMs { get; protected set; }
+        public int PrepareTimeoutMs { get; set; }
+        public int CommitTimeoutMs { get; set; }
 
-        public bool UnsafeDisableFlushToDisk { get; protected set; }
+        public bool UnsafeDisableFlushToDisk { get; set; }
 
-        public int GossipIntervalMs { get; protected set; }
-        public int GossipAllowedDifferenceMs { get; protected set; }
-        public int GossipTimeoutMs { get; protected set; }
+        public int GossipIntervalMs { get; set; }
+        public int GossipAllowedDifferenceMs { get; set; }
+        public int GossipTimeoutMs { get; set; }
 
         public ClusterNodeOptions()
         {
             Config = "clusternode-config.json";
             ShowHelp = Opts.ShowHelpDefault;
             ShowVersion = Opts.ShowVersionDefault;
-            LogsDir = Opts.LogsDefault;
+            Logsdir = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
 
             InternalIp = Opts.InternalIpDefault;

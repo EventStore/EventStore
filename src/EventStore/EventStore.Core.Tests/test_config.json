@@ -1,0 +1,4 @@
+﻿{
+    "Logsdir" : "~/logDirectoryFromConfigFile",
+    "HttpPort" : 2115
+}
