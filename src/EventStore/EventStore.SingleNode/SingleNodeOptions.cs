@@ -8,50 +8,50 @@ namespace EventStore.SingleNode
 {
     public class SingleNodeOptions : IOptions
     {
-        public bool ShowHelp { get; protected set; }
-        public bool ShowVersion { get; protected set; }
-        public string LogsDir { get; protected set; }
-        public string Config { get; protected set; }
-        public string[] Defines { get; protected set; }
+        public bool ShowHelp { get; set; }
+        public bool ShowVersion { get; set; }
+        public string Logsdir { get; set; }
+        public string Config { get; set; }
+        public string[] Defines { get; set; }
 
-        public IPAddress Ip { get; protected set; }
-        public int TcpPort { get; protected set; }
-        public int SecureTcpPort { get; protected set; }
-        public int HttpPort { get; protected set; }
+        public IPAddress Ip { get; set; }
+        public int TcpPort { get; set; }
+        public int SecureTcpPort { get; set; }
+        public int HttpPort { get; set; }
 
-        public int StatsPeriodSec { get; protected set; }
+        public int StatsPeriodSec { get; set; }
 
-        public int CachedChunks { get; protected set; }
-        public long ChunksCacheSize { get; protected set; }
-        public double MinFlushDelayMs { get; protected set; }
-        public int MaxMemTableSize { get; protected set; }
+        public int CachedChunks { get; set; }
+        public long ChunksCacheSize { get; set; }
+        public double MinFlushDelayMs { get; set; }
+        public int MaxMemTableSize { get; set; }
 
-        public string DbPath { get; protected set; }
-        public bool InMemDb { get; protected set; }
-        public bool SkipDbVerify { get; protected set; }
-        public RunProjections RunProjections { get; protected set; }
-        public int ProjectionThreads { get; protected set; }
-        public int WorkerThreads { get; protected set; }
+        public string DbPath { get; set; }
+        public bool InMemDb { get; set; }
+        public bool SkipDbVerify { get; set; }
+        public RunProjections RunProjections { get; set; }
+        public int ProjectionThreads { get; set; }
+        public int WorkerThreads { get; set; }
 
-        public bool DisableScavengeMerging { get; protected set; }
+        public bool DisableScavengeMerging { get; set; }
 
-        public string[] HttpPrefixes { get; protected set; }
-        public bool EnableTrustedAuth { get; protected set; }
+        public string[] HttpPrefixes { get; set; }
+        public bool EnableTrustedAuth { get; set; }
 
-        public string CertificateStoreLocation { get; protected set; }
-        public string CertificateStoreName { get; protected set; }
-        public string CertificateSubjectName { get; protected set; }
-        public string CertificateThumbprint { get; protected set; }
+        public string CertificateStoreLocation { get; set; }
+        public string CertificateStoreName { get; set; }
+        public string CertificateSubjectName { get; set; }
+        public string CertificateThumbprint { get; set; }
 
-        public string CertificateFile { get; protected set; }
-        public string CertificatePassword { get; protected set; }
+        public string CertificateFile { get; set; }
+        public string CertificatePassword { get; set; }
 
-        public int PrepareTimeoutMs { get; protected set; }
-        public int CommitTimeoutMs { get; protected set; }
+        public int PrepareTimeoutMs { get; set; }
+        public int CommitTimeoutMs { get; set; }
 
-        public bool Force { get; protected set; }
+        public bool Force { get; set; }
 
-        public bool UnsafeDisableFlushToDisk { get; protected set; }
+        public bool UnsafeDisableFlushToDisk { get; set; }
 
         public SingleNodeOptions()
         {
@@ -59,7 +59,7 @@ namespace EventStore.SingleNode
 
             ShowHelp = Opts.ShowHelpDefault;
             ShowVersion = Opts.ShowVersionDefault;
-            LogsDir = Opts.LogsDefault;
+            Logsdir = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
 
             Ip = Opts.IpDefault;
