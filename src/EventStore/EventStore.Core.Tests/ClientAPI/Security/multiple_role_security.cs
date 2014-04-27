@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             var settings = new SystemSettings(
                 new StreamAcl(new[]{"user1", "user2"}, new[]{"$admins", "user1"}, new[] {"user1", SystemRoles.All}, null, null),
                 null);
-            Connection.SetSystemSettings(settings, new UserCredentials("adm", "admpa$$"));
+            Connection.SetSystemSettingsAsync(settings, new UserCredentials("adm", "admpa$$")).Wait();
         }
 
         [Test, Category("LongRunning"), Category("Network")]

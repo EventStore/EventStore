@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
 
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
+            _conn.ConnectAsync().Wait();
         }
 
         [TestFixtureTearDown]
@@ -39,10 +39,10 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_returns_no_stream_and_no_events_on_read";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1).Wait();
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.StreamNotFound, res.Status);
             Assert.AreEqual(0, res.Events.Length);
             Assert.AreEqual(1, res.LastEventNumber);
@@ -53,20 +53,20 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_allows_recreation_when_expver_any";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1).Wait();
 
             var events = new[] {TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent()};
-            Assert.AreEqual(4, _conn.AppendToStream(stream, ExpectedVersion.Any, events).NextExpectedVersion);
+            Assert.AreEqual(4, _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, events).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(4, res.LastEventNumber);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(events.Select(x => x.EventId), res.Events.Select(x => x.OriginalEvent.EventId));
             Assert.AreEqual(new[]{2, 3, 4}, res.Events.Select(x => x.OriginalEvent.EventNumber));
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(1, meta.MetastreamVersion);
         }
@@ -76,20 +76,20 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_allows_recreation_when_expver_no_stream";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1).Wait();
 
             var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
-            Assert.AreEqual(4, _conn.AppendToStream(stream, ExpectedVersion.NoStream, events).NextExpectedVersion);
+            Assert.AreEqual(4, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(4, res.LastEventNumber);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(events.Select(x => x.EventId), res.Events.Select(x => x.OriginalEvent.EventId));
             Assert.AreEqual(new[] { 2, 3, 4 }, res.Events.Select(x => x.OriginalEvent.EventNumber));
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(1, meta.MetastreamVersion);
         }
@@ -99,20 +99,20 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_allows_recreation_when_expver_is_exact";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1).Wait();
 
             var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
-            Assert.AreEqual(4, _conn.AppendToStream(stream, 1, events).NextExpectedVersion);
+            Assert.AreEqual(4, _conn.AppendToStreamAsync(stream, 1, events).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(4, res.LastEventNumber);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(events.Select(x => x.EventId), res.Events.Select(x => x.OriginalEvent.EventId));
             Assert.AreEqual(new[] { 2, 3, 4 }, res.Events.Select(x => x.OriginalEvent.EventNumber));
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(1, meta.MetastreamVersion);
         }
@@ -122,27 +122,27 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_when_recreated_preserves_metadata_except_truncatebefore";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
 
-            Assert.AreEqual(0, _conn.SetStreamMetadata(stream, ExpectedVersion.NoStream,
+            Assert.AreEqual(0, _conn.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream,
                                     StreamMetadata.Build().SetTruncateBefore(int.MaxValue)
                                                           .SetMaxCount(100)
                                                           .SetDeleteRole("some-role")
                                                           .SetCustomProperty("key1", true)
                                                           .SetCustomProperty("key2", 17)
-                                                          .SetCustomProperty("key3", "some value")).NextExpectedVersion);
+                                                          .SetCustomProperty("key3", "some value")).Result.NextExpectedVersion);
 
             var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
-            Assert.AreEqual(4, _conn.AppendToStream(stream, 1, events).NextExpectedVersion);
+            Assert.AreEqual(4, _conn.AppendToStreamAsync(stream, 1, events).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(4, res.LastEventNumber);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(events.Select(x => x.EventId), res.Events.Select(x => x.OriginalEvent.EventId));
             Assert.AreEqual(new[] { 2, 3, 4 }, res.Events.Select(x => x.OriginalEvent.EventNumber));
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(1, meta.MetastreamVersion);
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(100, meta.StreamMetadata.MaxCount);
@@ -157,16 +157,16 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_can_be_deleted";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1);
-            _conn.DeleteStream(stream, ExpectedVersion.Any, hardDelete: true);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1).Wait();
+            _conn.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true).Wait();
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.StreamDeleted, res.Status);
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(true, meta.IsStreamDeleted);
 
-            Assert.That(() => _conn.AppendToStream(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()),
+            Assert.That(() => _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>()
                             .With.InnerException.InstanceOf<StreamDeletedException>());
         }
@@ -176,23 +176,23 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_allows_recreation_only_for_first_write";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1).Wait();
 
             var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
-            Assert.AreEqual(4, _conn.AppendToStream(stream, ExpectedVersion.NoStream, events).NextExpectedVersion);
-            Assert.That(() => _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()),
+            Assert.AreEqual(4, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events).Result.NextExpectedVersion);
+            Assert.That(() => _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>()
                             .With.InnerException.InstanceOf<WrongExpectedVersionException>());
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(4, res.LastEventNumber);
             Assert.AreEqual(3, res.Events.Length);
             Assert.AreEqual(events.Select(x => x.EventId), res.Events.Select(x => x.OriginalEvent.EventId));
             Assert.AreEqual(new[] { 2, 3, 4 }, res.Events.Select(x => x.OriginalEvent.EventNumber));
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(1, meta.MetastreamVersion);
         }
@@ -202,22 +202,22 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "soft_deleted_stream_appends_both_concurrent_writes_when_expver_any";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1).Wait();
 
             var events1 = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
             var events2 = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
-            Assert.AreEqual(4, _conn.AppendToStream(stream, ExpectedVersion.Any, events1).NextExpectedVersion);
-            Assert.AreEqual(6, _conn.AppendToStream(stream, ExpectedVersion.Any, events2).NextExpectedVersion);
+            Assert.AreEqual(4, _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, events1).Result.NextExpectedVersion);
+            Assert.AreEqual(6, _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, events2).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(6, res.LastEventNumber);
             Assert.AreEqual(5, res.Events.Length);
             Assert.AreEqual(events1.Concat(events2).Select(x => x.EventId), res.Events.Select(x => x.OriginalEvent.EventId));
             Assert.AreEqual(new[] { 2, 3, 4, 5, 6 }, res.Events.Select(x => x.OriginalEvent.EventNumber));
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(1, meta.MetastreamVersion);
         }
@@ -227,21 +227,21 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_json_metadata_on_empty_soft_deleted_stream_recreates_stream_not_overriding_metadata";
 
-            _conn.DeleteStream(stream, ExpectedVersion.NoStream, hardDelete: false);
+            _conn.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: false).Wait();
 
-            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0,
+            Assert.AreEqual(1, _conn.SetStreamMetadataAsync(stream, 0,
                                     StreamMetadata.Build().SetMaxCount(100)
                                                           .SetDeleteRole("some-role")
                                                           .SetCustomProperty("key1", true)
                                                           .SetCustomProperty("key2", 17)
-                                                          .SetCustomProperty("key3", "some value")).NextExpectedVersion);
+                                                          .SetCustomProperty("key3", "some value")).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.StreamNotFound, res.Status);
             Assert.AreEqual(-1, res.LastEventNumber);
             Assert.AreEqual(0, res.Events.Length);
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(2, meta.MetastreamVersion);
             Assert.AreEqual(0, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(100, meta.StreamMetadata.MaxCount);
@@ -256,22 +256,22 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_json_metadata_on_nonempty_soft_deleted_stream_recreates_stream_not_overriding_metadata";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1, hardDelete: false);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1, hardDelete: false).Wait();
 
-            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0,
+            Assert.AreEqual(1, _conn.SetStreamMetadataAsync(stream, 0,
                                                        StreamMetadata.Build().SetMaxCount(100)
                                                                      .SetDeleteRole("some-role")
                                                                      .SetCustomProperty("key1", true)
                                                                      .SetCustomProperty("key2", 17)
-                                                                     .SetCustomProperty("key3", "some value")).NextExpectedVersion);
+                                                                     .SetCustomProperty("key3", "some value")).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(1, res.LastEventNumber);
             Assert.AreEqual(0, res.Events.Length);
 
-            var meta = _conn.GetStreamMetadata(stream);
+            var meta = _conn.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(2, meta.MetastreamVersion);
             Assert.AreEqual(2, meta.StreamMetadata.TruncateBefore);
             Assert.AreEqual(100, meta.StreamMetadata.MaxCount);
@@ -286,16 +286,16 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_nonjson_metadata_on_empty_soft_deleted_stream_recreates_stream_overriding_metadata";
 
-            _conn.DeleteStream(stream, ExpectedVersion.NoStream, hardDelete: false);
+            _conn.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: false).Wait();
 
-            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0, new byte[256]).NextExpectedVersion);
+            Assert.AreEqual(1, _conn.SetStreamMetadataAsync(stream, 0, new byte[256]).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.StreamNotFound, res.Status);
             Assert.AreEqual(-1, res.LastEventNumber);
             Assert.AreEqual(0, res.Events.Length);
 
-            var meta = _conn.GetStreamMetadataAsRawBytes(stream);
+            var meta = _conn.GetStreamMetadataAsRawBytesAsync(stream).Result;
             Assert.AreEqual(1, meta.MetastreamVersion);
             Assert.AreEqual(new byte[256], meta.StreamMetadata);
         }
@@ -305,18 +305,18 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             const string stream = "setting_nonjson_metadata_on_nonempty_soft_deleted_stream_recreates_stream_overriding_metadata";
 
-            Assert.AreEqual(1, _conn.AppendToStream(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).NextExpectedVersion);
-            _conn.DeleteStream(stream, 1, hardDelete: false);
+            Assert.AreEqual(1, _conn.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(), TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+            _conn.DeleteStreamAsync(stream, 1, hardDelete: false).Wait();
 
-            Assert.AreEqual(1, _conn.SetStreamMetadata(stream, 0, new byte[256]).NextExpectedVersion);
+            Assert.AreEqual(1, _conn.SetStreamMetadataAsync(stream, 0, new byte[256]).Result.NextExpectedVersion);
 
-            var res = _conn.ReadStreamEventsForward(stream, 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync(stream, 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(1, res.LastEventNumber);
             Assert.AreEqual(2, res.Events.Length);
             Assert.AreEqual(new[] {0, 1}, res.Events.Select(x => x.OriginalEventNumber).ToArray());
 
-            var meta = _conn.GetStreamMetadataAsRawBytes(stream);
+            var meta = _conn.GetStreamMetadataAsRawBytesAsync(stream).Result;
             Assert.AreEqual(1, meta.MetastreamVersion);
             Assert.AreEqual(new byte[256], meta.StreamMetadata);
         }

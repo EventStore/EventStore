@@ -144,7 +144,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 _connections[i].Disconnected += (s, e) => Log.Debug("[SCENARIO] {0} disconnected from [{1}].", e.Connection.ConnectionName, e.RemoteEndPoint);
                 _connections[i].Reconnecting += (s, e) => Log.Debug("[SCENARIO] {0} reconnecting.", e.Connection.ConnectionName);
                 _connections[i].ErrorOccurred += (s, e) => Log.DebugException(e.Exception, "[SCENARIO] {0} error occurred.", e.Connection.ConnectionName);
-                _connections[i].Connect();
+                _connections[i].ConnectAsync().Wait();
             } 
             RunInternal();   
         }

@@ -168,7 +168,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_append_with_any_exp_ver_to_existing_stream";
             using (var store = TestConnection.To(_node, _tcpType))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 Assert.AreEqual(0, store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
                 Assert.AreEqual(1, store.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
             }
@@ -230,7 +230,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_allow_appending_zero_events_to_stream_with_no_problems";
             using (var store = TestConnection.To(_node, _tcpType))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 Assert.AreEqual(-1, store.AppendToStreamAsync(stream, ExpectedVersion.NoStream).Result.NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 2, resolveLinkTos: false).Result;
@@ -292,7 +292,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_fail_writing_with_any_exp_ver_to_deleted_stream";
             using (var store = TestConnection.To(_node, _tcpType))
             {
-                store.ConnectAsync.Wait();
+                store.ConnectAsync().Wait();
 
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                 Assert.DoesNotThrow(delete.Wait);
@@ -326,7 +326,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_append_with_correct_exp_ver_to_existing_stream";
             using (var store = TestConnection.To(_node, _tcpType))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
                 Assert.AreEqual(0, store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
                 Assert.AreEqual(1, store.AppendToStreamAsync(stream, 0, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
             }

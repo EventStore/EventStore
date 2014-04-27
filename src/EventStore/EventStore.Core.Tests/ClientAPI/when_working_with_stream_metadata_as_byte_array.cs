@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "setting_metadata_few_times_returns_last_metadata";
 
             var metadataBytes = Guid.NewGuid().ToByteArray();
-            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadataBytes).Result;
+            _connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadataBytes).Wait();
             var meta = _connection.GetStreamMetadataAsRawBytesAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);
             Assert.AreEqual(false, meta.IsStreamDeleted);

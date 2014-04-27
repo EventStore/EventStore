@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Assert.IsTrue(adminCreateEvent2.Wait(10000), "Administrator User creation failed");
 
             Connection = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, _userCredentials);
-            Connection.Connect();
+            Connection.ConnectAsync().Wait();
 
             Connection.SetStreamMetadataAsync("noacl-stream", ExpectedVersion.NoStream, StreamMetadata.Build()).Wait();
             Connection.SetStreamMetadataAsync("read-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetReadRole("user1")).Wait();
@@ -155,7 +155,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             return  Connection.StartTransactionAsync(streamId, ExpectedVersion.Any,
                                                 login == null && password == null ? null : new UserCredentials(login, password))
-            .Wait();
+            .Result;
         }
 
         protected void ReadAllForward(string login, string password)
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void ReadMeta(string streamId, string login, string password)
         {
-            Connection.GetStreamMetadataAsRawBytes(streamId, login == null && password == null ? null : new UserCredentials(login, password)).Wait();
+            Connection.GetStreamMetadataAsRawBytesAsync(streamId, login == null && password == null ? null : new UserCredentials(login, password)).Wait();
         }
 
         protected void WriteMeta(string streamId, string login, string password, string metawriteRole)
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         protected void SubscribeToStream(string streamId, string login, string password)
         {
             using (Connection.SubscribeToStreamAsync(streamId, false, (x, y) => { }, (x, y, z) => { },
-                                                login == null && password == null ? null : new UserCredentials(login, password)).Wait())
+                                                login == null && password == null ? null : new UserCredentials(login, password)).Result)
             {
             }
         }
@@ -201,7 +201,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         protected void SubscribeToAll(string login, string password)
         {
             using (Connection.SubscribeToAllAsync(false, (x, y) => { }, (x, y, z) => { },
-                                             login == null && password == null ? null : new UserCredentials(login, password)).Wait())
+                                             login == null && password == null ? null : new UserCredentials(login, password)).Result)
             {
             }
         }
@@ -216,8 +216,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void DeleteStream(string streamId, string login, string password)
         {
-            Connection.DeleteStream(streamId, ExpectedVersion.Any, true, 
-                                    login == null && password == null ? null : new UserCredentials(login, password));
+            Connection.DeleteStreamAsync(streamId, ExpectedVersion.Any, true, 
+                                    login == null && password == null ? null : new UserCredentials(login, password)).Wait();
         }
 
         protected void Expect<T>(Action action) where T : Exception

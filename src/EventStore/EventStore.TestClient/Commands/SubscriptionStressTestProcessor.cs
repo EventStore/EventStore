@@ -29,13 +29,13 @@ namespace EventStore.TestClient.Commands
                                                                      .FailOnNoServerResponse()
                                                                      /*.EnableVerboseLogging()*/, 
                                                                      context.Client.TcpEndpoint);
-            conn.Connect();
+            conn.ConnectAsync().Wait();
 
             long appearedCnt = 0;
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < subscriptionCount; ++i)
             {
-                conn.SubscribeToStream(
+                conn.SubscribeToStreamAsync(
                     string.Format("stream-{0}", i),
                     false,
                     (s, e) =>
@@ -47,7 +47,7 @@ namespace EventStore.TestClient.Commands
                             context.Log.Trace("Received total {0} events ({1} per sec)...", c, 100000.0/sw.Elapsed.TotalSeconds);
                             sw.Restart();
                         }
-                    });
+                    }).Wait();
             }
             context.Log.Info("Subscribed to {0} streams...", subscriptionCount);
             return true;

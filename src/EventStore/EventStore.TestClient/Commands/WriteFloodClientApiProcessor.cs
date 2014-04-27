@@ -77,7 +77,7 @@ namespace EventStore.TestClient.Commands
                 threads.Add(new Thread(_ =>
                 {
                     client.ErrorOccurred += (s, e) => context.Fail(e.Exception, "Error on connection");
-                    client.Connect();
+                    client.ConnectAsync().Wait();
 
                     for (int j = 0; j < count; ++j)
                     {

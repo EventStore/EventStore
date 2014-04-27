@@ -304,7 +304,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _conn.SetStreamMetadataAsync(stream, 0, StreamMetadata.Build().SetTruncateBefore(3)).Wait();
 
-            res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Wait();
+            res = _conn.ReadStreamEventsBackwardAsync(stream, -1, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.Success, res.Status);
             Assert.AreEqual(2, res.Events.Length);
             Assert.AreEqual(_testEvents.Skip(3).Select(x => x.EventId).ToArray(),

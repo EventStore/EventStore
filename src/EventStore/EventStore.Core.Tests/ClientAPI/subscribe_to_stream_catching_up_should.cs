@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "be_able_to_subscribe_to_non_existing_stream";
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.ConnectAssync().Wait();
+                store.ConnectAsync().Wait();
                 var appeared = new ManualResetEventSlim(false);
                 var dropped = new CountdownEvent(1);
 

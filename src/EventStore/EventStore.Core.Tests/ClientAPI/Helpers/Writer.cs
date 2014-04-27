@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             for (var i = 0; i < events.Length; i++)
             {
                 var expVer = _version == ExpectedVersion.Any ? ExpectedVersion.Any : _version + i;
-                var nextExpVer = _store.AppendToStream(_stream, expVer, new[] { events[i] }).NextExpectedVersion;
+                var nextExpVer = _store.AppendToStreamAsync(_stream, expVer, new[] { events[i] }).Result.NextExpectedVersion;
                 if (_version != ExpectedVersion.Any)
                     Assert.AreEqual(expVer + 1, nextExpVer);
             }
@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public TailWriter Then(EventData @event, int expectedVersion)
         {
-            _store.AppendToStream(_stream, expectedVersion, new[] {@event});
+            _store.AppendToStreamAsync(_stream, expectedVersion, new[] {@event}).Wait();
             return this;
         }
     }
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public OngoingTransaction StartTransaction(int expectedVersion)
         {
-            return new OngoingTransaction(_store.StartTransaction(_stream, expectedVersion));
+            return new OngoingTransaction(_store.StartTransactionAsync(_stream, expectedVersion).Result);
         }
     }
 

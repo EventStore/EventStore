@@ -13,8 +13,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             base.TestFixtureSetUp();
 
-            Connection.SetStreamMetadata("$all", ExpectedVersion.Any, StreamMetadata.Build(), new UserCredentials("adm", "admpa$$"));
-
+            Connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any, StreamMetadata.Build(), new UserCredentials("adm", "admpa$$")).Wait();
         }
 
         [Test, Category("LongRunning"), Category("Network")]

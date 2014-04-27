@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 using (var connection = TestConnection.Create(new IPEndPoint(ip, port), _tcpType))
                 {
-                    Assert.DoesNotThrow(() => connection.Connect());
+                    Assert.DoesNotThrow(() => connection.ConnectAsync().Wait());
                 }
             }
             finally
@@ -61,12 +61,12 @@ namespace EventStore.Core.Tests.ClientAPI
                 {
                     connection.Closed += (s, e) => closed.Set();
 
-                    connection.Connect();
+                    connection.ConnectAsync().Wait();
 
                     if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
                         Assert.Fail("Connection timeout took too long.");
 
-                    Assert.That(() => connection.Connect(),
+                    Assert.That(() => connection.ConnectAsync().Wait(),
                                 Throws.Exception.InstanceOf<AggregateException>()
                                       .With.InnerException.InstanceOf<InvalidOperationException>());
                 }
@@ -105,12 +105,12 @@ namespace EventStore.Core.Tests.ClientAPI
                     connection.Disconnected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);
                     connection.ErrorOccurred += (s, e) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", e.Connection.ConnectionName, e.Exception); 
 
-                    connection.Connect();
+                    connection.ConnectAsync().Wait();
 
                     if (!closed.Wait(TimeSpan.FromSeconds(120))) // TCP connection timeout might be even 60 seconds
                         Assert.Fail("Connection timeout took too long.");
 
-                    Assert.That(() => connection.AppendToStream("stream", ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()),
+                    Assert.That(() => connection.AppendToStreamAsync("stream", ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait(),
                                 Throws.Exception.InstanceOf<AggregateException>()
                                 .With.InnerException.InstanceOf<InvalidOperationException>());
                 }
@@ -154,7 +154,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 connection.Reconnecting += (s, e) => Console.WriteLine("EventStoreConnection '{0}': reconnecting...", e.Connection.ConnectionName);
                 connection.Disconnected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);
                 connection.ErrorOccurred += (s, e) => Console.WriteLine("EventStoreConnection '{0}': error = {1}", e.Connection.ConnectionName, e.Exception);
-                connection.Connect();
+                connection.ConnectAsync().Wait();
 
                 if (!closed.Wait(TimeSpan.FromSeconds(15)))
                     Assert.Fail("Connection timeout took too long.");

@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             WaitHandle.WaitAll(new[] { _nodes[0].StartedEvent, _nodes[1].StartedEvent, _nodes[2].StartedEvent });
             QueueStatsCollector.WaitIdle(waitForNonEmptyTf: true);
             _conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
-            _conn.Connect();
+            _conn.ConnectAsync().Wait();
 
             _manager = new ProjectionsManager(
                 new ConsoleLogger(),
@@ -181,17 +181,17 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
         protected void PostEvent(string stream, string eventType, string data)
         {
-            _conn.AppendToStream(stream, ExpectedVersion.Any, new[] {CreateEvent(eventType, data)});
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] {CreateEvent(eventType, data)}).Wait();
         }
 
         protected void HardDeleteStream(string stream)
         {
-            _conn.DeleteStream(stream, ExpectedVersion.Any, true, _admin);
+            _conn.DeleteStreamAsync(stream, ExpectedVersion.Any, true, _admin).Wait();
         }
 
         protected void SoftDeleteStream(string stream)
         {
-            _conn.DeleteStream(stream, ExpectedVersion.Any, false, _admin);
+            _conn.DeleteStreamAsync(stream, ExpectedVersion.Any, false, _admin).Wait();
         }
 
         protected static EventData CreateEvent(string type, string data)

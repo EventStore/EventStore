@@ -16,14 +16,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             public void streams_stream_exists()
             {
                 Assert.AreEqual(
-                    SliceReadStatus.Success, _conn.ReadStreamEventsForward("$streams", 0, 10, false, _admin).Status);
+                    SliceReadStatus.Success, _conn.ReadStreamEventsForwardAsync("$streams", 0, 10, false, _admin).Result.Status);
 
             }
 
             [Test, Category("Network")]
             public void deleted_stream_events_are_indexed()
             {
-                var slice = _conn.ReadStreamEventsForward("$ce-cat", 0, 10, true, _admin);
+                var slice = _conn.ReadStreamEventsForwardAsync("$ce-cat", 0, 10, true, _admin).Result;
                 Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
                 Assert.AreEqual(3, slice.Events.Length);
@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             [Test, Category("Network")]
             public void deleted_stream_events_are_indexed_as_deleted()
             {
-                var slice = _conn.ReadStreamEventsForward("$et-$deleted", 0, 10, true, _admin);
+                var slice = _conn.ReadStreamEventsForwardAsync("$et-$deleted", 0, 10, true, _admin).Result;
                 Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
                 Assert.AreEqual(1, slice.Events.Length);
@@ -52,15 +52,18 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             protected override void When()
             {
                 base.When();
-                var r1 = _conn.AppendToStream(
+                var r1 = _conn.AppendToStreamAsync(
                     "cat-1", ExpectedVersion.NoStream, _admin,
-                    new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
+                    new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null))
+                .Result;
 
-                var r2 = _conn.AppendToStream(
+                var r2 = _conn.AppendToStreamAsync(
                     "cat-1", r1.NextExpectedVersion, _admin,
-                    new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
+                    new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null))
+                .Result;
 
-                _conn.DeleteStream("cat-1", r2.NextExpectedVersion, GivenDeleteHardDeleteStreamMode(), _admin);
+                _conn.DeleteStreamAsync("cat-1", r2.NextExpectedVersion, GivenDeleteHardDeleteStreamMode(), _admin)
+                .Wait();
                 QueueStatsCollector.WaitIdle();
                 if (!GivenStandardProjectionsRunning())
                 {

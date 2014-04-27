@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             (_, __, ___) => dropped.Signal());
 
                 Thread.Sleep(100); // give time for first pull phase
-                store.SubscribeToAll(false, (s, x) => { }, (s, r, e) => { });
+                store.SubscribeToAllAsync(false, (s, x) => { }, (s, r, e) => { }).Wait();
                 Thread.Sleep(100);
 
                 Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
@@ -158,7 +158,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStreamAsync("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
                 }
 
                 var allSlice = store.ReadAllEventsForwardAsync(Position.Start, 100, false).Result;
@@ -208,7 +208,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             using (var store = TestConnection.Create(_node.TcpEndPoint))
             {
-                store.Connect();
+                store.ConnectAsync().Wait();
 
                 var events = new List<ResolvedEvent>();
                 var appeared = new CountdownEvent(1);

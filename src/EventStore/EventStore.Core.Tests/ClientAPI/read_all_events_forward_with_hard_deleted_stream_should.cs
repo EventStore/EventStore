@@ -18,19 +18,20 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.SetStreamMetadata(
+            _conn.SetStreamMetadataAsync(
                 "$all", -1, StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+                new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword))
+            .Wait();
 
             _testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-            _conn.AppendToStream("stream", ExpectedVersion.EmptyStream, _testEvents);
-            _conn.DeleteStream("stream", ExpectedVersion.Any, hardDelete: true);
+            _conn.AppendToStreamAsync("stream", ExpectedVersion.EmptyStream, _testEvents).Wait();
+            _conn.DeleteStreamAsync("stream", ExpectedVersion.Any, hardDelete: true).Wait();
         }
 
         [Test, Category("LongRunning")]
         public void ensure_deleted_stream()
         {
-            var res = _conn.ReadStreamEventsForward("stream", 0, 100, false);
+            var res = _conn.ReadStreamEventsForwardAsync("stream", 0, 100, false).Result;
             Assert.AreEqual(SliceReadStatus.StreamDeleted, res.Status);
             Assert.AreEqual(0, res.Events.Length);
         }
@@ -38,7 +39,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void returns_all_events_including_tombstone()
         {
-            AllEventsSlice read = _conn.ReadAllEventsForward(Position.Start, _testEvents.Length + 10, false);
+            AllEventsSlice read = _conn.ReadAllEventsForwardAsync(Position.Start, _testEvents.Length + 10, false).Result;
             Assert.That(
                 EventDataComparer.Equal(
                     _testEvents.ToArray(),

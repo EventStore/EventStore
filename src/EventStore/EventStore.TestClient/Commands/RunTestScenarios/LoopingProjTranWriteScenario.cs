@@ -104,12 +104,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     var batchSizeA = _random.Next(1, EventsPerStream / 10);
                     var batchSizeB = _random.Next(1, EventsPerStream / 10);
 
-                    var transactionA = store.StartTransaction(streamA, ExpectedVersion.Any);
+                    var transactionA = store.StartTransactionAsync(streamA, ExpectedVersion.Any).Result;
 
                     var w1 = WriteTransactionData(transactionA, writtenCountA, batchSizeA, CreateEventA);
                     w1.Wait();
 
-                    var transactionB = store.StartTransaction(streamB, ExpectedVersion.Any);
+                    var transactionB = store.StartTransactionAsync(streamB, ExpectedVersion.Any).Result;
                     var w2 = WriteTransactionData(transactionB, writtenCountB, batchSizeB, CreateEventB);
                     w2.Wait();
 

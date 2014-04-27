@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             CreateNode();
 
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
+            _conn.ConnectAsync().Wait();
 
             _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, TimeSpan.FromMilliseconds(10000));
             WaitIdle();
@@ -122,17 +122,17 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
         protected void PostEvent(string stream, string eventType, string data)
         {
-            _conn.AppendToStream(stream, ExpectedVersion.Any, new[] {event_by_type_index.with_existing_events.CreateEvent(eventType, data)});
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] {event_by_type_index.with_existing_events.CreateEvent(eventType, data)}).Wait();
         }
 
         protected void HardDeleteStream(string stream)
         {
-            _conn.DeleteStream(stream, ExpectedVersion.Any, true, _admin);
+            _conn.DeleteStreamAsync(stream, ExpectedVersion.Any, true, _admin).Wait();
         }
 
         protected void SoftDeleteStream(string stream)
         {
-            _conn.DeleteStream(stream, ExpectedVersion.Any, false, _admin);
+            _conn.DeleteStreamAsync(stream, ExpectedVersion.Any, false, _admin).Wait();
         }
 
         protected static EventData CreateEvent(string type, string data)

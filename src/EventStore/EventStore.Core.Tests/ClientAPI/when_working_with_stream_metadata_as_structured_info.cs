@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(metadata.CacheControl, meta.StreamMetadata.CacheControl);
 
             metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), 24, TimeSpan.FromSeconds(0xDABACABAD));
-            _connection.SetStreamMetadata(stream, 0, metadata);
+            _connection.SetStreamMetadataAsync(stream, 0, metadata).Wait();
 
             meta = _connection.GetStreamMetadataAsync(stream).Result;
             Assert.AreEqual(stream, meta.Stream);

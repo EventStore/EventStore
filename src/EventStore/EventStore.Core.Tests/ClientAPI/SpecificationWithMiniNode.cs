@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
             _node.Start();
             _conn = TestConnection.Create(_node.TcpEndPoint);
-            _conn.Connect();
+            _conn.ConnectAsync().Wait();
             When();
         }
 

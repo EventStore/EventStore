@@ -41,16 +41,17 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_be_preserved_with_all_possible_write_methods";
             using (var connection = TestConnection.To(_node, TcpType.Normal))
             {
-                connection.Connect();
+                connection.ConnectAsync().Wait();
 
-                connection.AppendToStream(
+                connection.AppendToStreamAsync(
                     stream,
                     ExpectedVersion.Any,
                     new EventData(Guid.NewGuid(), "some-type", true, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
                     new EventData(Guid.NewGuid(), "some-type", true, null, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
-                    new EventData(Guid.NewGuid(), "some-type", true, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
+                    new EventData(Guid.NewGuid(), "some-type", true, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")))
+                .Wait();
 
-                using (var transaction = connection.StartTransaction(stream, ExpectedVersion.Any))
+                using (var transaction = connection.StartTransactionAsync(stream, ExpectedVersion.Any).Result)
                 {
                     transaction.Write(
                         new EventData(Guid.NewGuid(), "some-type", true, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),

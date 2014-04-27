@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var position = Position.End;
             AllEventsSlice slice;
 
-            while (!(slice = _conn.ReadAllEventsBackwardAsync(position, 1, false)).Result.IsEndOfStream)
+            while (!(slice = _conn.ReadAllEventsBackwardAsync(position, 1, false).Result).IsEndOfStream)
             {
                 all.Add(slice.Events.Single().Event);
                 position = slice.NextPosition;
