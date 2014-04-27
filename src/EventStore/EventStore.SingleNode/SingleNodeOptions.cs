@@ -99,20 +99,5 @@ namespace EventStore.SingleNode
             Force = false;
             DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
         }
-
-        public SingleNodeOptions Parse(params string[] args)
-        {
-            return EventStoreOptions.Parse<SingleNodeOptions>(args);
-        }
-
-        public string DumpOptions()
-        {
-            return System.String.Empty;
-        }
-
-        public string GetUsage()
-        {
-            return EventStoreOptions.GetUsage<SingleNodeOptions>();
-        }
     }
 }
