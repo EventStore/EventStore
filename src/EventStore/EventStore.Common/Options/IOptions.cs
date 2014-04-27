@@ -5,7 +5,7 @@
         bool ShowHelp { get; }
         bool ShowVersion { get; }
         string Config { get; }
-        string LogsDir { get; }
+        string Logsdir { get; }
         string[] Defines { get; }
         bool Force { get; }
     }

@@ -7,18 +7,18 @@ namespace EventStore.Web.Playground
 {
     public class PlaygroundNodeOptions : IOptions
     {
-        public bool ShowHelp { get; protected set; }
-        public bool ShowVersion { get; protected set; }
-        public string LogsDir { get; protected set; }
-        public string Config { get; protected set; }
-        public string[] Defines { get; protected set; }
-        public IPAddress Ip { get; protected set; }
-        public int TcpPort { get; protected set; }
-        public int HttpPort { get; protected set; }
-        public string DbPath { get; protected set; }
-        public int WorkerThreads { get; protected set; }
-        public string[] HttpPrefixes { get; protected set; }
-        public bool Force { get; protected set; }
+        public bool ShowHelp { get; set; }
+        public bool ShowVersion { get; set; }
+        public string Logsdir { get; set; }
+        public string Config { get; set; }
+        public string[] Defines { get; set; }
+        public IPAddress Ip { get; set; }
+        public int TcpPort { get; set; }
+        public int HttpPort { get; set; }
+        public string DbPath { get; set; }
+        public int WorkerThreads { get; set; }
+        public string[] HttpPrefixes { get; set; }
+        public bool Force { get; set; }
 
         public PlaygroundNodeOptions()
         {
@@ -26,7 +26,7 @@ namespace EventStore.Web.Playground
 
             ShowHelp = Opts.ShowHelpDefault;
             ShowVersion = Opts.ShowVersionDefault;
-            LogsDir = Opts.LogsDefault;
+            Logsdir = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
 
             Ip = IPAddress.Loopback;
