@@ -14,7 +14,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core
 {
-    public abstract class ProgramBase<TOptions> where TOptions : IOptions, new()
+    public abstract class ProgramBase<TOptions> where TOptions : class, IOptions, new()
     {
 // ReSharper disable StaticFieldInGenericType
         protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
@@ -37,11 +37,11 @@ namespace EventStore.Core
             {
                 Application.RegisterExitAction(Exit);
 
-                var parsed = options.Parse(args);
-                if (!parsed || options.ShowHelp)
+                options = EventStoreOptions.Parse<TOptions>(args);
+                if (options.ShowHelp)
                 {
                     Console.WriteLine("Options:");
-                    Console.WriteLine(options.GetUsage());
+                    Console.WriteLine(EventStoreOptions.GetUsage<TOptions>());
                 }
                 else if (options.ShowVersion)
                 {
@@ -65,7 +65,7 @@ namespace EventStore.Core
                 Console.Error.WriteLine(FormatExceptionMessage(exc));
                 Console.Error.WriteLine();
                 Console.Error.WriteLine("Options:");
-                Console.Error.WriteLine(options.GetUsage());
+                Console.Error.WriteLine(EventStoreOptions.GetUsage<TOptions>());
             }
             catch (ApplicationInitializationException ex)
             {
@@ -138,7 +138,7 @@ namespace EventStore.Core
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
                      "LOGS:", LogManager.LogsDirectory,
-                     options.DumpOptions());
+                     EventStoreOptions.DumpOptions<TOptions>());
         }
 
         private string FormatExceptionMessage(Exception ex)
