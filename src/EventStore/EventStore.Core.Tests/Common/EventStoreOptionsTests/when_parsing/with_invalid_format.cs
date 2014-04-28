@@ -27,10 +27,10 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         [Test]
         public void with_environment_variable()
         {
-            Environment.SetEnvironmentVariable("ES_HTTP_PORT", "invalid_format");
+            Environment.SetEnvironmentVariable(Opts.EnvPrefix + "HTTP_PORT", "invalid_format");
             var args = new string[] { };
             Assert.Throws<OptionException>(() => { EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix); });
-            Environment.SetEnvironmentVariable("ES_HTTP_PORT", null);
+            Environment.SetEnvironmentVariable(Opts.EnvPrefix + "HTTP_PORT", null);
         }
     }
 }
