@@ -81,7 +81,7 @@ namespace EventStore.Common.Options
             {
                 var defaultValue = property.GetValue(options, null);
                 var currentValue = property.GetValue(currentOptions, null);
-                if (!defaultValue.Equals(currentValue))
+                if (defaultValue != null && !defaultValue.Equals(currentValue))
                 {
                     SetDumpedOptions(property.Name, source, currentValue);
                 }
