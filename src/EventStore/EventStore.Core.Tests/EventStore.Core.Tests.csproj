@@ -149,15 +149,6 @@
     <Compile Include="ClientAPI\when_working_with_stream_metadata_as_structured_info.cs" />
     <Compile Include="Common\EventStoreOptionsTests\TestArgs.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_invalid_format.cs" />
-    <Compile Include="Common\Options\OptsHelperTestBase.cs" />
-    <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_array.cs" />
-    <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_custom_type.cs" />
-    <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_number.cs" />
-    <Compile Include="Common\Options\opts_helper_for_array_of_int_should.cs" />
-    <Compile Include="Common\Options\opts_helper_for_custom_type_should.cs" />
-    <Compile Include="Common\Options\opts_helper_for_int_should.cs" />
-    <Compile Include="Common\Options\opts_helper_for_bool_flag_should.cs" />
-    <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_flag.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_no_arguments_and_environment_variables_exist.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_config_file_and_environment_variable.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_arguments_and_config_files.cs" />
