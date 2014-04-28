@@ -11,6 +11,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Util;
 
 namespace EventStore.Core
 {
@@ -37,7 +38,7 @@ namespace EventStore.Core
             {
                 Application.RegisterExitAction(Exit);
 
-                options = EventStoreOptions.Parse<TOptions>(args);
+                options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix);
                 if (options.ShowHelp)
                 {
                     Console.WriteLine("Options:");
