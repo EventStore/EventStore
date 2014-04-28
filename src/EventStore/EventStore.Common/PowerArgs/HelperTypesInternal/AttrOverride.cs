@@ -21,11 +21,6 @@ namespace PowerArgs
             StackTrace stackTrace = new StackTrace();
             var callingMethod = stackTrace.GetFrame(1).GetMethod() as MethodInfo;
 
-            if (callingMethod.Name.StartsWith("set_") == false || callingMethod.IsSpecialName == false)
-            {
-                throw new InvalidOperationException("This method should only be called from a property's set method");
-            }
-
             string propertyName = callingMethod.Name.Substring("get_".Length);
 
             if (overrideValues.ContainsKey(propertyName))
@@ -42,11 +37,6 @@ namespace PowerArgs
         {
             StackTrace stackTrace = new StackTrace();
             var callingMethod = stackTrace.GetFrame(1).GetMethod() as MethodInfo;
-
-            if (callingMethod.Name.StartsWith("get_") == false || callingMethod.IsSpecialName == false)
-            {
-                throw new InvalidOperationException("This method should only be called from a property's get method");
-            }
 
             string propertyName = callingMethod.Name.Substring("get_".Length);
             string typeName = callingMethod.DeclaringType.Name;
