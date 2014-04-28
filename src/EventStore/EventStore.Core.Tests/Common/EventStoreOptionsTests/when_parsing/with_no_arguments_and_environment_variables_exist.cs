@@ -6,18 +6,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.Tests.Common.when_parsing_options
+namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
 {
     [TestFixture]
-    public class when_no_arguments_and_environment_variables_exist
+    public class with_no_arguments_and_environment_variables_exist
     {
-        private static TestArgs testArgs;
-        private static string[] args;
         [Test]
         public void should_use_the_environment_variable_over_the_default_value()
         {
             Environment.SetEnvironmentVariable("ES_HTTP_PORT", "2111");
-            testArgs = EventStoreOptions.Parse<TestArgs>(args);
+            var args = new string[] { };
+            var testArgs = EventStoreOptions.Parse<TestArgs>(args);
             Assert.AreEqual(2111, testArgs.HttpPort);
         }
     }

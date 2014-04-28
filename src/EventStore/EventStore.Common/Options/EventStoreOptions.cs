@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PowerArgs;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,23 +10,39 @@ namespace EventStore.Common.Options
     public class EventStoreOptions
     {
         private static List<Tuple<string, object>> parsedOptions;
-        public static T Parse<T>(string[] args) where T : class, IOptions, new()
+        public static TOptions Parse<TOptions>(string[] args) where TOptions : class, IOptions, new()
         {
-            parsedOptions = SetupOptionsForDumping<T>();
+            parsedOptions = SetupOptionsForDumping<TOptions>();
             if (args == null || args.Length == 0)
             {
-                var arguments = new T();
-                arguments = SetEnvironmentVariables<T>(arguments);
+                var arguments = new TOptions();
+                arguments = SetEnvironmentVariables<TOptions>(arguments);
                 return arguments;
             }
-            var commandLineArguments = PowerArgs.Args.Parse<T>(args);
+            TOptions commandLineArguments = null;
+            try
+            {
+                commandLineArguments = PowerArgs.Args.Parse<TOptions>(args);
+            }
+            catch (ArgException ex)
+            {
+                throw new OptionException(ex.Message, String.Empty);
+            }
             if (File.Exists(commandLineArguments.Config))
             {
                 var config = File.ReadAllText(commandLineArguments.Config);
-                var configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(config);
-                MergeFromConfiguration<T>(configAsJson, commandLineArguments);
+                TOptions configAsJson = null;
+                try
+                {
+                    configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<TOptions>(config);
+                    MergeFromConfiguration<TOptions>(configAsJson, commandLineArguments);
+                }
+                catch (Newtonsoft.Json.JsonReaderException ex)
+                {
+                    throw new OptionException(ex.Message, String.Empty);
+                }
             }
-            commandLineArguments = SetEnvironmentVariables<T>(commandLineArguments);
+            commandLineArguments = SetEnvironmentVariables<TOptions>(commandLineArguments);
             return commandLineArguments;
         }
 
@@ -77,8 +94,15 @@ namespace EventStore.Common.Options
                     defaultValue.Equals(currentValue) &&
                     environmentVariableValue != null)
                 {
-                    var valueToSet = Convert.ChangeType(environmentVariableValue, property.PropertyType);
-                    property.SetValue(eventStoreArguments, valueToSet, null);
+                    try
+                    {
+                        var valueToSet = Convert.ChangeType(environmentVariableValue, property.PropertyType);
+                        property.SetValue(eventStoreArguments, valueToSet, null);
+                    }
+                    catch (FormatException ex)
+                    {
+                        throw new OptionException(ex.Message, String.Empty);
+                    }
                 }
             }
             return eventStoreArguments;
