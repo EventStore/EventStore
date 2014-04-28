@@ -40,7 +40,7 @@ namespace PowerArgs
                     {
                         var index = key.IndexOf("=");
                         value = key.Substring(index + 1);
-                        key = key.Substring(0, index);
+                        key = key.Substring(1, index - 1);
                     }
                     else
                     {

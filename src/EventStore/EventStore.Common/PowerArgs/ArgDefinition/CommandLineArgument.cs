@@ -421,12 +421,26 @@ namespace PowerArgs
                     ret.Add(shortcut);
                 }
 
+                var longFormShortcut = PascalCaseNameSplitter(info.Name);
+                if (!knownShortcuts.Any(x => x.Equals(longFormShortcut, StringComparison.OrdinalIgnoreCase)))
+                {
+                    knownShortcuts.Add(longFormShortcut);
+                    ret.Add(longFormShortcut);
+                }
+
                 return ret;
             }
             else
             {
                 return ret;
             }
+        }
+
+        private static string PascalCaseNameSplitter(string name)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
+            var convertedName = regex.Replace(name, "-");
+            return convertedName.ToLower();
         }
 
         private void FindMatchingArgumentInRawParseData(ArgHook.HookContext context)
