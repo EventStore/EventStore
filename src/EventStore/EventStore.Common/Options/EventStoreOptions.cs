@@ -148,7 +148,13 @@ namespace EventStore.Common.Options
             var dumpOptionsBuilder = new StringBuilder();
             foreach (var option in parsedOptions)
             {
-                dumpOptionsBuilder.AppendLine(String.Format("{0} - {1}:{2}", option.Item1, option.Item2.Source, option.Item2.Value));
+                var value = option.Item2.Value;
+                var valueToDump = value.ToString();
+                if (value is Array)
+                {
+                    valueToDump = "[ " + String.Join(", ", (IEnumerable<object>)value) + " ]";
+                }
+                dumpOptionsBuilder.AppendLine(String.Format("{0} - {1}:{2}", option.Item1, option.Item2.Source, String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump));
             }
             return dumpOptionsBuilder.ToString();
         }
