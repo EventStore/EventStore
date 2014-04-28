@@ -1,4 +1,5 @@
 ﻿using EventStore.Common.Options;
+using EventStore.Core.Util;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         public void should_use_the_defaults()
         {
             var args = new string[] { };
-            var testArgs = EventStoreOptions.Parse<TestArgs>(args);
+            var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual("~/logs", testArgs.Logsdir);
         }
     }

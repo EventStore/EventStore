@@ -1,4 +1,5 @@
 ﻿using EventStore.Common.Options;
+using EventStore.Core.Util;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         {
             Environment.SetEnvironmentVariable("ES_HTTP_PORT", "2111");
             var args = new string[] { "-config", "TestConfigs/test_config.json" };
-            var testArgs = EventStoreOptions.Parse<TestArgs>(args);
+            var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual(2115, testArgs.HttpPort);
         }
     }

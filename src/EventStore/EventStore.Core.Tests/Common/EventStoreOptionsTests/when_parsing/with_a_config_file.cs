@@ -1,4 +1,5 @@
 ﻿using EventStore.Common.Options;
+using EventStore.Core.Util;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         public void should_use_the_config_file_value()
         {
             var args = new string[] { "-config", "TestConfigs/test_config.json" };
-            var testArgs = EventStoreOptions.Parse<TestArgs>(args);
+            var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual("~/logDirectoryFromConfigFile", testArgs.Logsdir);
         }
     }

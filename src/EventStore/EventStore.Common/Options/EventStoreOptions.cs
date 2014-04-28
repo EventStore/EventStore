@@ -10,13 +10,13 @@ namespace EventStore.Common.Options
     public class EventStoreOptions
     {
         private static List<Tuple<string, object>> parsedOptions;
-        public static TOptions Parse<TOptions>(string[] args) where TOptions : class, IOptions, new()
+        public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {
             parsedOptions = SetupOptionsForDumping<TOptions>();
             if (args == null || args.Length == 0)
             {
                 var arguments = new TOptions();
-                arguments = SetEnvironmentVariables<TOptions>(arguments);
+                arguments = SetEnvironmentVariables<TOptions>(arguments, environmentPrefix);
                 return arguments;
             }
             TOptions commandLineArguments = null;
@@ -42,7 +42,7 @@ namespace EventStore.Common.Options
                     throw new OptionException(ex.Message, ex.Path);
                 }
             }
-            commandLineArguments = SetEnvironmentVariables<TOptions>(commandLineArguments);
+            commandLineArguments = SetEnvironmentVariables<TOptions>(commandLineArguments, environmentPrefix);
             return commandLineArguments;
         }
 
@@ -80,13 +80,13 @@ namespace EventStore.Common.Options
             return commandLineArguments;
         }
 
-        private static T SetEnvironmentVariables<T>(T eventStoreArguments) where T : class, IOptions, new()
+        private static T SetEnvironmentVariables<T>(T eventStoreArguments, string environmentPrefix) where T : class, IOptions, new()
         {
             var instanceToUseForDefaultValueComparrison = new T();
             foreach (var property in typeof(T).GetProperties())
             {
                 var defaultValue = property.GetValue(instanceToUseForDefaultValueComparrison, null);
-                var environmentVariableName = EnvironmentVariableNameProvider.GetName(property.Name);
+                var environmentVariableName = EnvironmentVariableNameProvider.GetName(environmentPrefix, property.Name);
                 var environmentVariableValue = Environment.GetEnvironmentVariable(environmentVariableName);
                 var currentValue = property.GetValue(eventStoreArguments, null);
 
@@ -162,11 +162,11 @@ namespace EventStore.Common.Options
     }
     public class EnvironmentVariableNameProvider
     {
-        public static string GetName(string name)
+        public static string GetName(string environmentPrefix, string name)
         {
             var regex = new System.Text.RegularExpressions.Regex(@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
             var convertedName = regex.Replace(name, "_");
-            return "ES_" + convertedName.ToUpper();
+            return environmentPrefix + convertedName.ToUpper();
         }
     }
 }
