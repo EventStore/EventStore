@@ -39,7 +39,7 @@ namespace EventStore.Common.Options
                 }
                 catch (Newtonsoft.Json.JsonReaderException ex)
                 {
-                    throw new OptionException(ex.Message, String.Empty);
+                    throw new OptionException(ex.Message, ex.Path);
                 }
             }
             commandLineArguments = SetEnvironmentVariables<TOptions>(commandLineArguments);
