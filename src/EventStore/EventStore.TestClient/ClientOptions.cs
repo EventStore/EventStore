@@ -1,6 +1,7 @@
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
+using PowerArgs;
 
 namespace EventStore.TestClient
 {
@@ -10,19 +11,28 @@ namespace EventStore.TestClient
     /// </summary>
     public sealed class ClientOptions : IOptions
     {
+        [ArgDescription(Opts.ShowHelpDescr)]
         public bool ShowHelp { get; set; }
+        [ArgDescription(Opts.ShowVersionDescr)]
         public bool ShowVersion { get; set; }
+        [ArgDescription(Opts.LogsDescr)]
         public string Logsdir { get; set; }
-        public string[] Defines { get; set; }
+        [ArgDescription(Opts.ConfigsDescr)]
         public string Config { get; set; }
+        [ArgDescription(Opts.DefinesDescr)]
+        public string[] Defines { get; set; }
 
+        [ArgDescription(Opts.IpDescr)]
         public IPAddress Ip { get; set; }
+        [ArgDescription(Opts.TcpPortDescr)]
         public int TcpPort { get; set; }
+        [ArgDescription(Opts.HttpPortDescr)]
         public int HttpPort { get; set; }
         public int Timeout { get; set; }
         public int ReadWindow { get; set; }
         public int WriteWindow { get; set; }
         public int PingWindow { get; set; }
+        [ArgDescription(Opts.ForceDescr)]
         public bool Force { get; set; }
         public string[] Command { get; set; }
 
