@@ -13,6 +13,7 @@ namespace EventStore.Common.Options
         public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {
             parsedOptions = SetupOptionsForDumping<TOptions>();
+
             if (args == null || args.Length == 0)
             {
                 var arguments = new TOptions();
@@ -56,9 +57,15 @@ namespace EventStore.Common.Options
             var parsedOptions = new List<Tuple<string, object>>();
             foreach (var property in typeof(T).GetProperties())
             {
-                parsedOptions.Add(new Tuple<string, object>(property.Name, "default"));
+                parsedOptions.Add(new Tuple<string, object>(property.Name, "default:" + "empty"));
             }
             return parsedOptions;
+        }
+
+        private static void SetDumpedOptions(string property, object value)
+        {
+            parsedOptions.Remove(parsedOptions.First(x => x.Item1 == property));
+            parsedOptions.Add(new Tuple<string, object>(property, value));
         }
 
         private static T MergeFromConfiguration<T>(T argumentsFromConfig, T commandLineArguments) where T : IOptions, new()
@@ -74,7 +81,9 @@ namespace EventStore.Common.Options
                    !defaultValue.Equals(configValue) &&
                     defaultValue.Equals(commandLineValue))
                 {
-                    property.SetValue(commandLineArguments, property.GetValue(argumentsFromConfig, null), null);
+                    var valueToUse = property.GetValue(argumentsFromConfig, null);
+                    SetDumpedOptions(property.Name, "config:" + valueToUse);
+                    property.SetValue(commandLineArguments, valueToUse, null);
                 }
             }
             return commandLineArguments;
@@ -96,8 +105,9 @@ namespace EventStore.Common.Options
                 {
                     try
                     {
-                        var valueToSet = Convert.ChangeType(environmentVariableValue, property.PropertyType);
-                        property.SetValue(eventStoreArguments, valueToSet, null);
+                        var valueToUse = Convert.ChangeType(environmentVariableValue, property.PropertyType);
+                        SetDumpedOptions(property.Name, "environment:" + valueToUse);
+                        property.SetValue(eventStoreArguments, valueToUse, null);
                     }
                     catch (FormatException ex)
                     {
@@ -107,57 +117,19 @@ namespace EventStore.Common.Options
             }
             return eventStoreArguments;
         }
+
         public static string DumpOptions<T>() where T : IOptions, new()
         {
-            return String.Empty;
-            //var sb = new StringBuilder();
-            //foreach (var option in _optionContainers.Values)
-            //{
-            //    var ss = new StringBuilder();
-            //    foreach (var c in option.Name)
-            //    {
-            //        if (ss.Length > 0 && char.IsLower(ss[ss.Length - 1]) && char.IsUpper(c))
-            //            ss.Append(' ');
-            //        ss.Append(c);
-            //    }
-            //    var optionName = ss.ToString().ToUpper();
-            //    var value = option.FinalValue is IEnumerable<object>
-            //                        ? string.Join(", ", ((IEnumerable<object>)option.FinalValue).ToArray())
-            //                        : option.FinalValue;
-            //    if (value is string && (string)value == "")
-            //        value = "<empty>";
-            //    switch (option.Origin)
-            //    {
-            //        case OptionOrigin.None:
-            //            throw new InvalidOperationException("Shouldn't get here ever.");
-            //        case OptionOrigin.CommandLine:
-            //            sb.AppendFormat("{0,-25} {1} ({2}{3} from command line)\n",
-            //                            optionName + ":",
-            //                            value,
-            //                            option.OriginOptionName.Length == 1 ? "-" : "--",
-            //                            option.OriginOptionName);
-            //            break;
-            //        case OptionOrigin.Environment:
-            //            sb.AppendFormat("{0,-25} {1} ({2} environment variable)\n",
-            //                            optionName + ":",
-            //                            value,
-            //                            option.OriginOptionName);
-            //            break;
-            //        case OptionOrigin.Config:
-            //            sb.AppendFormat("{0,-25} {1} ({2} in config at '{3}')\n",
-            //                            optionName + ":",
-            //                            value,
-            //                            option.OriginOptionName,
-            //                            option.OriginName);
-            //            break;
-            //        case OptionOrigin.Default:
-            //            sb.AppendFormat("{0,-25} {1} (<DEFAULT>)\n", optionName + ":", value);
-            //            break;
-            //        default:
-            //            throw new ArgumentOutOfRangeException();
-            //    }
-            //}
-            //return sb.ToString();
+            if (parsedOptions == null)
+            {
+                return "No options have been parsed";
+            }
+            var dumpOptionsBuilder = new StringBuilder();
+            foreach (var option in parsedOptions)
+            {
+                dumpOptionsBuilder.AppendLine(String.Format("{0} - {1}", option.Item1, option.Item2));
+            }
+            return dumpOptionsBuilder.ToString();
         }
     }
     public class EnvironmentVariableNameProvider
