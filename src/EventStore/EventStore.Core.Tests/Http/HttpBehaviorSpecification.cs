@@ -25,20 +25,22 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebResponse _lastResponse;
         protected string _lastResponseBody;
         protected JsonException _lastJsonException;
+#if !__MonoCS__
         private Func<HttpWebResponse, byte[]> _dumpResponse;
         private Func<HttpWebResponse, int> _dumpResponse2;
         private Func<HttpWebRequest, byte[]> _dumpRequest;
         private Func<HttpWebRequest, byte[]> _dumpRequest2;
+#endif
         private string _tag;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
 #if !__MonoCS__
-            EventStore.Common.Utils.Helper.EatException(() => _dumpResponse = CreateDumpResponse());
-            EventStore.Common.Utils.Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
-            EventStore.Common.Utils.Helper.EatException(() => _dumpRequest = CreateDumpRequest());
-            EventStore.Common.Utils.Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
+            Helper.EatException(() => _dumpResponse = CreateDumpResponse());
+            Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
+            Helper.EatException(() => _dumpRequest = CreateDumpRequest());
+            Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
 #endif
 
             base.TestFixtureSetUp();
@@ -243,6 +245,7 @@ namespace EventStore.Core.Tests.Http
             {
                 response = (HttpWebResponse) ex.Response;
             }
+#if !__MonoCS__
             if (_dumpRequest != null)
             {
                 var bytes = _dumpRequest(request);
@@ -263,6 +266,7 @@ namespace EventStore.Core.Tests.Http
                 if (bytes != null)
                     Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, len).TrimEnd('\0'));
             }
+#endif
             return response;
         }
 
