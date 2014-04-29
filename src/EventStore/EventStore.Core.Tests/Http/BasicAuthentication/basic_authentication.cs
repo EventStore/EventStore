@@ -71,8 +71,6 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_protected_resource_with_credentials_provided : with_admin_user
         {
-            private JObject _json;
-
             protected override void Given()
             {
                 var response = MakeJsonPost(
@@ -82,7 +80,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
+                GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
             }
 
             [Test]
@@ -95,8 +93,6 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_protected_resource_with_invalid_credentials_provided : with_admin_user
         {
-            private JObject _json;
-
             protected override void Given()
             {
                 var response = MakeJsonPost(
@@ -106,7 +102,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "InvalidPassword!"));
+                GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "InvalidPassword!"));
             }
 
             [Test]
@@ -119,8 +115,6 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_protected_resource_with_credentials_of_disabled_user_account : with_admin_user
         {
-            private JObject _json;
-
             protected override void Given()
             {
                 var response = MakeJsonPost(
@@ -132,7 +126,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
+                GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
             }
 
             [Test]
@@ -145,8 +139,6 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
         [TestFixture, Category("LongRunning")]
         class when_requesting_a_protected_resource_with_credentials_of_deleted_user_account : with_admin_user
         {
-            private JObject _json;
-
             protected override void Given()
             {
                 var response = MakeJsonPost(
@@ -158,7 +150,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 
             protected override void When()
             {
-                _json = GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
+                GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
             }
 
             [Test]

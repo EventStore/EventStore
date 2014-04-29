@@ -28,15 +28,12 @@ namespace EventStore.Core.Tests.Helpers
     {
         public class Transaction
         {
-            private long _position;
-            private ClientMessage.TransactionStart _startMessage;
+            private readonly ClientMessage.TransactionStart _startMessage;
 
-            private List<Tuple<int, Event >> _events =
-                new List<Tuple<int, Event >>();
+            private readonly List<Tuple<int, Event>> _events = new List<Tuple<int, Event>>();
 
             public Transaction(long position, ClientMessage.TransactionStart startMessage)
             {
-                _position = position;
                 _startMessage = startMessage;
             }
 
