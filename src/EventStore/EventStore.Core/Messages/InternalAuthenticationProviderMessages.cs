@@ -6,7 +6,7 @@ namespace EventStore.Core.Messages
     {
         public sealed class ResetPasswordCache : Message
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string LoginName;
