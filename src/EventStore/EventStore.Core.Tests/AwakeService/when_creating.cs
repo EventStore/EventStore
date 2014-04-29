@@ -38,6 +38,7 @@ namespace EventStore.Core.Tests.AwakeService
         public void it_can_ce_created()
         {
             var it = new Core.Services.AwakeReaderService.AwakeService();
+            Assert.NotNull(it);
         }
 
     }
