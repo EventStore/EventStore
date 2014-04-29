@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 #else 
             throw new NotSupportedException("These tests require DEBUG conditional");
 #endif
-
+#pragma warning disable 0162
             _nodeEndpoints[0] = new Endpoints(
                 PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
                 PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
@@ -106,6 +106,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             QueueStatsCollector.WaitIdle();
             Given();
             When();
+#pragma warning restore 0162
         }
 
         private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds)

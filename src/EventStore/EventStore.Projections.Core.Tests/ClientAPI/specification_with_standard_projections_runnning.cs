@@ -34,6 +34,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 #else 
             throw new NotSupportedException("These tests require DEBUG conditional");
 #endif
+#pragma warning disable 0162
             CreateNode();
 
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
@@ -46,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             QueueStatsCollector.WaitIdle();
             Given();
             When();
+#pragma warning restore 0162
         }
 
         private void CreateNode()
