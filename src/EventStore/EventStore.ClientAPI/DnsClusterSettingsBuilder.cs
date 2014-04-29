@@ -20,7 +20,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="clusterDns">The DNS name under which cluster nodes are listed.</param>
         /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
-        /// <exception cref="ArgumentNullException">If <see cref="clusterDns" /> is null or empty.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
         public DnsClusterSettingsBuilder SetClusterDns(string clusterDns)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
@@ -33,7 +33,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="maxDiscoverAttempts">The maximum number of attempts for DNS discovery.</param>
         /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">If <see cref="maxDiscoverAttempts" /> is less than or equal to 0.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="maxDiscoverAttempts" /> is less than or equal to 0.</exception>
         public DnsClusterSettingsBuilder SetMaxDiscoverAttempts(int maxDiscoverAttempts)
         {
             if (maxDiscoverAttempts <= 0)

@@ -124,6 +124,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Synchronously creates a one-time query.
         /// </summary>
+        /// <param name="name">A name for the query.</param>
         /// <param name="query">The JavaScript source code for the query.</param>
         /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
         public void CreateTransient(string name, string query, UserCredentials userCredentials = null)
@@ -136,6 +137,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Asynchronously creates a one-time query.
         /// </summary>
+        /// <param name="name">A name for the query.</param>
         /// <param name="query">The JavaScript source code for the query.</param>
         /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
         public Task CreateTransientAsync(string name, string query, UserCredentials userCredentials = null)

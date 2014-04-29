@@ -52,7 +52,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="maxDiscoverAttempts">The maximum number of attempts for DNS discovery.</param>
         /// <returns>A <see cref="GossipSeedClusterSettingsBuilder"/> for further configuration.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">If <see cref="maxDiscoverAttempts" /> is less than or equal to 0.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="maxDiscoverAttempts" /> is less than or equal to 0.</exception>
         public GossipSeedClusterSettingsBuilder SetMaxDiscoverAttempts(int maxDiscoverAttempts)
         {
             if (maxDiscoverAttempts <= 0)
