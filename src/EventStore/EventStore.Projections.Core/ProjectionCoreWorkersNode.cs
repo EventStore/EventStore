@@ -79,12 +79,15 @@ namespace EventStore.Projections.Core
 
                 coreQueues.Add(workerId, coreQueue);
             }
-            new ProjectionCoreCoordinator(
+            var queues = coreQueues.Select(v => v.Value).Cast<IPublisher>().ToArray();
+            var coordinator = new ProjectionCoreCoordinator(
                 projectionsStandardComponents.RunProjections,
                 coreTimeoutSchedulers,
+                queues,
                 projectionsStandardComponents.MasterOutputBus,
-                new PublishEnvelope(projectionsStandardComponents.MasterInputQueue, crossThread: true)).SetupMessaging(
-                    projectionsStandardComponents.MasterMainBus);
+                new PublishEnvelope(projectionsStandardComponents.MasterInputQueue, crossThread: true));
+
+            coordinator.SetupMessaging(projectionsStandardComponents.MasterMainBus);
             projectionsStandardComponents.MasterMainBus.Subscribe(
                 Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(coreQueues.Values.Cast<IPublisher>().ToArray()));
             return coreQueues;

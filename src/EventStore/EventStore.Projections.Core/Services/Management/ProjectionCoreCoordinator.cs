@@ -14,6 +14,7 @@ namespace EventStore.Projections.Core.Services.Management
     {
         private readonly RunProjections _runProjections;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
+        private readonly IPublisher[] _queues;
         private bool _started;
         private readonly IPublisher _publisher;
         private readonly IEnvelope _publishEnvelope;
@@ -21,11 +22,14 @@ namespace EventStore.Projections.Core.Services.Management
         public ProjectionCoreCoordinator(
             RunProjections runProjections,
             TimeoutScheduler[] timeoutSchedulers,
+            IPublisher[] queues,
+            
             IPublisher publisher,
             IEnvelope publishEnvelope)
         {
             _runProjections = runProjections;
             _timeoutSchedulers = timeoutSchedulers;
+            _queues = queues;
             _publisher = publisher;
             _publishEnvelope = publishEnvelope;
         }
@@ -73,6 +77,12 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new InvalidOperationException();
             _started = true;
             ScheduleRegularTimeout();
+            foreach (var queue in _queues)
+            {
+                queue.Publish(new ReaderCoreServiceMessage.StartReader());
+                if (_runProjections >= RunProjections.System)
+                    queue.Publish(new ProjectionCoreServiceMessage.StartCore());
+            }
         }
 
         private void Stop()
@@ -80,6 +90,12 @@ namespace EventStore.Projections.Core.Services.Management
             if (_started)
             {
                 _started = false;
+                foreach (var queue in _queues)
+                {
+                    queue.Publish(new ProjectionCoreServiceMessage.StopCore());
+                    if (_runProjections >= RunProjections.System)
+                        queue.Publish(new ReaderCoreServiceMessage.StopReader());
+                }
             }
         }
 

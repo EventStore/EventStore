@@ -55,7 +55,8 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
         private readonly Tuple<Guid, IPublisher>[] _queues;
-        private readonly IDictionary<Guid, IPublisher> _queueMap;
+        private readonly Guid[] _workers;
+
         private readonly ITimeProvider _timeProvider;
         private readonly RunProjections _runProjections;
         private readonly bool _initializeSystemProjections;
@@ -101,6 +102,7 @@ namespace EventStore.Projections.Core.Services.Management
             _inputQueue = inputQueue;
             _publisher = publisher;
             _queues = queueMap.Select(v => Tuple.Create(v.Key, v.Value)).ToArray();
+            _workers = _queues.Select(v => v.Item1).ToArray();
 
             _timeProvider = timeProvider;
             _runProjections = runProjections;
@@ -140,32 +142,9 @@ namespace EventStore.Projections.Core.Services.Management
                     new PublishEnvelope(_inputQueue));
         }
 
-        public IPublisher Publisher
-        {
-            get { return _publisher; }
-        }
-
-        public bool Started
-        {
-            set { _started = value; }
-            get { return _started; }
-        }
-
-        public PublishEnvelope PublishEnvelope
-        {
-            get { return _publishEnvelope; }
-        }
-
         private void Start()
         {
             _publisher.Publish(new ProjectionManagementMessage.Starting());
-            foreach (var queue in _queues)
-            {
-                var queuePublisher = queue.Item2;
-                queuePublisher.Publish(new ReaderCoreServiceMessage.StartReader());
-                if (_runProjections >= RunProjections.System)
-                    queuePublisher.Publish(new ProjectionCoreServiceMessage.StartCore());
-            }
             if (_runProjections >= RunProjections.System)
                 StartExistingProjections(
                     () =>
@@ -189,13 +168,6 @@ namespace EventStore.Projections.Core.Services.Management
         private void Stop()
         {
             _started = false;
-            foreach (var queue in _queues)
-            {
-                var queuePublisher = queue.Item2;
-                queuePublisher.Publish(new ProjectionCoreServiceMessage.StopCore());
-                if (_runProjections >= RunProjections.System)
-                    queuePublisher.Publish(new ReaderCoreServiceMessage.StopReader());
-            }
 
             _writeDispatcher.CancelAll();
             _readDispatcher.CancelAll();
@@ -601,12 +573,12 @@ namespace EventStore.Projections.Core.Services.Management
                         //NOTE: fixing 0 projection problem
                         if (projectionId == 0)
                             projectionId = Int32.MaxValue - 1;
-                        var enabledToRun = IsProjectionEnabledToRunByMode(projectionName);
+                        int queueIndex = GetNextWorkerIndex();
                         var managedProjection = CreateManagedProjectionInstance(
                             projectionName,
                             projectionId,
                             Guid.NewGuid(),
-                            GetNextQueueIndex());
+                            _workers[queueIndex]);
                         managedProjection.InitializeExisting(projectionName);
                     }
             }
@@ -750,7 +722,11 @@ namespace EventStore.Projections.Core.Services.Management
                             message.RunAs,
                             replyEnvelope);
 
-                        initializer.CreateAndInitializeNewProjection(this, Guid.NewGuid(), GetNextQueueIndex());
+                        int queueIndex = GetNextWorkerIndex();
+                        initializer.CreateAndInitializeNewProjection(
+                            this,
+                            Guid.NewGuid(),
+                            _workers[queueIndex]);
                     });
             }
             else
@@ -768,7 +744,8 @@ namespace EventStore.Projections.Core.Services.Management
                     message.RunAs,
                     replyEnvelope);
 
-                initializer.CreateAndInitializeNewProjection(this, Guid.NewGuid(), GetNextQueueIndex());
+                int queueIndex = GetNextWorkerIndex();
+                initializer.CreateAndInitializeNewProjection(this, Guid.NewGuid(), _workers[queueIndex]);
             }
         }
 
@@ -821,7 +798,7 @@ namespace EventStore.Projections.Core.Services.Management
             public void CreateAndInitializeNewProjection(
                 ProjectionManager projectionManager,
                 Guid projectionCorrelationId,
-                int queueIndex,
+                Guid workerId,
                 bool isSlave = false,
                 Guid slaveMasterWorkerId = default(Guid),
                 Guid slaveMasterCorrelationId = default(Guid))
@@ -830,7 +807,7 @@ namespace EventStore.Projections.Core.Services.Management
                     _name,
                     _projectionId,
                     projectionCorrelationId,
-                    queueIndex,
+                    workerId,
                     isSlave,
                     slaveMasterWorkerId,
                     slaveMasterCorrelationId);
@@ -855,16 +832,13 @@ namespace EventStore.Projections.Core.Services.Management
             string name,
             int projectionId,
             Guid projectionCorrelationId,
-            int queueIndex,
+            Guid workerID,
             bool isSlave = false,
             Guid slaveMasterWorkerId = default(Guid),
             Guid slaveMasterCorrelationId = default(Guid))
         {
-            var queue = _queues[queueIndex];
-            _lastUsedQueue++;
             var enabledToRun = IsProjectionEnabledToRunByMode(name);
-            var workerId = queue.Item1;
-            var queuePublisher = queue.Item2;
+            var workerId = workerID;
             var managedProjectionInstance = new ManagedProjection(
                 workerId,
                 projectionCorrelationId,
@@ -887,12 +861,12 @@ namespace EventStore.Projections.Core.Services.Management
             return managedProjectionInstance;
         }
 
-        private int GetNextQueueIndex()
+        private int GetNextWorkerIndex()
         {
-            int queueIndex;
-            if (_lastUsedQueue >= _queues.Length)
+            if (_lastUsedQueue >= _workers.Length)
                 _lastUsedQueue = 0;
-            queueIndex = _lastUsedQueue;
+            var queueIndex = _lastUsedQueue;
+            _lastUsedQueue++;
             return queueIndex;
         }
 
@@ -965,7 +939,7 @@ namespace EventStore.Projections.Core.Services.Management
                         var resultArray = new SlaveProjectionCommunicationChannel[1];
                         result.Add(g.Name, resultArray);
                         counter++;
-                        int queueIndex = GetNextQueueIndex();
+                        int queueIndex = GetNextWorkerIndex();
                         CINP(
                             message,
                             @group,
@@ -977,10 +951,10 @@ namespace EventStore.Projections.Core.Services.Management
                     }
                     case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread:
                     {
-                        var resultArray = new SlaveProjectionCommunicationChannel[_queues.Length];
+                        var resultArray = new SlaveProjectionCommunicationChannel[_workers.Length];
                         result.Add(g.Name, resultArray);
 
-                        for (int index = 0; index < _queues.Length; index++)
+                        for (int index = 0; index < _workers.Length; index++)
                         {
                             counter++;
                             CINP(
@@ -1027,8 +1001,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projectionCorrelationId,
                 assigned =>
                 {
-                    var queuePublisher = _queues[queueIndex].Item2;
-                    var queueWorkerId = _queues[queueIndex].Item1;
+                    var queueWorkerId = _workers[queueIndex];
 
                     resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
                         slaveProjectionName,
@@ -1056,7 +1029,7 @@ namespace EventStore.Projections.Core.Services.Management
             initializer.CreateAndInitializeNewProjection(
                 this,
                 projectionCorrelationId,
-                queueIndex,
+                _workers[queueIndex],
                 true,
                 message.MasterWorkerId,
                 message.MasterCorrelationId);

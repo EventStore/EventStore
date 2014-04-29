@@ -5,16 +5,14 @@ using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
-using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 
 namespace EventStore.Projections.Core
 {
     public sealed class ProjectionsSubsystem : ISubsystem
     {
-        public readonly int _projectionWorkerThreadCount;
-        public readonly RunProjections _runProjections;
+        private readonly int _projectionWorkerThreadCount;
+        private readonly RunProjections _runProjections;
         public const int VERSION = 3;
 
         private QueuedHandler _masterInputQueue;

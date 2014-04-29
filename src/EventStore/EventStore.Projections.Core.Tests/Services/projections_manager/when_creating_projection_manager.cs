@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -27,6 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             new ProjectionCoreCoordinator(
                 RunProjections.All, 
                 _timeoutSchedulers,
+                _queues.Values.ToArray(),
                 new FakePublisher(),
                 new NoopEnvelope());
         }
