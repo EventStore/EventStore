@@ -27,6 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected ProjectionManagerMessageDispatcher _managerMessageDispatcher;
         private bool _initializeSystemProjections;
         protected Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] _processingQueues;
+        private ProjectionCoreCoordinator _coordinator;
 
         protected override void Given1()
         {
@@ -65,6 +66,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 RunProjections.All,
                 _initializeSystemProjections);
 
+            _coordinator = new ProjectionCoreCoordinator(
+                RunProjections.All,
+                ProjectionCoreWorkersNode.CreateTimeoutSchedulers(queues.Count),
+                queues.Values.ToArray(),
+                _bus,
+                Envelope);
+
             _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
             _bus.Subscribe<CoreProjectionStatusMessage.Started>(_manager);
@@ -93,6 +101,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
+
+            _bus.Subscribe<SystemMessage.StateChangeMessage>(_coordinator);
 
             if (GetInputQueue() != _processingQueues.First().Item2)
             {
