@@ -58,7 +58,6 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
         private readonly Tuple<Guid, IPublisher>[] _queues;
-        private readonly IDictionary<Guid, IPublisher> _queueMap;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly ITimeProvider _timeProvider;
         private readonly RunProjections _runProjections;

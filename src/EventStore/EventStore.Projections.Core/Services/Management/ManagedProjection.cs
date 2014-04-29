@@ -120,7 +120,6 @@ namespace EventStore.Projections.Core.Services.Management
         //private int _version;
 
         private string _faultedReason;
-        private Action _onStopped;
         //private List<IEnvelope> _debugStateRequests;
         private ProjectionStatistics _lastReceivedStatistics;
         private DateTime _lastAccessed;
