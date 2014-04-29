@@ -12,11 +12,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
     {
         protected int _timeBetweenEvents;
         protected int _processingLagMs;
-        protected ITimeProvider _timeProvider;
 
         protected override void Given()
         {
-            _timeProvider = new RealTimeProvider();
             _timeBetweenEvents = 1100;
             _processingLagMs = 500;
             base.Given();

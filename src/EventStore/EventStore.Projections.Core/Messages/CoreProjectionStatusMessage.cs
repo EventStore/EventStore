@@ -209,7 +209,7 @@ namespace EventStore.Projections.Core.Messages
         public class ProjectionWorkerStarted : Message
         {
             private readonly Guid _workerId;
-            private new static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {

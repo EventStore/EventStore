@@ -12,13 +12,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
     [TestFixture]
     class when_handling_reordered_partition_processing_result_messages : specification_with_parallel_query
     {
-        private Guid _workerId;
 
         protected override void Given()
         {
             base.Given();
             _eventId = Guid.NewGuid();
-            _workerId = Guid.NewGuid();
         }
 
         protected override void When()
