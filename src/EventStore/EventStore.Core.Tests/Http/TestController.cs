@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
@@ -12,12 +11,9 @@ namespace EventStore.Core.Tests.Http
 {
     public class TestController : CommunicationController
     {
-        private readonly IPublisher _networkSendQueue;
-
-        public TestController(IPublisher publisher, IPublisher networkSendQueue)
+        public TestController(IPublisher publisher)
             : base(publisher)
         {
-            _networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service)

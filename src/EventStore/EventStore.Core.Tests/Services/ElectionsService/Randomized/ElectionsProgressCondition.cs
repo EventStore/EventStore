@@ -22,13 +22,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
             }
         }
 
-        private readonly int _instancesCount;
         private readonly int _majorityCount;
         protected readonly Dictionary<IPEndPoint, Tuple<int, IPEndPoint>> ElectionsResults = new Dictionary<IPEndPoint, Tuple<int, IPEndPoint>>();
 
         public ElectionsProgressCondition(int instancesCount)
         {
-            _instancesCount = instancesCount;
             _majorityCount = instancesCount/2 + 1;
         }
 

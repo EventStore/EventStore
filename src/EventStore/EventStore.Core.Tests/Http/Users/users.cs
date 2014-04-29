@@ -128,8 +128,6 @@ namespace EventStore.Core.Tests.Http.Users
         [TestFixture, Category("LongRunning")]
         class when_disabling_an_enabled_user_account : with_admin_user
         {
-            private HttpWebResponse _response;
-
             protected override void Given()
             {
                 MakeJsonPost(
@@ -138,7 +136,7 @@ namespace EventStore.Core.Tests.Http.Users
 
             protected override void When()
             {
-                _response = MakePost("/users/test1/command/disable", _admin);
+                MakePost("/users/test1/command/disable", _admin);
             }
 
             [Test]

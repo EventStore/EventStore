@@ -45,11 +45,9 @@ namespace EventStore.Core.Tests.Http.Streams
         [TestFixture, Category("LongRunning")]
         public class when_posting_multiple_events : SpecificationWithLongFeed
         {
-            private JObject _feed;
-
             protected override void When()
             {
-                _feed = GetJson<JObject>(TestStream, ContentType.AtomJson);
+                GetJson<JObject>(TestStream, ContentType.AtomJson);
             }
 
             [Test]

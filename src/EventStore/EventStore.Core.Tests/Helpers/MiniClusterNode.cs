@@ -14,7 +14,6 @@ using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
-using EventStore.Core.Settings;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -101,7 +100,7 @@ namespace EventStore.Core.Tests.Helpers
             Node = new ClusterVNode(
                 Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: memTableSize, subsystems: subsystems,
                 gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
-            Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue, Node.NetworkSendService));
+            Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
 
         public void Start()

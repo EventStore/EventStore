@@ -102,7 +102,7 @@ namespace EventStore.Core.Tests.Helpers
                      "HTTP ENDPOINT:", HttpEndPoint);
 
             Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: memTableSize, subsystems: subsystems);
-            Node.HttpService.SetupController(new TestController(Node.MainQueue, Node.NetworkSendService));
+            Node.HttpService.SetupController(new TestController(Node.MainQueue));
         }
 
         public void Start()
