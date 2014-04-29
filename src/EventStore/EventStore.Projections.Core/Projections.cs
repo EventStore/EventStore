@@ -150,25 +150,6 @@ namespace EventStore.Projections.Core
 
                 if (runProjections >= RunProjections.System)
                 {
-/*                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.StateReport>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.ResultReport>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.StatisticsReport>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.Started>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.Stopped>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.Faulted>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.Prepared>(_managerInputQueue));
-                    projectionNode.CoreOutput.Subscribe(
-                        Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(
-                            _managerInputQueue));
-                    */
-
 
                     projectionNode.CoreOutput.Subscribe<PartitionMeasuredOutput>(
                         projectionNode.SlaveProjectionResponseWriter);
