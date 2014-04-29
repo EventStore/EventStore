@@ -7,7 +7,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Util;
 using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
@@ -31,7 +30,6 @@ namespace EventStore.Projections.Core
         private readonly IODispatcher _ioDispatcher;
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
-        private ResponseWriter _responseWriter;
         private readonly ProjectionCoreResponseWriter _coreResponseWriter;
         private readonly SlaveProjectionResponseWriter _slaveProjectionResponseWriter;
 
@@ -81,8 +79,8 @@ namespace EventStore.Projections.Core
                     _spoolProcessingResponseDispatcher,
                     timeoutScheduler);
 
-                _responseWriter = new ResponseWriter(_ioDispatcher);
-                _coreResponseWriter = new ProjectionCoreResponseWriter(_responseWriter);
+                var responseWriter = new ResponseWriter(_ioDispatcher);
+                _coreResponseWriter = new ProjectionCoreResponseWriter(responseWriter);
             }
         }
 

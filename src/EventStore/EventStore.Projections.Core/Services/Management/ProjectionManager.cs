@@ -13,7 +13,6 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
-using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -36,7 +35,6 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<ProjectionManagementMessage.Command.Reset>,
             IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
             IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
-            IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
             IHandle<ProjectionManagementMessage.Internal.Deleted>,
             IHandle<CoreProjectionStatusMessage.Started>,
             IHandle<CoreProjectionStatusMessage.Stopped>,
@@ -46,11 +44,10 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionStatusMessage.ResultReport>,
             IHandle<CoreProjectionStatusMessage.StatisticsReport>,
             IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
-            IHandle<ProjectionManagementMessage.RegisterSystemProjection>, 
+            IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
             IHandle<CoreProjectionStatusMessage.ProjectionWorkerStarted>
 
     {
-
         public const int ProjectionQueryId = -2;
 
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
@@ -59,7 +56,6 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _publisher;
         private readonly Tuple<Guid, IPublisher>[] _queues;
         private readonly IDictionary<Guid, IPublisher> _queueMap;
-        private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly ITimeProvider _timeProvider;
         private readonly RunProjections _runProjections;
         private readonly bool _initializeSystemProjections;
@@ -95,7 +91,6 @@ namespace EventStore.Projections.Core.Services.Management
             IDictionary<Guid, IPublisher> queueMap,
             ITimeProvider timeProvider,
             RunProjections runProjections,
-            TimeoutScheduler[] timeoutSchedulers,
             bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
@@ -106,8 +101,6 @@ namespace EventStore.Projections.Core.Services.Management
             _inputQueue = inputQueue;
             _publisher = publisher;
             _queues = queueMap.Select(v => Tuple.Create(v.Key, v.Value)).ToArray();
-
-            _timeoutSchedulers = timeoutSchedulers;
 
             _timeProvider = timeProvider;
             _runProjections = runProjections;
@@ -131,18 +124,36 @@ namespace EventStore.Projections.Core.Services.Management
             _projections = new Dictionary<string, ManagedProjection>();
             _projectionsMap = new Dictionary<Guid, string>();
             _publishEnvelope = new PublishEnvelope(_inputQueue, crossThread: true);
-            _getStateDispatcher = new RequestResponseDispatcher
-                <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
-                _publisher, 
-                v => v.CorrelationId,
-                v => v.CorrelationId,
-                new PublishEnvelope(_inputQueue));
-            _getResultDispatcher = new RequestResponseDispatcher
-                <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
-                _publisher, 
-                v => v.CorrelationId,
-                v => v.CorrelationId,
-                new PublishEnvelope(_inputQueue));
+            _getStateDispatcher =
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
+                    _publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_inputQueue));
+            _getResultDispatcher =
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
+                    _publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_inputQueue));
+        }
+
+        public IPublisher Publisher
+        {
+            get { return _publisher; }
+        }
+
+        public bool Started
+        {
+            set { _started = value; }
+            get { return _started; }
+        }
+
+        public PublishEnvelope PublishEnvelope
+        {
+            get { return _publishEnvelope; }
         }
 
         private void Start()
@@ -151,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Management
             foreach (var queue in _queues)
             {
                 var queuePublisher = queue.Item2;
-                queuePublisher.Publish(new Messages.ReaderCoreServiceMessage.StartReader());
+                queuePublisher.Publish(new ReaderCoreServiceMessage.StartReader());
                 if (_runProjections >= RunProjections.System)
                     queuePublisher.Publish(new ProjectionCoreServiceMessage.StartCore());
             }
@@ -161,7 +172,6 @@ namespace EventStore.Projections.Core.Services.Management
                     {
                         _started = true;
                         ScheduleExpire();
-                        ScheduleRegularTimeout();
                     });
         }
 
@@ -176,17 +186,6 @@ namespace EventStore.Projections.Core.Services.Management
                     new ProjectionManagementMessage.Internal.CleanupExpired()));
         }
 
-        private void ScheduleRegularTimeout()
-        {
-            if (!_started)
-                return;
-            _publisher.Publish(
-                TimerMessage.Schedule.Create(
-                    TimeSpan.FromMilliseconds(100),
-                    _publishEnvelope,
-                    new ProjectionManagementMessage.Internal.RegularTimeout()));
-        }
-
         private void Stop()
         {
             _started = false;
@@ -195,7 +194,7 @@ namespace EventStore.Projections.Core.Services.Management
                 var queuePublisher = queue.Item2;
                 queuePublisher.Publish(new ProjectionCoreServiceMessage.StopCore());
                 if (_runProjections >= RunProjections.System)
-                    queuePublisher.Publish(new Messages.ReaderCoreServiceMessage.StopReader());
+                    queuePublisher.Publish(new ReaderCoreServiceMessage.StopReader());
             }
 
             _writeDispatcher.CancelAll();
@@ -409,13 +408,6 @@ namespace EventStore.Projections.Core.Services.Management
             CleanupExpired();
         }
 
-        public void Handle(ProjectionManagementMessage.Internal.RegularTimeout message)
-        {
-            ScheduleRegularTimeout();
-            for (var i = 0; i < _timeoutSchedulers.Length; i++)
-                _timeoutSchedulers[i].Tick();
-        }
-
         private void CleanupExpired()
         {
             foreach (var managedProjection in _projections.ToArray())
@@ -508,12 +500,16 @@ namespace EventStore.Projections.Core.Services.Management
             if (message.State == VNodeState.Master)
             {
                 if (!_started)
+                {
                     Start();
+                }
             }
             else
             {
                 if (_started)
+                {
                     Stop();
+                }
             }
         }
 
@@ -689,7 +685,6 @@ namespace EventStore.Projections.Core.Services.Management
                     _logger.Fatal("Cannot initialize projections subsystem. Cannot write a fake projection");
                     break;
             }
-
         }
 
         private void CreateSystemProjections()
@@ -742,7 +737,7 @@ namespace EventStore.Projections.Core.Services.Management
                     message.Name,
                     projectionId =>
                     {
-                        var initializer = new ProjectionManager.NewProjectionInitializer(
+                        var initializer = new NewProjectionInitializer(
                             projectionId,
                             message.Name,
                             message.Mode,
@@ -760,7 +755,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
             {
-                var initializer = new ProjectionManager.NewProjectionInitializer(
+                var initializer = new NewProjectionInitializer(
                     ProjectionQueryId,
                     message.Name,
                     message.Mode,
@@ -1006,7 +1001,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private static void CheckSlaveProjectionsStarted(
             ProjectionManagementMessage.Command.StartSlaveProjections message,
-            ref int counter, 
+            ref int counter,
             Dictionary<string, SlaveProjectionCommunicationChannel[]> result)
         {
             counter--;
@@ -1045,7 +1040,7 @@ namespace EventStore.Projections.Core.Services.Management
                 });
 
 
-            var initializer = new ProjectionManager.NewProjectionInitializer(
+            var initializer = new NewProjectionInitializer(
                 ProjectionQueryId,
                 slaveProjectionName,
                 @group.Mode,

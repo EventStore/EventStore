@@ -662,7 +662,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             jsonWriter.WriteValue(
                 projectionVersion.ProjectionId + ":" + projectionVersion.Epoch + ":" + projectionVersion.Version + ":"
-                + Projections.VERSION);
+                + ProjectionsSubsystem.VERSION);
         }
 
         public static CheckpointTagVersion FromJson(JsonReader reader, ProjectionVersion current, bool skipStartObject = false)

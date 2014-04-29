@@ -422,8 +422,7 @@ namespace EventStore.Core
             {
                 foreach (var subsystem in subsystems)
                 {
-                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _timeProvider,
-                                       httpSendService, new[] { _internalHttpService, _externalHttpService }, _workersHandler);
+                    subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, new[] { _internalHttpService, _externalHttpService }, _workersHandler));
                 }
             }
         }

@@ -343,7 +343,7 @@ namespace EventStore.Core
 
             if (subsystems != null)
                 foreach (var subsystem in subsystems)
-                    subsystem.Register(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, new[]{_httpService}, _workersHandler);
+                    subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, new[]{_httpService}, _workersHandler));
         }
 
         private void SubscribeWorkers(Action<InMemoryBus> setup)

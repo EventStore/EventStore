@@ -42,8 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _bus,
                 queues,
                 _timeProvider,
-                RunProjections.All,
-                ProjectionManagerNode.CreateTimeoutSchedulers(queues.Count));
+                RunProjections.All);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));

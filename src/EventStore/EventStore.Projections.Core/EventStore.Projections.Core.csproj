@@ -217,8 +217,10 @@
     <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />
+    <Compile Include="ProjectionCoreWorkersNode.cs" />
     <Compile Include="ProjectionManagerNode.cs" />
-    <Compile Include="Projections.cs" />
+    <Compile Include="ProjectionsStandardComponents.cs" />
+    <Compile Include="ProjectionsSubsystem.cs" />
     <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
     <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
     <Compile Include="Services\Management\MasterCoreProjectionResponseReader.cs" />
@@ -240,6 +242,7 @@
     <Compile Include="Services\Management\ManagedProjectionStates\StoppedState.cs" />
     <Compile Include="Services\Management\ManagedProjectionStates\StoppingState.cs" />
     <Compile Include="Services\Management\ProjectionBalancer.cs" />
+    <Compile Include="Services\Management\ProjectionCoreCoordinator.cs" />
     <Compile Include="Services\Management\ProjectionCoreResponseWriter.cs" />
     <Compile Include="Services\Management\ProjectionManagerResponseReader.cs" />
     <Compile Include="Services\Management\ProjectionManagerCommandWriter.cs" />

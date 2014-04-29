@@ -256,6 +256,7 @@
     <Compile Include="Services\VNode\MessageForwardingProxy.cs" />
     <Compile Include="Settings\ESConsts.cs" />
     <Compile Include="Settings\VNodeSettings.cs" />
+    <Compile Include="StandardComponents.cs" />
     <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDbTruncator.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\BulkReadResult.cs" />

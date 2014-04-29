@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public CheckpointTag AdjustBy(PositionTagger tagger, ProjectionVersion version)
         {
-            if (SystemVersion == Projections.VERSION && Version.Version == version.Version
+            if (SystemVersion == ProjectionsSubsystem.VERSION && Version.Version == version.Version
                 && Version.ProjectionId == version.ProjectionId)
                 return Tag;
 
