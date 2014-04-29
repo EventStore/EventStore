@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
     }
     
-    TestFixture, Category("LongRunning")]
+    [TestFixture, Category("LongRunning")]
     public class not_connected_tests
     {
         private readonly TcpType _tcpType = TcpType.Normal;
