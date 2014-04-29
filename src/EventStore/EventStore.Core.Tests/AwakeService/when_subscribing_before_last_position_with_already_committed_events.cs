@@ -25,8 +25,6 @@ namespace EventStore.Core.Tests.AwakeService
         private TestMessage _reply1;
         private TestMessage _reply2;
         private TestMessage _reply3;
-        private TestMessage _reply4;
-        private TestMessage _reply5;
 
         [SetUp]
         public void SetUp()
@@ -68,10 +66,8 @@ namespace EventStore.Core.Tests.AwakeService
             _handler = new TestHandler<TestMessage>();
             _publisher.Subscribe(_handler);
             _reply1 = new TestMessage(1);
-            _reply2 = new TestMessage(2);
-            _reply3 = new TestMessage(3);
-            _reply4 = new TestMessage(4);
-            _reply5 = new TestMessage(5);
+            _reply2 = new TestMessage(3);
+            _reply3 = new TestMessage(4);
 
             _it.Handle(_eventCommitted);
 
@@ -86,10 +82,10 @@ namespace EventStore.Core.Tests.AwakeService
                         _envelope, Guid.NewGuid(), "Stream", new TFPos(1000, 500), _reply1));
                 _it.Handle(
                     new AwakeServiceMessage.SubscribeAwake(
-                        _envelope, Guid.NewGuid(), "Stream2", new TFPos(1000, 500), _reply3));
+                        _envelope, Guid.NewGuid(), "Stream2", new TFPos(1000, 500), _reply2));
                 _it.Handle(
                     new AwakeServiceMessage.SubscribeAwake(
-                        _envelope, Guid.NewGuid(), null, new TFPos(1000, 500), _reply4));
+                        _envelope, Guid.NewGuid(), null, new TFPos(1000, 500), _reply3));
             }
             catch (Exception ex)
             {
