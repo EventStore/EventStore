@@ -38,6 +38,7 @@
     <Optimize>false</Optimize>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <DebugSymbols>true</DebugSymbols>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
