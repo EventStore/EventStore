@@ -29,6 +29,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
+            _node.Shutdown();
             base.TestFixtureTearDown();
         }
 
@@ -253,6 +254,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.IsTrue(dropped.Wait(Timeout));
 
                 Assert.AreEqual(events.Last().OriginalEventNumber, subscription.LastProcessedEventNumber);
+
+                subscription.Stop(TimeSpan.FromSeconds(0));
             }
         }
 
