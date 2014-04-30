@@ -69,33 +69,40 @@ namespace EventStore.Core.Services.Transport.Http
             return dto;
         }
 
-        public static Event[] SmartParse(string request, ICodec sourceCodec)
-        {
-            var writeEvents = Load(request, sourceCodec);
-            if (writeEvents.IsEmpty())
-                return null;
-            var events = Parse(writeEvents);
-            return events;
-        }
-
-        private static HttpClientMessageDto.ClientEventDynamic[] Load(string data, ICodec sourceCodec)
+        //TODO GFY THERE IS WAY TOO MUCH COPYING/SERIALIZING/DESERIALIZING HERE!
+        public static Event[] SmartParse(string request, ICodec sourceCodec, Guid includedId, string includedType=null)
         {
             switch(sourceCodec.ContentType)
             {
                 case ContentType.Json:
+                    return LoadRaw(request, true, includedId, includedType);
+                case ContentType.EventJson:
                 case ContentType.EventsJson:
                 case ContentType.AtomJson:
-                    return LoadFromJson(data);
+                    var writeEvents = LoadFromJson(request);
+                    if (writeEvents.IsEmpty())
+                        return null;
+                    return Parse(writeEvents);
 
                 case ContentType.Xml:
+                    return LoadRaw(request, false, includedId, includedType);
+                case ContentType.EventXml:
                 case ContentType.EventsXml:
                 case ContentType.ApplicationXml:
                 case ContentType.Atom:
-                    return LoadFromXml(data);
-
+                    var writeEvents2 = LoadFromXml(request);
+                    if (writeEvents2.IsEmpty())
+                        return null;
+                    return Parse(writeEvents2);
                 default:
                     return null;
             }
+        }
+
+        private static Event[] LoadRaw(string data, bool isJson, Guid includedId, string includedType) {
+            var ret = new Event[1];
+            ret[0] = new Event(includedId, includedType, isJson, data, null);
+            return ret;
         }
 
         private static HttpClientMessageDto.ClientEventDynamic[] LoadFromJson(string json)

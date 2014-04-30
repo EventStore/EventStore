@@ -14,7 +14,9 @@ namespace EventStore.Transport.Http.Codecs
 
         public string ContentType { get { return EventStore.Transport.Http.ContentType.Xml; } }
         public Encoding Encoding { get { return Helper.UTF8NoBom; } }
-
+        public bool HasEventIds { get { return false; }}
+        public bool HasEventTypes { get { return false; }}
+        
         public bool CanParse(MediaType format)
         {
             return format != null && format.Matches(ContentType, Encoding);

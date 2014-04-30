@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Text;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
@@ -11,8 +12,31 @@ namespace EventStore.Core.Tests.Http.Streams
 {
     namespace basic
     {
-        [TestFixture, Category("LongRunning")]
-        public class when_posting_an_event_as_array : HttpBehaviorSpecification
+/*        [TestFixture]
+        public class when_posting_an_event_as_raw_xml_without_eventtype : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeXmlPost(
+                    TestStream,
+                    new {A="1", B="3", C="5"});
+            }
+
+            [Test]
+            public void returns_created_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+*/
+        [TestFixture]
+        public class when_posting_an_event_as_raw_json_without_eventtype : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
 
@@ -23,6 +47,182 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _response = MakeJsonPost(
+                    TestStream,
+                    new {A="1", B="3", C="5"});
+            }
+
+            [Test]
+            public void returns_created_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+
+        [TestFixture]
+        public class when_posting_an_event_to_idempotent_uri_as_events_array : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeArrayEventsPost(
+                    TestStream + "/incoming/" + Guid.NewGuid().ToString(),
+                    new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
+            }
+
+            [Test]
+            public void returns_bad_request_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.UnsupportedMediaType, _response.StatusCode);
+            }
+        }
+
+        [TestFixture]
+        public class when_posting_an_event_as_json_to_idempotent_uri_without_event_type : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    TestStream + "/incoming/" + Guid.NewGuid().ToString(),
+                    new {A="1", B="3", C="5"});
+            }
+
+            [Test]
+            public void returns_bad_request_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+
+
+        [TestFixture]
+        public class when_posting_an_event_in_json_to_idempotent_uri_without_event_id : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                var request = CreateRequest(TestStream + "/incoming/" + Guid.NewGuid().ToString(), "", "POST", "application/json");
+                request.Headers.Add("ES-EventType", "SomeType");
+                request.AllowAutoRedirect = false;
+                var data = "{a : \"1\", b:\"3\", c:\"5\" }";
+                var bytes = Encoding.UTF8.GetBytes(data);
+                request.ContentLength = data.Length;
+                request.GetRequestStream().Write(bytes, 0, data.Length);
+                _response = GetRequestResponse(request);
+            }
+
+            [Test]
+            public void returns_created_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+            }
+
+            [Test]
+            public void returns_a_location_header()
+            {
+                Assert.IsNotNullOrEmpty(_response.Headers[HttpResponseHeader.Location]);
+            }
+
+            [Test]
+            public void returns_a_location_header_that_can_be_read_as_json()
+            {
+                var json = GetJson<JObject>(_response.Headers[HttpResponseHeader.Location]);
+                HelperExtensions.AssertJson(new {a = "1", b="3", c="5"}, json);
+            }
+        }
+
+        [TestFixture]
+        public class when_posting_an_event_as_raw_json_without_eventid : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                var request = CreateRequest(TestStream, "", "POST", "application/json");
+                request.Headers.Add("ES-EventType", "SomeType");
+                request.AllowAutoRedirect = false;
+                var data = "{A : \"1\", B:\"3\", C:\"5\" }";
+                var bytes = Encoding.UTF8.GetBytes(data);
+                request.ContentLength = data.Length;
+                request.GetRequestStream().Write(bytes, 0, data.Length);
+                _response = GetRequestResponse(request);
+            }
+
+            [Test]
+            public void returns_created_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.Moved, _response.StatusCode);
+            }
+
+            [Test]
+            public void returns_a_location_header()
+            {
+                Assert.IsNotNullOrEmpty(_response.Headers[HttpResponseHeader.Location]);
+            }
+
+            [Test]
+            public void returns_a_to_incoming()
+            {
+                Assert.IsTrue(_response.Headers[HttpResponseHeader.Location].Contains("/incoming/"));
+                //HelperExtensions.AssertJson(new {A = "1"}, json);
+            }
+        }
+
+        [TestFixture]
+        public class when_posting_an_event_as_array_with_no_event_type : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeArrayEventsPost(
+                    TestStream,
+                    new[] {new {EventId = Guid.NewGuid(), Data = new {A = "1"}}});
+            }
+
+            [Test]
+            public void returns_created_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
+            }
+        }
+
+
+        [TestFixture]
+        public class when_posting_an_event_as_array : HttpBehaviorSpecification
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+            }
+
+            protected override void When()
+            {
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
             }
@@ -58,7 +258,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                var request = CreateRequest(TestStream + "/", "", "POST", "application/json", null);
+                var request = CreateRequest(TestStream + "/", "", "POST", "application/vnd.eventstore.events+json", null);
                 request.AllowAutoRedirect = false;
                 request.GetRequestStream()
                     .WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
@@ -341,7 +541,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] { new { EventId = Guid.NewGuid(), Data = new { A = "1" } } });
             }
@@ -364,7 +564,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[]
                     {
@@ -408,7 +608,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[]
                         {
@@ -443,7 +643,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void Given()
             {
-                _response = MakeJsonPost(
+                _response = MakeArrayEventsPost(
                     TestStream,
                     new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
                 Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
