@@ -201,7 +201,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<SlaveProjectionReaderAssigned>();
                     _publisher.Publish(
-                        new CoreProjectionStatusMessage.SlaveProjectionReaderAssigned(
+                        new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
                             Guid.ParseExact(commandBody.Id, "N"),
                             Guid.ParseExact(commandBody.SubscriptionId, "N")));
                     break;

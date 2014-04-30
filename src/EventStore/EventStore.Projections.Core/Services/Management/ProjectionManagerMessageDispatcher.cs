@@ -11,7 +11,7 @@ namespace EventStore.Projections.Core.Services.Management
     public class ProjectionManagerMessageDispatcher
         : IHandle<PartitionProcessingResultBase>,
             IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
-            IHandle<CoreProjectionManagementMessage.CoreProjectionManagementControlMessage>,
+            IHandle<CoreProjectionManagementControlMessage>,
             IHandle<PartitionProcessingResultOutputBase>
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.WorkerId);
         }
 
-        public void Handle(CoreProjectionManagementMessage.CoreProjectionManagementControlMessage message)
+        public void Handle(CoreProjectionManagementControlMessage message)
         {
             DispatchWorkerMessage(message, message.WorkerId);
         }

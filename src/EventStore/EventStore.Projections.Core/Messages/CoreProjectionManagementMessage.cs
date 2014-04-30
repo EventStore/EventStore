@@ -1,56 +1,15 @@
 using System;
-using EventStore.Core.Messaging;
+using System.Threading;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public abstract partial class CoreProjectionManagementMessage : Message
+    public static class CoreProjectionManagementMessage
     {
-        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-        public override int MsgTypeId
-        {
-            get { return TypeId; }
-        }
-
-        private readonly Guid _projectionIdId;
-
-        protected CoreProjectionManagementMessage(Guid projectionId)
-        {
-            _projectionIdId = projectionId;
-        }
-
-        public Guid ProjectionId
-        {
-            get { return _projectionIdId; }
-        }
-
-        public class CoreProjectionManagementControlMessage : CoreProjectionManagementMessage
-        {
-            private readonly Guid _workerId;
-            private static new readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-            public override int MsgTypeId
-            {
-                get { return TypeId; }
-            }
-
-            public Guid WorkerId
-            {
-                get { return _workerId; }
-            }
-
-            public CoreProjectionManagementControlMessage(Guid projectionId, Guid workerId)
-                : base(projectionId)
-            {
-                _workerId = workerId;
-            }
-        }
-
         public class Start : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -67,7 +26,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class LoadStopped : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -82,7 +41,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class Stop : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -97,7 +56,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class Kill : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -112,7 +71,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class GetState : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -143,7 +102,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class GetResult : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -174,7 +133,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class CreateAndPrepare : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -232,7 +191,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class CreateAndPrepareSlave : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -312,7 +271,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class CreatePrepared : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -383,7 +342,7 @@ namespace EventStore.Projections.Core.Messages
 
         public class Dispose : CoreProjectionManagementControlMessage
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -399,7 +358,7 @@ namespace EventStore.Projections.Core.Messages
         public sealed class SlaveProjectionReaderAssigned : CoreProjectionStatusMessage
         {
             private readonly Guid _subscriptionId;
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -417,6 +376,5 @@ namespace EventStore.Projections.Core.Messages
                 get { return _subscriptionId; }
             }
         }
-
     }
 }

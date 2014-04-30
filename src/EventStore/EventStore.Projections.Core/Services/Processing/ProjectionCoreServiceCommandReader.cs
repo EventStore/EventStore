@@ -86,14 +86,14 @@ namespace EventStore.Projections.Core.Services.Processing
                             null)
                     };
 //                    Trace.WriteLine("Registering worker " + _coreServiceId);
-                    ClientMessage.WriteEventsCompleted response = null;
+//                    ClientMessage.WriteEventsCompleted response = null;
                     yield return
                         _ioDispatcher.BeginWriteEvents(
                             ProjectionNamesBuilder._projectionsMasterStream,
                             ExpectedVersion.Any,
                             SystemAccount.Principal,
                             events,
-                            r => response = r);
+                            r => { });
 //                    Trace.WriteLine("Worker registered: " + response.Result);
                 }
                 do
