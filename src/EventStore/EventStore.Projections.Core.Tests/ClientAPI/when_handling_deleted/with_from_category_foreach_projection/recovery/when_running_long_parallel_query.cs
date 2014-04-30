@@ -51,7 +51,7 @@ fromCategory('stream').foreachStream().when({
         private void DumpStreams()
         {
 #if DEBUG
-            var result = _conn.ReadAllEventsForward(Position.Start, 10000, false, _admin);
+            var result = _conn.ReadAllEventsForwardAsync(Position.Start, 10000, false, _admin).Result;
             var top = result.Events.GroupBy(v => v.OriginalStreamId)
                 .Select(v => new {v.Key, Count = v.Count()})
                 .OrderByDescending(v => v.Count);

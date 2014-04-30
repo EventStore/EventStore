@@ -149,7 +149,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         protected void AssertStreamTail(string streamId, params string[] events)
         {
 #if DEBUG
-            var result = _conn.ReadStreamEventsBackward(streamId, -1, events.Length, true, _admin);
+            var result = _conn.ReadStreamEventsBackwardAsync(streamId, -1, events.Length, true, _admin).Result;
             switch (result.Status)
             {
                 case SliceReadStatus.StreamDeleted:
@@ -186,7 +186,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         protected void DumpStream(string streamId)
         {
 #if DEBUG
-            var result = _conn.ReadStreamEventsBackward(streamId, -1, 100, true, _admin);
+            var result = _conn.ReadStreamEventsBackwardAsync(streamId, -1, 100, true, _admin).Result;
             switch (result.Status)
             {
                 case SliceReadStatus.StreamDeleted:
