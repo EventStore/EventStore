@@ -18,7 +18,6 @@ namespace EventStore.Core.Tests.Http
         [SetUp]
         public void SetUp()
         {
-            Console.WriteLine("***** Preconfiguring");
             WebRequest.DefaultWebProxy = new WebProxy();
             _counter = 0;
             _directory = new SpecificationWithDirectoryPerTestFixture();

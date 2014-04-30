@@ -35,17 +35,43 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             throw new NotSupportedException("These tests require DEBUG conditional");
 #endif
             CreateNode();
+            try
+            {
+                _conn = EventStoreConnection.Create(_node.TcpEndPoint);
+                _conn.ConnectAsync().Wait();
 
-            _conn = EventStoreConnection.Create(_node.TcpEndPoint);
-            _conn.ConnectAsync().Wait();
+                _manager = new ProjectionsManager(
+                    new ConsoleLogger(),
+                    _node.HttpEndPoint,
+                    TimeSpan.FromMilliseconds(10000));
+                WaitIdle();
+                if (GivenStandardProjectionsRunning())
+                    EnableStandardProjections();
+                QueueStatsCollector.WaitIdle();
+                Given();
+                When();
+            }
+            catch
+            {
+                try
+                {
+                    if (_conn != null)
+                        _conn.Close();
+                }
+                catch
+                {
+                }
+                try
+                {
+                    if (_node != null)
+                        _node.Shutdown();
+                }
+                catch
+                {
+                }
 
-            _manager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, TimeSpan.FromMilliseconds(10000));
-            WaitIdle();
-            if (GivenStandardProjectionsRunning())
-                EnableStandardProjections();
-            QueueStatsCollector.WaitIdle();
-            Given();
-            When();
+                throw;
+            }
         }
 
         private void CreateNode()

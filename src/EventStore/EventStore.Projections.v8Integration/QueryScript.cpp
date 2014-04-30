@@ -96,7 +96,7 @@ namespace js1
 		{
 			v8::Handle<v8::Array> array_result = call_result.As<v8::Array>();
 			Status status = GetStringValue(array_result->Get(0), result);
-			if (status != Status::S_OK) 
+			if (status != S_OK) 
 				return status;
 
 			return GetStringValue(array_result->Get(1), result2);
