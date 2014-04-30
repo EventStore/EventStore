@@ -248,7 +248,6 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(0, store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 2, resolveLinkTos: false);
-                Assert.DoesNotThrow(read.Wait);
                 Assert.That(read.Result.Events.Length, Is.EqualTo(1));
             }
         }
@@ -261,9 +260,9 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = TestConnection.To(_node, _tcpType))
             {
                 store.ConnectAsync().Wait();
+                Assert.AreEqual(0, store.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
 
                 var read = store.ReadStreamEventsForwardAsync(stream, 0, 2, resolveLinkTos: false);
-                Assert.DoesNotThrow(read.Wait);
                 Assert.That(read.Result.Events.Length, Is.EqualTo(1));
             }
         }
