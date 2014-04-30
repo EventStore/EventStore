@@ -19,6 +19,7 @@ namespace EventStore.Projections.Core.Services.Management
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
+        private bool _stopped;
 
         public ProjectionManagerResponseReader(IPublisher publisher, IODispatcher ioDispatcher)
         {
@@ -67,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Management
 
 //            Trace.WriteLine("$response-reader-started has been written");
 
-            while (true)
+            while (!_stopped)
             {
                 var eof = false;
                 var subscribeFrom = default(TFPos);

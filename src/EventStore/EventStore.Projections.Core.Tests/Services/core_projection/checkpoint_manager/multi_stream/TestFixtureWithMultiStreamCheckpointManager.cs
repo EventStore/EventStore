@@ -4,7 +4,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 {
     public class TestFixtureWithMultiStreamCheckpointManager : TestFixtureWithCoreProjectionCheckpointManager
     {
-        protected new string[] _streams;
+        protected string[] _streams;
 
         protected override void Given()
         {

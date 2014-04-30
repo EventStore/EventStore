@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Messages
         public class CoreProjectionManagementControlMessage : CoreProjectionManagementMessage
         {
             private readonly Guid _workerId;
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
