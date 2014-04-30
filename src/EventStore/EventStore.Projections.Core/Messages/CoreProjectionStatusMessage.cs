@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public class CoreProjectionStatusMessage : CoreProjectionManagementMessage_
+    public class CoreProjectionStatusMessage : CoreProjectionManagementMessageBase
     {
         private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
