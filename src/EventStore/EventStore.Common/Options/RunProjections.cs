@@ -1,8 +1,4 @@
-﻿using System;
-using System.ComponentModel;
-using System.Globalization;
-
-namespace EventStore.Common.Options
+﻿namespace EventStore.Common.Options
 {
     public enum RunProjections
     {
