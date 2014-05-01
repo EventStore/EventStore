@@ -4,11 +4,9 @@
     {
         bool ShowHelp { get; }
         bool ShowVersion { get; }
-        string LogsDir { get; }
+        string Config { get; }
+        string Logsdir { get; }
         string[] Defines { get; }
         bool Force { get; }
-        bool Parse(params string[] args);
-        string DumpOptions();
-        string GetUsage();
     }
 }
