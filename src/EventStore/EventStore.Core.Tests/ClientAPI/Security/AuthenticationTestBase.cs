@@ -28,91 +28,145 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             base.TestFixtureSetUp();
             _node = new MiniNode(PathName, enableTrustedAuth: true);
-            _node.Start();
+            try
+            {
+                _node.Start();
 
-            var userCreateEvent1 = new ManualResetEventSlim();
-            _node.Node.MainQueue.Publish(
-                new UserManagementMessage.Create(
-                    new CallbackEnvelope(
-                        m =>
+                var userCreateEvent1 = new ManualResetEventSlim();
+                _node.Node.MainQueue.Publish(
+                    new UserManagementMessage.Create(
+                        new CallbackEnvelope(
+                            m =>
                             {
                                 Assert.IsTrue(m is UserManagementMessage.UpdateResult);
                                 var msg = (UserManagementMessage.UpdateResult) m;
                                 Assert.IsTrue(msg.Success);
 
                                 userCreateEvent1.Set();
-                            }), SystemAccount.Principal, "user1", "Test User 1", new string[0], "pa$$1"));
+                            }),
+                        SystemAccount.Principal,
+                        "user1",
+                        "Test User 1",
+                        new string[0],
+                        "pa$$1"));
 
-            var userCreateEvent2 = new ManualResetEventSlim();
-            _node.Node.MainQueue.Publish(
-                new UserManagementMessage.Create(
-                    new CallbackEnvelope(
-                        m =>
+                var userCreateEvent2 = new ManualResetEventSlim();
+                _node.Node.MainQueue.Publish(
+                    new UserManagementMessage.Create(
+                        new CallbackEnvelope(
+                            m =>
                             {
                                 Assert.IsTrue(m is UserManagementMessage.UpdateResult);
                                 var msg = (UserManagementMessage.UpdateResult) m;
                                 Assert.IsTrue(msg.Success);
 
                                 userCreateEvent2.Set();
-                            }), SystemAccount.Principal, "user2", "Test User 2", new string[0], "pa$$2"));
+                            }),
+                        SystemAccount.Principal,
+                        "user2",
+                        "Test User 2",
+                        new string[0],
+                        "pa$$2"));
 
-            var adminCreateEvent2 = new ManualResetEventSlim();
-            _node.Node.MainQueue.Publish(
-                new UserManagementMessage.Create(
-                    new CallbackEnvelope(
-                        m =>
-                        {
-                            Assert.IsTrue(m is UserManagementMessage.UpdateResult);
-                            var msg = (UserManagementMessage.UpdateResult)m;
-                            Assert.IsTrue(msg.Success);
+                var adminCreateEvent2 = new ManualResetEventSlim();
+                _node.Node.MainQueue.Publish(
+                    new UserManagementMessage.Create(
+                        new CallbackEnvelope(
+                            m =>
+                            {
+                                Assert.IsTrue(m is UserManagementMessage.UpdateResult);
+                                var msg = (UserManagementMessage.UpdateResult) m;
+                                Assert.IsTrue(msg.Success);
 
-                            adminCreateEvent2.Set();
-                        }), SystemAccount.Principal, "adm", "Administrator User", new[] { SystemRoles.Admins}, "admpa$$"));
+                                adminCreateEvent2.Set();
+                            }),
+                        SystemAccount.Principal,
+                        "adm",
+                        "Administrator User",
+                        new[] {SystemRoles.Admins},
+                        "admpa$$"));
 
-            Assert.IsTrue(userCreateEvent1.Wait(10000), "User 1 creation failed");
-            Assert.IsTrue(userCreateEvent2.Wait(10000), "User 2 creation failed");
-            Assert.IsTrue(adminCreateEvent2.Wait(10000), "Administrator User creation failed");
+                Assert.IsTrue(userCreateEvent1.Wait(10000), "User 1 creation failed");
+                Assert.IsTrue(userCreateEvent2.Wait(10000), "User 2 creation failed");
+                Assert.IsTrue(adminCreateEvent2.Wait(10000), "Administrator User creation failed");
 
-            Connection = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, _userCredentials);
-            Connection.ConnectAsync().Wait();
+                Connection = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, _userCredentials);
+                Connection.ConnectAsync().Wait();
 
-            Connection.SetStreamMetadataAsync("noacl-stream", ExpectedVersion.NoStream, StreamMetadata.Build()).Wait();
-            Connection.SetStreamMetadataAsync("read-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetReadRole("user1")).Wait();
-            Connection.SetStreamMetadataAsync("write-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetWriteRole("user1")).Wait();
-            Connection.SetStreamMetadataAsync("metaread-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetMetadataReadRole("user1")).Wait();
-            Connection.SetStreamMetadataAsync("metawrite-stream", ExpectedVersion.NoStream, StreamMetadata.Build().SetMetadataWriteRole("user1")).Wait();
+                Connection.SetStreamMetadataAsync("noacl-stream", ExpectedVersion.NoStream, StreamMetadata.Build())
+                    .Wait();
+                Connection.SetStreamMetadataAsync(
+                    "read-stream",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build().SetReadRole("user1")).Wait();
+                Connection.SetStreamMetadataAsync(
+                    "write-stream",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build().SetWriteRole("user1")).Wait();
+                Connection.SetStreamMetadataAsync(
+                    "metaread-stream",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build().SetMetadataReadRole("user1")).Wait();
+                Connection.SetStreamMetadataAsync(
+                    "metawrite-stream",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build().SetMetadataWriteRole("user1")).Wait();
 
-            Connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any, StreamMetadata.Build().SetReadRole("user1"), new UserCredentials("adm", "admpa$$")).Wait();
+                Connection.SetStreamMetadataAsync(
+                    "$all",
+                    ExpectedVersion.Any,
+                    StreamMetadata.Build().SetReadRole("user1"),
+                    new UserCredentials("adm", "admpa$$")).Wait();
 
-            Connection.SetStreamMetadataAsync("$system-acl", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build()
-                                                       .SetReadRole("user1")
-                                                       .SetWriteRole("user1")
-                                                       .SetMetadataReadRole("user1")
-                                                       .SetMetadataWriteRole("user1"), new UserCredentials("adm", "admpa$$"))
-                                         .Wait();
-            Connection.SetStreamMetadataAsync("$system-adm", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build()
-                                                       .SetReadRole(SystemRoles.Admins)
-                                                       .SetWriteRole(SystemRoles.Admins)
-                                                       .SetMetadataReadRole(SystemRoles.Admins)
-                                                       .SetMetadataWriteRole(SystemRoles.Admins), new UserCredentials("adm", "admpa$$"))
-                                        .Wait();
+                Connection.SetStreamMetadataAsync(
+                    "$system-acl",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build()
+                        .SetReadRole("user1")
+                        .SetWriteRole("user1")
+                        .SetMetadataReadRole("user1")
+                        .SetMetadataWriteRole("user1"),
+                    new UserCredentials("adm", "admpa$$")).Wait();
+                Connection.SetStreamMetadataAsync(
+                    "$system-adm",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build()
+                        .SetReadRole(SystemRoles.Admins)
+                        .SetWriteRole(SystemRoles.Admins)
+                        .SetMetadataReadRole(SystemRoles.Admins)
+                        .SetMetadataWriteRole(SystemRoles.Admins),
+                    new UserCredentials("adm", "admpa$$")).Wait();
 
-            Connection.SetStreamMetadataAsync("normal-all", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build()
-                                                       .SetReadRole(SystemRoles.All)
-                                                       .SetWriteRole(SystemRoles.All)
-                                                       .SetMetadataReadRole(SystemRoles.All)
-                                                       .SetMetadataWriteRole(SystemRoles.All))
-                                        .Wait();
-            Connection.SetStreamMetadataAsync("$system-all", ExpectedVersion.NoStream,
-                                         StreamMetadata.Build()
-                                                       .SetReadRole(SystemRoles.All)
-                                                       .SetWriteRole(SystemRoles.All)
-                                                       .SetMetadataReadRole(SystemRoles.All)
-                                                       .SetMetadataWriteRole(SystemRoles.All), new UserCredentials("adm", "admpa$$"))
-                                        .Wait();
+                Connection.SetStreamMetadataAsync(
+                    "normal-all",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build()
+                        .SetReadRole(SystemRoles.All)
+                        .SetWriteRole(SystemRoles.All)
+                        .SetMetadataReadRole(SystemRoles.All)
+                        .SetMetadataWriteRole(SystemRoles.All)).Wait();
+                Connection.SetStreamMetadataAsync(
+                    "$system-all",
+                    ExpectedVersion.NoStream,
+                    StreamMetadata.Build()
+                        .SetReadRole(SystemRoles.All)
+                        .SetWriteRole(SystemRoles.All)
+                        .SetMetadataReadRole(SystemRoles.All)
+                        .SetMetadataWriteRole(SystemRoles.All),
+                    new UserCredentials("adm", "admpa$$")).Wait();
+            }
+            catch
+            {
+                if (_node != null)
+                    try
+                    {
+                        _node.Shutdown();
+                    }
+                    catch
+                    {
+                    }
+                throw;
+            }
         }
 
         [TestFixtureTearDown]

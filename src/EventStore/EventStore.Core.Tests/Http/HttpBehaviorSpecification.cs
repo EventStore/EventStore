@@ -45,16 +45,16 @@ namespace EventStore.Core.Tests.Http
 
             base.TestFixtureSetUp();
 
+            bool createdMiniNode = false;
             if (SetUpFixture._connection != null && SetUpFixture._node != null)
             {
-                Console.WriteLine("***** Already");
                 _tag = "_" + (++SetUpFixture._counter).ToString();
                 _node = SetUpFixture._node;
                 _connection = SetUpFixture._connection;
             }
             else
             {
-                Console.WriteLine("***** Configuring");
+                createdMiniNode = true;
                 _tag = "_1";
                 _node = CreateMiniNode();
                 _node.Start();
@@ -65,10 +65,34 @@ namespace EventStore.Core.Tests.Http
             _lastResponse = null;
             _lastResponseBody = null;
             _lastJsonException = null;
-
-            Given();
-            When();
-
+            try
+            {
+                Given();
+                When();
+            }
+            catch
+            {
+                if (createdMiniNode)
+                {
+                    if (_connection != null)
+                        try
+                        {
+                            _connection.Close();
+                        }
+                        catch
+                        {
+                        }
+                    if (_node != null)
+                        try
+                        {
+                            _node.Shutdown();
+                        }
+                        catch
+                        {
+                        }
+                }
+                throw;
+            }
         }
 
         public string TestStream {
