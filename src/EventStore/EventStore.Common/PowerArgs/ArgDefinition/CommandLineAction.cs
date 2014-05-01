@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace PowerArgs
 {
@@ -13,7 +12,7 @@ namespace PowerArgs
     /// </summary>
     public class CommandLineAction
     {
-        private AttrOverride overrides;
+        private readonly AttrOverride overrides;
 
         /// <summary>
         /// The values that the user can specify on the command line to specify this action.
@@ -124,19 +123,22 @@ namespace PowerArgs
             return ret;
         }
 
+        protected bool Equals(CommandLineAction other)
+        {
+            return Equals(Source, other.Source);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Source != null ? Source.GetHashCode() : 0);
+        }
+
         public override bool Equals(object obj)
         {
-            var other = obj as CommandLineAction;
-            if (other == null) return false;
-
-            if (this.Source == other.Source)
-            {
-                return true;
-            }
-
-            // TODO - improve robustness of this equals
-
-            return false;
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((CommandLineAction) obj);
         }
 
         internal CommandLineAction()

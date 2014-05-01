@@ -41,7 +41,7 @@ namespace PowerArgs
             /// The current property being operating on.  This is not available during BeforePopulateProperties or
             /// AfterPopulateProperties.
             /// </summary>
-            [Obsolete("You should use CurrentArgument instead of Property since it offers more metadata.  It also exposes the PropertyInfo via CommandLineArgument.Source if the argument was created from a PropertyInfo.")]
+            //[Obsolete("You should use CurrentArgument instead of Property since it offers more metadata.  It also exposes the PropertyInfo via CommandLineArgument.Source if the argument was created from a PropertyInfo.")]
             public PropertyInfo Property { get; set; }
 
             /// <summary>

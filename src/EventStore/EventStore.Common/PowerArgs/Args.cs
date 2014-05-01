@@ -331,7 +331,7 @@ namespace PowerArgs
             {
                 return argsProcessingCode();
             }
-            catch (ArgCancelProcessingException ex)
+            catch (ArgCancelProcessingException)
             {
                 if (executeRecursionCounter > 1)
                 {
