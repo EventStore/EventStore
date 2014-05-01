@@ -41,8 +41,7 @@ namespace PowerArgs
                 {
                     return false;
                 }
-                var rest = Path.GetFileName(soFar);
-
+                
                 var matches = from f in Directory.GetFiles(dir)
                               where f.ToLower().StartsWith(Path.GetFullPath(soFar).ToLower())
                               select f;
