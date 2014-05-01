@@ -76,7 +76,7 @@
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />
     <Compile Include="Options\OptionException.cs" />
-    <Compile Include="Options\RunProjections.cs" />
+    <Compile Include="Options\ProjectionType.cs" />
     <Compile Include="PowerArgs\ArgDefinition\CommandLineAction.cs" />
     <Compile Include="PowerArgs\ArgDefinition\CommandLineArgument.cs" />
     <Compile Include="PowerArgs\ArgDefinition\CommandLineArgumentsDefinition.cs" />
