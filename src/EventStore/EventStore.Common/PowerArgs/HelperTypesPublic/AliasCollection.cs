@@ -16,13 +16,10 @@ namespace PowerArgs
     {
         private class AliasCollectionEnumerator : IEnumerator<string>
         {
-            AliasCollection c;
-
             IEnumerator<string> wrapped;
 
             public AliasCollectionEnumerator(AliasCollection c)
             {
-                this.c = c;
                 List<string> completeList = new List<string>();
                 completeList.AddRange(c.overrides);
                 completeList.AddRange(c.metadataEval());
