@@ -9,14 +9,12 @@ namespace EventStore.Projections.Core.Tests.Services.slave_projection_response_w
     class when_handling_spool_stream_reading_message : specification_with_slave_projection_response_writer
     {
         private Guid _workerId;
-        private Guid _masterProjectionId;
         private Guid _subscriptionId;
 
         protected override void Given()
         {
             _workerId = Guid.NewGuid();
             _subscriptionId = Guid.NewGuid();
-            _masterProjectionId = Guid.NewGuid();
         }
 
         protected override void When()

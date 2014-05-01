@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.v8;
 using NUnit.Framework;
 
@@ -11,13 +10,6 @@ namespace EventStore.Projections.Core.Tests.Services.v8
     [TestFixture]
     public class v8_internals
     {
-        private ProjectionStateHandlerFactory _stateHandlerFactory;
-
-        [SetUp]
-        public void Setup()
-        {
-            _stateHandlerFactory = new ProjectionStateHandlerFactory();
-        }
 
         private static readonly string _jsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Prelude");
         private Action<int, Action> _cancelCallbackFactory;

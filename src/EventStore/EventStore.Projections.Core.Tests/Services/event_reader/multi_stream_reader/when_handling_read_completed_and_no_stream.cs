@@ -18,12 +18,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     public class when_handling_read_completed_and_no_stream : TestFixtureWithExistingEvents
     {
         private MultiStreamEventReader _edp;
-        private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
         private Guid _secondEventId;
-        private Guid _thirdEventId;
-        private Guid _fourthEventId;
 
         protected override void Given()
         {
@@ -39,7 +36,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 0}};
             _abStreams = new[] {"a", "b"};
 
-            _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new MultiStreamEventReader(
                 _ioDispatcher, _bus, _distibutionPointCorrelationId, null, 0, _abStreams, _ab12Tag, false,
@@ -47,8 +43,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
-            _thirdEventId = Guid.NewGuid();
-            _fourthEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,

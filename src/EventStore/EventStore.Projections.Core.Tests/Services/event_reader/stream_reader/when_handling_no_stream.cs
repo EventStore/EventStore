@@ -18,11 +18,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
     public class when_handling_no_stream : TestFixtureWithExistingEvents
     {
         private StreamEventReader _edp;
-        private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
-        private Guid _firstEventId;
-        private Guid _secondEventId;
-
+        
         protected override void Given()
         {
             TicksAreHandledImmediately();
@@ -31,14 +28,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [SetUp]
         public new void When()
         {
-            _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new StreamEventReader(
                 _ioDispatcher, _bus, _distibutionPointCorrelationId, null, "stream", 0, new RealTimeProvider(), false,
                 produceStreamDeletes: false);
             _edp.Resume();
-            _firstEventId = Guid.NewGuid();
-            _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream", 100, 100,

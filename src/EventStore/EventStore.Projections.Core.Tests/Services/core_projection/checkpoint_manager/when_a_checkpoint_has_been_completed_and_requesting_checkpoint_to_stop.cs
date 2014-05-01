@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -45,6 +43,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             {
                 _exception = ex;
             }
+        }
+
+        [Test]
+        public void does_not_throw()
+        {
+            Assert.IsNull(_exception);
         }
 
         [Test]

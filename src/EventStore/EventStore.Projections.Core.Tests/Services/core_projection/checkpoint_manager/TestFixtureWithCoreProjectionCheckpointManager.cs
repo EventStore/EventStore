@@ -24,7 +24,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected bool _createTempStreams;
         protected bool _stopOnEof;
         protected ProjectionNamesBuilder _namingBuilder;
-        protected ResultEventEmitter _resultEventEmitter;
         protected CoreProjectionCheckpointWriter _checkpointWriter;
         protected CoreProjectionCheckpointReader _checkpointReader;
         protected string _projectionName;
@@ -38,7 +37,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
                 _pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
                 _checkpointsEnabled, _createTempStreams, _stopOnEof, isSlaveProjection: false);
-            _resultEventEmitter = new ResultEventEmitter(_namingBuilder);
             When();
         }
 

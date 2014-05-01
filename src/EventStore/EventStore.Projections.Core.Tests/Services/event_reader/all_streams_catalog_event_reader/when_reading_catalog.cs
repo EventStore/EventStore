@@ -15,12 +15,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
         {
             protected const int TailLength = 10;
             protected Guid _subscriptionId;
-            private QuerySourcesDefinition _sourceDefinition;
             protected IReaderStrategy _readerStrategy;
             protected ReaderSubscriptionOptions _readerSubscriptionOptions;
-            protected TFPos _tfPos1;
-            protected TFPos _tfPos2;
-            protected TFPos _tfPos3;
 
             protected override bool GivenHeadingReaderRunning()
             {
@@ -31,9 +27,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
             {
                 base.Given();
                 AllWritesSucceed();
-                _tfPos1 = ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
-                _tfPos2 = ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
-                _tfPos3 = ExistingEvent("test-stream2", "type1", "{}", "{Data: 3}");
+                ExistingEvent("test-stream", "type1", "{}", "{Data: 1}");
+                ExistingEvent("test-stream", "type1", "{}", "{Data: 2}");
+                ExistingEvent("test-stream2", "type1", "{}", "{Data: 3}");
+
                 ExistingEvent("test-stream2", "type1", "{}", "{Data: 4}");
                 ExistingEvent("test-stream3", "type1", "{}", "{Data: 5}");
                 ExistingEvent("test-stream3", "type1", "{}", "{Data: 6}");
@@ -51,13 +48,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
                 NoOtherStreams();
 
                 _subscriptionId = Guid.NewGuid();
-                _sourceDefinition = new QuerySourcesDefinition
-                {
-                    CatalogStream = "$all",
-                    AllEvents = true,
-                    ByStreams = true,
-                    Options = new QuerySourcesDefinitionOptions { }
-                };
                 _readerStrategy = new ParallelQueryAllStreamsMasterReaderStrategy(
                     "test",
                     0,

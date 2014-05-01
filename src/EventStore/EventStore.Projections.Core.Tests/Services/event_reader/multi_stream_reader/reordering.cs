@@ -18,8 +18,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             private QuerySourcesDefinition _sourceDefinition;
             protected IReaderStrategy _readerStrategy;
             protected ReaderSubscriptionOptions _readerSubscriptionOptions;
-            protected TFPos _tfPos1;
-            protected TFPos _tfPos2;
 
             protected override bool GivenHeadingReaderRunning()
             {
@@ -30,8 +28,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             {
                 base.Given();
                 AllWritesSucceed();
-                _tfPos1 = ExistingEvent("stream-a", "type1", "{}", "{Data: 1}");
-                _tfPos2 = ExistingEvent("stream-b", "type1", "{}", "{Data: 2}");
+                ExistingEvent("stream-a", "type1", "{}", "{Data: 1}");
+                ExistingEvent("stream-b", "type1", "{}", "{Data: 2}");
 
                 GivenOtherEvents();
 

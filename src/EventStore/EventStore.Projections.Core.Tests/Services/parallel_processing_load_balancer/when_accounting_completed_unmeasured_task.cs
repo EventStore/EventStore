@@ -5,7 +5,6 @@ namespace EventStore.Projections.Core.Tests.Services.parallel_processing_load_ba
     [TestFixture]
     public class when_accounting_completed_unmeasured_task : specification_with_parallel_processing_load_balancer
     {
-        private int _task1ScheduledOn;
         private int _task2ScheduledOn;
 
         protected override void Given()
@@ -25,7 +24,6 @@ namespace EventStore.Projections.Core.Tests.Services.parallel_processing_load_ba
             {
                 case "task1":
                 {
-                    _task1ScheduledOn = worker;
                     break;
                 }
                 case "task2":

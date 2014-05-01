@@ -30,13 +30,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
                 _exception = ex;
             }
 
+            Assume.That(_exception == null);
+
             _distibutionPointCorrelationId = Guid.NewGuid();
             _point.Start(
                 _distibutionPointCorrelationId,
                 new TransactionFileEventReader(
                     _ioDispatcher, _bus, _distibutionPointCorrelationId, null, new TFPos(0, -1), new RealTimeProvider()));
         }
-
 
         [Test]
         public void transaction_file_reader_publishes_read_events_from_tf()

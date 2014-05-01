@@ -74,7 +74,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
         public class anonymous : TestFixtureWithProjectionCoreAndManagementServices
         {
             private string _projectionName;
-            private OpenGenericPrincipal _testUserPrincipal;
 
             private string _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
 
@@ -82,8 +81,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             {
                 _projectionName = "test-projection";
                 _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
-                _testUserPrincipal = new OpenGenericPrincipal(
-                    new GenericIdentity("test-user"), new[] { "test-role1", "test-role2" });
 
                 AllWritesSucceed();
                 NoOtherStreams();

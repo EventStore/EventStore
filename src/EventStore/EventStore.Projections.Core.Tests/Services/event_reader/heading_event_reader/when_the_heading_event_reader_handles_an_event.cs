@@ -28,6 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             {
                 _exception = ex;
             }
+            Assume.That(_exception == null);
 
             _distibutionPointCorrelationId = Guid.NewGuid();
             _point.Start(

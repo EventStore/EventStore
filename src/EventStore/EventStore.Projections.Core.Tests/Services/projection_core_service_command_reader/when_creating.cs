@@ -58,6 +58,12 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
         }
 
         [Test]
+        public void does_not_throw()
+        {
+            Assert.IsNull(_exception);
+        }
+
+        [Test]
         public void it_can_be_created()
         {
             Assert.IsNotNull(_commandReader);

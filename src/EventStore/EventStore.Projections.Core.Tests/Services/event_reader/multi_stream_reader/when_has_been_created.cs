@@ -16,7 +16,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     public class when_has_been_created : TestFixtureWithExistingEvents
     {
         private MultiStreamEventReader _edp;
-        private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private string[] _abStreams;
         private Dictionary<string, int> _ab12Tag;
@@ -27,7 +26,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _ab12Tag = new Dictionary<string, int> { { "a", 1 }, { "b", 2 } };
             _abStreams = new[] { "a", "b" };
 
-            _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new MultiStreamEventReader(
                 _ioDispatcher, _bus, _distibutionPointCorrelationId, null, 0, _abStreams, _ab12Tag, false,
