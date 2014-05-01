@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace EventStore.Common.Options
+﻿namespace EventStore.Common.Options
 {
     public class ArgDescriptionAttribute : PowerArgs.ArgDescription
     {

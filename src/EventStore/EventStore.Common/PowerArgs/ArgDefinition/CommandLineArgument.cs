@@ -394,7 +394,7 @@ namespace PowerArgs
         {
             List<string> ret = new List<string>();
 
-            var argumentName = info.Name.ToLower();
+            var argumentName = info.Name;
 
             bool excludeName = info.Attrs<ArgShortcut>().Where(s => s.Policy == ArgShortcutPolicy.ShortcutsOnly).Count() > 0;
 
