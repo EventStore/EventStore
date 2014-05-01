@@ -64,7 +64,6 @@ namespace PowerArgs.EasterEggs
             ConsoleColor resetFG = Console.ForegroundColor, resetBG = Console.BackgroundColor;
             try
             {
-                char last = ' ';
                 while (true)
                 {
                     if (Console.CursorLeft < Console.BufferWidth - 1)
@@ -97,7 +96,6 @@ namespace PowerArgs.EasterEggs
                                 Console.CursorLeft--;
                             }
                             wrapped.Write(c);
-                            last = c;
                         }
                         else if (cancelled)
                         {
