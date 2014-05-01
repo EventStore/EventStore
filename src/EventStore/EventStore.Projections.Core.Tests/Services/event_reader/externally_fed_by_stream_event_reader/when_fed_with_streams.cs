@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
             [Test]
             public void publishes_partition_eof_message_at_the_end()
             {
-                var events = HandledMessages.OfType<EventReaderSubscriptionMessage>();
+                var events = HandledMessages.OfType<EventReaderSubscriptionMessageBase>();
                 var lastEvent = events.LastOrDefault();
 
                 Assert.IsNotNull(lastEvent);
@@ -144,7 +144,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                 var events =
                     HandledMessages
                         .OfTypes
-                        <EventReaderSubscriptionMessage, EventReaderSubscriptionMessage.PartitionEofReached,
+                        <EventReaderSubscriptionMessageBase, EventReaderSubscriptionMessage.PartitionEofReached,
                             EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                 var events =
                     HandledMessages
                         .OfTypes
-                        <EventReaderSubscriptionMessage, EventReaderSubscriptionMessage.PartitionEofReached,
+                        <EventReaderSubscriptionMessageBase, EventReaderSubscriptionMessage.PartitionEofReached,
                             EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
@@ -244,7 +244,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                 var events =
                     HandledMessages
                         .OfTypes
-                        <EventReaderSubscriptionMessage, EventReaderSubscriptionMessage.PartitionEofReached,
+                        <EventReaderSubscriptionMessageBase, EventReaderSubscriptionMessage.PartitionEofReached,
                             EventReaderSubscriptionMessage.CommittedEventReceived>().ToArray();
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[2]);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.PartitionEofReached>(events[5]);
@@ -254,7 +254,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
             public void publishes_eof_message()
             {
                 var lastEvent =
-                    HandledMessages.OfType<EventReaderSubscriptionMessage>()
+                    HandledMessages.OfType<EventReaderSubscriptionMessageBase>()
                         .LastOrDefault(v => !(v is EventReaderSubscriptionMessage.ReaderAssignedReader));
                 Assert.IsNotNull(lastEvent);
                 Assert.IsAssignableFrom<EventReaderSubscriptionMessage.EofReached>(lastEvent);

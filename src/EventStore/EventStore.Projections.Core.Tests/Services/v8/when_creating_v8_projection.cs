@@ -54,8 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "SyntaxError:", MatchType = MessageMatch.StartsWith)]
         public void js_syntax_errors_are_reported()
         {
-            string m = null;
-            using (_stateHandlerFactory.Create("JS", @"log(1;", logger: s => m = s))
+            using (_stateHandlerFactory.Create("JS", @"log(1;", logger: s => { }))
             {
             }
         }
@@ -63,8 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "123")]
         public void js_exceptions_errors_are_reported()
         {
-            string m = null;
-            using (_stateHandlerFactory.Create("JS", @"throw 123;", logger: s => m = s))
+            using (_stateHandlerFactory.Create("JS", @"throw 123;", logger: s => { }))
             {
             }
         }
@@ -72,13 +70,12 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "terminated", MatchType = MessageMatch.Contains)]
         public void long_compilation_times_out()
         {
-            string m = null;
             using (_stateHandlerFactory.Create("JS",
                 @"
                             var i = 0;
                             while (true) i++;
                 ",
-                logger: s => m = s,
+                logger: s => { },
                 cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
                     {
                         Console.WriteLine("Calling a callback in " + timeout + "ms");

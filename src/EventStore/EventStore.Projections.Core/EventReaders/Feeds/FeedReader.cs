@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
         private readonly
             PublishSubscribeDispatcher
                 <Guid, ReaderSubscriptionManagement.Subscribe,
-                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                    ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase>
             _subscriptionDispatcher;
 
         private readonly IPrincipal _user;
@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
         public static FeedReader Create(
             PublishSubscribeDispatcher
                 <Guid, ReaderSubscriptionManagement.Subscribe,
-                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase>
                 publishSubscribeDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider)
         {
             return new FeedReader(
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
         public FeedReader(
             PublishSubscribeDispatcher
                 <Guid, ReaderSubscriptionManagement.Subscribe,
-                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessage>
+                ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase>
                 subscriptionDispatcher, IPrincipal user, QuerySourcesDefinition querySource, CheckpointTag fromPosition,
             int maxEvents, Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider)
         {

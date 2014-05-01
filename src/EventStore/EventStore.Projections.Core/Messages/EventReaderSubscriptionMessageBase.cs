@@ -1,38 +1,21 @@
 using System;
+using System.Threading;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public abstract class EventReaderSubscriptionMessage : Message
+    public static class EventReaderSubscriptionMessage
     {
-        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-        public override int MsgTypeId { get { return TypeId; } }
-
-        private readonly Guid _subscriptionId;
-        private readonly long _subscriptionMessageSequenceNumber;
-        private readonly object _source;
-        private readonly CheckpointTag _checkpointTag;
-        private readonly float _progress;
-
-        private EventReaderSubscriptionMessage(Guid subscriptionId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber, object source)
-        {
-            _subscriptionId = subscriptionId;
-            _checkpointTag = checkpointTag;
-            _progress = progress;
-            _subscriptionMessageSequenceNumber = subscriptionMessageSequenceNumber;
-            _source = source;
-        }
-
         /// <summary>
         /// A CheckpointSuggested message is sent to core projection 
         /// to allow bookmarking a position that can be used to 
         /// restore the projection processing (typically
         /// an event at this position does not satisfy projection filter)
         /// </summary>
-        public class CheckpointSuggested : EventReaderSubscriptionMessage
+        public class CheckpointSuggested : EventReaderSubscriptionMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public CheckpointSuggested(
@@ -43,9 +26,9 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class ProgressChanged : EventReaderSubscriptionMessage
+        public class ProgressChanged : EventReaderSubscriptionMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public ProgressChanged(
@@ -56,9 +39,9 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class SubscriptionStarted : EventReaderSubscriptionMessage
+        public class SubscriptionStarted : EventReaderSubscriptionMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly long _startingLastCommitPosition;
@@ -77,9 +60,9 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public sealed class NotAuthorized : EventReaderSubscriptionMessage
+        public sealed class NotAuthorized : EventReaderSubscriptionMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public NotAuthorized(
@@ -90,9 +73,9 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class EofReached : EventReaderSubscriptionMessage
+        public class EofReached : EventReaderSubscriptionMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public EofReached(
@@ -103,10 +86,10 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class PartitionEofReached : EventReaderSubscriptionMessage
+        public class PartitionEofReached : EventReaderSubscriptionMessageBase
         {
             private readonly string _partition;
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public string Partition
@@ -123,11 +106,11 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class PartitionMeasured : EventReaderSubscriptionMessage
+        public class PartitionMeasured : EventReaderSubscriptionMessageBase
         {
             private readonly string _partition;
             private readonly int _size;
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public string Partition
@@ -154,10 +137,10 @@ namespace EventStore.Projections.Core.Messages
         /// NOTEL the PartitionDeleted may appear out-of-order and is not guaranteed
         /// to appear at the same sequence position in a recovery 
         /// </summary>
-        public class PartitionDeleted : EventReaderSubscriptionMessage
+        public class PartitionDeleted : EventReaderSubscriptionMessageBase
         {
             private readonly string _partition;
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
             public override int MsgTypeId
             {
@@ -178,9 +161,9 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class CommittedEventReceived : EventReaderSubscriptionMessage
+        public class CommittedEventReceived : EventReaderSubscriptionMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public static CommittedEventReceived Sample(
@@ -246,9 +229,9 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class ReaderAssignedReader : EventReaderSubscriptionMessage
+        public class ReaderAssignedReader : EventReaderSubscriptionMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             private readonly Guid _readerId;
@@ -264,6 +247,27 @@ namespace EventStore.Projections.Core.Messages
                 get { return _readerId; }
             }
 
+        }
+    }
+
+    public abstract class EventReaderSubscriptionMessageBase : Message
+    {
+        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+        public override int MsgTypeId { get { return TypeId; } }
+
+        private readonly Guid _subscriptionId;
+        private readonly long _subscriptionMessageSequenceNumber;
+        private readonly object _source;
+        private readonly CheckpointTag _checkpointTag;
+        private readonly float _progress;
+
+        internal EventReaderSubscriptionMessageBase(Guid subscriptionId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber, object source)
+        {
+            _subscriptionId = subscriptionId;
+            _checkpointTag = checkpointTag;
+            _progress = progress;
+            _subscriptionMessageSequenceNumber = subscriptionMessageSequenceNumber;
+            _source = source;
         }
 
 

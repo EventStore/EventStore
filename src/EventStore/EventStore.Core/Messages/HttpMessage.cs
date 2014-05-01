@@ -25,7 +25,9 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly HttpEntityManager HttpEntityManager;
 
+            /// <param name="correlationId"></param>
             /// <param name="envelope">non-null envelope requests HttpCompleted messages in response</param>
+            /// <param name="httpEntityManager"></param>
             protected HttpSendMessage(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager)
             {
                 CorrelationId = correlationId;

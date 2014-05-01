@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _checkpointManager; }
         }
 
-        protected bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessage message)
+        protected bool IsOutOfOrderSubscriptionMessage(EventReaderSubscriptionMessageBase message)
         {
             if (_currentSubscriptionId != message.SubscriptionId)
                 return true;
@@ -117,7 +117,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        protected void RegisterSubscriptionMessage(EventReaderSubscriptionMessage message)
+        protected void RegisterSubscriptionMessage(EventReaderSubscriptionMessageBase message)
         {
             _expectedSubscriptionMessageSequenceNumber = message.SubscriptionMessageSequenceNumber + 1;
         }

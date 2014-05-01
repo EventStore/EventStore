@@ -211,7 +211,7 @@
     <Compile Include="Messages\QuerySourcesDefinitionOptions.cs" />
     <Compile Include="Messages\ReaderCoreServiceMessage.cs" />
     <Compile Include="Messages\ReaderSubscriptionManagement.cs" />
-    <Compile Include="Messages\EventReaderSubscriptionMessage.cs" />
+    <Compile Include="Messages\EventReaderSubscriptionMessageBase.cs" />
     <Compile Include="Messages\ReaderSubscriptionMessage.cs" />
     <Compile Include="Messages\SlaveProjectionCommunicationChannel.cs" />
     <Compile Include="Messages\SlaveProjectionCommunicationChannels.cs" />

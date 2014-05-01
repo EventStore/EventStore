@@ -355,7 +355,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public sealed class SlaveProjectionReaderAssigned : CoreProjectionStatusMessage
+        public sealed class SlaveProjectionReaderAssigned : CoreProjectionStatusMessage.CoreProjectionStatusMessageBase
         {
             private readonly Guid _subscriptionId;
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

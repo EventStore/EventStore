@@ -28,7 +28,6 @@ namespace EventStore.Projections.Core.Services
         /// <summary>
         /// transforms a catalog event to streamId
         /// </summary>
-        /// <param name="streamId"></param>
         /// <param name="eventPosition"></param>
         /// <param name="data"></param>
         /// <returns></returns>
