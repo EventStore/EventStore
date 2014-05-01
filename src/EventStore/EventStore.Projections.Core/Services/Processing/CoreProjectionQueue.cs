@@ -12,7 +12,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly StagedProcessingQueue _queuePendingEvents;
 
         private readonly IPublisher _publisher;
-        private readonly Guid _projectionCorrelationId;
         private readonly int _pendingEventsThreshold;
 
         private CheckpointTag _lastEnqueuedEventTag;
@@ -25,11 +24,7 @@ namespace EventStore.Projections.Core.Services.Processing
             remove { _queuePendingEvents.EnsureTickPending -= value; }
         }
 
-        public CoreProjectionQueue(
-            Guid projectionCorrelationId,
-            IPublisher publisher,
-            int pendingEventsThreshold,
-            bool orderedPartitionProcessing)
+        public CoreProjectionQueue(IPublisher publisher, int pendingEventsThreshold, bool orderedPartitionProcessing)
         {
             _queuePendingEvents =
                 new StagedProcessingQueue(
@@ -42,7 +37,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         /* write emits - ordered - async ordered completion*/, false /* complete item */
                     });
             _publisher = publisher;
-            _projectionCorrelationId = projectionCorrelationId;
             _pendingEventsThreshold = pendingEventsThreshold;
         }
 

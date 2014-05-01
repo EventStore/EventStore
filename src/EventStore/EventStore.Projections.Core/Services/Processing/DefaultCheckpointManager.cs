@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter)
             : base(
                 publisher, projectionCorrelationId, projectionConfig, name, positionTagger, namingBuilder,
-                usePersistentCheckpoints, producesRunningResults)
+                usePersistentCheckpoints)
         {
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             _projectionVersion = projectionVersion;
@@ -154,7 +154,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition)
         {
             return new ProjectionCheckpoint(
-                _ioDispatcher, _projectionVersion, _runAs, this, checkpointPosition, _positionTagger, _zeroTag,
+                _ioDispatcher, _projectionVersion, _runAs, this, checkpointPosition, _positionTagger,
                 _projectionConfig.MaxWriteBatchLength, _logger);
         }
 

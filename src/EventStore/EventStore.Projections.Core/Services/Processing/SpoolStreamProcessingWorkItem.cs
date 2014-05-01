@@ -23,7 +23,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private Tuple<Guid, string> _spoolRequestId;
         private readonly long _limitingCommitPosition;
         private readonly Guid _subscriptionId;
-        private readonly Guid _correlationId;
         private readonly bool _definesCatalogTransform;
         private CheckpointTag _completedAtPosition;
         private readonly IPublisher _publisher;
@@ -38,7 +37,6 @@ namespace EventStore.Projections.Core.Services.Processing
             SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
             long limitingCommitPosition,
             Guid subscriptionId,
-            Guid correlationId,
             bool definesCatalogTransform)
             : base(Guid.NewGuid())
         {
@@ -56,7 +54,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
             _limitingCommitPosition = limitingCommitPosition;
             _subscriptionId = subscriptionId;
-            _correlationId = correlationId;
             _definesCatalogTransform = definesCatalogTransform;
         }
 

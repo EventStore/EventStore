@@ -42,7 +42,6 @@ namespace EventStore.Projections.Core.Services.Processing
             var readerStrategy = new ExternallyFedReaderStrategy(
                 tag,
                 phase,
-                runAs,
                 timeProvider,
                 limitingCommitPosition);
             return readerStrategy;
@@ -358,7 +357,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             return new ByStreamCatalogEventReader(
                 publisher, eventReaderId, _runAs, ioDispatcher, catalogStream, startFromCatalogEventNumber,
-                startFromDataStreamName, startFromDataStreamEventNumber, limitingCommitPosition, _timeProvider,
+                startFromDataStreamName, startFromDataStreamEventNumber, limitingCommitPosition,
                 resolveLinkTos, stopAfterNEvents);
         }
 

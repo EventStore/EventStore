@@ -86,7 +86,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return new ExternallyFedReaderStrategy(
                 _name,
                 0,
-                _projectionConfig.RunAs,
                 timeProvider,
                 _sourceDefinition.LimitingCommitPosition ?? long.MinValue);
         }

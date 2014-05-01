@@ -24,7 +24,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _checkpointRequested = false;
         private int _requestedCheckpoints;
         private bool _started = false;
-        private readonly CheckpointTag _zero;
 
         private readonly IODispatcher _ioDispatcher;
 
@@ -33,14 +32,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private List<IEnvelope> _awaitingStreams;
 
         public ProjectionCheckpoint(
-            IODispatcher ioDispatcher, ProjectionVersion projectionVersion, IPrincipal runAs,
-            IProjectionCheckpointManager readyHandler, CheckpointTag from, PositionTagger positionTagger,
-            CheckpointTag zero, int maxWriteBatchLength, ILogger logger = null)
+            IODispatcher ioDispatcher,
+            ProjectionVersion projectionVersion,
+            IPrincipal runAs,
+            IProjectionCheckpointManager readyHandler,
+            CheckpointTag from,
+            PositionTagger positionTagger,
+            int maxWriteBatchLength,
+            ILogger logger = null)
         {
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
-            if (zero == null) throw new ArgumentNullException("zero");
             if (from.CommitPosition < from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
             _ioDispatcher = ioDispatcher;
@@ -48,7 +51,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _runAs = runAs;
             _readyHandler = readyHandler;
             _positionTagger = positionTagger;
-            _zero = zero;
             _from = _last = from;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;

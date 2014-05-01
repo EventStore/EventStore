@@ -24,7 +24,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly string _name;
         private readonly IQuerySources _sources;
-        private readonly string _partitionResultStreamNamePattern;
         private readonly string _resultStreamName;
         private readonly string _partitionCatalogStreamName;
         private readonly string _checkpointStreamName;
@@ -40,9 +39,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (sources == null) throw new ArgumentNullException("sources");
             _name = name;
             _sources = sources;
-            _partitionResultStreamNamePattern = _sources.PartitionResultStreamNamePatternOption
-                                                ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}"
-                                                + ProjectionsStateStreamSuffix;
             _resultStreamName = _sources.ResultStreamNameOption
                                 ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
             _partitionCatalogStreamName = ProjectionsStreamPrefix + EffectiveProjectionName

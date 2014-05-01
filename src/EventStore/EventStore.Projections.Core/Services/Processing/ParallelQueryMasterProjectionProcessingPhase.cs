@@ -113,7 +113,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     _spoolProcessingResponseDispatcher,
                     _subscriptionStartedAtLastCommitPosition,
                     _currentSubscriptionId,
-                    correlationId,
                     _stateHandler.GetSourceDefinition().DefinesCatalogTransform);
                 _spoolProcessingWorkItems.Add(correlationId, committedEventWorkItem);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);

@@ -184,7 +184,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private int _fromSequenceNumber;
         private readonly ITimeProvider _timeProvider;
-        private readonly bool _resolveLinkTos;
         private readonly Queue<OutItem> _queue = new Queue<OutItem>();
 
         private bool _eventsRequested;
@@ -198,8 +197,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _eof;
 
         public AllStreamsCatalogEventReader(
-            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
-            int fromSequenceNumber, ITimeProvider timeProvider, bool resolveLinkTos, bool stopOnEof = false,
+            IODispatcher ioDispatcher,
+            IPublisher publisher,
+            Guid eventReaderCorrelationId,
+            IPrincipal readAs,
+            int fromSequenceNumber,
+            ITimeProvider timeProvider,
+            bool stopOnEof = false,
             int? stopAfterNEvents = null)
             : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
         {
@@ -207,7 +211,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _ioDispatcher = ioDispatcher;
             _fromSequenceNumber = fromSequenceNumber;
             _timeProvider = timeProvider;
-            _resolveLinkTos = resolveLinkTos;
         }
 
         protected override bool AreEventsRequested()

@@ -62,7 +62,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PartitionStateCache _partitionStateCache;
         private ICoreProjectionCheckpointManager _checkpointManager;
         private readonly ICoreProjectionCheckpointReader _checkpointReader;
-        private readonly bool _isSlaveProjection;
 
         private bool _tickPending;
 
@@ -99,8 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing
             CoreProjectionCheckpointWriter coreProjectionCheckpointWriter,
             PartitionStateCache partitionStateCache,
             string effectiveProjectionName,
-            ITimeProvider timeProvider,
-            bool isSlaveProjection)
+            ITimeProvider timeProvider)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
@@ -119,7 +117,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _ioDispatcher = ioDispatcher;
             _partitionStateCache = partitionStateCache;
             _requiresRootPartition = projectionProcessingStrategy.GetRequiresRootPartition();
-            _isSlaveProjection = isSlaveProjection;
             var useCheckpoints = projectionProcessingStrategy.GetUseCheckpoints();
 
             _coreProjectionCheckpointWriter = coreProjectionCheckpointWriter;

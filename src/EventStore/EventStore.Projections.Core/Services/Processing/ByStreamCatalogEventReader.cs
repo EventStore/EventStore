@@ -7,7 +7,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
-using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -19,7 +18,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _catalogCurrentSequenceNumber;
         private int _catalogNextSequenceNumber;
         private long? _limitingCommitPosition;
-        private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
 
         private int _maxReadCount = 111;
@@ -35,9 +33,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public ByStreamCatalogEventReader(
-            IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, IODispatcher ioDispatcher,
-            string catalogCatalogStreamName, int catalogNextSequenceNumber, string dataStreamName,
-            int dataNextSequenceNumber, long? limitingCommitPosition, ITimeProvider timeProvider, bool resolveLinkTos,
+            IPublisher publisher,
+            Guid eventReaderCorrelationId,
+            IPrincipal readAs,
+            IODispatcher ioDispatcher,
+            string catalogCatalogStreamName,
+            int catalogNextSequenceNumber,
+            string dataStreamName,
+            int dataNextSequenceNumber,
+            long? limitingCommitPosition,
+            bool resolveLinkTos,
             int? stopAfterNEvents = null)
             : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents)
         {
@@ -49,7 +54,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _dataStreamName = dataStreamName;
             _dataNextSequenceNumber = dataNextSequenceNumber;
             _limitingCommitPosition = limitingCommitPosition;
-            _timeProvider = timeProvider;
             _resolveLinkTos = resolveLinkTos;
         }
 

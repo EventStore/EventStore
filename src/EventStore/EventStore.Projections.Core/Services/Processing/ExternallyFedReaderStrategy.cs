@@ -1,5 +1,4 @@
 using System;
-using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
@@ -10,8 +9,6 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ExternallyFedReaderStrategy : IReaderStrategy
     {
         private readonly string _tag;
-        private readonly int _phase;
-        private readonly IPrincipal _runAs;
         private readonly ITimeProvider _timeProvider;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
@@ -19,13 +16,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public ExternallyFedReaderStrategy(
             string tag,
             int phase,
-            IPrincipal runAs,
             ITimeProvider timeProvider,
             long limitingCommitPosition)
         {
             _tag = tag;
-            _phase = phase;
-            _runAs = runAs;
             _timeProvider = timeProvider;
             _eventFilter = new BypassingEventFilter();
             _positionTagger = new PreTaggedPositionTagger(

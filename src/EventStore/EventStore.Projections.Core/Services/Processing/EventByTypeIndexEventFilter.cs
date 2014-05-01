@@ -9,13 +9,11 @@ namespace EventStore.Projections.Core.Services.Processing
         //NOTE: this filter will pass both events and links to these events from index streams resulting
         //      in resolved events re-appearing in the event stream.  This must be filtered out by a 
         //      reader subscription
-        private readonly HashSet<string> _events;
         private readonly HashSet<string> _streams;
 
         public EventByTypeIndexEventFilter(HashSet<string> events)
             : base(false, false, events)
         {
-            _events = events;
             _streams = new HashSet<string>(from eventType in events select "$et-" + eventType);
         }
 

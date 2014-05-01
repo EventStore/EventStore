@@ -15,7 +15,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly ILogger _logger;
 
         private readonly bool _usePersistentCheckpoints;
-        private readonly bool _producesRunningResults;
 
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
@@ -39,9 +38,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private PartitionState _currentProjectionState;
 
         protected CoreProjectionCheckpointManager(
-            IPublisher publisher, Guid projectionCorrelationId, ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints,
-            bool producesRunningResults)
+            IPublisher publisher,
+            Guid projectionCorrelationId,
+            ProjectionConfig projectionConfig,
+            string name,
+            PositionTagger positionTagger,
+            ProjectionNamesBuilder namingBuilder,
+            bool usePersistentCheckpoints)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
@@ -59,7 +62,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
             _namingBuilder = namingBuilder;
             _usePersistentCheckpoints = usePersistentCheckpoints;
-            _producesRunningResults = producesRunningResults;
             _requestedCheckpointState = new PartitionState("", null, _zeroTag);
             _currentProjectionState = new PartitionState("", null, _zeroTag);
         }

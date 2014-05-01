@@ -43,7 +43,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly bool _stopOnEof;
         private readonly bool _isBiState;
 
-        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
         private readonly Action _updateStatistics;
 
         protected EventSubscriptionBasedProjectionProcessingPhase(
@@ -78,9 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache = partitionStateCache;
             _resultWriter = resultWriter;
             _updateStatistics = updateStatistics;
-            _processingQueue = new CoreProjectionQueue(
-                projectionCorrelationId,
-                publisher,
+            _processingQueue = new CoreProjectionQueue(publisher,
                 projectionConfig.PendingEventsThreshold,
                 orderedPartitionProcessing);
             _processingQueue.EnsureTickPending += EnsureTickPending;
@@ -160,7 +157,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_updateStatistics != null)
                 _updateStatistics();
-            _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
         }
 
         public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
@@ -409,7 +405,6 @@ namespace EventStore.Projections.Core.Services.Processing
             // this can be old checkpoint
             var adjustedCheckpointTag = _readerStrategy.PositionTagger.AdjustTag(checkpointTag);
             _processingQueue.InitializeQueue(adjustedCheckpointTag);
-            _lastReportedStatisticsTimeStamp = default(DateTime);
         }
 
         public int GetBufferedEventCount()

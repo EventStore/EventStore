@@ -63,8 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 coreProjectionCheckpointWriter,
                 partitionStateCache,
                 namingBuilder.EffectiveProjectionName,
-                timeProvider,
-                GetIsSlaveProjection());
+                timeProvider);
         }
 
         protected abstract IQuerySources GetSourceDefinition();
