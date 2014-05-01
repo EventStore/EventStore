@@ -1,10 +1,6 @@
 ﻿using EventStore.Common.Options;
 using EventStore.Core.Util;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
 {
@@ -14,9 +10,18 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         [Test]
         public void should_use_the_supplied_argument()
         {
-            var args = new string[] { "--logsdir=~/customLogDirectory" };
+            var args = new[] { "--logsdir=~/customLogDirectory" };
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual("~/customLogDirectory", testArgs.Logsdir);
+        }
+
+        [Test]
+        public void should_not_require_equals_in_method()
+        {
+            var args = new[] {"--logsdir", "./customLogDirectory", "--run-projections", "all"};
+            var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
+            Assert.AreEqual("./customLogDirectory", testArgs.Logsdir);
+            Assert.AreEqual(RunProjections.All, testArgs.RunProjections);
         }
     }
 }

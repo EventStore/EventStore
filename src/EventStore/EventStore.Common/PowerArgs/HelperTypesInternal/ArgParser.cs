@@ -44,6 +44,10 @@ namespace PowerArgs
                     }
                     else
                     {
+                        if (key.StartsWith("-"))
+                        {
+                            key = key.Substring(1);
+                        }
                         if (i == args.Length - 1)
                         {
                             value = "";

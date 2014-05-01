@@ -1,8 +1,4 @@
 ﻿using EventStore.Common.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace EventStore.Core.Tests.Common
 {
@@ -14,6 +10,7 @@ namespace EventStore.Core.Tests.Common
         public string Logsdir { get; set; }
         public string[] Defines { get; set; }
         public bool Force { get; set; }
+        public RunProjections RunProjections { get; set; }
 
         public int HttpPort { get; set; }
         public TestArgs()
