@@ -70,6 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private const string ProjectionsStreamPrefix = "$projections-";
+        private const string ProjectionsControlStreamPrefix = "$projections-$";
         private const string ProjectionsStateStreamSuffix = "-result";
         private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
         private const string ProjectionOrderStreamSuffix = "-order";
