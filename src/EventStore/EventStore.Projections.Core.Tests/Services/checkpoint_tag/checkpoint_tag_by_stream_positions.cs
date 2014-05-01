@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -48,8 +49,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_a1 < _a2b2);
             Assert.IsFalse(_a1b2 < _a1b2);
             Assert.IsFalse(_a1b2 < _a1b1);
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1b2 < _a2b1; });
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1 < _b1; });
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1b2 < _a2b1));
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1 < _b1));
         }
 
         [Test]
@@ -60,8 +61,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsTrue(_a1 <= _a2b2);
             Assert.IsTrue(_a1b2 <= _a1b2);
             Assert.IsFalse(_a1b2 <= _a1b1);
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1b2 <= _a2b1; });
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1 <= _b1; });
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1b2 <= _a2b1));
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1 <= _b1));
         }
 
         [Test]
@@ -72,8 +73,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsFalse(_a1 > _a2b2);
             Assert.IsFalse(_a1b2 > _a1b2);
             Assert.IsTrue(_a1b2 > _a1b1);
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1b2 > _a2b1; });
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1 > _b1; });
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1b2 > _a2b1));
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1 > _b1));
         }
 
         [Test]
@@ -84,8 +85,8 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
             Assert.IsFalse(_a1 >= _a2b2);
             Assert.IsTrue(_a1b2 >= _a1b2);
             Assert.IsTrue(_a1b2 >= _a1b1);
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1b2 >= _a2b1; });
-            Assert.Throws<InvalidOperationException>(() => { var r = _a1 >= _b1; });
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1b2 >= _a2b1));
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(_a1 >= _b1));
         }
     }
 #pragma warning restore 1718

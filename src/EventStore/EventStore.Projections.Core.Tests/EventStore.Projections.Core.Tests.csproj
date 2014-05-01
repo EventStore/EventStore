@@ -50,6 +50,8 @@
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>
+    </NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <SolutionPlatform>anycpu</SolutionPlatform>

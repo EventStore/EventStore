@@ -75,6 +75,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private const string ProjectionOrderStreamSuffix = "-order";
         private const string ProjectionPartitionCatalogStreamSuffix = "-partitions";
         private const string CategoryCatalogStreamNamePrefix = "$category-";
+        public const string _projectionsControlStream = "$projections-$control";
+        public const string _projectionsMasterStream = "$projections-$master";
 
         public string GetPartitionCatalogStreamName()
         {
@@ -118,7 +120,14 @@ namespace EventStore.Projections.Core.Services.Processing
             return CategoryCatalogStreamNamePrefix + category;
         }
 
-        public const string _projectionsControlStream = "$projections-$control";
-        public const string _projectionsMasterStream = "$projections-$master";
+        public static string MakeControlStreamName(Guid guid)
+        {
+            return MakeControlStreamName(guid.ToString("N"));
+        }
+
+        public static string MakeControlStreamName(string guid)
+        {
+            return ProjectionsControlStreamPrefix + guid;
+        }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -171,7 +172,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
             Assert.AreEqual(zeroEvent2, zeroEvent);
             Assert.AreNotEqual(second, second2);
             Assert.IsTrue(second2 > zeroEvent);
-            Assert.Throws<InvalidOperationException>(() => { var r = second2 > first; });
+            Assert.Throws<InvalidOperationException>(() => TestHelper.Consume(second2 > first));
 
             Assert.IsTrue(third > second);
             Assert.IsTrue(third > first);

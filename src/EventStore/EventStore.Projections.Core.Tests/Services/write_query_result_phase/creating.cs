@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using EventStore.Core.Bus;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager;
 using EventStore.Projections.Core.Tests.Services.core_projection.multi_phase;
@@ -21,14 +22,15 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                 var stateCache = new PartitionStateCache();
                 var bus = new InMemoryBus("test");
                 var fakeCheckpointManager = new specification_with_multi_phase_core_projection.FakeCheckpointManager(bus, Guid.NewGuid());
-                var it = new WriteQueryResultProjectionProcessingPhase(
-                    bus,
-                    1,
-                    "result-stream",
-                    coreProjection,
-                    stateCache,
-                    fakeCheckpointManager,
-                    fakeCheckpointManager);
+                TestHelper.Consume(
+                    new WriteQueryResultProjectionProcessingPhase(
+                        bus,
+                        1,
+                        "result-stream",
+                        coreProjection,
+                        stateCache,
+                        fakeCheckpointManager,
+                        fakeCheckpointManager));
             }
         }
 

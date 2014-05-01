@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Other
@@ -15,9 +16,9 @@ namespace EventStore.Projections.Core.Tests.Other
             sw.Start();
             measured.Start();
             measured.Stop();
-            var warmupTemp = measured.ElapsedMilliseconds;
+            TestHelper.Consume(measured.ElapsedMilliseconds);
             sw.Stop();
-            var warmupTime = sw.ElapsedMilliseconds;
+            TestHelper.Consume(sw.ElapsedMilliseconds);
             measured.Reset();
             sw.Reset();
 
@@ -31,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.Other
             {
                 measured.Start();
                 measured.Stop();
-                var temp = measured.ElapsedMilliseconds;
+                TestHelper.Consume(measured.ElapsedMilliseconds);
             }
             sw.Stop();
             var measuredTime = sw.ElapsedMilliseconds;
