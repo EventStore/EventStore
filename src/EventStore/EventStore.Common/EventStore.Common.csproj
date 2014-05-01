@@ -72,6 +72,7 @@
     <Compile Include="Log\LogManager.cs" />
     <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
     <Compile Include="Log\NLogger.cs" />
+    <Compile Include="Options\ArgDescriptionAttribute.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />
     <Compile Include="Options\OptionException.cs" />

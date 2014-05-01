@@ -394,19 +394,21 @@ namespace PowerArgs
         {
             List<string> ret = new List<string>();
 
+            var argumentName = info.Name.ToLower();
+
             bool excludeName = info.Attrs<ArgShortcut>().Where(s => s.Policy == ArgShortcutPolicy.ShortcutsOnly).Count() > 0;
 
             if (excludeName == false)
             {
                 knownShortcuts.Add(info.Name);
 
-                if (CommandLineAction.IsActionImplementation(info) && info.Name.EndsWith(Constants.ActionArgConventionSuffix))
+                if (CommandLineAction.IsActionImplementation(info) && argumentName.EndsWith(Constants.ActionArgConventionSuffix))
                 {
-                    ret.Add(info.Name.Substring(0, info.Name.Length - Constants.ActionArgConventionSuffix.Length));
+                    ret.Add(info.Name.Substring(0, argumentName.Length - Constants.ActionArgConventionSuffix.Length));
                 }
                 else
                 {
-                    ret.Add(info.Name);
+                    ret.Add(argumentName);
                 }
             }
 
@@ -414,26 +416,15 @@ namespace PowerArgs
 
             if (attrs.Count == 0)
             {
-                var shortcut = GenerateShortcutAlias(info.Name, knownShortcuts, ignoreCase);
-                if (shortcut != null)
-                {
-                    knownShortcuts.Add(shortcut);
-                    ret.Add(shortcut);
-                }
-
                 var longFormShortcut = PascalCaseNameSplitter(info.Name);
                 if (!knownShortcuts.Any(x => x.Equals(longFormShortcut, StringComparison.OrdinalIgnoreCase)))
                 {
                     knownShortcuts.Add(longFormShortcut);
                     ret.Add(longFormShortcut);
                 }
-
-                return ret;
             }
-            else
-            {
-                return ret;
-            }
+            ret.Reverse();
+            return ret;
         }
 
         private static string PascalCaseNameSplitter(string name)

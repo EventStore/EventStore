@@ -1,7 +1,6 @@
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
-using PowerArgs;
 
 namespace EventStore.TestClient
 {

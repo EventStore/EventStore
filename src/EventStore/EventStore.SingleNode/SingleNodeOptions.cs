@@ -3,7 +3,6 @@ using System.Net;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
-using PowerArgs;
 
 namespace EventStore.SingleNode
 {

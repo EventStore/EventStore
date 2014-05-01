@@ -12,15 +12,18 @@ namespace PowerArgs
         /// <summary>
         /// A brief description of your argument property.
         /// </summary>
-        public string Description { get; private set; }
+        public string Description { get; protected set; }
+        public string Group { get; protected set; }
 
         /// <summary>
         /// Creates a new ArgDescription attribute.
         /// </summary>
         /// <param name="description">A brief description of your argument property.</param>
-        public ArgDescription(string description)
+        public ArgDescription(string description) : this(description, String.Empty) { }
+        public ArgDescription(string description, string group)
         {
             this.Description = description;
+            this.Group = group;
         }
     }
 }

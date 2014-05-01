@@ -71,7 +71,7 @@ namespace PowerArgs
         /// <param name="info">An object that you can use to manipulate the usage output.</param>
         public virtual void BeforeGenerateUsage(ArgumentUsageInfo info)
         {
-            if(HookExecuting != null) HookExecuting(info);
+            if (HookExecuting != null) HookExecuting(info);
         }
     }
 
@@ -125,6 +125,11 @@ namespace PowerArgs
         public string Description { get; set; }
 
         /// <summary>
+        /// The grouping that will be used to group the usage.
+        /// </summary>
+        public string Group { get; set; }
+
+        /// <summary>
         /// If set to true, the argument usage will not be written.
         /// </summary>
         public bool Ignore { get; set; }
@@ -175,14 +180,14 @@ namespace PowerArgs
             DefaultValue = toAutoGen.DefaultValue;
             IsRequired = toAutoGen.IsRequired;
 
-            Name = "-"+toAutoGen.DefaultAlias;
+            Name = "-" + toAutoGen.DefaultAlias;
 
             if (Name.EndsWith(Constants.ActionArgConventionSuffix))
             {
                 Name = Name.Substring(0, Name.Length - Constants.ActionArgConventionSuffix.Length);
             }
 
-            Aliases.AddRange(toAutoGen.Aliases.Skip(1).Select(a => "-"+a));
+            Aliases.AddRange(toAutoGen.Aliases.Skip(1).Select(a => "-" + a));
 
             Type = toAutoGen.ArgumentType.Name;
             if (KnownTypeMappings.ContainsKey(Type))
@@ -196,6 +201,7 @@ namespace PowerArgs
 
             Position = toAutoGen.Position >= 0 ? new int?(toAutoGen.Position) : null;
             Description = toAutoGen.Description ?? "";
+            Group = Property.HasAttr<ArgDescription>() ? Property.Attr<ArgDescription>().Group : "";
 
             if (toAutoGen.ArgumentType.IsEnum)
             {
@@ -215,7 +221,7 @@ namespace PowerArgs
     /// </summary>
     public static class ArgUsage
     {
-        internal static Dictionary<PropertyInfo, List<UsageHook>> ExplicitPropertyHooks = new Dictionary<PropertyInfo,List<UsageHook>>();
+        internal static Dictionary<PropertyInfo, List<UsageHook>> ExplicitPropertyHooks = new Dictionary<PropertyInfo, List<UsageHook>>();
         internal static List<UsageHook> GlobalUsageHooks = new List<UsageHook>();
 
         // TODO P0 - Need unit tests for usage hooks
@@ -260,7 +266,7 @@ namespace PowerArgs
         /// <param name="options">Specify custom usage options</param>
         /// <returns>the usage documentation as a string</returns>
         public static string GetUsage<T>(string exeName = null, ArgUsageOptions options = null)
-        { 
+        {
             return GetStyledUsage<T>(exeName, options).ToString();
         }
 
@@ -299,7 +305,7 @@ namespace PowerArgs
         {
             return GetStyledUsage(new CommandLineArgumentsDefinition(t), exeName, options);
         }
- 
+
         /// <summary>
         /// Generates color styled usage documentation for the given arguments definition.  
         /// </summary>
@@ -324,7 +330,7 @@ namespace PowerArgs
 
             ret += new ConsoleString("Usage: " + exeName, ConsoleColor.Cyan);
 
- 
+
             if (definition.Actions.Count > 0)
             {
                 ret.AppendUsingCurrentFormat(" <action> options\n");
@@ -351,7 +357,7 @@ namespace PowerArgs
                     specifiedAction = options.SpecifiedActionOverride;
                     if (definition.Actions.Contains(specifiedAction) == false)
                     {
-                        throw new InvalidArgDefinitionException("There is no action that matches '" + options.SpecifiedActionOverride+"'");
+                        throw new InvalidArgDefinitionException("There is no action that matches '" + options.SpecifiedActionOverride + "'");
                     }
 
                 }
@@ -369,7 +375,7 @@ namespace PowerArgs
                         continue;
                     }
 
-                    ret += "\n" + action.DefaultAlias + " - "+action.Description + "\n\n";
+                    ret += "\n" + action.DefaultAlias + " - " + action.Description + "\n\n";
 
                     foreach (var example in action.Examples)
                     {
@@ -390,11 +396,11 @@ namespace PowerArgs
 
                 foreach (var example in definition.Examples)
                 {
-                    ret += new ConsoleString() + "   EXAMPLE: " + new ConsoleString(example.Example + "\n" , ConsoleColor.Green) + 
-                        new ConsoleString("   "+example.Description + "\n\n", ConsoleColor.DarkGreen);
+                    ret += new ConsoleString() + "   EXAMPLE: " + new ConsoleString(example.Example + "\n", ConsoleColor.Green) +
+                        new ConsoleString("   " + example.Description + "\n\n", ConsoleColor.DarkGreen);
                 }
             }
-            
+
             return ret;
         }
 
@@ -431,9 +437,21 @@ namespace PowerArgs
             }
 
             List<List<ConsoleString>> rows = new List<List<ConsoleString>>();
-
-            foreach (ArgumentUsageInfo usageInfo in usageInfos.OrderBy(i => i.Position >= 0 ? i.Position : 1000))
+            string currentGroup = String.Empty;
+            foreach (ArgumentUsageInfo usageInfo in usageInfos.OrderBy(x => x.Group).OrderBy(i => i.Position >= 0 ? i.Position : 1000))
             {
+                if (currentGroup != usageInfo.Group && !String.IsNullOrEmpty(usageInfo.Group))
+                {
+                    currentGroup = usageInfo.Group;
+                    rows.Add(new List<ConsoleString>() { ConsoleString.Empty, ConsoleString.Empty, ConsoleString.Empty });
+                    rows.Add(new List<ConsoleString>()
+                    {
+                        new ConsoleString("Options for " + currentGroup),
+                        ConsoleString.Empty,
+                        ConsoleString.Empty
+                    });
+                }
+
                 var hooks = new List<UsageHook>();
                 if (usageInfo.Property != null && ArgUsage.ExplicitPropertyHooks.ContainsKey(usageInfo.Property))
                 {
@@ -448,7 +466,7 @@ namespace PowerArgs
                 {
                     hook.BeforeGenerateUsage(usageInfo);
                 }
-               
+
 
                 if (usageInfo.Ignore) continue;
                 if (usageInfo.IsAction && ignoreActionProperties) continue;
@@ -482,7 +500,7 @@ namespace PowerArgs
 
                 rows.Add(new List<ConsoleString>()
                 {
-                    new ConsoleString("")+(usageInfo.Name + inlineAliasInfo),
+                    new ConsoleString("")+("-" + usageInfo.Name + inlineAliasInfo),
                     descriptionString,
                 });
 
