@@ -98,8 +98,6 @@ namespace PowerArgs
 
             if (open) return QuoteStatus.OpenedQuote;
 
-            var charsAsString = new string(chars.ToArray());
-
             if (chars.LastIndexOf('"') > chars.LastIndexOf(' ')) return QuoteStatus.ClosedQuote;
 
             return QuoteStatus.NoQuotes;
