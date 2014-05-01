@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.v8
                 prelude.GetHandle(), script, fileName, _commandHandlerRegisteredCallback, _reverseCommandHandlerDelegate);
             var terminated = prelude.CancelTerminateExecution();
             CompiledScript.CheckResult(query, terminated, disposeScriptOnException: true);
-            return new CompiledScript(query, fileName);
+            return new CompiledScript(query);
         }
 
         private void ReverseCommandHandler(string commandName, string commandBody)

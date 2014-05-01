@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 
@@ -8,7 +7,6 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class HeadingEventReader
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<HeadingEventReader>();
         private IEventReader _headEventReader;
         private TFPos _subscribeFromPosition = new TFPos(long.MaxValue, long.MaxValue);
 

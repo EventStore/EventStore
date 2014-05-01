@@ -205,7 +205,6 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly Dictionary<string, string> _streamToEventType;
             private readonly HashSet<string> _eventsRequested = new HashSet<string>();
             private readonly HashSet<Guid> _validRequests = new HashSet<Guid>();
-            private readonly HashSet<Guid> _awakeSubscriptions = new HashSet<Guid>();
             private bool _indexCheckpointStreamRequested;
             private int _lastKnownIndexCheckpointEventNumber = -1;
             private TFPos? _lastKnownIndexCheckpointPosition = null;

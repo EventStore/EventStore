@@ -8,7 +8,6 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class CoreProjectionQueue
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<CoreProjectionQueue>();
         private readonly StagedProcessingQueue _queuePendingEvents;
 
         private readonly IPublisher _publisher;

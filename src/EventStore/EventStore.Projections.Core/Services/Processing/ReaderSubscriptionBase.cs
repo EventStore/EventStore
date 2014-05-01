@@ -9,7 +9,6 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ReaderSubscriptionBase
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingReaderSubscription>();
         private readonly IPublisher _publisher;
         private readonly IReaderStrategy _readerStrategy;
         private readonly ITimeProvider _timeProvider;

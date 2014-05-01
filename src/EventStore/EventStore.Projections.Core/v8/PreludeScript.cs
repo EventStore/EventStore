@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.v8
                         else throw;
                     }
                 } while (prelude == default(IntPtr));
-                return new CompiledScript(prelude, fileName);
+                return new CompiledScript(prelude);
             }
             catch (DllNotFoundException ex)
             {
@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.v8
                 var compiledModuleHandle = Js1.CompileModule(
                     GetHandle(), moduleSourceAndFileName.Item1, moduleSourceAndFileName.Item2);
                 CompiledScript.CheckResult(compiledModuleHandle, terminated: false, disposeScriptOnException: true);
-                var compiledModule = new CompiledScript(compiledModuleHandle, moduleSourceAndFileName.Item2);
+                var compiledModule = new CompiledScript(compiledModuleHandle);
                 _modules.Add(compiledModule);
                 return compiledModuleHandle;
             }

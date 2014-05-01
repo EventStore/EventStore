@@ -5,14 +5,12 @@ namespace EventStore.Projections.Core.v8
     class CompiledScript : IDisposable
     {
         private IntPtr _script;
-        private readonly string _fileName;
         private bool _disposed = false;
         private static Js1.ReportErrorDelegate _reportErrorCallback;
 
-        public CompiledScript(IntPtr script, string fileName)
+        public CompiledScript(IntPtr script)
         {
             _script = script;
-            _fileName = fileName;
         }
 
         public void Dispose()

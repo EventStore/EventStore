@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -11,7 +9,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Commands;
-using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -22,7 +19,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IODispatcher _ioDispatcher;
         private readonly string _coreServiceId;
         private bool _stopped;
-        private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreServiceCommandReader>();
 
         public ProjectionCoreServiceCommandReader(IPublisher publisher, IODispatcher ioDispatcher, string workerId)
         {

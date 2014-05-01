@@ -7,7 +7,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public class WorkerState
         {
-            private readonly int Worker;
+            public readonly int Worker;
             public int UnmeasuredTasksScheduled;
             public int MeasuredTasksScheduled;
             public long ScheduledSize;
