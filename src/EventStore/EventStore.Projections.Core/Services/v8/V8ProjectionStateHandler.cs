@@ -205,6 +205,8 @@ namespace EventStore.Projections.Core.Services.v8
                     data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
                     data.PositionMetadata ?? "", partition, ""
                 });
+            if (!string.IsNullOrEmpty(newStates))
+                throw new Exception("_query.NotifyCreated shoul dnot return any states");
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }

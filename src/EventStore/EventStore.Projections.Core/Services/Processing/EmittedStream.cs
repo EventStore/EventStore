@@ -377,7 +377,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_started && !_awaitingListEventsCompleted && !_awaitingWriteCompleted
                 && !_awaitingMetadataWriteCompleted && _pendingWrites.Count > 0)
             {
-                var firstEvent = _pendingWrites.Peek();
                 if (_lastCommittedOrSubmittedEventPosition == null)
                     SubmitListEvents(_fromCheckpointPosition);
                 else

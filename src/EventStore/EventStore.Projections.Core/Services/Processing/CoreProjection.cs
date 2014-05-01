@@ -405,7 +405,6 @@ namespace EventStore.Projections.Core.Services.Processing
             var wasStarted = _state == State.Subscribed || _state == State.Running || _state == State.Stopping
                              || _state == State.FaultedStopping || _state == State.CompletingPhase;
             var wasRunning = _state == State.Running;
-            var wasFaulted = _state == State.Faulted || _state == State.FaultedStopping;
             var stateChanged = _state != state;
             _state = state; // set state before transition to allow further state change
             switch (state)
