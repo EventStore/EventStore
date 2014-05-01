@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _queues = new Dictionary<Guid, IPublisher> {{Guid.NewGuid(), new FakePublisher()}};
             _timeoutSchedulers = ProjectionCoreWorkersNode.CreateTimeoutSchedulers(_queues.Count);
             new ProjectionCoreCoordinator(
-                RunProjections.All, 
+                ProjectionType.All, 
                 _timeoutSchedulers,
                 _queues.Values.ToArray(),
                 new FakePublisher(),
@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     _queues,
                     _timeProvider,
-                    RunProjections.All))
+                    ProjectionType.All))
             {
             }
 
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     _queues,
                     _timeProvider,
-                    RunProjections.All))
+                    ProjectionType.All))
             {
             }
         }
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     null,
                     _queues,
                     _timeProvider,
-                    RunProjections.All))
+                    ProjectionType.All))
             {
             }
         }
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     null,
                     _timeProvider,
-                    RunProjections.All))
+                    ProjectionType.All))
             {
             }
         }
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     new Dictionary<Guid, IPublisher>(),
                     _timeProvider,
-                    RunProjections.All))
+                    ProjectionType.All))
             {
             }
         }

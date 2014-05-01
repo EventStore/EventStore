@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 GetInputQueue(),
                 queues,
                 _timeProvider,
-                RunProjections.All,
+                ProjectionType.All,
                 _initializeSystemProjections);
 
             IPublisher inputQueue = GetInputQueue();

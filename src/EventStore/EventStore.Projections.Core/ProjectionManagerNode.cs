@@ -68,13 +68,13 @@ namespace EventStore.Projections.Core
         private static void SubscribeMainBus(
             ISubscriber mainBus,
             ProjectionManager projectionManager,
-            RunProjections runProjections,
+            ProjectionType runProjections,
             ProjectionManagerResponseReader projectionManagerResponseReader,
             IODispatcher ioDispatcher,
             ProjectionManagerCommandWriter projectionManagerCommadnWriter)
         {
             mainBus.Subscribe<SystemMessage.StateChangeMessage>(projectionManager);
-            if (runProjections >= RunProjections.System)
+            if (runProjections >= ProjectionType.System)
             {
                 mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(projectionManager);

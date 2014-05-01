@@ -1,89 +1,89 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using EventStore.Common.Options;
-using EventStore.Common.Utils;
 using EventStore.Core.Util;
+using PowerArgs;
 
 namespace EventStore.SingleNode
 {
+    [TabCompletion]
     public class SingleNodeOptions : IOptions
     {
-        [ArgDescription(Opts.ShowHelpDescr)]
+        [Common.Options.ArgDescription(Opts.ShowHelpDescr, Opts.AppGroup)]
         public bool ShowHelp { get; set; }
-        [ArgDescription(Opts.ShowVersionDescr)]
+        [Common.Options.ArgDescription(Opts.ShowVersionDescr, Opts.AppGroup)]
         public bool ShowVersion { get; set; }
-        [ArgDescription(Opts.LogsDescr)]
+        [Common.Options.ArgDescription(Opts.LogsDescr, Opts.AppGroup)]
         public string Logsdir { get; set; }
-        [ArgDescription(Opts.ConfigsDescr)]
+        [Common.Options.ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
         public string Config { get; set; }
-        [ArgDescription(Opts.DefinesDescr)]
+        [Common.Options.ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
         public string[] Defines { get; set; }
 
-        [ArgDescription(Opts.IpDescr)]
+        [Common.Options.ArgDescription(Opts.IpDescr, Opts.InterfacesGroup)]
         public IPAddress Ip { get; set; }
-        [ArgDescription(Opts.TcpPortDescr)]
+        [Common.Options.ArgDescription(Opts.TcpPortDescr, Opts.InterfacesGroup)]
         public int TcpPort { get; set; }
-        [ArgDescription(Opts.SecureTcpPortDescr)]
+        [Common.Options.ArgDescription(Opts.SecureTcpPortDescr, Opts.InterfacesGroup)]
         public int SecureTcpPort { get; set; }
-        [ArgDescription(Opts.HttpPortDescr)]
+        [Common.Options.ArgDescription(Opts.HttpPortDescr, Opts.InterfacesGroup)]
         public int HttpPort { get; set; }
 
-        [ArgDescription(Opts.StatsPeriodDescr)]
+        [Common.Options.ArgDescription(Opts.StatsPeriodDescr, Opts.AppGroup)]
         public int StatsPeriodSec { get; set; }
 
-        [ArgDescription(Opts.CachedChunksDescr)]
+        [Common.Options.ArgDescription(Opts.CachedChunksDescr, Opts.DbGroup)]
         public int CachedChunks { get; set; }
-        [ArgDescription(Opts.ChunksCacheSizeDescr)]
+        [Common.Options.ArgDescription(Opts.ChunksCacheSizeDescr, Opts.DbGroup)]
         public long ChunksCacheSize { get; set; }
-        [ArgDescription(Opts.MinFlushDelayMsDescr)]
+        [Common.Options.ArgDescription(Opts.MinFlushDelayMsDescr, Opts.DbGroup)]
         public double MinFlushDelayMs { get; set; }
-        [ArgDescription(Opts.MaxMemTableSizeDescr)]
+        [Common.Options.ArgDescription(Opts.MaxMemTableSizeDescr, Opts.DbGroup)]
         public int MaxMemTableSize { get; set; }
 
-        [ArgDescription(Opts.DbPathDescr)]
+        [Common.Options.ArgDescription(Opts.DbPathDescr, Opts.DbGroup)]
         public string DbPath { get; set; }
-        [ArgDescription(Opts.InMemDbDescr)]
+        [Common.Options.ArgDescription(Opts.InMemDbDescr, Opts.DbGroup)]
         public bool InMemDb { get; set; }
-        [ArgDescription(Opts.SkipDbVerifyDescr)]
+        [Common.Options.ArgDescription(Opts.SkipDbVerifyDescr, Opts.DbGroup)]
         public bool SkipDbVerify { get; set; }
-        [ArgDescription(Opts.RunProjectionsDescr)]
-        public RunProjections RunProjections { get; set; }
-        [ArgDescription(Opts.ProjectionThreadsDescr)]
+        [Common.Options.ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
+        public ProjectionType RunProjections { get; set; }
+        [Common.Options.ArgDescription(Opts.ProjectionThreadsDescr, Opts.ProjectionsGroup)]
         public int ProjectionThreads { get; set; }
-        [ArgDescription(Opts.WorkerThreadsDescr)]
+        [Common.Options.ArgDescription(Opts.WorkerThreadsDescr, Opts.AppGroup)]
         public int WorkerThreads { get; set; }
 
-        [ArgDescription(Opts.DisableScavengeMergeDescr)]
+        [Common.Options.ArgDescription(Opts.DisableScavengeMergeDescr, Opts.DbGroup)]
         public bool DisableScavengeMerging { get; set; }
 
-        [ArgDescription(Opts.HttpPrefixesDescr)]
+        [Common.Options.ArgDescription(Opts.HttpPrefixesDescr, Opts.InterfacesGroup)]
         public string[] HttpPrefixes { get; set; }
-        [ArgDescription(Opts.EnableTrustedAuthDescr)]
+        [Common.Options.ArgDescription(Opts.EnableTrustedAuthDescr, Opts.AuthGroup)]
         public bool EnableTrustedAuth { get; set; }
 
-        [ArgDescription(Opts.CertificateStoreLocationDescr)]
+        [Common.Options.ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesGroup)]
         public string CertificateStoreLocation { get; set; }
-        [ArgDescription(Opts.CertificateStoreNameDescr)]
+        [Common.Options.ArgDescription(Opts.CertificateStoreNameDescr, Opts.CertificatesGroup)]
         public string CertificateStoreName { get; set; }
-        [ArgDescription(Opts.CertificateSubjectNameDescr)]
+        [Common.Options.ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesGroup)]
         public string CertificateSubjectName { get; set; }
-        [ArgDescription(Opts.CertificateThumbprintDescr)]
+        [Common.Options.ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesGroup)]
         public string CertificateThumbprint { get; set; }
 
-        [ArgDescription(Opts.CertificateFileDescr)]
+        [Common.Options.ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesGroup)]
         public string CertificateFile { get; set; }
-        [ArgDescription(Opts.CertificatePasswordDescr)]
+        [Common.Options.ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesGroup)]
         public string CertificatePassword { get; set; }
 
-        [ArgDescription(Opts.PrepareTimeoutMsDescr)]
+        [Common.Options.ArgDescription(Opts.PrepareTimeoutMsDescr, Opts.DbGroup)]
         public int PrepareTimeoutMs { get; set; }
-        [ArgDescription(Opts.CommitTimeoutMsDescr)]
+        [Common.Options.ArgDescription(Opts.CommitTimeoutMsDescr, Opts.DbGroup)]
         public int CommitTimeoutMs { get; set; }
 
-        [ArgDescription(Opts.ForceDescr)]
+        [Common.Options.ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
         public bool Force { get; set; }
 
-        [ArgDescription(Opts.UnsafeDisableFlushToDiskDescr)]
+        [Common.Options.ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
         public bool UnsafeDisableFlushToDisk { get; set; }
 
         public SingleNodeOptions()

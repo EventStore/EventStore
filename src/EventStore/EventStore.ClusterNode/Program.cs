@@ -117,7 +117,7 @@ namespace EventStore.ClusterNode
                      "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
                      "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
-            var enabledNodeSubsystems = runProjections >= RunProjections.System
+            var enabledNodeSubsystems = runProjections >= ProjectionType.System
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);

@@ -241,10 +241,14 @@ namespace PowerArgs
                 }
             });
 
-            revivers.Add(typeof(IPAddress), (prop, val) =>
+            revivers.Add(typeof(IPAddress), (prop, val) => IPAddress.Parse(val));
+
+            revivers.Add(typeof(IPEndPoint), (prop, val) =>
             {
-                return IPAddress.Parse(val);
+                var parts = val.Split(':');
+                return new IPEndPoint(IPAddress.Parse(parts[0]), Int32.Parse(parts[1]));
             });
+
         }
     }
 }

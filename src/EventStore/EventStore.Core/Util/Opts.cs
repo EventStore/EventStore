@@ -9,6 +9,17 @@ namespace EventStore.Core.Util
         public const string EnvPrefix = "EVENTSTORE_";
 
         /*
+         * OPTIONS GROUPS
+         */
+        public const string AppGroup = "Application Options";
+        public const string DbGroup = "Database Options";
+        public const string ProjectionsGroup = "Projections Options";
+        public const string AuthGroup = "Authentication Options";
+        public const string InterfacesGroup = "Interface Options";
+        public const string CertificatesGroup = "Certificate Options";
+        public const string ClusterGroup = "Cluster Options";
+
+        /*
          *  COMMON OPTIONS 
          */
 
@@ -120,7 +131,7 @@ namespace EventStore.Core.Util
         public const string RunProjectionsEnv = "RUN_PROJECTIONS";
         public const string RunProjectionsJson = "runProjections";
         public const string RunProjectionsDescr = "Enables the running of JavaScript projections.";
-        public const RunProjections RunProjectionsDefault = RunProjections.System;
+        public const ProjectionType RunProjectionsDefault = ProjectionType.System;
 
         public const string ProjectionThreadsCmd = "projection-threads=";
         public const string ProjectionThreadsEnv = "PROJECTION_THREADS";

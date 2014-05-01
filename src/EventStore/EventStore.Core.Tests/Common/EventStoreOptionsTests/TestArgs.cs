@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.Common
         public string Logsdir { get; set; }
         public string[] Defines { get; set; }
         public bool Force { get; set; }
-        public RunProjections RunProjections { get; set; }
+        public ProjectionType RunProjections { get; set; }
 
         public int HttpPort { get; set; }
         public TestArgs()

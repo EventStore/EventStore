@@ -1,6 +1,6 @@
 ﻿namespace EventStore.Common.Options
 {
-    public enum RunProjections
+    public enum ProjectionType
     {
         None,
         System,

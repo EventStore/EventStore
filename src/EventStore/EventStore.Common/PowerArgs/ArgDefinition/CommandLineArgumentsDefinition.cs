@@ -254,7 +254,7 @@ namespace PowerArgs
                     foreach (var property in argument.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
                     {
                         // Getting each property will result in all AttrOverrides being validated
-                        var val = property.GetValue(argument, null);
+                        property.GetValue(argument, null);
                     }
                 }
                 catch (TargetInvocationException ex)

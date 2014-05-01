@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core
                 coreOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
 
 
-                if (projectionsStandardComponents.RunProjections >= RunProjections.System)
+                if (projectionsStandardComponents.RunProjections >= ProjectionType.System)
                 {
                     var slaveProjectionResponseWriter = projectionNode.SlaveProjectionResponseWriter;
                     coreOutput.Subscribe<PartitionMeasuredOutput>(slaveProjectionResponseWriter);

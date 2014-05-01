@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
             var args = new[] {"--logsdir", "./customLogDirectory", "--run-projections", "all"};
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual("./customLogDirectory", testArgs.Logsdir);
-            Assert.AreEqual(RunProjections.All, testArgs.RunProjections);
+            Assert.AreEqual(ProjectionType.All, testArgs.RunProjections);
         }
     }
 }

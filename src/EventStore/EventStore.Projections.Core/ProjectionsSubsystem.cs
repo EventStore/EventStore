@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core
     public sealed class ProjectionsSubsystem : ISubsystem
     {
         private readonly int _projectionWorkerThreadCount;
-        private readonly RunProjections _runProjections;
+        private readonly ProjectionType _runProjections;
         public const int VERSION = 3;
 
         private QueuedHandler _masterInputQueue;
@@ -21,9 +21,9 @@ namespace EventStore.Projections.Core
         private IDictionary<Guid, QueuedHandler> _coreQueues;
         private Dictionary<Guid, IPublisher> _queueMap;
 
-        public ProjectionsSubsystem(int projectionWorkerThreadCount, RunProjections runProjections)
+        public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections)
         {
-            if (runProjections <= RunProjections.System)
+            if (runProjections <= ProjectionType.System)
                 _projectionWorkerThreadCount = 1;
             else
                 _projectionWorkerThreadCount = projectionWorkerThreadCount;

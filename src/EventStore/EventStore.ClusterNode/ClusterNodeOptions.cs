@@ -1,137 +1,136 @@
 ﻿using System.Net;
 using EventStore.Common.Options;
-using EventStore.Common.Utils;
 using EventStore.Core.Util;
 
 namespace EventStore.ClusterNode
 {
     public class ClusterNodeOptions : IOptions
     {
-        [ArgDescription(Opts.ShowHelpDescr)]
+        [ArgDescription(Opts.ShowHelpDescr, Opts.AppGroup)]
         public bool ShowHelp { get; set; }
-        [ArgDescription(Opts.ShowVersionDescr)]
+        [ArgDescription(Opts.ShowVersionDescr, Opts.AppGroup)]
         public bool ShowVersion { get; set; }
-        [ArgDescription(Opts.LogsDescr)]
+        [ArgDescription(Opts.LogsDescr, Opts.AppGroup)]
         public string Logsdir { get; set; }
-        [ArgDescription(Opts.ConfigsDescr)]
+        [ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
         public string Config { get; set; }
-        [ArgDescription(Opts.DefinesDescr)]
+        [ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
         public string[] Defines { get; set; }
 
-        [ArgDescription(Opts.InternalIpDescr)]
+        [ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
         public IPAddress InternalIp { get; set; }
-        [ArgDescription(Opts.ExternalIpDescr)]
+        [ArgDescription(Opts.ExternalIpDescr, Opts.InterfacesGroup)]
         public IPAddress ExternalIp { get; set; }
-        [ArgDescription(Opts.InternalHttpPortDescr)]
+        [ArgDescription(Opts.InternalHttpPortDescr, Opts.InterfacesGroup)]
         public int InternalHttpPort { get; set; }
-        [ArgDescription(Opts.ExternalHttpPortDescr)]
+        [ArgDescription(Opts.ExternalHttpPortDescr, Opts.InterfacesGroup)]
         public int ExternalHttpPort { get; set; }
-        [ArgDescription(Opts.InternalTcpPortDescr)]
+        [ArgDescription(Opts.InternalTcpPortDescr, Opts.InterfacesGroup)]
         public int InternalTcpPort { get; set; }
-        [ArgDescription(Opts.InternalSecureTcpPortDescr)]
+        [ArgDescription(Opts.InternalSecureTcpPortDescr, Opts.InterfacesGroup)]
         public int InternalSecureTcpPort { get; set; }
-        [ArgDescription(Opts.ExternalTcpPortDescr)]
+        [ArgDescription(Opts.ExternalTcpPortDescr, Opts.InterfacesGroup)]
         public int ExternalTcpPort { get; set; }
-        [ArgDescription(Opts.ExternalSecureTcpPortDescr)]
+        [ArgDescription(Opts.ExternalSecureTcpPortDescr, Opts.InterfacesGroup)]
         public int ExternalSecureTcpPort { get; set; }
-        [ArgDescription(Opts.ForceDescr)]
+        [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
         public bool Force { get; set; }
-        [ArgDescription(Opts.ClusterSizeDescr)]
+        [ArgDescription(Opts.ClusterSizeDescr, Opts.ClusterGroup)]
         public int ClusterSize { get; set; }
-        [ArgDescription(Opts.NodePriorityDescr)]
+        [ArgDescription(Opts.NodePriorityDescr, Opts.ClusterGroup)]
         public int NodePriority { get; set; }
-        [ArgDescription(Opts.MinFlushDelayMsDescr)]
+        [ArgDescription(Opts.MinFlushDelayMsDescr, Opts.DbGroup)]
         public double MinFlushDelayMs { get; set; }
 
-        [ArgDescription(Opts.CommitCountDescr)]
+        [ArgDescription(Opts.CommitCountDescr, Opts.ClusterGroup)]
         public int CommitCount { get; set; }
-        [ArgDescription(Opts.PrepareCountDescr)]
+        [ArgDescription(Opts.PrepareCountDescr, Opts.ClusterGroup)]
         public int PrepareCount { get; set; }
 
-        [ArgDescription(Opts.AdminOnExtDescr)]
+        [ArgDescription(Opts.AdminOnExtDescr, Opts.InterfacesGroup)]
         public bool AdminOnExt { get; set; }
-        [ArgDescription(Opts.StatsOnExtDescr)]
+        [ArgDescription(Opts.StatsOnExtDescr, Opts.InterfacesGroup)]
         public bool StatsOnExt { get; set; }
-        [ArgDescription(Opts.GossipOnExtDescr)]
+        [ArgDescription(Opts.GossipOnExtDescr, Opts.InterfacesGroup)]
         public bool GossipOnExt { get; set; }
-        [ArgDescription(Opts.DisableScavengeMergeDescr)]
+        [ArgDescription(Opts.DisableScavengeMergeDescr, Opts.DbGroup)]
         public bool DisableScavengeMerging { get; set; }
 
-        [ArgDescription(Opts.DiscoverViaDnsDescr)]
+        [ArgDescription(Opts.DiscoverViaDnsDescr, Opts.ClusterGroup)]
         public bool DiscoverViaDns { get; set; }
-        [ArgDescription(Opts.ClusterDnsDescr)]
+        [ArgDescription(Opts.ClusterDnsDescr, Opts.ClusterGroup)]
         public string ClusterDns { get; set; }
-        [ArgDescription(Opts.ClusterGossipPortDescr)]
+        [ArgDescription(Opts.ClusterGossipPortDescr, Opts.ClusterGroup)]
         public int ClusterGossipPort { get; set; }
-        [ArgDescription(Opts.GossipSeedDescr)]
+        [ArgDescription(Opts.GossipSeedDescr, Opts.ClusterGroup)]
         public IPEndPoint[] GossipSeeds { get; set; }
 
-        [ArgDescription(Opts.StatsPeriodDescr)]
+        [ArgDescription(Opts.StatsPeriodDescr, Opts.AppGroup)]
         public int StatsPeriodSec { get; set; }
-        [ArgDescription(Opts.CachedChunksDescr)]
+        [ArgDescription(Opts.CachedChunksDescr, Opts.DbGroup)]
         public int CachedChunks { get; set; }
-        [ArgDescription(Opts.ChunksCacheSizeDescr)]
+        [ArgDescription(Opts.ChunksCacheSizeDescr, Opts.DbGroup)]
         public long ChunksCacheSize { get; set; }
-        [ArgDescription(Opts.MaxMemTableSizeDescr)]
+        [ArgDescription(Opts.MaxMemTableSizeDescr, Opts.DbGroup)]
         public int MaxMemTableSize { get; set; }
 
-        [ArgDescription(Opts.DbPathDescr)]
+        [ArgDescription(Opts.DbPathDescr, Opts.DbGroup)]
         public string DbPath { get; set; }
-        [ArgDescription(Opts.InMemDbDescr)]
+        [ArgDescription(Opts.InMemDbDescr, Opts.DbGroup)]
         public bool InMemDb { get; set; }
-        [ArgDescription(Opts.SkipDbVerifyDescr)]
+        [ArgDescription(Opts.SkipDbVerifyDescr, Opts.DbGroup)]
         public bool SkipDbVerify { get; set; }
-        [ArgDescription(Opts.RunProjectionsDescr)]
-        public RunProjections RunProjections { get; set; }
-        [ArgDescription(Opts.ProjectionThreadsDescr)]
+        [ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
+        public ProjectionType RunProjections { get; set; }
+        [ArgDescription(Opts.ProjectionThreadsDescr, Opts.ProjectionsGroup)]
         public int ProjectionThreads { get; set; }
-        [ArgDescription(Opts.WorkerThreadsDescr)]
+        [ArgDescription(Opts.WorkerThreadsDescr, Opts.AppGroup)]
         public int WorkerThreads { get; set; }
 
-        [ArgDescription(Opts.HttpPrefixesDescr)]
+        [ArgDescription(Opts.HttpPrefixesDescr, Opts.InterfacesGroup)]
         public string[] HttpPrefixes { get; set; }
-        [ArgDescription(Opts.EnableTrustedAuthDescr)]
+        [ArgDescription(Opts.EnableTrustedAuthDescr, Opts.InterfacesGroup)]
         public bool EnableTrustedAuth { get; set; }
 
-        [ArgDescription(Opts.CertificateStoreLocationDescr)]
+        [ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesGroup)]
         public string CertificateStoreLocation { get; set; }
-        [ArgDescription(Opts.CertificateStoreNameDescr)]
+        [ArgDescription(Opts.CertificateStoreNameDescr, Opts.CertificatesGroup)]
         public string CertificateStoreName { get; set; }
-        [ArgDescription(Opts.CertificateSubjectNameDescr)]
+        [ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesGroup)]
         public string CertificateSubjectName { get; set; }
-        [ArgDescription(Opts.CertificateThumbprintDescr)]
+        [ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesGroup)]
         public string CertificateThumbprint { get; set; }
 
-        [ArgDescription(Opts.CertificateFileDescr)]
+        [ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesGroup)]
         public string CertificateFile { get; set; }
-        [ArgDescription(Opts.CertificatePasswordDescr)]
+        [ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesGroup)]
         public string CertificatePassword { get; set; }
 
-        [ArgDescription(Opts.UseInternalSslDescr)]
+        [ArgDescription(Opts.UseInternalSslDescr, Opts.InterfacesGroup)]
         public bool UseInternalSsl { get; set; }
-        [ArgDescription(Opts.SslTargetHostDescr)]
+        [ArgDescription(Opts.SslTargetHostDescr, Opts.InterfacesGroup)]
         public string SslTargetHost { get; set; }
-        [ArgDescription(Opts.SslValidateServerDescr)]
+        [ArgDescription(Opts.SslValidateServerDescr, Opts.InterfacesGroup)]
         public bool SslValidateServer { get; set; }
 
-        [ArgDescription(Opts.AuthenticationTypeDescr)]
+        [ArgDescription(Opts.AuthenticationTypeDescr, Opts.AuthGroup)]
         public string AuthenticationType { get; set; }
-        [ArgDescription(Opts.AuthenticationConfigFileDescr)]
+        [ArgDescription(Opts.AuthenticationConfigFileDescr, Opts.AuthGroup)]
         public string AuthenticationConfigFile { get; set; }
 
-        [ArgDescription(Opts.PrepareTimeoutMsDescr)]
+        [ArgDescription(Opts.PrepareTimeoutMsDescr, Opts.DbGroup)]
         public int PrepareTimeoutMs { get; set; }
-        [ArgDescription(Opts.CommitTimeoutMsDescr)]
+        [ArgDescription(Opts.CommitTimeoutMsDescr, Opts.DbGroup)]
         public int CommitTimeoutMs { get; set; }
 
-        [ArgDescription(Opts.UnsafeDisableFlushToDiskDescr)]
+        [ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
         public bool UnsafeDisableFlushToDisk { get; set; }
 
-        [ArgDescription(Opts.GossipIntervalMsDescr)]
+        [ArgDescription(Opts.GossipIntervalMsDescr, Opts.ClusterGroup)]
         public int GossipIntervalMs { get; set; }
-        [ArgDescription(Opts.GossipAllowedDifferenceMsDescr)]
+        [ArgDescription(Opts.GossipAllowedDifferenceMsDescr, Opts.ClusterGroup)]
         public int GossipAllowedDifferenceMs { get; set; }
-        [ArgDescription(Opts.GossipTimeoutMsDescr)]
+        [ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
         public int GossipTimeoutMs { get; set; }
 
         public ClusterNodeOptions()
