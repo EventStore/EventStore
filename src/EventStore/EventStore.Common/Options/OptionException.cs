@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
-using System.Text;
 
 namespace EventStore.Common.Options
 {
     [Serializable]
     public class OptionException : Exception
     {
-        private string option;
+        private readonly string option;
 
         public OptionException()
         {
@@ -19,24 +16,24 @@ namespace EventStore.Common.Options
         public OptionException(string message, string optionName)
             : base(message)
         {
-            this.option = optionName;
+            option = optionName;
         }
 
         public OptionException(string message, string optionName, Exception innerException)
             : base(message, innerException)
         {
-            this.option = optionName;
+            option = optionName;
         }
 
         protected OptionException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            this.option = info.GetString("OptionName");
+            option = info.GetString("OptionName");
         }
 
         public string OptionName
         {
-            get { return this.option; }
+            get { return option; }
         }
 
         [SecurityPermission(SecurityAction.LinkDemand, SerializationFormatter = true)]
