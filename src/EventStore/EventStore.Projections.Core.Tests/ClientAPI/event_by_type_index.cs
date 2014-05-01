@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI
 {

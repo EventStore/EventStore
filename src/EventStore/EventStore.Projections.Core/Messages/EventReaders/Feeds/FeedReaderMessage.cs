@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Security.Principal;
+using System.Threading;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages.EventReaders.Feeds
 {
-    public abstract class FeedReaderMessage : Message
+    public static class FeedReaderMessage
     {
-        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-        public override int MsgTypeId { get { return TypeId; } }
-
-        public sealed class ReadPage: FeedReaderMessage
+        public abstract class FeedReaderMessageBase : Message
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+        }
+
+        public sealed class ReadPage : FeedReaderMessageBase
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
@@ -36,9 +40,9 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds
             }
         }
 
-        public sealed class FeedPage: FeedReaderMessage
+        public sealed class FeedPage: FeedReaderMessageBase
         {
-            private new static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public enum ErrorStatus
@@ -62,4 +66,5 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds
             }
         }
     }
+
 }

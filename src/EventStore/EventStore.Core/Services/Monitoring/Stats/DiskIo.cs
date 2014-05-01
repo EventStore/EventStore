@@ -96,6 +96,8 @@ namespace EventStore.Core.Services.Monitoring.Stats
                               counters.ReadOperationCount, counters.WriteOperationCount);
         }
 
+#pragma warning disable 649
+#pragma warning disable 169
 
         // http://msdn.microsoft.com/en-us/library/ms683218%28VS.85%29.aspx
         private struct IO_COUNTERS
@@ -107,6 +109,8 @@ namespace EventStore.Core.Services.Monitoring.Stats
             public ulong WriteTransferCount;
             public ulong OtherTransferCount;
         }
+#pragma warning restore 649
+#pragma warning restore 169
 
         [DllImport("kernel32.dll")]
         static extern bool GetProcessIoCounters(IntPtr ProcessHandle, out IO_COUNTERS IoCounters);
