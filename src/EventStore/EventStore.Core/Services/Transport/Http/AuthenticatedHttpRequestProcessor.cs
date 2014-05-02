@@ -33,14 +33,24 @@ namespace EventStore.Core.Services.Transport.Http
                 return;
             try
             {
+                var utcNow = DateTime.UtcNow;
                 while (_pending.Count > 0)
                 {
                     var req = _pending.FindMin();
-                    if (req.Item1 <= DateTime.UtcNow || req.Item2.IsProcessing)
+                    if (req.Item1 <= utcNow || !req.Item2.IsProcessing)
                     {
                         req = _pending.DeleteMin();
-                        req.Item2.ReplyStatus(HttpStatusCode.RequestTimeout, "Server was unable to handle request in time",
-                                              e => Log.Debug("Error occurred while closing timed out connection (http service core): {0}.", e.Message));
+
+                        //NOTE: if new element appear before old min it should also be removed
+                        // so we only check whether it is still active
+                        if (req.Item2.IsProcessing)
+                            req.Item2.ReplyStatus(
+                                HttpStatusCode.RequestTimeout,
+                                "Server was unable to handle request in time",
+                                e =>
+                                    Log.Debug(
+                                        "Error occurred while closing timed out connection (http service core): {0}.",
+                                        e.Message));
                     }
                     else 
                         break;
