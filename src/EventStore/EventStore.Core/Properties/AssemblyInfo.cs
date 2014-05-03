@@ -5,6 +5,8 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
+using EventStore.Core.Messaging;
+
 [assembly: AssemblyTitle("EventStore.Core")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
@@ -13,6 +15,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright © Event Store LLP. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
+
+[assembly: MessageContainer]
 
 //NOTE: Do not change these, they will be modified during the build by TeamCity.
 [assembly: AssemblyVersion("0.0.0.0")]

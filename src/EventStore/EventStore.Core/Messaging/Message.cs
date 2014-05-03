@@ -15,6 +15,11 @@ namespace EventStore.Core.Messaging
         public virtual int MsgTypeId { get { return TypeId; } }
     }
 
+    [AttributeUsage(AttributeTargets.Assembly)]
+    public sealed class MessageContainerAttribute : Attribute
+    {
+    }
+
     public static class MessageHierarchy
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(MessageHierarchy));
@@ -38,45 +43,47 @@ namespace EventStore.Core.Messaging
             Descendants = new Dictionary<Type, List<Type>>();
 
             int msgTypeCount = 0;
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var msgType in 
+                (from assembly in AppDomain.CurrentDomain.GetAssemblies()
+                where Attribute.IsDefined(assembly, typeof(MessageContainerAttribute))
+                from type in assembly.GetTypes()
+                where rootMsgType.IsAssignableFrom(type)
+                select type))
             {
-                foreach (var msgType in assembly.GetTypes().Where(rootMsgType.IsAssignableFrom))
+                msgTypeCount += 1;
+
+                var msgTypeId = GetMsgTypeId(msgType);
+                MsgTypeIdByType.Add(msgType, msgTypeId);
+                parents.Add(msgTypeId, new List<int>());
+
+                MaxMsgTypeId = Math.Max(msgTypeId, MaxMsgTypeId);
+                //Log.WriteLine("Found {0} with MsgTypeId {1}", msgType.Name, msgTypeId);
+
+                var type = msgType;
+                while (true)
                 {
-                    msgTypeCount += 1;
-
-                    var msgTypeId = GetMsgTypeId(msgType);
-                    MsgTypeIdByType.Add(msgType, msgTypeId);
-                    parents.Add(msgTypeId, new List<int>());
-
-                    MaxMsgTypeId = Math.Max(msgTypeId, MaxMsgTypeId);
-                    //Log.WriteLine("Found {0} with MsgTypeId {1}", msgType.Name, msgTypeId);
-
-                    var type = msgType;
-                    while (true)
+                    var typeId = GetMsgTypeId(type);
+                    parents[msgTypeId].Add(typeId);
+                    List<int> list;
+                    if (!descendants.TryGetValue(typeId, out list))
                     {
-                        var typeId = GetMsgTypeId(type);
-                        parents[msgTypeId].Add(typeId);
-                        List<int> list;
-                        if (!descendants.TryGetValue(typeId, out list))
-                        {
-                            list = new List<int>();
-                            descendants.Add(typeId, list);
-                        }
-                        list.Add(msgTypeId);
+                        list = new List<int>();
+                        descendants.Add(typeId, list);
+                    }
+                    list.Add(msgTypeId);
 
-                        List<Type> typeList;
-                        if (!Descendants.TryGetValue(type, out typeList))
-                        {
-                            typeList = new List<Type>();
-                            Descendants.Add(type, typeList);
-                        }
-                        typeList.Add(msgType);
+                    List<Type> typeList;
+                    if (!Descendants.TryGetValue(type, out typeList))
+                    {
+                        typeList = new List<Type>();
+                        Descendants.Add(type, typeList);
+                    }
+                    typeList.Add(msgType);
 
-                        if (type == rootMsgType)
-                            break;
-                        type = type.BaseType;
-                    };
-                }
+                    if (type == rootMsgType)
+                        break;
+                    type = type.BaseType;
+                };
             }
 
             if (msgTypeCount - 1 != MaxMsgTypeId)
