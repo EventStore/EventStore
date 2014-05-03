@@ -63,11 +63,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 GetInputQueue(),
                 queues,
                 _timeProvider,
-                RunProjections.All,
+                ProjectionType.All,
                 _initializeSystemProjections);
 
             _coordinator = new ProjectionCoreCoordinator(
-                RunProjections.All,
+                ProjectionType.All,
                 ProjectionCoreWorkersNode.CreateTimeoutSchedulers(queues.Count),
                 queues.Values.ToArray(),
                 _bus,

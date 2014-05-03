@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         private void CreateNode()
         {
             var projectionWorkerThreadCount = GivenWorkerThreadCount();
-            _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: RunProjections.All);
+            _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All);
             _node = new MiniNode(
                 PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] {_projections});
             _node.Start();

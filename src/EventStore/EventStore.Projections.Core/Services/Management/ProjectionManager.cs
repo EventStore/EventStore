@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly Guid[] _workers;
 
         private readonly ITimeProvider _timeProvider;
-        private readonly RunProjections _runProjections;
+        private readonly ProjectionType _runProjections;
         private readonly bool _initializeSystemProjections;
         private readonly Dictionary<string, ManagedProjection> _projections;
         private readonly Dictionary<Guid, string> _projectionsMap;
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Management
             IPublisher publisher,
             IDictionary<Guid, IPublisher> queueMap,
             ITimeProvider timeProvider,
-            RunProjections runProjections,
+            ProjectionType runProjections,
             bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void Start()
         {
             _publisher.Publish(new ProjectionManagementMessage.Starting());
-            if (_runProjections >= RunProjections.System)
+            if (_runProjections >= ProjectionType.System)
                 StartExistingProjections(
                     () =>
                     {
@@ -615,8 +615,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         private bool IsProjectionEnabledToRunByMode(string projectionName)
         {
-            return _runProjections >= RunProjections.All
-                   || _runProjections == RunProjections.System && projectionName.StartsWith("$");
+            return _runProjections >= ProjectionType.All
+                   || _runProjections == ProjectionType.System && projectionName.StartsWith("$");
         }
 
         private void RequestSystemProjections()

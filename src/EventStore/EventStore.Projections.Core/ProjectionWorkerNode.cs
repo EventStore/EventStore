@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core
 {
     public class ProjectionWorkerNode 
     {
-        private readonly RunProjections _runProjections;
+        private readonly ProjectionType _runProjections;
         private readonly ProjectionCoreService _projectionCoreService;
         private readonly ProjectionCoreServiceCommandReader _projectionCoreServiceCommandReader;
         private readonly InMemoryBus _coreOutput;
@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core
             QueuedHandler inputQueue,
             ITimeProvider timeProvider,
             ISingletonTimeoutScheduler timeoutScheduler,
-            RunProjections runProjections)
+            ProjectionType runProjections)
         {
             _runProjections = runProjections;
             Ensure.NotNull(db, "db");
@@ -56,10 +56,10 @@ namespace EventStore.Projections.Core
                 _ioDispatcher,
                 10,
                 db.Config.WriterCheckpoint,
-                runHeadingReader: runProjections >= RunProjections.System);
+                runHeadingReader: runProjections >= ProjectionType.System);
 
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
-            if (runProjections >= RunProjections.System)
+            if (runProjections >= ProjectionType.System)
             {
                 _projectionCoreServiceCommandReader = new ProjectionCoreServiceCommandReader(
                     publisher,
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core
 
             coreInputBus.Subscribe(_feedReaderService);
 
-            if (_runProjections >= RunProjections.System)
+            if (_runProjections >= ProjectionType.System)
             {
 
                 coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_projectionCoreService);

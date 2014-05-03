@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Services.Management
     public class ProjectionCoreCoordinator
         : IHandle<ProjectionManagementMessage.Internal.RegularTimeout>, IHandle<SystemMessage.StateChangeMessage>
     {
-        private readonly RunProjections _runProjections;
+        private readonly ProjectionType _runProjections;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly IPublisher[] _queues;
         private bool _started;
@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IEnvelope _publishEnvelope;
 
         public ProjectionCoreCoordinator(
-            RunProjections runProjections,
+            ProjectionType runProjections,
             TimeoutScheduler[] timeoutSchedulers,
             IPublisher[] queues,
             
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Services.Management
             foreach (var queue in _queues)
             {
                 queue.Publish(new ReaderCoreServiceMessage.StartReader());
-                if (_runProjections >= RunProjections.System)
+                if (_runProjections >= ProjectionType.System)
                     queue.Publish(new ProjectionCoreServiceMessage.StartCore());
             }
         }
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Services.Management
                 foreach (var queue in _queues)
                 {
                     queue.Publish(new ProjectionCoreServiceMessage.StopCore());
-                    if (_runProjections >= RunProjections.System)
+                    if (_runProjections >= ProjectionType.System)
                         queue.Publish(new ReaderCoreServiceMessage.StopReader());
                 }
             }
@@ -102,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void SetupMessaging(IBus bus)
         {
             bus.Subscribe<SystemMessage.StateChangeMessage>(this);
-            if (_runProjections >= RunProjections.System)
+            if (_runProjections >= ProjectionType.System)
             {
                 bus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(this);
             }
