@@ -9,6 +9,10 @@ namespace EventStore.Common.Options
 {
     public class EventStoreOptions
     {
+        private const string DEFAULT_OPTION_SOURCE = "<DEFAULT>";
+        private const string FROM_ENVIRONMENT_VARIABLE = "environment variable";
+        private const string FROM_COMMAND_LINE = "from commandline";
+        private const string FROM_CONFIG_FILE = "from config";
         private static List<Tuple<string, OptionSource>> parsedOptions;
 
         public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
@@ -19,14 +23,15 @@ namespace EventStore.Common.Options
             {
                 var arguments = new TOptions();
                 arguments = SetEnvironmentVariables<TOptions>(arguments, environmentPrefix);
-                ReEvaluateOptionsForDumping(arguments, "environment");
+                ReEvaluateOptionsForDumping(arguments, EventStoreOptions.FROM_ENVIRONMENT_VARIABLE);
                 return arguments;
             }
             TOptions options = null;
             try
             {
                 options = PowerArgs.Args.Parse<TOptions>(args);
-                ReEvaluateOptionsForDumping(options, "commandline");
+                var ambientArgs = PowerArgs.Args.GetAmbientArgs<TOptions>();
+                ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_COMMAND_LINE);
             }
             catch (ArgException ex)
             {
@@ -62,15 +67,17 @@ namespace EventStore.Common.Options
             foreach (var property in typeof(TOptions).GetProperties())
             {
                 var defaultValue = property.GetValue(options, null);
-                parsedOptions.Add(new Tuple<string, OptionSource>(property.Name, new OptionSource("default", defaultValue)));
+                parsedOptions.Add(new Tuple<string, OptionSource>(property.Name, new OptionSource(DEFAULT_OPTION_SOURCE, defaultValue)));
             }
             return parsedOptions;
         }
 
         private static void SetDumpedOptions(string property, string source, object value)
         {
-            parsedOptions.Remove(parsedOptions.First(x => x.Item1 == property));
-            parsedOptions.Add(new Tuple<string, OptionSource>(property, new OptionSource(source, value)));
+            var optionToReplace = parsedOptions.First(x => x.Item1 == property);
+            var indexOfOption = parsedOptions.IndexOf(optionToReplace);
+            parsedOptions.Remove(optionToReplace);
+            parsedOptions.Insert(indexOfOption, new Tuple<string, OptionSource>(property, new OptionSource(source, value)));
         }
 
         private static List<Tuple<string, OptionSource>> ReEvaluateOptionsForDumping<TOptions>(TOptions currentOptions, string source) where TOptions : IOptions, new()
@@ -103,7 +110,7 @@ namespace EventStore.Common.Options
                     defaultValue.Equals(commandLineValue))
                 {
                     var valueToUse = property.GetValue(argumentsFromConfig, null);
-                    SetDumpedOptions(property.Name, "config", valueToUse);
+                    SetDumpedOptions(property.Name, EventStoreOptions.FROM_CONFIG_FILE, valueToUse);
                     property.SetValue(commandLineArguments, valueToUse, null);
                 }
             }
@@ -127,7 +134,7 @@ namespace EventStore.Common.Options
                     try
                     {
                         var valueToUse = Convert.ChangeType(environmentVariableValue, property.PropertyType);
-                        SetDumpedOptions(property.Name, "environment", valueToUse);
+                        SetDumpedOptions(property.Name, EventStoreOptions.FROM_ENVIRONMENT_VARIABLE, valueToUse);
                         property.SetValue(eventStoreArguments, valueToUse, null);
                     }
                     catch (FormatException ex)
@@ -149,14 +156,27 @@ namespace EventStore.Common.Options
             foreach (var option in parsedOptions)
             {
                 var value = option.Item2.Value;
+                var optionName = PascalCaseNameSplitter(option.Item1).ToUpper();
                 var valueToDump = value.ToString();
+                var source = option.Item2.Source;
                 if (value is Array)
                 {
-                    valueToDump = "[ " + String.Join(", ", (IEnumerable<object>)value) + " ]";
+                    valueToDump = String.Empty;
+                    var collection = value as Array;
+                    if (collection.Length > 0)
+                    {
+                        valueToDump = "[ " + String.Join(", ", (IEnumerable<object>)value) + " ]";
+                    }
                 }
-                dumpOptionsBuilder.AppendLine(String.Format("{0} - {1}:{2}", option.Item1, option.Item2.Source, String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump));
+                dumpOptionsBuilder.AppendLine(String.Format("{0,-25} {1} ({2})", optionName + ":", String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump, source));
             }
             return dumpOptionsBuilder.ToString();
+        }
+        private static string PascalCaseNameSplitter(string name)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
+            var convertedName = regex.Replace(name, " ");
+            return convertedName;
         }
     }
     public struct OptionSource
