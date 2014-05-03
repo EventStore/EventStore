@@ -146,6 +146,7 @@ namespace EventStore.Core.Tests.Http
             if (credentials != null)
             {
                 httpWebRequest.Credentials = credentials;
+				httpWebRequest.PreAuthenticate = true;
             }
             return httpWebRequest;
         }
@@ -158,6 +159,7 @@ namespace EventStore.Core.Tests.Http
             if (credentials != null)
             {
                 httpWebRequest.Credentials = credentials;
+				httpWebRequest.PreAuthenticate = true;
             }
             return httpWebRequest;
         }

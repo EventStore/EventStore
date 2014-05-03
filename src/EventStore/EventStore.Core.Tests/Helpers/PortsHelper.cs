@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.Helpers
                 try
                 {
                     var httpListener = new HttpListener();
-                    httpListener.Prefixes.Add(string.Format("http://+:{0}/", port));
+					httpListener.Prefixes.Add(string.Format("http://127.0.0.1:{0}/", port));
                     httpListener.Start();
                     httpListener.Stop();
                 }
