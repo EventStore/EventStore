@@ -30,7 +30,6 @@ namespace EventStore.Common.Options
             try
             {
                 options = PowerArgs.Args.Parse<TOptions>(args);
-                var ambientArgs = PowerArgs.Args.GetAmbientArgs<TOptions>();
                 ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_COMMAND_LINE);
             }
             catch (ArgException ex)
