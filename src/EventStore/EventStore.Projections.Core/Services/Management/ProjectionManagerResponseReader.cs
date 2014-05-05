@@ -11,6 +11,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Responses;
 using EventStore.Projections.Core.Services.Processing;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -25,17 +26,17 @@ namespace EventStore.Projections.Core.Services.Management
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
 
-            
+
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
         }
 
         public void Handle(ProjectionManagementMessage.Starting message)
         {
-            _ioDispatcher.Perform(PerformStartReader());
+            PerformStartReader().Run();
         }
 
-        private IEnumerable<IODispatcher.Step> PerformStartReader()
+        private IEnumerable<IODispatcherAsync.Step> PerformStartReader()
         {
             ClientMessage.WriteEventsCompleted writeResult = null;
 //            Trace.WriteLine("Writing $response-reader-starting");
@@ -44,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Management
                     ProjectionNamesBuilder._projectionsMasterStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
-                    new[] { new Event(Guid.NewGuid(), "$response-reader-starting", true, "{}", null) },
+                    new[] {new Event(Guid.NewGuid(), "$response-reader-starting", true, "{}", null)},
                     completed => writeResult = completed);
 
             if (writeResult.Result != OperationResult.Success)
@@ -60,7 +61,7 @@ namespace EventStore.Projections.Core.Services.Management
                     ProjectionNamesBuilder._projectionsControlStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
-                    new[] { new Event(Guid.NewGuid(), "$response-reader-started", true, "{}", null) },
+                    new[] {new Event(Guid.NewGuid(), "$response-reader-started", true, "{}", null)},
                     completed => writeResult = completed);
 
             if (writeResult.Result != OperationResult.Success)
@@ -78,7 +79,7 @@ namespace EventStore.Projections.Core.Services.Management
                     yield return
                         _ioDispatcher.BeginReadForward(
                             ProjectionNamesBuilder._projectionsMasterStream,
-                            from,
+                            @from,
                             10,
                             false,
                             SystemAccount.Principal,
@@ -88,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Management
                                 if (completed.Result == ReadStreamResult.Success
                                     || completed.Result == ReadStreamResult.NoStream)
                                 {
-                                    from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
+                                    @from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
                                     eof = completed.IsEndOfStream;
                                     // subscribeFrom is only used if eof
                                     subscribeFrom = new TFPos(
@@ -101,18 +102,22 @@ namespace EventStore.Projections.Core.Services.Management
                                     }
                                 }
                                 else
-                                    Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
+                                    Trace.WriteLine(
+                                        ProjectionNamesBuilder._projectionsMasterStream + " read completed: "
+                                        + completed.Result);
                             });
-                     
-
                 } while (!eof);
                 //Trace.WriteLine("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
-                yield return _ioDispatcher.BeginSubscribeAwake(ProjectionNamesBuilder._projectionsMasterStream, subscribeFrom, message => { });
+                yield return
+                    _ioDispatcher.BeginSubscribeAwake(
+                        ProjectionNamesBuilder._projectionsMasterStream,
+                        subscribeFrom,
+                        message => { });
                 //Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " await completed");
             }
         }
 
-        private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        private void PublishCommand(ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
             //Trace.WriteLine("Response received: " + command);
@@ -124,8 +129,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionWorkerStarted>();
                     _publisher.Publish(
-                        new CoreProjectionStatusMessage.ProjectionWorkerStarted(
-                            Guid.ParseExact(commandBody.Id, "N")));
+                        new CoreProjectionStatusMessage.ProjectionWorkerStarted(Guid.ParseExact(commandBody.Id, "N")));
                     break;
                 }
                 case "$prepared":
@@ -149,14 +153,12 @@ namespace EventStore.Projections.Core.Services.Management
                 case "$started":
                 {
                     var commandBody = resolvedEvent.Event.Data.ParseJson<Started>();
-                    _publisher.Publish(
-                        new CoreProjectionStatusMessage.Started(Guid.ParseExact(commandBody.Id, "N")));
+                    _publisher.Publish(new CoreProjectionStatusMessage.Started(Guid.ParseExact(commandBody.Id, "N")));
                     break;
                 }
                 case "$statistics-report":
                 {
-                    var commandBody =
-                        resolvedEvent.Event.Data.ParseJson<StatisticsReport>();
+                    var commandBody = resolvedEvent.Event.Data.ParseJson<StatisticsReport>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.StatisticsReport(
                             Guid.ParseExact(commandBody.Id, "N"),
@@ -344,6 +346,5 @@ namespace EventStore.Projections.Core.Services.Management
                     throw new Exception("Unknown response: " + command);
             }
         }
-
     }
 }

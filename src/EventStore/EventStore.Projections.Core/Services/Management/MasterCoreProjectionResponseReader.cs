@@ -11,7 +11,7 @@ using EventStore.Projections.Core.Messages.Persisted.Responses.Slave;
 
 namespace EventStore.Projections.Core.Services.Management
 {
-    public class MasterCoreProjectionResponseReader 
+    public class MasterCoreProjectionResponseReader
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Start()
         {
-            _ioDispatcher.Perform(PerformStartReader());
+            StartReaderSteps().Run();
         }
 
         public void Stop()
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Management
             _ioDispatcher.UnsubscribeAwake(_lastAwakeCorrelationId);
         }
 
-        private IEnumerable<IODispatcher.Step> PerformStartReader()
+        private IEnumerable<IODispatcherAsync.Step> StartReaderSteps()
         {
             var @from = 0;
 
@@ -88,12 +88,12 @@ namespace EventStore.Projections.Core.Services.Management
                                 else
                                     Trace.WriteLine(_streamId + " read completed: " + completed.Result);
                             });
-
-
                 } while (!eof);
                 //Trace.WriteLine("Awaiting " + _streamId);
                 _lastAwakeCorrelationId = Guid.NewGuid();
-                yield return _ioDispatcher.BeginSubscribeAwake(_streamId, subscribeFrom, message => { }, _lastAwakeCorrelationId);
+                yield return
+                    _ioDispatcher.BeginSubscribeAwake(_streamId, subscribeFrom, message => { }, _lastAwakeCorrelationId)
+                    ;
                 //Trace.WriteLine(_streamId + " await completed");
             }
             // unlikely we can ever get here, but still possible - do nothing
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Services.Management
                         new PartitionProcessingResult(
                             _workerId,
                             _masterProjectionId,
-                            Guid.ParseExact(body.SubscriptionId, "N"), 
+                            Guid.ParseExact(body.SubscriptionId, "N"),
                             body.Partition,
                             Guid.ParseExact(body.CausedBy, "N"),
                             body.Position,
@@ -146,6 +146,5 @@ namespace EventStore.Projections.Core.Services.Management
                     throw new Exception("Unknown response: " + command);
             }
         }
-
     }
 }

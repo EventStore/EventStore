@@ -44,30 +44,29 @@ namespace EventStore.Projections.Core.Services.Management
             var events = queue.Items.Select(CreateEvent).ToArray();
             queue.Items.Clear();
             var streamId = "$projections-$" + workerId.ToString("N");
-            _ioDispatcher.Perform(
-                _ioDispatcher.BeginWriteEvents(
-                    streamId,
-                    ExpectedVersion.Any,
-                    SystemAccount.Principal,
-                    events,
-                    completed =>
+            _ioDispatcher.BeginWriteEvents(
+                streamId,
+                ExpectedVersion.Any,
+                SystemAccount.Principal,
+                events,
+                completed =>
+                {
+                    queue.Busy = false;
+                    if (completed.Result != OperationResult.Success)
                     {
-                        queue.Busy = false;
-                        if (completed.Result != OperationResult.Success)
-                        {
-                            var message = string.Format(
-                                "Cannot write commands to the stream {0}. status: {1}",
-                                streamId,
-                                completed.Result);
-                            _logger.Fatal(message);
-                            throw new Exception(message);
-                        }
+                        var message = string.Format(
+                            "Cannot write commands to the stream {0}. status: {1}",
+                            streamId,
+                            completed.Result);
+                        _logger.Fatal(message);
+                        throw new Exception(message);
+                    }
 
-                        if (queue.Items.Count > 0)
-                            EmitEvents(queue, workerId);
-                        else
-                            _queues.Remove(workerId);
-                    }));
+                    if (queue.Items.Count > 0)
+                        EmitEvents(queue, workerId);
+                    else
+                        _queues.Remove(workerId);
+                }).Run();
         }
 
         private Event CreateEvent(Queue.Item item)
