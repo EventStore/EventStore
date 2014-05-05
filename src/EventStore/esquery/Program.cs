@@ -118,6 +118,7 @@ namespace esquery
             request.ContentType = "application/json";
             request.ContentLength = 10;
             request.Credentials = cred;
+            request.PreAuthenticate = true;
             try
             {
                 using (var response = (HttpWebResponse) request.GetResponse())
