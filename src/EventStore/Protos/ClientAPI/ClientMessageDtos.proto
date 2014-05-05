@@ -58,6 +58,8 @@ message WriteEventsCompleted {
 	optional string message = 2;
 	required int32 first_event_number = 3;
 	required int32 last_event_number = 4;
+	optional int64 prepare_position = 5;
+	optional int64 commit_position = 6;
 }
 
 message DeleteStream {
@@ -70,6 +72,8 @@ message DeleteStream {
 message DeleteStreamCompleted {
 	required OperationResult result = 1;
 	optional string message = 2;
+	optional int64 prepare_position = 3;
+	optional int64 commit_position = 4;
 }
 
 message TransactionStart {

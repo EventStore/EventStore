@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
         {
-            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
             var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, firstEventNumber, lastEventNumber);
             ResponseEnvelope.ReplyWith(responseMsg);
         }

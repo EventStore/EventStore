@@ -150,8 +150,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     throw new ArgumentOutOfRangeException();
             }
             _responseEnvelope.ReplyWith(responseMsg);
-            //_transactionId happens to be 
-            _bus.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true, _transactionId, _transactionId));
+            _bus.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true));
         }
 
         private void CompleteFailedRequest(OperationResult result, string error)
@@ -173,7 +172,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     throw new ArgumentOutOfRangeException();
             }
             _responseEnvelope.ReplyWith(responseMsg);
-            _bus.Publish(new StorageMessage.RequestCompleted(_internalCorrId, false, -1,-1));
+            _bus.Publish(new StorageMessage.RequestCompleted(_internalCorrId, false));
         }
 
         private enum RequestType

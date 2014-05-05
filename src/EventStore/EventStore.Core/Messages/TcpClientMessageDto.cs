@@ -186,14 +186,22 @@ namespace EventStore.Core.Messages
     [ProtoMember(4, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int LastEventNumber;
   
+    [ProtoMember(5, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? PreparePosition;
+  
+    [ProtoMember(6, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CommitPosition;
+  
     private WriteEventsCompleted() {}
   
-    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber)
+    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
     {
         Result = result;
         Message = message;
         FirstEventNumber = firstEventNumber;
         LastEventNumber = lastEventNumber;
+        PreparePosition = preparePosition;
+        CommitPosition = commitPosition;
     }
   }
   
@@ -232,12 +240,20 @@ namespace EventStore.Core.Messages
     [ProtoMember(2, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
     public readonly string Message;
   
+    [ProtoMember(3, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? PreparePosition;
+  
+    [ProtoMember(4, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CommitPosition;
+  
     private DeleteStreamCompleted() {}
   
-    public DeleteStreamCompleted(OperationResult result, string message)
+    public DeleteStreamCompleted(OperationResult result, string message, long? preparePosition, long? commitPosition)
     {
         Result = result;
         Message = message;
+        PreparePosition = preparePosition;
+        CommitPosition = commitPosition;
     }
   }
   

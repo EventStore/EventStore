@@ -40,15 +40,15 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
         {
-            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
-            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null);
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
+            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null, preparePosition, commitPosition);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 
         protected override void CompleteFailedRequest(OperationResult result, string error)
         {
             base.CompleteFailedRequest(result, error);
-            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, result, error);
+            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, result, error, -1, -1);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
     }
