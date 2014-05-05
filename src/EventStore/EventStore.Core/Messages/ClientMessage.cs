@@ -351,8 +351,10 @@ namespace EventStore.Core.Messages
             public readonly string Message;
             public readonly int FirstEventNumber;
             public readonly int LastEventNumber;
+            public readonly long PreparePosition;
+            public readonly long CommitPosition;
 
-            public TransactionCommitCompleted(Guid correlationId, long transactionId, int firstEventNumber, int lastEventNumber)
+            public TransactionCommitCompleted(Guid correlationId, long transactionId, int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
             {
                 if (firstEventNumber < -1)
                     throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
@@ -364,6 +366,8 @@ namespace EventStore.Core.Messages
                 Message = string.Empty;
                 FirstEventNumber = firstEventNumber;
                 LastEventNumber = lastEventNumber;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
             }
 
             public TransactionCommitCompleted(Guid correlationId, long transactionId, OperationResult result, string message)

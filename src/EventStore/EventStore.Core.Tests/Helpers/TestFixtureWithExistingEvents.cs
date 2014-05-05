@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Helpers
                     _events.Select(v => v.Item2).ToArray(),
                     (f, l) =>
                     new ClientMessage.TransactionCommitCompleted(
-                        message.CorrelationId, message.TransactionId, f, l),
+                        message.CorrelationId, message.TransactionId, f, l, -1, -1),
                     new ClientMessage.TransactionCommitCompleted(
                         message.CorrelationId, message.TransactionId, OperationResult.WrongExpectedVersion, "Wrong expected version"),
                     _events.Select(v => (long)v.Item1).ToArray(), commitPosition);
