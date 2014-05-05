@@ -135,8 +135,8 @@ namespace EventStore.Core.Helpers
                         ioDispatcher,
                         streamId,
                         expectedVersion,
-                        principal, 
-                        metadata, 
+                        principal,
+                        metadata,
                         handler,
                         steps);
         }
