@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 {
                     Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, PublishEnvelope, _transactionId));
                     _nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
-                }
+                } 
             }
         }
 
@@ -170,10 +170,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber);
         }
 
-        protected virtual void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
+        protected virtual void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
         {
             _completed = true;
-            Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true));
+            Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true, preparePosition, commitPosition));
         }
 
         protected virtual void CompleteFailedRequest(OperationResult result, string error)

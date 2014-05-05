@@ -328,12 +328,16 @@ namespace EventStore.Core.Messages
 
             public readonly Guid CorrelationId;
             public readonly bool Success;
+            public readonly long PreparePosition;
+            public readonly long CommitPosition;
 
-            public RequestCompleted(Guid correlationId, bool success)
+            public RequestCompleted(Guid correlationId, bool success, long preparePosition, long commitPosition)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 CorrelationId = correlationId;
                 Success = success;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
             }
         }
 

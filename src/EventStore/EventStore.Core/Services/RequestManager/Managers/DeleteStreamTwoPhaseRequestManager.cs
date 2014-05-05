@@ -2,7 +2,7 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
-
+ 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     liveUntil: NextTimeoutTime - TimeoutOffset));
         }
 
-        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
         {
             base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
             var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null);
