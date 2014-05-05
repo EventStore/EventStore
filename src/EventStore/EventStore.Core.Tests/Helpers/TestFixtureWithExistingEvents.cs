@@ -156,7 +156,7 @@ namespace EventStore.Core.Tests.Helpers
             var message = _writesQueue.Dequeue();
             ProcessWrite(
                 message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion, message.Events,
-                (firstEventNumber, lastEventNumber) => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber),
+                (firstEventNumber, lastEventNumber) => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber, -1,-1),
                 new ClientMessage.WriteEventsCompleted(
                     message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
         }
@@ -369,7 +369,7 @@ namespace EventStore.Core.Tests.Helpers
                     message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion,
                     message.Events,
                     (firstEventNumber, lastEventNumber) =>
-                        new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber),
+                        new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber, -1, -1),
                     new ClientMessage.WriteEventsCompleted(
                         message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
             }
@@ -437,7 +437,7 @@ namespace EventStore.Core.Tests.Helpers
             List<EventRecord> list;
             if (_deletedStreams.Contains(message.EventStreamId))
             {
-                message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.StreamDeleted, string.Empty));
+                message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.StreamDeleted, string.Empty, -1, -1));
                 return;
             }
             if (!_streams.TryGetValue(message.EventStreamId, out list) || list == null)

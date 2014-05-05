@@ -182,8 +182,10 @@ namespace EventStore.Core.Messages
             public readonly string Message;
             public readonly int FirstEventNumber;
             public readonly int LastEventNumber;
+            public readonly long PreparePosition;
+            public readonly long CommitPosition;
 
-            public WriteEventsCompleted(Guid correlationId, int firstEventNumber, int lastEventNumber)
+            public WriteEventsCompleted(Guid correlationId, int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
             {
                 if (firstEventNumber < -1)
                     throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
@@ -195,6 +197,8 @@ namespace EventStore.Core.Messages
                 Message = null;
                 FirstEventNumber = firstEventNumber;
                 LastEventNumber = lastEventNumber;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
             }
 
             public WriteEventsCompleted(Guid correlationId, OperationResult result, string message)
@@ -423,17 +427,24 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly OperationResult Result;
             public readonly string Message;
+            public readonly long PreparePosition;
+            public readonly long CommitPosition;
 
-            public DeleteStreamCompleted(Guid correlationId, OperationResult result, string message)
+            public DeleteStreamCompleted(Guid correlationId, OperationResult result, string message, long preparePosition, long commitPosition)
             {
                 CorrelationId = correlationId;
                 Result = result;
                 Message = message;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
             }
+
+            public DeleteStreamCompleted(Guid correlationId, OperationResult result, string message) : this(correlationId, result, message, -1,-1) { }
+
 
             public DeleteStreamCompleted WithCorrelationId(Guid newCorrId)
             {
-                return new DeleteStreamCompleted(newCorrId, Result, Message);
+                return new DeleteStreamCompleted(newCorrId, Result, Message, PreparePosition, CommitPosition);
             }
         }
 
