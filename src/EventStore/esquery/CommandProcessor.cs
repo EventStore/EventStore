@@ -305,7 +305,7 @@ namespace esquery
             var message = "[{'eventType':'" + eventType + "', 'eventId' :'" + Guid.NewGuid() + "', 'data' : " + data +"}]";
             var request = WebRequest.Create(baseUri.AbsoluteUri + "streams/" + stream);
             request.Method = "POST";
-            request.ContentType = "application/json";
+            request.ContentType = "application/vnd.eventstore.events+json";
             request.ContentLength = message.Length;
             using (var sw = new StreamWriter(request.GetRequestStream()))
             {
@@ -405,7 +405,7 @@ namespace esquery
         public override string ToString()
         {
             return "esquery help:\n" + "\th/help: prints help\n" + "\tq/query {js query} executes a query.\n"
-                   + "\ta/append {stream} {js object}: appends to a stream.\n"
+                   + "\ta/append {stream} {type} {js object}: appends to a stream.\n"
                    + "\ts/subscribe {stream}: subscribes to a stream.\n";
         }
     }

@@ -69,8 +69,22 @@ namespace esquery
                 baseuri = new Uri(args[0]);
                 return new Args(false, baseuri, GetValidatedNetworkCredential(baseuri));
             }
+            if(args.Length == 2) {
+                WriteUsage();
+            }
+            if(args.Length == 3) {
+                baseuri = new Uri(args[0]);
+                return new Args(false, baseuri, new NetworkCredential(args[1], args[2]));
+            }
+            if(args.Length > 4) {
+                WriteUsage();
+            }
             Console.WriteLine("No server set defaulting to http://127.0.0.1:2113/");
             return new Args(true, baseuri, GetValidatedNetworkCredential(baseuri));
+        }
+
+        private static void WriteUsage() {
+            Console.WriteLine("Usage esquery {baseuri} {user} {password}");
         }
 
         private static NetworkCredential GetValidatedNetworkCredential(Uri baseuri)
@@ -102,7 +116,7 @@ namespace esquery
             var request = WebRequest.Create(baseuri.AbsoluteUri +"projections/transient?enabled=yes");
             request.Method = "POST";
             request.ContentType = "application/json";
-            request.ContentLength = 0;
+            request.ContentLength = 10;
             request.Credentials = cred;
             try
             {
@@ -113,7 +127,12 @@ namespace esquery
             }
             catch (WebException ex)
             {
+                Console.WriteLine(ex);
                 var response = (HttpWebResponse)ex.Response;
+                if(response == null) {
+                    Console.WriteLine("The server at " + baseuri + " does not seem to be reachable.\n");
+                    return false;
+                }
                 return response.StatusCode != HttpStatusCode.Unauthorized;
             }
         }
