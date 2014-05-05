@@ -8,6 +8,8 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Messages.Persisted.Responses.Slave;
+using EventStore.Projections.Core.Services.Processing;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -51,6 +53,14 @@ namespace EventStore.Projections.Core.Services.Management
 
         private IEnumerable<IODispatcherAsync.Step> StartReaderSteps()
         {
+            yield return
+                _ioDispatcher.BeginUpdateStreamAcl(
+                    _streamId,
+                    ExpectedVersion.Any,
+                    SystemAccount.Principal,
+                    new StreamMetadata(maxAge: ProjectionNamesBuilder.SlaveProjectionControlStreamMaxAge),
+                    completed => { });
+
             var @from = 0;
 
             while (!_stopped)
