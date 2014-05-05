@@ -381,15 +381,23 @@ namespace EventStore.Core.Messages
     [ProtoMember(5, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int LastEventNumber;
   
+    [ProtoMember(6, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? PreparePosition;
+  
+    [ProtoMember(7, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CommitPosition;
+  
     private TransactionCommitCompleted() {}
   
-    public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber)
+    public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
     {
         TransactionId = transactionId;
         Result = result;
         Message = message;
         FirstEventNumber = firstEventNumber;
         LastEventNumber = lastEventNumber;
+        PreparePosition = preparePosition;
+        CommitPosition = commitPosition;
     }
   }
   

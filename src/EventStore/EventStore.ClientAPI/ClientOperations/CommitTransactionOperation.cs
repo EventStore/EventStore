@@ -58,7 +58,7 @@ namespace EventStore.ClientAPI.ClientOperations
         protected override WriteResult TransformResponse(ClientMessage.TransactionCommitCompleted response)
         {
             //TODO GFY MAKE COMMIT WITH PREPARE/COMMIT POSITIONS
-            return new WriteResult(response.LastEventNumber, new Position(-1,-1));
+            return new WriteResult(response.LastEventNumber, new Position(response.PreparePosition, response.CommitPosition));
         }
 
         public override string ToString()

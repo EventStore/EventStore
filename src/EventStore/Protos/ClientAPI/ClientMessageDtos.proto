@@ -111,6 +111,8 @@ message TransactionCommitCompleted {
 	optional string message = 3;
 	required int32 first_event_number = 4;
 	required int32 last_event_number = 5;
+	optional int64 prepare_position = 6;
+	optional int64 commit_position = 7;
 }
 
 message ReadEvent {
