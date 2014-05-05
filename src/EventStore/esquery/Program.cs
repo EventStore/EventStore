@@ -128,7 +128,6 @@ namespace esquery
             }
             catch (WebException ex)
             {
-                Console.WriteLine(ex);
                 var response = (HttpWebResponse)ex.Response;
                 if(response == null) {
                     Console.WriteLine("The server at " + baseuri + " does not seem to be reachable.\n");
