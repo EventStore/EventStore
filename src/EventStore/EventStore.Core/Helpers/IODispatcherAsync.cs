@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 
 namespace EventStore.Core.Helpers
 {
@@ -120,6 +121,26 @@ namespace EventStore.Core.Helpers
                 correlationId);
         }
 
+        public static Step BeginUpdateStreamAcl(
+            this IODispatcher ioDispatcher,
+            string streamId,
+            int expectedVersion,
+            IPrincipal principal,
+            StreamMetadata metadata,
+            Action<ClientMessage.WriteEventsCompleted> handler)
+        {
+            return
+                steps =>
+                    UpdateStreamAclWithRetry(
+                        ioDispatcher,
+                        streamId,
+                        expectedVersion,
+                        principal, 
+                        metadata, 
+                        handler,
+                        steps);
+        }
+
         public static Step BeginDelay(this IODispatcher ioDispatcher, TimeSpan timeout, Action handler)
         {
             return steps => ioDispatcher.Delay(
@@ -175,6 +196,32 @@ namespace EventStore.Core.Helpers
                         streamId,
                         expectedVersion,
                         hardDelete,
+                        principal,
+                        response => action(response, response.Result)));
+        }
+
+
+        private static void UpdateStreamAclWithRetry(
+            this IODispatcher ioDispatcher,
+            string streamId,
+            int expectedVersion,
+            IPrincipal principal,
+            StreamMetadata metadata,
+            Action<ClientMessage.WriteEventsCompleted> handler,
+            IEnumerator<Step> steps)
+        {
+            PerformWithRetry(
+                ioDispatcher,
+                handler,
+                steps,
+                expectedVersion == ExpectedVersion.Any,
+                TimeSpan.FromMilliseconds(100),
+                action =>
+                    ioDispatcher.WriteEvents(
+                        SystemStreams.MetastreamOf(streamId),
+                        expectedVersion,
+                        new[]
+                        {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata.ToJsonBytes(), null)},
                         principal,
                         response => action(response, response.Result)));
         }
