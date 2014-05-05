@@ -68,6 +68,21 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
+        public void should_return_log_position_when_writing()
+        {
+            const string stream = "delete_should_return_log_position_when_writing";
+            using (var connection = TestConnection.Create(_node.TcpEndPoint))
+            {
+                connection.ConnectAsync().Wait();
+
+                var result = connection.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result;
+                var delete = connection.DeleteStreamAsync(stream, 1, hardDelete: true).Result;
+                
+                Assert.IsTrue(0 < result.LogPosition.PreparePosition);
+                Assert.IsTrue(0 < result.LogPosition.CommitPosition);
+            }
+        }
+
         [Test]
         [Category("Network")]
         public void which_was_already_deleted_should_fail()

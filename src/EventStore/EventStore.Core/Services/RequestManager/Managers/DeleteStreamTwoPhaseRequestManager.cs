@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected override void CompleteFailedRequest(OperationResult result, string error)
         {
             base.CompleteFailedRequest(result, error);
-            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, result, error, -1, -1);
+            var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
     }

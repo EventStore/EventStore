@@ -346,6 +346,20 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test, Category("LongRunning")]
         [Category("Network")]
+        public void should_return_log_position_when_writing()
+        {
+            const string stream = "should_return_log_position_when_writing";
+            using (var store = TestConnection.To(_node, _tcpType))
+            {
+                store.ConnectAsync().Wait();
+                var result = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result;
+                Assert.IsTrue(0 < result.LogPosition.PreparePosition);
+                Assert.IsTrue(0 < result.LogPosition.CommitPosition);
+            }
+        }
+
+        [Test, Category("LongRunning")]
+        [Category("Network")]
         public void should_fail_appending_with_wrong_exp_ver_to_existing_stream()
         {
             const string stream = "should_fail_appending_with_wrong_exp_ver_to_existing_stream";

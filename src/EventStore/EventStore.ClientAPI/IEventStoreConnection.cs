@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
-        Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
+        Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Deletes a stream from the Event Store asynchronously
@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI
         /// can be written to again, but the EventNumber sequence will not start from 0.</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
-        Task DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
+        Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
