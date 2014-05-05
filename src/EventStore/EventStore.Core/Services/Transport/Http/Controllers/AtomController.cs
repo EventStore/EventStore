@@ -38,19 +38,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private static readonly ICodec[] AtomCodecsWithoutBatches = new[]
                                                       {
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                           EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                           Codec.Json
                                                       };
 
         private static readonly ICodec[] AtomCodecs = new[]
                                                       {
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),                                                        
                                                           EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                           Codec.Json,
                                                           Codec.EventXml,
                                                           Codec.EventJson,
@@ -59,10 +59,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
+                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                                   EventStoreJsonCodec,
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
-                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                                   Codec.Json,
                                                                   Codec.EventXml,
                                                                   Codec.EventJson,
