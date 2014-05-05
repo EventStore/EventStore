@@ -65,6 +65,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
 //            Trace.WriteLine("Starting read control from: " + fromEventNumber);
 
+            yield return
+                _ioDispatcher.BeginUpdateStreamAcl(
+                    ProjectionNamesBuilder._projectionsMasterStream,
+                    ExpectedVersion.Any,
+                    SystemAccount.Principal,
+                    new StreamMetadata(maxAge: ProjectionNamesBuilder.MastrerStreamMaxAge),
+                    completed => { });
+
             //TODO: handle shutdown here and in other readers
             long subscribeFrom = 0;
             var doWriteRegistration = true;
