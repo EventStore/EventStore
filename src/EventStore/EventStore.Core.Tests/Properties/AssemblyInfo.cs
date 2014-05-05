@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using EventStore.Core.Messaging;
 
 [assembly: AssemblyTitle("EventStore.Core.Tests")]
 [assembly: AssemblyDescription("")]
@@ -10,6 +11,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
+[assembly: MessageContainer]
+
 //NOTE: Do not change these, they will be modified during the build by TeamCity.
 [assembly: AssemblyVersion("0.0.0.0")]
 [assembly: AssemblyFileVersion("0.0.0.0")]
@@ -19,3 +22,4 @@ using System.Runtime.InteropServices;
 
 [assembly: NUnit.Framework.Category("All")]
 [assembly: NUnit.Framework.Timeout(30 * 60 * 1000)]
+
