@@ -35,10 +35,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _request = null;
         }
 
-        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
+        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
         {
-            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber);
-            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber, lastEventNumber));
+            base.CompleteSuccessRequest(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber, lastEventNumber, preparePosition, commitPosition));
         }
 
         protected override void CompleteFailedRequest(OperationResult result, string error)

@@ -68,16 +68,16 @@ namespace EventStore.ClientAPI
             _handler.EnqueueMessage(new CloseConnectionMessage("Connection close requested by client.", null));
         }
 
-        public Task DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
+        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
         }
 
-        public Task DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
+        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            var source = new TaskCompletionSource<object>();
+            var source = new TaskCompletionSource<DeleteResult>();
             EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.RequireMaster, 
                                                        stream, expectedVersion, hardDelete, userCredentials));
             return source.Task;

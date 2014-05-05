@@ -6,14 +6,14 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class DeleteStreamOperation : OperationBase<object, ClientMessage.DeleteStreamCompleted>
+    internal class DeleteStreamOperation : OperationBase<DeleteResult, ClientMessage.DeleteStreamCompleted>
     {
         private readonly bool _requireMaster;
         private readonly string _stream;
         private readonly int _expectedVersion;
         private readonly bool _hardDelete;
 
-        public DeleteStreamOperation(ILogger log, TaskCompletionSource<object> source,
+        public DeleteStreamOperation(ILogger log, TaskCompletionSource<DeleteResult> source,
                                      bool requireMaster, string stream, int expectedVersion, bool hardDelete,
                                      UserCredentials userCredentials)
             :base(log, source, TcpCommand.DeleteStream, TcpCommand.DeleteStreamCompleted, userCredentials)
@@ -60,9 +60,9 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        protected override object TransformResponse(ClientMessage.DeleteStreamCompleted response)
+        protected override DeleteResult TransformResponse(ClientMessage.DeleteStreamCompleted response)
         {
-            return null;
+            return new DeleteResult(new Position(response.PreparePosition ?? -1, response.CommitPosition ?? -1));
         }
 
         public override string ToString()

@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         public void publishes_ready_for_checkpoint_on_handling_last_write_events_completed()
         {
             var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
-            _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0, 0));
+            _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0, 0, -1, -1));
             Assert.AreEqual(
                 1, _readyHandler.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }

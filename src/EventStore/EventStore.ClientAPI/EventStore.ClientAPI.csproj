@@ -125,6 +125,7 @@
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
     <Compile Include="WriteResult.cs" />
+    <Compile Include="DeleteResult.cs" />
     <Compile Include="SystemSettings.cs" />
     <Compile Include="EventReadResult.cs" />
     <Compile Include="Core\EventStoreConnectionLogicHandler.cs" />

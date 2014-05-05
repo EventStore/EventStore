@@ -138,7 +138,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
             Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {0}, {1}.", _clientCorrId, message);
-            CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber);
+            CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, -1, -1); 
+            //TODO GFY WE NEED TO GET THE LOG POSITION HERE WHEN ITS AN IDEMPOTENT WRITE
         }
 
         public void Handle(StorageMessage.PrepareAck message)
@@ -156,7 +157,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 {
                     Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, PublishEnvelope, _transactionId));
                     _nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
-                }
+                } 
             }
         }
 
@@ -167,10 +168,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _awaitingCommit -= 1;
             if (_awaitingCommit == 0)
-                CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber);
+                CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, message.LogPosition, message.LogPosition);
         }
 
-        protected virtual void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber)
+        protected virtual void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
         {
             _completed = true;
             Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true));

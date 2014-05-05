@@ -556,7 +556,7 @@ namespace EventStore.Core.Services.VNode
                 return;
             }
             var timeoutMessage = new ClientMessage.DeleteStreamCompleted(
-                message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout");
+                message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1);
             ForwardRequest(message, timeoutMessage);
         }
 

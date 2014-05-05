@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             var writeRequests =
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
             var writeEvents = writeRequests.Single();
-            writeEvents.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, 0, 0));
+            writeEvents.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, 0, 0, -1, -1));
             Assert.AreEqual(2, writeRequests.Count());
         }
     }
