@@ -65,14 +65,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
 //            Trace.WriteLine("Starting read control from: " + fromEventNumber);
 
-            yield return
-                _ioDispatcher.BeginUpdateStreamAcl(
-                    ProjectionNamesBuilder._projectionsMasterStream,
-                    ExpectedVersion.Any,
-                    SystemAccount.Principal,
-                    new StreamMetadata(maxAge: ProjectionNamesBuilder.MastrerStreamMaxAge),
-                    completed => { });
-
             //TODO: handle shutdown here and in other readers
             long subscribeFrom = 0;
             var doWriteRegistration = true;
@@ -140,6 +132,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private IEnumerable<IODispatcherAsync.Step> StartCoreSteps()
         {
+            var coreControlStreamID = "$projections-$" + _coreServiceId;
+            yield return
+                _ioDispatcher.BeginUpdateStreamAcl(
+                    coreControlStreamID,
+                    ExpectedVersion.Any,
+                    SystemAccount.Principal,
+                    new StreamMetadata(maxAge: ProjectionNamesBuilder.CoreControlStreamMaxAge),
+                    completed => { });
+
             var from = 0;
             while (!_stopped)
             {
@@ -149,7 +150,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     yield return
                         _ioDispatcher.BeginReadForward(
-                            "$projections-$" + _coreServiceId,
+                            coreControlStreamID,
                             @from,
                             10,
                             false,
@@ -167,7 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             });
                 } while (!eof);
                 yield return
-                    _ioDispatcher.BeginSubscribeAwake("$projections-$" + _coreServiceId, subscribeFrom, message => { });
+                    _ioDispatcher.BeginSubscribeAwake(coreControlStreamID, subscribeFrom, message => { });
             }
         }
 

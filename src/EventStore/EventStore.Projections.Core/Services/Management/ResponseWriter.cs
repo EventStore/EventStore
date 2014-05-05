@@ -44,9 +44,8 @@ namespace EventStore.Projections.Core.Services.Management
             Busy = true;
             var events = Items.Select(CreateEvent).ToArray();
             Items.Clear();
-            var streamId = ProjectionNamesBuilder._projectionsMasterStream;
             _ioDispatcher.BeginWriteEvents(
-                streamId,
+                ProjectionNamesBuilder._projectionsMasterStream,
                 ExpectedVersion.Any,
                 SystemAccount.Principal,
                 events,
@@ -57,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Management
                     {
                         var message = string.Format(
                             "Cannot write commands to the stream {0}. status: {1}",
-                            streamId,
+                            ProjectionNamesBuilder._projectionsMasterStream,
                             completed.Result);
                         _logger.Fatal(message);
                         throw new Exception(message);

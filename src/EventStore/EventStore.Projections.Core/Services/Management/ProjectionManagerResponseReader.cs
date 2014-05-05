@@ -38,6 +38,22 @@ namespace EventStore.Projections.Core.Services.Management
 
         private IEnumerable<IODispatcherAsync.Step> PerformStartReader()
         {
+            yield return
+                _ioDispatcher.BeginUpdateStreamAcl(
+                    ProjectionNamesBuilder._projectionsControlStream,
+                    ExpectedVersion.Any,
+                    SystemAccount.Principal,
+                    new StreamMetadata(maxAge: ProjectionNamesBuilder.ControlStreamMaxAge),
+                    completed => { });
+
+            yield return
+                _ioDispatcher.BeginUpdateStreamAcl(
+                    ProjectionNamesBuilder._projectionsMasterStream,
+                    ExpectedVersion.Any,
+                    SystemAccount.Principal,
+                    new StreamMetadata(maxAge: ProjectionNamesBuilder.MastrerStreamMaxAge),
+                    completed => { });
+
             ClientMessage.WriteEventsCompleted writeResult = null;
 //            Trace.WriteLine("Writing $response-reader-starting");
             yield return
