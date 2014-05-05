@@ -74,7 +74,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override WriteResult TransformResponse(ClientMessage.WriteEventsCompleted response)
         {
-            return new WriteResult(response.LastEventNumber);
+            return new WriteResult(response.LastEventNumber, new Position(response.PreparePosition ?? -1, response.CommitPosition ?? -1));
         }
 
         public override string ToString()

@@ -62,7 +62,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override object TransformResponse(ClientMessage.DeleteStreamCompleted response)
         {
-            return null;
+            return new DeleteResult(new Position(response.PreparePosition ?? -1, response.CommitPosition ?? -1));
         }
 
         public override string ToString()
