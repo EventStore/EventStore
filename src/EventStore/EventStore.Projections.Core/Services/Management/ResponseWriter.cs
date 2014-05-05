@@ -32,7 +32,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void PublishCommand(string command, object body)
         {
-
             Items.Add(new Item {Command = command, Body = body});
             if (!Busy)
             {
@@ -46,34 +45,32 @@ namespace EventStore.Projections.Core.Services.Management
             var events = Items.Select(CreateEvent).ToArray();
             Items.Clear();
             var streamId = ProjectionNamesBuilder._projectionsMasterStream;
-            _ioDispatcher.Perform(
-                _ioDispatcher.BeginWriteEvents(
-                    streamId,
-                    ExpectedVersion.Any,
-                    SystemAccount.Principal,
-                    events,
-                    completed =>
+            _ioDispatcher.BeginWriteEvents(
+                streamId,
+                ExpectedVersion.Any,
+                SystemAccount.Principal,
+                events,
+                completed =>
+                {
+                    Busy = false;
+                    if (completed.Result != OperationResult.Success)
                     {
-                        Busy = false;
-                        if (completed.Result != OperationResult.Success)
-                        {
-                            var message = string.Format(
-                                "Cannot write commands to the stream {0}. status: {1}",
-                                streamId,
-                                completed.Result);
-                            _logger.Fatal(message);
-                            throw new Exception(message);
-                        }
+                        var message = string.Format(
+                            "Cannot write commands to the stream {0}. status: {1}",
+                            streamId,
+                            completed.Result);
+                        _logger.Fatal(message);
+                        throw new Exception(message);
+                    }
 
-                        if (Items.Count > 0)
-                            EmitEvents();
-                    }));
+                    if (Items.Count > 0)
+                        EmitEvents();
+                }).Run();
         }
 
         private Event CreateEvent(Item item)
         {
             return new Event(Guid.NewGuid(), item.Command, true, item.Body.ToJsonBytes(), null);
         }
-
     }
 }

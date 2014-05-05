@@ -32,11 +32,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
-            _ioDispatcher.Perform(PerformStartCore());
-            _ioDispatcher.Perform(PerformControl());
+            StartCoreSteps().Run();
+            ControlSteps().Run();
         }
 
-        private IEnumerable<IODispatcher.Step> PerformControl()
+        private IEnumerable<IODispatcherAsync.Step> ControlSteps()
         {
             ClientMessage.ReadStreamEventsBackwardCompleted readResult = null;
             yield return
@@ -126,16 +126,12 @@ namespace EventStore.Projections.Core.Services.Processing
                             new TFPos(subscribeFrom, subscribeFrom),
                             message => { });
                     //Trace.WriteLine("Control stream await completed");
-
                 } while (true);
-
-
             }
         }
 
-        private IEnumerable<IODispatcher.Step> PerformStartCore()
+        private IEnumerable<IODispatcherAsync.Step> StartCoreSteps()
         {
-
             var from = 0;
             while (!_stopped)
             {
@@ -146,13 +142,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     yield return
                         _ioDispatcher.BeginReadForward(
                             "$projections-$" + _coreServiceId,
-                            from,
+                            @from,
                             10,
                             false,
                             SystemAccount.Principal,
                             completed =>
                             {
-                                from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
+                                @from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
                                 eof = completed.IsEndOfStream;
                                 // subscribeFrom is only used if eof
                                 subscribeFrom = new TFPos(
@@ -161,8 +157,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                 foreach (var e in completed.Events)
                                     PublishCommand(e);
                             });
-
-
                 } while (!eof);
                 yield return
                     _ioDispatcher.BeginSubscribeAwake("$projections-$" + _coreServiceId, subscribeFrom, message => { });

@@ -134,6 +134,7 @@
     <Compile Include="Exceptions\SystemStreamNotFoundException.cs" />
     <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
     <Compile Include="ExclusiveDbLock.cs" />
+    <Compile Include="Helpers\IODispatcherAsync.cs" />
     <Compile Include="Helpers\IODispatcherDelayedMessage.cs" />
     <Compile Include="Helpers\LengthPrefixSuffixFramer.cs" />
     <Compile Include="Index\GuidFilenameProvider.cs" />

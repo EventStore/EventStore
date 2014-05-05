@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -74,7 +73,11 @@ namespace EventStore.Core.Helpers
         }
 
         public Guid ReadBackward(
-            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
+            string streamId,
+            int fromEventNumber,
+            int maxCount,
+            bool resolveLinks,
+            IPrincipal principal,
             Action<ClientMessage.ReadStreamEventsBackwardCompleted> action)
         {
             var corrId = Guid.NewGuid();
@@ -95,7 +98,11 @@ namespace EventStore.Core.Helpers
         }
 
         public Guid ReadForward(
-            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
+            string streamId,
+            int fromEventNumber,
+            int maxCount,
+            bool resolveLinks,
+            IPrincipal principal,
             Action<ClientMessage.ReadStreamEventsForwardCompleted> action)
         {
             var corrId = Guid.NewGuid();
@@ -116,8 +123,12 @@ namespace EventStore.Core.Helpers
         }
 
         public void ConfigureStreamAndWriteEvents(
-            string streamId, int expectedVersion, Lazy<StreamMetadata> streamMetadata, Event[] events,
-            IPrincipal principal, Action<ClientMessage.WriteEventsCompleted> action)
+            string streamId,
+            int expectedVersion,
+            Lazy<StreamMetadata> streamMetadata,
+            Event[] events,
+            IPrincipal principal,
+            Action<ClientMessage.WriteEventsCompleted> action)
         {
             if (expectedVersion != ExpectedVersion.Any && expectedVersion != ExpectedVersion.NoStream)
                 WriteEvents(streamId, expectedVersion, events, principal, action);
@@ -166,7 +177,10 @@ namespace EventStore.Core.Helpers
         }
 
         public Guid WriteEvents(
-            string streamId, int expectedVersion, Event[] events, IPrincipal principal,
+            string streamId,
+            int expectedVersion,
+            Event[] events,
+            IPrincipal principal,
             Action<ClientMessage.WriteEventsCompleted> action)
         {
             var corrId = Guid.NewGuid();
@@ -185,7 +199,10 @@ namespace EventStore.Core.Helpers
         }
 
         public Guid WriteEvent(
-            string streamId, int expectedVersion, Event @event, IPrincipal principal,
+            string streamId,
+            int expectedVersion,
+            Event @event,
+            IPrincipal principal,
             Action<ClientMessage.WriteEventsCompleted> action)
         {
             var corrId = Guid.NewGuid();
@@ -204,7 +221,10 @@ namespace EventStore.Core.Helpers
         }
 
         public void DeleteStream(
-            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal,
+            string streamId,
+            int expectedVersion,
+            bool hardDelete,
+            IPrincipal principal,
             Action<ClientMessage.DeleteStreamCompleted> action)
         {
             var corrId = Guid.NewGuid();
@@ -244,7 +264,10 @@ namespace EventStore.Core.Helpers
         }
 
         public void UpdateStreamAcl(
-            string streamId, int expectedVersion, IPrincipal principal, StreamMetadata metadata,
+            string streamId,
+            int expectedVersion,
+            IPrincipal principal,
+            StreamMetadata metadata,
             Action<ClientMessage.WriteEventsCompleted> completed)
         {
             WriteEvents(
@@ -269,188 +292,6 @@ namespace EventStore.Core.Helpers
             if (_selfId != message.CorrelationId)
                 return;
             message.Action();
-        }
-
-
-        public delegate void Step(IEnumerator<Step> nextSteps);
-
-        public void Perform(IEnumerable<Step> actions)
-        {
-            var actionsEnumerator = actions.GetEnumerator();
-            Perform(actionsEnumerator);
-        }
-
-        public void Perform(params Step[] actions)
-        {
-            var actionsEnumerator = ((IEnumerable<Step>)actions).GetEnumerator();
-            Perform(actionsEnumerator);
-        }
-
-        private void Perform(IEnumerator<Step> actions)
-        {
-            if (actions.MoveNext())
-            {
-                var action = actions.Current;
-                action(actions);
-            }
-        }
-
-        public Step BeginReadForward(
-            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
-            Action<ClientMessage.ReadStreamEventsForwardCompleted> handler)
-        {
-            return steps => ReadForward(
-                streamId,
-                fromEventNumber,
-                maxCount,
-                resolveLinks,
-                principal,
-                response =>
-                {
-                    handler(response);
-                    Perform(steps);
-                });
-        }
-
-        public Step BeginReadBackward(
-            string streamId, int fromEventNumber, int maxCount, bool resolveLinks, IPrincipal principal,
-            Action<ClientMessage.ReadStreamEventsBackwardCompleted> handler)
-        {
-            return steps => ReadBackward(
-                streamId,
-                fromEventNumber,
-                maxCount,
-                resolveLinks,
-                principal,
-                response =>
-                {
-                    handler(response);
-                    Perform(steps);
-                });
-        }
-
-        public Step BeginWriteEvents(
-            string streamId, int expectedVersion, IPrincipal principal, Event[] events,
-            Action<ClientMessage.WriteEventsCompleted> handler)
-        {
-            return steps => WriteEventsWithRetry(streamId, expectedVersion, principal, events, handler, steps);
-        }
-
-        public Step BeginDeleteStream(
-            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal,
-            Action<ClientMessage.DeleteStreamCompleted> handler)
-        {
-              return steps => DeleteStreamWithRetry(streamId, expectedVersion, hardDelete, principal, handler, steps);
-        }
-
-        public Step BeginSubscribeAwake(
-            string streamId,
-            TFPos from,
-            Action<IODispatcherDelayedMessage> handler,
-            Guid? correlationId = null)
-        {
-            return steps => SubscribeAwake(
-                streamId,
-                from,
-                message =>
-                {
-                    handler(message);
-                    Perform(steps);
-                },
-                correlationId);
-        }
-
-        private void WriteEventsWithRetry(
-            string streamId, int expectedVersion, IPrincipal principal, Event[] events,
-            Action<ClientMessage.WriteEventsCompleted> handler, IEnumerator<Step> steps)
-        {
-            PerformWithRetry(
-                handler,
-                steps,
-                expectedVersion == ExpectedVersion.Any,
-                TimeSpan.FromMilliseconds(100),
-                action =>
-                    WriteEvents(
-                        streamId,
-                        expectedVersion,
-                        events,
-                        principal,
-                        response => action(response, response.Result)));
-        }
-
-
-        private void DeleteStreamWithRetry(
-            string streamId, int expectedVersion, bool hardDelete, IPrincipal principal,
-            Action<ClientMessage.DeleteStreamCompleted> handler, IEnumerator<Step> steps)
-        {
-            PerformWithRetry(
-                handler,
-                steps,
-                expectedVersion == ExpectedVersion.Any,
-                TimeSpan.FromMilliseconds(100),
-                action =>
-                    DeleteStream(
-                        streamId,
-                        expectedVersion,
-                        hardDelete,
-                        principal,
-                        response => action(response, response.Result)));
-        }
-
-        private void PerformWithRetry<T>(
-            Action<T> handler,
-            IEnumerator<Step> steps,
-            bool retryExpectedVersion,
-            TimeSpan timeout,
-            Action<Action<T, OperationResult>> action)
-        {
-            action(
-                (response, result) =>
-                {
-                    if (ShouldRetry(result, retryExpectedVersion))
-                    {
-                        Delay(
-                            timeout,
-                            () =>
-                            {
-                                if (timeout < TimeSpan.FromSeconds(10))
-                                    timeout += timeout;
-                                PerformWithRetry(handler, steps, retryExpectedVersion, timeout, action);
-                            });
-                    }
-                    else
-                    {
-                        handler(response);
-                        Perform(steps);
-                    }
-                });
-        }
-
-        private bool ShouldRetry(OperationResult result, bool retryExpectedVersion)
-        {
-            switch (result)
-            {
-                case OperationResult.CommitTimeout:
-                case OperationResult.ForwardTimeout:
-                case OperationResult.PrepareTimeout:
-                    return true;
-                case OperationResult.WrongExpectedVersion:
-                    return retryExpectedVersion;
-                default:
-                    return false;
-            }
-        }
-
-
-        public Step BeginDelay(TimeSpan timeout, Action handler)
-        {
-            return steps => Delay(
-                timeout,
-                () =>
-                {
-                    handler();
-                    Perform(steps);
-                });
         }
     }
 }
