@@ -254,8 +254,6 @@ namespace EventStore.Core.Services.Transport.Http
                             return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
                         var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-                        //if (!headOfTf && msg.Events.Length == 0)
-                        //    return NotFound(etag, cacheSeconds, isPublic, "text/plain");
                         return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                     case ReadAllResult.NotModified:
                         return NotModified();
