@@ -4,6 +4,7 @@ using EventStore.Core.Util;
 
 namespace EventStore.ClusterNode
 {
+    [PowerArgs.TabCompletion]
     public class ClusterNodeOptions : IOptions
     {
         [ArgDescription(Opts.ShowHelpDescr, Opts.AppGroup)]
@@ -75,9 +76,9 @@ namespace EventStore.ClusterNode
         public int MaxMemTableSize { get; set; }
 
         [ArgDescription(Opts.DbPathDescr, Opts.DbGroup)]
-        public string DbPath { get; set; }
+        public string Db { get; set; }
         [ArgDescription(Opts.InMemDbDescr, Opts.DbGroup)]
-        public bool InMemDb { get; set; }
+        public bool MemDb { get; set; }
         [ArgDescription(Opts.SkipDbVerifyDescr, Opts.DbGroup)]
         public bool SkipDbVerify { get; set; }
         [ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
@@ -168,8 +169,8 @@ namespace EventStore.ClusterNode
             CachedChunks = Opts.CachedChunksDefault;
             ChunksCacheSize = Opts.ChunksCacheSizeDefault;
 
-            DbPath = Opts.DbPathDefault;
-            InMemDb = Opts.InMemDbDefault;
+            Db = Opts.DbPathDefault;
+            MemDb = Opts.InMemDbDefault;
             SkipDbVerify = Opts.SkipDbVerifyDefault;
             RunProjections = Opts.RunProjectionsDefault;
             ProjectionThreads = Opts.ProjectionThreadsDefault;

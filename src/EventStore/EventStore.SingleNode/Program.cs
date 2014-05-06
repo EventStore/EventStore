@@ -29,7 +29,7 @@ namespace EventStore.SingleNode
 
         protected override string GetLogsDirectory(SingleNodeOptions options)
         {
-            return ResolveDbPath(options.DbPath, options.HttpPort) + "-logs";
+            return ResolveDbPath(options.Db, options.HttpPort) + "-logs";
         }
 
         private string ResolveDbPath(string optionsPath, int nodePort)
@@ -49,9 +49,9 @@ namespace EventStore.SingleNode
 
         protected override void Create(SingleNodeOptions opts)
         {
-            var dbPath = Path.GetFullPath(ResolveDbPath(opts.DbPath, opts.HttpPort));
+            var dbPath = Path.GetFullPath(ResolveDbPath(opts.Db, opts.HttpPort));
 
-            if (!opts.InMemDb)
+            if (!opts.MemDb)
             {
                 _dbLock = new ExclusiveDbLock(dbPath);
                 if (!_dbLock.Acquire())
@@ -59,7 +59,7 @@ namespace EventStore.SingleNode
             }
 
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk: opts.UnsafeDisableFlushToDisk);
-            var db = new TFChunkDb(CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.InMemDb));
+            var db = new TFChunkDb(CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.MemDb));
             var vnodeSettings = GetVNodeSettings(opts);
             var dbVerifyHashes = !opts.SkipDbVerify;
             var runProjections = opts.RunProjections;

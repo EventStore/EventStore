@@ -39,7 +39,7 @@ namespace EventStore.ClusterNode
 
         protected override string GetLogsDirectory(ClusterNodeOptions options)
         {
-            return ResolveDbPath(options.DbPath, options.ExternalHttpPort) + "-logs";
+            return ResolveDbPath(options.Db, options.ExternalHttpPort) + "-logs";
         }
 
         protected override string GetComponentName(ClusterNodeOptions options)
@@ -59,9 +59,9 @@ namespace EventStore.ClusterNode
 
         protected override void Create(ClusterNodeOptions opts)
         {
-            var dbPath = Path.GetFullPath(ResolveDbPath(opts.DbPath, opts.ExternalHttpPort));
+            var dbPath = Path.GetFullPath(ResolveDbPath(opts.Db, opts.ExternalHttpPort));
 
-            if (!opts.InMemDb)
+            if (!opts.MemDb)
             {
                 _dbLock = new ExclusiveDbLock(dbPath);
                 if (!_dbLock.Acquire())
@@ -71,7 +71,7 @@ namespace EventStore.ClusterNode
             if (!_clusterNodeMutex.Acquire())
                 throw new Exception(string.Format("Couldn't acquire exclusive Cluster Node mutex '{0}'.", _clusterNodeMutex.MutexName));
 
-            var dbConfig = CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.InMemDb);
+            var dbConfig = CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.MemDb);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk: opts.UnsafeDisableFlushToDisk);
             var db = new TFChunkDb(dbConfig);
             var vNodeSettings = GetClusterVNodeSettings(opts);
