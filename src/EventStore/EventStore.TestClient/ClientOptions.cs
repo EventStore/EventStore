@@ -43,7 +43,6 @@ namespace EventStore.TestClient
             ShowVersion = Opts.ShowVersionDefault;
             Logsdir = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
-
             Ip = IPAddress.Loopback;
             TcpPort = 1113;
             HttpPort = 2113;
