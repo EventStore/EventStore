@@ -21,7 +21,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _resolveLinkTos;
 
         private int _maxReadCount = 111;
-        private int _deliveredEvents;
 
         private string _dataStreamName;
         private int _dataNextSequenceNumber;
@@ -42,9 +41,8 @@ namespace EventStore.Projections.Core.Services.Processing
             string dataStreamName,
             int dataNextSequenceNumber,
             long? limitingCommitPosition,
-            bool resolveLinkTos,
-            int? stopAfterNEvents = null)
-            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents)
+            bool resolveLinkTos)
+            : base(publisher, eventReaderCorrelationId, readAs, true)
         {
 
             _ioDispatcher = ioDispatcher;
@@ -60,18 +58,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override bool AreEventsRequested()
         {
             return _catalogReadRequestId != Guid.Empty || _dataReadRequestId != Guid.Empty;
-        }
-
-        private bool CheckEnough()
-        {
-            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
-            {
-                _publisher.Publish(
-                    new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId, maxEventsReached: true));
-                Dispose();
-                return true;
-            }
-            return false;
         }
 
         protected override void RequestEvents()
@@ -149,11 +135,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 case ReadStreamResult.Success:
                     foreach (var e in completed.Events)
-                    {
                         DeliverEvent(e, 17.7f);
-                        if (CheckEnough())
-                            return;
-                    }
                     if (completed.IsEndOfStream)
                         _dataNextSequenceNumber = int.MaxValue;
                     PauseOrContinueProcessing();
@@ -205,8 +187,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress)
         {
-            _deliveredEvents++;
-
             EventRecord positionEvent = pair.OriginalEvent;
             if (positionEvent.LogPosition > _limitingCommitPosition)
                 return;

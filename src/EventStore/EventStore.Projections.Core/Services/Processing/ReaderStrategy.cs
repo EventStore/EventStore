@@ -217,11 +217,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (_allStreams)
             {
-                var eventReader = new TransactionFileEventReader(
-                    ioDispatcher, publisher, eventReaderId, _runAs,
+                var eventReader = new TransactionFileEventReader(publisher, eventReaderId, _runAs,
                     new TFPos(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value), _timeProvider,
-                    deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false,
-                    stopAfterNEvents: stopAfterNEvents);
+                    deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false);
                 return eventReader;
             }
             if (_streams != null && _streams.Count == 1)
@@ -309,9 +307,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
-            var eventReader = new StreamEventReader(
-                ioDispatcher, publisher, eventReaderId, _runAs, streamName, fromSequenceNumber, _timeProvider,
-                resolveLinkTos, produceStreamDeletes, stopOnEof, stopAfterNEvents);
+            var eventReader = new StreamEventReader(publisher, eventReaderId, _runAs, streamName, fromSequenceNumber, _timeProvider,
+                resolveLinkTos, produceStreamDeletes, stopOnEof);
             return eventReader;
         }
 
@@ -328,9 +325,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (includeStreamDeletedNotification)
                 nextPositions.Add("$et-$deleted", checkpointTag.Streams.TryGetValue("$deleted", out p) ? p + 1 : 0);
 
-            return new EventByTypeIndexEventReader(
-                ioDispatcher, publisher, eventReaderId, _runAs, eventTypes.ToArray(), includeStreamDeletedNotification,
-                checkpointTag.Position, nextPositions, resolveLinkTos, _timeProvider, stopOnEof, stopAfterNEvents);
+            return new EventByTypeIndexEventReader(publisher, eventReaderId, _runAs, eventTypes.ToArray(), includeStreamDeletedNotification,
+                checkpointTag.Position, nextPositions, resolveLinkTos, _timeProvider, stopOnEof);
         }
 
         private IEventReader CreatePausedMultiStreamEventReader(
@@ -358,7 +354,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new ByStreamCatalogEventReader(
                 publisher, eventReaderId, _runAs, ioDispatcher, catalogStream, startFromCatalogEventNumber,
                 startFromDataStreamName, startFromDataStreamEventNumber, limitingCommitPosition,
-                resolveLinkTos, stopAfterNEvents);
+                resolveLinkTos);
         }
 
 

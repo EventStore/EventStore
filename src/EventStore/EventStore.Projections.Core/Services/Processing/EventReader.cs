@@ -3,7 +3,6 @@ using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 
@@ -14,18 +13,14 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly Guid EventReaderCorrelationId;
         private readonly IPrincipal _readAs;
         protected readonly IPublisher _publisher;
-        protected readonly ILogger _logger = LogManager.GetLoggerFor<EventReader>();
 
         protected readonly bool _stopOnEof;
-        protected readonly int? _stopAfterNEvents;
         private bool _paused = true;
         private bool _pauseRequested = true;
         protected bool _disposed;
         private bool _startingSent;
 
-        protected EventReader(
-            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
-            bool stopOnEof, int? stopAfterNEvents)
+        protected EventReader(IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (eventReaderCorrelationId == Guid.Empty)
@@ -34,7 +29,6 @@ namespace EventStore.Projections.Core.Services.Processing
             EventReaderCorrelationId = eventReaderCorrelationId;
             _readAs = readAs;
             _stopOnEof = stopOnEof;
-            _stopAfterNEvents = stopAfterNEvents;
         }
 
         protected bool PauseRequested
@@ -71,7 +65,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Pause()
         {
-            if (_disposed) throw new InvalidOperationException("Disposed");
+            if (_disposed)
+                return; // due to possible self disposed
+
             if (_pauseRequested)
                 throw new InvalidOperationException("Pause has been already requested");
             _pauseRequested = true;
@@ -90,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void SendEof()
         {
-            if (_stopOnEof || _stopAfterNEvents != null)
+            if (_stopOnEof)
             {
                 _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId));
                 Dispose();

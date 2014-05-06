@@ -28,8 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         public new void When()
         {
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamEventReader(
-                _ioDispatcher, _bus, _distibutionPointCorrelationId, null, "stream", 0, new RealTimeProvider(), false,
+            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, null, "stream", 0, new RealTimeProvider(), false,
                 produceStreamDeletes: false);
             _edp.Resume();
             _edp.Pause();

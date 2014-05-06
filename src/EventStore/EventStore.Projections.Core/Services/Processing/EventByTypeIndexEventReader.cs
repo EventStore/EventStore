@@ -4,7 +4,6 @@ using System.Linq;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -39,7 +38,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private int _deliveredEvents;
         private State _state;
         private TFPos _lastEventPosition;
         private readonly Dictionary<string, int> _fromPositions;
@@ -47,11 +45,17 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _lastPosition;
 
         public EventByTypeIndexEventReader(
-            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
-            string[] eventTypes, bool includeDeletedStreamNotification, TFPos fromTfPosition,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
-            bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+            IPublisher publisher,
+            Guid eventReaderCorrelationId,
+            IPrincipal readAs,
+            string[] eventTypes,
+            bool includeDeletedStreamNotification,
+            TFPos fromTfPosition,
+            Dictionary<string, int> fromPositions,
+            bool resolveLinkTos,
+            ITimeProvider timeProvider,
+            bool stopOnEof = false)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof)
         {
             if (eventTypes == null) throw new ArgumentNullException("eventTypes");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -103,18 +107,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return _state.AreEventsRequested();
         }
 
-        private bool CheckEnough()
-        {
-            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
-            {
-                _publisher.Publish(
-                    new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId, maxEventsReached: true));
-                Dispose();
-                return true;
-            }
-            return false;
-        }
-
         private void PublishIORequest(bool delay, Message readEventsForward, Guid correlationId)
         {
             if (delay)
@@ -157,7 +149,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (resolvedEvent.EventOrLinkTargetPosition <= _reader._lastEventPosition)
                     return;
                 _reader._lastEventPosition = resolvedEvent.EventOrLinkTargetPosition;
-                _reader._deliveredEvents ++;
                 //TODO: this is incomplete.  where reading from TF we need to handle actual deletes
 
                 string deletedPartitionStreamId;
@@ -454,9 +445,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     else
                         return; // no safe events to deliver
 
-                    if (_reader.CheckEnough())
-                        return;
-
                     if (_buffers[minStreamId].Count == 0)
                         _reader.PauseOrContinueProcessing();
                 }
@@ -647,8 +635,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                     DeliverEventRetrievedFromTf(
                                         @event, 100.0f*data.LogPosition/message.TfLastCommitPosition, originalTfPosition);
                                 }
-                                if (_reader.CheckEnough())
-                                    return;
                             }
                         }
                         if (_disposed)
@@ -682,7 +668,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             private void DeliverLastCommitPosition(TFPos lastPosition)
             {
-                if (_reader._stopOnEof || _reader._stopAfterNEvents != null)
+                if (_reader._stopOnEof)
                     return;
                 _publisher.Publish(
                     new ReaderSubscriptionMessage.CommittedEventDistributed(
