@@ -144,7 +144,7 @@ namespace EventStore.Core
 
         private string FormatExceptionMessage(Exception ex)
         {
-            string msg = ex.Message;
+            string msg = ex.Message + "\n" + ex.StackTrace.ToString();
             var exc = ex.InnerException;
             int cnt = 0;
             while (exc != null)
