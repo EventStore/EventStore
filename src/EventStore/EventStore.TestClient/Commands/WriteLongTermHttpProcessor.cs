@@ -1,4 +1,6 @@
-﻿using System;
+﻿/*
+GFY NOT USED
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
@@ -230,3 +232,4 @@ namespace EventStore.TestClient.Commands
         }
     }
 }
+*/
