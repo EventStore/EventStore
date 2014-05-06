@@ -65,7 +65,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_pausedSubscriptions.Add(message.SubscriptionId))
                 throw new InvalidOperationException("Already paused projection");
-            var projectionSubscription = _subscriptions[message.SubscriptionId];
+
+            IReaderSubscription projectionSubscription;
+            if (!_subscriptions.TryGetValue(message.SubscriptionId, out projectionSubscription))
+                return; // may be already unsubscribed when self-unsubscribing
+
             var eventReaderId = _subscriptionEventReaders[message.SubscriptionId];
             if (eventReaderId == Guid.Empty) // head
             {

@@ -68,6 +68,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void ProcessOne(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
+            if (_eofReached)
+                return; // eof may be set by reach N events
+
             // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
             var roundedProgress = (float) Math.Round(message.Progress, 1);
@@ -115,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_checkpointProcessedEventsThreshold > 0
                     && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold)
                     SuggestCheckpoint(message);
-                if (_stopAfterNEvents > 0 && _checkpointProcessedEventsThreshold >= _stopAfterNEvents)
+                if (_stopAfterNEvents > 0 && _eventsSinceLastCheckpointSuggestedOrStart >= _stopAfterNEvents)
                     NEventsReached();
             }
             else
@@ -188,6 +191,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             if (_stopOnEof)
                 ProcessEofAndEmitEof();
         }
@@ -207,6 +213,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
             
             _publisher.Publish(
@@ -217,6 +226,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             _publisher.Publish(
                             new EventReaderSubscriptionMessage.PartitionMeasured(
                                 _subscriptionId, message.Partition, message.Size,
@@ -225,6 +237,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             if (_stopOnEof)
             {
                 _eofReached = true;

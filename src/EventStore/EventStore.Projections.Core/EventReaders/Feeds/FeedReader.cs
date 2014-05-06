@@ -115,9 +115,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
         {
-            _lastReaderPosition = message.CheckpointTag;
-            Reply();
-            Unsubscribe();
+            throw new NotSupportedException();
         }
 
         private void Unsubscribe()
