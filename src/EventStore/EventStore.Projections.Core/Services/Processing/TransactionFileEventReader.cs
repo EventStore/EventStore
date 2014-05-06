@@ -1,12 +1,9 @@
 using System;
-using System.Diagnostics;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
@@ -22,15 +19,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _deliverEndOfTfPosition;
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
-        private int _deliveredEvents;
         private long _lastPosition;
         private bool _eof;
 
         public TransactionFileEventReader(
-            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
-            TFPos @from, ITimeProvider timeProvider, bool stopOnEof = false, bool deliverEndOfTFPosition = true,
-            bool resolveLinkTos = true, int? stopAfterNEvents = null)
-            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+            IPublisher publisher,
+            Guid eventReaderCorrelationId,
+            IPrincipal readAs,
+            TFPos @from,
+            ITimeProvider timeProvider,
+            bool stopOnEof = false,
+            bool deliverEndOfTFPosition = true,
+            bool resolveLinkTos = true)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
@@ -86,21 +87,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     var @event = message.Events[index];
                     DeliverEvent(@event, message.TfLastCommitPosition, oldFrom);
-                    if (CheckEnough())
-                        return;
                 }
             }
-        }
-
-        private bool CheckEnough()
-        {
-            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
-            {
-                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId, maxEventsReached: true));
-                Dispose();
-                return true;
-            }
-            return false;
         }
 
         private void SendIdle()
@@ -139,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverLastCommitPosition(TFPos lastPosition)
         {
-            if (_stopOnEof || _stopAfterNEvents != null)
+            if (_stopOnEof)
                 return;
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
@@ -150,7 +138,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private void DeliverEvent(
             EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, TFPos currentFrom)
         {
-            _deliveredEvents++;
             EventRecord linkEvent = @event.Link;
             EventRecord targetEvent = @event.Event ?? linkEvent;
             EventRecord positionEvent = (linkEvent ?? targetEvent);

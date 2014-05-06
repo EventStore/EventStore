@@ -2,7 +2,6 @@ using System;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
@@ -22,15 +21,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool _eventsRequested;
         private int _maxReadCount = 111;
-        private int _deliveredEvents;
         private long _lastPosition;
         private bool _eof;
 
         public StreamEventReader(
-            IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
-            string streamName, int fromSequenceNumber, ITimeProvider timeProvider, bool resolveLinkTos,
-            bool produceStreamDeletes, bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+            IPublisher publisher,
+            Guid eventReaderCorrelationId,
+            IPrincipal readAs,
+            string streamName,
+            int fromSequenceNumber,
+            ITimeProvider timeProvider,
+            bool resolveLinkTos,
+            bool produceStreamDeletes,
+            bool stopOnEof = false)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             if (streamName == null) throw new ArgumentNullException("streamName");
@@ -106,8 +110,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             var @link = message.Events[index].Link;
                             DeliverEvent(message.Events[index], 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
                                 ref oldFromSequenceNumber);
-                            if (CheckEnough())
-                                return;
                         }
                     }
 
@@ -119,17 +121,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
-        }
-
-        private bool CheckEnough()
-        {
-            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
-            {
-                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId, maxEventsReached: true));
-                Dispose();
-                return true;
-            }
-            return false;
         }
 
         private void SendIdle()
@@ -167,7 +158,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverSafeJoinPosition(long? safeJoinPosition)
         {
-            if (_stopOnEof || _stopAfterNEvents != null || safeJoinPosition == null || safeJoinPosition == -1)
+            if (_stopOnEof || safeJoinPosition == null || safeJoinPosition == -1)
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
@@ -176,8 +167,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref int sequenceNumber)
         {
-            _deliveredEvents++;
-
             EventRecord positionEvent = pair.OriginalEvent;
             if (positionEvent.EventNumber != sequenceNumber)
                 throw new InvalidOperationException(

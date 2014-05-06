@@ -1,5 +1,4 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
@@ -22,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
-        private int _eventsSinceLastCheckpointSuggested;
+        private int _eventsSinceLastCheckpointSuggestedOrStart;
         private readonly Guid _subscriptionId;
         private bool _eofReached;
         protected string _tag;
@@ -42,6 +41,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
+            if (checkpointProcessedEventsThreshold > 0 && stopAfterNEvents > 0)
+                throw new ArgumentException("checkpointProcessedEventsThreshold > 0 && stopAfterNEvents > 0");
+
             _publisher = publisher;
             _readerStrategy = readerStrategy;
             _timeProvider = timeProvider;
@@ -66,6 +68,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void ProcessOne(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
+            if (_eofReached)
+                return; // eof may be set by reach N events
+
             // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
             var roundedProgress = (float) Math.Round(message.Progress, 1);
@@ -75,7 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType))
             {
                 if (progressChanged)
-                    PublishProgress(roundedProgress, message);
+                    PublishProgress(roundedProgress);
                 return;
             }
 
@@ -109,32 +114,32 @@ namespace EventStore.Projections.Core.Services.Processing
                         message, eventCheckpointTag, _eventFilter.GetCategory(message.Data.PositionStreamId),
                         _subscriptionId, _subscriptionMessageSequenceNumber++);
                 _publisher.Publish(convertedMessage);
-                _eventsSinceLastCheckpointSuggested++;
+                _eventsSinceLastCheckpointSuggestedOrStart++;
                 if (_checkpointProcessedEventsThreshold > 0
-                    && _eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
+                    && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold)
                     SuggestCheckpoint(message);
+                if (_stopAfterNEvents > 0 && _eventsSinceLastCheckpointSuggestedOrStart >= _stopAfterNEvents)
+                    NEventsReached();
             }
             else
-            {
                 if (_checkpointUnhandledBytesThreshold > 0
                     && (_lastPassedOrCheckpointedEventPosition != null
                         && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
                         > _checkpointUnhandledBytesThreshold))
-                {
                     SuggestCheckpoint(message);
-                }
-                else
-                {
-                    if (progressChanged)
-                        PublishProgress(roundedProgress, message);
-                }
-            }
+                else if (progressChanged)
+                    PublishProgress(roundedProgress);
             // initialize checkpointing based on first message 
             if (_lastPassedOrCheckpointedEventPosition == null)
                 _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
         }
 
-        private void PublishProgress(float roundedProgress, ReaderSubscriptionMessage.CommittedEventDistributed message)
+        private void NEventsReached()
+        {
+            ProcessEofAndEmitEof();
+        }
+
+        private void PublishProgress(float roundedProgress)
         {
             var now = _timeProvider.Now;
             if (now - _lastProgressPublished > TimeSpan.FromMilliseconds(500))
@@ -172,7 +177,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new EventReaderSubscriptionMessage.CheckpointSuggested(
                     _subscriptionId, _positionTracker.LastTag, message.Progress,
                     _subscriptionMessageSequenceNumber++));
-            _eventsSinceLastCheckpointSuggested = 0;
+            _eventsSinceLastCheckpointSuggestedOrStart = 0;
         }
 
         public IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid eventReaderId)
@@ -186,19 +191,31 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderEof message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             if (_stopOnEof)
-            {
-                _eofReached = true;
-                EofReached();
-                _publisher.Publish(
-                    new EventReaderSubscriptionMessage.EofReached(
-                        _subscriptionId, _positionTracker.LastTag,
-                        _subscriptionMessageSequenceNumber++));
-            }
+                ProcessEofAndEmitEof();
+        }
+
+        private void ProcessEofAndEmitEof()
+        {
+            _eofReached = true;
+            EofReached();
+            _publisher.Publish(
+                new EventReaderSubscriptionMessage.EofReached(
+                    _subscriptionId,
+                    _positionTracker.LastTag,
+                    _subscriptionMessageSequenceNumber++));
+            // self unsubscribe
+            _publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_subscriptionId));
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
             
             _publisher.Publish(
@@ -209,6 +226,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             _publisher.Publish(
                             new EventReaderSubscriptionMessage.PartitionMeasured(
                                 _subscriptionId, message.Partition, message.Size,
@@ -217,6 +237,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message)
         {
+            if (_eofReached)
+                return; // self eof-reached, but reader is still running
+
             if (_stopOnEof)
             {
                 _eofReached = true;

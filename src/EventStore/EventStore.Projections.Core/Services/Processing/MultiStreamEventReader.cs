@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
             string[] streams, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
             bool stopOnEof = false, int? stopAfterNEvents = null)
-            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -221,22 +221,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
                 var minHead = _buffers[minStreamId].Dequeue();
                 DeliverEvent(minHead.Item1, minHead.Item2);
-                if (CheckEnough())
-                    return;
                 if (_buffers[minStreamId].Count == 0)
                     PauseOrContinueProcessing();
             }
-        }
-
-        private bool CheckEnough()
-        {
-            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
-            {
-                _publisher.Publish(new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId, maxEventsReached: true));
-                Dispose();
-                return true;
-            }
-            return false;
         }
 
         private void RequestEvents(string stream, bool delay)
@@ -266,7 +253,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverSafePositionToJoin()
         {
-            if (_stopOnEof || _stopAfterNEvents != null || _safePositionToJoin == null)
+            if (_stopOnEof || _safePositionToJoin == null)
                 return;
             // deliver if already available
             _publisher.Publish(

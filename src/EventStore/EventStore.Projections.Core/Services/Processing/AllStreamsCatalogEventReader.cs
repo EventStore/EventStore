@@ -189,7 +189,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _eventsRequested;
         private readonly HashSet<Guid> _activeReads = new HashSet<Guid>();
         private int _maxReadCount = 111;
-        private int _enqueuedEventDeliveries;
         private readonly Queue<DeliverEventOutItem> _readMetaStreamItemsQueue = new Queue<DeliverEventOutItem>();
         private int _metaStreamReadsCount;
         private readonly IODispatcher _ioDispatcher;
@@ -203,9 +202,8 @@ namespace EventStore.Projections.Core.Services.Processing
             IPrincipal readAs,
             int fromSequenceNumber,
             ITimeProvider timeProvider,
-            bool stopOnEof = false,
-            int? stopAfterNEvents = null)
-            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, stopOnEof, stopAfterNEvents)
+            bool stopOnEof = false)
+            : base(publisher, eventReaderCorrelationId, readAs, stopOnEof)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             _ioDispatcher = ioDispatcher;
@@ -262,8 +260,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             EnqueueDeliverEvent(
                                 @event, @link, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
                                 ref oldFromSequenceNumber);
-                            if (CheckEnough())
-                                return;
                         }
                     }
                     //NOTE: unlike other readers all stream reader requests new reads after processing
@@ -297,7 +293,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnqueueEof(bool maxEventsReached = false)
         {
-            if (_stopOnEof || _stopAfterNEvents != null)
+            if (_stopOnEof)
                 Enqueue(new SendEofOutItem(this, maxEventsReached));
         }
 
@@ -316,16 +312,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             while (_queue.Count > 0 && _queue.Peek().IsReady())
                 _queue.Dequeue().Complete();
-        }
-
-        private bool CheckEnough()
-        {
-            if (_stopAfterNEvents != null && _enqueuedEventDeliveries >= _stopAfterNEvents)
-            {
-                EnqueueEof(maxEventsReached: true);
-                return true;
-            }
-            return false;
         }
 
         protected override void RequestEvents()
@@ -379,7 +365,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnqueueDeliverSafeJoinPosition(long? safeJoinPosition)
         {
-            if (_stopOnEof || _stopAfterNEvents != null || safeJoinPosition == null || safeJoinPosition == -1)
+            if (_stopOnEof || safeJoinPosition == null || safeJoinPosition == -1)
                 return; //TODO: this should not happen, but StorageReader does not return it now
             Enqueue(new DeliverSafePositionToJoinoutItem(this, safeJoinPosition));
         }
@@ -387,7 +373,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnqueueDeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
         {
             if (link != null) throw new Exception();
-            _enqueuedEventDeliveries++;
             var positionEvent = @event;
             if (positionEvent.EventNumber != sequenceNumber)
                 throw new InvalidOperationException(

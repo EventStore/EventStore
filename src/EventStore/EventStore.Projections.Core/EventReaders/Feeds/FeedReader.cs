@@ -84,7 +84,11 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
             //TODO: make reader mode explicit
             var readerOptions = new ReaderSubscriptionOptions(
-                1024*1024, _maxEvents + 1, stopOnEof: true, stopAfterNEvents: _maxEvents);
+                1024*1024,
+                checkpointProcessedEventsThreshold: null,
+                stopOnEof: true,
+                stopAfterNEvents: _maxEvents);
+
             _subscriptionId =
                 _subscriptionDispatcher.PublishSubscribe(
                     new ReaderSubscriptionManagement.Subscribe(
@@ -111,9 +115,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
 
         public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message)
         {
-            _lastReaderPosition = message.CheckpointTag;
-            Reply();
-            Unsubscribe();
+            throw new NotSupportedException();
         }
 
         private void Unsubscribe()

@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public ExternallyFedByStreamEventReader(
             IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, IODispatcher ioDispatcher,
             long? limitingCommitPosition, ITimeProvider timeProvider, bool resolveLinkTos)
-            : base(ioDispatcher, publisher, eventReaderCorrelationId, readAs, true, stopAfterNEvents: null)
+            : base(publisher, eventReaderCorrelationId, readAs, true)
         {
             _ioDispatcher = ioDispatcher;
             _limitingCommitPosition = limitingCommitPosition;
@@ -47,18 +47,6 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override bool AreEventsRequested()
         {
             return _dataReadRequestId != Guid.Empty;
-        }
-
-        private bool CheckEnough()
-        {
-            if (_stopAfterNEvents != null && _deliveredEvents >= _stopAfterNEvents)
-            {
-                _publisher.Publish(
-                    new ReaderSubscriptionMessage.EventReaderEof(EventReaderCorrelationId, maxEventsReached: true));
-                Dispose();
-                return true;
-            }
-            return false;
         }
 
         protected override void RequestEvents()
@@ -138,11 +126,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 case ReadStreamResult.Success:
                     foreach (var e in completed.Events)
-                    {
                         DeliverEvent(e, 19.9f);
-                        if (CheckEnough())
-                            return;
-                    }
                     if (completed.IsEndOfStream)
                         _dataNextSequenceNumber = int.MaxValue;
                     else

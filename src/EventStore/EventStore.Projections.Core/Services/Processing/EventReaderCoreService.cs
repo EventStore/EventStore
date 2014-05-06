@@ -65,7 +65,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_pausedSubscriptions.Add(message.SubscriptionId))
                 throw new InvalidOperationException("Already paused projection");
-            var projectionSubscription = _subscriptions[message.SubscriptionId];
+
+            IReaderSubscription projectionSubscription;
+            if (!_subscriptions.TryGetValue(message.SubscriptionId, out projectionSubscription))
+                return; // may be already unsubscribed when self-unsubscribing
+
             var eventReaderId = _subscriptionEventReaders[message.SubscriptionId];
             if (eventReaderId == Guid.Empty) // head
             {
@@ -129,6 +133,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (eventReaderId != Guid.Empty)
             {
                 //TODO: test it
+                _eventReaders[eventReaderId].Dispose();
                 _eventReaders.Remove(eventReaderId);
                 _eventReaderSubscriptions.Remove(eventReaderId);
                 _publisher.Publish(
@@ -190,8 +195,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return; // unsubscribed
             _subscriptions[projectionId].Handle(message);
 
-            _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
-            Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
+//            _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
+//            Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message)
@@ -246,8 +251,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = false;
             var distributionPointCorrelationId = Guid.NewGuid();
             var transactionFileReader = new TransactionFileEventReader(
-                _ioDispatcher, _publisher, distributionPointCorrelationId, SystemAccount.Principal,
-                new TFPos(_writerCheckpoint.Read(), -1), new RealTimeProvider(), deliverEndOfTFPosition: false);
+                _publisher,
+                distributionPointCorrelationId,
+                SystemAccount.Principal,
+                new TFPos(_writerCheckpoint.Read(), -1),
+                new RealTimeProvider(),
+                deliverEndOfTFPosition: false);
+
             _eventReaders.Add(distributionPointCorrelationId, transactionFileReader);
             if (_runHeadingReader)
                 _headingEventReader.Start(distributionPointCorrelationId, transactionFileReader);
