@@ -38,7 +38,7 @@ namespace EventStore.TestClient
         public ClientOptions()
         {
             Config = "testclient-config.json";
-
+            Command = new string[] {};
             ShowHelp = Opts.ShowHelpDefault;
             ShowVersion = Opts.ShowVersionDefault;
             Logsdir = Opts.LogsDefault;
