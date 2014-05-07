@@ -41,20 +41,36 @@ fromStreamCatalog('catalog').foreachStream().when({
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
             yield return
                 (new ProjectionManagementMessage.Command.Post(
-                    new PublishEnvelope(_bus), _projectionMode, _projectionName,
-                    ProjectionManagementMessage.RunAs.System, "JS",
-                    _projectionSource, enabled: false, checkpointsEnabled: false,
+                    new PublishEnvelope(_bus),
+                    _projectionMode,
+                    _projectionName,
+                    ProjectionManagementMessage.RunAs.System,
+                    "JS",
+                    _projectionSource,
+                    enabled: false,
+                    checkpointsEnabled: false,
                     emitEnabled: false));
+
             yield return
                 new ProjectionManagementMessage.Command.Disable(
-                    Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
+                    Envelope,
+                    _projectionName,
+                    ProjectionManagementMessage.RunAs.System);
+
             yield return
-                new WhenStep(
-                    new ProjectionManagementMessage.Command.UpdateQuery(
-                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.System, "JS", _projectionSource,
-                        emitEnabled: false), 
-                    new ProjectionManagementMessage.Command.Enable(
-                        Envelope, _projectionName, ProjectionManagementMessage.RunAs.System));
+                new ProjectionManagementMessage.Command.UpdateQuery(
+                    Envelope,
+                    _projectionName,
+                    ProjectionManagementMessage.RunAs.System,
+                    "JS",
+                    _projectionSource,
+                    emitEnabled: false);
+
+            yield return
+                new ProjectionManagementMessage.Command.Enable(
+                    Envelope,
+                    _projectionName,
+                    ProjectionManagementMessage.RunAs.System);
         }
 
         [Test]
