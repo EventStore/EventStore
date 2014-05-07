@@ -46,7 +46,7 @@ fromStreamCatalog('catalog').foreachStream().when({
                     _projectionSource, enabled: false, checkpointsEnabled: false,
                     emitEnabled: false));
             yield return
-                new ProjectionManagementMessage.Command.Enable(
+                new ProjectionManagementMessage.Command.Disable(
                     Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
             yield return
                 new WhenStep(

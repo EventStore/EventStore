@@ -28,6 +28,7 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
         var lastEmitEnabled = false;
         var lastStatusUrl = url;
         var lastName = null;
+        var lastStatus = null;
 
         function setEnabled(control, enabled) {
             if (!control)
@@ -74,6 +75,7 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
                 window.location.hash = status.statusUrl;
             lastStatusUrl = status.statusUrl;
             lastName = status.name;
+            lastStatus = status.status;
         }
 
         function urlChanged(url) {
@@ -190,6 +192,14 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
             }
         }
 
+        function resetIfCompleted(success) {
+            if (lastStatus.indexOf("Completed") === 0) {
+                controller.reset(success);
+            } else {
+                success();
+            }
+        }
+
         function updateAndStart() {
             var success = controller.start.bind(controller);
             updateIfChanged(success);
@@ -203,7 +213,9 @@ define(["ace/ace", "projections/ui/Confirmation", "projections/Observer", "proje
 
         function debug() {
             updateIfChanged(function () {
-                window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
+                resetIfCompleted(function() {
+                    window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
+                });
             });
         }
 
