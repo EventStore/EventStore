@@ -12,28 +12,28 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.ShowVersionDescr, Opts.AppGroup)]
         public bool ShowVersion { get; set; }
         [ArgDescription(Opts.LogsDescr, Opts.AppGroup)]
-        public string Logsdir { get; set; }
+        public string Log { get; set; }
         [ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
         public string Config { get; set; }
         [ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
         public string[] Defines { get; set; }
 
         [ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
-        public IPAddress InternalIp { get; set; }
+        public IPAddress IntIp { get; set; }
         [ArgDescription(Opts.ExternalIpDescr, Opts.InterfacesGroup)]
-        public IPAddress ExternalIp { get; set; }
+        public IPAddress ExtIp { get; set; }
         [ArgDescription(Opts.InternalHttpPortDescr, Opts.InterfacesGroup)]
-        public int InternalHttpPort { get; set; }
+        public int IntHttpPort { get; set; }
         [ArgDescription(Opts.ExternalHttpPortDescr, Opts.InterfacesGroup)]
-        public int ExternalHttpPort { get; set; }
+        public int ExtHttpPort { get; set; }
         [ArgDescription(Opts.InternalTcpPortDescr, Opts.InterfacesGroup)]
-        public int InternalTcpPort { get; set; }
+        public int IntTcpPort { get; set; }
         [ArgDescription(Opts.InternalSecureTcpPortDescr, Opts.InterfacesGroup)]
-        public int InternalSecureTcpPort { get; set; }
+        public int IntSecureTcpPort { get; set; }
         [ArgDescription(Opts.ExternalTcpPortDescr, Opts.InterfacesGroup)]
-        public int ExternalTcpPort { get; set; }
+        public int ExtTcpPort { get; set; }
         [ArgDescription(Opts.ExternalSecureTcpPortDescr, Opts.InterfacesGroup)]
-        public int ExternalSecureTcpPort { get; set; }
+        public int ExtSecureTcpPort { get; set; }
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
         public bool Force { get; set; }
         [ArgDescription(Opts.ClusterSizeDescr, Opts.ClusterGroup)]
@@ -64,7 +64,7 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.ClusterGossipPortDescr, Opts.ClusterGroup)]
         public int ClusterGossipPort { get; set; }
         [ArgDescription(Opts.GossipSeedDescr, Opts.ClusterGroup)]
-        public IPEndPoint[] GossipSeeds { get; set; }
+        public IPEndPoint[] GossipSeed { get; set; }
 
         [ArgDescription(Opts.StatsPeriodDescr, Opts.AppGroup)]
         public int StatsPeriodSec { get; set; }
@@ -139,17 +139,17 @@ namespace EventStore.ClusterNode
             Config = "clusternode-config.json";
             ShowHelp = Opts.ShowHelpDefault;
             ShowVersion = Opts.ShowVersionDefault;
-            Logsdir = Opts.LogsDefault;
+            Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
 
-            InternalIp = Opts.InternalIpDefault;
-            ExternalIp = Opts.ExternalIpDefault;
-            InternalHttpPort = Opts.InternalHttpPortDefault;
-            ExternalHttpPort = Opts.ExternalHttpPortDefault;
-            InternalTcpPort = Opts.InternalTcpPortDefault;
-            InternalSecureTcpPort = Opts.InternalSecureTcpPortDefault;
-            ExternalTcpPort = Opts.ExternalTcpPortDefault;
-            ExternalSecureTcpPort = Opts.ExternalSecureTcpPortDefault;
+            IntIp = Opts.InternalIpDefault;
+            ExtIp = Opts.ExternalIpDefault;
+            IntHttpPort = Opts.InternalHttpPortDefault;
+            ExtHttpPort = Opts.ExternalHttpPortDefault;
+            IntTcpPort = Opts.InternalTcpPortDefault;
+            IntSecureTcpPort = Opts.InternalSecureTcpPortDefault;
+            ExtTcpPort = Opts.ExternalTcpPortDefault;
+            ExtSecureTcpPort = Opts.ExternalSecureTcpPortDefault;
             Force = Opts.ForceDefault;
             ClusterSize = Opts.ClusterSizeDefault;
             MinFlushDelayMs = Opts.MinFlushDelayMsDefault;
@@ -162,7 +162,7 @@ namespace EventStore.ClusterNode
             DiscoverViaDns = Opts.DiscoverViaDnsDefault;
             ClusterDns = Opts.ClusterDnsDefault;
             ClusterGossipPort = Opts.ClusterGossipPortDefault;
-            GossipSeeds = Opts.GossipSeedDefault;
+            GossipSeed = Opts.GossipSeedDefault;
 
             StatsPeriodSec = Opts.StatsPeriodDefault;
 

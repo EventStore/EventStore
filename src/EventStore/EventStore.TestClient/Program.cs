@@ -16,7 +16,7 @@ namespace EventStore.TestClient
 
         protected override string GetLogsDirectory(ClientOptions options)
         {
-            return options.Logsdir.IsNotEmptyString() ? options.Logsdir : Helper.GetDefaultLogsDir();
+            return options.Log.IsNotEmptyString() ? options.Log : Helper.GetDefaultLogsDir();
         }
 
         protected override string GetComponentName(ClientOptions options)

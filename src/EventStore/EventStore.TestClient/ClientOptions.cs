@@ -15,7 +15,7 @@ namespace EventStore.TestClient
         [ArgDescription(Opts.ShowVersionDescr)]
         public bool ShowVersion { get; set; }
         [ArgDescription(Opts.LogsDescr)]
-        public string Logsdir { get; set; }
+        public string Log { get; set; }
         [ArgDescription(Opts.ConfigsDescr)]
         public string Config { get; set; }
         [ArgDescription(Opts.DefinesDescr)]
@@ -41,7 +41,7 @@ namespace EventStore.TestClient
             Command = new string[] {};
             ShowHelp = Opts.ShowHelpDefault;
             ShowVersion = Opts.ShowVersionDefault;
-            Logsdir = Opts.LogsDefault;
+            Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
             Ip = IPAddress.Loopback;
             TcpPort = 1113;

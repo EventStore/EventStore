@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         {
             var args = new[] { "--logsdir=~/customLogDirectory" };
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
-            Assert.AreEqual("~/customLogDirectory", testArgs.Logsdir);
+            Assert.AreEqual("~/customLogDirectory", testArgs.Log);
         }
 
         [Test]
@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         {
             var args = new[] {"--logsdir", "./customLogDirectory", "--run-projections", "all"};
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
-            Assert.AreEqual("./customLogDirectory", testArgs.Logsdir);
+            Assert.AreEqual("./customLogDirectory", testArgs.Log);
             Assert.AreEqual(ProjectionType.All, testArgs.RunProjections);
         }
     }

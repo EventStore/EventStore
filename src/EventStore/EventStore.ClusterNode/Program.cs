@@ -39,12 +39,12 @@ namespace EventStore.ClusterNode
 
         protected override string GetLogsDirectory(ClusterNodeOptions options)
         {
-            return ResolveDbPath(options.Db, options.ExternalHttpPort) + "-logs";
+            return ResolveDbPath(options.Db, options.ExtHttpPort) + "-logs";
         }
 
         protected override string GetComponentName(ClusterNodeOptions options)
         {
-            return string.Format("{0}-{1}-cluster-node", options.ExternalIp, options.ExternalHttpPort);
+            return string.Format("{0}-{1}-cluster-node", options.ExtIp, options.ExtHttpPort);
         }
 
         private string ResolveDbPath(string optionsPath, int nodePort)
@@ -59,7 +59,7 @@ namespace EventStore.ClusterNode
 
         protected override void Create(ClusterNodeOptions opts)
         {
-            var dbPath = Path.GetFullPath(ResolveDbPath(opts.Db, opts.ExternalHttpPort));
+            var dbPath = Path.GetFullPath(ResolveDbPath(opts.Db, opts.ExtHttpPort));
 
             if (!opts.MemDb)
             {
@@ -83,7 +83,7 @@ namespace EventStore.ClusterNode
 			}
 			else
 			{
-				if (opts.GossipSeeds.Length == 0)
+				if (opts.GossipSeed.Length == 0)
 				{
 					if (opts.ClusterSize > 1)
 					{
@@ -98,7 +98,7 @@ namespace EventStore.ClusterNode
 					}
 				}
 
-				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeeds);
+				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
 			}
 
             var dbVerifyHashes = !opts.SkipDbVerify;
@@ -152,7 +152,7 @@ namespace EventStore.ClusterNode
         private static ClusterVNodeSettings GetClusterVNodeSettings(ClusterNodeOptions options)
         {
             X509Certificate2 certificate = null;
-            if (options.InternalSecureTcpPort > 0 || options.ExternalSecureTcpPort > 0)
+            if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (options.CertificateStoreName.IsNotEmptyString())
                     certificate = LoadCertificateFromStore(options.CertificateStoreLocation, options.CertificateStoreName, options.CertificateSubjectName, options.CertificateThumbprint);
@@ -162,12 +162,12 @@ namespace EventStore.ClusterNode
                     throw new Exception("No server certificate specified.");
             }
 
-            var intHttp = new IPEndPoint(options.InternalIp, options.InternalHttpPort);
-            var extHttp = new IPEndPoint(options.ExternalIp, options.ExternalHttpPort);
-            var intTcp = new IPEndPoint(options.InternalIp, options.InternalTcpPort);
-            var intSecTcp = options.InternalSecureTcpPort > 0 ? new IPEndPoint(options.InternalIp, options.InternalSecureTcpPort) : null;
-            var extTcp = new IPEndPoint(options.ExternalIp, options.ExternalTcpPort);
-            var extSecTcp = options.ExternalSecureTcpPort > 0 ? new IPEndPoint(options.ExternalIp, options.ExternalSecureTcpPort) : null;
+            var intHttp = new IPEndPoint(options.IntIp, options.IntHttpPort);
+            var extHttp = new IPEndPoint(options.ExtIp, options.ExtHttpPort);
+            var intTcp = new IPEndPoint(options.IntIp, options.IntTcpPort);
+            var intSecTcp = options.IntSecureTcpPort > 0 ? new IPEndPoint(options.IntIp, options.IntSecureTcpPort) : null;
+            var extTcp = new IPEndPoint(options.ExtIp, options.ExtTcpPort);
+            var extSecTcp = options.ExtSecureTcpPort > 0 ? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort) : null;
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
             var quorumSize = GetQuorumSize(options.ClusterSize);
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
@@ -186,7 +186,7 @@ namespace EventStore.ClusterNode
 	                                        prefixes, options.EnableTrustedAuth,
 	                                        certificate,
 	                                        options.WorkerThreads, options.DiscoverViaDns,
-	                                        options.ClusterDns, options.GossipSeeds,
+	                                        options.ClusterDns, options.GossipSeed,
 											TimeSpan.FromMilliseconds(options.MinFlushDelayMs), options.ClusterSize,
 	                                        prepareCount, commitCount,
 	                                        TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),

@@ -12,7 +12,7 @@ namespace EventStore.SingleNode
         [ArgDescription(Opts.ShowVersionDescr, Opts.AppGroup)]
         public bool ShowVersion { get; set; }
         [ArgDescription(Opts.LogsDescr, Opts.AppGroup)]
-        public string Logsdir { get; set; }
+        public string Log { get; set; }
         [ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
         public string Config { get; set; }
         [ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
@@ -91,7 +91,7 @@ namespace EventStore.SingleNode
 
             ShowHelp = Opts.ShowHelpDefault;
             ShowVersion = Opts.ShowVersionDefault;
-            Logsdir = Opts.LogsDefault;
+            Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
 
             Ip = Opts.IpDefault;

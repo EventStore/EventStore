@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         {
             var args = new string[] { "-config", "TestConfigs/test_config.json", "-logsdir", "~/customLogsDirectory" };
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
-            Assert.AreEqual("~/customLogsDirectory", testArgs.Logsdir);
+            Assert.AreEqual("~/customLogsDirectory", testArgs.Log);
         }
     }
 }

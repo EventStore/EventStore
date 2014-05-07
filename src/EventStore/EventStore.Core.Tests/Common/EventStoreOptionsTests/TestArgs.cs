@@ -7,7 +7,7 @@ namespace EventStore.Core.Tests.Common
         public bool ShowHelp { get; set; }
         public bool ShowVersion { get; set; }
         public string Config { get; set; }
-        public string Logsdir { get; set; }
+        public string Log { get; set; }
         public string[] Defines { get; set; }
         public bool Force { get; set; }
         public ProjectionType RunProjections { get; set; }
@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Common
         public TestArgs()
         {
             HttpPort = 2111;
-            Logsdir = "~/logs";
+            Log = "~/logs";
         }
     }
 }
