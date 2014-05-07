@@ -34,7 +34,7 @@ if [[ $MONOPATH == "" ]]; then
     MONOPATH="/opt/mono"
 fi
 
-LD_LIBRARY_PATH=bin/eventstore/$CONFIGURATION/anycpu/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/eventstore.tests/$CONFIGURATION/anycpu/EventStore.Core.Tests.dll $EXCLUDE -xml=inter
+LD_LIBRARY_PATH=bin/eventstore/$CONFIGURATION/anycpu/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/eventstore.tests/$CONFIGURATION/anycpu/EventStore.Core.Tests.dll $EXCLUDE -xml=inter 
 rc=$?
 xsltproc tools/nunit-2.6.3/results.xslt inter
 rm inter
