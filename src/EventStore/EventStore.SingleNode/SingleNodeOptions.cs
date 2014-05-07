@@ -8,9 +8,9 @@ namespace EventStore.SingleNode
     public class SingleNodeOptions : IOptions
     {
         [ArgDescription(Opts.ShowHelpDescr, Opts.AppGroup)]
-        public bool ShowHelp { get; set; }
+        public bool Help { get; set; }
         [ArgDescription(Opts.ShowVersionDescr, Opts.AppGroup)]
-        public bool ShowVersion { get; set; }
+        public bool Version { get; set; }
         [ArgDescription(Opts.LogsDescr, Opts.AppGroup)]
         public string Log { get; set; }
         [ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
@@ -89,8 +89,8 @@ namespace EventStore.SingleNode
         {
             Config = "singlenode-config.json";
 
-            ShowHelp = Opts.ShowHelpDefault;
-            ShowVersion = Opts.ShowVersionDefault;
+            Help = Opts.ShowHelpDefault;
+            Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
 

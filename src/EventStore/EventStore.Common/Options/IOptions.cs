@@ -2,8 +2,8 @@
 {
     public interface IOptions
     {
-        bool ShowHelp { get; }
-        bool ShowVersion { get; }
+        bool Help { get; }
+        bool Version { get; }
         string Config { get; }
         string Log { get; }
         string[] Defines { get; }

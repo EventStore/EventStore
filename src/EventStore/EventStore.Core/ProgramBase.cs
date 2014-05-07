@@ -39,12 +39,12 @@ namespace EventStore.Core
                 Application.RegisterExitAction(Exit);
 
                 options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix);
-                if (options.ShowHelp)
+                if (options.Help)
                 {
                     Console.WriteLine("Options:");
                     Console.WriteLine(EventStoreOptions.GetUsage<TOptions>());
                 }
-                else if (options.ShowVersion)
+                else if (options.Version)
                 {
                     Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
                                       VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);

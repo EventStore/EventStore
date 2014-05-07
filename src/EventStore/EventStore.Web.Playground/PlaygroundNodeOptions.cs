@@ -8,9 +8,9 @@ namespace EventStore.Web.Playground
     public class PlaygroundNodeOptions : IOptions
     {
         [ArgDescription(Opts.ShowHelpDescr)]
-        public bool ShowHelp { get; set; }
+        public bool Help { get; set; }
         [ArgDescription(Opts.ShowVersionDescr)]
-        public bool ShowVersion { get; set; }
+        public bool Version { get; set; }
         [ArgDescription(Opts.LogsDescr)]
         public string Log { get; set; }
         [ArgDescription(Opts.ConfigsDescr)]
@@ -37,8 +37,8 @@ namespace EventStore.Web.Playground
         {
             Config = "config.json";
 
-            ShowHelp = Opts.ShowHelpDefault;
-            ShowVersion = Opts.ShowVersionDefault;
+            Help = Opts.ShowHelpDefault;
+            Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
 

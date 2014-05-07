@@ -4,8 +4,8 @@ namespace EventStore.Core.Tests.Common
 {
     public class TestArgs : IOptions
     {
-        public bool ShowHelp { get; set; }
-        public bool ShowVersion { get; set; }
+        public bool Help { get; set; }
+        public bool Version { get; set; }
         public string Config { get; set; }
         public string Log { get; set; }
         public string[] Defines { get; set; }

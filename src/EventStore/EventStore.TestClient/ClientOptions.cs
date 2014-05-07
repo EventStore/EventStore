@@ -11,9 +11,9 @@ namespace EventStore.TestClient
     public sealed class ClientOptions : IOptions
     {
         [ArgDescription(Opts.ShowHelpDescr)]
-        public bool ShowHelp { get; set; }
+        public bool Help { get; set; }
         [ArgDescription(Opts.ShowVersionDescr)]
-        public bool ShowVersion { get; set; }
+        public bool Version { get; set; }
         [ArgDescription(Opts.LogsDescr)]
         public string Log { get; set; }
         [ArgDescription(Opts.ConfigsDescr)]
@@ -39,8 +39,8 @@ namespace EventStore.TestClient
         {
             Config = "testclient-config.json";
             Command = new string[] {};
-            ShowHelp = Opts.ShowHelpDefault;
-            ShowVersion = Opts.ShowVersionDefault;
+            Help = Opts.ShowHelpDefault;
+            Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
             Ip = IPAddress.Loopback;
