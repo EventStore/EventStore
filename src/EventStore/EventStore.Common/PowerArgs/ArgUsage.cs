@@ -553,14 +553,19 @@ namespace PowerArgs
             Dictionary<int, int> maximums = new Dictionary<int, int>();
 
             #if __MonoCS__
-            int optionDescriptionWidth = 24;
+            int optionDescriptionWidth = 20;
             int standardColumnWidth = 80;
-            int[] columnWidths = new int[] { optionDescriptionWidth, 
-                                                 standardColumnWidth - optionDescriptionWidth, 
-                                                 standardColumnWidth - optionDescriptionWidth - 2 };
+
+            List<int> columnWidths = new List<int>();
             #endif
 
-            for (int i = 0; i < columns.Count; i++) maximums.Add(i, columns[i].Length);
+            for (int i = 0; i < columns.Count; i++)
+            {
+                #if __MonoCS__
+                columnWidths.Add(i == 0 ? optionDescriptionWidth : standardColumnWidth - optionDescriptionWidth);
+                #endif
+                maximums.Add(i, columns[i].Length);
+            }
             for (int i = 0; i < columns.Count; i++)
             {
                 foreach (var row in rows)
