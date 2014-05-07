@@ -43,7 +43,7 @@ namespace PowerArgs
         /// </summary>
         public ArgUsageOptions()
         {
-            ShowType = true;
+            ShowType = false;
             ShowPosition = true;
             ShowPossibleValues = true;
             AppendDefaultValueToDescription = true;
@@ -552,12 +552,29 @@ namespace PowerArgs
 
             Dictionary<int, int> maximums = new Dictionary<int, int>();
 
-            for (int i = 0; i < columns.Count; i++) maximums.Add(i, columns[i].Length);
+            #if __MonoCS__
+            int optionDescriptionWidth = 20;
+            int standardColumnWidth = 80;
+
+            List<int> columnWidths = new List<int>();
+            #endif
+
+            for (int i = 0; i < columns.Count; i++)
+            {
+                #if __MonoCS__
+                columnWidths.Add(i == 0 ? optionDescriptionWidth : standardColumnWidth - optionDescriptionWidth);
+                #endif
+                maximums.Add(i, columns[i].Length);
+            }
             for (int i = 0; i < columns.Count; i++)
             {
                 foreach (var row in rows)
                 {
-                    maximums[i] = Math.Max(maximums[i], row[i].Length);
+                #if __MonoCS__
+                       maximums[i] = columnWidths[i];
+                #else
+                       maximums[i] = Math.Max(maximums[i], row[i].Length);
+                #endif
                 }
             }
 
