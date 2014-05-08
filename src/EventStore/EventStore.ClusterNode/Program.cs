@@ -16,7 +16,6 @@ using EventStore.Core.PluginModel;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using EventStore.Web.Users;
@@ -87,14 +86,14 @@ namespace EventStore.ClusterNode
 				{
 					if (opts.ClusterSize > 1)
 					{
-						Log.Error(string.Format("DNS discovery is disabled, but no gossip seed endpoints have been specified. " +
-						                        "Specify gossip seeds using the --{0} command line option.", Opts.GossipSeedCmd));
+					    Log.Error("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+					        + "Specify gossip seeds using the --gossip-seed command line option.");
 					}
 					else
 					{
-						Log.Info(string.Format("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since" +
-											   "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified" +
-						                       "seeds using the --{0} command line option.", Opts.GossipSeedCmd));
+					    Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since"
+					        + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified"
+					        + "seeds using the --gossip-seed command line option.");
 					}
 				}
 
