@@ -35,6 +35,18 @@ namespace PowerArgs
 
                     string value;
 
+                    // Handles a special case --arg-name- where we have a trailing -
+                    // it's a shortcut way of disabling an option
+                    if (key.StartsWith("-") && key.EndsWith("-"))
+                    {
+                        key = key.Substring(1, key.Length - 2);
+                        if (IsBool(key, context))
+                        {
+                            var redefinedArgs = new List<string>(args);
+                            redefinedArgs.Insert(i + 1, "false");
+                            args = redefinedArgs.ToArray();
+                        }
+                    }
                     // Handles long form syntax --argName=argValue.
                     if (key.StartsWith("-") && key.Contains("="))
                     {
