@@ -1,0 +1,2488 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PowerArgs</name>
+    </assembly>
+    <members>
+        <member name="T:PowerArgs.IArgMetadataEx">
+            <summary>
+            Extension methods that make it easy to work with metadata collections
+            </summary>
+        </member>
+        <member name="M:PowerArgs.IArgMetadataEx.HasMeta``1(System.Collections.Generic.IEnumerable{PowerArgs.IArgMetadata})">
+            <summary>
+            Returns true if the given collection of metadata contains metadata of the generic type T
+            provided.
+            </summary>
+            <typeparam name="T">The type of metadata to search for</typeparam>
+            <param name="metadata">The list of metadata to search</param>
+            <returns>rue if the given collection of metadata contains metadata of the generic type T
+            provided, otherwise false</returns>
+        </member>
+        <member name="M:PowerArgs.IArgMetadataEx.Meta``1(System.Collections.Generic.IEnumerable{PowerArgs.IArgMetadata})">
+            <summary>
+            Gets the first instance of metadata of the given generic type T in the collection
+            or null if it was not found.
+            </summary>
+            <typeparam name="T">The type of metadata to search for</typeparam>
+            <param name="metadata">The list of metadata to search</param>
+            <returns>the first instance of an metadata of the given generic type T in the collection
+            or null if it was not found</returns>
+        </member>
+        <member name="M:PowerArgs.IArgMetadataEx.TryGetMeta``1(System.Collections.Generic.IEnumerable{PowerArgs.IArgMetadata},``0@)">
+            <summary>
+            Try to get the first instance of metadata of the given generic type T in the collection.
+            </summary>
+            <typeparam name="T">The type of metadata to search for</typeparam>
+            <param name="metadata">The list of metadata to search</param>
+            <param name="ret">the our variable to set if the metadata was found</param>
+            <returns>true if the metadata was found, otherwise false</returns>
+        </member>
+        <member name="M:PowerArgs.IArgMetadataEx.Metas``1(System.Collections.Generic.IEnumerable{PowerArgs.IArgMetadata})">
+            <summary>
+            Gets the subset of metadata of the given generic type T from the collection.
+            </summary>
+            <typeparam name="T">The type of metadata to search for</typeparam>
+            <param name="metadata">The list of metadata to search</param>
+            <returns>the subset of metadata of the given generic type T from the collection</returns>
+        </member>
+        <member name="T:PowerArgs.MatchCollectionEx">
+            <summary>
+            A simple helper that makes it possible to do Linq queries over a MatchCollection
+            </summary>
+        </member>
+        <member name="M:PowerArgs.MatchCollectionEx.ToList(System.Text.RegularExpressions.MatchCollection)">
+            <summary>
+            Converts a MatchCollection to a List of Match objects so that you can perform linq queries over the matches.
+            </summary>
+            <param name="matches">The MatchCollection to convert</param>
+            <returns>a list of Match objects</returns>
+        </member>
+        <member name="T:PowerArgs.MemberInfoEx">
+            <summary>
+            Provides some reflection helpers in the form of extension methods for the MemberInfo type.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.MemberInfoEx.HasAttr``1(System.Reflection.MemberInfo)">
+            <summary>
+            Returns true if the given member has an attribute of the given type (including inherited types).
+            </summary>
+            <typeparam name="T">The type of attribute to test for (will return true for attributes that inherit from this type)</typeparam>
+            <param name="info">The member to test</param>
+            <returns>true if a matching attribute was found, false otherwise</returns>
+        </member>
+        <member name="M:PowerArgs.MemberInfoEx.Attr``1(System.Reflection.MemberInfo)">
+            <summary>
+            Gets the attribute of the given type or null if the member does not have this attribute defined.  The standard reflection helper GetCustomAttributes will
+            give you a new instance of the attribute every time you call it.  This helper caches it's results so if you ask for the same attibute twice you will actually
+            get back the same attribute.  Note that the cache key is based off of the type T that you provide.  So asking for Attr() where T : BaseType> and then asking for Attr() where T : ConcreteType 
+            will result in two different objects being returned.  If you ask for Attr() where T : BaseType and then Attr() where T :BaseType the caching will work and you'll get the same object back
+            the second time.
+            </summary>
+            <typeparam name="T">The type of attribute to search for</typeparam>
+            <param name="info">The member to inspect</param>
+            <returns>The desired attribute or null if it is not present</returns>
+        </member>
+        <member name="M:PowerArgs.MemberInfoEx.Attrs``1(System.Reflection.MemberInfo)">
+            <summary>
+            Gets the attributes of the given type.  The standard reflection helper GetCustomAttributes will give you new instances of the attributes every time you call it.  
+            This helper caches it's results so if you ask for the same attibutes twice you will actually get back the same attributes.  Note that the cache key is based off 
+            of the type T that you provide.  So asking for Attrs() where T : BaseType and then asking for Attrs() where T : ConcreteType
+            will result in two different sets of objects being returned.  If you ask for Attrs() where T : BaseType and then Attrs() where T : BaseType the caching will work and you'll get the
+            same results back the second time.
+            </summary>
+            <typeparam name="T">The type of attribute to search for</typeparam>
+            <param name="info">The member to inspect</param>
+            <returns>The list of attributes that you asked for</returns>
+        </member>
+        <member name="T:PowerArgs.ParemeterInfoEx">
+            <summary>
+            Some useful helper extensions for the ParameterInfo type
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ParemeterInfoEx.HasAttr``1(System.Reflection.ParameterInfo)">
+            <summary>
+            Returns true if the given parameter has an attribute of the given type (including inherited types).
+            </summary>
+            <typeparam name="T">The type of attribute to test for (will return true for attributes that inherit from this type)</typeparam>
+            <param name="info">The parameter to test</param>
+            <returns>true if a matching attribute was found, false otherwise</returns>
+        </member>
+        <member name="M:PowerArgs.ParemeterInfoEx.Attr``1(System.Reflection.ParameterInfo)">
+            <summary>
+            Gets the attribute of the given type or null if the parameter does not have this attribute defined.  The standard reflection helper GetCustomAttributes will
+            give you a new instance of the attribute every time you call it.  This helper caches it's results so if you ask for the same attibute twice you will actually
+            get back the same attribute.  Note that the cache key is based off of the type T that you provide.  So asking for Attr() where T : BaseType> and then asking for Attr() where T : ConcreteType 
+            will result in two different objects being returned.  If you ask for Attr() where T : BaseType and then Attr() where T :BaseType the caching will work and you'll get the same object back
+            the second time.
+            </summary>
+            <typeparam name="T">The type of attribute to search for</typeparam>
+            <param name="info">The parameter to inspect</param>
+            <returns>The desired attribute or null if it is not present</returns>
+        </member>
+        <member name="M:PowerArgs.ParemeterInfoEx.Attrs``1(System.Reflection.ParameterInfo)">
+            <summary>
+            Gets the attributes of the given type.  The standard reflection helper GetCustomAttributes will give you new instances of the attributes every time you call it.  
+            This helper caches it's results so if you ask for the same attibutes twice you will actually get back the same attributes.  Note that the cache key is based off 
+            of the type T that you provide.  So asking for Attrs() where T : BaseType and then asking for Attrs() where T : ConcreteType
+            will result in two different sets of objects being returned.  If you ask for Attrs() where T : BaseType and then Attrs() where T : BaseType the caching will work and you'll get the
+            same results back the second time.
+            </summary>
+            <typeparam name="T">The type of attribute to search for</typeparam>
+            <param name="info">The parameter to inspect</param>
+            <returns>The list of attributes that you asked for</returns>
+        </member>
+        <member name="T:PowerArgs.AliasCollection">
+            <summary>
+            This class tracks the command line aliases for a CommandLineArgument and a CommandLineAction.
+            It combines the aliases that have been retrieved from the ArgShortcut attibute and any additional
+            aliases that may have been added to the model manually into a single collection.  It also makes sure that those two sources
+            of aliases don't conflict.
+            
+            </summary>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.IndexOf(System.String)">
+            <summary>
+            Gets the index of the given alias in the collection.
+            </summary>
+            <param name="item">the alias to look for</param>
+            <returns>The index of item if found in the list; otherwise, -1.</returns>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.Insert(System.Int32,System.String)">
+            <summary>
+            Not supported
+            </summary>
+            <param name="index">Not supported</param>
+            <param name="item">Not supported</param>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.RemoveAt(System.Int32)">
+            <summary>
+            Not supported
+            </summary>
+            <param name="index">Not supported</param>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.AddRange(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Adds the given aliases to the collection. 
+            </summary>
+            <param name="items">The alias to add</param>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.Add(System.String)">
+            <summary>
+            Adds the given alias to the collection.  An InvalidArgDefinitionException is thrown if you try to add
+            the same alias twice (case sensitivity is determined by the CommandLineArgument or CommandLineAction).
+            </summary>
+            <param name="item">The alias to add</param>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.Clear">
+            <summary>
+            Clear is not supported, use ClearOverrides() to clear items that have manually been added
+            </summary>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.ClearOverrides">
+            <summary>
+            Clears the aliases that have been manually addd to this collection via Add() or AddRange().
+            Aliases that are inferred from the Metadata will still be present in the collection. 
+            </summary>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.Contains(System.String)">
+            <summary>
+            Tests to see if this Alias collection contains the given item.  Case sensitivity is enforced
+            based on the CommandLineArgument or CommandLineAction.
+            </summary>
+            <param name="item">The item to test for containment</param>
+            <returns>True if the collection contains the item, otherwise false</returns>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.CopyTo(System.String[],System.Int32)">
+            <summary>
+            Copies this collection to an array, starting at the given index
+            </summary>
+            <param name="array">the destination array</param>
+            <param name="arrayIndex">the starting index of where to place the elements into the destination</param>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.Remove(System.String)">
+            <summary>
+            Removes the given alias from the collection if it was added via Add() or AddRange().  If
+            it was added by injecting metadata into a CommandLineArgument or a CommandLineAction then
+            an InvalidOperationException will be thrown.  The correct way to remove metadata injected
+            aliases is to remove it from the metadata directly.
+            </summary>
+            <param name="item">the item to remove</param>
+            <returns>true if the alias was removed, false otherwise</returns>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.GetEnumerator">
+            <summary>
+            Gets an enumerator capable of enumerating all aliases
+            </summary>
+            <returns>an enumerator capable of enumerating all aliases</returns>
+        </member>
+        <member name="M:PowerArgs.AliasCollection.System#Collections#IEnumerable#GetEnumerator">
+            <summary>
+            Gets an enumerator capable of enumerating all aliases
+            </summary>
+            <returns>an enumerator capable of enumerating all aliases</returns>
+        </member>
+        <member name="P:PowerArgs.AliasCollection.Item(System.Int32)">
+            <summary>
+            The setter is not supported.  The getter returns the item at the specified index.
+            </summary>
+            <param name="index"></param>
+            <returns>the item at the specified index</returns>
+        </member>
+        <member name="P:PowerArgs.AliasCollection.Count">
+            <summary>
+            Gets the count of aliases
+            </summary>
+        </member>
+        <member name="P:PowerArgs.AliasCollection.IsReadOnly">
+            <summary>
+            Not read only ever
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgAction`1">
+            <summary>
+            This is the more complex version of the public result that is produced by the parser.
+            </summary>
+            <typeparam name="T">Represents the custom argument scaffold type that was passed to the parser.</typeparam>
+        </member>
+        <member name="T:PowerArgs.ArgAction">
+            <summary>
+            This is the weakly typed, more complex version of the public result that is produced by the parser.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgAction.Invoke">
+            <summary>
+            This will find the implementation method for your action and invoke it, passing the action specific
+            arguments as a parameter.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction.Definition">
+            <summary>
+            The definition or model that was used to parse the arguments
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction.Value">
+            <summary>
+            The instance of your custom scaffold type that the parser generated and parsed.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction.ActionArgs">
+            <summary>
+            If you used the action framework then this will represent the instance of the action specific arguments
+            that were parsed.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction.ActionArgsProperty">
+            <summary>
+            If you used the action framework then this will map to the property that the user specified as the first
+            parameter on the command line.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction.ActionParameters">
+            <summary>
+            This is set if you defined your action via a method with simple parameters
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction.HandledException">
+            <summary>
+            If an exception was handled by the parser then this property will be populated and others will not be.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction.Cancelled">
+            <summary>
+            If processing was cancelled then this property will be set to true.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgAction`1.Args">
+            <summary>
+            The instance of your custom scaffold type that the parser generated and parsed.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ConsoleHelper">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ConsoleHelper.ConsoleImpl">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ConsoleHelper.ParseContext(System.String)">
+            <summary>
+            The input is the full command line previous to the token to be completed.  This function 
+            pulls out the last token before the completion's 'so far' input.
+            </summary>
+            <param name="commandLine"></param>
+            <returns></returns>
+        </member>
+        <member name="T:PowerArgs.ConsoleCharacter">
+            <summary>
+            A wrapper for char that encapsulates foreground and background colors.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.#ctor(System.Char,System.Nullable{System.ConsoleColor},System.Nullable{System.ConsoleColor})">
+            <summary>
+            Create a new ConsoleCharacter given a char value and optionally set the foreground or background coor.
+            </summary>
+            <param name="value">The character value</param>
+            <param name="foregroundColor">The foreground color (defaults to the console's foreground color at initialization time).</param>
+            <param name="backgroundColor">The background color (defaults to the console's background color at initialization time).</param>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.Write">
+            <summary>
+            Write this formatted character to the console
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.ToString">
+            <summary>
+            Gets the string representation of the character
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.Equals(System.Object)">
+            <summary>
+            ConsoleCharacters can be compared to other ConsoleCharacter instances or char values.
+            </summary>
+            <param name="obj">The ConsoleCharacter or char to compare to.</param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.op_Equality(PowerArgs.ConsoleCharacter,PowerArgs.ConsoleCharacter)">
+            <summary>
+            Operator overload for Equals
+            </summary>
+            <param name="a">The first operand</param>
+            <param name="b">The second operand</param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.op_Inequality(PowerArgs.ConsoleCharacter,PowerArgs.ConsoleCharacter)">
+            <summary>
+            Operator overload for !Equals
+            </summary>
+            <param name="a">The first operand</param>
+            <param name="b">The second operand</param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.op_Equality(PowerArgs.ConsoleCharacter,System.Char)">
+            <summary>
+            Operator overload for Equals
+            </summary>
+            <param name="a">The first operand</param>
+            <param name="b">The second operand</param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.op_Inequality(PowerArgs.ConsoleCharacter,System.Char)">
+            <summary>
+            Operator overload for !Equals
+            </summary>
+            <param name="a">The first operand</param>
+            <param name="b">The second operand</param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleCharacter.GetHashCode">
+            <summary>
+            Override of GetHashcode that returns the internal char's hashcode.
+            </summary>
+            <returns>the internal char's hashcode.</returns>
+        </member>
+        <member name="P:PowerArgs.ConsoleCharacter.Value">
+            <summary>
+            The value of the character
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ConsoleCharacter.ForegroundColor">
+            <summary>
+            The console foreground color to use when printing this character.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ConsoleCharacter.BackgroundColor">
+            <summary>
+            The console background color to use when printing this character.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ConsoleString">
+            <summary>
+            A wrapper for string that encapsulates foreground and background colors.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.#ctor">
+            <summary>
+            Create a new empty ConsoleString
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.#ctor(System.String,System.Nullable{System.ConsoleColor},System.Nullable{System.ConsoleColor})">
+            <summary>
+            Create a ConsoleString given an initial text value and optional color info.
+            </summary>
+            <param name="value"></param>
+            <param name="foregroundColor">The foreground color (defaults to the console's foreground color at initialization time).</param>
+            <param name="backgroundColor">The background color (defaults to the console's background color at initialization time).</param>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Append(System.String,System.Nullable{System.ConsoleColor},System.Nullable{System.ConsoleColor})">
+            <summary>
+            Appends the given value to this ConsoleString using the given formatting.
+            </summary>
+            <param name="value"></param>
+            <param name="foregroundColor">The foreground color (defaults to the console's foreground color at initialization time).</param>
+            <param name="backgroundColor">The background color (defaults to the console's background color at initialization time).</param>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Append(PowerArgs.ConsoleString)">
+            <summary>
+            Concatenates two ConsoleStrings together.
+            </summary>
+            <param name="other">The string to append.</param>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.AppendUsingCurrentFormat(System.String)">
+            <summary>
+            Appends the given value using the formatting of the last character or the default formatting if this ConsoleString is empty.
+            </summary>
+            <param name="value">The string to append.</param>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Replace(System.String,System.String,System.Nullable{System.ConsoleColor},System.Nullable{System.ConsoleColor})">
+            <summary>
+            Replaces all occurrances of the given string with the replacement value using the specified formatting.
+            </summary>
+            <param name="toFind">The substring to find</param>
+            <param name="toReplace">The replacement value</param>
+            <param name="foregroundColor">The foreground color (defaults to the console's foreground color at initialization time).</param>
+            <param name="backgroundColor">The background color (defaults to the console's background color at initialization time).</param>
+            <returns>A new ConsoleString with the replacements.</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.ReplaceRegex(System.String,System.String,System.Nullable{System.ConsoleColor},System.Nullable{System.ConsoleColor})">
+            <summary>
+            Replaces all matches of the given regular expression with the replacement value using the specified formatting.
+            </summary>
+            <param name="regex">The regular expression to find.</param>
+            <param name="toReplace">The replacement value</param>
+            <param name="foregroundColor">The foreground color (defaults to the console's foreground color at initialization time).</param>
+            <param name="backgroundColor">The background color (defaults to the console's background color at initialization time).</param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.IndexOf(System.String)">
+            <summary>
+            Finds the index of a given substring in this ConsoleString.
+            </summary>
+            <param name="toFind">The substring to search for.</param>
+            <returns>The first index of the given substring or -1 if the substring was not found.</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Contains(System.String)">
+            <summary>
+            Determines if this ConsoleString contains the given substring.
+            </summary>
+            <param name="substr">The substring to search for.</param>
+            <returns>True if found, false otherwise.</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Substring(System.Int32)">
+            <summary>
+            Get a substring of this ConsoleString starting at the given index.
+            </summary>
+            <param name="start">the start index.</param>
+            <returns>A new ConsoleString representing the substring requested.</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Substring(System.Int32,System.Int32)">
+            <summary>
+            Get a substring of this ConsoleString starting at the given index and with the given length.
+            </summary>
+            <param name="start">the start index.</param>
+            <param name="length">the number of characters to return</param>
+            <returns>A new ConsoleString representing the substring requested.</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Write">
+            <summary>
+            Write this ConsoleString to the console using the desired style.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.ToString">
+            <summary>
+            Get the string representation of this ConsoleString.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.Equals(System.Object)">
+            <summary>
+            Compare this ConsoleString to another ConsoleString or a plain string.
+            </summary>
+            <param name="obj">The ConsoleString or plain string to compare to.</param>
+            <returns>True if equal, false otherwise</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.CompareTo(System.String)">
+            <summary>
+            Compare this ConsoleString to another ConsoleString.
+            </summary>
+            <param name="other">The ConsoleString to compare to.</param>
+            <returns>True if equal, false otherwise</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.GetHashCode">
+            <summary>
+            Gets the hashcode of the underlying string
+            </summary>
+            <returns>the hashcode of the underlying string</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.op_Addition(PowerArgs.ConsoleString,PowerArgs.ConsoleString)">
+            <summary>
+            Operator overload that concatenates 2 ConsoleString instances and returns a new one.
+            </summary>
+            <param name="a">The left operand</param>
+            <param name="b">The right operand</param>
+            <returns>A new, concatenated ConsoleString</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.op_Addition(PowerArgs.ConsoleString,System.String)">
+            <summary>
+            Operator overload that concatenates a ConsoleString with a string and returns a new one.
+            </summary>
+            <param name="a">The left operand</param>
+            <param name="b">The right operand</param>
+            <returns>A new, concatenated ConsoleString</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.op_Equality(PowerArgs.ConsoleString,PowerArgs.ConsoleString)">
+            <summary>
+            Compares 2 ConsoleStrings for equality.
+            </summary>
+            <param name="a">The left operand</param>
+            <param name="b">The right operand</param>
+            <returns>True if they are the same, false otherwise</returns>
+        </member>
+        <member name="M:PowerArgs.ConsoleString.op_Inequality(PowerArgs.ConsoleString,PowerArgs.ConsoleString)">
+            <summary>
+            Compares 2 ConsoleStrings for inequality.
+            </summary>
+            <param name="a">The left operand</param>
+            <param name="b">The right operand</param>
+            <returns>False if they are the same, true otherwise</returns>
+        </member>
+        <member name="P:PowerArgs.ConsoleString.Empty">
+            <summary>
+            Represents an empty string.  You will get a new instance each time you access this property.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ConsoleString.Length">
+            <summary>
+            The length of the string.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.Args">
+            <summary>
+            The main entry point for PowerArgs that includes the public parsing functions such as Parse, ParseAction, and InvokeAction.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.Args.Convert(System.String)">
+            <summary>
+            Converts a single string that represents a command line to be executed into a string[], 
+            accounting for quoted arguments that may or may not contain spaces.
+            </summary>
+            <param name="commandLine">The raw arguments as a single string</param>
+            <returns>a converted string array with the arguments properly broken up</returns>
+        </member>
+        <member name="M:PowerArgs.Args.GetAmbientArgs``1">
+            <summary>
+            Gets the last instance of this type of argument that was parsed on the current thread
+            or null if PowerArgs did not parse an object of this type.
+            </summary>
+            <typeparam name="T">The scaffold type for your arguments</typeparam>
+            <returns>the last instance of this type of argument that was parsed on the current thread</returns>
+        </member>
+        <member name="M:PowerArgs.Args.GetAmbientArgs(System.Type)">
+            <summary>
+            Gets the last instance of this type of argument that was parsed on the current thread
+            or null if PowerArgs did not parse an object of this type.
+            </summary>
+            <param name="t">The scaffold type for your arguments</param>
+            <returns>the last instance of this type of argument that was parsed on the current thread</returns>
+        </member>
+        <member name="M:PowerArgs.Args.ParseAction``1(System.String[])">
+            <summary>
+            Creates a new instance of T and populates it's properties based on the given arguments.
+            If T correctly implements the heuristics for Actions (or sub commands) then the complex property
+            that represents the options of a sub command are also populated.
+            </summary>
+            <typeparam name="T">The argument scaffold type.</typeparam>
+            <param name="args">The command line arguments to parse</param>
+            <returns>The raw result of the parse with metadata about the specified action.</returns>
+        </member>
+        <member name="M:PowerArgs.Args.ParseAction(System.Type,System.String[])">
+            <summary>
+            Creates a new instance of the given type and populates it's properties based on the given arguments.
+            If the type correctly implements the heuristics for Actions (or sub commands) then the complex property
+            that represents the options of a sub command are also populated.
+            </summary>
+            <param name="t">The argument scaffold type.</param>
+            <param name="args">The command line arguments to parse</param>
+            <returns>The raw result of the parse with metadata about the specified action.</returns>
+        </member>
+        <member name="M:PowerArgs.Args.ParseAction(PowerArgs.CommandLineArgumentsDefinition,System.String[])">
+            <summary>
+            Parses the given arguments using a command line arguments definition.  
+            </summary>
+            <param name="definition">The definition that defines a set of command line arguments and/or actions.</param>
+            <param name="args">The command line arguments to parse</param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.Args.InvokeMain(System.Type,System.String[])">
+            <summary>
+            Parses the args for the given scaffold type and then calls the Main() method defined by the type.
+            </summary>
+            <param name="t">The argument scaffold type.</param>
+            <param name="args">The command line arguments to parse</param>
+            <returns>The raw result of the parse with metadata about the specified action.</returns>
+        </member>
+        <member name="M:PowerArgs.Args.InvokeMain``1(System.String[])">
+            <summary>
+            Parses the args for the given scaffold type and then calls the Main() method defined by the type.
+            </summary>
+            <typeparam name="T">The argument scaffold type.</typeparam>
+            <param name="args">The command line arguments to parse</param>
+            <returns>The raw result of the parse with metadata about the specified action.</returns>
+        </member>
+        <member name="M:PowerArgs.Args.InvokeAction``1(System.String[])">
+            <summary>
+            Creates a new instance of T and populates it's properties based on the given arguments. T must correctly
+            implement the heuristics for Actions (or sub commands) because this method will not only detect the action
+            specified on the command line, but will also find and execute the method that implements the action.
+            </summary>
+            <typeparam name="T">The argument scaffold type that must properly implement at least one action.</typeparam>
+            <param name="args">The command line arguments to parse</param>
+            <returns>The raw result of the parse with metadata about the specified action.  The action is executed before returning.</returns>
+        </member>
+        <member name="M:PowerArgs.Args.InvokeAction(PowerArgs.CommandLineArgumentsDefinition,System.String[])">
+            <summary>
+            Parses the given arguments using a command line arguments definition.  Then, invokes the action
+            that was specified.  
+            </summary>
+            <param name="definition">The definition that defines a set of command line arguments and actions.</param>
+            <param name="args"></param>
+            <returns>The raw result of the parse with metadata about the specified action.  The action is executed before returning.</returns>
+        </member>
+        <member name="M:PowerArgs.Args.Parse``1(System.String[])">
+            <summary>
+            Creates a new instance of T and populates it's properties based on the given arguments.
+            </summary>
+            <typeparam name="T">The argument scaffold type.</typeparam>
+            <param name="args">The command line arguments to parse</param>
+            <returns>A new instance of T with all of the properties correctly populated</returns>
+        </member>
+        <member name="M:PowerArgs.Args.Parse(System.Type,System.String[])">
+            <summary>
+            Creates a new instance of the given type and populates it's properties based on the given arguments.
+            </summary>
+            <param name="t">The argument scaffold type</param>
+            <param name="args">The command line arguments to parse</param>
+            <returns>A new instance of the given type with all of the properties correctly populated</returns>
+        </member>
+        <member name="M:PowerArgs.Args.Parse(PowerArgs.CommandLineArgumentsDefinition,System.String[])">
+            <summary>
+            Parses the given arguments using a command line arguments definition. The values will be populated within
+            the definition.
+            </summary>
+            <param name="definition">The definition that defines a set of command line arguments and/or actions.</param>
+            <param name="args">The command line arguments to parse</param>
+        </member>
+        <member name="T:PowerArgs.ArgUsageOptions">
+            <summary>
+            A class that lets you customize how your usage displays
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgUsageOptions.#ctor">
+            <summary>
+            Creates a new instance of ArgUsageOptions
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgUsageOptions.ShowType">
+            <summary>
+            Set to true if you want to show the type column (true by default)
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgUsageOptions.ShowPosition">
+            <summary>
+            Set to true if you want to show the position column (true by default)
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgUsageOptions.ShowPossibleValues">
+            <summary>
+            Set to true to list possible values (usually for enums, true by default)
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgUsageOptions.AppendDefaultValueToDescription">
+            <summary>
+            Set to true if you want to show default values after the description (true by default)
+            </summary>
+        </member>
+        <member name="T:PowerArgs.UsageHook">
+            <summary>
+            An attribute used to hook into the usage generation process and influence
+            the content that is written.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.IGlobalArgMetadata">
+            <summary>
+            Represents IArgMetadata that is valid for CommandLineArguments, CommandLineActions, and CommandLineArgumentsDefinition instances
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ICommandLineArgumentMetadata">
+            <summary>
+            Represents IArgMetadata that is valid for CommandLineArguments
+            </summary>
+        </member>
+        <member name="T:PowerArgs.IArgMetadata">
+            <summary>
+            Any attribute that's purpose is to add information about a command line arguments definiton should
+            derive from this type.  
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ICommandLineActionMetadata">
+            <summary>
+            Represents IArgMetadata that is valid for CommandLineActions
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ICommandLineArgumentsDefinitionMetadata">
+            <summary>
+            Represents IArgMetadata that is valid for CommandLineArgumentsDefinition instances
+            </summary>
+        </member>
+        <member name="M:PowerArgs.UsageHook.BeforeGenerateUsage(PowerArgs.ArgumentUsageInfo)">
+            <summary>
+            This hook gets called when the property it is attached to is having
+            its usage generated.  You can override this method and manipulate the
+            properties of the given usage info object.
+            </summary>
+            <param name="info">An object that you can use to manipulate the usage output.</param>
+        </member>
+        <member name="E:PowerArgs.UsageHook.HookExecuting">
+            <summary>
+            An event you can subscribe to in the case where you created
+            your hook in running code rather than as a declarative attribute.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgumentUsageInfo">
+            <summary>
+            A class that represents usage info to be written to the console.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgumentUsageInfo.#ctor(PowerArgs.CommandLineArgument)">
+            <summary>
+            Generate a new info instance given a reflected property. 
+            </summary>
+            <param name="toAutoGen">The property to use to seed the usage info</param>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Name">
+            <summary>
+            The name that will be written as part of the usage.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Aliases">
+            <summary>
+            Aliases for this argument that will be honored by the parser.  This
+            includes shortcuts and long form aliases, but can be extended further.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.PossibleValues">
+            <summary>
+            Possible values for this option.  This is auto populated for enums and includes the description if specified.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.IsRequired">
+            <summary>
+            Indicates that the argument is required.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Type">
+            <summary>
+            The friendly type name that will be displayed to the user.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Position">
+            <summary>
+            The expected position of the argument, or null if not a positioning is not supported for the given argument.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Description">
+            <summary>
+            The description that will be written as part of the usage.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Ignore">
+            <summary>
+            If set to true, the argument usage will not be written.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.IsAction">
+            <summary>
+            True if this is the "Action" property
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.IsActionArgs">
+            <summary>
+            True if this represents a nested action argument property
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Property">
+            <summary>
+            The reflected property that this info object represents
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.Argument">
+            <summary>
+            The command line argument that the system is currently generating usage for
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgumentUsageInfo.DefaultValue">
+            <summary>
+            The default value for the argument
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgUsage">
+            <summary>
+            A helper class that generates usage documentation for your command line arguments given a custom argument
+            scaffolding type.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgUsage.RegisterHook(System.Reflection.PropertyInfo,PowerArgs.UsageHook)">
+            <summary>
+            Registers a usage hook for the given property.
+            </summary>
+            <param name="prop">The property to hook into or null to hook into all properties.</param>
+            <param name="hook">The hook implementation.</param>
+        </member>
+        <member name="M:PowerArgs.ArgUsage.GetUsage``1(System.String,PowerArgs.ArgUsageOptions)">
+            <summary>
+            Generates usage documentation for the given argument scaffold type.
+            </summary>
+            <typeparam name="T">Your custom argument scaffold type</typeparam>
+            <param name="exeName">The name of your program or null if you want PowerArgs to automatically detect it.</param>
+            <param name="options">Specify custom usage options</param>
+            <returns>the usage documentation as a string</returns>
+        </member>
+        <member name="M:PowerArgs.ArgUsage.GetUsage(PowerArgs.CommandLineArgumentsDefinition,System.String,PowerArgs.ArgUsageOptions)">
+            <summary>
+            Generates usage documentation for the given argument definition.
+            </summary>
+            <param name="definition">The definition of the command line arguments for a program</param>
+            <param name="exeName">The name of your program or null if you want PowerArgs to automatically detect it.</param>
+            <param name="options">Specify custom usage options</param>
+            <returns>the usage documentation as a string</returns>
+        </member>
+        <member name="M:PowerArgs.ArgUsage.GetStyledUsage``1(System.String,PowerArgs.ArgUsageOptions)">
+            <summary>
+            Generates color styled usage documentation for the given argument scaffold type.  
+            </summary>
+            <typeparam name="T">Your custom argument scaffold type</typeparam>
+            <param name="exeName">The name of your program or null if you want PowerArgs to automatically detect it.</param>
+            <param name="options">Specify custom usage options</param>
+            <returns>the usage documentation as a styled string that can be printed to the console</returns>
+        </member>
+        <member name="M:PowerArgs.ArgUsage.GetStyledUsage(System.Type,System.String,PowerArgs.ArgUsageOptions)">
+            <summary>
+            Generates color styled usage documentation for the given argument scaffold type.  
+            </summary>
+            <param name="t">Your custom argument scaffold type</param>
+            <param name="exeName">The name of your program or null if you want PowerArgs to automatically detect it.</param>
+            <param name="options">Specify custom usage options</param>
+            <returns>the usage documentation as a styled string that can be printed to the console</returns>
+        </member>
+        <member name="M:PowerArgs.ArgUsage.GetStyledUsage(PowerArgs.CommandLineArgumentsDefinition,System.String,PowerArgs.ArgUsageOptions)">
+            <summary>
+            Generates color styled usage documentation for the given arguments definition.  
+            </summary>
+            <param name="definition">The definition of the command line arguments for a program</param>
+            <param name="exeName">The name of your program or null if you want PowerArgs to automatically detect it.</param>
+            <param name="options">Specify custom usage options</param>
+            <returns>the usage documentation as a styled string that can be printed to the console</returns>
+        </member>
+        <member name="T:PowerArgs.EasterEggs.MatrixMode">
+            <summary>
+            An easter egg that makes all command line output get written in a green themed, futuristic fasion.  Don't use in a real program :).
+            Breaking changes are allowed in the PowerArgs.EasterEggs namespace.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.EasterEggs.MatrixMode.Start">
+            <summary>
+            Starts MatrixMode.
+            </summary>
+            <returns>An action that when invoked stops MatrixMode.</returns>
+        </member>
+        <member name="T:PowerArgs.ArgException">
+            <summary>
+            An exception that should be thrown when the error condition is caused because of bad user input.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgException.#ctor(System.String)">
+            <summary>
+            Creates a new ArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+        </member>
+        <member name="M:PowerArgs.ArgException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new ArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.InvalidArgDefinitionException">
+            <summary>
+            An exception that should be thrown when the error condition is caused by an improperly formed
+            argument scaffold type.  For example if the user specified the same shortcut value for more than one property.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.InvalidArgDefinitionException.#ctor(System.String)">
+            <summary>
+            Creates a new InvalidArgDefinitionException given a message.
+            </summary>
+            <param name="msg">An error message.</param>
+        </member>
+        <member name="M:PowerArgs.InvalidArgDefinitionException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new InvalidArgDefinitionException given a message.
+            </summary>
+            <param name="msg">An error message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.UnexpectedArgException">
+            <summary>
+            An exception that should be thrown when an unexpected named|positional argument is found.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.UnexpectedArgException.#ctor(System.String)">
+            <summary>
+            Creates a new UnexpectedArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+        </member>
+        <member name="M:PowerArgs.UnexpectedArgException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new UnexpectedArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.DuplicateArgException">
+            <summary>
+            An exception that should be thrown when the same argument is repeated.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.DuplicateArgException.#ctor(System.String)">
+            <summary>
+            Creates a new DuplicateArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+        </member>
+        <member name="M:PowerArgs.DuplicateArgException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new DuplicateArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.MissingArgException">
+            <summary>
+            An exception that should be thrown when a required argument is missing.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.MissingArgException.#ctor(System.String)">
+            <summary>
+            Creates a new MissingArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+        </member>
+        <member name="M:PowerArgs.MissingArgException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new MissingArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.UnknownActionArgException">
+            <summary>
+            An exception that should be thrown when an unknown action argument is specified.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.UnknownActionArgException.#ctor(System.String)">
+            <summary>
+            Creates a new UnknownActionArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+        </member>
+        <member name="M:PowerArgs.UnknownActionArgException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new UnknownActionArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.QueryInvalidArgException">
+            <summary>
+            An exception that should be thrown when the query can not be compiled.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.QueryInvalidArgException.#ctor(System.String)">
+            <summary>
+            Creates a new QueryInvalidArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+        </member>
+        <member name="M:PowerArgs.QueryInvalidArgException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new QueryInvalidArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.ValidationArgException">
+            <summary>
+            An exception that should be thrown when an argument's value is not valid.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ValidationArgException.#ctor(System.String)">
+            <summary>
+            Creates a new ValidationArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+        </member>
+        <member name="M:PowerArgs.ValidationArgException.#ctor(System.String,System.Exception)">
+            <summary>
+            Creates a new ValidationArgException given a user friendly message
+            </summary>
+            <param name="msg">A user friendly message.</param>
+            <param name="inner">The inner exception that caused the problem</param>
+        </member>
+        <member name="T:PowerArgs.ITabCompletionSource">
+            <summary>
+            An interface used to implement custom tab completion logic.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ITabCompletionSource.TryComplete(System.Boolean,System.String,System.String@)">
+            <summary>
+            PowerArgs will call this method if it has enhanced the command prompt and the user presses tab.  You should use the
+            text the user has types so far to determine if there is a completion you'd like to make.  If you find a completion
+            then you should assign it to the completion variable and return true.
+            </summary>
+            <param name="shift">Indicates if shift was being pressed</param>
+            <param name="soFar">The text token that the user has typed before pressing tab.</param>
+            <param name="completion">The variable that you should assign the completed string to if you find a match.</param>
+            <returns>True if you completed the string, false otherwise.</returns>
+        </member>
+        <member name="T:PowerArgs.IConsoleProvider">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.IConsoleProvider.ReadKey">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.IConsoleProvider.Write(System.Object)">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.IConsoleProvider.WriteLine(System.Object)">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.IConsoleProvider.WriteLine">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.IConsoleProvider.Clear">
+            <summary>
+            Clears the console window
+            </summary>
+        </member>
+        <member name="P:PowerArgs.IConsoleProvider.CursorLeft">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.IConsoleProvider.CursorTop">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.IConsoleProvider.BufferWidth">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.StdConsoleProvider">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.StdConsoleProvider.ReadKey">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+            <returns>Used for internal implementation, but marked public for testing, please do not use.</returns>
+        </member>
+        <member name="M:PowerArgs.StdConsoleProvider.Write(System.Object)">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+            <param name="output">Used for internal implementation, but marked public for testing, please do not use.</param>
+        </member>
+        <member name="M:PowerArgs.StdConsoleProvider.WriteLine(System.Object)">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+            <param name="output">Used for internal implementation, but marked public for testing, please do not use.</param>
+        </member>
+        <member name="M:PowerArgs.StdConsoleProvider.WriteLine">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.StdConsoleProvider.ReadALineOfConsoleOutput(System.Int32)">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+            <param name="y">Used for internal implementation, but marked public for testing, please do not use.</param>
+            <returns>Used for internal implementation, but marked public for testing, please do not use.</returns>
+        </member>
+        <member name="M:PowerArgs.StdConsoleProvider.Clear">
+            <summary>
+            Clears the console
+            </summary>
+        </member>
+        <member name="P:PowerArgs.StdConsoleProvider.CursorLeft">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.StdConsoleProvider.CursorTop">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.StdConsoleProvider.BufferWidth">
+            <summary>
+            Used for internal implementation, but marked public for testing, please do not use.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ParseResult">
+            <summary>
+            The raw parse result that contains the dictionary of values that were parsed
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ParseResult.ExplicitParameters">
+            <summary>
+            Dictionary of values that were either in the format -key value or /key:value on
+            the command line.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ParseResult.ImplicitParameters">
+            <summary>
+            Dictionary of values that were implicitly specified by position where the key is the position (e.g. 0)
+            and the value is the actual parameter value.
+            
+            Example command line:  Program.exe John Smith
+            
+            John would be an implicit parameter at position 0.
+            Smith would be an implicit parameter at position 1.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgHook">
+            <summary>
+            An abstract class that you can implement if you want to hook into various parts of the
+            parsing pipeline.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgHook.BeforeParse(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called before the parser ever looks at the command line.  You can do some preprocessing of the 
+            raw string arguments here.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.BeforePopulateProperties(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called before the arguments defined in a class are populated.  For actions (or sub commands) this hook will
+            get called once for the main class and once for the specified action.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.BeforePopulateProperty(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called before an argument is transformed from a string into a proper type and validated.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.AfterPopulateProperty(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called after an argument is transformed from a string into a proper type and validated.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.AfterPopulateProperties(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called after the arguments defined in a class are populated.  For actions (or sub commands) this hook will
+            get called once for the main class and once for the specified action.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.BeforeInvoke(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called after parsing is complete, but before any Action or Main method is invoked.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.AfterInvoke(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called after any Action or Main method is invoked.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.AfterCancel(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            This hook is called if CancelAllProcessing() is called on a HookContext object.
+            </summary>
+            <param name="context">An object that has useful context.  See the documentation of each property for information about when those properties are populated.</param>
+        </member>
+        <member name="P:PowerArgs.ArgHook.BeforeParsePriority">
+            <summary>
+            The priority of the BeforeParse hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.BeforePopulatePropertiesPriority">
+            <summary>
+            The priority of the BeforePopulateProperties hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.BeforePopulatePropertyPriority">
+            <summary>
+            The priority of the BeforePopulateProperty hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.AfterPopulatePropertyPriority">
+            <summary>
+            The priority of the AfterPopulateProperty hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.AfterPopulatePropertiesPriority">
+            <summary>
+            The priority of the AfterPopulateProperties hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.BeforeInvokePriority">
+            <summary>
+            The priority of the BeforeInvoke hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.AfterInvokePriority">
+            <summary>
+            The priority of the AfterInvoke hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.AfterCancelPriority">
+            <summary>
+            The priority of the AfterCancel hook.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgHook.HookContext">
+            <summary>
+            Context that is passed to your hook.  Different parts of the context will be available
+            depending on which part of the pipeline you're hooking into.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgHook.HookContext.CmdLineArgs">
+            <summary>
+            The command line arguments that were passed to the Args class.  This is always available and you
+            can modify it in the BeforeParse hook at your own risk.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgHook.HookContext.ArgumentValue">
+            <summary>
+            The string value that was specified for the current argument.  This will align with the value of ArgHook.CurrentArgument.
+            
+            This is not available during BeforePopulateProperties or
+            AfterPopulateProperties.
+            
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgHook.HookContext.RevivedProperty">
+            <summary>
+            This is the value of the current property after it has been converted into its proper .NET type.  It is only available
+            to the AfterPopulateProperty hook.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgHook.HookContext.GetProperty``1(System.String)">
+            <summary>
+            Get a value from the context's property bag.
+            </summary>
+            <typeparam name="T">The type of value you are expecting</typeparam>
+            <param name="key">The key for the property you want to get</param>
+            <returns>The value or default(T) if no value was found.</returns>
+        </member>
+        <member name="M:PowerArgs.ArgHook.HookContext.SetProperty``1(System.String,``0)">
+            <summary>
+            Set a value in the context's property bag.
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="key">The key for the property you want to set</param>
+            <param name="value">The value of the property to set</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.HookContext.HasProperty(System.String)">
+            <summary>
+            Returns true if the context has a value for the given property.
+            </summary>
+            <param name="key">The key to check</param>
+            <returns>true if the context has a value for the given property, false otherwise</returns>
+        </member>
+        <member name="M:PowerArgs.ArgHook.HookContext.ClearProperty(System.String)">
+            <summary>
+            Clear a value in the context's property bag.
+            </summary>
+            <param name="key">The key for the property you want to clear.</param>
+        </member>
+        <member name="M:PowerArgs.ArgHook.HookContext.CancelAllProcessing">
+            <summary>
+            Stops all argument processing, hooks, and action invocation as soon as is feasable.  You
+            can implement an ArgHook that receives an event when this is called.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.HookContext.Current">
+            <summary>
+            Gets the context for the current parse operation happening on the current thread or
+            null if no parse is happening on the current thread.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.HookContext.Property">
+            <summary>
+            The current property being operating on.  This is not available during BeforePopulateProperties or
+            AfterPopulateProperties.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.HookContext.CurrentArgument">
+            <summary>
+            The current argument being operating on. 
+            AfterPopulateProperties.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.HookContext.Args">
+            <summary>
+            This is the instance of your argument class.  The amount that it is populated will depend on how far along in the pipeline
+            the parser is.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.HookContext.Definition">
+            <summary>
+            The definition that's being used throughout the parsing process
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgHook.HookContext.ParserData">
+            <summary>
+            The raw parser data.  This is not available to the BeforeParse hook.  It may be useful for you to look at, but you should rarely have to change the values.  
+            Modify the content of this at your own risk.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.DefaultValueAttribute">
+            <summary>
+            Use this attribute to set the default value for a parameter.  Note that this only
+            works for simple types since only compile time constants can be passed to an attribute.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.DefaultValueAttribute.#ctor(System.Object)">
+            <summary>
+            Creates a new DefaultValueAttribute with the given value.  Note that the value will get
+            converted to a string and then fed into the parser to be revived.
+            </summary>
+            <param name="value">The default value for the property</param>
+        </member>
+        <member name="M:PowerArgs.DefaultValueAttribute.BeforePopulateProperty(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            Before the property is revived and validated, if the user didn't specify a value, 
+            then substitue the default value.
+            
+            </summary>
+            <param name="Context"></param>
+        </member>
+        <member name="P:PowerArgs.DefaultValueAttribute.Value">
+            <summary>
+            The default value that was specified on the attribute.  Note that the value will get
+            converted to a string and then fed into the parser to be revived.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.StickyArg">
+            <summary>
+            A useful arg hook that will store the last used value for an argument and repeat it the next time.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.StickyArg.#ctor">
+            <summary>
+            Marks a property as a sticky arg.  Use the default location to store sticky arguments (AppData/Roaming/PowerArgs/EXE_NAME.txt)
+            </summary>
+        </member>
+        <member name="M:PowerArgs.StickyArg.#ctor(System.String)">
+            <summary>
+            Marks a property as a sticky arg.  Use the provided location to store sticky arguments (AppData/Roaming/PowerArgs/EXE_NAME.txt)
+            </summary>
+        </member>
+        <member name="M:PowerArgs.StickyArg.BeforePopulateProperty(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            If the user didn't specify a value on the command line then the StickyArg will try to load the last used
+            value.
+            </summary>
+            <param name="Context">Used to see if the property was specified.</param>
+        </member>
+        <member name="M:PowerArgs.StickyArg.AfterPopulateProperty(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            If the given property has a non null value then that value is persisted for the next use.
+            </summary>
+            <param name="Context">Used to see if the property was specified.</param>
+        </member>
+        <member name="T:PowerArgs.IStickyArgPersistenceProvider">
+            <summary>
+            An interface used to implement custom saving and loading of persistent (sticky) args.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.IStickyArgPersistenceProvider.Save(System.Collections.Generic.Dictionary{System.String,System.String},System.String)">
+            <summary>
+            This method is called when it is time to save the sticky args.
+            </summary>
+            <param name="stickyArgs">The names and values of the arguments to save.</param>
+            <param name="pathInfo">The string that was passed to the StickyArg attribue (usually a file path).</param>
+        </member>
+        <member name="M:PowerArgs.IStickyArgPersistenceProvider.Load(System.String)">
+            <summary>
+            This method is called when it is time to load the sticky args.
+            </summary>
+            <param name="pathInfo">The string that was passed to the StickyArg attribue (usually a file path).</param>
+            <returns>The loaded sticky args.</returns>
+        </member>
+        <member name="T:PowerArgs.StickyArgPersistence">
+            <summary>
+            An attribute you can put on a type in order to override how StickyArg properties are saved and loaded.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.StickyArgPersistence.#ctor(System.Type)">
+            <summary>
+            Creates a new StickyArgPersistence attribute given the type of the persistence provider.
+            </summary>
+            <param name="persistenceProviderType">The type that implements IStickyArgPersistenceProvider and defines a default constructor.</param>
+        </member>
+        <member name="P:PowerArgs.StickyArgPersistence.PersistenceProvider">
+            <summary>
+            Gets the provider that will be used to save and load sticky args.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgActionMethod">
+            <summary>
+            Use this attribute to annotate methods that represent your program's actions.  
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgActionType">
+            <summary>
+            Use this attribute if your action implementation methods are defined in a type other than the 
+            type being passed to Args.ParseAction() or Args.InvokeAction().
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgActionType.#ctor(System.Type)">
+            <summary>
+            Creates a new ArgActionType attribute given the type that contains the action implementation.
+            </summary>
+            <param name="t">The type that implements your action methods.</param>
+        </member>
+        <member name="P:PowerArgs.ArgActionType.ActionType">
+            <summary>
+            The type that implements your action methods.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgDescription">
+            <summary>
+            Use this attribute to describe your argument property.  This will show up in the auto generated
+            usage documentation.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgDescription.#ctor(System.String)">
+            <summary>
+            Creates a new ArgDescription attribute.
+            </summary>
+            <param name="description">A brief description of your argument property.</param>
+        </member>
+        <member name="P:PowerArgs.ArgDescription.Description">
+            <summary>
+            A brief description of your argument property.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgExample">
+            <summary>
+            Use this attribute to provide an example of how to use your program.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgExample.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new ArgExample class
+            </summary>
+            <param name="example">The example command line.</param>
+            <param name="description">A brief description of what this example does.</param>
+        </member>
+        <member name="P:PowerArgs.ArgExample.Example">
+            <summary>
+            The example command line.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgExample.Description">
+            <summary>
+            A brief description of what this example does.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgExceptionPolicy">
+            <summary>
+            Enum used to specify how user errors (ArgExceptions) should be handled by the parser.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgExceptionPolicy.DontHandleExceptions">
+            <summary>
+            The default, PowerArgs will throw these exceptions for your program to handle.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgExceptionPolicy.StandardExceptionHandling">
+            <summary>
+            PowerArgs will print the user friendly error message as well as the auto-generated usage documentation
+            for the program.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgExceptionBehavior">
+            <summary>
+            Use this attrbiute to opt into standard error handling of user input errors.  
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgExceptionBehavior.#ctor(PowerArgs.ArgExceptionPolicy)">
+            <summary>
+            Creates a new ArgExceptionBehavior attributes with the given policy.
+            </summary>
+            <param name="policy">The policy to use, defaults to DontHandleExceptions.</param>
+        </member>
+        <member name="P:PowerArgs.ArgExceptionBehavior.Policy">
+            <summary>
+            The policy to use, defaults to DontHandleExceptions.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgExceptionBehavior.ShowTypeColumn">
+            <summary>
+            Optionally show the TYPE column in the auto generated usage.  Defaults to true.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgExceptionBehavior.ShowPositionColumn">
+            <summary>
+            Optionally show the POSITION column in the auto generated usage.  Defaults to true.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgExceptionBehavior.ShowPossibleValues">
+            <summary>
+            Set to true to list possible values (usually for enums).  Defaults to true.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgExceptionBehavior.ExeName">
+            <summary>
+            Optionally override the ExeName.  You need to do this in unit tests.  In a real console app the
+            value will be detected automatically if you leave this as null.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgIgnoreAttribute">
+            <summary>
+            Use this attribute if you want PowerArgs to ignore a property completely.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.IArgumentOrActionMetadata">
+            <summary>
+            Represents IArgMetadata that is valid for CommandLineArguments or CommandLineActions
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgIgnoreCase">
+            <summary>
+            Use this argument on your class, property, or action method to enforce case sensitivity.  By default,
+            case is ignored.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgIgnoreCase.#ctor(System.Boolean)">
+            <summary>
+            Create a new ArgIgnoreCase attribute.
+            </summary>
+            <param name="ignore">Whether or not to ignore case</param>
+        </member>
+        <member name="P:PowerArgs.ArgIgnoreCase.IgnoreCase">
+            <summary>
+            Flag to set whether or not case is ignored.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgEnforceCase">
+            <summary>
+            Use this argument on your class or property to enforce case sensitivity.  By default,
+            case is ignored.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgEnforceCase.#ctor">
+            <summary>
+            Create a new ArgEnforceCase attribute.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgPosition">
+            <summary>
+            Use this attribute if you want users to be able to specify an argument without specifying the name, 
+            but rather by it's position on the command line.  All positioned arguments must come before any named arguments.
+            Zero '0' represents the first position.  If you are using the Action framework then subcommands must start at
+            position 1.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgPosition.#ctor(System.Int32)">
+            <summary>
+            Creates a new ArgPositionAttribute
+            </summary>
+            <param name="pos">The expected position of this argument</param>
+        </member>
+        <member name="P:PowerArgs.ArgPosition.Position">
+            <summary>
+            The expected position of this argument
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgReviverAttribute">
+            <summary>
+            The attribute used when you want to create an arg reviver. You should put this on public static methods 
+            that take 2 string parameters (the first represents the name of the property, the second represents the string value
+            and the return type is the type that you are reviving (or converting) the string into.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgShortcutPolicy">
+            <summary>
+            An enum to represent argument shortcut policies
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgShortcutPolicy.Default">
+            <summary>
+            No special behavior.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgShortcutPolicy.NoShortcut">
+            <summary>
+            Pass this value to the ArgShortcut attribute's constructor to indicate that the given property
+            does not support a shortcut.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgShortcutPolicy.ShortcutsOnly">
+            <summary>
+            This indicates that the .NET property named should not be used as an indicator.  Instead,
+            only the values in the other ArgShortcut attributes should be used.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgShortcut">
+            <summary>
+            Use this attribute to override the shortcut that PowerArgs automatically assigns to each property.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgShortcut.#ctor(System.String)">
+            <summary>
+            Creates a new ArgShortcut attribute with a specified value.
+            </summary>
+            <param name="shortcut">The value of the new shortcut.</param>
+        </member>
+        <member name="M:PowerArgs.ArgShortcut.#ctor(PowerArgs.ArgShortcutPolicy)">
+            <summary>
+            Creates a new ArgShortcut using the given policy
+            </summary>
+            <param name="policy"></param>
+        </member>
+        <member name="P:PowerArgs.ArgShortcut.Shortcut">
+            <summary>
+            The shortcut for the given property
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgShortcut.Policy">
+            <summary>
+            Get the ShortcutPolicy for this attribute.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgLongForm">
+            <summary>
+            An attribute used to define long form aliases for argument
+            names.  For example, --log-level instead of -log.
+            It also supports an alternate syntax for providing the values.
+            For example: --log-level=error instead of -log error or /log:error.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgLongForm.#ctor(System.String)">
+            <summary>
+            Creates a new instance of an ArgLongForm attribute given the shortcut value.
+            </summary>
+            <param name="value">The shortcut value</param>
+        </member>
+        <member name="T:PowerArgs.ArgStyle">
+            <summary>
+            Obsolete, both the -name value and /name:value styles are supported automatically.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgStyle.PowerShell">
+            <summary>
+            Obsolete, both the -name value and /name:value styles are supported automatically.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgStyle.SlashColon">
+            <summary>
+            Obsolete, both the -name value and /name:value styles are supported automatically.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgStyleAttribute">
+            <summary>
+            Obsolete - Don't use this.  Both the -name value and /name:value styles are now both supported automatically.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgStyleAttribute.#ctor(PowerArgs.ArgStyle)">
+            <summary>
+            Obsolete - Don't use this.  Both the -name value and /name:value styles are now both supported automatically.
+            </summary>
+            <param name="style">obsolete</param>
+        </member>
+        <member name="P:PowerArgs.ArgStyleAttribute.Style">
+            <summary>
+            Obsolete - Don't use this.  Both the -name value and /name:value styles are now both supported automatically.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.OmitFromUsageDocs">
+            <summary>
+            An attribute that, when placed on a property or action method, makes sure that property/action does not appear
+            in the output created by the ArgUsage class (the class that auto generates usage documentation).
+            </summary>
+        </member>
+        <member name="M:PowerArgs.OmitFromUsageDocs.BeforeGenerateUsage(PowerArgs.ArgumentUsageInfo)">
+            <summary>
+            sets the ignroe flag on the info object
+            </summary>
+            <param name="info">the context used to modify the usage documentation</param>
+        </member>
+        <member name="T:PowerArgs.CommandLineAction">
+            <summary>
+            A class that represents command line actions that users can specify on the command line.  This is useful for programs like git
+            where users first specify an action like 'push' and then the remaining arguments are either global or specific to 'push'.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.CommandLineAction.#ctor(System.Action{PowerArgs.CommandLineArgumentsDefinition})">
+            <summary>
+            Creates a new command line action given an implementation.
+            </summary>
+            <param name="actionHandler">The implementation of the aciton.</param>
+        </member>
+        <member name="M:PowerArgs.CommandLineAction.ToString">
+            <summary>
+            Gets a string representation of this action.
+            </summary>
+            <returns>a string representation of this action</returns>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.Aliases">
+            <summary>
+            The values that the user can specify on the command line to specify this action.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.Arguments">
+            <summary>
+            The action specific arguments that are applicable to the end user should they specify this action.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.Description">
+            <summary>
+            The description that will be shown in the auto generated usage.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.Source">
+            <summary>
+            The method or property that was used to define this action.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.IsSpecifiedAction">
+            <summary>
+            This will be set by the parser if the parse was successful and this was the action the user specified.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.IgnoreCase">
+            <summary>
+            Indicates whether or not the parser should ignore case when matching a user string with this action.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.DefaultAlias">
+            <summary>
+            The first alias or null if there are no aliases.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.Metadata">
+            <summary>
+            The list of metadata that can be used to inject behavior into the action
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.ActionMethod">
+            <summary>
+            The implementation of the action that can be invoked by the parser if the user specifies this action.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineAction.Examples">
+            <summary>
+            Examples that show users how to use this action.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.CommandLineArgument">
+            <summary>
+            Instances of this class represent a single command line argument that users can specify on the command line.
+            Supported syntaxes include:
+                -argumentName argumentValue
+                /argumentName:argumentValue
+                -argumentName                   - If the argument is a boolean it will be true in this case.
+                --argumentName=argumentValue    - Only works if you have added an alias that starts with --.
+                argumentValue                   - Only works if this argument defines the Position property as >= 0
+            </summary>
+        </member>
+        <member name="M:PowerArgs.CommandLineArgument.#ctor(System.Type,System.String,System.Boolean)">
+            <summary>
+            Creates a command line argument of the given type and sets the first default alias.
+            </summary>
+            <param name="t">The CLR type of the argument</param>
+            <param name="defaultAlias">The default name that users will use to specify this argument</param>
+            <param name="ignoreCase">If true, the parser will match this argument even if the specifier doesn't match case.  True by default.</param>
+        </member>
+        <member name="M:PowerArgs.CommandLineArgument.ToString">
+            <summary>
+            Gets the string representation of this argument.
+            </summary>
+            <returns>the string representation of this argument.</returns>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.Aliases">
+            <summary>
+            The values that can be used as specifiers for this argument on the command line
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.Metadata">
+            <summary>
+            Metadata that has been injected into this Argument
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.ArgumentType">
+            <summary>
+            The CLR type of this argument.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.IgnoreCase">
+            <summary>
+            Specifies whether or not the parser should ignore case when trying to find a match for this argument on the command line.  Defaults to true.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.Position">
+            <summary>
+            If this is a positional argument then set this value >= 0 and users can specify a value without specifying an argument alias.  Defaults to -1.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.DefaultValue">
+            <summary>
+            The default value for this argument in the event it is optional and the user did not specify it.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.Description">
+            <summary>
+            The description for this argument that appears in the auto generated usage.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.IsRequired">
+            <summary>
+            Gets or sets whether or not this argument is required.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.Source">
+            <summary>
+            If this argument was inferred from a type then the source is either a PropertyInfo or a ParameterInfo.  If this argument
+            was created manually then this value will be null.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.RevivedValue">
+            <summary>
+            This property will contain the parsed value of the command line argument if parsing completed successfully.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgument.DefaultAlias">
+            <summary>
+            The first alias of this argument or null if no aliases are defined.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.CommandLineArgumentsDefinition">
+            <summary>
+            This is the root class used to define a program's command line arguments.  You can start with an empty definition and 
+            programatically add arguments or you can start from a Type that you have defined and have the definition inferred from it.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.CommandLineArgumentsDefinition.#ctor">
+            <summary>
+            Creates an empty command line arguments definition.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.CommandLineArgumentsDefinition.#ctor(System.Type)">
+            <summary>
+            Creates a command line arguments definition and infers things like Arguments, Actions, etc. from the type's metadata.
+            </summary>
+            <param name="t">The argument scaffold type used to infer the definition</param>
+        </member>
+        <member name="M:PowerArgs.CommandLineArgumentsDefinition.FindMatchingArgument(System.String,System.Boolean)">
+            <summary>
+            Finds the first CommandLineArgument that matches the given key.
+            </summary>
+            <param name="key">The key as if it was typed in on the command line.  This can also be an alias. </param>
+            <param name="throwIfMoreThanOneMatch">If set to true then this method will throw and InvalidArgDeginitionException if more than 1 match is found</param>
+            <returns>The first argument that matches the key.</returns>
+        </member>
+        <member name="M:PowerArgs.CommandLineArgumentsDefinition.FindMatchingAction(System.String,System.Boolean)">
+            <summary>
+            Finds the first CommandLineAction that matches the given key
+            </summary>
+            <param name="key">The key as if it was typed in on the command line.  This can also be an alias. </param>
+            <param name="throwIfMoreThanOneMatch">If set to true then this method will throw and InvalidArgDeginitionException if more than 1 match is found</param>
+            <returns>The first action that matches the key.</returns>
+        </member>
+        <member name="M:PowerArgs.CommandLineArgumentsDefinition.ToString">
+            <summary>
+            Gets a basic string representation of the definition.
+            </summary>
+            <returns>a basic string representation of the definition</returns>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.ArgumentScaffoldType">
+            <summary>
+            The type that was used to generate this definition.  This will only be populated if you use the constructor that takes in a type and the definition is inferred.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.Arguments">
+            <summary>
+            The command line arguments that are global to this definition.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.Hooks">
+            <summary>
+            Global hooks that can execute all hook override methods except those that target a particular argument.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.Actions">
+            <summary>
+            Actions that are defined for this definition.  If you have at least one action then the end user must specify the action as the first argument to your program.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.Metadata">
+            <summary>
+            Arbitrary metadata that has been added to the definition
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.Examples">
+            <summary>
+            Examples that show users how to use your program.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.ExceptionBehavior">
+            <summary>
+            Determines how end user errors should be handled by the parser.  By default all exceptions flow through to your program.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.CommandLineArgumentsDefinition.SpecifiedAction">
+            <summary>
+            If your definition declares actions and has been successfully parsed then this property will be populated
+            with the action that the end user specified.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.Query">
+            <summary>
+            A hook you can use to easily query a data source.  See an example here: https://github.com/adamabdelhamed/PowerArgs#data-source-queries
+            </summary>
+        </member>
+        <member name="M:PowerArgs.Query.#ctor(System.Type,System.String[])">
+            <summary>
+            Creates a new query hook given a data source type and optional reference assemblies.
+            </summary>
+            <param name="dataSourceType">Your data source implementation. he query will create a new instance of this type and use a property that matches the property name of the PowerArgs property this attribute is on in order to get the data.</param>
+            <param name="referencedAssemblies">The names (if in the GAC) or full paths to assemblies you would like to include.  We will automatically add dlls in your bin folder.</param>
+        </member>
+        <member name="M:PowerArgs.Query.AfterPopulateProperties(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            After PowerArgs does most of its work this hook looks for string properties on the parsed object called Skip, Take, 
+            Where, OrderBy, and OrderByDescending.  These properties are used to construct a linq query that is dynamically compiled
+            and executed against the provided data source.
+            </summary>
+            <param name="context">The context used to detect the query parameters.</param>
+        </member>
+        <member name="P:PowerArgs.Query.DataSourceType">
+            <summary>
+            Your data source implementation.  The query will create a new instance of this type and use a property
+            that matches the property name of the PowerArgs property this attribute is on in order to get the data.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.Resources.QueryTemplate">
+             <summary>
+               Looks up a localized string similar to using System;
+            using System.Linq;
+            using System.Collections.Generic;
+            $Usings$
+            
+            namespace $Namespace$
+            {
+                public class $Class$
+                {
+                    public static List&lt;$ReturnType$&gt; $Method$(IEnumerable&lt;$ReturnType$&gt; source)
+                    {
+                        IEnumerable&lt;$ReturnType$&gt; query = from item in source select item;
+            
+                        $WhereComment$              query = from item in query where $Where$ select item;
+                        $OrderByDescendingComment$  query = query.OrderByDescending($OrderByDescending$);
+                [rest of string was truncated]&quot;;.
+             </summary>
+        </member>
+        <member name="T:PowerArgs.SecureStringArgument">
+            <summary>
+            A PowerArgs argument type that can be used to accept user input without that input appearing on the command line.
+            It uses secure strings under the hood.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.SecureStringArgument.ConvertToNonsecureString">
+            <summary>
+            Converts the underlying secure string to a regular string.
+            </summary>
+            <returns>A normal string representation of the user's input.</returns>
+        </member>
+        <member name="P:PowerArgs.SecureStringArgument.SecureString">
+            <summary>
+            The secure string value.  The first time your code accesses this property is when the user will be presented with
+            the secure input prompt.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.CycledTabCompletionManager">
+            <summary>
+            This helper class can be leveraged when implementing custom tab completion logic.  It knows how to cycle through multple
+            candidates and support tabbing forward and shift/tabbing backwards.  You just pass values from the tab completion methods
+            and then provide an evaluation function that knows how to get the list of possible matches.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.CycledTabCompletionManager.Cycle(System.Boolean,System.String@,System.Func{System.Collections.Generic.List{System.String}},System.String@)">
+            <summary>
+            Cycles through the candidates provided by the given evaluation function using the arguments passed through from
+            the tab completion system.
+            </summary>
+            <param name="shift">You should pass true if the shift key was pressed during the tab</param>
+            <param name="soFar">You should pass through a reference to the soFar value that was sent by the tab completion system</param>
+            <param name="evaluation">A function that looks at 'soFar' and determines which values might be a match</param>
+            <param name="completion">The completion to populate if the conditions all work out</param>
+            <returns>True if completion was populated, false otherwise</returns>
+        </member>
+        <member name="P:PowerArgs.CycledTabCompletionManager.MinCharsBeforeCyclingBegins">
+            <summary>
+            If the value of soFar is a string that's less than this value then no completion will be returned.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.GroupedRegexArg">
+            <summary>
+            An abstract class that lets you create custom argument types that match a regular expression.  The 
+            class also makes it easy to extract named groups from the regular expression for use by your application.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.GroupedRegexArg.exactMatch">
+            <summary>
+            The match that exactly matches the given regular expression
+            </summary>
+        </member>
+        <member name="M:PowerArgs.GroupedRegexArg.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Creates a new grouped regular expression argument instance.
+            </summary>
+            <param name="regex">The regular expression to enforce</param>
+            <param name="input">The user input that was provided</param>
+            <param name="errorMessage">An error message to show in the case of a non match</param>
+        </member>
+        <member name="M:PowerArgs.GroupedRegexArg.Group(System.String,System.String)">
+            <summary>
+            A helper function you can use to group a particular regular expression.
+            </summary>
+            <param name="regex">Your regular expression that you would like to put in a group.</param>
+            <param name="groupName">The name of the group that you can use to extract the group value later.</param>
+            <returns></returns>
+        </member>
+        <member name="P:PowerArgs.GroupedRegexArg.Item(System.String)">
+            <summary>
+            Gets the value of the regex group from the exact match.
+            </summary>
+            <param name="groupName">The name of the group to lookup</param>
+            <returns></returns>
+        </member>
+        <member name="P:PowerArgs.GroupedRegexArg.Item(System.Int32)">
+            <summary>
+            Gets the value of the regex group from the exact match.
+            </summary>
+            <param name="groupNumber">The index of the group to lookup</param>
+            <returns></returns>
+        </member>
+        <member name="T:PowerArgs.MultiTabCompletionSource">
+            <summary>
+            An aggregate tab completion source that cycles through it's inner sources looking for matches.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.MultiTabCompletionSource.#ctor(PowerArgs.ITabCompletionSource[])">
+            <summary>
+            Create a new MultiTabCompletionSource given an array of sources.
+            </summary>
+            <param name="sources">The sources to wrap</param>
+        </member>
+        <member name="M:PowerArgs.MultiTabCompletionSource.#ctor(System.Collections.Generic.IEnumerable{PowerArgs.ITabCompletionSource})">
+            <summary>
+            Create a new MultiTabCompletionSource given an IEnumerable of sources.
+            </summary>
+            <param name="sources">The sources to wrap</param>
+        </member>
+        <member name="M:PowerArgs.MultiTabCompletionSource.TryComplete(System.Boolean,System.String,System.String@)">
+            <summary>
+            Not implemented since this type implements ITabCompletionSourceWithContext
+            </summary>
+            <param name="shift"></param>
+            <param name="soFar"></param>
+            <param name="completion"></param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.MultiTabCompletionSource.TryComplete(System.Boolean,System.String,System.String,System.String@)">
+            <summary>
+            Iterates over the wrapped sources looking for a match
+            </summary>
+            <param name="shift">Indicates if shift was being pressed</param>
+            <param name="soFar">The text token that the user has typed before pressing tab.</param>
+            <param name="context"></param>
+            <param name="completion">The variable that you should assign the completed string to if you find a match.</param>
+            <returns></returns>
+        </member>
+        <member name="T:PowerArgs.SimpleTabCompletionSource">
+            <summary>
+            A simple tab completion source implementation that looks for matches over a set of pre-determined strings.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.SimpleTabCompletionSource.#ctor(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Creates a new completion source given an enumeration of string candidates
+            </summary>
+            <param name="candidates"></param>
+        </member>
+        <member name="M:PowerArgs.SimpleTabCompletionSource.#ctor(System.Func{System.Collections.Generic.IEnumerable{System.String}})">
+            <summary>
+            Creates a simple tab completion source given a function used to evaluate the candidates.
+            </summary>
+            <param name="candidateFunction">The function used to evaluate the completions where the input is a string parameter that represents the incomplete token</param>
+        </member>
+        <member name="M:PowerArgs.SimpleTabCompletionSource.TryComplete(System.Boolean,System.String,System.String@)">
+            <summary>
+            Not implemented since this type implements ITabCompletionSourceWithContext
+            </summary>
+            <param name="shift"></param>
+            <param name="context"></param>
+            <param name="completion"></param>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.SimpleTabCompletionSource.TryComplete(System.Boolean,System.String,System.String,System.String@)">
+            <summary>
+            Iterates through the candidates to try to find a match.  If there are multiple possible matches it 
+            supports cycling through tem as the user continually presses tab.
+            </summary>
+            <param name="shift">Indicates if shift was being pressed</param>
+            <param name="soFar">The text token that the user has typed before pressing tab.</param>
+            <param name="context"></param>
+            <param name="completion">The variable that you should assign the completed string to if you find a match.</param>
+            <returns></returns>
+        </member>
+        <member name="P:PowerArgs.SimpleTabCompletionSource.MinCharsBeforeCyclingBegins">
+            <summary>
+            Require that the user type this number of characters before the source starts cycling through ambiguous matches.  The default is 3.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.USPhoneNumber">
+            <summary>
+            An example of a custom type that uses regular expressions to extract values from the command line
+            and implements an ArgReviver to transform the text input into a complex type.
+            This class represents a US phone number.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.USPhoneNumber.#ctor(System.String)">
+            <summary>
+            Creates a phone number object from a string
+            </summary>
+            <param name="phoneNumber"></param>
+        </member>
+        <member name="M:PowerArgs.USPhoneNumber.ToString">
+            <summary>
+            Gets the default string representation of the phone number in the format '1-(aaa)-bbb-cccc'.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:PowerArgs.USPhoneNumber.ToString(System.String)">
+            <summary>
+            Formats the phone number as a string.  
+            </summary>
+            <param name="format">Use '{aaa}' for the area code, use {bbb} for the first grouping, and use {cccc} for the second grouping.</param>
+            <returns>A formatted phone number string</returns>
+        </member>
+        <member name="M:PowerArgs.USPhoneNumber.Revive(System.String,System.String)">
+            <summary>
+            Custom PowerArgs reviver that converts a string parameter into a custom phone number
+            </summary>
+            <param name="key">The name of the argument (not used)</param>
+            <param name="val">The value specified on the command line</param>
+            <returns>A USPhoneNumber object based on the user input</returns>
+        </member>
+        <member name="P:PowerArgs.USPhoneNumber.AreaCode">
+            <summary>
+            The three digit area code of the phone number.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.USPhoneNumber.FirstDigits">
+            <summary>
+            The three digit first segment of the phone number
+            </summary>
+        </member>
+        <member name="P:PowerArgs.USPhoneNumber.SecondDigits">
+            <summary>
+            The four digit second segment of the phone number.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.TabCompletion">
+            <summary>
+            A hook that takes over the command line and provides tab completion for known strings when the user presses
+            the tab key.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.TabCompletion.#ctor(System.String)">
+            <summary>
+            Creates a new tab completion hook.
+            </summary>
+            <param name="indicator">When this indicator is the only argument the user specifies that triggers the hook to enhance the command prompt.  By default, the indicator is the empty string.</param>
+        </member>
+        <member name="M:PowerArgs.TabCompletion.#ctor(System.Type,System.String)">
+            <summary>
+            Creates a new tab completion hook given a custom tab completion implementation.
+            </summary>
+            <param name="completionSource">A type that implements ITabCompletionSource such as SimpleTabCompletionSource</param>
+            <param name="indicator">When this indicator is the only argument the user specifies that triggers the hook to enhance the command prompt.  By default, the indicator is the empty string.</param>
+        </member>
+        <member name="M:PowerArgs.TabCompletion.BeforeParse(PowerArgs.ArgHook.HookContext)">
+            <summary>
+            Before PowerArgs parses the args, this hook inspects the command line for the indicator and if found 
+            takes over the command line and provides tab completion.
+            </summary>
+            <param name="context">The context used to inspect the command line arguments.</param>
+        </member>
+        <member name="M:PowerArgs.TabCompletion.ClearHistory">
+            <summary>
+            Clears all history saved on disk
+            </summary>
+        </member>
+        <member name="P:PowerArgs.TabCompletion.Indicator">
+            <summary>
+            When this indicator is the only argument the user specifies that triggers the hook to enhance the command prompt.  By default, the indicator is the empty string.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.TabCompletion.HistoryToSave">
+            <summary>
+            If this is > 0 then PowerArgs will save this many previous executions of the command line to your application data folder.
+            Users can then access the history by pressing arrow up or down from the enhanced command prompt.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.TabCompletion.HistoryFileName">
+            <summary>
+            The location of the history file name (AppData/PowerArgs/EXE_NAME.TabCompletionHistory.txt
+            </summary>
+        </member>
+        <member name="P:PowerArgs.TabCompletion.ExeName">
+            <summary>
+            The name of your program (leave null and PowerArgs will try to detect it automatically)
+            </summary>
+        </member>
+        <member name="P:PowerArgs.TabCompletion.REPL">
+            <summary>
+            If true, then you must use Args.InvokeAction or Args.InvokeMain instead of Args.Parse.  Your user
+            will get an interactive prompt that loops until they specify the REPLExitIndicator.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.TabCompletion.REPLExitIndicator">
+            <summary>
+            The string users can specify in order to exit the REPL (defaults to string.Empty)
+            </summary>
+        </member>
+        <member name="P:PowerArgs.TabCompletion.REPLWelcomeMessage">
+            <summary>
+            The message to display to the user when the REPL starts.  The default is Type a command or '{{Indicator}}' to exit.
+            You can customize this message and use {{Indicator}} for the placeholder for your exit indicator.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgExistingDirectory">
+            <summary>
+            Validates that if the user specifies a value for a property that the value represents a directory that exists
+            as determined by System.IO.Directory.Exists(directory).
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgValidator">
+            <summary>
+            An abstract class that all validators should extend to validate user input from the command line.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgValidator.Validate(System.String,System.String@)">
+            <summary>
+            Most validators should just override this method. It ONLY gets called if the user specified the 
+            given argument on the command line, meaning you will never get a null for 'arg'.
+            
+            If you want your validator to run even if the user did not specify the argument on the command line
+            (for example if you were building something like [ArgRequired] then you should do 3 things.
+            
+            1 - Override the boolean ImplementsValidateAlways property so that it returns true
+            2 - Override the ValidateAlways() method instead
+            3 - Don't override the Validate() method since it will no longer be called
+            
+            </summary>
+            <param name="name"></param>
+            <param name="arg">The value specified on the command line.  If the user specified the property name, but not a value then arg will equal string.Empty.  The value will never be null.</param>
+        </member>
+        <member name="M:PowerArgs.ArgValidator.ValidateAlways(System.Reflection.PropertyInfo,System.String@)">
+             <summary>
+             Always validates the given property, even if it was not specified by the user (arg will be null in this case).
+             If you override this method then you should also override ImplementsValidateAlways so it returns true.
+            </summary>
+             <param name="property">The property that the attribute was placed on.</param>
+             <param name="arg">The value specified on the command line or null if the user didn't actually specify a value for the property.  If the user specified the property name, but not a value then arg will equal string.Empty</param>
+        </member>
+        <member name="M:PowerArgs.ArgValidator.ValidateAlways(PowerArgs.CommandLineArgument,System.String@)">
+             <summary>
+             Always validates the given argument, even if it was not specified by the user (arg will be null in this case).
+             If you override this method then you should also override ImplementsValidateAlways so it returns true.
+            </summary>
+             <param name="argument">The argument that the attribute was placed on.</param>
+             <param name="arg">The value specified on the command line or null if the user didn't actually specify a value for the argument.  If the user specified the argument name, but not a value then arg will equal string.Empty</param>
+        </member>
+        <member name="P:PowerArgs.ArgValidator.Priority">
+            <summary>
+            Determines the order in which validators are executed.  Higher numbers execute first.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgValidator.ImplementsValidateAlways">
+            <summary>
+            If implemented in a derived class then ValidateAlways will be called for each property,
+            even if that property wasn't specified by the user on the command line.  In this case the value
+            will always be null.  This is useful for implementing validators such as [ArgRequired].
+            
+            By default, the Validate(string,ref string) method is called unless a validator opts into ValidateAlways
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgExistingDirectory.Validate(System.String,System.String@)">
+            <summary>
+            Validates that the given directory exists and cleans up the argument so that the application has access
+            to the full path.
+            </summary>
+            <param name="name">the name of the property being populated.  This validator doesn't do anything with it.</param>
+            <param name="arg">The value specified on the command line</param>
+        </member>
+        <member name="T:PowerArgs.ArgExistingFile">
+            <summary>
+            Validates that if the user specifies a value for a property that the value represents a file that exists
+            as determined by System.IO.File.Exists(file).
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgExistingFile.Validate(System.String,System.String@)">
+            <summary>
+            Validates that the given file exists and cleans up the argument so that the application has access
+            to the full path.
+            </summary>
+            <param name="name">the name of the property being populated.  This validator doesn't do anything with it.</param>
+            <param name="arg">The value specified on the command line</param>
+        </member>
+        <member name="T:PowerArgs.ArgRange">
+            <summary>
+            Validates that the value is a number between the min and max (both inclusive) specified
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgRange.#ctor(System.Double,System.Double)">
+            <summary>
+             Creates a new ArgRange validator.
+            </summary>
+            <param name="min">The minimum value (inclusive)</param>
+            <param name="max">The maximum value (inclusive by default, set MaxIsExclusive to true to override)</param>
+        </member>
+        <member name="M:PowerArgs.ArgRange.Validate(System.String,System.String@)">
+            <summary>
+            Validates that the value is a number between the min and max (both inclusive) specifie
+            </summary>
+            <param name="name">the name of the property being populated.  This validator doesn't do anything with it.</param>
+            <param name="arg">The value specified on the command line</param>
+        </member>
+        <member name="P:PowerArgs.ArgRange.MaxIsExclusive">
+            <summary>
+            Set to true if your max is exclusive.  This value is false by default.
+            </summary>
+        </member>
+        <member name="T:PowerArgs.ArgRegex">
+            <summary>
+            Performs regular expression validation on a property.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgRegex.regex">
+            <summary>
+            The regular expression to match
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgRegex.errorMessage">
+            <summary>
+            A prefix for the error message to show in the case of a match.
+            </summary>
+        </member>
+        <member name="F:PowerArgs.ArgRegex.exactMatch">
+            <summary>
+            The exact match that was found.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgRegex.#ctor(System.String,System.String)">
+            <summary>
+            Creates a new ArgRegex validator.
+            </summary>
+            <param name="regex">The regular expression that requires an exact match to be valid</param>
+            <param name="errorMessage">A prefix for the error message to show in the case of a match.</param>
+        </member>
+        <member name="M:PowerArgs.ArgRegex.Validate(System.String,System.String@)">
+            <summary>
+            Validates that the given arg exactly matches the regular expression provided.
+            </summary>
+            <param name="name">the name of the property being populated.  This validator doesn't do anything with it.</param>
+            <param name="arg">The value specified on the command line.</param>
+        </member>
+        <member name="T:PowerArgs.ArgRequired">
+            <summary>
+            Validates that the user actually provided a value for the given property on the command line.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgRequired.#ctor">
+            <summary>
+            Creates a new ArgRequired attribute.
+            </summary>
+        </member>
+        <member name="M:PowerArgs.ArgRequired.ValidateAlways(PowerArgs.CommandLineArgument,System.String@)">
+            <summary>
+            Validates that the user actually specified a value and optionally prompts them when it is missing.
+            </summary>
+            <param name="argument">The argument being populated.  This validator doesn't do anything with it.</param>
+            <param name="arg">The value specified on the command line or null if it wasn't specified</param>
+        </member>
+        <member name="P:PowerArgs.ArgRequired.ImplementsValidateAlways">
+            <summary>
+            Determines whether or not the validator should run even if the user doesn't specify a value on the command line.
+            This value is always true for this validator.
+            </summary>
+        </member>
+        <member name="P:PowerArgs.ArgRequired.PromptIfMissing">
+            <summary>
+            If you set this to true and the user didn't specify a value then the command line will prompt the user for the value.
+            </summary>
+        </member>
+    </members>
+</doc>
