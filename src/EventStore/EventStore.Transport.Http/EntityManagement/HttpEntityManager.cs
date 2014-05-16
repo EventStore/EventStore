@@ -132,7 +132,7 @@ namespace EventStore.Transport.Http.EntityManagement
             try
             {
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
-                HttpEntity.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER, Authorization, ES-LongPoll");
+                HttpEntity.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER, Authorization, ES-LongPoll, ES-ExpectedVersion");
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
                 HttpEntity.Response.AddHeader("Access-Control-Expose-Headers", "Location, ES-Position");
                 if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized)
