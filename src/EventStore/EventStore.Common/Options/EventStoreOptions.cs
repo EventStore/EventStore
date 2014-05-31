@@ -47,7 +47,20 @@ namespace EventStore.Common.Options
                 }
                 catch (Newtonsoft.Json.JsonReaderException ex)
                 {
-                    throw new OptionException(ex.Message, ex.Path);
+                    string failureMessage = "Invalid configuration file specified. ";
+                    if (String.IsNullOrEmpty(ex.Path))
+                    {
+                        failureMessage += "Please ensure that the configuration file is valid JSON";
+                    }
+                    else
+                    {
+                        var failedOptionTypeName = GetTypeForOptionName<TOptions>(ex.Path);
+                        if(!String.IsNullOrEmpty(failedOptionTypeName))
+                        {
+                            failureMessage += "Please ensure that the value specified for " + ex.Path + " is of type " + failedOptionTypeName;
+                        }
+                    }
+                    throw new OptionException(failureMessage, ex.Path);
                 }
             }
             options = SetEnvironmentVariables<TOptions>(options, environmentPrefix);
@@ -143,6 +156,16 @@ namespace EventStore.Common.Options
                 }
             }
             return eventStoreArguments;
+        }
+
+        private static string GetTypeForOptionName<TOptions>(string optionName)where TOptions : IOptions, new()
+        {
+            var optionProperty = typeof(TOptions).GetProperty(optionName, 
+                  System.Reflection.BindingFlags.IgnoreCase 
+                | System.Reflection.BindingFlags.Public 
+                | System.Reflection.BindingFlags.Static 
+                | System.Reflection.BindingFlags.Instance);
+            return optionProperty == null ? String.Empty : optionProperty.PropertyType.Name;
         }
 
         public static string DumpOptions<TOptions>() where TOptions : IOptions, new()
