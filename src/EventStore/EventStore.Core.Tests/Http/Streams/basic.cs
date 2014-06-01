@@ -168,9 +168,9 @@ namespace EventStore.Core.Tests.Http.Streams
             }
 
             [Test]
-            public void returns_created_status_code()
+            public void returns_redirectkeepverb_status_code()
             {
-                Assert.AreEqual(HttpStatusCode.Moved, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
@@ -268,7 +268,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_permanent_redirect()
             {
-                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
@@ -309,7 +309,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_permanent_redirect()
             {
-                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
@@ -344,7 +344,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_permanent_redirect()
             {
-                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
@@ -380,7 +380,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_permanent_redirect()
             {
-                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
@@ -416,7 +416,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_permanent_redirect()
             {
-                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
@@ -428,7 +428,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl("/streams/%24all").ToString(), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl("/streams/$all").ToString(), _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -453,7 +453,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_permanent_redirect()
             {
-                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
@@ -490,7 +490,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_permanent_redirect()
             {
-                Assert.AreEqual(HttpStatusCode.MovedPermanently, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
             }
 
             [Test]
