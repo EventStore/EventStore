@@ -88,9 +88,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             Register(http, "/streams/{stream}/incoming/{guid}", HttpMethod.Post, PostEventsIdempotent, AtomCodecsWithoutBatches, AtomCodecsWithoutBatches);
 
-            Register(http, "/streams/{stream}/", HttpMethod.Post, PermRedirect, AtomCodecs, AtomCodecs);
-            Register(http, "/streams/{stream}/", HttpMethod.Delete, PermRedirect, Codec.NoCodecs, AtomCodecs);
-            Register(http, "/streams/{stream}/", HttpMethod.Get, PermRedirect, Codec.NoCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/", HttpMethod.Delete, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs);
 
             Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
@@ -101,10 +101,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             // METASTREAMS
             Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs);
-            Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, PermRedirect, AtomCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs);
 
             Register(http, "/streams/{stream}/metadata?embed={embed}", HttpMethod.Get, GetMetastreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(http, "/streams/{stream}/metadata/?embed={embed}", HttpMethod.Get, PermRedirect, Codec.NoCodecs, AtomCodecs);
+            Register(http, "/streams/{stream}/metadata/?embed={embed}", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs);
             Register(http, "/streams/{stream}/metadata/{event}?embed={embed}", HttpMethod.Get, GetMetastreamEvent, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             Register(http, "/streams/{stream}/metadata/{event}/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
@@ -112,8 +112,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             RegisterCustom(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get, GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
 
             // $ALL
-            Register(http, "/streams/$all/", HttpMethod.Get, PermRedirect, Codec.NoCodecs, AtomWithHtmlCodecs);
-            Register(http, "/streams/%24all/", HttpMethod.Get, PermRedirect, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/$all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs);
+            Register(http, "/streams/%24all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
             Register(http, "/streams/$all/{position}/backward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
@@ -124,13 +124,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             RegisterCustom(http, "/streams/%24all/{position}/forward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
         }
 
-        private void PermRedirect(HttpEntityManager httpEntity, UriTemplateMatch uriTemplateMatch)
+        private void RedirectKeepVerb(HttpEntityManager httpEntity, UriTemplateMatch uriTemplateMatch)
         {
             var original = uriTemplateMatch.RequestUri.ToString();
             var header = new []
                              {new KeyValuePair<string, string>("Location", original.Substring(0, original.Length - 1)),
                              new KeyValuePair<string, string>("Cache-Control", "max-age=31536000, public"), };
-            httpEntity.ReplyTextContent("Moved Permanently", HttpStatusCode.MovedPermanently, "", "", header, e => { });
+            httpEntity.ReplyTextContent("Moved Permanently", HttpStatusCode.RedirectKeepVerb, "", "", header, e => { });
         }
 
         // STREAMS
