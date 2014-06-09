@@ -446,7 +446,7 @@ namespace PowerArgs
                     rows.Add(new List<ConsoleString>() { ConsoleString.Empty, ConsoleString.Empty, ConsoleString.Empty });
                     rows.Add(new List<ConsoleString>()
                     {
-                        new ConsoleString("Options for " + currentGroup),
+                        new ConsoleString(currentGroup),
                         ConsoleString.Empty,
                         ConsoleString.Empty
                     });
