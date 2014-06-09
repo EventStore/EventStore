@@ -1,4 +1,8 @@
-﻿using PowerArgs;
+﻿using EventStore.Common.Utils;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
+using PowerArgs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,16 +42,20 @@ namespace EventStore.Common.Options
             }
             if (File.Exists(options.Config))
             {
+                var configSerializerSettings = new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                    Converters = new JsonConverter[] {new StringEnumConverter(), new IPAddressConverter(), new IPEndpointConverter()}
+                };
                 var config = File.ReadAllText(options.Config);
-                TOptions configAsJson = null;
                 try
                 {
-                    configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<TOptions>(config);
+                    var configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<TOptions>(config, configSerializerSettings);
                     MergeFromConfiguration<TOptions>(configAsJson, options);
                 }
                 catch (Newtonsoft.Json.JsonReaderException ex)
                 {
-                    string failureMessage = "Invalid configuration file specified. ";
+                    var failureMessage = "Invalid configuration file specified. ";
                     if (String.IsNullOrEmpty(ex.Path))
                     {
                         failureMessage += "Please ensure that the configuration file is valid JSON";
