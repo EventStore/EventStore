@@ -52,6 +52,7 @@ namespace EventStore.Common.Options
                 {
                     var configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<TOptions>(config, configSerializerSettings);
                     MergeFromConfiguration<TOptions>(configAsJson, options);
+                    ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_CONFIG_FILE);
                 }
                 catch (Newtonsoft.Json.JsonReaderException ex)
                 {
@@ -78,6 +79,7 @@ namespace EventStore.Common.Options
                 }
             }
             options = SetEnvironmentVariables<TOptions>(options, environmentPrefix);
+            ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_ENVIRONMENT_VARIABLE);
             return options;
         }
 
