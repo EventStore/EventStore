@@ -18,6 +18,7 @@ namespace EventStore.Core.Util
         public const string InterfacesGroup = "Interface Options";
         public const string CertificatesGroup = "Certificate Options";
         public const string ClusterGroup = "Cluster Options";
+        public const string ManagerGroup = "Manager Options";
 
         /*
          *  COMMON OPTIONS 
