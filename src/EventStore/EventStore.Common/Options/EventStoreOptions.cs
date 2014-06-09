@@ -70,6 +70,12 @@ namespace EventStore.Common.Options
                     }
                     throw new OptionException(failureMessage, ex.Path);
                 }
+                catch (Newtonsoft.Json.JsonSerializationException ex)
+                {
+                    string failureMessage = "Invalid configuration file specified. ";
+                    failureMessage += ex.Message;
+                    throw new OptionException(failureMessage, String.Empty);
+                }
             }
             options = SetEnvironmentVariables<TOptions>(options, environmentPrefix);
             return options;
