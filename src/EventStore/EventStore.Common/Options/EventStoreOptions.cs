@@ -79,7 +79,6 @@ namespace EventStore.Common.Options
                 }
             }
             options = SetEnvironmentVariables<TOptions>(options, environmentPrefix);
-            ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_ENVIRONMENT_VARIABLE);
             return options;
         }
 
