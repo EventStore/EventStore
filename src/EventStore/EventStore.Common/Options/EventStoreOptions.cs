@@ -14,7 +14,7 @@ namespace EventStore.Common.Options
     public class EventStoreOptions
     {
         private const string DEFAULT_OPTION_SOURCE = "<DEFAULT>";
-        private const string FROM_ENVIRONMENT_VARIABLE = "environment variable";
+        private const string FROM_ENVIRONMENT_VARIABLE = "from environment variable";
         private const string FROM_COMMAND_LINE = "from commandline";
         private const string FROM_CONFIG_FILE = "from config";
         private static List<Tuple<string, OptionSource>> parsedOptions;
