@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                     Thread.Sleep(timeout);
                     action();
                 });
-            Action<string> logger = Console.WriteLine;
+            Action<string, object[]> logger = (m, _) => Console.WriteLine(m);
 
 
             Func<string, Tuple<string, string>> getModuleSource = name =>

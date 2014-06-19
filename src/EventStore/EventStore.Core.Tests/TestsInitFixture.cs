@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests
         public void SetUp()
         {
             Console.WriteLine("Initializing tests (setting console loggers)...");
-            LogManager.SetLogFactory(x => new ConsoleLogger(x));
+            LogManager.SetLogFactory(x => new ConsoleLogger());
             Application.AddDefines(new[] { Application.AdditionalCommitChecks });
             LogEnvironmentInfo();
 

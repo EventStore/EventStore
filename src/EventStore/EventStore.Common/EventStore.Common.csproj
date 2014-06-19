@@ -73,6 +73,7 @@
     <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
     <Compile Include="Log\NLogger.cs" />
     <Compile Include="Options\ArgDescriptionAttribute.cs" />
+    <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Utils\IPAddressConverter.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />

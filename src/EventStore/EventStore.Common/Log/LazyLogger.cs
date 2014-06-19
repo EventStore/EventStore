@@ -18,31 +18,6 @@ namespace EventStore.Common.Log
             _logger.Value.Flush(maxTimeToWait);
         }
 
-        public void Fatal(string text)
-        {
-            _logger.Value.Fatal(text);
-        }
-
-        public void Error(string text)
-        {
-            _logger.Value.Error(text);
-        }
-
-        public void Info(string text)
-        {
-            _logger.Value.Info(text);
-        }
-
-        public void Debug(string text)
-        {
-            _logger.Value.Debug(text);
-        }
-
-        public void Trace(string text)
-        {
-            _logger.Value.Trace(text);
-        }
-
         public void Fatal(string format, params object[] args)
         {
             _logger.Value.Fatal(format, args);
@@ -66,31 +41,6 @@ namespace EventStore.Common.Log
         public void Trace(string format, params object[] args)
         {
             _logger.Value.Trace(format, args);
-        }
-
-        public void FatalException(Exception exc, string format)
-        {
-            _logger.Value.FatalException(exc, format);
-        }
-
-        public void ErrorException(Exception exc, string format)
-        {
-            _logger.Value.ErrorException(exc, format);
-        }
-
-        public void InfoException(Exception exc, string format)
-        {
-            _logger.Value.InfoException(exc, format);
-        }
-
-        public void DebugException(Exception exc, string format)
-        {
-            _logger.Value.DebugException(exc, format);
-        }
-
-        public void TraceException(Exception exc, string format)
-        {
-            _logger.Value.TraceException(exc, format);
         }
 
         public void FatalException(Exception exc, string format, params object[] args)

@@ -8,7 +8,7 @@ namespace EventStore.Projections.Core.Services.Management
     {
         public IProjectionStateHandler Create(
             string factoryType, string source, Action<int, Action> cancelCallbackFactory = null,
-            Action<string> logger = null)
+            Action<string, object[]> logger = null)
         {
             var colonPos = factoryType.IndexOf(':');
             string kind = null;

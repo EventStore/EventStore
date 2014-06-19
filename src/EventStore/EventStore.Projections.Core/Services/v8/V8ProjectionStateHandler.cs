@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core.Services.v8
 
         public V8ProjectionStateHandler(
             string preludeName, string querySource, Func<string, Tuple<string, string>> getModuleSource,
-            Action<string> logger, Action<int, Action> cancelCallbackFactory)
+            Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory)
         {
             var preludeSource = getModuleSource(preludeName);
             var prelude = new PreludeScript(preludeSource.Item1, preludeSource.Item2, getModuleSource, cancelCallbackFactory, logger);
