@@ -9,7 +9,7 @@ namespace EventStore.Projections.Core.v8
     {
         private readonly ILogger _systemLogger = LogManager.GetLoggerFor<PreludeScript>();
         private readonly Func<string, Tuple<string, string>> _getModuleSourceAndFileName;
-        private readonly Action<string> _logger;
+        private readonly Action<string, object[]> _logger;
         private readonly CompiledScript _script;
         private readonly List<CompiledScript> _modules = new List<CompiledScript>();
 
@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.v8
 
         public PreludeScript(
             string script, string fileName, Func<string, Tuple<string, string>> getModuleSourceAndFileName,
-            Action<int, Action> cancelCallbackFactory, Action<string> logger = null)
+            Action<int, Action> cancelCallbackFactory, Action<string, object[]> logger = null)
         {
             _logDelegate = LogHandler;
             _loadModuleDelegate = GetModule;
@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.v8
         private void LogHandler(string message)
         {
             if (_logger != null)
-                _logger(message);
+                _logger(message, new object[] {});
             else
                 Console.WriteLine(message);
         }

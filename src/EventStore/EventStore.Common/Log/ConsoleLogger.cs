@@ -7,39 +7,9 @@ namespace EventStore.Common.Log
 {
     public class ConsoleLogger : ILogger
     {
-        public ConsoleLogger(string name = "")
-        {
-        }
-
         public void Flush(TimeSpan? maxTimeToWait = null)
         {
         }
-
-        public void Fatal(string text)
-        {
-            Console.WriteLine(Log("FATAL", text, Utils.Empty.ObjectArray));
-        }
-
-        public void Error(string text)
-        {
-            Console.WriteLine(Log("ERROR", text, Utils.Empty.ObjectArray));
-        }
-
-        public void Info(string text)
-        {
-            Console.WriteLine(Log("INFO ", text, Utils.Empty.ObjectArray));
-        }
-
-        public void Debug(string text)
-        {
-            Console.WriteLine(Log("DEBUG", text, Utils.Empty.ObjectArray));
-        }
-
-        public void Trace(string text)
-        {
-            Console.WriteLine(Log("TRACE", text, Utils.Empty.ObjectArray));
-        }
-
 
         public void Fatal(string format, params object[] args)
         {
@@ -65,33 +35,6 @@ namespace EventStore.Common.Log
         {
             Console.WriteLine(Log("TRACE", format, args));
         }
-
-
-        public void FatalException(Exception exc, string format)
-        {
-            Console.WriteLine(Log("FATAL", exc, format, Utils.Empty.ObjectArray));
-        }
-
-        public void ErrorException(Exception exc, string format)
-        {
-            Console.WriteLine(Log("ERROR", exc, format, Utils.Empty.ObjectArray));
-        }
-
-        public void InfoException(Exception exc, string format)
-        {
-            Console.WriteLine(Log("INFO ", exc, format, Utils.Empty.ObjectArray));
-        }
-
-        public void DebugException(Exception exc, string format)
-        {
-            Console.WriteLine(Log("DEBUG", exc, format, Utils.Empty.ObjectArray));
-        }
-
-        public void TraceException(Exception exc, string format)
-        {
-            Console.WriteLine(Log("TRACE", exc, format, Utils.Empty.ObjectArray));
-        }
-
 
         public void FatalException(Exception exc, string format, params object[] args)
         {

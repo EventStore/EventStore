@@ -11,7 +11,7 @@ namespace EventStore.Projections.Core.Services.v8
         private static readonly string _jsPath = Path.Combine(GetJsFileSystemDirectory(), "Prelude");
 
         public DefaultV8ProjectionStateHandler(
-            string query, Action<string> logger, Action<int, Action> cancelCallbackFactory)
+            string query, Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory)
             : base("1Prelude", query, GetModuleSource, logger, cancelCallbackFactory)
         {
         }

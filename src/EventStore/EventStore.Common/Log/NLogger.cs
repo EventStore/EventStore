@@ -36,32 +36,6 @@ namespace EventStore.Common.Log
             FlushLog(maxTimeToWait);
         }
 
-        public void Fatal(string text)
-        {
-            _logger.Fatal(text);
-        }
-
-        public void Error(string text)
-        {
-            _logger.Error(text);
-        }
-
-        public void Info(string text)
-        {
-            _logger.Info(text);
-        }
-
-        public void Debug(string text)
-        {
-            _logger.Debug(text);
-        }
-
-        public void Trace(string text)
-        {
-            _logger.Trace(text);
-        }
-
-
         public void Fatal(string format, params object[] args)
         {
             _logger.Fatal(format, args);
@@ -86,33 +60,6 @@ namespace EventStore.Common.Log
         {
             _logger.Trace(format, args);
         }
-
-
-        public void FatalException(Exception exc, string format)
-        {
-            _logger.FatalException(format, exc);
-        }
-
-        public void ErrorException(Exception exc, string format)
-        {
-            _logger.ErrorException(format, exc);
-        }
-
-        public void InfoException(Exception exc, string format)
-        {
-            _logger.InfoException(format, exc);
-        }
-
-        public void DebugException(Exception exc, string format)
-        {
-            _logger.DebugException(format, exc);
-        }
-
-        public void TraceException(Exception exc, string format)
-        {
-            _logger.TraceException(format, exc);
-        }
-
 
         public void FatalException(Exception exc, string format, params object[] args)
         {
@@ -152,28 +99,5 @@ namespace EventStore.Common.Log
             }
             countdown.Wait(maxTimeToWait ?? TimeSpan.FromMilliseconds(500));
         }
-
-/*
-        public static void InitTestLayout()
-        {
-            var config = new LoggingConfiguration();
-
-            var consoleTarget = new ConsoleTarget();
-            consoleTarget.Layout = @"[${pad:padCharacter=0:padding=5:inner=${processid}},"
-                                 + @"${pad:padCharacter=0:padding=2:inner=${threadid}}," 
-                                 + @"${date:universalTime=true:format=HH\:mm\:ss\.fff}] "
-                                 + @"${message}${onexception:${newline}EXCEPTION OCCURED:${newline}${exception:format=message}}";
-
-            //var consoleAsyncTarget = new NLog.Targets.Wrappers.AsyncTargetWrapper(consoleTarget);
-
-            config.AddTarget("consoleAsync", consoleTarget);
-            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, consoleTarget));
-
-            NLog.LogManager.Configuration = config;
-
-            var logger = NLog.LogManager.GetLogger("TestsLayoutLogger");
-            logger.Info("Tests layout is set.");
-        }
-*/
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -27,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _logged = new List<string>();
             _stateHandlerFactory = new ProjectionStateHandlerFactory();
             _stateHandler = _stateHandlerFactory.Create(
-                "JS", _projection, logger: s =>
+                "JS", _projection, logger: (s, _) =>
                     {
                         if (s.StartsWith("P:"))
                             Console.WriteLine(s);

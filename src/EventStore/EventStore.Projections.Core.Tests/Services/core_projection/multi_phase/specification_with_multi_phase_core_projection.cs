@@ -443,7 +443,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             _phase1 = new FakeProjectionProcessingPhase(0, this, Phase1CheckpointManager, _phase1readerStrategy);
             _phase2 = new FakeProjectionProcessingPhase(1, this, Phase2CheckpointManager, _phase2readerStrategy);
             return new FakeProjectionProcessingStrategy(
-                _projectionName, _version, new ConsoleLogger("logger"), Phase1, Phase2);
+                _projectionName, _version, new ConsoleLogger(), Phase1, Phase2);
         }
 
         protected virtual FakeReaderStrategy GivenPhase2ReaderStrategy()

@@ -6,28 +6,34 @@ namespace EventStore.Common.Log
     {
         void Flush(TimeSpan? maxTimeToWait = null);
 
-        void Fatal(string text);
-        void Error(string text);
-        void Info(string text);
-        void Debug(string text);
-        void Trace(string text);
-
+        [StringFormatMethod("format")]
         void Fatal(string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void Error(string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void Info(string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void Debug(string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void Trace(string format, params object[] args);
 
-        void FatalException(Exception exc, string text);
-        void ErrorException(Exception exc, string text);
-        void InfoException(Exception exc, string text);
-        void DebugException(Exception exc, string text);
-        void TraceException(Exception exc, string text);
-
+        [StringFormatMethod("format")]
         void FatalException(Exception exc, string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void ErrorException(Exception exc, string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void InfoException(Exception exc, string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void DebugException(Exception exc, string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void TraceException(Exception exc, string format, params object[] args);
     }
 }
