@@ -434,23 +434,18 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 return string.Format("EventNumber: {0}, KeepCommit: {1}", EventNumber, KeepCommit);
             }
-        }
-    }
 
-    internal static class CommitInfoExtensions
-    {
-        public static void ForciblyKeep(this TFChunkScavenger.CommitInfo commitInfo)
-        {
-            if (commitInfo != null)
-                commitInfo.KeepCommit = true;
-        }
+            public void ForciblyKeep()
+            {
+                KeepCommit = true;
+            }
 
-        public static void TryNotToKeep(this TFChunkScavenger.CommitInfo commitInfo)
-        {
-            // If someone decided definitely to keep corresponding commit then we shouldn't interfere.
-            // Otherwise we should point that yes, you can remove commit for this prepare.
-            if (commitInfo != null)
-                commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
+            public void TryNotToKeep()
+            {
+                // If someone decided definitely to keep corresponding commit then we shouldn't interfere.
+                // Otherwise we should point that yes, you can remove commit for this prepare.
+                KeepCommit = KeepCommit ?? false;
+            }
         }
     }
 }
