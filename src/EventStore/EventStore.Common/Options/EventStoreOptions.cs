@@ -19,6 +19,11 @@ namespace EventStore.Common.Options
         private const string FROM_CONFIG_FILE = "from config";
         private static List<Tuple<string, OptionSource>> parsedOptions;
 
+        public static ArgAction<TOptions> InvokeAction<TOptions>(params string[] args)
+        {
+            return Args.InvokeAction<TOptions>(args);
+        }
+
         public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {
             parsedOptions = SetupOptionsForDumping<TOptions>();
