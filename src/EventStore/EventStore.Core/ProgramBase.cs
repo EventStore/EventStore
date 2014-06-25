@@ -140,6 +140,9 @@ namespace EventStore.Core
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
                      "LOGS:", LogManager.LogsDirectory,
                      EventStoreOptions.DumpOptions<TOptions>());
+
+            if (options.WhatIf)
+                Application.Exit(ExitCode.Success, "WhatIf option specified");
         }
 
         private string FormatExceptionMessage(Exception ex)

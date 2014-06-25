@@ -8,5 +8,6 @@
         string Log { get; }
         string[] Defines { get; }
         bool Force { get; }
+        bool WhatIf { get; }
     }
 }
