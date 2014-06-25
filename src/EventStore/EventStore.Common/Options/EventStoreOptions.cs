@@ -45,44 +45,53 @@ namespace EventStore.Common.Options
             {
                 throw new OptionException(ex.Message, String.Empty);
             }
-            if (File.Exists(options.Config))
+
+            if (!string.IsNullOrWhiteSpace(options.Config))
             {
-                var configSerializerSettings = new JsonSerializerSettings
+                if (File.Exists(options.Config))
                 {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                    Converters = new JsonConverter[] {new StringEnumConverter(), new IPAddressConverter(), new IPEndpointConverter()}
-                };
-                var config = File.ReadAllText(options.Config);
-                try
-                {
-                    var configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<TOptions>(config, configSerializerSettings);
-                    MergeFromConfiguration<TOptions>(configAsJson, options);
-                    ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_CONFIG_FILE);
-                }
-                catch (Newtonsoft.Json.JsonReaderException ex)
-                {
-                    var failureMessage = "Invalid configuration file specified. ";
-                    if (String.IsNullOrEmpty(ex.Path))
+                    var configSerializerSettings = new JsonSerializerSettings
                     {
-                        failureMessage += "Please ensure that the configuration file is valid JSON";
+                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                        Converters = new JsonConverter[] {new StringEnumConverter(), new IPAddressConverter(), new IPEndpointConverter()}
+                    };
+                    var config = File.ReadAllText(options.Config);
+                    try
+                    {
+                        var configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<TOptions>(config, configSerializerSettings);
+                        MergeFromConfiguration<TOptions>(configAsJson, options);
+                        ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_CONFIG_FILE);
                     }
-                    else
+                    catch (Newtonsoft.Json.JsonReaderException ex)
                     {
-                        var failedOptionTypeName = GetTypeForOptionName<TOptions>(ex.Path);
-                        if(!String.IsNullOrEmpty(failedOptionTypeName))
+                        var failureMessage = "Invalid configuration file specified. ";
+                        if (String.IsNullOrEmpty(ex.Path))
                         {
-                            failureMessage += "Please ensure that the value specified for " + ex.Path + " is of type " + failedOptionTypeName;
+                            failureMessage += "Please ensure that the configuration file is valid JSON";
                         }
+                        else
+                        {
+                            var failedOptionTypeName = GetTypeForOptionName<TOptions>(ex.Path);
+                            if(!String.IsNullOrEmpty(failedOptionTypeName))
+                            {
+                                failureMessage += "Please ensure that the value specified for " + ex.Path + " is of type " + failedOptionTypeName;
+                            }
+                        }
+                        throw new OptionException(failureMessage, ex.Path);
                     }
-                    throw new OptionException(failureMessage, ex.Path);
+                    catch (Newtonsoft.Json.JsonSerializationException ex)
+                    {
+                        string failureMessage = "Invalid configuration file specified. ";
+                        failureMessage += ex.Message;
+                        throw new OptionException(failureMessage, String.Empty);
+                    }
                 }
-                catch (Newtonsoft.Json.JsonSerializationException ex)
+                else
                 {
-                    string failureMessage = "Invalid configuration file specified. ";
-                    failureMessage += ex.Message;
-                    throw new OptionException(failureMessage, String.Empty);
+                    Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", options.Config));
                 }
             }
+
             options = SetEnvironmentVariables<TOptions>(options, environmentPrefix);
             return options;
         }
