@@ -20,6 +20,8 @@ namespace EventStore.TestClient
         public string Config { get; set; }
         [ArgDescription(Opts.DefinesDescr)]
         public string[] Defines { get; set; }
+        [ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
+        public bool WhatIf { get; set; }
 
         [ArgDescription(Opts.IpDescr)]
         public IPAddress Ip { get; set; }
@@ -43,6 +45,7 @@ namespace EventStore.TestClient
             Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
+            WhatIf = Opts.WhatIfDefault;
             Ip = IPAddress.Loopback;
             TcpPort = 1113;
             HttpPort = 2113;

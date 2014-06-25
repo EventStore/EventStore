@@ -27,6 +27,9 @@ namespace EventStore.Core.Util
         public const string ForceDescr = "Force the Event Store to run in possibly harmful environments such as with Boehm GC.";
         public const bool ForceDefault = false;
 
+        public const string WhatIfDescr = "Print effective configuration to console and then exit.";
+        public const bool WhatIfDefault = false;
+
         public const string LogsDescr = "Path where to keep log files.";
         public static readonly string LogsDefault = string.Empty;
 

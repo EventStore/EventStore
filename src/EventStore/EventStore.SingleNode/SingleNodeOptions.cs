@@ -17,6 +17,8 @@ namespace EventStore.SingleNode
         public string Config { get; set; }
         [ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
         public string[] Defines { get; set; }
+        [ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
+        public bool WhatIf { get; set; }
 
         [ArgDescription(Opts.IpDescr, Opts.InterfacesGroup)]
         public IPAddress Ip { get; set; }
@@ -88,11 +90,11 @@ namespace EventStore.SingleNode
         public SingleNodeOptions()
         {
             Config = "singlenode-config.json";
-
             Help = Opts.ShowHelpDefault;
             Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
+            WhatIf = Opts.WhatIfDefault;
 
             Ip = Opts.IpDefault;
             TcpPort = Opts.TcpPortDefault;

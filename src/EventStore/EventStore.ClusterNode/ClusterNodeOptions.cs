@@ -17,6 +17,8 @@ namespace EventStore.ClusterNode
         public string Config { get; set; }
         [ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
         public string[] Defines { get; set; }
+        [ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
+        public bool WhatIf { get; set; }
 
         [ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
         public IPAddress IntIp { get; set; }
@@ -141,6 +143,7 @@ namespace EventStore.ClusterNode
             Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
+            WhatIf = Opts.WhatIfDefault;
 
             IntIp = Opts.InternalIpDefault;
             ExtIp = Opts.ExternalIpDefault;
