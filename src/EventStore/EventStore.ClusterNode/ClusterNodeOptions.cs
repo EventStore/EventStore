@@ -138,7 +138,7 @@ namespace EventStore.ClusterNode
 
         public ClusterNodeOptions()
         {
-            Config = "clusternode-config.json";
+            Config = "";
             Help = Opts.ShowHelpDefault;
             Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;

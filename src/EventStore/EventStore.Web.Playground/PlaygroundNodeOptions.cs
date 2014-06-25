@@ -37,8 +37,7 @@ namespace EventStore.Web.Playground
 
         public PlaygroundNodeOptions()
         {
-            Config = "config.json";
-
+            Config = "";
             Help = Opts.ShowHelpDefault;
             Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;

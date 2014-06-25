@@ -89,7 +89,7 @@ namespace EventStore.SingleNode
 
         public SingleNodeOptions()
         {
-            Config = "singlenode-config.json";
+            Config = "";
             Help = Opts.ShowHelpDefault;
             Version = Opts.ShowVersionDefault;
             Log = Opts.LogsDefault;
