@@ -60,6 +60,7 @@ namespace EventStore.Documentation
                     documentation += optionDocumentation;
                 }
             }
+            File.WriteAllText("documentation.html", documentation);
         }
 
         public static string FirstCharToLower(string input)
