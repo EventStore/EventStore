@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -52,7 +53,7 @@ namespace EventStore.Documentation
                         parameterRow += String.Format("<td>{0}</td>", EnvironmentVariableNameProvider.GetName("EVENTSTORE_", property.Name.ToUpper()));
                         parameterRow += String.Format("<td>{0}</td>", FirstCharToLower(property.Name));
                         parameterRow += String.Format("<td>{0}</td>", property.Attr<ArgDescription>().Description);
-                        parameterRow += String.Format("<td>{0}</td>", property.GetValue(options));
+                        parameterRow += String.Format("<td>{0}</td>", GetValues(property.GetValue(options)));
                         parameterRow += "</tr>";
                         optionDocumentation += parameterRow;
                     }
@@ -61,6 +62,20 @@ namespace EventStore.Documentation
                 }
             }
             File.WriteAllText("documentation.html", documentation);
+        }
+
+        public static string GetValues(object value)
+        {
+            if(value is Array)
+            {
+                var values = String.Empty;
+                foreach (var val in (Array)value)
+                {
+                    values += val + ",";
+                }
+                return values.Length > 1 ? values.Substring(0, values.Length - 1) : "n/a";
+            }
+            return value.ToString();
         }
 
         public static string FirstCharToLower(string input)
