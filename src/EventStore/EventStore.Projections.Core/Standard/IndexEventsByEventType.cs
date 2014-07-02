@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Standard
         private readonly string _indexStreamPrefix;
         private readonly string _indexCheckpointStream;
 
-        public IndexEventsByEventType(string source, Action<string> logger)
+        public IndexEventsByEventType(string source, Action<string, object[]> logger)
         {
             if (!string.IsNullOrWhiteSpace(source))
                 throw new InvalidOperationException("Empty source expected");

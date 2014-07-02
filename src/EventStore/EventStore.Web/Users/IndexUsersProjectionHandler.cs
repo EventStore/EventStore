@@ -14,7 +14,7 @@ namespace EventStore.Web.Users
         private const string UsersStream = "$users";
         private const string UserEventType = "$User";
 
-        public IndexUsersProjectionHandler(string query, Action<string> logger)
+        public IndexUsersProjectionHandler(string query, Action<string, object[]> logger)
         {
         }
 

@@ -8,13 +8,18 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     public class FakeFromCatalogStreamProjection : IProjectionStateHandler
     {
         private readonly string _query;
-        private readonly Action<string> _logger;
+        private readonly Action<string, object[]> _logger;
         private string _state;
 
-        public FakeFromCatalogStreamProjection(string query, Action<string> logger)
+        public FakeFromCatalogStreamProjection(string query, Action<string, object[]> logger)
         {
             _query = query;
             _logger = logger;
+        }
+
+        private void Log(string msg, params object[] args)
+        {
+            _logger(msg, args);
         }
 
         public void Dispose()
@@ -23,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
-            _logger("ConfigureSourceProcessingStrategy(" + builder + ")");
+            Log("ConfigureSourceProcessingStrategy(" + builder + ")");
             builder.FromCatalogStream("catalog");
             builder.AllEvents();
             builder.SetByStream();
@@ -31,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public void Load(string state)
         {
-            _logger("Load(" + state + ")");
+            Log("Load(" + state + ")");
             _state = state;
         }
 
@@ -42,19 +47,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public void Initialize()
         {
-            _logger("Initialize");
+            Log("Initialize");
             _state = "";
         }
 
         public void InitializeShared()
         {
-            _logger("InitializeShared");
+            Log("InitializeShared");
             throw new NotImplementedException();
         }
 
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
-            _logger("GetStatePartition(" + "..." + ")");
+            Log("GetStatePartition(" + "..." + ")");
             return @data.EventStreamId;
         }
 
@@ -70,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             newSharedState = null;
             if (data.EventType == "fail" || _query == "fail")
                 throw new Exception("failed");
-            _logger("ProcessEvent(" + "..." + ")");
+            Log("ProcessEvent(" + "..." + ")");
             newState = "{\"data\": " + _state + data + "}";
             emittedEvents = null;
             return true;

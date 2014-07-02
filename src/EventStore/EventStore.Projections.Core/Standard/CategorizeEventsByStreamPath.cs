@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Standard
         private readonly string _categoryStreamPrefix;
         private readonly StreamCategoryExtractor _streamCategoryExtractor;
 
-        public CategorizeEventsByStreamPath(string source, Action<string> logger)
+        public CategorizeEventsByStreamPath(string source, Action<string, object[]> logger)
         {
             var extractor = StreamCategoryExtractor.GetExtractor(source, logger);
             // we will need to declare event types we are interested in

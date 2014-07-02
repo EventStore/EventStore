@@ -8,9 +8,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     public class FakeBiStateProjection : IProjectionStateHandler
     {
         private readonly string _query;
-        private readonly Action<string> _logger;
+        private readonly Action<string, object[]> _logger;
 
-        public FakeBiStateProjection(string query, Action<string> logger)
+        public FakeBiStateProjection(string query, Action<string, object[]> logger)
         {
             _query = query;
             _logger = logger;
@@ -20,9 +20,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
         }
 
+        private void Log(string msg, params object[] args)
+        {
+            _logger(msg, args);
+        }
+
         public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
         {
-            _logger("ConfigureSourceProcessingStrategy(" + builder + ")");
+            Log("ConfigureSourceProcessingStrategy(" + builder + ")");
             builder.FromAll();
             builder.AllEvents();
             builder.SetByStream();
@@ -31,27 +36,27 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public void Load(string state)
         {
-            _logger("Load(" + state + ")");
+            Log("Load(" + state + ")");
         }
 
         public void LoadShared(string state)
         {
-            _logger("LoadShared(" + state + ")");
+            Log("LoadShared(" + state + ")");
         }
 
         public void Initialize()
         {
-            _logger("Initialize");
+            Log("Initialize");
         }
 
         public void InitializeShared()
         {
-            _logger("InitializeShared");
+            Log("InitializeShared");
         }
 
         public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data)
         {
-            _logger("GetStatePartition(" + "..." + ")");
+            Log("GetStatePartition(" + "..." + ")");
             throw new NotImplementedException();
         }
 
@@ -67,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             newSharedState = null;
             if (data.EventType == "fail" || _query == "fail")
                 throw new Exception("failed");
-            _logger("ProcessEvent(" + "..." + ")");
+            Log("ProcessEvent(" + "..." + ")");
             newState = "{\"data\": 1}";
             newSharedState = "{\"data\": 2}";
             emittedEvents = null;
@@ -76,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data, out EmittedEventEnvelope[] emittedEvents)
         {
-            _logger("ProcessPartitionCreated");
+            Log("ProcessPartitionCreated");
             emittedEvents = null;
             return false;
         }

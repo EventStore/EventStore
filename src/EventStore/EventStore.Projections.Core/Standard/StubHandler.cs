@@ -10,7 +10,7 @@ namespace EventStore.Projections.Core.Standard
         //private readonly char _separator;
         //private readonly string _categoryStreamPrefix;
 
-        public StubHandler(string source, Action<string> logger)
+        public StubHandler(string source, Action<string, object[]> logger)
         {
             if (!string.IsNullOrWhiteSpace(source))
                 throw new InvalidOperationException(
