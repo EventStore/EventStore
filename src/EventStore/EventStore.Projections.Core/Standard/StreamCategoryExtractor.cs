@@ -8,7 +8,7 @@ namespace EventStore.Projections.Core.Standard
 
         public abstract string GetCategoryByStreamId(string streamId);
 
-        public static StreamCategoryExtractor GetExtractor(string source, Action<string> logger)
+        public static StreamCategoryExtractor GetExtractor(string source, Action<string, object[]> logger)
         {
             var trimmedSource = source == null ? null : source.Trim();
             if (string.IsNullOrEmpty(source))

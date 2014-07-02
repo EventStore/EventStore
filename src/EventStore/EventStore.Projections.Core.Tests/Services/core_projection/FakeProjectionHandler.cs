@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private readonly Action<SourceDefinitionBuilder> _configureBuilder;
         private readonly IQuerySources _definition;
 
-        public FakeProjectionStateHandler(string source, Action<string> logger)
+        public FakeProjectionStateHandler(string source, Action<string, object[]> logger)
         {
             _definition = source.ParseJson<QuerySourcesDefinition>();
         }

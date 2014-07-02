@@ -8,7 +8,7 @@ namespace EventStore.Projections.Core.Standard
 {
     public class IndexStreams : IProjectionStateHandler
     {
-        public IndexStreams(string source, Action<string> logger)
+        public IndexStreams(string source, Action<string, object[]> logger)
         {
             var trimmedSource = source == null ? null : source.Trim();
             if (!string.IsNullOrEmpty(trimmedSource))
