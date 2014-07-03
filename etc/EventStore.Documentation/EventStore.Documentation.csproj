@@ -32,13 +32,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EventStore.ClusterNode">
+      <HintPath>..\..\bin\eventstore\release\anycpu\EventStore.ClusterNode.exe</HintPath>
+    </Reference>
+    <Reference Include="EventStore.Common">
+      <HintPath>..\..\bin\eventstore\release\anycpu\EventStore.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="EventStore.SingleNode">
+      <HintPath>..\..\bin\eventstore\release\anycpu\EventStore.SingleNode.exe</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -46,20 +50,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj">
-      <Project>{0294fd68-461c-46db-9fcf-b279bbfda5f6}</Project>
-      <Name>EventStore.ClusterNode</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
-      <Project>{b4c9be3d-43b1-4049-a23a-5dc53db3f0b0}</Project>
-      <Name>EventStore.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.SingleNode\EventStore.SingleNode.csproj">
-      <Project>{8071224e-8c49-4387-b834-801badd4023d}</Project>
-      <Name>EventStore.SingleNode</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
