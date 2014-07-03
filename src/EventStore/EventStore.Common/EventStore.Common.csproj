@@ -74,7 +74,6 @@
     <Compile Include="Log\NLogger.cs" />
     <Compile Include="Options\ArgDescriptionAttribute.cs" />
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
-    <Compile Include="Utils\IPAddressConverter.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />
     <Compile Include="Options\OptionException.cs" />
@@ -155,7 +154,6 @@
     <Compile Include="Utils\FileStreamExtensions.cs" />
     <Compile Include="Utils\Empty.cs" />
     <Compile Include="Utils\IPEndPointComparer.cs" />
-    <Compile Include="Utils\IPEndpointConverter.cs" />
     <Compile Include="Utils\Json.cs" />
     <Compile Include="Utils\ShellExecutor.cs" />
     <Compile Include="Utils\StringExtensions.cs" />
@@ -168,6 +166,7 @@
     <Compile Include="Utils\Ensure.cs" />
     <Compile Include="Utils\Runtime.cs" />
     <Compile Include="Utils\VersionInfo.cs" />
+    <Compile Include="Utils\IPEndPointConverter.cs" />
     <Compile Include="YamlDotNet.Dynamic\DynamicYaml.cs" />
     <Compile Include="YamlDotNet.Dynamic\Extensions.cs" />
     <Compile Include="YamlDotNet.Dynamic\YamlDoc.cs" />

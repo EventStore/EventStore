@@ -7,10 +7,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.Serialization;
 using System.Text;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.Utilities;
 
 namespace EventStore.Common.Options
 {
@@ -57,6 +59,7 @@ namespace EventStore.Common.Options
                     try
                     {
                         var deserializer = new Deserializer();
+                        TypeConverter.RegisterTypeConverter<IPEndPoint, IPEndPointConverter>();
                         var configAsYaml = deserializer.Deserialize<TOptions>(new StringReader(config));
                         MergeFromConfiguration<TOptions>(configAsYaml, options);
                         ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_CONFIG_FILE);
