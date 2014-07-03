@@ -7,7 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
+using YamlDotNet.Core;
+using YamlDotNet.Serialization;
 
 namespace EventStore.Common.Options
 {
@@ -50,36 +53,15 @@ namespace EventStore.Common.Options
             {
                 if (File.Exists(options.Config))
                 {
-                    var configSerializerSettings = new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                        Converters = new JsonConverter[] {new StringEnumConverter(), new IPAddressConverter(), new IPEndpointConverter()}
-                    };
                     var config = File.ReadAllText(options.Config);
                     try
                     {
-                        var configAsJson = Newtonsoft.Json.JsonConvert.DeserializeObject<TOptions>(config, configSerializerSettings);
-                        MergeFromConfiguration<TOptions>(configAsJson, options);
+                        var deserializer = new Deserializer();
+                        var configAsYaml = deserializer.Deserialize<TOptions>(new StringReader(config));
+                        MergeFromConfiguration<TOptions>(configAsYaml, options);
                         ReEvaluateOptionsForDumping(options, EventStoreOptions.FROM_CONFIG_FILE);
                     }
-                    catch (Newtonsoft.Json.JsonReaderException ex)
-                    {
-                        var failureMessage = "Invalid configuration file specified. ";
-                        if (String.IsNullOrEmpty(ex.Path))
-                        {
-                            failureMessage += "Please ensure that the configuration file is valid JSON";
-                        }
-                        else
-                        {
-                            var failedOptionTypeName = GetTypeForOptionName<TOptions>(ex.Path);
-                            if(!String.IsNullOrEmpty(failedOptionTypeName))
-                            {
-                                failureMessage += "Please ensure that the value specified for " + ex.Path + " is of type " + failedOptionTypeName;
-                            }
-                        }
-                        throw new OptionException(failureMessage, ex.Path);
-                    }
-                    catch (Newtonsoft.Json.JsonSerializationException ex)
+                    catch (Exception ex)
                     {
                         string failureMessage = "Invalid configuration file specified. ";
                         failureMessage += ex.Message;
