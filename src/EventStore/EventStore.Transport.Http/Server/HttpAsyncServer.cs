@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -78,10 +77,10 @@ namespace EventStore.Transport.Http.Server
 
         private void TryAddAcl(string address)
         {
-            if (Environment.OSVersion.Platform == PlatformID.Xbox || Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
+            if (Runtime.IsMono)
                 return;
 
-            var args = string.Format(@"http add urlacl url={0} user={1}\{2}", address, Environment.UserDomainName, Environment.UserName);
+            var args = string.Format("http add urlacl url={0} user=\"{1}\\{2}\"", address, Environment.UserDomainName, Environment.UserName);
             Logger.Info("Attempting to add permissions for " + address + " using netsh " + args);
             var startInfo = new ProcessStartInfo("netsh", args)
                           {
@@ -91,7 +90,10 @@ namespace EventStore.Transport.Http.Server
                               UseShellExecute = true
                           };
 
-            Process.Start(startInfo).WaitForExit();
+            var aclProcess = Process.Start(startInfo);
+
+            if (aclProcess != null) 
+                aclProcess.WaitForExit();
         }
     
         public void Shutdown()
