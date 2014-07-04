@@ -10,9 +10,9 @@ using System.Linq;
 using System.Net;
 using System.Runtime.Serialization;
 using System.Text;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.Utilities;
+using EventStore.Common.Yaml.Core;
+using EventStore.Common.Yaml.Serialization;
+using EventStore.Common.Yaml.Serialization.Utilities;
 
 namespace EventStore.Common.Options
 {
