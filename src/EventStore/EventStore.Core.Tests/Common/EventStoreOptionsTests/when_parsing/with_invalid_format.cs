@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         [Test]
         public void with_config()
         {
-            var args = new string[] { "-config", "TestConfigs/invalid_format_config.json" };
+            var args = new string[] { "-config", "TestConfigs/invalid_format_config.yaml" };
             Assert.Throws<OptionException>(() => { EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix); });
         }
         [Test]

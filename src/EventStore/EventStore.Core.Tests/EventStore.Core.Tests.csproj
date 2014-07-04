@@ -523,10 +523,10 @@
     <Folder Include="TransactionLog\Manager\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="TestConfigs\invalid_format_config.json">
+    <None Include="TestConfigs\invalid_format_config.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="TestConfigs\test_config.json">
+    <None Include="TestConfigs\test_config.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

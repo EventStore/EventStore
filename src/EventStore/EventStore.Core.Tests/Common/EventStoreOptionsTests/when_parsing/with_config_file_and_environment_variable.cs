@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         public void should_use_the_config_value_over_the_environment_variable()
         {
             Environment.SetEnvironmentVariable("ES_HTTP_PORT", "2111");
-            var args = new string[] { "-config", "TestConfigs/test_config.json" };
+            var args = new string[] { "-config", "TestConfigs/test_config.yaml" };
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual(2115, testArgs.HttpPort);
         }
