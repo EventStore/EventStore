@@ -535,6 +535,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void ResetProjection()
         {
             UpdateProjectionVersion(force: true);
+            Enabled = false;
             _persistedState.Epoch = _persistedState.Version;
         }
 

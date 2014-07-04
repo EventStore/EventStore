@@ -235,9 +235,27 @@ var $projections = {
         }
 
         function callHandler(handler, state, eventEnvelope) {
-            if (debugging)
-                debugger;
-            var newState = handler(state, eventEnvelope);
+            var newState;
+            if (debugging) {
+                try {
+
+
+
+                    debugger;
+
+                    /* F11 to step into the projection user code */
+
+                    newState = handler(state, eventEnvelope);
+
+
+
+                } catch (ex) {
+                    _log("Exception: " + ex.toString());
+                    throw ex;
+                }
+            } else {
+                newState = handler(state, eventEnvelope);
+            }
             if (newState === undefined)
                 newState = state;
             return newState;

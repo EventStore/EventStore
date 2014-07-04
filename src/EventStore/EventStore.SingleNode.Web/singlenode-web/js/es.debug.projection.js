@@ -29,10 +29,10 @@ require(['projections/Observer', 'projections/Controller'],
 
             observer.subscribe({
                 statusChanged: function (status) {
-                    if (status.status !== "Stopped" && status.status !== "Faulted")
+                    if (status.status.indexOf("Stopped") !== 0 && status.status.indexOf("Faulted") !== 0)
                         alert("The projection must be stopped to be debugged. " + status.status);
                     projectionStatusOk = true;
-                    checkLoaded();
+                    partLoaded();
                 },
                 stateChanged: function (state, xhr) {
                     var positionJson = xhr.getResponseHeader("ES-Position");
@@ -104,9 +104,10 @@ require(['projections/Observer', 'projections/Controller'],
                 $('.run-button').removeAttr("disabled");
                 if (data == "") {
                     processor.initialize();
-                    cachedStates[partition] = processor.debugging_get_state();
-                } else
+                } else {
                     processor.set_state(data);
+                }
+                cachedStates[partition] = processor.debugging_get_state();
                 $("#projection-debug-result").text(cachedStates[partition]);
             }
 
@@ -207,7 +208,6 @@ require(['projections/Observer', 'projections/Controller'],
                     currentEvent.eventNumber,
                     currentEvent.isJson ? JSON.stringify(currentEvent.metadata) : currentEvent.metadata,
                     partition);
-
 
                 cachedStates[partition] = state;
                 console.log(currentEvent.readerPosition);
