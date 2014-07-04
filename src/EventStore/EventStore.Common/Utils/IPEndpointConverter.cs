@@ -1,32 +1,30 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Net;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text;
 
 namespace EventStore.Common.Utils
 {
-    class IPEndpointConverter : JsonConverter
+    public class IPEndPointConverter : TypeConverter
     {
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            var endpoint = (IPEndPoint) value;
-            writer.WriteValue(string.Format("{0}:{1}", endpoint.Address, endpoint.Port));
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
         {
-            var value = JToken.Load(reader).Value<string>();
+            var valueAsString = value as string;
+            if (valueAsString != null)
+            {
+                var address = valueAsString.Substring(0, valueAsString.LastIndexOf(':'));
+                var port = valueAsString.Substring(valueAsString.LastIndexOf(':') + 1);
 
-            var address = value.Substring(0, value.LastIndexOf(':'));
-            var port = value.Substring(value.LastIndexOf(':') + 1);
+                return new IPEndPoint(IPAddress.Parse(address), Int32.Parse(port));
+            }
 
-            return new IPEndPoint(IPAddress.Parse(address), Int32.Parse(port));
+            return base.ConvertFrom(context, culture, value);
         }
-
-        public override bool CanConvert(Type objectType)
-        {
-            return (objectType == typeof (IPEndPoint));
-        }
-
     }
 }

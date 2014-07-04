@@ -33,12 +33,11 @@ namespace EventStore.Core
 
         public int Run(string[] args)
         {
-            var options = new TOptions();
             try
             {
                 Application.RegisterExitAction(Exit);
 
-                options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix);
+                var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix);
                 if (options.Help)
                 {
                     Console.WriteLine("Options:");
@@ -139,7 +138,7 @@ namespace EventStore.Core
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
                      "LOGS:", LogManager.LogsDirectory,
-                     EventStoreOptions.DumpOptions<TOptions>());
+                     EventStoreOptions.DumpOptions());
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");
