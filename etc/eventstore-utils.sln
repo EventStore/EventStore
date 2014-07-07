@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Documentation", "EventStore.Documentation\EventStore.Documentation.csproj", "{7AEB8C6E-E0EF-4E0B-A3F1-E0A6F726C266}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.UpgradeProjections", "EventStore.UpgradeProjections\EventStore.UpgradeProjections.csproj", "{4D0D3CA3-D73B-425A-B969-85968218A17B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{7AEB8C6E-E0EF-4E0B-A3F1-E0A6F726C266}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AEB8C6E-E0EF-4E0B-A3F1-E0A6F726C266}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7AEB8C6E-E0EF-4E0B-A3F1-E0A6F726C266}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D0D3CA3-D73B-425A-B969-85968218A17B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D0D3CA3-D73B-425A-B969-85968218A17B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D0D3CA3-D73B-425A-B969-85968218A17B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D0D3CA3-D73B-425A-B969-85968218A17B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

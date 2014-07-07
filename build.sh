@@ -232,7 +232,7 @@ function buildV8() {
     fi
 
     echo "Coping some crap" $fileext
-    pushd ../src/EventStore/libs > /dev/null
+    pushd ../src/libs > /dev/null
     cp $v8OutputDir/libv8.$fileext . || err
     cp $v8OutputDir/libicui18n.$fileext . ||  err
     cp $v8OutputDir/libicuuc.$fileext . || err
@@ -247,10 +247,10 @@ function buildV8() {
     fi
     popd > /dev/null
 
-    [[ -d ../src/EventStore/libs/include ]] || mkdir ../src/EventStore/libs/include
+    [[ -d ../src/libs/include ]] || mkdir ../src/libs/include
 
     pushd include > /dev/null || err
-    cp *.h ../../src/EventStore/libs/include || err
+    cp *.h ../../src/libs/include || err
     popd > /dev/null || err
 
     popd > /dev/null || err
@@ -258,11 +258,11 @@ function buildV8() {
 
 function buildJS1() {
     currentDir=$(pwd -P)
-    includeString="-I $currentDir/src/EventStore/libs/include"
-    libsString="-L $currentDir/src/EventStore/libs"
-    outputDir="$currentDir/src/EventStore/libs"
+    includeString="-I $currentDir/src/libs/include"
+    libsString="-L $currentDir/src/libs"
+    outputDir="$currentDir/src/libs"
 
-    pushd $currentDir/src/EventStore/EventStore.Projections.v8Integration/ > /dev/null || err
+    pushd $currentDir/src/EventStore.Projections.v8Integration/ > /dev/null || err
 
     if [[ "$ARCHITECTURE" == "x86" ]] ; then
         gccArch="-arch i386"
@@ -367,16 +367,16 @@ function buildEventStore {
     patchVersionFiles
     patchVersionInfo
     rm -rf bin/
-    xbuild src/EventStore/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
+    xbuild src/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
     revertVersionFiles
     revertVersionInfo
 }
 
 function cleanAll {
     rm -rf bin/
-    rm -f src/EventStore/libs/libv8.so
-    rm -f src/EventStore/libs/libjs1.so
-    pushd src/EventStore/EventStore.Projections.v8Integration > /dev/null
+    rm -f src/libs/libv8.so
+    rm -f src/libs/libjs1.so
+    pushd src/EventStore.Projections.v8Integration > /dev/null
     git clean --quiet -dfx -- .
     popd > /dev/null
 }
@@ -406,9 +406,9 @@ else
         buildJS1
         buildEventStore
     else
-        [[ -f src/EventStore/libs/libv8.so ]] || [[ -f src/EventStore/libs/libv8.dylib ]] || exitWithError "Cannot find libv8.[so|dylib] - in src/EventStore/libs/ so cannot do a quick build!"
-        [[ -f src/EventStore/libs/libicui18n.so ]] || [[ -f src/EventStore/libs/libicui18n.dylib ]] || exitWithError "Cannot find libicui18n.[so|dylib] - in src/EventStore/libs/ so cannot do a quick build!"
-        [[ -f src/EventStore/libs/libjs1.so ]] || [[ -f src/EventStore/libs/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/EventStore/libs/ so cannot do a quick build!"
+        [[ -f src/libs/libv8.so ]] || [[ -f src/libs/libv8.dylib ]] || exitWithError "Cannot find libv8.[so|dylib] - in src/libs/ so cannot do a quick build!"
+        [[ -f src/libs/libicui18n.so ]] || [[ -f src/libs/libicui18n.dylib ]] || exitWithError "Cannot find libicui18n.[so|dylib] - in src/libs/ so cannot do a quick build!"
+        [[ -f src/libs/libjs1.so ]] || [[ -f src/libs/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/ so cannot do a quick build!"
 
         buildEventStore
     fi

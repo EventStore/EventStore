@@ -1,0 +1,546 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{898C5545-7749-42F0-961A-048AF92B2A79}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EventStore.ClusterNode.Web</RootNamespace>
+    <AssemblyName>EventStore.ClusterNode.Web</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\bin\eventstore\debug\anycpu\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\bin\eventstore\release\anycpu\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>..\..\bin\eventstore\debug\x86\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>..\..\bin\eventstore\release\x86\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{b4c9be3d-43b1-4049-a23a-5dc53db3f0b0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Web\EventStore.Web.csproj">
+      <Project>{68065B8C-0FDC-473F-9C32-54078E32FD5C}</Project>
+      <Name>EventStore.Web</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\admin.htm">
+      <Link>clusternode-web\admin.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\charts.htm">
+      <Link>clusternode-web\charts.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\chat.htm">
+      <Link>clusternode-web\chat.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\debug-projection.htm">
+      <Link>clusternode-web\debug-projection.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\delete-projection.htm">
+      <Link>clusternode-web\delete-projection.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\edit-projection-source.htm">
+      <Link>clusternode-web\edit-projection-source.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\external-host.htm">
+      <Link>clusternode-web\external-host.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\home.htm">
+      <Link>clusternode-web\home.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\es.chartsSetup.js">
+      <Link>clusternode-web\js\es.chartsSetup.js</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\es.debug.projection.js">
+      <Link>clusternode-web\js\es.debug.projection.js</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\es.menu.js">
+      <Link>clusternode-web\js\es.menu.js</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\ace.js">
+      <Link>clusternode-web\js\projections\lib\ace\ace.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\ext-static_highlight.js">
+      <Link>clusternode-web\js\projections\lib\ace\ext-static_highlight.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\ext-textarea.js">
+      <Link>clusternode-web\js\projections\lib\ace\ext-textarea.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\keybinding-emacs.js">
+      <Link>clusternode-web\js\projections\lib\ace\keybinding-emacs.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\keybinding-vim.js">
+      <Link>clusternode-web\js\projections\lib\ace\keybinding-vim.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-abap.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-abap.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-asciidoc.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-asciidoc.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-c9search.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-c9search.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-clojure.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-clojure.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-coffee.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-coffee.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-coldfusion.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-coldfusion.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-csharp.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-csharp.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-css.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-css.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-c_cpp.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-c_cpp.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-dart.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-dart.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-diff.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-diff.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-dot.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-dot.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-glsl.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-glsl.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-golang.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-golang.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-groovy.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-groovy.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-haml.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-haml.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-haxe.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-haxe.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-html.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-html.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-jade.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-jade.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-java.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-java.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-javascript.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-javascript.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-json.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-json.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-jsp.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-jsp.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-jsx.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-jsx.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-latex.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-latex.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-less.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-less.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-liquid.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-liquid.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-lisp.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-lisp.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-lua.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-lua.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-luapage.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-luapage.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-lucene.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-lucene.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-makefile.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-makefile.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-markdown.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-markdown.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-objectivec.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-objectivec.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-ocaml.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-ocaml.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-perl.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-perl.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-pgsql.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-pgsql.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-php.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-php.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-powershell.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-powershell.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-python.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-python.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-r.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-r.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-rdoc.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-rdoc.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-rhtml.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-rhtml.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-ruby.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-ruby.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-sass.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-sass.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-scad.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-scad.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-scala.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-scala.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-scss.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-scss.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-sh.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-sh.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-sql.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-sql.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-stylus.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-stylus.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-svg.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-svg.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-tcl.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-tcl.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-text.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-text.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-textile.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-textile.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-typescript.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-typescript.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-xml.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-xml.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-xquery.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-xquery.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\mode-yaml.js">
+      <Link>clusternode-web\js\projections\lib\ace\mode-yaml.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-ambiance.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-ambiance.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-chaos.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-chaos.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-chrome.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-chrome.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-clouds.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-clouds.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-clouds_midnight.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-clouds_midnight.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-cobalt.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-cobalt.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-crimson_editor.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-crimson_editor.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-dawn.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-dawn.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-dreamweaver.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-dreamweaver.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-eclipse.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-eclipse.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-github.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-github.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-idle_fingers.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-idle_fingers.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-kr.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-kr.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-merbivore.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-merbivore.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-merbivore_soft.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-merbivore_soft.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-monokai.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-monokai.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-mono_industrial.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-mono_industrial.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-pastel_on_dark.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-pastel_on_dark.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-solarized_dark.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-solarized_dark.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-solarized_light.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-solarized_light.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-textmate.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-textmate.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-tomorrow.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-tomorrow.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-tomorrow_night.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-tomorrow_night.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-tomorrow_night_blue.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-tomorrow_night_blue.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-tomorrow_night_bright.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-tomorrow_night_bright.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-tomorrow_night_eighties.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-tomorrow_night_eighties.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-twilight.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-twilight.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-vibrant_ink.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-vibrant_ink.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\theme-xcode.js">
+      <Link>clusternode-web\js\projections\lib\ace\theme-xcode.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\worker-coffee.js">
+      <Link>clusternode-web\js\projections\lib\ace\worker-coffee.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\worker-css.js">
+      <Link>clusternode-web\js\projections\lib\ace\worker-css.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\worker-javascript.js">
+      <Link>clusternode-web\js\projections\lib\ace\worker-javascript.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\worker-json.js">
+      <Link>clusternode-web\js\projections\lib\ace\worker-json.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\lib\ace\worker-xquery.js">
+      <Link>clusternode-web\js\projections\lib\ace\worker-xquery.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\ui\Ace.js">
+      <Link>clusternode-web\js\projections\ui\Ace.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\ui\Confirmation.js">
+      <Link>clusternode-web\js\projections\ui\Confirmation.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\js\projections\ui\Editor.js">
+      <Link>clusternode-web\js\projections\ui\Editor.js</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\new-projection.htm">
+      <Link>clusternode-web\new-projection.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\post-standard-projection.htm">
+      <Link>clusternode-web\post-standard-projection.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\projections.htm">
+      <Link>clusternode-web\projections.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\query.htm">
+      <Link>clusternode-web\query.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\queues.htm">
+      <Link>clusternode-web\queues.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\streams.htm">
+      <Link>clusternode-web\streams.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\EventStore.SingleNode.Web\singlenode-web\view-projection.htm">
+      <Link>clusternode-web\view-projection.htm</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="clusternode-web\gossip.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

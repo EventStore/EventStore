@@ -24,7 +24,7 @@ $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
 
 #Dependency Repositories and Directories
 $baseDirectory = Resolve-Path .
-$srcDirectory = Join-Path $baseDirectory (Join-Path "src" "EventStore")
+$srcDirectory = Join-Path $baseDirectory "src"
 $libsDirectory = Join-Path $srcDirectory "libs"
 
     #Event Store

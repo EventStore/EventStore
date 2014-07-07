@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>EventStore.Client</id>
+    <version>0.0.0</version>
+    <authors>Event Store LLP</authors>
+    <owners>Event Store LLP</owners>
+    <licenseUrl>http://geteventstore.com/terms/licence/bsd/</licenseUrl>
+    <projectUrl>http://geteventstore.com</projectUrl>
+    <iconUrl>http://geteventstore.com/assets/ouro-200.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</description>
+    <releaseNotes>Client API for version 2 of the Event Store</releaseNotes>
+    <copyright>Copyright 2012-2013 Event Store LLP</copyright>
+    <dependencies>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="..\..\bin\eventstore.client\EventStore.ClientAPI.dll" target="lib\net40" />
+    <file src="..\..\bin\eventstore.client\EventStore.ClientAPI.pdb" target="lib\net40" />
+    <file src="..\..\bin\eventstore.client\EventStore.ClientAPI.xml" target="lib\net40" />
+    <file src="EventStore.ClientAPI\**\*.cs" target="src\EventStore.ClientAPI\" />
+    <file src="..\..\..\protobuf-net-read-only\protobuf-net\**\*.cs" target="src\protobuf-net\" />
+    <file src="..\..\..\Newtonsoft.Json\Src\Newtonsoft.Json\**\*.cs" target="src\Newtonsoft.Json\" />
+  </files>
+</package>
