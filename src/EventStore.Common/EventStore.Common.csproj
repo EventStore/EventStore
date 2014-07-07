@@ -166,7 +166,7 @@
     <Compile Include="Utils\Ensure.cs" />
     <Compile Include="Utils\Runtime.cs" />
     <Compile Include="Utils\VersionInfo.cs" />
-    <Compile Include="Utils\IPEndPointConverter.cs" />
+    <Compile Include="Utils\IPEndpointConverter.cs" />
     <Compile Include="Yaml.Dynamic\DynamicYaml.cs" />
     <Compile Include="Yaml.Dynamic\Extensions.cs" />
     <Compile Include="Yaml.Dynamic\YamlDoc.cs" />
