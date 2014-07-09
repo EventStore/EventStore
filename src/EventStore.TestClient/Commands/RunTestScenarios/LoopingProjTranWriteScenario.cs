@@ -162,7 +162,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 ", runIndex);
 
                 var projectionManager = GetProjectionsManager();
-                projectionManager.CreateContinuous(projectionName, projection, AdminCredentials);
+                projectionManager.CreateContinuousAsync(projectionName, projection, AdminCredentials).Wait();
 
                 WaitAndCheckIfIsFaulted(projectionName);
 

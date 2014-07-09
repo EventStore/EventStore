@@ -40,9 +40,9 @@ fromAll().foreachStream().when({
         protected override void When()
         {
             base.When();
-            _manager.Abort("test-projection", _admin);
+            _manager.AbortAsync("test-projection", _admin).Wait();
             WaitIdle();
-            _manager.Enable("test-projection", _admin);
+            _manager.EnableAsync("test-projection", _admin).Wait();
             WaitIdle();
         }
 

@@ -27,7 +27,7 @@ fromAll().foreachStream().when({
     $deleted: function(s,e){s.deleted=1;},
 }).outputState();
 ");
-            _manager.Abort("test-projection", _admin);
+            _manager.AbortAsync("test-projection", _admin).Wait();
             WaitIdle();
 
             EnableStandardProjections();
@@ -41,7 +41,7 @@ fromAll().foreachStream().when({
         protected override void When()
         {
             base.When();
-            _manager.Enable("test-projection", _admin);
+            _manager.EnableAsync("test-projection", _admin).Wait();
             WaitIdle();
         }
 

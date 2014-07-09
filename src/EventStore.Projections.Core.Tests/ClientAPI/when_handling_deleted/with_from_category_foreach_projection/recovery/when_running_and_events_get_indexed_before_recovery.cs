@@ -31,14 +31,14 @@ fromCategory('stream').foreachStream().when({
             WaitIdle();
             HardDeleteStream("stream-1");
             WaitIdle();
-            _manager.Abort("test-projection", _admin);
+            _manager.AbortAsync("test-projection", _admin).Wait();
             WaitIdle();
         }
 
         protected override void When()
         {
             base.When();
-            _manager.Enable("test-projection", _admin);
+            _manager.EnableAsync("test-projection", _admin).Wait();
             WaitIdle();
         }
 

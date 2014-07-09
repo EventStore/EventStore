@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         [TearDown]
         public void PostTestAsserts()
         {
-            var all = _manager.ListAll(_admin);
+            var all = _manager.ListAllAsync(_admin).Result;
             if (all.Contains("Faulted"))
                 Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
         }
@@ -119,12 +119,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
         protected void EnableProjection(string name)
         {
-            _manager.Enable(name, _admin);
+            _manager.EnableAsync(name, _admin).Wait();
         }
 
         protected void DisableProjection(string name)
         {
-            _manager.Disable(name, _admin);
+            _manager.DisableAsync(name, _admin).Wait();
         }
 
         [TestFixtureTearDown]
@@ -262,13 +262,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
         protected void PostProjection(string query)
         {
-            _manager.CreateContinuous("test-projection", query, _admin);
+            _manager.CreateContinuousAsync("test-projection", query, _admin).Wait();
             WaitIdle();
         }
 
         protected void PostQuery(string query)
         {
-            _manager.CreateTransient("query", query, _admin);
+            _manager.CreateTransientAsync("query", query, _admin).Wait();
             WaitIdle();
         }
     }

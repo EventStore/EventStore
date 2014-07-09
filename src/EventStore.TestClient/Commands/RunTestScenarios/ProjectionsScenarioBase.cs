@@ -87,7 +87,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             string rawState;
             try
             {
-                rawState = GetProjectionsManager().GetStatistics(projectionName, AdminCredentials);
+                rawState = GetProjectionsManager().GetStatisticsAsync(projectionName, AdminCredentials).Result;
             }
             catch (Exception ex)
             {
@@ -136,7 +136,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             string rawState;
             try
             {
-                rawState = GetProjectionsManager().GetState(projectionName, AdminCredentials);
+                rawState = GetProjectionsManager().GetStateAsync(projectionName, AdminCredentials).Result;
             }
             catch (Exception ex)
             {
@@ -162,7 +162,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     if (!isRunning)
                     {
                         Log.Debug(string.Format("Enable *{0}* projection", byCategoryProjection));
-                        GetProjectionsManager().Enable(byCategoryProjection, AdminCredentials);
+                        GetProjectionsManager().EnableAsync(byCategoryProjection, AdminCredentials).Wait();
                     }
                     else
                     {

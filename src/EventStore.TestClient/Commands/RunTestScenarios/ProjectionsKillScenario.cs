@@ -125,7 +125,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 }})
 ", GetIterationCode());
 
-            projectionManager.CreateContinuous(countItemsProjectionName, countItemsProjection, AdminCredentials);
+            projectionManager.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials).Wait();
             return countItemsProjectionName;
         }
 
@@ -169,7 +169,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 }})                
 ", GetIterationCode());
 
-            GetProjectionsManager().CreateContinuous(countItemsProjectionName, countItemsProjection, AdminCredentials);
+            GetProjectionsManager().CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials).Wait();
 
             return countItemsProjectionName;
         }
