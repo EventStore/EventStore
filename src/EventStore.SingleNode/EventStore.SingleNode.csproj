@@ -12,33 +12,12 @@
     <AssemblyName>EventStore.SingleNode</AssemblyName>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\bin\eventstore\debug\x86\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Externalconsole>true</Externalconsole>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\bin\eventstore\release\x86\</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>..\..\bin\eventstore\debug\anycpu\</OutputPath>
+    <OutputPath>..\..\bin\eventstore\debug\anycpu\singlenode\</OutputPath>
     <DebugType>full</DebugType>
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
-    <Externalconsole>true</Externalconsole>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <DebugSymbols>true</DebugSymbols>
@@ -46,7 +25,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>..\..\bin\eventstore\release\anycpu\</OutputPath>
+    <OutputPath>..\..\bin\eventstore\release\anycpu\singlenode\</OutputPath>
     <DebugType>none</DebugType>
     <WarningLevel>4</WarningLevel>
     <Optimize>true</Optimize>
@@ -79,6 +58,10 @@
     <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
       <Project>{03e02082-e179-4730-81ff-ce914749d6e3}</Project>
       <Name>EventStore.Projections.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.SingleNode.Web\EventStore.SingleNode.Web.csproj">
+      <Project>{d597790a-0ab4-4962-b50a-b4aca40765eb}</Project>
+      <Name>EventStore.SingleNode.Web</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Web\EventStore.Web.csproj">
       <Project>{68065b8c-0fdc-473f-9c32-54078e32fd5c}</Project>
