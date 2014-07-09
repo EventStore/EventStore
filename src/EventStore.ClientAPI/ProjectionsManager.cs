@@ -31,17 +31,6 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Synchronously enables a projection.
-        /// </summary>
-        /// <param name="name">The name of the projection</param>
-        /// <param name="userCredentials">Credentials for a user with permission to enable a projection</param>
-        public void Enable(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            EnableAsync(name, userCredentials).Wait();
-        }
-
-        /// <summary>
         /// Asynchronously enables a projection 
         /// </summary>
         /// <param name="name">The name of the projection.</param>
@@ -51,17 +40,6 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(name, "name");
             return _client.Enable(_httpEndPoint, name, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously disables a projection.
-        /// </summary>
-        /// <param name="name">The name of the projection.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
-        public void Disable(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            DisableAsync(name, userCredentials).Wait();
         }
 
         /// <summary>
@@ -77,17 +55,6 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Synchronously avborts and disables a projection without writing a checkpoint.
-        /// </summary>
-        /// <param name="name">The name of the projection.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
-        public void Abort(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            AbortAsync(name, userCredentials).Wait();
-        }
-
-        /// <summary>
         /// Asynchronously disables a projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
@@ -97,17 +64,6 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(name, "name");
             return _client.Abort(_httpEndPoint, name, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously creates a one-time query.
-        /// </summary>
-        /// <param name="query">The JavaScript source code for the query.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
-        public void CreateOneTime(string query, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(query, "query");
-            CreateOneTimeAsync(query, userCredentials).Wait();
         }
 
         /// <summary>
@@ -122,19 +78,6 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Synchronously creates a one-time query.
-        /// </summary>
-        /// <param name="name">A name for the query.</param>
-        /// <param name="query">The JavaScript source code for the query.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
-        public void CreateTransient(string name, string query, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-            CreateTransientAsync(name, query, userCredentials).Wait();
-        }
-
-        /// <summary>
         /// Asynchronously creates a one-time query.
         /// </summary>
         /// <param name="name">A name for the query.</param>
@@ -145,20 +88,6 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
             return _client.CreateTransient(_httpEndPoint, name, query, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously creates a continuous projection.
-        /// </summary>
-        /// <param name="name">The name of the projection.</param>
-        /// <param name="query">The JavaScript source code for the query.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
-        public void CreateContinuous(string name, string query, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            CreateContinuousAsync(name, query, userCredentials).Wait();
         }
 
         /// <summary>
@@ -176,16 +105,6 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Synchronously lists this status of all projections.
-        /// </summary>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing projection statuses.</returns>
-        public string ListAll(UserCredentials userCredentials = null)
-        {
-            return ListAllAsync(userCredentials).Result;
-        }
-
-        /// <summary>
         /// Asynchronously lists this status of all projections.
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
@@ -193,16 +112,6 @@ namespace EventStore.ClientAPI
         public Task<string> ListAllAsync(UserCredentials userCredentials = null)
         {
             return _client.ListAll(_httpEndPoint, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously lists this status of all one-time projections.
-        /// </summary>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing projection statuses.</returns>
-        public string ListOneTime(UserCredentials userCredentials = null)
-        {
-            return ListOneTimeAsync(userCredentials).Result;
         }
 
         /// <summary>
@@ -220,31 +129,9 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
-        public string ListContinuous(UserCredentials userCredentials = null)
-        {
-            return ListContinuousAsync(userCredentials).Result;
-        }
-
-        /// <summary>
-        /// Synchronously lists this status of all continuous projections.
-        /// </summary>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing projection statuses.</returns>
         public Task<string> ListContinuousAsync(UserCredentials userCredentials = null)
         {
             return _client.ListContinuous(_httpEndPoint, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously gets the status of a projection.
-        /// </summary>
-        /// <param name="name">The name of the projection.</param>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing projection status.</returns>
-        public string GetStatus(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetStatusAsync(name, userCredentials).Result;
         }
 
         /// <summary>
@@ -260,18 +147,6 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Synchronously gets the state of a projection.
-        /// </summary>
-        /// <param name="name">The name of the projection.</param>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing projection state.</returns>
-        public string GetState(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetStateAsync(name, userCredentials).Result;
-        }
-
-        /// <summary>
         /// Asynchronously gets the state of a projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
@@ -281,18 +156,6 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(name, "name");
             return _client.GetState(_httpEndPoint, name, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously gets the statistics of a projection.
-        /// </summary>
-        /// <param name="name">The name of the projection.</param>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing projection statistics.</returns>
-        public string GetStatistics(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetStatisticsAsync(name, userCredentials).Result;
         }
 
         /// <summary>
@@ -308,18 +171,6 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Synchronously gets the status of a query.
-        /// </summary>
-        /// <param name="name">The name of the query.</param>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing query status.</returns>
-        public string GetQuery(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return GetQueryAsync(name, userCredentials).Result;
-        }
-
-        /// <summary>
         /// Asynchronously gets the status of a query.
         /// </summary>
         /// <param name="name">The name of the query.</param>
@@ -329,20 +180,6 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(name, "name");
             return _client.GetQuery(_httpEndPoint, name, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously updates the definition of a query.
-        /// </summary>
-        /// <param name="name">The name of the query.</param>
-        /// <param name="query">The JavaScript source code of the query.</param>
-        /// <param name="userCredentials">Credentials for the operation.</param>
-        public void UpdateQuery(string name, string query, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            UpdateQueryAsync(name, query, userCredentials).Wait();
         }
 
         /// <summary>
@@ -357,17 +194,6 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(query, "query");
 
             return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials);
-        }
-
-        /// <summary>
-        /// Synchronously deletes a projection 
-        /// </summary>
-        /// <param name="name">The name of the projection.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to delete a projection</param>
-        public void Delete(string name, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            DeleteAsync(name, userCredentials).Wait();
         }
 
         /// <summary>

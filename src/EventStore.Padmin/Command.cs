@@ -14,7 +14,7 @@ namespace EventStore.Padmin
             var nameAndCredentials = GetProjectionNameAndCredentials(commandArgs);
             var name = nameAndCredentials.Item1;
             Log("Enabling {0}...", name);
-            manager.Enable(name, nameAndCredentials.Item2);
+            manager.EnableAsync(name, nameAndCredentials.Item2).Wait();
             Log("{0} enabled", name);
         }
 
@@ -23,7 +23,7 @@ namespace EventStore.Padmin
             var nameAndCredentials = GetProjectionNameAndCredentials(commandArgs);
             var name = nameAndCredentials.Item1;
             Log("Disabling {0}...", nameAndCredentials.Item1);
-            manager.Disable(name, nameAndCredentials.Item2);
+            manager.DisableAsync(name, nameAndCredentials.Item2).Wait();
             Log("{0} disabled", name);
         }
 
@@ -50,12 +50,12 @@ namespace EventStore.Padmin
             {
                 case "onetime":
                     Log("Creating onetime projection...");
-                    manager.CreateOneTime(query, userCredentials);
+                    manager.CreateOneTimeAsync(query, userCredentials).Wait();
                     Log("Created");
                     break;
                 case "continuous":
                     Log("Creating continuous projection {0}...", pname);
-                    manager.CreateContinuous(pname, query, userCredentials);
+                    manager.CreateContinuousAsync(pname, query, userCredentials).Wait();
                     Log("Created");
                     break;
                 default:
@@ -77,17 +77,17 @@ namespace EventStore.Padmin
             {
                 case "all":
                     Log("Listing all projections...");
-                    LogUnformatted(manager.ListAll(userCredentials));
+                    LogUnformatted(manager.ListAllAsync(userCredentials).Result);
                     Log("All projections listed");
                     break;
                 case "onetime":
                     Log("Listing onetime projections...");
-                    LogUnformatted(manager.ListOneTime(userCredentials));
+                    LogUnformatted(manager.ListOneTimeAsync(userCredentials).Result);
                     Log("Onetime projections listed");
                     break;
                 case "continuous":
                     Log("Listing continuous projections...");
-                    LogUnformatted(manager.ListContinuous(userCredentials));
+                    LogUnformatted(manager.ListContinuousAsync(userCredentials).Result);
                     Log("Continuous projections listed");
                     break;
                 default:
@@ -106,7 +106,7 @@ namespace EventStore.Padmin
             }
 
             var name = nameAndCredentials.Item1;
-            Log("{0} is '{1}'", name, manager.GetStatus(name, nameAndCredentials.Item2));
+            Log("{0} is '{1}'", name, manager.GetStatusAsync(name, nameAndCredentials.Item2).Result);
         }
 
         public static void State(ProjectionsManager manager, string[] commandArgs)
@@ -118,7 +118,7 @@ namespace EventStore.Padmin
                 return;
             }
             var name = nameAndCredentials.Item1;
-            Log("{0}'s state is : '{1}'", name, manager.GetState(name, nameAndCredentials.Item2));
+            Log("{0}'s state is : '{1}'", name, manager.GetStateAsync(name, nameAndCredentials.Item2).Result);
         }
 
         public static void Statistics(ProjectionsManager manager, string[] commandArgs)
@@ -131,7 +131,7 @@ namespace EventStore.Padmin
             }
             var name = nameAndCredentials.Item1;
             Log("{0}'s statistics :", name);
-            LogUnformatted(manager.GetStatistics(name, nameAndCredentials.Item2));
+            LogUnformatted(manager.GetStatisticsAsync(name, nameAndCredentials.Item2).Result);
         }
 
         public static void ShowQuery(ProjectionsManager manager, string[] commandArgs)
@@ -144,7 +144,7 @@ namespace EventStore.Padmin
             }
             var name = nameAndCredentials.Item1;
             Log("{0}'s query :", name);
-            LogUnformatted(manager.GetQuery(name, nameAndCredentials.Item2));
+            LogUnformatted(manager.GetQueryAsync(name, nameAndCredentials.Item2).Result);
         }
 
         public static void UpdateQuery(ProjectionsManager manager, string[] commandArgs)
@@ -159,7 +159,7 @@ namespace EventStore.Padmin
             var query = queryInfo.Item2;
             var userCredentials = queryInfo.Item3;
             Log("Updating query of {0}...", pname);
-            manager.UpdateQuery(pname, query, userCredentials);
+            manager.UpdateQueryAsync(pname, query, userCredentials).Wait();
             Log("Query updated");
         }
 
@@ -173,7 +173,7 @@ namespace EventStore.Padmin
             }
             var name = nameAndCredentials.Item1;
             Log("Deleting {0}...", name);
-            manager.Delete(name, nameAndCredentials.Item2);
+            manager.DeleteAsync(name, nameAndCredentials.Item2).Wait();
             Log("{0} deleted", name);
         }
 

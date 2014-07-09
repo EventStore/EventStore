@@ -221,7 +221,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 }})
 ", projectionName, GetIterationCode());
 
-            GetProjectionsManager().CreateContinuous(fullProjectionName, countItemsProjection, AdminCredentials);
+            GetProjectionsManager().CreateContinuousAsync(fullProjectionName, countItemsProjection, AdminCredentials).Wait();
 
             return fullProjectionName;
         }

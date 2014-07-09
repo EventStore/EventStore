@@ -144,14 +144,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         if (enable)
                         {
                             if (!isRunning)
-                                manager.Enable(projection, AdminCredentials);
+                                manager.EnableAsync(projection, AdminCredentials).Wait();
                             else 
                                 Log.Info("Projection '{0}' is already running and will not be enabled.", projection);
                         }
                         else
                         {
                             if (isRunning)
-                                manager.Disable(projection, AdminCredentials);
+                                manager.DisableAsync(projection, AdminCredentials).Wait();
                             else
                                 Log.Info("Projection '{0}' is already not running and will not be disabled again.", projection);
                         }
