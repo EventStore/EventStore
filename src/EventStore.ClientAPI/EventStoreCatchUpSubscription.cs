@@ -154,7 +154,6 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Attempts to stop the subscription without blocking for completion of stop
         /// </summary>
-        /// <exception cref="TimeoutException">Thrown if the subscription fails to stop within it's timeout period.</exception>
         public void Stop()
         {
             if (Verbose) Log.Debug("Catch-up Subscription to {0}: requesting stop...", IsSubscribedToAll ? "<all>" : StreamId);
