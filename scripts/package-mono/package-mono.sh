@@ -90,17 +90,19 @@ else
 	writeLog "Using gcc: $GCCPATH"
 fi
 
-OUTPUTDIR=$SCRIPTDIR../../bin/packaged
-[[ -d $OUTPUTDIR ]] || mkir -p $OUTPUTDIR
+OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
+[[ -d $OUTPUTDIR ]] || mkdir -p $OUTPUTDIR
 
 
 if [[ $OS == "Darwin" ]] ; then
     soext="dylib"
-    PACKAGEDIRECTORY="$OUTPUTDIR/EventStore-Mac-v$VERSIONSTRING"
+    PACKAGENAME="EventStore-Mac-v$VERSIONSTRING"
 else
     soext="so"
-    PACKAGEDIRECTORY="$OUTPUTDIR/EventStore-Linux-v$VERSIONSTRING"
+    PACKAGENAME="EventStore-Linux-v$VERSIONSTRING"
 fi
+
+PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
 
 if [[ -d $PACKAGEDIRECTORY ]] ; then
     rm -rf $PACKAGEDIRECTORY
@@ -108,7 +110,7 @@ fi
 mkdir $PACKAGEDIRECTORY
 
 
-pushd $SCRIPTDIR../../bin/singlenode/
+pushd $SCRIPTDIR/../../bin/singlenode/
 
 if [[ $OS == "Darwin" ]] ; then
     mkbundle -c -o singlenode.c -oo singlenode.a EventStore.SingleNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config /opt/mono/etc/mono/config --machine-config /opt/mono/etc/mono/4.0/machine.config
@@ -123,7 +125,6 @@ cp -r singlenode-web $PACKAGEDIRECTORY/
 cp -r Prelude $PACKAGEDIRECTORY/
 cp -r web-resources $PACKAGEDIRECTORY/
 cp -r Users $PACKAGEDIRECTORY/
-cp singlenode-config.dist.json $PACKAGEDIRECTORY/
 cp libjs1.$soext $PACKAGEDIRECTORY/
 cp libv8.$soext $PACKAGEDIRECTORY/
 cp libicui18n.$soext $PACKAGEDIRECTORY/
@@ -134,13 +135,13 @@ cp $SCRIPTDIR/singlenode.sh $PACKAGEDIRECTORY/run-singlenode.sh
 
 popd
 
-pushd $SCRIPTDIR../../bin/clusternode/
+pushd $SCRIPTDIR/../../bin/clusternode/
 
 if [[ $OS == "Darwin" ]] ; then
-    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
     gcc -o clusternode $ES_COMPILE_FLAGS clusternode.c clusternode.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
 else
-    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
     cc -o clusternode -Wall `pkg-config --cflags monosgen-2` clusternode.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` clusternode.a
 fi
 
@@ -149,7 +150,6 @@ cp -r es-common-web $PACKAGEDIRECTORY/
 cp -r Prelude $PACKAGEDIRECTORY/
 cp -r web-resources $PACKAGEDIRECTORY/
 cp -r Users $PACKAGEDIRECTORY/
-cp clusternode-config.dist.json $PACKAGEDIRECTORY/
 cp libjs1.$soext $PACKAGEDIRECTORY/
 cp libv8.$soext $PACKAGEDIRECTORY/
 cp libicui18n.$soext $PACKAGEDIRECTORY/
@@ -160,10 +160,24 @@ cp $SCRIPTDIR/clusternode.sh $PACKAGEDIRECTORY/run-clusternode.sh
 
 popd
 
+pushd $SCRIPTDIR/../../bin/testclient
+
+if [[ $OS == "Darwin" ]] ; then
+    mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    gcc -o testclient $ES_COMPILE_FLAGS testclient.c testclient.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
+else
+    mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    cc -o testclient -Wall `pkg-config --cflags monosgen-2` testclient.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` testclient.a
+fi
+
+cp testclient $PACKAGEDIRECTORY/
+
+popd
+
+
 pushd $OUTPUTDIR
 
-tar -zcvf $PACKAGEDIRECTORY.tar.gz $PACKAGEDIRECTORY
-
-rm -rf $PACKAGEDIRECTORY
+tar -zcvf $PACKAGENAME.tar.gz $PACKAGENAME
+rm -r $PACKAGEDIRECTORY
 
 popd
