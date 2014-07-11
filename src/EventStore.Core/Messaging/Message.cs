@@ -45,7 +45,7 @@ namespace EventStore.Core.Messaging
             int msgTypeCount = 0;
             foreach (var msgType in 
                 (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                where Attribute.IsDefined(assembly, typeof(MessageContainerAttribute))
+                //where Attribute.IsDefined(assembly, typeof(MessageContainerAttribute))
                 from type in assembly.GetTypes()
                 where rootMsgType.IsAssignableFrom(type)
                 select type))
