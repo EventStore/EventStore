@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.TestClient.Commands
 {

@@ -11,7 +11,6 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Log;
 using EventStore.Core.Services;
-using EventStore.Core.Tests.Helpers;
 using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
 using ILogger = EventStore.Common.Log.ILogger;
 using TcpCommand = EventStore.Core.Services.Transport.Tcp.TcpCommand;

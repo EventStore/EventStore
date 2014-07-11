@@ -35,6 +35,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientApiLoggerBridge.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="ClientOptions.cs" />
     <Compile Include="CommandProcessorContext.cs" />
@@ -89,6 +90,7 @@
     <Compile Include="ConsoleTable.cs" />
     <Compile Include="ICmdProcessor.cs" />
     <Compile Include="PerfUtils.cs" />
+    <Compile Include="PortsHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -104,10 +106,6 @@
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj">
-      <Project>{6bc8929c-ffd0-4ee6-acf8-bdf4a3855af4}</Project>
-      <Name>EventStore.Core.Tests</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
       <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
