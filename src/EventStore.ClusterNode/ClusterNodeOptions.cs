@@ -36,6 +36,9 @@ namespace EventStore.ClusterNode
         public int ExtTcpPort { get; set; }
         [ArgDescription(Opts.ExternalSecureTcpPortDescr, Opts.InterfacesGroup)]
         public int ExtSecureTcpPort { get; set; }
+        [ArgDescription(Opts.TcpTimeoutDescr, Opts.InterfacesGroup)]
+        public int TcpTimeout {get; set;}
+
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
         public bool Force { get; set; }
         [ArgDescription(Opts.ClusterSizeDescr, Opts.ClusterGroup)]
@@ -181,6 +184,8 @@ namespace EventStore.ClusterNode
 
             HttpPrefixes = Opts.HttpPrefixesDefault;
             EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
+
+            TcpTimeout = Opts.TcpTimeoutDefault; 
 
             CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
             CertificateStoreName = Opts.CertificateStoreNameDefault;
