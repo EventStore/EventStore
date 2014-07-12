@@ -119,7 +119,7 @@ namespace EventStore.SingleNode
                                                         TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
                                                         TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
                                                         TimeSpan.FromSeconds(options.StatsPeriodSec),
-                                                        TimeSpan.FromSeconds(options.TcpTimeout),
+                                                        TimeSpan.FromMilliseconds(options.TcpTimeout),
                                                         StatsStorage.StreamAndCsv,
                                                         false,
                                                         options.DisableScavengeMerging);
