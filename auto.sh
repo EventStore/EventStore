@@ -5,7 +5,7 @@ do
       if [ ! -z $(inotifywait --recursive -qre modify --format "%w%f" ./ | grep -v -f includes) ]
           then
 	  sleep .25
-          /opt/mono/bin/xbuild src/EventStore/EventStore.sln /p:Configuration=Debug /verbosity:0 /nologo
+          /opt/mono/bin/xbuild src/EventStore.sln /p:Configuration=Debug /verbosity:0 /nologo
           if [ $? -eq 0 ]
             then
                ./run_tests.sh -m /opt/mono -x LongRunning 
