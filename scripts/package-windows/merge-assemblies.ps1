@@ -1,5 +1,5 @@
 ﻿# Setup and Configuration
-$baseDirectory = Resolve-Path .
+$baseDirectory = Resolve-Path (Join-Path $PSScriptRoot "..\..\")
 $binDirectory = Join-Path $baseDirectory "bin"
 $mergedDirectory = Join-Path $binDirectory "merged"
 $toolsDirectory = Join-Path $baseDirectory "tools"
