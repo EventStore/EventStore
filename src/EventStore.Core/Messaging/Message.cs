@@ -15,11 +15,6 @@ namespace EventStore.Core.Messaging
         public virtual int MsgTypeId { get { return TypeId; } }
     }
 
-    [AttributeUsage(AttributeTargets.Assembly)]
-    public sealed class MessageContainerAttribute : Attribute
-    {
-    }
-
     public static class MessageHierarchy
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(MessageHierarchy));
@@ -45,10 +40,9 @@ namespace EventStore.Core.Messaging
             int msgTypeCount = 0;
             foreach (var msgType in 
                 (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                //where Attribute.IsDefined(assembly, typeof(MessageContainerAttribute))
-                from type in assembly.GetTypes()
-                where rootMsgType.IsAssignableFrom(type)
-                select type))
+                 from type in assembly.GetTypes()
+                 where rootMsgType.IsAssignableFrom(type)
+                 select type))
             {
                 msgTypeCount += 1;
 
