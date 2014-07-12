@@ -23,7 +23,7 @@ $companyName = "Event Store LLP"
 $copyright = "Copyright 2012 Event Store LLP. All rights reserved."
 
 #Dependency Repositories and Directories
-$baseDirectory = Resolve-Path .
+$baseDirectory = Resolve-Path (Join-Path $PSScriptRoot "..\..\")
 $srcDirectory = Join-Path $baseDirectory "src"
 $libsDirectory = Join-Path $srcDirectory "libs"
 
@@ -61,9 +61,8 @@ $libsDirectory = Join-Path $srcDirectory "libs"
 
 #Source scripts
 
-$buildScriptDir = Join-Path $baseDirectory (Join-Path "tools" "powershell")
-. (Join-Path $buildScriptDir "build-functions.ps1")
-Import-Module (Join-Path $buildScriptDir "EnvironmentVars.dll")
+. (Join-Path $PSScriptRoot "build-functions.ps1")
+Import-Module (Join-Path $PSScriptRoot "EnvironmentVars.dll")
 
 #Clean if neccessary
 Function Clean-All() {
