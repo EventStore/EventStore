@@ -193,7 +193,7 @@ namespace EventStore.Core
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
                                                    TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
-                                                   ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
+                                                   ESConsts.ExternalHeartbeatInterval, vNodeSettings.TcpTimeout,
                                                    authenticationProvider, null);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
@@ -204,7 +204,7 @@ namespace EventStore.Core
                 {
                     var extSecTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalSecureTcp, _workersHandler,
                                                           TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
-                                                          ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout,
+                                                          ESConsts.ExternalHeartbeatInterval, vNodeSettings.TcpTimeout,
                                                           authenticationProvider, vNodeSettings.Certificate);
                     _mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
                     _mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);

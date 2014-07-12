@@ -196,7 +196,8 @@ namespace EventStore.ClusterNode
                                             options.AdminOnExt, options.StatsOnExt, options.GossipOnExt,
                                             TimeSpan.FromMilliseconds(options.GossipIntervalMs),
                                             TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs),
-                                            TimeSpan.FromMilliseconds(options.GossipTimeoutMs));
+                                            TimeSpan.FromMilliseconds(options.GossipTimeoutMs),
+                                            TimeSpan.FromMilliseconds(options.TcpTimeout));
         }
 
 	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)

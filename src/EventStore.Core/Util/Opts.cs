@@ -45,6 +45,9 @@ namespace EventStore.Core.Util
         public const string ShowVersionDescr = "Show version.";
         public const bool   ShowVersionDefault = false;
 
+        public const string TcpTimeoutDescr = "Timeout for TCP sockets";
+        public const int TcpTimeoutDefault = 1000;
+
         public const string StatsPeriodDescr = "The number of seconds between statistics gathers.";
         public const int    StatsPeriodDefault = 30;
 

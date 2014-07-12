@@ -27,6 +27,8 @@ namespace EventStore.Core.Settings
 
         public readonly bool SkipInitializeStandardUsersCheck;
 
+        public readonly TimeSpan TcpTimeout;
+
         public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, 
                                    IPEndPoint externalSecureTcpEndPoint,
                                    IPEndPoint externalHttpEndPoint, 
@@ -38,6 +40,7 @@ namespace EventStore.Core.Settings
                                    TimeSpan prepareTimeout,
                                    TimeSpan commitTimeout,
                                    TimeSpan statsPeriod, 
+                                   TimeSpan tcpTimeout,
                                    StatsStorage statsStorage = StatsStorage.StreamAndCsv,
                                    bool skipInitializeStandardUsersCheck = false,
                                    bool disableScavengeMerging = false)
@@ -66,6 +69,7 @@ namespace EventStore.Core.Settings
 
             SkipInitializeStandardUsersCheck = skipInitializeStandardUsersCheck;
             DisableScavengeMerging = disableScavengeMerging;
+            TcpTimeout = tcpTimeout;
         }
 
         public override string ToString()

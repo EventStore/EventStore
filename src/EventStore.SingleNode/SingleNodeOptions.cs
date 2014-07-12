@@ -29,6 +29,9 @@ namespace EventStore.SingleNode
         [ArgDescription(Opts.HttpPortDescr, Opts.InterfacesGroup)]
         public int HttpPort { get; set; }
 
+        [ArgDescription(Opts.TcpTimeoutDescr, Opts.InterfacesGroup)]
+        public int TcpTimeout {get; set;}
+
         [ArgDescription(Opts.StatsPeriodDescr, Opts.AppGroup)]
         public int StatsPeriodSec { get; set; }
 
@@ -106,6 +109,8 @@ namespace EventStore.SingleNode
             CachedChunks = Opts.CachedChunksDefault;
             ChunksCacheSize = Opts.ChunksCacheSizeDefault;
             MinFlushDelayMs = Opts.MinFlushDelayMsDefault;
+
+            TcpTimeout = Opts.TcpTimeoutDefault;
 
             Db = Opts.DbPathDefault;
             MemDb = Opts.InMemDbDefault;
