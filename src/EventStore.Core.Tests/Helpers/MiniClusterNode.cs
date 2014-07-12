@@ -83,7 +83,8 @@ namespace EventStore.Core.Tests.Helpers
                 false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
                 new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, adminOnPublic: true, 
                 statsOnPublic: true, gossipOnPublic: true, gossipInterval : TimeSpan.FromSeconds(1),
-                gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1));
+                gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
+                tcpTimeout: TimeSpan.FromSeconds(10));
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"

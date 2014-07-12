@@ -46,6 +46,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan GossipInterval;
         public readonly TimeSpan GossipAllowedTimeDifference;
         public readonly TimeSpan GossipTimeout;
+        public readonly TimeSpan TcpTimeout;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
@@ -80,7 +81,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool gossipOnPublic,
                                     TimeSpan gossipInterval,
                                     TimeSpan gossipAllowedTimeDifference,
-                                    TimeSpan gossipTimeout)
+                                    TimeSpan gossipTimeout,
+                                    TimeSpan tcpTimeout)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -140,6 +142,7 @@ namespace EventStore.Core.Cluster.Settings
             GossipInterval = gossipInterval;
             GossipAllowedTimeDifference = gossipAllowedTimeDifference;
             GossipTimeout = gossipTimeout;
+            TcpTimeout = tcpTimeout;
         }
 
         public override string ToString()
