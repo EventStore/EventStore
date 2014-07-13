@@ -180,4 +180,9 @@ pushd $OUTPUTDIR
 tar -zcvf $PACKAGENAME.tar.gz $PACKAGENAME
 rm -r $PACKAGEDIRECTORY
 
+[[ -d ../../packages ]] || mkdir -p ../../packages
+mv $PACKAGENAME.tar.gz ../../packages/
+
 popd
+
+rm -r $OUTPUTDIR
