@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BASEDIR=$SCRIPTDIR/../../
+BASEDIR=$SCRIPTDIR/../..
 
 MONO_PATH=/opt/mono/bin/mono
 PROTOC_PATH=$BASEDIR/tools/protoc/protoc
