@@ -44,12 +44,10 @@ namespace EventStore.Web.Playground
         private readonly QueuedHandler _mainQueue;
         private readonly InMemoryBus _mainBus;
 
-        private readonly PlaygroundVNodeController _controller;
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
 
         private readonly InMemoryBus[] _workerBuses;
-        private readonly MultiQueuedHandler _workersHandler;
 
         public PlaygroundVNode(PlaygroundVNodeSettings vNodeSettings)
         {
@@ -57,9 +55,9 @@ namespace EventStore.Web.Playground
             _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
 
             _mainBus = new InMemoryBus("MainBus");
-            _controller = new PlaygroundVNodeController(Bus, _httpEndPoint);
-            _mainQueue = new QueuedHandler(_controller, "MainQueue");
-            _controller.SetMainQueue(MainQueue);
+            var controller = new PlaygroundVNodeController(Bus, _httpEndPoint);
+            _mainQueue = new QueuedHandler(controller, "MainQueue");
+            controller.SetMainQueue(MainQueue);
 
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
@@ -75,16 +73,16 @@ namespace EventStore.Web.Playground
                 new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
                                 watchSlowMsg: true,
                                 slowMsgThreshold: TimeSpan.FromMilliseconds(50))).ToArray();
-            _workersHandler = new MultiQueuedHandler(
-                    vNodeSettings.WorkerThreads,
-                    queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
-                                                            string.Format("Worker #{0}", queueNum + 1),
-                                                            groupName: "Workers",
-                                                            watchSlowMsg: true,
-                                                            slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
+            var workersHandler = new MultiQueuedHandler(
+                vNodeSettings.WorkerThreads,
+                queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
+                    string.Format("Worker #{0}", queueNum + 1),
+                    groupName: "Workers",
+                    watchSlowMsg: true,
+                    slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
 
             // AUTHENTICATION INFRASTRUCTURE
-            var dispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_workersHandler, crossThread: true));
+            var dispatcher = new IODispatcher(_mainBus, new PublishEnvelope(workersHandler, crossThread: true));
             var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
             var internalAuthenticationProvider = new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, 1000);
             var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_mainQueue, dispatcher);
@@ -104,8 +102,8 @@ namespace EventStore.Web.Playground
 
             // TCP
             var tcpService = new TcpService(
-                MainQueue, _tcpEndPoint, _workersHandler, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
-                ESConsts.ExternalHeartbeatInterval, ESConsts.ExternalHeartbeatTimeout, internalAuthenticationProvider, null);
+                MainQueue, _tcpEndPoint, workersHandler, TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), 
+                ESConsts.ExternalHeartbeatInterval, TimeSpan.FromMilliseconds(1000), internalAuthenticationProvider, null);
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
@@ -122,7 +120,7 @@ namespace EventStore.Web.Playground
                 var httpPipe = new HttpMessagePipe();
                 var httpSendService = new HttpSendService(httpPipe, forwardRequests: false);
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
-                _mainBus.Subscribe(new WideningHandler<HttpMessage.SendOverHttp, Message>(_workersHandler));
+                _mainBus.Subscribe(new WideningHandler<HttpMessage.SendOverHttp, Message>(workersHandler));
                 SubscribeWorkers(bus =>
                 {
                     bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
@@ -133,17 +131,17 @@ namespace EventStore.Web.Playground
                 });
 
                 _httpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
-                                               _workersHandler, vNodeSettings.HttpPrefixes);
+                                               workersHandler, vNodeSettings.HttpPrefixes);
 
                 _mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
                 _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_httpService);
                 HttpService.SetupController(new AdminController(_mainQueue));
                 HttpService.SetupController(new PingController());
-                HttpService.SetupController(new StatController(monitoringQueue, _workersHandler));
-                HttpService.SetupController(new AtomController(httpSendService, _mainQueue, _workersHandler));
+                HttpService.SetupController(new StatController(monitoringQueue, workersHandler));
+                HttpService.SetupController(new AtomController(httpSendService, _mainQueue, workersHandler));
                 HttpService.SetupController(new GuidController(_mainQueue));
-                HttpService.SetupController(new UsersController(httpSendService, _mainQueue, _workersHandler));
+                HttpService.SetupController(new UsersController(httpSendService, _mainQueue, workersHandler));
 
                 SubscribeWorkers(bus => HttpService.CreateAndSubscribePipeline(bus, httpAuthenticationProviders));
             }
