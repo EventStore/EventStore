@@ -21,37 +21,31 @@ namespace EventStore.Documentation
                 {
                     var optionConstructor = optionType.GetConstructor(new Type[]{});
                     var options = optionConstructor.Invoke(null);
-                    var optionDocumentation = String.Format("<h3>{0}</h3>", options.GetType().Name);
-                    optionDocumentation += "<table>";
-                    optionDocumentation += @"<tr>
-	                <th>Parameter</th>
-	                <th>Environment *(all prefixed with EVENTSTORE_)*</th>
-	                <th>Json</th>
-	                <th>Description</th>
-	                <th>Default</th>
-                    </tr>";
+                    var optionDocumentation = String.Format("###{0}{1}", options.GetType().Name, Environment.NewLine);
+                    optionDocumentation += String.Format("| Parameter | Environment *(all prefixed with EVENTSTORE_)* | Json | Description | Default |{0}", Environment.NewLine);
+                    optionDocumentation += String.Format("| --------- | --------------------------------------------- | ---- | ----------- | ------- |{0}", Environment.NewLine);
                     var properties = options.GetType().GetProperties();
                     var argumentsDefinition = new CommandLineArgumentsDefinition(optionType);
                     foreach (var property in properties)
                     {
-                        var parameterRow = "<tr>";
+                        var parameterRow = String.Empty;
                         var parameterDefinition = argumentsDefinition.Arguments.First(x => ((PropertyInfo)x.Source).Name == property.Name);
-                        var parameterUsageFormat = "-{0}";
+                        var parameterUsageFormat = "-{0} <br/>";
                         var parameterUsage = String.Empty;
                         foreach (var alias in parameterDefinition.Aliases.Reverse())
                         {
                             parameterUsage += String.Format(parameterUsageFormat, alias);
-                            parameterUsageFormat = "<br/>--{0}=VALUE";
+                            parameterUsageFormat = "--{0}=VALUE";
                         }
-                        parameterRow += String.Format("<td>{0}</td>", parameterUsage);
-                        parameterRow += String.Format("<td>{0}</td>", EnvironmentVariableNameProvider.GetName("EVENTSTORE_", property.Name.ToUpper()));
-                        parameterRow += String.Format("<td>{0}</td>", FirstCharToLower(property.Name));
-                        parameterRow += String.Format("<td>{0}</td>", property.Attr<ArgDescription>().Description);
-                        parameterRow += String.Format("<td>{0}</td>", GetValues(property.GetValue(options)));
-                        parameterRow += "</tr>";
+                        parameterRow += String.Format("|{0}", parameterUsage);
+                        parameterRow += String.Format("|{0}", EnvironmentVariableNameProvider.GetName("EVENTSTORE_", property.Name.ToUpper()));
+                        parameterRow += String.Format("|{0}", FirstCharToLower(property.Name));
+                        parameterRow += String.Format("|{0}", property.Attr<ArgDescription>().Description);
+                        parameterRow += String.Format("|{0}|{1}", GetValues(property.GetValue(options)), Environment.NewLine);
+
                         optionDocumentation += parameterRow;
                     }
-                    optionDocumentation += "</table>";
+                    optionDocumentation += Environment.NewLine;
                     documentation += optionDocumentation;
                 }
             }
