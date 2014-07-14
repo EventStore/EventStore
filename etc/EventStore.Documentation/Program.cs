@@ -22,7 +22,7 @@ namespace EventStore.Documentation
                     var optionConstructor = optionType.GetConstructor(new Type[]{});
                     var options = optionConstructor.Invoke(null);
                     var optionDocumentation = String.Format("###{0}{1}", options.GetType().Name, Environment.NewLine);
-                    optionDocumentation += String.Format("| Parameter | Environment *(all prefixed with EVENTSTORE_)* | Json | Description | Default |{0}", Environment.NewLine);
+                    optionDocumentation += String.Format("| Parameter | Environment *(all prefixed with EVENTSTORE_)* | Yaml | Description | Default |{0}", Environment.NewLine);
                     optionDocumentation += String.Format("| --------- | --------------------------------------------- | ---- | ----------- | ------- |{0}", Environment.NewLine);
                     var properties = options.GetType().GetProperties();
                     var argumentsDefinition = new CommandLineArgumentsDefinition(optionType);
@@ -39,7 +39,7 @@ namespace EventStore.Documentation
                         }
                         parameterRow += String.Format("|{0}", parameterUsage);
                         parameterRow += String.Format("|{0}", EnvironmentVariableNameProvider.GetName("EVENTSTORE_", property.Name.ToUpper()));
-                        parameterRow += String.Format("|{0}", FirstCharToLower(property.Name));
+                        parameterRow += String.Format("|{0}", property.Name);
                         parameterRow += String.Format("|{0}", property.Attr<ArgDescription>().Description);
                         parameterRow += String.Format("|{0}|{1}", GetValues(property.GetValue(options)), Environment.NewLine);
 
