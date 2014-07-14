@@ -158,6 +158,7 @@ namespace EventStore.Core.Services.Transport.Http
                 var richEntry = new RichEntryElement();
                 entry = richEntry;
 
+                richEntry.EventId = evnt.EventId;
                 richEntry.EventType = evnt.EventType;
                 richEntry.EventNumber = evnt.EventNumber;
                 richEntry.StreamId = evnt.EventStreamId;
