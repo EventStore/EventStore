@@ -240,6 +240,7 @@ namespace EventStore.Transport.Http.Atom
 
     public class RichEntryElement : EntryElement
     {
+        public Guid EventId { get; set; }
         public string EventType { get; set; }
         public int EventNumber { get; set; }
         public string Data { get; set; }
