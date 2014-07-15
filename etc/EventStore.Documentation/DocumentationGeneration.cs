@@ -29,7 +29,7 @@ namespace EventStore.Documentation
             }
             catch (Exception ex)
             {
-                Console.Error.Write(ex.Message);
+                Console.Error.WriteLine(ex.Message);
             }
             return 1;
         }
