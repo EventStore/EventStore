@@ -62,7 +62,7 @@ namespace EventStore.Documentation
                             parameterRow += String.Format("|{0}", EnvironmentVariableNameProvider.GetName("EVENTSTORE_", property.Name.ToUpper()));
                             parameterRow += String.Format("|{0}", property.Name);
                             parameterRow += String.Format("|{0}", property.Attr<ArgDescription>().Description);
-                            parameterRow += String.Format("|{0}|{1}", GetValues(property.GetValue(options)), Environment.NewLine);
+                            parameterRow += String.Format("|{0}|{1}", GetValues(property.GetValue(options, null)), Environment.NewLine);
 
                             optionDocumentation += parameterRow;
                         }
