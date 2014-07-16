@@ -17,6 +17,9 @@ Param(
     [string]$Defines = ""
 )
 
+#Make compatible with Powershell 2
+if(!$PSScriptRoot) { $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent }
+
 #Configuration
 $productName = "Event Store Open Source"
 $companyName = "Event Store LLP"
