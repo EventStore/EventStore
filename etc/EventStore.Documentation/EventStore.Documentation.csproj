@@ -32,24 +32,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.ClusterNode">
-      <HintPath>..\..\bin\eventstore\release\anycpu\EventStore.ClusterNode.exe</HintPath>
-    </Reference>
     <Reference Include="EventStore.Common">
-      <HintPath>..\..\bin\eventstore\release\anycpu\EventStore.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="EventStore.SingleNode">
-      <HintPath>..\..\bin\eventstore\release\anycpu\EventStore.SingleNode.exe</HintPath>
+      <HintPath>..\..\bin\intermediate\EventStore.Common.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="DocumentationGeneration.cs" />
+    <Compile Include="DocumentGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
