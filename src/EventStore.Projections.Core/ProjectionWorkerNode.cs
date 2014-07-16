@@ -96,6 +96,7 @@ namespace EventStore.Projections.Core
 
         public void SetupMessaging(IBus coreInputBus)
         {
+
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
@@ -109,7 +110,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionMeasured>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingProgress>());
-
+            
             coreInputBus.Subscribe(_feedReaderService);
 
             if (_runProjections >= ProjectionType.System)
@@ -143,6 +144,28 @@ namespace EventStore.Projections.Core
                 coreInputBus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_projectionCoreService);
                 coreInputBus.Subscribe<CoreProjectionProcessingMessage.Failed>(_projectionCoreService);
                 //NOTE: message forwarding is set up outside (for Read/Write events)
+
+                coreInputBus.Subscribe<CoreProjectionStatusMessage.Faulted>(_coreResponseWriter);
+                coreInputBus.Subscribe<CoreProjectionStatusMessage.Prepared>(_coreResponseWriter);
+                coreInputBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_coreResponseWriter);
+                coreInputBus.Subscribe<CoreProjectionStatusMessage.Started>(_coreResponseWriter);
+                coreInputBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_coreResponseWriter);
+                coreInputBus.Subscribe<CoreProjectionStatusMessage.Stopped>(_coreResponseWriter);
+                coreInputBus.Subscribe<CoreProjectionStatusMessage.StateReport>(_coreResponseWriter);
+                coreInputBus.Subscribe<CoreProjectionStatusMessage.ResultReport>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.Abort>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.Delete>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.Disable>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.Enable>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetResult>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetState>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.Post>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_coreResponseWriter);
+                coreInputBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_coreResponseWriter);
             }
 
             coreInputBus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_eventReaderCoreService);
@@ -163,29 +186,6 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionMeasured>(_eventReaderCoreService);
             coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_eventReaderCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)
-
-            coreInputBus.Subscribe<CoreProjectionStatusMessage.Faulted>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionStatusMessage.Prepared>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionStatusMessage.Started>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionStatusMessage.Stopped>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionStatusMessage.StateReport>(_coreResponseWriter);
-            coreInputBus.Subscribe<CoreProjectionStatusMessage.ResultReport>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Abort>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Delete>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Disable>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Enable>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetResult>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetState>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Post>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_coreResponseWriter);
-            coreInputBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_coreResponseWriter);
-
         }
     }
 }
