@@ -16,6 +16,7 @@ ipch/
 *.DotSettings
 *.DotSettings.user
 *.DotSettings.personal/Logs
+*.md
 /Data
 /src/Public/v8/
 /src/Public/ipch/

@@ -19,6 +19,7 @@ namespace EventStore.Documentation
             {
                 if (!Directory.Exists(eventStoreBinaryPath))
                 {
+                    Console.WriteLine("The path <{0}> does not exist", eventStoreBinaryPath);
                     continue;
                 }
                 foreach (var assemblyFilePath in new DirectoryInfo(eventStoreBinaryPath).GetFiles().Where(x => x.Name.Contains("EventStore") && x.Name.EndsWith("exe")))
@@ -36,7 +37,7 @@ namespace EventStore.Documentation
                         var properties = options.GetType().GetProperties();
                         var argumentsDefinition = new CommandLineArgumentsDefinition(optionType);
                         var currentGroup = String.Empty;
-                        foreach (var property in properties.OrderBy(x=>x.Attr<ArgDescription>().Group))
+                        foreach (var property in properties.OrderBy(x => x.Attr<ArgDescription>().Group))
                         {
                             var parameterRow = String.Empty;
                             var groupColumn = "|";
@@ -70,7 +71,15 @@ namespace EventStore.Documentation
                         documentation += optionDocumentation;
                     }
                 }
-                File.WriteAllText(outputPath, documentation);
+                if (!String.IsNullOrEmpty(documentation))
+                {
+                    Console.WriteLine("Writing generated document to {0}", outputPath);
+                    File.WriteAllText(outputPath, documentation);
+                }
+                else
+                {
+                    Console.Error.WriteLine("The generated document is empty, please ensure that the event store binary paths that you supplied are correct.");
+                }
             }
         }
         public static string GetValues(object value)
