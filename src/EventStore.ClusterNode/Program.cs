@@ -56,6 +56,8 @@ namespace EventStore.ClusterNode
                                 string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-Node{1}", _startupTimeStamp, nodePort));
         }
 
+
+
         protected override void Create(ClusterNodeOptions opts)
         {
             var dbPath = Path.GetFullPath(ResolveDbPath(opts.Db, opts.ExtHttpPort));
@@ -145,6 +147,7 @@ namespace EventStore.ClusterNode
 
         private static int GetQuorumSize(int clusterSize)
         {
+            if(clusterSize == 1) return 1;
             return clusterSize/2 + 1;
         }
 
@@ -169,6 +172,7 @@ namespace EventStore.ClusterNode
             var extSecTcp = options.ExtSecureTcpPort > 0 ? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort) : null;
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
             var quorumSize = GetQuorumSize(options.ClusterSize);
+            
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);

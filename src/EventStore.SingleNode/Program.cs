@@ -125,7 +125,6 @@ namespace EventStore.SingleNode
                                                         options.DisableScavengeMerging);
             return vnodeSettings;
         }
-
         protected override void Start()
         {
             _node.Start();
