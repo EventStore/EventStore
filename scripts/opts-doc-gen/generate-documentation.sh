@@ -4,7 +4,7 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASEDIR=$SCRIPTDIR/../..
 
 MONO_PATH=/opt/mono/bin/mono
-DOCUMENTATIONOUTPUT_PATH=$BASEDIR/tools/documentation-generation/documentation.md
+DOCUMENTATIONOUTPUT_PATH=$SCRIPTDIR/documentation.md
 DOCUMENTATIONGEN_PATH=$BASEDIR/tools/documentation-generation/EventStore.Documentation.exe
 
 EVENTSTORESINGLENODE_PATH=$BASEDIR/bin/singlenode

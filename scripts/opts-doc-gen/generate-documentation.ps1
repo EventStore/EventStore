@@ -2,7 +2,7 @@
 $baseDirectory = Resolve-Path (Join-Path $PSScriptRoot "..\..\")
 $srcDirectory = Join-Path $baseDirectory "src"
 $toolsDirectory = Join-Path $baseDirectory "tools"
-$documentationOutputPath = Join-Path $toolsDirectory (Join-Path "documentation-generation" "documentation.md")
+$documentationOutputPath = Join-Path $PSScriptRoot "documentation.md"
 $documentationGenPath = Join-Path $toolsDirectory (Join-Path "documentation-generation" "EventStore.Documentation.exe")
 
 try {
