@@ -110,7 +110,7 @@ namespace EventStore.ClientAPI
                             if (response.HttpStatusCode == expectedCode)
                                 source.SetResult(response.Body);
                             else if (noResultCode.HasValue && noResultCode.Value == response.HttpStatusCode)
- +                                source.SetResult(null);
+                                 source.SetResult(null);
                             else
                                 source.SetException(new ProjectionCommandFailedException(
                                                             string.Format("Server returned {0} ({1}) for GET on {2}",
