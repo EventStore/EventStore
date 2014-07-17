@@ -14,6 +14,8 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
+using EventStore.Core.Services.Gossip;
+using EventStore.Core.Cluster.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -38,7 +40,7 @@ namespace EventStore.Core.Tests.Helpers
         public IPEndPoint TcpSecEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
 
-        public readonly SingleVNode Node;
+        public readonly ClusterVNode Node;
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
 
@@ -69,8 +71,43 @@ namespace EventStore.Core.Tests.Helpers
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
-
-            var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint,
+            var vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
+                                                         0,
+                                                         null,
+                                                         null,
+                                                         TcpEndPoint,
+                                                         TcpSecEndPoint,
+                                                         null,
+                                                         HttpEndPoint,
+                                                         new [] {HttpEndPoint.ToHttpUrl()},
+                                                         enableTrustedAuth,
+                                                         ssl_connections.GetCertificate(),
+                                                         1,
+                                                         false,
+                                                         "whatever",
+                                                         new IPEndPoint[] {},
+                                                         TFConsts.MinFlushDelayMs,
+                                                         1,
+                                                         1,
+                                                         1,
+                                                         TimeSpan.FromSeconds(2),
+                                                         TimeSpan.FromSeconds(2),
+                                                         false,
+                                                         "",
+                                                         false,
+                                                         TimeSpan.FromHours(1),
+                                                         StatsStorage.None,
+                                                         1,
+                                                         null,
+                                                         true,
+                                                         true,
+                                                         true,
+                                                         false,
+                                                         TimeSpan.FromSeconds(30),
+                                                         TimeSpan.FromSeconds(30),
+                                                         TimeSpan.FromSeconds(10),
+                                                         TimeSpan.FromSeconds(10));
+ /*           var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint,
                                                               TcpSecEndPoint,
                                                               HttpEndPoint,
                                                               new[] { HttpEndPoint.ToHttpUrl() },
@@ -78,13 +115,16 @@ namespace EventStore.Core.Tests.Helpers
                                                               ssl_connections.GetCertificate(),
                                                               1,
                                                               TFConsts.MinFlushDelayMs,
+                                                              1,
+                                                              1,
+                                                              1,
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromHours(1),
                                                               TimeSpan.FromSeconds(10),
                                                               StatsStorage.None,
                                                               skipInitializeStandardUsersCheck: skipInitializeStandardUsersCheck );
-
+*/
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
@@ -101,9 +141,14 @@ namespace EventStore.Core.Tests.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
+            Node = new ClusterVNode(Db,
+                                    vNodeSettings,         
+                                   new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}),
+                                   false,
+                                   memTableSize,
+                                   subsystems : subsystems);
 
-            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: memTableSize, subsystems: subsystems);
-            Node.HttpService.SetupController(new TestController(Node.MainQueue));
+            Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
 
         public void Start()
@@ -129,7 +174,7 @@ namespace EventStore.Core.Tests.Helpers
             var shutdownEvent = new ManualResetEventSlim(false);
             Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
 
-            Node.Stop(exitProcess: true);
+            Node.Stop();
 
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
