@@ -10,6 +10,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Authentication;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Http;
@@ -39,7 +40,9 @@ namespace EventStore.Core.Tests.Helpers
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint TcpSecEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
-
+        public IPEndPoint IntTcpEndPoint { get; private set;}
+        public IPEndPoint IntSecTcpEndPoint { get; private set; }
+        public IPEndPoint IntHttpEndPoint { get; private set; }
         public readonly ClusterVNode Node;
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
@@ -62,7 +65,9 @@ namespace EventStore.Core.Tests.Helpers
             int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
             int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
             int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
-
+            int intTcpPort = PortsHelper.GetAvailablePort(ip);
+            int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
+            int intHttpPort = PortsHelper.GetAvailablePort(ip);
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
@@ -71,13 +76,16 @@ namespace EventStore.Core.Tests.Helpers
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
+            IntTcpEndPoint = new IPEndPoint(ip,intTcpPort);
+            IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
+            IntHttpEndPoint = new IPEndPoint(ip, intHttpPort);
             var vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
                                                          0,
-                                                         null,
-                                                         null,
+                                                         IntTcpEndPoint,
+                                                         IntSecTcpEndPoint,
                                                          TcpEndPoint,
                                                          TcpSecEndPoint,
-                                                         null,
+                                                         IntHttpEndPoint,
                                                          HttpEndPoint,
                                                          new [] {HttpEndPoint.ToHttpUrl()},
                                                          enableTrustedAuth,
@@ -98,7 +106,7 @@ namespace EventStore.Core.Tests.Helpers
                                                          TimeSpan.FromHours(1),
                                                          StatsStorage.None,
                                                          1,
-                                                         null,
+                                                         new InternalAuthenticationProviderFactory(),
                                                          true,
                                                          true,
                                                          true,
@@ -184,6 +192,9 @@ namespace EventStore.Core.Tests.Helpers
                 PortsHelper.ReturnPort(TcpEndPoint.Port);
                 PortsHelper.ReturnPort(TcpSecEndPoint.Port);
                 PortsHelper.ReturnPort(HttpEndPoint.Port);
+                PortsHelper.ReturnPort(IntHttpEndPoint.Port);
+                PortsHelper.ReturnPort(IntTcpEndPoint.Port);
+                PortsHelper.ReturnPort(IntSecTcpEndPoint.Port);
             }
             
             if (!keepDb)
