@@ -268,6 +268,16 @@ namespace EventStore.ClientAPI
                 Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
+
+        //TODO COMPETING DOCUMENTATION
+        EventStorePersistentSubscription ConnectToPersistentSubscription(
+            string subscriptionId, 
+            string stream, 
+            bool resolveLinkTos,
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int? bufferSize = null);
         
         /// <summary>
         /// Subscribes to a all events. Existing events from lastCheckpoint

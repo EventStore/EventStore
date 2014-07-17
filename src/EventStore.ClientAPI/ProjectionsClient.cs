@@ -99,7 +99,7 @@ namespace EventStore.ClientAPI
             return SendDelete(endPoint.ToHttpUrl("/projection/{0}", name), userCredentials, HttpStatusCode.OK);
         }
 
-        private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
+        private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode, int? noResultCode = null)
         {
             var source = new TaskCompletionSource<string>();
             _client.Get(url,
@@ -109,6 +109,8 @@ namespace EventStore.ClientAPI
                         {
                             if (response.HttpStatusCode == expectedCode)
                                 source.SetResult(response.Body);
+                            else if (noResultCode.HasValue && noResultCode.Value == response.HttpStatusCode)
+ +                                source.SetResult(null);
                             else
                                 source.SetException(new ProjectionCommandFailedException(
                                                             string.Format("Server returned {0} ({1}) for GET on {2}",
