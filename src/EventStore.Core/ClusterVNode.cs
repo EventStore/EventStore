@@ -19,6 +19,7 @@ using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
+using EventStore.Core.Helpers;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
@@ -29,6 +30,7 @@ using EventStore.Core.Services.VNode;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.Core
 {
@@ -382,6 +384,31 @@ namespace EventStore.Core
             subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
             subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
             subscrBus.Subscribe<StorageMessage.EventCommitted>(subscription);
+
+
+            // PERSISTENT SUBSCRIPTIONS
+            // IO DISPATCHER
+            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
+            _mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+            _mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
+            _mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
+            _mainBus.Subscribe(ioDispatcher);
+            var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
+            var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscription, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNotifyEventsProcessed, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
+  
+            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher);
+            perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
+            perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>(persistentSubscription);
+            perSubscrBus.Subscribe<StorageMessage.EventCommitted>(persistentSubscription);
 
             // TIMER
             _timeProvider = new RealTimeProvider();
