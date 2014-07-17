@@ -183,7 +183,7 @@ namespace EventStore.Core.Util
         public const int    ExternalSecureTcpPortDefault = 0;
 
 		public const string ClusterSizeDescr = "The number of nodes in the cluster.";
-        public const int    ClusterSizeDefault = 3;
+        public const int    ClusterSizeDefault = 1;
 
         public const string CommitCountDescr = "The number of nodes which must acknowledge commits before acknowledging to a client.";
         public const int    CommitCountDefault = -1;
