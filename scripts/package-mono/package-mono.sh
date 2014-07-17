@@ -110,31 +110,6 @@ fi
 mkdir $PACKAGEDIRECTORY
 
 
-pushd $SCRIPTDIR/../../bin/singlenode/
-
-if [[ $OS == "Darwin" ]] ; then
-    mkbundle -c -o singlenode.c -oo singlenode.a EventStore.SingleNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config /opt/mono/etc/mono/config --machine-config /opt/mono/etc/mono/4.0/machine.config
-    gcc -o singlenode $ES_COMPILE_FLAGS singlenode.c singlenode.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
-else
-    mkbundle -c -o singlenode.c -oo singlenode.a EventStore.SingleNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.SingleNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
-    cc -o singlenode -Wall `pkg-config --cflags monosgen-2` singlenode.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` singlenode.a
-fi
-
-cp -r es-common-web $PACKAGEDIRECTORY/
-cp -r singlenode-web $PACKAGEDIRECTORY/
-cp -r Prelude $PACKAGEDIRECTORY/
-cp -r web-resources $PACKAGEDIRECTORY/
-cp -r Users $PACKAGEDIRECTORY/
-cp libjs1.$soext $PACKAGEDIRECTORY/
-cp libv8.$soext $PACKAGEDIRECTORY/
-cp libicui18n.$soext $PACKAGEDIRECTORY/
-cp libicuuc.$soext $PACKAGEDIRECTORY/
-cp singlenode $PACKAGEDIRECTORY/
-cp NLog.config $PACKAGEDIRECTORY/
-cp $SCRIPTDIR/singlenode.sh $PACKAGEDIRECTORY/run-singlenode.sh
-
-popd
-
 pushd $SCRIPTDIR/../../bin/clusternode/
 
 if [[ $OS == "Darwin" ]] ; then
@@ -156,7 +131,7 @@ cp libicui18n.$soext $PACKAGEDIRECTORY/
 cp libicuuc.$soext $PACKAGEDIRECTORY/
 cp clusternode $PACKAGEDIRECTORY/
 cp NLog.config $PACKAGEDIRECTORY/
-cp $SCRIPTDIR/clusternode.sh $PACKAGEDIRECTORY/run-clusternode.sh
+cp $SCRIPTDIR/run-node.sh $PACKAGEDIRECTORY/run-node.sh
 
 popd
 

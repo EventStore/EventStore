@@ -8,10 +8,9 @@ $documentationGenPath = Join-Path $toolsDirectory (Join-Path "documentation-gene
 try {
     Push-Location $baseDirectory
 
-    $eventStoreSingleNodePath = Join-Path $baseDirectory "bin\singlenode"
     $eventStoreClusterNodePath = Join-Path $baseDirectory "bin\clusternode"
 
-    Start-Process -NoNewWindow -Wait -FilePath $documentationGenPath -ArgumentList @("-b $eventStoreSingleNodePath,$eventStoreClusterNodePath -o $documentationOutputPath")
+    Start-Process -NoNewWindow -Wait -FilePath $documentationGenPath -ArgumentList @("-b $eventStoreClusterNodePath -o $documentationOutputPath")
 
 } finally {
     Pop-Location

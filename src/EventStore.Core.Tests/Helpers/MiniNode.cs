@@ -10,10 +10,13 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Authentication;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
+using EventStore.Core.Services.Gossip;
+using EventStore.Core.Cluster.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -37,8 +40,10 @@ namespace EventStore.Core.Tests.Helpers
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint TcpSecEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
-
-        public readonly SingleVNode Node;
+        public IPEndPoint IntTcpEndPoint { get; private set;}
+        public IPEndPoint IntSecTcpEndPoint { get; private set; }
+        public IPEndPoint IntHttpEndPoint { get; private set; }
+        public readonly ClusterVNode Node;
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
 
@@ -60,7 +65,9 @@ namespace EventStore.Core.Tests.Helpers
             int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
             int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
             int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
-
+            int intTcpPort = PortsHelper.GetAvailablePort(ip);
+            int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
+            int intHttpPort = PortsHelper.GetAvailablePort(ip);
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
             Directory.CreateDirectory(_dbPath);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
@@ -69,8 +76,46 @@ namespace EventStore.Core.Tests.Helpers
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
-
-            var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint,
+            IntTcpEndPoint = new IPEndPoint(ip,intTcpPort);
+            IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
+            IntHttpEndPoint = new IPEndPoint(ip, intHttpPort);
+            var vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
+                                                         0,
+                                                         IntTcpEndPoint,
+                                                         IntSecTcpEndPoint,
+                                                         TcpEndPoint,
+                                                         TcpSecEndPoint,
+                                                         IntHttpEndPoint,
+                                                         HttpEndPoint,
+                                                         new [] {HttpEndPoint.ToHttpUrl()},
+                                                         enableTrustedAuth,
+                                                         ssl_connections.GetCertificate(),
+                                                         1,
+                                                         false,
+                                                         "whatever",
+                                                         new IPEndPoint[] {},
+                                                         TFConsts.MinFlushDelayMs,
+                                                         1,
+                                                         1,
+                                                         1,
+                                                         TimeSpan.FromSeconds(2),
+                                                         TimeSpan.FromSeconds(2),
+                                                         false,
+                                                         "",
+                                                         false,
+                                                         TimeSpan.FromHours(1),
+                                                         StatsStorage.None,
+                                                         1,
+                                                         new InternalAuthenticationProviderFactory(),
+                                                         true,
+                                                         true,
+                                                         true,
+                                                         false,
+                                                         TimeSpan.FromSeconds(30),
+                                                         TimeSpan.FromSeconds(30),
+                                                         TimeSpan.FromSeconds(10),
+                                                         TimeSpan.FromSeconds(10));
+ /*           var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint,
                                                               TcpSecEndPoint,
                                                               HttpEndPoint,
                                                               new[] { HttpEndPoint.ToHttpUrl() },
@@ -78,13 +123,16 @@ namespace EventStore.Core.Tests.Helpers
                                                               ssl_connections.GetCertificate(),
                                                               1,
                                                               TFConsts.MinFlushDelayMs,
+                                                              1,
+                                                              1,
+                                                              1,
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromHours(1),
                                                               TimeSpan.FromSeconds(10),
                                                               StatsStorage.None,
                                                               skipInitializeStandardUsersCheck: skipInitializeStandardUsersCheck );
-
+*/
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
@@ -101,9 +149,14 @@ namespace EventStore.Core.Tests.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
+            Node = new ClusterVNode(Db,
+                                    vNodeSettings,         
+                                   new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}),
+                                   false,
+                                   memTableSize,
+                                   subsystems : subsystems);
 
-            Node = new SingleVNode(Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: memTableSize, subsystems: subsystems);
-            Node.HttpService.SetupController(new TestController(Node.MainQueue));
+            Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
 
         public void Start()
@@ -129,16 +182,19 @@ namespace EventStore.Core.Tests.Helpers
             var shutdownEvent = new ManualResetEventSlim(false);
             Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
 
-            Node.Stop(exitProcess: true);
+            Node.Stop();
 
             if (!shutdownEvent.Wait(20000))
-                throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
+                throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
             
             if (!keepPorts)
             {
                 PortsHelper.ReturnPort(TcpEndPoint.Port);
                 PortsHelper.ReturnPort(TcpSecEndPoint.Port);
                 PortsHelper.ReturnPort(HttpEndPoint.Port);
+                PortsHelper.ReturnPort(IntHttpEndPoint.Port);
+                PortsHelper.ReturnPort(IntTcpEndPoint.Port);
+                PortsHelper.ReturnPort(IntSecTcpEndPoint.Port);
             }
             
             if (!keepDb)

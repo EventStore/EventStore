@@ -183,13 +183,13 @@ namespace EventStore.Core.Util
         public const int    ExternalSecureTcpPortDefault = 0;
 
 		public const string ClusterSizeDescr = "The number of nodes in the cluster.";
-        public const int    ClusterSizeDefault = 3;
+        public const int    ClusterSizeDefault = 1;
 
         public const string CommitCountDescr = "The number of nodes which must acknowledge commits before acknowledging to a client.";
-        public const int    CommitCountDefault = 2;
+        public const int    CommitCountDefault = -1;
 
         public const string PrepareCountDescr = "The number of nodes which must acknowledge prepares.";	
-        public const int    PrepareCountDefault = 2;
+        public const int    PrepareCountDefault = -1;
 
         public const string InternalManagerIpDescr = null;
         public static readonly IPAddress InternalManagerIpDefault = IPAddress.Loopback;

@@ -70,6 +70,7 @@ namespace EventStore.Core
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
             Ensure.NotNull(gossipSeedSource, "gossipSeedSource");
 
+            var isSingleNode = vNodeSettings.ClusterNodeCount == 1;
             _nodeInfo = vNodeSettings.NodeInfo;
             _mainBus = new InMemoryBus("MainBus");
 
@@ -210,28 +211,29 @@ namespace EventStore.Core
                     _mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
                     _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extSecTcpService);
                 }
-
+                if(!isSingleNode) {
                 // INTERNAL TCP
-                var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
-                                                   TcpServiceType.Internal, TcpSecurityType.Normal,
-                                                   new InternalTcpDispatcher(),
-                                                   ESConsts.InternalHeartbeatInterval, ESConsts.InternalHeartbeatTimeout,
-                                                   authenticationProvider, null);
-                _mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
-                _mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
-                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
+                    var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
+                                                      TcpServiceType.Internal, TcpSecurityType.Normal,
+                                                    new InternalTcpDispatcher(),
+                                                    ESConsts.InternalHeartbeatInterval, ESConsts.InternalHeartbeatTimeout,
+                                                    authenticationProvider, null);
+                    _mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
+                    _mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
+                    _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
 
                 // INTERNAL SECURE TCP
-                if (_nodeInfo.InternalSecureTcp != null)
-                {
-                    var intSecTcpService = new TcpService(_mainQueue, _nodeInfo.InternalSecureTcp, _workersHandler,
-                                                           TcpServiceType.Internal, TcpSecurityType.Secure,
-                                                           new InternalTcpDispatcher(),
-                                                           ESConsts.InternalHeartbeatInterval, ESConsts.InternalHeartbeatTimeout,
-                                                           authenticationProvider, vNodeSettings.Certificate);
-                    _mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
-                    _mainBus.Subscribe<SystemMessage.SystemStart>(intSecTcpService);
-                    _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intSecTcpService);
+                    if (_nodeInfo.InternalSecureTcp != null)
+                    {
+                        var intSecTcpService = new TcpService(_mainQueue, _nodeInfo.InternalSecureTcp, _workersHandler,
+                                                            TcpServiceType.Internal, TcpSecurityType.Secure,
+                                                            new InternalTcpDispatcher(),
+                                                            ESConsts.InternalHeartbeatInterval, ESConsts.InternalHeartbeatTimeout,
+                                                            authenticationProvider, vNodeSettings.Certificate);
+                        _mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
+                        _mainBus.Subscribe<SystemMessage.SystemStart>(intSecTcpService);
+                        _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intSecTcpService);
+                    }
                 }
             }
 
@@ -290,23 +292,24 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
-
             // INTERNAL HTTP
-            _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
-                                                    _workersHandler, _nodeInfo.InternalHttp.ToHttpUrl());
-            _internalHttpService.SetupController(adminController);
-            _internalHttpService.SetupController(pingController);
-            _internalHttpService.SetupController(statController);
-            _internalHttpService.SetupController(atomController);
-            _internalHttpService.SetupController(gossipController);
-            _internalHttpService.SetupController(electController);
-
+            if(!isSingleNode) {
+                _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
+                                                       _workersHandler, _nodeInfo.InternalHttp.ToHttpUrl());
+                _internalHttpService.SetupController(adminController);
+                _internalHttpService.SetupController(pingController);
+                _internalHttpService.SetupController(statController);
+                _internalHttpService.SetupController(atomController);
+                _internalHttpService.SetupController(gossipController);
+                _internalHttpService.SetupController(electController);
+            }
 			// Authentication plugin HTTP
 	        vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, _internalHttpService, httpSendService, _mainQueue, _workersHandler);
-
-            _mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
-            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
-            _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
+            if(_internalHttpService != null) {
+                _mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
+                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
+                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
+            }
 
             SubscribeWorkers(bus =>
             {
@@ -373,46 +376,47 @@ namespace EventStore.Core
             _timerService = new TimerService(new ThreadBasedScheduler(_timeProvider));
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
             _mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
-
+            if(!isSingleNode) {
             // MASTER REPLICATION
-            var masterReplicationService = new MasterReplicationService(_mainQueue, _nodeInfo.InstanceId, db, _workersHandler,
+                var masterReplicationService = new MasterReplicationService(_mainQueue, _nodeInfo.InstanceId, db, _workersHandler,
                                                                         epochManager, vNodeSettings.ClusterNodeCount);
-            _mainBus.Subscribe<SystemMessage.SystemStart>(masterReplicationService);
-            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
-            _mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
-            _mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
+                _mainBus.Subscribe<SystemMessage.SystemStart>(masterReplicationService);
+                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
+                _mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
+                _mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
 
-            // REPLICA REPLICATION
-            var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, authenticationProvider,
+                // REPLICA REPLICATION
+                var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, authenticationProvider,
                                                     _nodeInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer);
-            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
-            _mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
-            _mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
-            _mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
-            _mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
-            _mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
-            _mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
+                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
+                _mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
+                _mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
+                _mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
+                _mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
+                _mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
+                _mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
+            }
 
             // ELECTIONS
             var electionsService = new ElectionsService(_mainQueue, _nodeInfo, vNodeSettings.ClusterNodeCount,
                                                         db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
                                                         epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
             electionsService.SubscribeMessages(_mainBus);
-
+            if(!isSingleNode) {
             // GOSSIP
-            var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, _nodeInfo, db.Config.WriterCheckpoint,
-											   db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastCommitPosition,
-                                               vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference);
-            _mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
-            _mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
-            _mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
-            _mainBus.Subscribe<GossipMessage.Gossip>(gossip);
-            _mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
-            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
-            _mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
-            _mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
-            _mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
-
+                var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, _nodeInfo, db.Config.WriterCheckpoint,
+			    								   db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastCommitPosition,
+                                                   vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference);
+                _mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
+                _mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
+                _mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
+                _mainBus.Subscribe<GossipMessage.Gossip>(gossip);
+                _mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
+                _mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
+                _mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
+                _mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
+                _mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
+            }
             _workersHandler.Start();
             _mainQueue.Start();
             monitoringQueue.Start();
@@ -422,7 +426,8 @@ namespace EventStore.Core
             {
                 foreach (var subsystem in subsystems)
                 {
-                    subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, new[] { _internalHttpService, _externalHttpService }, _workersHandler));
+                    var http = isSingleNode ? new [] {_externalHttpService} : new [] {_internalHttpService, _externalHttpService};
+                    subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, http, _workersHandler));
                 }
             }
         }

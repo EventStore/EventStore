@@ -10,32 +10,27 @@ using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    public class ClusterWebUIController : CommunicationController
+    public class ClusterWebUiController : CommunicationController
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterWebUIController>();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterWebUiController>();
 
         private readonly NodeSubsystems[] _enabledNodeSubsystems;
 
-        private readonly MiniWeb _commonWeb;
+        //private readonly MiniWeb _commonWeb;
         private readonly MiniWeb _clusterNodeWeb;
 
-        public ClusterWebUIController(IPublisher publisher, NodeSubsystems[] enabledNodeSubsystems)
+        public ClusterWebUiController(IPublisher publisher, NodeSubsystems[] enabledNodeSubsystems)
             : base(publisher)
         {
             _enabledNodeSubsystems = enabledNodeSubsystems;
         
-            string commonFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
-            //string clusterNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("../../../Cluster/src/EventStore.ClusterNode.Web");
-            string clusterNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory();
-
-            _clusterNodeWeb = new MiniWeb("/web", Path.Combine(clusterNodeFSRoot, @"clusternode-web"));
-            _commonWeb = new MiniWeb("/web/es", Path.Combine(commonFSRoot, @"es-common-web"));
+            var clusterNodeFsRoot = MiniWeb.GetWebRootFileSystemDirectory();
+            _clusterNodeWeb = new MiniWeb("/web", Path.Combine(clusterNodeFsRoot, @"clusternode-web"));
         }
 
         protected override void SubscribeCore(IHttpService service)
         {
             _clusterNodeWeb.RegisterControllerActions(service);
-            _commonWeb.RegisterControllerActions(service);
             RegisterRedirectAction(service, "", "/web/home.htm");
             RegisterRedirectAction(service, "/web", "/web/home.htm");
 

@@ -74,6 +74,7 @@ namespace EventStore.Core
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 Log.FatalException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }

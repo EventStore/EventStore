@@ -44,23 +44,11 @@ Function Stage-Build() {
     Get-ChildItem -Path $mergedAssembliesPath |
         ForEach-Object { Copy-Item $_.FullName $stagingDirectory }
 
-    Write-Host "Staging supporting files from single-node..."
-
-    #Stage single node files
-    $singleNodeDirectory = Join-Path $binDirectory "singlenode"
-    Copy-Item (Join-Path $singleNodeDirectory "NLog.config") $stagingDirectory
-    Copy-Item -Recurse -Force (Join-Path $singleNodeDirectory "es-common-web") $stagingDirectory
-    Copy-Item -Recurse -Force (Join-Path $singleNodeDirectory "Prelude") $stagingDirectory
-    Copy-Item -Recurse -Force (Join-Path $singleNodeDirectory "singlenode-web") $stagingDirectory
-    Copy-Item -Recurse -Force (Join-Path $singleNodeDirectory "Users") $stagingDirectory
-    Copy-Item -Recurse -Force (Join-Path $singleNodeDirectory "web-resources") $stagingDirectory
-
     Write-Host "Staging supporting files from cluster-node..."
 
     #Stage cluster node files
     $clusterNodeDirectory = Join-Path $binDirectory "clusternode"
-    Copy-Item (Join-Path $singleNodeDirectory "NLog.config") $stagingDirectory
-    Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "es-common-web") $stagingDirectory
+    Copy-Item (Join-Path $clusterNodeDirectory "NLog.config") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "Prelude") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "clusternode-web") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "Users") $stagingDirectory

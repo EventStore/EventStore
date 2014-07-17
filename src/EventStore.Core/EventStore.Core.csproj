@@ -219,7 +219,6 @@
     <Compile Include="Services\Transport\Http\Controllers\GuidController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\Transport\Http\IncomingHttpRequestAuthenticationManager.cs" />
@@ -291,7 +290,6 @@
     <Compile Include="Services\Transport\Tcp\ITcpDispatcher.cs" />
     <Compile Include="Services\Transport\Tcp\TcpDispatcher.cs" />
     <Compile Include="Services\Transport\Tcp\TcpService.cs" />
-    <Compile Include="Services\VNode\SingleVNodeController.cs" />
     <Compile Include="Services\VNode\VNodeFSM.cs" />
     <Compile Include="Services\VNode\VNodeFSMBuilder.cs" />
     <Compile Include="Services\VNode\VNodeFSMHandling.cs" />
@@ -351,7 +349,6 @@
     <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
     <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\IFileNamingStrategy.cs" />
-    <Compile Include="SingleVNode.cs" />
     <Compile Include="Util\MiniWeb.cs" />
     <Compile Include="Util\Opts.cs" />
   </ItemGroup>
