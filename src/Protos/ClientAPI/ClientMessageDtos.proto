@@ -30,8 +30,6 @@ message EventRecord {
 	required int32 metadata_content_type = 6;
 	required bytes data = 7;
 	optional bytes metadata = 8;
-	optional int64 created = 9;
-	optional int64 created_epoch = 10;
 }
 
 message ResolvedIndexedEvent {
@@ -58,8 +56,6 @@ message WriteEventsCompleted {
 	optional string message = 2;
 	required int32 first_event_number = 3;
 	required int32 last_event_number = 4;
-	optional int64 prepare_position = 5;
-	optional int64 commit_position = 6;
 }
 
 message DeleteStream {
@@ -72,8 +68,6 @@ message DeleteStream {
 message DeleteStreamCompleted {
 	required OperationResult result = 1;
 	optional string message = 2;
-	optional int64 prepare_position = 3;
-	optional int64 commit_position = 4;
 }
 
 message TransactionStart {
@@ -111,8 +105,6 @@ message TransactionCommitCompleted {
 	optional string message = 3;
 	required int32 first_event_number = 4;
 	required int32 last_event_number = 5;
-	optional int64 prepare_position = 6;
-	optional int64 commit_position = 7;
 }
 
 message ReadEvent {
@@ -193,6 +185,28 @@ message ReadAllEventsCompleted {
 
 	optional ReadAllResult result = 6 [default = Success];
 	optional string error = 7;
+}
+
+message ConnectToPersistentSubscription {
+	required string subscription_id = 1;
+	required string event_stream_id = 2;
+	required bool resolve_link_tos = 3;
+	required int32 number_of_free_slots = 4;
+}
+
+message PersistentSubscriptionNotifyEventsProcessed {
+	required string subscription_id = 1;
+	required int32 number_of_free_slots = 2;
+	repeated bytes processed_event_ids = 3;
+}
+
+message PersistentSubscriptionConfirmation {
+	required int64 last_commit_position = 1;
+	optional int32 last_event_number = 2;
+}
+
+message PersistentSubscriptionStreamEventAppeared {
+	required ResolvedIndexedEvent event = 1;
 }
 
 message SubscribeToStream {
