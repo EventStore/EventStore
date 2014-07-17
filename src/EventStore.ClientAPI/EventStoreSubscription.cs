@@ -52,8 +52,9 @@ namespace EventStore.ClientAPI
             Unsubscribe();
         }
 
+        ///<summary>
+        ///Unsubscribes from the stream
+        ///</summary>
         public abstract void Unsubscribe();
-        /// Unsubscribes from the stream.
-        /// </summary>
     }
 }

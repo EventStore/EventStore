@@ -78,9 +78,15 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(8, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
+    [ProtoMember(9, IsRequired = false, Name=@"created", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? Created;
+  
+    [ProtoMember(10, IsRequired = false, Name=@"created_epoch", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CreatedEpoch;
+  
     private EventRecord() {}
   
-    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata)
+    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created, long? createdEpoch)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
@@ -90,6 +96,8 @@ namespace EventStore.ClientAPI.Messages
         MetadataContentType = metadataContentType;
         Data = data;
         Metadata = metadata;
+        Created = created;
+        CreatedEpoch = createdEpoch;
     }
   }
   
@@ -178,14 +186,22 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int LastEventNumber;
   
+    [ProtoMember(5, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? PreparePosition;
+  
+    [ProtoMember(6, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CommitPosition;
+  
     private WriteEventsCompleted() {}
   
-    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber)
+    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
     {
         Result = result;
         Message = message;
         FirstEventNumber = firstEventNumber;
         LastEventNumber = lastEventNumber;
+        PreparePosition = preparePosition;
+        CommitPosition = commitPosition;
     }
   }
   
@@ -224,12 +240,20 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
     public readonly string Message;
   
+    [ProtoMember(3, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? PreparePosition;
+  
+    [ProtoMember(4, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CommitPosition;
+  
     private DeleteStreamCompleted() {}
   
-    public DeleteStreamCompleted(OperationResult result, string message)
+    public DeleteStreamCompleted(OperationResult result, string message, long? preparePosition, long? commitPosition)
     {
         Result = result;
         Message = message;
+        PreparePosition = preparePosition;
+        CommitPosition = commitPosition;
     }
   }
   
@@ -357,15 +381,23 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(5, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int LastEventNumber;
   
+    [ProtoMember(6, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? PreparePosition;
+  
+    [ProtoMember(7, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CommitPosition;
+  
     private TransactionCommitCompleted() {}
   
-    public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber)
+    public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
     {
         TransactionId = transactionId;
         Result = result;
         Message = message;
         FirstEventNumber = firstEventNumber;
         LastEventNumber = lastEventNumber;
+        PreparePosition = preparePosition;
+        CommitPosition = commitPosition;
     }
   }
   
