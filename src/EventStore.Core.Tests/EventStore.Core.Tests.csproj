@@ -261,6 +261,8 @@
     <Compile Include="Services\ElectionsService\no_quorum_cases.cs" />
     <Compile Include="Services\ElectionsService\Randomized\ElectionParams.cs" />
     <Compile Include="Services\ElectionsService\Randomized\ElectionsInstance.cs" />
+    <Compile Include="Services\CheckpointingQueue_should.cs" />
+    <Compile Include="Services\PersistentSubscription_should.cs" />
     <Compile Include="Services\ElectionsService\Randomized\ElectionsLogger.cs" />
     <Compile Include="Services\ElectionsService\Randomized\ElectionsProgressCondition.cs" />
     <Compile Include="Services\ElectionsService\Randomized\ElectionsSafetyCondition.cs" />
