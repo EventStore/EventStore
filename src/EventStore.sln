@@ -29,8 +29,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Projections.Core
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Padmin", "EventStore.Padmin\EventStore.Padmin.csproj", "{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.SingleNode.Web", "EventStore.SingleNode.Web\EventStore.SingleNode.Web.csproj", "{D597790A-0AB4-4962-B50A-B4ACA40765EB}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Web.Playground", "EventStore.Web.Playground\EventStore.Web.Playground.csproj", "{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "esquery", "esquery\esquery.csproj", "{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}"
@@ -97,10 +95,6 @@ Global
 		{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A5DFCF1-3FFE-480F-82E4-EBE73AAE7D6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
