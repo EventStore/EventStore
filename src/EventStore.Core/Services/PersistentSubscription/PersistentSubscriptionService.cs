@@ -1,0 +1,207 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using EventStore.Common.Log;
+using EventStore.Common.Utils;
+using EventStore.Core.Bus;
+using EventStore.Core.Data;
+using EventStore.Core.Helpers;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
+
+namespace EventStore.Core.Services.PersistentSubscription
+{
+    public class PersistentSubscriptionService :
+                                        IHandle<SystemMessage.BecomeShuttingDown>,
+                                        IHandle<TcpMessage.ConnectionClosed>,
+                                        IHandle<ClientMessage.ConnectToPersistentSubscription>,
+                                        IHandle<StorageMessage.EventCommitted>,
+                                        IHandle<ClientMessage.UnsubscribeFromStream>,
+                                        IHandle<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>
+    {
+        public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
+
+        private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionService>();
+
+        private readonly Dictionary<string, List<PersistentSubscription>> _subscriptionTopics = new Dictionary<string, List<PersistentSubscription>>();
+        private readonly Dictionary<string, PersistentSubscription> _subscriptionsById = new Dictionary<string, PersistentSubscription>(); 
+
+        private readonly IQueuedHandler _queuedHandler;
+        private readonly IReadIndex _readIndex;
+        private readonly IODispatcher _ioDispatcher;
+        private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
+        private readonly IPersistentSubscriptionEventLoader _eventLoader;
+
+        public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher)
+        {
+            Ensure.NotNull(queuedHandler, "queudHandler");
+            Ensure.NotNull(readIndex, "readIndex");
+            Ensure.NotNull(ioDispatcher, "ioDispatcher");
+
+            _queuedHandler = queuedHandler;
+            _readIndex = readIndex;
+            _ioDispatcher = ioDispatcher;
+            _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
+            _eventLoader = new PersistentSubscriptionEventLoader(_ioDispatcher);
+        }
+
+        public void Handle(SystemMessage.BecomeShuttingDown message)
+        {
+            foreach (var subscription in _subscriptionsById.Values)
+            {
+                subscription.Shutdown();
+            }
+            _queuedHandler.RequestStop();
+        }
+
+        public void Handle(ClientMessage.UnsubscribeFromStream message)
+        {
+            UnsubscribeFromStream(message.CorrelationId, true);
+        }
+
+        private void UnsubscribeFromStream(Guid correlationId, bool sendDropNotification)
+        {
+            foreach (var subscription in _subscriptionsById.Values)
+            {
+                subscription.RemoveClientByCorrelationId(correlationId, sendDropNotification);
+            }
+            CleanUpDeadSubscriptions();
+        }
+
+        public void Handle(TcpMessage.ConnectionClosed message)
+        {
+            foreach (var subscription in _subscriptionsById.Values)
+            {
+                subscription.RemoveClientByConnectionId(message.Connection.ConnectionId);
+            }
+            CleanUpDeadSubscriptions();
+        }
+
+        private void CleanUpDeadSubscriptions()
+        {
+            var deadSubscriptions = _subscriptionsById.Values.Where(x => !x.HasAnyClients).ToList();
+            foreach (var deadSubscription in deadSubscriptions)
+            {
+                _subscriptionsById.Remove(deadSubscription.SubscriptionId);
+                Log.Debug("Subscription {0} has no more connected clients. Removing. ", deadSubscription.SubscriptionId);
+            }
+
+            List<string> subscriptionGroupsToRemove = null;
+            foreach (var subscriptionGroup in _subscriptionTopics)
+            {
+                var subscriptions = subscriptionGroup.Value;
+                foreach (var deadSubscription in deadSubscriptions)
+                {
+                    subscriptions.Remove(deadSubscription);
+                }
+                if (subscriptions.Count == 0) // schedule removal of list instance
+                {
+                    if (subscriptionGroupsToRemove == null)
+                        subscriptionGroupsToRemove = new List<string>();
+                    subscriptionGroupsToRemove.Add(subscriptionGroup.Key);
+                }
+            }
+            if (subscriptionGroupsToRemove != null)
+            {
+                for (int i = 0, n = subscriptionGroupsToRemove.Count; i < n; ++i)
+                {
+                    _subscriptionTopics.Remove(subscriptionGroupsToRemove[i]);
+                }
+            }
+        }
+
+        public void Handle(ClientMessage.ConnectToPersistentSubscription message)
+        {
+            var streamAccess = _readIndex.CheckStreamAccess(
+                message.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : message.EventStreamId, StreamAccessType.Read, message.User);
+
+            if (!streamAccess.Granted)
+            {
+                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.AccessDenied));
+                return;
+            }
+
+            List<PersistentSubscription> subscribers;
+            if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
+            {
+                subscribers = new List<PersistentSubscription>();
+                _subscriptionTopics.Add(message.EventStreamId, subscribers);
+            }
+
+            PersistentSubscription subscription;
+            if (!_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
+            {
+                subscription = new PersistentSubscription(
+                    message.ResolveLinkTos, message.SubscriptionId,
+                    message.EventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : message.EventStreamId,
+                    _eventLoader,_checkpointReader, new PersistentSubscriptionCheckpointWriter(message.SubscriptionId, _ioDispatcher));
+                _subscriptionsById[message.SubscriptionId] = subscription;
+                subscribers.Add(subscription);
+                Log.Debug("New persistent subscription {0}.",message.SubscriptionId);
+            }
+            Log.Debug("New connection to persistent subscription {0}.", message.SubscriptionId);
+            var lastEventNumber = _readIndex.GetStreamLastEventNumber(message.EventStreamId);
+            var lastCommitPos = _readIndex.LastCommitPosition;
+            var subscribedMessage = new ClientMessage.PersistentSubscriptionConfirmation(message.CorrelationId, lastCommitPos, lastEventNumber);
+            message.Envelope.ReplyWith(subscribedMessage);
+            subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope, message.NumberOfFreeSlots);
+        }
+
+        public void Handle(StorageMessage.EventCommitted message)
+        {
+            var resolvedEvent = ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null);
+            ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
+        }
+
+        private ResolvedEvent? ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent)
+        {
+            List<PersistentSubscription> subscriptions;
+            if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions)) 
+                return resolvedEvent;
+            for (int i = 0, n = subscriptions.Count; i < n; i++)
+            {
+                var subscr = subscriptions[i];
+                if (subscr.State == PersistentSubscriptionState.Pull || evnt.EventNumber <= subscr.LastEventNumber)
+                    continue;
+
+                var pair = new ResolvedEvent(evnt, null, commitPosition);
+                if (subscr.ResolveLinkTos)
+                    resolvedEvent = pair = resolvedEvent ?? ResolveLinkToEvent(evnt, commitPosition);
+
+                subscr.Push(pair);
+            }
+            return resolvedEvent;
+        }
+
+        private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition)
+        {
+            if (eventRecord.EventType == SystemEventTypes.LinkTo)
+            {
+                try
+                {
+                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split('@');
+                    int eventNumber = int.Parse(parts[0]);
+                    string streamId = parts[1];
+
+                    var res = _readIndex.ReadEvent(streamId, eventNumber);
+                    if (res.Result == ReadEventResult.Success)
+                        return new ResolvedEvent(res.Record, eventRecord, commitPosition);
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
+                }
+            }
+            return new ResolvedEvent(eventRecord, null, commitPosition);
+        }
+
+        public void Handle(ClientMessage.PersistentSubscriptionNotifyEventsProcessed message)
+        {
+            PersistentSubscription subscription;
+            if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
+            {
+                subscription.NotifyFreeSlots(message.CorrelationId, message.NumberOfFreeSlots, message.ProcessedEventIds);
+            }
+        }
+    }
+}

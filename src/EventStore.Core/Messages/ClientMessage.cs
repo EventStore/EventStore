@@ -834,6 +834,74 @@ namespace EventStore.Core.Messages
             }
         }
 
+                //Persistent subscriptions
+        public class ConnectToPersistentSubscription : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid ConnectionId;
+            public readonly string SubscriptionId;
+            public readonly string EventStreamId;
+            public readonly bool ResolveLinkTos;
+            public readonly int NumberOfFreeSlots;
+
+            public ConnectToPersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
+                string subscriptionId, string eventStreamId, bool resolveLinkTos, int numberOfFreeSlots, IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                Ensure.NotEmptyGuid(connectionId, "connectionId");
+                Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
+                Ensure.Nonnegative(numberOfFreeSlots, "numberOfFreeSlots");
+                SubscriptionId = subscriptionId;
+                ConnectionId = connectionId;
+                NumberOfFreeSlots = numberOfFreeSlots;
+                EventStreamId = eventStreamId;
+                ResolveLinkTos = resolveLinkTos;
+            }
+        }
+
+        public class PersistentSubscriptionNotifyEventsProcessed : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly string SubscriptionId;
+            public readonly int NumberOfFreeSlots;
+            public readonly Guid[] ProcessedEventIds;
+
+            public PersistentSubscriptionNotifyEventsProcessed(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string subscriptionId, int numberOfFreeSlots, Guid[] processedEventIds, IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                Ensure.Nonnegative(numberOfFreeSlots, "numberOfFreeSlots");
+                Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
+                Ensure.NotNull(processedEventIds, "processedEventIds");
+
+                NumberOfFreeSlots = numberOfFreeSlots;
+                SubscriptionId = subscriptionId;
+                ProcessedEventIds = processedEventIds;
+            }
+        }
+
+        public class PersistentSubscriptionConfirmation : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly long LastCommitPosition;
+            public readonly int? LastEventNumber;
+
+            public PersistentSubscriptionConfirmation(Guid correlationId, long lastCommitPosition, int? lastEventNumber)
+            {
+                CorrelationId = correlationId;
+                LastCommitPosition = lastCommitPosition;
+                LastEventNumber = lastEventNumber;
+            }
+        }
+        //End of persistens subscritions
+
+
         public class SubscribeToStream : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -891,6 +959,21 @@ namespace EventStore.Core.Messages
             public readonly ResolvedEvent Event;
 
             public StreamEventAppeared(Guid correlationId, ResolvedEvent @event)
+            {
+                CorrelationId = correlationId;
+                Event = @event;
+            }
+        }
+
+        public class PersistentSubscriptionStreamEventAppeared : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly ResolvedEvent Event;
+
+            public PersistentSubscriptionStreamEventAppeared(Guid correlationId, ResolvedEvent @event)
             {
                 CorrelationId = correlationId;
                 Event = @event;
