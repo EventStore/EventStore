@@ -66,6 +66,9 @@ namespace EventStore.Core.Services.VNode
             _nodeInfo = nodeInfo;
             _db = db;
             _node = node;
+            if(vnodeSettings.ClusterNodeCount == 1) {
+                _serviceShutdownsToExpect = 4;
+            }
 
             _forwardingProxy = forwardingProxy;
             _forwardingTimeout = vnodeSettings.PrepareTimeout + vnodeSettings.CommitTimeout + TimeSpan.FromMilliseconds(300);

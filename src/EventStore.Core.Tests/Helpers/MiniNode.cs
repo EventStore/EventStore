@@ -185,7 +185,7 @@ namespace EventStore.Core.Tests.Helpers
             Node.Stop();
 
             if (!shutdownEvent.Wait(20000))
-                throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
+                throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
             
             if (!keepPorts)
             {
