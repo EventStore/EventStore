@@ -269,7 +269,18 @@ namespace EventStore.ClientAPI
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
-        //TODO COMPETING DOCUMENTATION
+        //TODO competing more docs
+        /// <summary>
+        /// Subscribes a persistent subscription (competing consumer) to the event store
+        /// </summary>
+        /// <param name="subscriptionId">The subscription group to connect to</param>
+        /// <param name="stream">The stream to subscribe to</param>
+        /// <param name="resolveLinkTos">whether or not to resolve links when reading events</param>
+        /// <param name="eventAppeared">An action invoked when an event appears</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <param name="bufferSize">The buffer size to use for the persistent subscription</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStorePersistentSubscription ConnectToPersistentSubscription(
             string subscriptionId, 
             string stream, 

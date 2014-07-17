@@ -13,6 +13,9 @@ namespace EventStore.ClientAPI
     public class EventStorePersistentSubscription
     {
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
+        ///<summary>
+        ///The default buffer size for the persistent subscription
+        ///</summary>
         public const int DefaultBufferSize = 10;
 
         private readonly string _subscriptionId;
@@ -60,6 +63,9 @@ namespace EventStore.ClientAPI
             _bufferSize = bufferSize;
         }
 
+        ///<summary>
+        /// The current number of available free slots on the persistent subscription
+        ///</summary>
         public int FreeSlots
         {
             get { return Math.Max(0, _bufferSize - _queue.Count); }

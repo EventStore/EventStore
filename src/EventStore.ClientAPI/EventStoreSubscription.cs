@@ -30,16 +30,8 @@ namespace EventStore.ClientAPI
         private readonly string _streamId;
         private readonly Action _unsubscribe;
 
-<<<<<<< HEAD
-        internal EventStoreSubscription(Action unsubscribe, string streamId, long lastCommitPosition, int? lastEventNumber)
-        {
-            Ensure.NotNull(unsubscribe, "unsubscribe");
-
-            _unsubscribe = unsubscribe;
-=======
         internal EventStoreSubscription(string streamId, long lastCommitPosition, int? lastEventNumber)
         {
->>>>>>> bring in competing consumers on client api side + messaging protocols
             _streamId = streamId;
             LastCommitPosition = lastCommitPosition;
             LastEventNumber = lastEventNumber;
@@ -61,15 +53,9 @@ namespace EventStore.ClientAPI
             Unsubscribe();
         }
 
+        ///<summary>
+        ///Unsubscribes from the stream
+        ///</summary>
         public abstract void Unsubscribe();
-        /// Unsubscribes from the stream.
-        /// </summary>
-<<<<<<< HEAD
-        public void Unsubscribe()
-        {
-            _unsubscribe();
-        }
-=======
->>>>>>> bring in competing consumers on client api side + messaging protocols
     }
 }
