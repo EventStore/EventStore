@@ -135,8 +135,10 @@ namespace EventStore.ClusterNode
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterVNodeSettings settings)
         {
-            _node.InternalHttpService.SetupController(new ClusterWebUIController(_node.MainQueue, enabledNodeSubsystems));
-            _node.InternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
+            if(_node.InternalHttpService != null) {
+                _node.InternalHttpService.SetupController(new ClusterWebUIController(_node.MainQueue, enabledNodeSubsystems));
+                _node.InternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
+            }
             if (settings.AdminOnPublic)
             {
                 _node.ExternalHttpService.SetupController(

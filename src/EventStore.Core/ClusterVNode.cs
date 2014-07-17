@@ -292,23 +292,24 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
-
             // INTERNAL HTTP
-            _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
-                                                    _workersHandler, _nodeInfo.InternalHttp.ToHttpUrl());
-            _internalHttpService.SetupController(adminController);
-            _internalHttpService.SetupController(pingController);
-            _internalHttpService.SetupController(statController);
-            _internalHttpService.SetupController(atomController);
-            _internalHttpService.SetupController(gossipController);
-            _internalHttpService.SetupController(electController);
-
+            if(!isSingleNode) {
+                _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
+                                                       _workersHandler, _nodeInfo.InternalHttp.ToHttpUrl());
+                _internalHttpService.SetupController(adminController);
+                _internalHttpService.SetupController(pingController);
+                _internalHttpService.SetupController(statController);
+                _internalHttpService.SetupController(atomController);
+                _internalHttpService.SetupController(gossipController);
+                _internalHttpService.SetupController(electController);
+            }
 			// Authentication plugin HTTP
 	        vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, _internalHttpService, httpSendService, _mainQueue, _workersHandler);
-
-            _mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
-            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
-            _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
+            if(_internalHttpService != null) {
+                _mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
+                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
+                _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
+            }
 
             SubscribeWorkers(bus =>
             {
@@ -425,7 +426,8 @@ namespace EventStore.Core
             {
                 foreach (var subsystem in subsystems)
                 {
-                    subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, new[] { _internalHttpService, _externalHttpService }, _workersHandler));
+                    var http = isSingleNode ? new [] {_externalHttpService} : new [] {_internalHttpService, _externalHttpService};
+                    subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider, httpSendService, http, _workersHandler));
                 }
             }
         }
