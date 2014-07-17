@@ -78,15 +78,9 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(8, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
-    [ProtoMember(9, IsRequired = false, Name=@"created", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? Created;
-  
-    [ProtoMember(10, IsRequired = false, Name=@"created_epoch", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? CreatedEpoch;
-  
     private EventRecord() {}
   
-    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created, long? createdEpoch)
+    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
@@ -96,8 +90,6 @@ namespace EventStore.ClientAPI.Messages
         MetadataContentType = metadataContentType;
         Data = data;
         Metadata = metadata;
-        Created = created;
-        CreatedEpoch = createdEpoch;
     }
   }
   
@@ -186,22 +178,14 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int LastEventNumber;
   
-    [ProtoMember(5, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? PreparePosition;
-  
-    [ProtoMember(6, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? CommitPosition;
-  
     private WriteEventsCompleted() {}
   
-    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
+    public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber)
     {
         Result = result;
         Message = message;
         FirstEventNumber = firstEventNumber;
         LastEventNumber = lastEventNumber;
-        PreparePosition = preparePosition;
-        CommitPosition = commitPosition;
     }
   }
   
@@ -240,20 +224,12 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
     public readonly string Message;
   
-    [ProtoMember(3, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? PreparePosition;
-  
-    [ProtoMember(4, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? CommitPosition;
-  
     private DeleteStreamCompleted() {}
   
-    public DeleteStreamCompleted(OperationResult result, string message, long? preparePosition, long? commitPosition)
+    public DeleteStreamCompleted(OperationResult result, string message)
     {
         Result = result;
         Message = message;
-        PreparePosition = preparePosition;
-        CommitPosition = commitPosition;
     }
   }
   
@@ -381,23 +357,15 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(5, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int LastEventNumber;
   
-    [ProtoMember(6, IsRequired = false, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? PreparePosition;
-  
-    [ProtoMember(7, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? CommitPosition;
-  
     private TransactionCommitCompleted() {}
   
-    public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
+    public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber)
     {
         TransactionId = transactionId;
         Result = result;
         Message = message;
         FirstEventNumber = firstEventNumber;
         LastEventNumber = lastEventNumber;
-        PreparePosition = preparePosition;
-        CommitPosition = commitPosition;
     }
   }
   
@@ -645,6 +613,86 @@ namespace EventStore.ClientAPI.Messages
         NextPreparePosition = nextPreparePosition;
         Result = result;
         Error = error;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"ConnectToPersistentSubscription")]
+  public partial class ConnectToPersistentSubscription
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    public readonly string EventStreamId;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
+    public readonly int NumberOfFreeSlots;
+  
+    private ConnectToPersistentSubscription() {}
+  
+    public ConnectToPersistentSubscription(string subscriptionId, string eventStreamId, bool resolveLinkTos, int numberOfFreeSlots)
+    {
+        SubscriptionId = subscriptionId;
+        EventStreamId = eventStreamId;
+        ResolveLinkTos = resolveLinkTos;
+        NumberOfFreeSlots = numberOfFreeSlots;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"PersistentSubscriptionNotifyEventsProcessed")]
+  public partial class PersistentSubscriptionNotifyEventsProcessed
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
+    public readonly int NumberOfFreeSlots;
+  
+    [ProtoMember(3, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
+    public readonly byte[][] ProcessedEventIds;
+  
+    private PersistentSubscriptionNotifyEventsProcessed() {}
+  
+    public PersistentSubscriptionNotifyEventsProcessed(string subscriptionId, int numberOfFreeSlots, byte[][] processedEventIds)
+    {
+        SubscriptionId = subscriptionId;
+        NumberOfFreeSlots = numberOfFreeSlots;
+        ProcessedEventIds = processedEventIds;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"PersistentSubscriptionConfirmation")]
+  public partial class PersistentSubscriptionConfirmation
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long LastCommitPosition;
+  
+    [ProtoMember(2, IsRequired = false, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int? LastEventNumber;
+  
+    private PersistentSubscriptionConfirmation() {}
+  
+    public PersistentSubscriptionConfirmation(long lastCommitPosition, int? lastEventNumber)
+    {
+        LastCommitPosition = lastCommitPosition;
+        LastEventNumber = lastEventNumber;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"PersistentSubscriptionStreamEventAppeared")]
+  public partial class PersistentSubscriptionStreamEventAppeared
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
+    public readonly ResolvedIndexedEvent Event;
+  
+    private PersistentSubscriptionStreamEventAppeared() {}
+  
+    public PersistentSubscriptionStreamEventAppeared(ResolvedIndexedEvent @event)
+    {
+        Event = @event;
     }
   }
   

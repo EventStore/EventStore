@@ -1,6 +1,4 @@
 using System;
-using EventStore.ClientAPI.ClientOperations;
-using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
@@ -8,7 +6,7 @@ namespace EventStore.ClientAPI
     /// Represents a subscription to a single stream or to the stream
     /// of all events in the Event Store.
     /// </summary>
-    public class EventStoreSubscription : IDisposable
+    public abstract class EventStoreSubscription : IDisposable
     {
         /// <summary>
         /// True if this subscription is to all streams.
@@ -29,14 +27,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly int? LastEventNumber;
 
-        private readonly SubscriptionOperation _subscriptionOperation;
         private readonly string _streamId;
 
-        internal EventStoreSubscription(SubscriptionOperation subscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
+        internal EventStoreSubscription(string streamId, long lastCommitPosition, int? lastEventNumber)
         {
-            Ensure.NotNull(subscriptionOperation, "subscriptionOperation");
-
-            _subscriptionOperation = subscriptionOperation;
             _streamId = streamId;
             LastCommitPosition = lastCommitPosition;
             LastEventNumber = lastEventNumber;
@@ -58,12 +52,8 @@ namespace EventStore.ClientAPI
             Unsubscribe();
         }
 
-        /// <summary>
+        public abstract void Unsubscribe();
         /// Unsubscribes from the stream.
         /// </summary>
-        public void Unsubscribe()
-        {
-            _subscriptionOperation.Unsubscribe();
-        }
     }
 }

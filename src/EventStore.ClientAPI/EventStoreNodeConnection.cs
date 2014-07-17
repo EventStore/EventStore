@@ -288,6 +288,29 @@ namespace EventStore.ClientAPI
             return catchUpSubscription;
         }
 
+        public EventStorePersistentSubscription ConnectToPersistentSubscription(
+            string subscriptionId, 
+            string stream, 
+            bool resolveLinkTos,
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null, 
+            int? bufferSize = null)
+        {
+            Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            var subscription = new EventStorePersistentSubscription(
+                subscriptionId, stream, resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
+                _settings.VerboseLogging, _settings, _handler, bufferSize ?? EventStorePersistentSubscription.DefaultBufferSize);
+
+            subscription.Start();
+
+            return subscription;
+        }
+
+
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);

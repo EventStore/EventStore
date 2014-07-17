@@ -58,6 +58,13 @@
     <Compile Include="StreamCheckpoint.cs" />
     <Compile Include="ClientAuthenticationFailedEventArgs.cs" />
     <Compile Include="ClientErrorEventArgs.cs" />
+    <Compile Include="ClientOperations\VolatileSubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\ISubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\PersistentSubscriptionOperation.cs" />
+    <Compile Include="EventStorePersistentSubscription.cs" />
+    <Compile Include="PersistentEventStoreSubscription.cs" />
+    <Compile Include="PersistentSubscription.cs" />
+    <Compile Include="VolatileEventStoreSubscription.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
     <Compile Include="ClientOperations\ReadEventOperation.cs" />
     <Compile Include="ClientOperations\SubscriptionOperation.cs" />
