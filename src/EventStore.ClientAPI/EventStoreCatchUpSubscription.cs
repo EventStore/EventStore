@@ -497,7 +497,7 @@ namespace EventStore.ClientAPI
 
                 if (!done && slice.IsEndOfStream)
                     Thread.Sleep(1); // we are waiting for server to flush its data
-            } while (!done);
+            } while (!done || _stop);
 
             if (Verbose)
                 Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",
