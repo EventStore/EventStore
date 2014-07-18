@@ -62,8 +62,10 @@ namespace EventStore.ClientAPI
         private DropData _dropData;
         private volatile bool _allowProcessing;
         private int _isProcessing;
-
-        private volatile bool _stop;
+        ///<summary>
+        /// stop has been called.
+        ///</summary>
+        protected volatile bool _stop;
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
