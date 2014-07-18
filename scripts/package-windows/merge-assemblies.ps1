@@ -39,7 +39,7 @@ Function Merge-ClusterNode
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
 
-    $outputName = "EventStore-ClusterNode.exe"
+    $outputName = "EventStore.ClusterNode.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
     Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
@@ -81,7 +81,7 @@ Function Merge-TestClient
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
 
-    $outputName = "EventStore-TestClient.exe"
+    $outputName = "EventStore.TestClient.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
     Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
@@ -123,7 +123,7 @@ Function Merge-PAdmin
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
 
-    $outputName = "EventStore-PAdmin.exe"
+    $outputName = "EventStore.PAdmin.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
     Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
@@ -165,7 +165,7 @@ Function Merge-EsQuery
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
 
-    $outputName = "EventStore-Query.exe"
+    $outputName = "EventStore.Query.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
     Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
