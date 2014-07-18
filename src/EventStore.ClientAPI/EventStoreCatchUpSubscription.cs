@@ -62,8 +62,10 @@ namespace EventStore.ClientAPI
         private DropData _dropData;
         private volatile bool _allowProcessing;
         private int _isProcessing;
-
-        private volatile bool _stop;
+        ///<summary>
+        /// stop has been called.
+        ///</summary>
+        protected volatile bool _stop;
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
@@ -497,7 +499,7 @@ namespace EventStore.ClientAPI
 
                 if (!done && slice.IsEndOfStream)
                     Thread.Sleep(1); // we are waiting for server to flush its data
-            } while (!done);
+            } while (!done || _stop);
 
             if (Verbose)
                 Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",
