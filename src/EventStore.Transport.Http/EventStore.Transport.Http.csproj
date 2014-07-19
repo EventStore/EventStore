@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{30AF4820-DC60-4674-9E19-C4518445545A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EventStore.Transport.Http</RootNamespace>
+    <AssemblyName>EventStore.Transport.Http</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\bin\intermediate\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\bin\intermediate\</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Codecs\Codec.cs" />
+    <Compile Include="Codecs\CustomCodec.cs" />
+    <Compile Include="Codecs\JsonCodec.cs" />
+    <Compile Include="Codecs\ManualEncoding.cs" />
+    <Compile Include="Codecs\NoCodec.cs" />
+    <Compile Include="Codecs\TextCodec.cs" />
+    <Compile Include="Codecs\XmlCodec.cs" />
+    <Compile Include="MediaType.cs" />
+    <Compile Include="AsyncQueuedBufferWriter.cs" />
+    <Compile Include="Client\ClientOperationState.cs" />
+    <Compile Include="Client\HttpAsyncClient.cs" />
+    <Compile Include="Client\IHttpClient.cs" />
+    <Compile Include="EntityManagement\HttpEntity.cs" />
+    <Compile Include="EntityManagement\HttpEntityManager.cs" />
+    <Compile Include="EntityManagement\HttpEntityManagerExtensions.cs" />
+    <Compile Include="EntityManagement\ManagerOperationState.cs" />
+    <Compile Include="HttpResponse.cs" />
+    <Compile Include="IOStreams.cs" />
+    <Compile Include="AsyncStreamCopier.cs" />
+    <Compile Include="Atom\AtomSpecs.cs" />
+    <Compile Include="Atom\AtomExceptions.cs" />
+    <Compile Include="Atom\Feed.cs" />
+    <Compile Include="Atom\ServiceDocument.cs" />
+    <Compile Include="ContentType.cs" />
+    <Compile Include="HttpMethod.cs" />
+    <Compile Include="ICodec.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="HttpStatusCode.cs" />
+    <Compile Include="Server\HttpAsyncServer.cs" />
+    <Compile Include="WebRequestExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

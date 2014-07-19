@@ -1,4 +1,6 @@
+TestResult.xml
 *.nupkg
+/packages
 /Logs
 /Data
 /Data-logs
@@ -10,13 +12,16 @@ ipch/
 *.s
 *.sdf
 *.opensdf
+*.VisualState.xml
 *.DotSettings
 *.DotSettings.user
 *.DotSettings.personal/Logs
+*.md
 /Data
 /src/Public/v8/
 /src/Public/ipch/
 /research/ci/CompatibilityInfo
+.DS_Store
 
 src/EventStore/EventStore.Common/Properties/AssemblyVersion.cs
 src/EventStore/EventStore.ClientAPI/Properties/AssemblyVersion.cs

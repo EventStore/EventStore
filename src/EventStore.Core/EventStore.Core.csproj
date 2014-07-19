@@ -1,0 +1,382 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{D42A5833-4F20-4FCC-B364-6207AE016732}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EventStore.Core</RootNamespace>
+    <AssemblyName>EventStore.Core</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\bin\intermediate\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\bin\intermediate\</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="protobuf-net, Version=2.0.0.580, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Web" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Authentication\AuthenticationRequest.cs" />
+    <Compile Include="Authentication\IAuthenticationProvider.cs" />
+    <Compile Include="Authentication\IAuthenticationProviderFactory.cs" />
+    <Compile Include="Authentication\InternalAuthenticationProviderFactory.cs" />
+    <Compile Include="Bus\AdHocHandler.cs" />
+    <Compile Include="Bus\QueueStatsCollector.cs" />
+    <Compile Include="Bus\IQueuedHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerThreadPool.cs" />
+    <Compile Include="Bus\MultiQueuedHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerSleep.cs" />
+    <Compile Include="Bus\QueuedHandlerMRES.cs" />
+    <Compile Include="Bus\QueuedHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerPulse.cs" />
+    <Compile Include="Bus\NarrowingHandler.cs" />
+    <Compile Include="Bus\WideningHandler.cs" />
+    <Compile Include="Bus\HandleExtensions.cs" />
+    <Compile Include="Bus\IBus.cs" />
+    <Compile Include="Bus\IMonitoredQueue.cs" />
+    <Compile Include="Bus\InMemoryBus.cs" />
+    <Compile Include="Bus\ISubscriber.cs" />
+    <Compile Include="Bus\MessageHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerAutoReset.cs" />
+    <Compile Include="Bus\IPublisher.cs" />
+    <Compile Include="Bus\IHandle.cs" />
+    <Compile Include="Bus\QueueMonitor.cs" />
+    <Compile Include="ClusterNodeMutex.cs" />
+    <Compile Include="ClusterVNode.cs" />
+    <Compile Include="Cluster\ClusterInfo.cs" />
+    <Compile Include="Cluster\MemberInfo.cs" />
+    <Compile Include="Cluster\Settings\ClusterConsts.cs" />
+    <Compile Include="Cluster\Settings\ClusterVNodeAuthenticationType.cs" />
+    <Compile Include="Cluster\Settings\ClusterVNodeSettings.cs" />
+    <Compile Include="Cluster\VNodeInfo.cs" />
+    <Compile Include="DataStructures\StickyLRUCache.cs" />
+    <Compile Include="Data\LowerUpper.cs" />
+    <Compile Include="Data\StreamAcl.cs" />
+    <Compile Include="Data\SystemSettings.cs" />
+    <Compile Include="Data\VNodeInfo.cs" />
+    <Compile Include="Data\VNodeState.cs" />
+    <Compile Include="DataStructures\ILRUCache.cs" />
+    <Compile Include="DataStructures\LRUCache.cs" />
+    <Compile Include="DataStructures\NoLRUCache.cs" />
+    <Compile Include="DataStructures\ObjectPool.cs" />
+    <Compile Include="DataStructures\PairingHeap.cs" />
+    <Compile Include="Data\CommitEventRecord.cs" />
+    <Compile Include="Data\Epoch.cs" />
+    <Compile Include="Data\ResolvedEvent.cs" />
+    <Compile Include="Data\EventNumber.cs" />
+    <Compile Include="Data\EventRecord.cs" />
+    <Compile Include="Data\ReadAllResult.cs" />
+    <Compile Include="Data\ReadStreamResult.cs" />
+    <Compile Include="Data\StreamMetadata.cs" />
+    <Compile Include="Data\TFPos.cs" />
+    <Compile Include="Exceptions\BadChunkInDatabaseException.cs" />
+    <Compile Include="Exceptions\ChunkNotFoundException.cs" />
+    <Compile Include="Exceptions\WrongFileVersionException.cs" />
+    <Compile Include="Exceptions\CorruptIndexException.cs" />
+    <Compile Include="Exceptions\ExtraneousFileFoundException.cs" />
+    <Compile Include="Exceptions\FileBeingDeletedException.cs" />
+    <Compile Include="Exceptions\HashValidationException.cs" />
+    <Compile Include="Exceptions\InvalidFileException.cs" />
+    <Compile Include="Exceptions\PossibleToHandleOutOfMemoryException.cs" />
+    <Compile Include="Exceptions\PTableNotFoundException.cs" />
+    <Compile Include="Exceptions\ReaderCheckpointHigherThanWriterException.cs" />
+    <Compile Include="Exceptions\SystemStreamNotFoundException.cs" />
+    <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
+    <Compile Include="ExclusiveDbLock.cs" />
+    <Compile Include="Helpers\IODispatcherAsync.cs" />
+    <Compile Include="Helpers\IODispatcherDelayedMessage.cs" />
+    <Compile Include="Helpers\LengthPrefixSuffixFramer.cs" />
+    <Compile Include="Index\GuidFilenameProvider.cs" />
+    <Compile Include="Index\Hashes\IHasher.cs" />
+    <Compile Include="Index\Hashes\Murmur2Unsafe.cs" />
+    <Compile Include="Index\Hashes\Murmur3AUnsafe.cs" />
+    <Compile Include="Index\Hashes\XXHashUnsafe.cs" />
+    <Compile Include="Index\IIndexFilenameProvider.cs" />
+    <Compile Include="Index\IMemTable.cs" />
+    <Compile Include="Index\IndexEntry.cs" />
+    <Compile Include="Index\IndexMap.cs" />
+    <Compile Include="Index\ISearchTable.cs" />
+    <Compile Include="Index\ITableIndex.cs" />
+    <Compile Include="Index\HashListMemTable.cs" />
+    <Compile Include="Index\MergeResult.cs" />
+    <Compile Include="Index\PTable.cs" />
+    <Compile Include="Index\PTableConstruction.cs" />
+    <Compile Include="Index\PTableHeader.cs" />
+    <Compile Include="Index\SortedListExtensions.cs" />
+    <Compile Include="ISubsystem.cs" />
+    <Compile Include="Messages\ClusterInfoDto.cs" />
+    <Compile Include="Messages\ElectionMessage.cs" />
+    <Compile Include="Messages\ElectionMessageDtos.cs" />
+    <Compile Include="Messages\GossipMessage.cs" />
+    <Compile Include="Messages\MemberInfoDto.cs" />
+    <Compile Include="Messages\ReplicationMessage.cs" />
+    <Compile Include="Messages\ReplicationMessageDto.cs" />
+    <Compile Include="Messages\SubscriptionMessage.cs" />
+    <Compile Include="Messages\HttpClientMessageDto.cs" />
+    <Compile Include="Messages\InternalAuthenticationProviderMessages.cs" />
+    <Compile Include="Messages\IQueueAffineMessage.cs" />
+    <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
+    <Compile Include="Messaging\CallbackEnvelope.cs" />
+    <Compile Include="Helpers\IODispatcher.cs" />
+    <Compile Include="Messages\UserManagementMessage.cs" />
+    <Compile Include="Messaging\RequestResponseDispatcher.cs" />
+    <Compile Include="PluginModel\IAuthenticationPlugin.cs" />
+    <Compile Include="Services\AwakeReaderService\AwakeService.cs" />
+    <Compile Include="Services\AwakeReaderService\AwakeServiceMessage.cs" />
+    <Compile Include="Services\ClusterStorageWriterService.cs" />
+    <Compile Include="Services\ElectionsService.cs" />
+    <Compile Include="Services\Gossip\DnsGossipSeedSource.cs" />
+    <Compile Include="Services\Gossip\GossipServiceBase.cs" />
+    <Compile Include="Services\Gossip\GossipState.cs" />
+    <Compile Include="Services\Gossip\IGossipSeedSource.cs" />
+    <Compile Include="Services\Gossip\LoopbackDns.cs" />
+    <Compile Include="Services\Gossip\NodeGossipService.cs" />
+    <Compile Include="Services\Replication\MasterReplicationService.cs" />
+    <Compile Include="Services\Replication\ReplicaService.cs" />
+    <Compile Include="Services\RequestForwardingService.cs" />
+    <Compile Include="Services\Storage\EpochManager\EpochManager.cs" />
+    <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
+    <Compile Include="NodeSubsystems.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\AllReader.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IIndexCache.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexBackend.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexCommitter.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexReader.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\StreamAccessType.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\StreamAccess.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexWriter.cs" />
+    <Compile Include="Services\SubscriptionsService.cs" />
+    <Compile Include="Services\HttpSendService.cs" />
+    <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />
+    <Compile Include="Services\Monitoring\StatsCollectorEnvelope.cs" />
+    <Compile Include="Services\Monitoring\Stats\StatsContainer.cs" />
+    <Compile Include="Services\Monitoring\SystemStatsHelper.cs" />
+    <Compile Include="Services\Monitoring\Stats\StatMetadata.cs" />
+    <Compile Include="Services\RequestManager\Managers\SingleAckRequestManager.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\CommitCheckResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\CommitDecision.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexReadAllResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IReadIndex.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\ReadStreamResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexReadEventResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\ReadIndex.cs" />
+    <Compile Include="Index\TableIndex.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexReadStreamResult.cs" />
+    <Compile Include="Data\ReadEventResult.cs" />
+    <Compile Include="Services\Storage\StorageReaderWorker.cs" />
+    <Compile Include="Services\Storage\StorageScavenger.cs" />
+    <Compile Include="Services\SystemNames.cs" />
+    <Compile Include="Services\RequestManager\Managers\TransactionCommitTwoPhaseRequestManager.cs" />
+    <Compile Include="Services\TcpSendService.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\HttpAuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\BasicHttpAuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\AnonymousHttpAuthenticationProvider.cs" />
+    <Compile Include="Authentication\InternalAuthenticationProvider.cs" />
+    <Compile Include="Authentication\OpenGenericPrincipal.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\PasswordChangeNotificationReader.cs" />
+    <Compile Include="Authentication\PasswordHashAlgorithm.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
+    <Compile Include="Data\UserData.cs" />
+    <Compile Include="Services\Transport\Http\Authentication\TrustedHttpAuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\ClusterWebUIController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\ElectController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\GossipController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\GuidController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
+    <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
+    <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
+    <Compile Include="Services\Transport\Http\IncomingHttpRequestAuthenticationManager.cs" />
+    <Compile Include="Services\Transport\Http\AuthenticatedHttpRequestProcessor.cs" />
+    <Compile Include="Services\Transport\Http\IHttpService.cs" />
+    <Compile Include="Services\Transport\Http\RequestParams.cs" />
+    <Compile Include="Services\Transport\Http\UriRouters.cs" />
+    <Compile Include="Services\Transport\Http\Messages\AuthenticatedHttpRequestMessage.cs" />
+    <Compile Include="Services\Transport\Http\Messages\IncomingHttpRequestMessage.cs" />
+    <Compile Include="Services\Transport\Http\ServiceAccessibility.cs" />
+    <Compile Include="Services\Transport\Http\UriToActionMatch.cs" />
+    <Compile Include="Services\Transport\Tcp\InternalTcpDispatcher.cs" />
+    <Compile Include="Services\Transport\Tcp\UnableToAcquireStreamException.cs" />
+    <Compile Include="Services\UserManagement\AllUsersReader.cs" />
+    <Compile Include="Services\UserManagement\SystemAccount.cs" />
+    <Compile Include="Services\UserManagement\UserManagementService.cs" />
+    <Compile Include="Services\VNode\ClusterVNodeController.cs" />
+    <Compile Include="Services\VNode\MessageForwardingProxy.cs" />
+    <Compile Include="Settings\ESConsts.cs" />
+    <Compile Include="Settings\VNodeSettings.cs" />
+    <Compile Include="StandardComponents.cs" />
+    <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkDbTruncator.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\BulkReadResult.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\PosMap.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\TFChunkReadSide.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
+    <Compile Include="Services\Transport\Http\Configure.cs" />
+    <Compile Include="Services\Transport\Http\AutoEventConverter.cs" />
+    <Compile Include="Services\Transport\Http\Format.cs" />
+    <Compile Include="Services\Transport\Http\SendToHttpWithConversionEnvelope.cs" />
+    <Compile Include="TransactionLog\Chunks\ChunkFooter.cs" />
+    <Compile Include="TransactionLog\Chunks\ChunkHeader.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\ReaderWorkItem.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkChaser.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkDbConfig.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkDb.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkReader.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkWriter.cs" />
+    <Compile Include="TransactionLog\Chunks\TFConsts.cs" />
+    <Compile Include="Exceptions\UnableToReadPastEndOfStreamException.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\WriterWorkItem.cs" />
+    <Compile Include="Exceptions\CorruptDatabaseException.cs" />
+    <Compile Include="TransactionLog\ITransactionFileChaser.cs" />
+    <Compile Include="TransactionLog\ITransactionFileReader.cs" />
+    <Compile Include="TransactionLog\LogRecords\EpochRecord.cs" />
+    <Compile Include="TransactionLog\LogRecords\SystemLogRecord.cs" />
+    <Compile Include="TransactionLog\ReadResults.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\TFChunk.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
+    <Compile Include="TransactionLog\RecordWriteResult.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
+    <Compile Include="Util\FileUtil.cs" />
+    <Compile Include="Util\MD5Hash.cs" />
+    <Compile Include="Messages\TcpClientMessageDto.cs" />
+    <Compile Include="Messages\MonitoringMessage.cs" />
+    <Compile Include="Messages\StorageMessage.cs" />
+    <Compile Include="Messaging\Forwarder.cs" />
+    <Compile Include="Messaging\SendToThisEnvelope.cs" />
+    <Compile Include="Messaging\NoopEnvelope.cs" />
+    <Compile Include="ProgramBase.cs" />
+    <Compile Include="Services\Monitoring\Utils\PerfCounterHelper.cs" />
+    <Compile Include="Services\Monitoring\Stats\QueueStats.cs" />
+    <Compile Include="Services\Monitoring\Stats\GcStats.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\BoundedCache.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\ReadCacheStats.cs" />
+    <Compile Include="Services\TimerService\ThreadBasedScheduler.cs" />
+    <Compile Include="Services\Transport\Tcp\ITcpDispatcher.cs" />
+    <Compile Include="Services\Transport\Tcp\TcpDispatcher.cs" />
+    <Compile Include="Services\Transport\Tcp\TcpService.cs" />
+    <Compile Include="Services\VNode\VNodeFSM.cs" />
+    <Compile Include="Services\VNode\VNodeFSMBuilder.cs" />
+    <Compile Include="Services\VNode\VNodeFSMHandling.cs" />
+    <Compile Include="Services\VNode\VNodeFSMStatesDefinition.cs" />
+    <Compile Include="Services\Monitoring\MonitoringService.cs" />
+    <Compile Include="Services\Monitoring\Stats\EsDriveInfo.cs" />
+    <Compile Include="Services\Monitoring\Stats\DiskIo.cs" />
+    <Compile Include="Services\Monitoring\Utils\StatsCsvEncoder.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\DictionaryBasedCache.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\ReadIndexStats.cs" />
+    <Compile Include="Services\Storage\StorageChaser.cs" />
+    <Compile Include="Services\Storage\StorageReaderService.cs" />
+    <Compile Include="Services\Transport\Http\ControllerAction.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\AdminController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\CommunicationController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\PingController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\StatController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\AtomController.cs" />
+    <Compile Include="Services\Transport\Http\Convert.cs" />
+    <Compile Include="Services\Transport\Http\HttpMessagePipe.cs" />
+    <Compile Include="Services\Transport\Http\ResponseConfiguration.cs" />
+    <Compile Include="Data\Event.cs" />
+    <Compile Include="Data\ExpectedVersion.cs" />
+    <Compile Include="Messages\SystemMessage.cs" />
+    <Compile Include="Messages\ClientMessage.cs" />
+    <Compile Include="Messaging\IEnvelope.cs" />
+    <Compile Include="Messaging\Message.cs" />
+    <Compile Include="Messaging\PublishEnvelope.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\RequestManager\RequestManagementService.cs" />
+    <Compile Include="Services\Storage\StorageWriterService.cs" />
+    <Compile Include="Services\Transport\Tcp\TcpCommand.cs" />
+    <Compile Include="Messages\HttpMessage.cs" />
+    <Compile Include="Services\Transport\Http\HttpService.cs" />
+    <Compile Include="Services\Transport\Tcp\ProtobufExtensions.cs" />
+    <Compile Include="Services\Transport\Http\SendToHttpEnvelope.cs" />
+    <Compile Include="Services\Transport\Tcp\ClientTcpDispatcher.cs" />
+    <Compile Include="Services\Transport\Tcp\SendOverTcpEnvelope.cs" />
+    <Compile Include="Services\Transport\Tcp\TcpConnectionManager.cs" />
+    <Compile Include="Messages\TcpMessage.cs" />
+    <Compile Include="Services\TimerService\IScheduler.cs" />
+    <Compile Include="Services\TimerService\ITimer.cs" />
+    <Compile Include="Services\TimerService\ITimeProvider.cs" />
+    <Compile Include="Services\TimerService\TimerBasedScheduler.cs" />
+    <Compile Include="Services\TimerService\RealTimer.cs" />
+    <Compile Include="Services\TimerService\RealTimeProvider.cs" />
+    <Compile Include="Services\TimerService\TimerService.cs" />
+    <Compile Include="Services\TimerService\TimerMessage.cs" />
+    <Compile Include="Services\Transport\Tcp\TcpPackage.cs" />
+    <Compile Include="TransactionLog\Checkpoint\FileCheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\ICheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\InMemoryCheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\MemoryMappedFileCheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\WriteThroughFileCheckpoint.cs" />
+    <Compile Include="TransactionLog\LogRecords\CommitLogRecord.cs" />
+    <Compile Include="TransactionLog\LogRecords\LogRecord.cs" />
+    <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
+    <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\IFileNamingStrategy.cs" />
+    <Compile Include="Util\MiniWeb.cs" />
+    <Compile Include="Util\Opts.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
+      <Project>{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}</Project>
+      <Name>EventStore.BufferManagement</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
+      <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>
+      <Name>EventStore.Transport.Http</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj">
+      <Project>{A3C1CBE0-4728-451F-B709-480134432880}</Project>
+      <Name>EventStore.Transport.Tcp</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

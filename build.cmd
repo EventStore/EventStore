@@ -8,7 +8,7 @@ if '%1'=='-h' goto help
 
 :: if ($psake.build_success -eq $false) { exit 1 } else { exit 0 }"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0\tools\powershell\build.ps1' %*;"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0\scripts\build-windows\build.ps1' %*;"
 exit /B %errorlevel%
 
 :help

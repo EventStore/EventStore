@@ -1,0 +1,546 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{B3792B44-423E-4937-B065-F2D61785017F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EventStore.Projections.Core.Tests</RootNamespace>
+    <AssemblyName>EventStore.Projections.Core.Tests</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\bin\tests\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <SolutionPlatform>anycpu</SolutionPlatform>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\bin\tests\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <SolutionPlatform>anycpu</SolutionPlatform>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="nunit.framework">
+      <HintPath>..\libs\nunit.framework.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ClientAPI\Cluster\specification_with_standard_projections_runnning.cs" />
+    <Compile Include="ClientAPI\event_by_type_index.cs" />
+    <Compile Include="ClientAPI\event_by_type_index\when_reverting_after_index_catches_up.cs" />
+    <Compile Include="ClientAPI\specification_with_standard_projections_runnning.cs" />
+    <Compile Include="ClientAPI\when_handling_created\with_from_all_any_foreach_projection\when_running_and_events_are_posted.cs" />
+    <Compile Include="ClientAPI\when_handling_created\with_from_all_foreach_projection\when_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_created\with_from_category_foreach_projection\when_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_any_foreach_projection\recovery\when_running_and_events_are_posted.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_any_foreach_projection\recovery\when_running_and_a_stream_gets_deleted_before_recovery.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_any_foreach_projection\when_running_and_events_are_posted.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_any_foreach_projection\when_running_and_events_are_posted_but_a_stream_and_tombstone_postponed.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_any_foreach_projection\when_running_and_events_are_posted_but_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_any_foreach_projection\when_running_and_events_are_posted_including_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_any_foreach_projection\when_running_and_then_other_events_tombstone_ant_other_events.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\recovery\when_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\recovery\when_running_and_events_get_indexed_before_recovery.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\recovery\when_running_long_parallel_query.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\recovery\when_running_parallel_query.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\when_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\when_running_and_events_are_indexed_but_a_stream_and_tombstone_postponed.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\when_running_and_events_are_indexed_including_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\when_running_and_events_are_indexed_but_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_category_foreach_projection\when_running_and_then_other_events_tombstone_ant_other_events.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\recovery\when_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\recovery\when_running_and_events_get_indexed_before_recovery.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\when_running_and_no_indexing.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\when_running_and_events_are_indexed.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\when_running_and_events_are_indexed_but_a_stream_and_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\when_running_and_events_are_indexed_but_more_events_and_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\when_running_and_events_are_indexed_but_tombstone.cs" />
+    <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\when_running_and_no_indexing_and_other_events.cs" />
+    <Compile Include="ClientAPI\with_standard_projections_running.cs" />
+    <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
+    <Compile Include="Integration\from_streams_matching\when_running_wit_stream_metadata.cs" />
+    <Compile Include="Integration\scenarios\when_deleting_already_categorized_stream.cs" />
+    <Compile Include="Integration\system_projections\when_changing_categorization_projection_configurations.cs" />
+    <Compile Include="Other\json_serialization.cs" />
+    <Compile Include="Other\Stopwatch.cs" />
+    <Compile Include="Other\when_matching_remaining_path.cs" />
+    <Compile Include="Playground\BusTestingExtentions.cs" />
+    <Compile Include="Playground\Launchpad.cs" />
+    <Compile Include="Playground\Launchpad2.cs" />
+    <Compile Include="Playground\Launchpad3.cs" />
+    <Compile Include="Playground\LaunchpadBase.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_phase.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_prepare_position.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions_when_updating.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions_when_updating.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_slave_projections_started_response.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_delete_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_abort_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_disable_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_enable_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_query_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_result_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_state_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_get_statistics_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_post_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_reset_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_set_runas_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_start_slave_projections_command.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_update_query_command.cs" />
+    <Compile Include="Services\slave_projection_response_writer\specification_with_slave_projection_response_writer.cs" />
+    <Compile Include="Services\slave_projection_response_writer\when_handling_partition_measured_message.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\specification_with_projection_manager_response_reader.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\specification_with_projection_manager_response_reader_started.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_creating.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_a_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_faulted_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_prepared_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_projection_worker_started_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_result_report_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_started_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_state_report_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_statistics_report_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_receiving_stopped_response.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_starting.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\specification_with_projection_manager_command_writer.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_faulted_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_prepared_message.cs" />
+    <Compile Include="Services\core_projection\another_epoch\when_loading_an_existing_projection.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_prerecording_event_order.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithMultiStreamCheckpointManager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_with_prerecorded_events_after_the_last_checkpoint.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_with_prerecorded_events_in_past_epoch.cs" />
+    <Compile Include="Services\emitted_stream\another_epoch\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
+    <Compile Include="Services\emitted_stream\another_epoch\when_handling_emits_with_previously_written_events_at_the_same_position.cs" />
+    <Compile Include="Services\emitted_stream\another_epoch\when_handling_emits_with_previously_written_events_in_different_epochs.cs" />
+    <Compile Include="Services\emitted_stream\another_projection\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_to_the_nonexisting_stream.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_caused_by_and_correlation_id.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_stream_metadata.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_write_as_configured.cs" />
+    <Compile Include="Services\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_committed_callback.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_extra_metadata.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_not_ready_event.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_emits_in_invalid_order.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_emits_with_previously_written_events.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_emits_with_previously_written_events_at_the_same_position.cs" />
+    <Compile Include="Services\core_projection\multi_phase\specification_with_multi_phase_core_projection.cs" />
+    <Compile Include="Services\core_projection\multi_phase\when_completing_phase1_of_a_multiphase_projection.cs" />
+    <Compile Include="Services\core_projection\multi_phase\when_creating_a_multi_phase_projection.cs" />
+    <Compile Include="Services\core_projection\multi_phase\when_starting_a_multi_phase_projection.cs" />
+    <Compile Include="Services\core_projection\multi_phase\when_starting_phase2_without_a_reader_strategy.cs" />
+    <Compile Include="Services\core_projection\parallel_query\specification_with_parallel_query.cs" />
+    <Compile Include="Services\core_projection\parallel_query\when_handling_committed_event_received_messages.cs" />
+    <Compile Include="Services\core_projection\parallel_query\when_handling_partition_processing_result_messages.cs" />
+    <Compile Include="Services\core_projection\parallel_query\when_handling_reordered_partition_processing_result_messages.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
+    <Compile Include="Services\core_projection\query_by_stream\specification_with_from_catalog_query.cs" />
+    <Compile Include="Services\core_projection\slave_projection\specification_with_slave_core_projection.cs" />
+    <Compile Include="Services\core_projection\query_by_stream\when_handling_multiple_empty_streams.cs" />
+    <Compile Include="Services\core_projection\query_by_stream\when_handling_multiple_non_empty_streams.cs" />
+    <Compile Include="Services\core_projection\query_by_stream\when_receiving_a_committed_event_the_projection_with_partitioned_state_by_custom_rule_should.cs" />
+    <Compile Include="Services\core_projection\TestFixtureUtils.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithReadWriteDispatchers.cs" />
+    <Compile Include="Services\core_projection\when_creating_a_new_partitiion_the_projection_should.cs" />
+    <Compile Include="Services\core_projection\when_receiving_committed_events_the_projection_without_when.cs" />
+    <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
+    <Compile Include="Services\core_projection\when_the_projection_with_pending_checkpoint_is_stopped.cs" />
+    <Compile Include="Services\event_filter\include_everything_handling_deleted_notifications_event_filter.cs" />
+    <Compile Include="Services\event_reader\all_streams_catalog_event_reader\when_reading_catalog.cs" />
+    <Compile Include="Services\event_reader\by_stream_catalog_event_reader\when_reading_catalog.cs" />
+    <Compile Include="Services\event_reader\externally_fed_by_stream_event_reader\when_fed_with_streams.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\index_checkpoint.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\when_reordering_happens_in_event_by_type_index.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_reader\catching_up\when_one_event_type_has_been_never_emitted.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\reordering.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_eof_for_all_streams_and_idle_eof.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_for_all_streams_after_pause_requested.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_onetime_reader_handles_eof.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_eof_and_idle_eof.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_onetime_reader_handles_eof.cs" />
+    <Compile Include="Services\event_reader\transaction_file_reader\when_handling_eof_and_idle_eof.cs" />
+    <Compile Include="Services\event_reader\transaction_file_reader\when_handling_stream_hard_deleted.cs" />
+    <Compile Include="Services\event_reader\transaction_file_reader\when_handling_stream_soft_deleted.cs" />
+    <Compile Include="Services\event_reader\transaction_file_reader\when_onetime_reader_handles_eof.cs" />
+    <Compile Include="Services\feed_reader\feed_reader.cs" />
+    <Compile Include="Services\feed_reader\feed_reader_by_event_indexes.cs" />
+    <Compile Include="Services\event_reader\TestFixtureWithEventReaderService.cs" />
+    <Compile Include="Services\handlers\categorize_events_by_stream_path.cs" />
+    <Compile Include="Integration\parallel_query\when_running_from_streams_matching_query.cs" />
+    <Compile Include="Integration\link_metadata\when_running_from_catalog_stream_query.cs" />
+    <Compile Include="Integration\parallel_query\when_running_from_catalog_stream_query_twice.cs" />
+    <Compile Include="Integration\parallel_query\when_running_from_catalog_stream_query_with_transform.cs" />
+    <Compile Include="Integration\specification_with_a_v8_query_posted.cs" />
+    <Compile Include="Integration\scenarios\when_recategorizing_chat_events_by_users.cs" />
+    <Compile Include="Integration\system_projections\when_recategorizing_events.cs" />
+    <Compile Include="Integration\system_projections\when_recategorizing_events_while_running.cs" />
+    <Compile Include="Integration\system_projections\when_running_system_projections.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\specification_with_parallel_processing_load_balancer.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_task.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_accounting_completed_unmeasured_task.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_accounting_measured_tasks.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_completing_a_task_and_others_pending.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_completing_a_task_and_other_pending.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_creating.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_first_task.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_first_tasks.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_many_measured_tasks.cs" />
+    <Compile Include="Services\parallel_processing_load_balancer\when_scheduling_many_unmeasured_tasks.cs" />
+    <Compile Include="Services\partition_state\partition_state.cs" />
+    <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
+    <Compile Include="Services\partition_state_cache\when_unlocking_and_forgetting_part_of_cached_states.cs" />
+    <Compile Include="Services\partition_state_update_manager\FakeEventWriter.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_created.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_creating.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_state_updated.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_state_updated_twice.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_two_states_were_updated.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\event_by_type_index_position_tagger.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_creating_event_by_type_index_position_tracker.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_updating_event_by_type_index_position_tracker_from_a_tag.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_updating_event_by_type_index_position_tracker_to_zero.cs" />
+    <Compile Include="Services\position_tagging\event_by_type_index_position_tagger\when_updating_postion_event_by_type_index_position_tracker.cs" />
+    <Compile Include="Services\position_tagging\prepare_position_tagger\prepare_position_tagger.cs" />
+    <Compile Include="Services\position_tagging\prepare_position_tagger\when_creating_prepare_postion_tracker.cs" />
+    <Compile Include="Services\position_tagging\prepare_position_tagger\when_reinitializing_prepapre_postion_tracker.cs" />
+    <Compile Include="Services\position_tagging\prepare_position_tagger\when_updating_postion_tagger_from_a_tag.cs" />
+    <Compile Include="Services\position_tagging\prepare_position_tagger\when_updating_prepare_postion_tracker.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\TestFixtureWithEventReorderingProjectionSubscription.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_creating_projection_subscription.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_handling_an_event_after_the_delay_and_reordering_is_required.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_handling_an_idle_notification_and_reordering_is_required.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_handling_committed_event_passing_the_filter.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_handling_duplicate_events.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_handling_a_second_event_after_the_delay.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_handling_two_subsequent_events.cs" />
+    <Compile Include="Services\event_reordering_projection_subscription\when_receiving_multiple_events_not_passing_event_filter.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\when_a_default_checkpoint_manager_has_been_reinitialized.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
+    <Compile Include="Services\core_projection\TestCheckpointManagerMessageHandler.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithCoreProjection.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithCoreProjectionLoaded.cs" />
+    <Compile Include="Services\core_projection\when_loading_an_existing_projection.cs" />
+    <Compile Include="Services\core_projection\when_loading_a_new_projection.cs" />
+    <Compile Include="Services\core_projection\when_starting_an_existing_projection_and_an_event_is_received.cs" />
+    <Compile Include="Services\core_projection\when_starting_a_new_projection_and_an_event_is_received.cs" />
+    <Compile Include="Services\core_projection\when_receiving_a_committed_event_the_projection_with_partitioned_state_by_custom_rule_should.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_fails_to_load_state_the_projection_should.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should.cs" />
+    <Compile Include="Services\event_filter\specific_stream_event_filter.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_an_idle_notification.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_and_no_stream.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_for_all_streams.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_creating.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_for_all_streams_and_eofs.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_for_all_streams_then_pause_requested_then_eof.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_resuming.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_has_been_created.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\FakeCoreProjection.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\TestFixtureWithCoreProjectionCheckpointManager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\when_a_core_projection_checkpoint_manager_has_been_created.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\when_beginning_to_load_state_the_core_projection_checkpoint_manager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\when_creating_a_default_checkpoint_manager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\when_multiple_event_processed_received_the_core_projection_checkpoint_manager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\when_starting_the_core_projection_checkpoint_manager.cs" />
+    <Compile Include="Services\core_projection\when_receiving_a_committed_event_the_projection_with_partitioned_state_should.cs" />
+    <Compile Include="Services\core_projection\when_receiving_committed_events_the_projection_with_partitioned_state_should.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\FakeReaderSubscription.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_heading_event_reader_has_been_created.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_starting_a_heading_event_reader.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_handles_an_event.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_subscribes_a_projection.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_unsubscribes_a_projection.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_an_event.cs" />
+    <Compile Include="Services\mixed_checkpoint_tags.cs" />
+    <Compile Include="Services\partition_state_cache\when_caching_a_parition_state_as_locked.cs" />
+    <Compile Include="Services\partition_state_cache\when_relocking_the_state_at_earlier_position.cs" />
+    <Compile Include="Services\partition_state_cache\when_relocking_the_state_at_later_position.cs" />
+    <Compile Include="Services\partition_state_cache\when_relocking_the_state_at_the_same_position.cs" />
+    <Compile Include="Services\partition_state_cache\when_the_partition_state_cache_has_been_created.cs" />
+    <Compile Include="Services\partition_state_cache\when_the_partition_state_cache_has_been_reinitialized.cs" />
+    <Compile Include="Services\partition_state_cache\when_unlocking_an_overflowed_cache.cs" />
+    <Compile Include="Services\partition_state_cache\when_unlocking_part_of_cached_states.cs" />
+    <Compile Include="Services\projections_manager\bi_state\a_new_posted_projection.cs" />
+    <Compile Include="Services\projections_manager\command_writer\specification_with_projection_manager_command_writer.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_create_and_prepare_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_create_and_prepare_slave_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_create_prepared_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_dispose_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_get_result_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_get_state_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_kill_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_load_stopped_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_start_message.cs" />
+    <Compile Include="Services\projections_manager\command_writer\when_handling_stop_message.cs" />
+    <Compile Include="Services\projections_manager\continuous\a_new_posted_projection.cs" />
+    <Compile Include="Services\projections_manager\continuous\a_running_projection.cs" />
+    <Compile Include="Services\projections_manager\FakeBiStateProjection.cs" />
+    <Compile Include="Services\projections_manager\FakeFromCatalogStreamProjection.cs" />
+    <Compile Include="Services\projections_manager\managed_projection\when_starting_a_managed_projection_without_slave_projections.cs" />
+    <Compile Include="Services\projections_manager\query\an_expired_projection.cs" />
+    <Compile Include="Services\projections_manager\query\a_running_foreach_stream_projection.cs" />
+    <Compile Include="Services\projections_manager\query\a_completed_projection.cs" />
+    <Compile Include="Services\projections_manager\query\a_failed_projection.cs" />
+    <Compile Include="Services\projections_manager\query\a_running_projection.cs" />
+    <Compile Include="Services\projections_manager\FakeForeachStreamProjection.cs" />
+    <Compile Include="Services\projections_manager\FakeProjection.cs" />
+    <Compile Include="Services\projections_manager\query\a_new_posted_projection.cs" />
+    <Compile Include="Services\feed_reader\TestFixtureWithFeedReaderService.cs" />
+    <Compile Include="Services\projections_manager\runas\when_posting_a_transient_projection.cs" />
+    <Compile Include="Services\projections_manager\runas\when_posting_a_persistent_projection.cs" />
+    <Compile Include="Services\projections_manager\slave_projection\specification_with_slave_projection.cs" />
+    <Compile Include="Services\projections_manager\TestFixtureWithProjectionCoreAndManagementServices.cs" />
+    <Compile Include="Services\projections_manager\specification_with_projection_management_service.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\specification_with_projection_core_service_command_reader.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\specification_with_projection_core_service_command_reader_started.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_creating.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_a_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_create_and_prepare_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_create_and_prepare_slave_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_create_prepared_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_dispose_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_get_result_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_get_state_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_kill_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_load_stopped_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_spool_stream_reading_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_start_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_stop_command.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_receiving_two_commands.cs" />
+    <Compile Include="Services\projection_core_service_command_reader\when_starting.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_result_report_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_slave_projection_reader_assigned_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_started_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_state_report_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_statistics_report_message.cs" />
+    <Compile Include="Services\projection_core_service_response_writer\when_handling_stopped_message.cs" />
+    <Compile Include="Services\slave_projection_response_writer\when_handling_partition_processing_result_message.cs" />
+    <Compile Include="Services\slave_projection_response_writer\when_handling_partition_progress_message.cs" />
+    <Compile Include="Services\slave_projection_response_writer\when_handling_spool_stream_reading_message.cs" />
+    <Compile Include="Services\v8\v8_internals.cs" />
+    <Compile Include="Services\v8\when_compiling_v8_projection.cs" />
+    <Compile Include="Services\v8\when_defining_a_v8_projection.cs" />
+    <Compile Include="Services\v8\when_initializing_state.cs" />
+    <Compile Include="Services\v8\when_not_returning_state_from_a_js_handler.cs" />
+    <Compile Include="Services\v8\when_partitioning_by_custom_rule.cs" />
+    <Compile Include="Services\v8\when_running_a_projection_with_created_handler.cs" />
+    <Compile Include="Services\v8\when_running_a_v8_projection_emitting_metadata.cs" />
+    <Compile Include="Services\v8\when_running_a_v8_projection_emitting_stream_links.cs" />
+    <Compile Include="Services\v8\when_running_a_v8_projection_with_not_passing_filter_by.cs" />
+    <Compile Include="Services\v8\when_running_a_v8_projection_with_transform_by.cs" />
+    <Compile Include="Services\v8\when_running_bi_state_v8_projection.cs" />
+    <Compile Include="Services\v8\when_running_body_reflecting_v8_projection.cs" />
+    <Compile Include="Services\v8\when_running_emitting_v8_projection.cs" />
+    <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />
+    <Compile Include="Services\projections_manager\when_handling_start_slave_projections_message.cs" />
+    <Compile Include="Services\projections_manager\when_requesting_partition_state_from_a_stopped_foreach_projection.cs" />
+    <Compile Include="Services\projections_manager\when_updating_a_disabled_projection_query_text.cs" />
+    <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
+    <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_emit_enabled_option.cs" />
+    <Compile Include="Services\projections_system\updating_projections\updating_projection_sources.cs" />
+    <Compile Include="Services\projections_system\when_requesting_state_from_a_faulted_projection.cs" />
+    <Compile Include="Services\projections_system\with_projection_config.cs" />
+    <Compile Include="Services\projections_system\with_projections_subsystem.cs" />
+    <Compile Include="Services\projections_system\startup.cs" />
+    <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
+    <Compile Include="Services\projection_version\when_comparing.cs" />
+    <Compile Include="Services\result_emitter\result_emitter.cs" />
+    <Compile Include="Services\staged_processing_queue.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_creating_stream_event_reader.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_no_stream.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_read_completed_and_eof.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_read_completed_stream_event_reader.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_read_completed_then_pause_then_eof.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_paused_then_handling_no_stream.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_resuming_stream_event_reader.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_stream_event_reader_has_been_created.cs" />
+    <Compile Include="Services\position_tagging\multistream_position_tagger\multistream_position_tagger.cs" />
+    <Compile Include="Services\position_tagging\multistream_position_tagger\when_creating_multistream_postion_tracker.cs" />
+    <Compile Include="Services\position_tagging\multistream_position_tagger\when_updating_multistream_postion_tracker_to_zero.cs" />
+    <Compile Include="Services\position_tagging\multistream_position_tagger\when_updating_postion_multistream_position_tracker.cs" />
+    <Compile Include="Services\position_tagging\multistream_position_tagger\when_updating_multistream_postion_tracker_from_a_tag.cs" />
+    <Compile Include="Services\projection_subscription\TestFixtureWithProjectionSubscription.cs" />
+    <Compile Include="Services\projection_subscription\when_creating_projection_subscription.cs" />
+    <Compile Include="Services\projection_subscription\when_handling_committed_event_passing_the_filter.cs" />
+    <Compile Include="Services\projection_subscription\when_handling_duplicate_events.cs" />
+    <Compile Include="Services\projection_subscription\when_receiving_multiple_events_not_passing_event_filter.cs" />
+    <Compile Include="Services\position_tagging\stream_position_tagger\stream_position_tagger.cs" />
+    <Compile Include="Services\position_tagging\stream_position_tagger\when_creating_stream_postion_tracker.cs" />
+    <Compile Include="Services\position_tagging\stream_position_tagger\when_updating_postion_stream_position_tracker.cs" />
+    <Compile Include="Services\position_tagging\stream_position_tagger\when_updating_stream_postion_tracker_from_a_tag.cs" />
+    <Compile Include="Services\position_tagging\stream_position_tagger\when_updating_stream_postion_tracker_to_zero.cs" />
+    <Compile Include="Services\TestTask.cs" />
+    <Compile Include="Services\position_tagging\transaction_file_position_tagger\transaction_file_position_tagger.cs" />
+    <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_creating_transaction_file_postion_tracker.cs" />
+    <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_updating_transaction_file_postion_tracker.cs" />
+    <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_updating_postion_tagger_from_a_tag.cs" />
+    <Compile Include="Services\core_projection\checkpoint_suggested.cs" />
+    <Compile Include="Services\core_projection\when_the_projection_with_pending_writes_is_stopped.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_fails_to_process_an_event_the_projection_should.cs" />
+    <Compile Include="Services\core_service\when_unsubscribing_a_subscribed_projection.cs" />
+    <Compile Include="Services\event_filter\empty_event_filter.cs" />
+    <Compile Include="Services\event_filter\include_everything_event_filter.cs" />
+    <Compile Include="Services\event_filter\just_all_events_event_filter.cs" />
+    <Compile Include="Services\event_filter\just_from_all_event_filter.cs" />
+    <Compile Include="Services\event_filter\specific_category_event_filter.cs" />
+    <Compile Include="Services\event_filter\specific_event_event_filter.cs" />
+    <Compile Include="Services\event_filter\specific_stream_and_category_event_filter.cs" />
+    <Compile Include="Services\event_filter\specific_streams_event_filter.cs" />
+    <Compile Include="Services\event_filter\TestFixtureWithEventFilter.cs" />
+    <Compile Include="Services\event_position.cs" />
+    <Compile Include="Services\paused_at_event_distribution_point.cs" />
+    <Compile Include="Services\projections_manager\managed_projection\when_creating_a_managed_projection.cs" />
+    <Compile Include="Services\projections_manager\managed_projection\when_loading_a_managed_projection_state.cs" />
+    <Compile Include="Services\projections_manager\TestFixtureWithJsProjection.cs" />
+    <Compile Include="Services\v8\when_creating_v8_projection.cs" />
+    <Compile Include="Services\v8\when_running_a_faulting_v8_projection.cs" />
+    <Compile Include="Services\v8\when_running_counting_v8_projection.cs" />
+    <Compile Include="Services\v8\when_running_reflecting_v8_projection.cs" />
+    <Compile Include="Services\projections_manager\when_creating_projection_manager.cs" />
+    <Compile Include="Services\projections_manager\when_the_onetime_projection_has_been_posted.cs" />
+    <Compile Include="Services\projections_manager\when_posting_a_persistent_projection_and_writes_succeed.cs" />
+    <Compile Include="Services\projections_manager\when_posting_an_onetime_projection.cs" />
+    <Compile Include="Services\projections_manager\when_posting_a_persistent_projection.cs" />
+    <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_existing_projection.cs" />
+    <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_existing_projections.cs" />
+    <Compile Include="Services\projections_manager\when_updating_an_onetime_projection_query_text.cs" />
+    <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_query_text.cs" />
+    <Compile Include="Services\v8\when_v8_projection_loading_state.cs" />
+    <Compile Include="Services\not_started_event_distribution_point_should.cs" />
+    <Compile Include="Services\emitted_stream\a_checkpoint_requested_on_a_non_started_stream.cs" />
+    <Compile Include="Services\emitted_stream\when_checkpoint_requested.cs" />
+    <Compile Include="Services\emitted_stream\when_checkpoint_requested_with_all_writes_already_completed.cs" />
+    <Compile Include="Services\emitted_stream\when_checkpoint_requested_with_pending_writes.cs" />
+    <Compile Include="Services\emitted_stream\when_creating_an_emitted_stream.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_the_started_in_recovery_stream.cs" />
+    <Compile Include="Services\emitted_stream\when_handling_an_emit_the_not_started_stream.cs" />
+    <Compile Include="Services\emitted_stream\when_the_stream_is_started.cs" />
+    <Compile Include="Services\emitted_stream\when_the_stream_is_started_with_already_emitted_events.cs" />
+    <Compile Include="Services\core_projection\FakeProjectionHandler.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\the_non_started_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\the_started_checkpoint_with_some_events_emitted.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_creating_a_projection_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_in_backward_order_to_the_same_stream_the_projection_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_in_correct_order_the_started_projection_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_the_non_started_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_before_from_position_the_projection_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_requesting_checkpoint_after_all_writes_completed.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_requesting_checkpoint_before_all_writes_completed.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_starting_the_projection_checkpoint_with_some_events_already_emitted.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_the_projection_checkpoint_has_been_started.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithCoreProjectionStarted.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithExistingEvents.cs" />
+    <Compile Include="Services\core_projection\when_creating_a_projection.cs" />
+    <Compile Include="Services\core_projection\when_receiving_a_committed_event_the_projection_should.cs" />
+    <Compile Include="Services\core_projection\when_starting_an_existing_projection.cs" />
+    <Compile Include="Services\core_projection\when_starting_an_existing_projection_missing_last_emitted_event_and_state_snapshot.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_does_emit_multiple_interleaved_events_into_the_same_stream_the_projection_should.cs" />
+    <Compile Include="Services\core_projection\when_starting_an_existing_projection_missing_last_state_snapshot.cs" />
+    <Compile Include="Services\core_projection\when_starting_a_new_projection.cs" />
+    <Compile Include="Services\core_projection\when_starting_a_projection.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_does_emit_an_event_the_projection_should.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_does_emit_multiple_subsequent_events_into_the_same_stream_the_projection_should.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_does_not_process_event_the_projection_should.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_does_process_an_event_the_projection_should.cs" />
+    <Compile Include="Services\TestFixtureWithProjectionCoreService.cs" />
+    <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_reinitializing_transaction_file_postion_tracker.cs" />
+    <Compile Include="Services\write_query_result_phase\creating.cs" />
+    <Compile Include="TestsInitFixture.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
+      <Project>{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}</Project>
+      <Name>EventStore.ClientAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj">
+      <Project>{6BC8929C-FFD0-4EE6-ACF8-BDF4A3855AF4}</Project>
+      <Name>EventStore.Core.Tests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
+      <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
+      <Name>EventStore.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
+      <Project>{03e02082-e179-4730-81ff-ce914749d6e3}</Project>
+      <Name>EventStore.Projections.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Queries\1Query.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Services\checkpoint_strategy\" />
+    <Folder Include="Services\projections_manager\parallel_query\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <IsMac>false</IsMac>
+    <IsMac Condition="'$(OS)' == 'Unix' And Exists ('/Library/Frameworks')">true</IsMac>
+  </PropertyGroup>
+  <Target Name="BeforeBuild">
+    <Copy ContinueOnError="true" SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="true" SourceFiles="..\libs\libv8.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="true" SourceFiles="..\libs\libicui18n.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="true" SourceFiles="..\libs\libicuuc.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="true" SourceFiles="..\libs\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+    <Copy ContinueOnError="true" SourceFiles="..\libs\libv8.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+    <Copy SourceFiles="..\libs\win32\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
+    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
+    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

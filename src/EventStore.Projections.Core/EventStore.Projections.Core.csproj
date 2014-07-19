@@ -1,0 +1,411 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{03E02082-E179-4730-81FF-CE914749D6E3}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EventStore.Projections.Core</RootNamespace>
+    <AssemblyName>EventStore.Projections.Core</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <CodeContractsAssemblyMode>0</CodeContractsAssemblyMode>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\bin\intermediate\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
+    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
+    <CodeContractsEnumObligations>False</CodeContractsEnumObligations>
+    <CodeContractsRedundantAssumptions>False</CodeContractsRedundantAssumptions>
+    <CodeContractsInferRequires>False</CodeContractsInferRequires>
+    <CodeContractsInferEnsures>False</CodeContractsInferEnsures>
+    <CodeContractsInferObjectInvariants>False</CodeContractsInferObjectInvariants>
+    <CodeContractsSuggestAssumptions>False</CodeContractsSuggestAssumptions>
+    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>
+    <CodeContractsSuggestEnsures>False</CodeContractsSuggestEnsures>
+    <CodeContractsSuggestObjectInvariants>False</CodeContractsSuggestObjectInvariants>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
+    <CodeContractsCustomRewriterAssembly />
+    <CodeContractsCustomRewriterClass />
+    <CodeContractsLibPaths />
+    <CodeContractsExtraRewriteOptions />
+    <CodeContractsExtraAnalysisOptions />
+    <CodeContractsBaseLineFile />
+    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>
+    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsReferenceAssembly>DoNotBuild</CodeContractsReferenceAssembly>
+    <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\bin\intermediate\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugAsserts|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\DebugAsserts\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;PROJECTIONS_ASSERTS</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
+    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
+    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>
+    <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
+    <CodeContractsEnumObligations>False</CodeContractsEnumObligations>
+    <CodeContractsRedundantAssumptions>False</CodeContractsRedundantAssumptions>
+    <CodeContractsInferRequires>False</CodeContractsInferRequires>
+    <CodeContractsInferEnsures>False</CodeContractsInferEnsures>
+    <CodeContractsInferObjectInvariants>False</CodeContractsInferObjectInvariants>
+    <CodeContractsSuggestAssumptions>False</CodeContractsSuggestAssumptions>
+    <CodeContractsSuggestRequires>False</CodeContractsSuggestRequires>
+    <CodeContractsSuggestEnsures>False</CodeContractsSuggestEnsures>
+    <CodeContractsSuggestObjectInvariants>False</CodeContractsSuggestObjectInvariants>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
+    <CodeContractsCustomRewriterAssembly />
+    <CodeContractsCustomRewriterClass />
+    <CodeContractsLibPaths />
+    <CodeContractsExtraRewriteOptions />
+    <CodeContractsExtraAnalysisOptions />
+    <CodeContractsBaseLineFile />
+    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>
+    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsReferenceAssembly>DoNotBuild</CodeContractsReferenceAssembly>
+    <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="EventReaders\Feeds\FeedReader.cs" />
+    <Compile Include="EventReaders\Feeds\FeedReaderService.cs" />
+    <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
+    <Compile Include="Messages\CoreProjectionManagementMessageBase.cs" />
+    <Compile Include="Messages\CoreProjectionManagementControlMessage.cs" />
+    <Compile Include="Messages\CoreProjectionProcessingMessage.cs" />
+    <Compile Include="Messages\CoreProjectionStatusMessage.cs" />
+    <Compile Include="Messages\EventReaders\Feeds\FeedReaderMessage.cs" />
+    <Compile Include="Messages\ICoreProjection.cs" />
+    <Compile Include="Messages\IProjectionCheckpointManager.cs" />
+    <Compile Include="Messages\IQuerySources.cs" />
+    <Compile Include="Messages\ParallelQueryProcessingOutputMessages.cs" />
+    <Compile Include="Messages\ParallelQueryProcessingMessages.cs" />
+    <Compile Include="Messages\Persisted\Commands\CreateAndPrepareCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\CreateAndPrepareSlaveCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\CreatePreparedCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\DisposeCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\GetResultCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\GetStateCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\KillCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\LoadStoppedCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\PersistedProjectionConfig.cs" />
+    <Compile Include="Messages\Persisted\Commands\PersistedProjectionVersion.cs" />
+    <Compile Include="Messages\Persisted\Commands\SlaveProjectionsStartedResponse.cs" />
+    <Compile Include="Messages\Persisted\Commands\SpoolStreamReadingCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\StartCommand.cs" />
+    <Compile Include="Messages\Persisted\Commands\StopCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\AbortCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\DeleteCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\DisableCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\EnableCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\Faulted.cs" />
+    <Compile Include="Messages\Persisted\Responses\GetQueryCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\GetResultCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\GetStateCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\GetStatisticsCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\PostCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\Prepared.cs" />
+    <Compile Include="Messages\Persisted\Responses\ProjectionWorkerStarted.cs" />
+    <Compile Include="Messages\Persisted\Responses\ResetCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\ResultReport.cs" />
+    <Compile Include="Messages\Persisted\Responses\SetRunAsCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\SlaveProjectionReaderAssigned.cs" />
+    <Compile Include="Messages\Persisted\Responses\Slave\PartitionMeasuredResponse.cs" />
+    <Compile Include="Messages\Persisted\Responses\Slave\PartitionProcessingProgressResponse.cs" />
+    <Compile Include="Messages\Persisted\Responses\Slave\PartitionProcessingResultResponse.cs" />
+    <Compile Include="Messages\Persisted\Responses\Started.cs" />
+    <Compile Include="Messages\Persisted\Responses\StartSlaveProjectionsCommand.cs" />
+    <Compile Include="Messages\Persisted\Responses\StateReport.cs" />
+    <Compile Include="Messages\Persisted\Responses\StatisticsReport.cs" />
+    <Compile Include="Messages\Persisted\Responses\Stopped.cs" />
+    <Compile Include="Messages\Persisted\Responses\UpdateQueryCommand.cs" />
+    <Compile Include="Messages\ProjectionCoreServiceMessage.cs" />
+    <Compile Include="Messages\QuerySourcesDefinition.cs" />
+    <Compile Include="Messages\QuerySourcesDefinitionOptions.cs" />
+    <Compile Include="Messages\ReaderCoreServiceMessage.cs" />
+    <Compile Include="Messages\ReaderSubscriptionManagement.cs" />
+    <Compile Include="Messages\EventReaderSubscriptionMessageBase.cs" />
+    <Compile Include="Messages\ReaderSubscriptionMessage.cs" />
+    <Compile Include="Messages\SlaveProjectionCommunicationChannel.cs" />
+    <Compile Include="Messages\SlaveProjectionCommunicationChannels.cs" />
+    <Compile Include="Messages\SlaveProjectionDefinitions.cs" />
+    <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
+    <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
+    <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />
+    <Compile Include="ProjectionCoreWorkersNode.cs" />
+    <Compile Include="ProjectionManagerNode.cs" />
+    <Compile Include="ProjectionsStandardComponents.cs" />
+    <Compile Include="ProjectionsSubsystem.cs" />
+    <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
+    <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
+    <Compile Include="Services\Management\MasterCoreProjectionResponseReader.cs" />
+    <Compile Include="Services\Management\MultiStreamMessageWriter.cs" />
+    <Compile Include="Services\Management\IMultiStreamMessageWriter.cs" />
+    <Compile Include="Services\Management\IResponseWriter.cs" />
+    <Compile Include="Services\Management\ManagedProjection.cs" />
+    <Compile Include="Services\Management\ManagedProjectionState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\AbortedState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\AbortingState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\CompletedState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\CreatingLoadingLoadedState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\FaultedState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\LoadingStateState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\PreparedState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\PreparingState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\RunningState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\StartingState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\StoppedState.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\StoppingState.cs" />
+    <Compile Include="Services\Management\ProjectionBalancer.cs" />
+    <Compile Include="Services\Management\ProjectionCoreCoordinator.cs" />
+    <Compile Include="Services\Management\ProjectionCoreResponseWriter.cs" />
+    <Compile Include="Services\Management\ProjectionManagerResponseReader.cs" />
+    <Compile Include="Services\Management\ProjectionManagerCommandWriter.cs" />
+    <Compile Include="Services\Management\ProjectionManagerMessageDispatcher.cs" />
+    <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
+    <Compile Include="Services\Management\ResponseWriter.cs" />
+    <Compile Include="Services\Management\SlaveProjectionResponseWriter.cs" />
+    <Compile Include="Services\Management\TimeoutScheduler.cs" />
+    <Compile Include="Services\Processing\AllStreamsCatalogEventReader.cs" />
+    <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\BypassingEventFilter.cs" />
+    <Compile Include="Services\Processing\ByPositionStreamStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\ByStreamCatalogEventReader.cs" />
+    <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\CatalogStreamPositionTagger.cs" />
+    <Compile Include="Services\Processing\CategoryEventFilter.cs" />
+    <Compile Include="Services\Processing\CheckpointSuggestedWorkItem.cs" />
+    <Compile Include="Services\Processing\CheckpointTagExtensions.cs" />
+    <Compile Include="Services\Processing\CheckpointWorkItemBase.cs" />
+    <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
+    <Compile Include="Services\Processing\CompletedWorkItem.cs" />
+    <Compile Include="Services\Processing\ContinuousProjectionProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
+    <Compile Include="Services\Processing\CoreProjectionCheckpointReader.cs" />
+    <Compile Include="Services\Processing\CoreProjectionCheckpointWriter.cs" />
+    <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
+    <Compile Include="Services\Processing\DefaultProjectionProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\EmittedDataEvent.cs" />
+    <Compile Include="Services\Processing\EmittedEventEnvelope.cs" />
+    <Compile Include="Services\Processing\EmittedLinkTo.cs" />
+    <Compile Include="Services\Processing\EventByTypeIndexEventFilter.cs" />
+    <Compile Include="Services\Processing\EventByTypeIndexEventReader.cs" />
+    <Compile Include="Services\Processing\EventByTypeIndexPositionTagger.cs" />
+    <Compile Include="Services\Processing\EventProcessedResult.cs" />
+    <Compile Include="Services\Processing\EventReorderingReaderSubscription.cs" />
+    <Compile Include="Services\Processing\ExternallyFedByStreamEventReader.cs" />
+    <Compile Include="Services\Processing\ExternallyFedReaderStrategy.cs" />
+    <Compile Include="Services\Processing\ExtraMetaData.cs" />
+    <Compile Include="Services\Processing\GetDataWorkItemBase.cs" />
+    <Compile Include="Services\Processing\GetResultWorkItem.cs" />
+    <Compile Include="Services\Processing\GetStateWorkItem.cs" />
+    <Compile Include="Services\Processing\ICoreProjectionCheckpointManager.cs" />
+    <Compile Include="Services\Processing\ICoreProjectionForProcessingPhase.cs" />
+    <Compile Include="Services\Processing\IEventReader.cs" />
+    <Compile Include="Services\Processing\IEventWriter.cs" />
+    <Compile Include="Services\Processing\IEventProcessingPhase.cs" />
+    <Compile Include="Services\Processing\IProgressResultWriter.cs" />
+    <Compile Include="Services\Processing\IProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\IReaderStrategy.cs" />
+    <Compile Include="Services\Processing\IResultEventEmitter.cs" />
+    <Compile Include="Services\Processing\IResultWriter.cs" />
+    <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
+    <Compile Include="Services\Processing\MultiStreamMultiOutputCheckpointManager.cs" />
+    <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
+    <Compile Include="Services\Processing\EventReader.cs" />
+    <Compile Include="Services\Processing\IReaderSubscription.cs" />
+    <Compile Include="Services\Processing\MultiStreamEventFilter.cs" />
+    <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
+    <Compile Include="Services\Processing\NoopCheckpointManager.cs" />
+    <Compile Include="Services\Processing\NoopResultEventEmitter.cs" />
+    <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\NotAuthorizedWorkItem.cs" />
+    <Compile Include="Services\Processing\ParallelProcessingLoadBalancer.cs" />
+    <Compile Include="Services\Processing\ParallelQueryAllStreamsMasterReaderStrategy.cs" />
+    <Compile Include="Services\Processing\ParallelQueryMasterProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\ParallelQueryMasterReaderStrategy.cs" />
+    <Compile Include="Services\Processing\ParallelQueryProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\PartitionCompletedWorkItem.cs" />
+    <Compile Include="Services\Processing\PartitionDeletedWorkItem.cs" />
+    <Compile Include="Services\Processing\PartitionState.cs" />
+    <Compile Include="Services\Processing\PartitionStateCache.cs" />
+    <Compile Include="Services\Processing\PartitionStateUpdateManager.cs" />
+    <Compile Include="Services\Processing\PhasePositionTagger.cs" />
+    <Compile Include="Services\Processing\PositionTracker.cs" />
+    <Compile Include="Services\Processing\PreparePositionTagger.cs" />
+    <Compile Include="Services\Processing\PreTaggedPositionTagger.cs" />
+    <Compile Include="Services\Processing\ProcessingStrategySelector.cs" />
+    <Compile Include="Services\Processing\ProgressWorkItem.cs" />
+    <Compile Include="Services\Processing\ProjectionCoreServiceCommandReader.cs" />
+    <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
+    <Compile Include="Services\Processing\EventReaderCoreService.cs" />
+    <Compile Include="Services\Processing\EventProcessingProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\EventSubscriptionBasedProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\ProjectionOutputConfig.cs" />
+    <Compile Include="Services\Processing\ProjectionProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
+    <Compile Include="Services\Processing\ReaderSubscriptionBase.cs" />
+    <Compile Include="Services\Processing\ProjectionVersion.cs" />
+    <Compile Include="Services\Processing\QueryProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\ResultWriter.cs" />
+    <Compile Include="Services\Processing\SlaveQueryProcessingStrategy.cs" />
+    <Compile Include="Services\Processing\SlaveResultWriter.cs" />
+    <Compile Include="Services\Processing\SourceDefinitionBuilder.cs" />
+    <Compile Include="Services\Processing\CheckpointTag.cs" />
+    <Compile Include="Services\Processing\EmittedEvent.cs" />
+    <Compile Include="Services\Processing\EmittedStream.cs" />
+    <Compile Include="Services\Processing\HeadingEventReader.cs" />
+    <Compile Include="Services\Processing\ReaderStrategy.cs" />
+    <Compile Include="Services\Processing\ReaderSubscriptionOptions.cs" />
+    <Compile Include="Services\Processing\ResolvedEvent.cs" />
+    <Compile Include="Services\Processing\ResultEventEmitter.cs" />
+    <Compile Include="Services\Processing\EmittedLinkToWithRecategorization.cs" />
+    <Compile Include="Services\Processing\SpoolStreamProcessingWorkItem.cs" />
+    <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
+    <Compile Include="Services\Processing\StatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\StreamEventFilter.cs" />
+    <Compile Include="Services\Processing\StreamEventReader.cs" />
+    <Compile Include="Services\IProjectionStateHandler.cs" />
+    <Compile Include="Services\Processing\EventFilter.cs" />
+    <Compile Include="Services\Processing\StreamPositionTagger.cs" />
+    <Compile Include="Services\Processing\PositionTagger.cs" />
+    <Compile Include="Services\Processing\PrepareInfo.cs" />
+    <Compile Include="Services\Processing\CoreProjection.cs" />
+    <Compile Include="Services\Processing\ProjectionCheckpoint.cs" />
+    <Compile Include="Services\Processing\ReaderSubscription.cs" />
+    <Compile Include="Services\Processing\TaggedResolvedEvent.cs" />
+    <Compile Include="Services\Processing\TransactionFileEventFilter.cs" />
+    <Compile Include="Services\Processing\TransactionFilePositionTagger.cs" />
+    <Compile Include="Services\Processing\TransactionFileEventReader.cs" />
+    <Compile Include="Services\Processing\WorkItem.cs" />
+    <Compile Include="Services\Processing\WorkLoadEstimationStrategy.cs" />
+    <Compile Include="Services\Processing\WriteQueryEofProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\WriteQueryResultProjectionProcessingPhase.cs" />
+    <Compile Include="Services\Processing\WriteQueryResultProjectionProcessingPhaseBase.cs" />
+    <Compile Include="Services\ProjectionConfig.cs" />
+    <Compile Include="Services\Processing\ProjectionCoreService.cs" />
+    <Compile Include="Messages\ProjectionManagementMessage.cs" />
+    <Compile Include="Services\Management\ProjectionManager.cs" />
+    <Compile Include="Services\ProjectionMode.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProjectionWorkerNode.cs" />
+    <Compile Include="Services\Http\ProjectionsController.cs" />
+    <Compile Include="Services\Http\ProjectionStatisticsHttpFormatted.cs" />
+    <Compile Include="Services\ProjectionStatistics.cs" />
+    <Compile Include="Services\PublishSubscribeDispatcher.cs" />
+    <Compile Include="Services\Processing\RequestResponseQueueForwarder.cs" />
+    <Compile Include="Services\ReaderSubscriptionDispatcher.cs" />
+    <Compile Include="Services\ReadWrite.cs" />
+    <Compile Include="Services\v8\DefaultV8ProjectionStateHandler.cs" />
+    <Compile Include="Services\v8\V8ProjectionStateHandler.cs" />
+    <Compile Include="Standard\CategorizeEventsByStreamPath.cs" />
+    <Compile Include="Standard\CategorizeStreamByPath.cs" />
+    <Compile Include="Standard\IndexEventsByEventType.cs" />
+    <Compile Include="Standard\IndexStreams.cs" />
+    <Compile Include="Standard\StreamCategoryExtractor.cs" />
+    <Compile Include="Standard\StreamCategoryExtractorByFirstSeparator.cs" />
+    <Compile Include="Standard\StreamCategoryExtractorByLastSeparator.cs" />
+    <Compile Include="Standard\StreamDeletedHelper.cs" />
+    <Compile Include="Standard\StubHandler.cs" />
+    <Compile Include="Utils\EncodingExtensions.cs" />
+    <Compile Include="Utils\EnumExtensions.cs" />
+    <Compile Include="v8\CompiledScript.cs" />
+    <Compile Include="v8\js1.cs" />
+    <Compile Include="v8\Js1Exception.cs" />
+    <Compile Include="v8\PreludeScript.cs" />
+    <Compile Include="v8\QueryScript.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
+      <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
+      <Name>EventStore.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
+      <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>
+      <Name>EventStore.Transport.Http</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Prelude\Modules\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Prelude\1Prelude.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\Modules.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\ModulesExecuted.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\Projections.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Services\Management\TODO.txt" />
+    <Content Include="web-resources\js\es.menu.part.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

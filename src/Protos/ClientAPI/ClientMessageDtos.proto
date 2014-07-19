@@ -1,0 +1,261 @@
+package EventStore.Client.Messages;
+
+enum OperationResult
+{
+	Success = 0;
+	PrepareTimeout = 1;
+	CommitTimeout = 2;
+	ForwardTimeout = 3;
+	WrongExpectedVersion = 4;
+	StreamDeleted = 5;
+	InvalidTransaction = 6;
+	AccessDenied = 7;
+}
+
+message NewEvent {
+	required bytes event_id = 1;
+	required string event_type = 2;
+	required int32 data_content_type = 3;
+	required int32 metadata_content_type = 4;
+	required bytes data = 5;
+	optional bytes metadata = 6;
+}
+
+message EventRecord {
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required bytes event_id = 3;
+	required string event_type = 4;
+	required int32 data_content_type = 5;
+	required int32 metadata_content_type = 6;
+	required bytes data = 7;
+	optional bytes metadata = 8;
+	optional int64 created = 9;
+	optional int64 created_epoch = 10;
+}
+
+message ResolvedIndexedEvent {
+	required EventRecord event = 1;
+	optional EventRecord link = 2;
+}
+
+message ResolvedEvent {
+	required EventRecord event = 1;
+	optional EventRecord link = 2;
+	required int64 commit_position = 3;
+	required int64 prepare_position = 4;
+}
+
+message WriteEvents {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	repeated NewEvent events = 3;
+	required bool require_master = 4;
+}
+
+message WriteEventsCompleted {
+	required OperationResult result = 1;
+	optional string message = 2;
+	required int32 first_event_number = 3;
+	required int32 last_event_number = 4;
+	optional int64 prepare_position = 5;
+	optional int64 commit_position = 6;
+}
+
+message DeleteStream {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	required bool require_master = 3;
+	optional bool hard_delete = 4;
+}
+
+message DeleteStreamCompleted {
+	required OperationResult result = 1;
+	optional string message = 2;
+	optional int64 prepare_position = 3;
+	optional int64 commit_position = 4;
+}
+
+message TransactionStart {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	required bool require_master = 3;
+}
+
+message TransactionStartCompleted {
+	required int64 transaction_id = 1;
+	required OperationResult result = 2;
+	optional string message = 3;
+}
+
+message TransactionWrite {
+	required int64 transaction_id = 1;
+	repeated NewEvent events = 2;
+	required bool require_master = 3;
+}
+
+message TransactionWriteCompleted {
+	required int64 transaction_id = 1;
+	required OperationResult result = 2;
+	optional string message = 3;
+}
+
+message TransactionCommit {
+	required int64 transaction_id = 1;
+	required bool require_master = 2;
+}
+
+message TransactionCommitCompleted {
+	required int64 transaction_id = 1;
+	required OperationResult result = 2;
+	optional string message = 3;
+	required int32 first_event_number = 4;
+	required int32 last_event_number = 5;
+	optional int64 prepare_position = 6;
+	optional int64 commit_position = 7;
+}
+
+message ReadEvent {
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required bool resolve_link_tos = 3;
+	required bool require_master = 4;
+}
+
+message ReadEventCompleted {
+
+	enum ReadEventResult {
+		Success = 0;
+		NotFound = 1;
+		NoStream = 2;
+		StreamDeleted = 3;
+		Error = 4;
+		AccessDenied = 5;
+	}
+
+	required ReadEventResult result = 1;
+	required ResolvedIndexedEvent event = 2;
+
+	optional string error = 3;
+}
+
+message ReadStreamEvents {
+	required string event_stream_id = 1;
+	required int32 from_event_number = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+	required bool require_master = 5;
+}
+
+message ReadStreamEventsCompleted {
+
+	enum ReadStreamResult {
+		Success = 0;
+		NoStream = 1;
+		StreamDeleted = 2;
+		NotModified = 3;
+		Error = 4;
+		AccessDenied = 5;
+	}
+
+	repeated ResolvedIndexedEvent events = 1;
+	required ReadStreamResult result = 2;
+	required int32 next_event_number = 3;
+	required int32 last_event_number = 4;
+	required bool is_end_of_stream = 5;
+	required int64 last_commit_position = 6;
+
+	optional string error = 7;
+}
+
+message ReadAllEvents {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+	required bool require_master = 5;
+}
+
+message ReadAllEventsCompleted {
+
+	enum ReadAllResult {
+		Success = 0;
+		NotModified = 1;
+		Error = 2;
+		AccessDenied = 3;
+	}
+
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	repeated ResolvedEvent events = 3;
+	required int64 next_commit_position = 4;
+	required int64 next_prepare_position = 5;
+
+	optional ReadAllResult result = 6 [default = Success];
+	optional string error = 7;
+}
+
+message SubscribeToStream {
+	required string event_stream_id = 1;
+	required bool resolve_link_tos = 2;
+}
+
+message SubscriptionConfirmation {
+	required int64 last_commit_position = 1;
+	optional int32 last_event_number = 2;
+}
+
+message StreamEventAppeared {
+	required ResolvedEvent event = 1;
+}
+
+message UnsubscribeFromStream {
+}
+
+message SubscriptionDropped {
+
+	enum SubscriptionDropReason {
+		Unsubscribed = 0;
+		AccessDenied = 1;
+	}
+	
+	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];
+}
+
+message NotHandled {
+	
+	enum NotHandledReason {
+		NotReady = 0;
+		TooBusy = 1;
+		NotMaster = 2;
+	}
+	
+	required NotHandledReason reason = 1;
+	optional bytes additional_info = 2;
+
+	message MasterInfo {
+		required string external_tcp_address = 1;
+		required int32 external_tcp_port = 2;
+		required string external_http_address = 3;
+		required int32 external_http_port = 4;
+		optional string external_secure_tcp_address = 5;
+		optional int32 external_secure_tcp_port = 6;
+	}
+}
+
+message ScavengeDatabase {
+}
+
+message ScavengeDatabaseCompleted {
+	
+	enum ScavengeResult {
+		Success = 0;
+		InProgress = 1;
+		Failed = 2;
+	}
+	
+	required ScavengeResult result = 1;
+	optional string error = 2;
+	required int32 total_time_ms = 3;
+	required int64 total_space_saved = 4;
+}
