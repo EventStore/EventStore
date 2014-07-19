@@ -1,5 +1,12 @@
 ﻿#Functions
 
+#Make compatible with Powershell 2
+if(!$PSScriptRoot) { $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent }
+
+$baseDirectory = Resolve-Path (Join-Path $PSScriptRoot "..\..\")
+$toolsDirectory = Join-Path $baseDirectory "tools"
+$svnClientPath = Join-Path $toolsDirectory (Join-Path "svn" "svn.exe")
+
 Function Write-Info {
     Param([string]$message)
     Process {
@@ -15,6 +22,7 @@ Function Exec
         [Parameter(Mandatory=$true, Position=0)][scriptblock]$Command,
         [Parameter(Mandatory=$false, Position=1)][string]$ErrorMessage = ("Failed executing {0}" -F $Command)
     )
+
     & $Command
     if ($LASTEXITCODE -ne 0) {
         throw ("Exec: " + $ErrorMessage)
@@ -64,7 +72,8 @@ Function Test-SvnRepoIsAtRevision {
                 return $false
             }
             Push-Location $WorkingCopy
-            [xml]$svnInfo = Exec { svn info --xml }
+            $svnCommand = "$svnClientPath info --xml"
+            [xml]$svnInfo = Exec ([ScriptBlock]::Create($svnCommand))
             $actualRevision = $svnInfo.info.entry.GetAttribute("revision")
             return ($actualRevision -eq $Revision)
         } catch {
@@ -99,7 +108,8 @@ Function Get-SvnRepoAtRevision
             try {
                 if ((Test-SvnRepoIsAtRevision $localPath $revision) -eq $false) {
                     Write-Verbose "Updating to revision $revision"
-                    Exec { svn update --quiet $revisionString }
+                    $svnCommand = "$svnClientPath update --quiet $revisionString"
+                    Exec ([ScriptBlock]::Create($svnCommand))
                 } else {
                     Write-Verbose "Already at revision $revision."
                 }
@@ -110,7 +120,8 @@ Function Get-SvnRepoAtRevision
             Write-Verbose "$localPathSvnDirectory not found"
             Write-Verbose "Checking out svn repository from $repositoryAddress (revision $revision) to $localPath"
 
-            Exec { svn checkout --quiet $revisionString $repositoryAddress $localPath }
+            $svnCommand = "$svnClientPath checkout --quiet $revisionString $repositoryAddress $localPath"
+            Exec ([ScriptBlock]::Create($svnCommand))
         }
     }
 }
