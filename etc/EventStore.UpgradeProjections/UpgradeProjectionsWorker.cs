@@ -36,6 +36,7 @@ using System.Net;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
+using System.Threading.Tasks;
 
 namespace EventStore.UpgradeProjections
 {
@@ -88,8 +89,8 @@ namespace EventStore.UpgradeProjections
             var ip = new IPEndPoint(_ipAddress, _port);
             Log("Connecting to {0}:{1}...", _ipAddress, _port);
             _connection = EventStoreConnection.Create(settings, ip);
-            _connection.Connect();
-            _connection.AppendToStream("hello", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "Hello", false, new byte[0], new byte[0]));
+            _connection.ConnectAsync();
+            _connection.AppendToStreamAsync("hello", ExpectedVersion.Any, new EventData(Guid.NewGuid(), "Hello", false, new byte[0], new byte[0]));
             Log("Connected.");
             Log("Username to be used is: {0}", _userName);
             _credentials = new UserCredentials(_userName, _password);
@@ -103,7 +104,7 @@ namespace EventStore.UpgradeProjections
             do
             {
                 Log("Reading catalog chunk...");
-                projections = _connection.ReadStreamEventsForward("$projections-$all", _lastCatalogEventNumber, 100, false, _credentials);
+                projections = _connection.ReadStreamEventsForwardAsync("$projections-$all", _lastCatalogEventNumber, 100, false, _credentials).Result;
                 Log("{0} events loaded", projections.Events.Length);
                 foreach (var e in projections.Events)
                 {
@@ -147,7 +148,7 @@ namespace EventStore.UpgradeProjections
             foreach (string projection in _oldStyleProjections)
             {
                 Log("Writing new registration for: {0}", projection);
-                _connection.AppendToStream(
+                _connection.AppendToStreamAsync(
                     "$projections-$all", _lastCatalogEventNumber, _credentials,
                     new EventData(Guid.NewGuid(), ProjectionCreatedNew, false, Encoding.UTF8.GetBytes(projection), null));
                 _lastCatalogEventNumber++;
@@ -171,8 +172,8 @@ namespace EventStore.UpgradeProjections
         private void UpgradeProjectionStream(string projectionStream)
         {
             Log("Reading the last event from the {0}", projectionStream);
-            var lastProjectionVersion = _connection.ReadStreamEventsBackward(
-                projectionStream, -1, 1, false, _credentials);
+            var lastProjectionVersion = _connection.ReadStreamEventsBackwardAsync(
+                projectionStream, -1, 1, false, _credentials).Result;
             if (lastProjectionVersion.Events.Length > 0)
             {
                 Log("Loaded the last event from the {0} stream", projectionStream);
@@ -190,11 +191,11 @@ namespace EventStore.UpgradeProjections
                         return;
                     }
                     Log("Writing new projection definition event to {0}", projectionStream);
-                    _connection.AppendToStream(
+                    _connection.AppendToStreamAsync(
                         projectionStream, projectionDefinition.EventNumber, _credentials,
                         new EventData(
                             Guid.NewGuid(), ProjectionUpdatedNew, true, projectionDefinition.Data,
-                            projectionDefinition.Metadata));
+                            projectionDefinition.Metadata)).Wait();
                     Log("New projection definition has been written to {0}", projectionStream);
                 }
             }
@@ -221,14 +222,14 @@ namespace EventStore.UpgradeProjections
             Log("Looking for projection partition checkpoint streams");
             var from = Position.Start;
             _oldTfScanPercent = 0d;
-            var lastSlice = _connection.ReadAllEventsBackward(Position.End, 1, false, _credentials);
+            var lastSlice = _connection.ReadAllEventsBackwardAsync(Position.End, 1, false, _credentials).Result;
             if (lastSlice.Events.Length == 0)
                 throw new Exception("Empty TF");
             _lastTfPosition = lastSlice.Events[0].OriginalPosition.Value.PreparePosition;
             AllEventsSlice slice;
             do
             {
-                slice = _connection.ReadAllEventsForward(@from, 100, false, _credentials);
+                slice = _connection.ReadAllEventsForwardAsync(@from, 100, false, _credentials).Result;
                 DisplayTfScanProgress(slice);
                 foreach (var @event in slice.Events)
                     if (@event.OriginalEventNumber == 0)
@@ -279,7 +280,7 @@ namespace EventStore.UpgradeProjections
         private void UpgradeCheckpointStream(string checkpointStream, string eventTypeSuffix)
         {
             Log("Reading last event in the projection checkpoint stream '{0}'", checkpointStream);
-            var slice = _connection.ReadStreamEventsBackward(checkpointStream, -1, 1, false, _credentials);
+            var slice = _connection.ReadStreamEventsBackwardAsync(checkpointStream, -1, 1, false, _credentials).Result;
             if (slice.Events.Length > 0)
             {
                 var lastEvent = slice.Events[0];
@@ -293,10 +294,11 @@ namespace EventStore.UpgradeProjections
                     if (_runUpgrade)
                     {
                         Log("Writing converted checkpoint to stream {0}", checkpointStream);
-                        _connection.AppendToStream(
+                        _connection.AppendToStreamAsync(
                             checkpointStream, lastEvent.OriginalEventNumber, _credentials,
                             new EventData(
-                                Guid.NewGuid(), "$" + eventTypeSuffix, true, lastEvent.Event.Data, lastEvent.Event.Metadata));
+                                Guid.NewGuid(), "$" + eventTypeSuffix, true, lastEvent.Event.Data, lastEvent.Event.Metadata)).Wait();
+;
                     }
                     else
                     {

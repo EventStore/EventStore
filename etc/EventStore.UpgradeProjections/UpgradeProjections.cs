@@ -31,49 +31,38 @@
 using System;
 using System.Linq;
 using System.Net;
-using NDesk.Options;
+using PowerArgs;
 
 namespace EventStore.UpgradeProjections
 {
+    public class UpgradeProjectionOptions
+    {
+        [DefaultValue("127.0.0.1")]
+        public string Ip { get; set; }
+        [DefaultValue(1113)]
+        public int Port { get; set; }
+        [DefaultValue("admin")]
+        public string UserName { get; set; }
+        [DefaultValue("changeit")]
+        public string Password { get; set; }
+        [DefaultValue(true)]
+        public bool Upgrade { get; set; }
+        public bool Help { get; set; }
+    }
     class UpgradeProjections
     {
-        private static string _ipString = "127.0.0.1";
-        private static int _port = 1113;
-        private static string _userName = "admin";
-        private static string _password = "changeit";
-        private static readonly OptionSet _parser;
-        private static bool _helpInvoked;
-        private static bool _runUpgrade;
-
-
-        static UpgradeProjections()
-        {
-            _parser = new OptionSet
-            {
-                {"i|ip=", "the {IP} address of the upgraded EventStore instance", v => _ipString = v},
-                {"p|port=", "the {PORT} to connect to", (int v) => _port = v},
-                {"U|user=", "the {USER} account name with $admin privilages", v => _userName = v},
-                {"P|password=", "the {PASSWORD} to use", v => _password = v},
-                {"upgrade", "upgrade projectons", v => _runUpgrade = true},
-                {"h|help", "show this help", v => Usage()}
-            };
-        }
-
         public static int Main(string[] args)
         {
-            var unrecognized = _parser.Parse(args);
-            if (_helpInvoked) 
-                return 0;
-            if (unrecognized.Count > 0)
+            var options = Args.Parse<UpgradeProjectionOptions>(args);
+            if (options.Help)
             {
-                Console.Error.WriteLine("Unrecognized command line: {0}", unrecognized.First());
-                Usage();
-                return 1;
+                Console.Write(ArgUsage.GetUsage<UpgradeProjectionOptions>());
+                return 0;
             }
             try
             {
                 var upgrade = new UpgradeProjectionsWorker(
-                    IPAddress.Parse(_ipString), _port, _userName, _password, _runUpgrade);
+                    IPAddress.Parse(options.Ip), options.Port, options.UserName, options.Password, options.Upgrade);
                 upgrade.RunUpgrade();
                 return 0;
             }
@@ -91,14 +80,6 @@ namespace EventStore.UpgradeProjections
                 Console.Error.WriteLine(ex.Message);
                 return 1;
             }
-        }
-
-        private static void Usage()
-        {
-            Console.WriteLine("Run this tool to upgrade projection definitions from the EventStore v1.x to v2.0");
-            Console.WriteLine();
-            _parser.WriteOptionDescriptions(Console.Out);
-            _helpInvoked = true;
         }
     }
 }

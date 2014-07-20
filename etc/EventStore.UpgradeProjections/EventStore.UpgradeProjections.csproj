@@ -34,10 +34,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EventStore.ClientAPI">
-      <HintPath>packages\EventStore.Client.2.0.0\lib\net40\EventStore.ClientAPI.dll</HintPath>
+      <HintPath>..\..\bin\clientapi\EventStore.ClientAPI.dll</HintPath>
     </Reference>
-    <Reference Include="NDesk.Options">
-      <HintPath>packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
+    <Reference Include="EventStore.Common">
+      <HintPath>..\..\bin\intermediate\EventStore.Common.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -49,7 +49,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.txt">
