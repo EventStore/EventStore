@@ -42,7 +42,7 @@ Function Merge-ClusterNode
     $outputName = "EventStore.ClusterNode.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
     
     if ($ExcludeAssemblies.Count -gt 0) {
         Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |
@@ -84,7 +84,7 @@ Function Merge-TestClient
     $outputName = "EventStore.TestClient.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
 
     if ($ExcludeAssemblies.Count -gt 0) {
         Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |
@@ -126,7 +126,7 @@ Function Merge-PAdmin
     $outputName = "EventStore.PAdmin.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
 
     if ($ExcludeAssemblies.Count -gt 0) {
         Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |
@@ -168,7 +168,7 @@ Function Merge-EsQuery
     $outputName = "EventStore.Query.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
 
     if ($ExcludeAssemblies.Count -gt 0) {
         Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |
@@ -210,7 +210,9 @@ Function Merge-ClientAPI
     $outputName = "EventStore.ClientAPI.dll"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/internalize", "/targetPlatform:v4,""$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
+    echo $otherAssemblies
+
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/internalize", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
 
     if ($ExcludeAssemblies.Count -gt 0) {
         Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |
