@@ -210,14 +210,7 @@ Function Merge-ClientAPI
     $outputName = "EventStore.ClientAPI.dll"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
-    echo $otherAssemblies
-
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/internalize", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
-
-    if ($ExcludeAssemblies.Count -gt 0) {
-        Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |
-            Foreach-Object { Copy-Item -Force -Path $_.FullName -Destination $mergedDirectory }
-    }
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/internalize", "/target:library", "/targetPlatform:""v4,$platformPath""", "/out:""$outputPath""", $Executable, $otherAssemblies)
 }
 
 Merge-ClusterNode -BuildDirectory (Join-Path $binDirectory "clusternode") -OutputDirectory $mergedDirectory
