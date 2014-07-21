@@ -504,7 +504,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 length = workItem.Reader.ReadInt32();
                 if (length <= 0)
                 {
-                    throw new InvalidReadException((
+                    throw new InvalidReadException(
                         string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
                                       + "In chunk {2}.",
                                       actualPosition, length, Chunk));
