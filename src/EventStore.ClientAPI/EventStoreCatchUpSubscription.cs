@@ -65,7 +65,7 @@ namespace EventStore.ClientAPI
         ///<summary>
         /// stop has been called.
         ///</summary>
-        protected volatile bool _stop;
+        protected volatile bool ShouldStop;
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
@@ -163,7 +163,7 @@ namespace EventStore.ClientAPI
             if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.");
             _connection.Connected -= OnReconnect;
 
-            _stop = true;
+            ShouldStop = true;
             EnqueueSubscriptionDropNotification(SubscriptionDropReason.UserInitiated, null);
         }
 
@@ -184,13 +184,13 @@ namespace EventStore.ClientAPI
                 _stopped.Reset();
                 try
                 {
-                    if (!_stop)
+                    if (!ShouldStop)
                     {
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: pulling events...", IsSubscribedToAll ? "<all>" : StreamId);
                         ReadEventsTill(_connection, _resolveLinkTos, _userCredentials, null, null);
                     }
 
-                    if (!_stop)
+                    if (!ShouldStop)
                     {
                         if (Verbose) Log.Debug("Catch-up Subscription to {0}: subscribing...", IsSubscribedToAll ? "<all>" : StreamId);
                         _subscription = _streamId == string.Empty
@@ -207,7 +207,7 @@ namespace EventStore.ClientAPI
                     return;
                 }
 
-                if (_stop)
+                if (ShouldStop)
                 {
                     DropSubscription(SubscriptionDropReason.UserInitiated, null);
                     return;
@@ -397,7 +397,7 @@ namespace EventStore.ClientAPI
 
                 if (!done && slice.IsEndOfStream)
                     Thread.Sleep(1); // we are waiting for server to flush its data
-            } while (!done);
+            } while (!done && !ShouldStop);
 
             if (Verbose) 
                 Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadPosition = {1}.", 
@@ -499,7 +499,7 @@ namespace EventStore.ClientAPI
 
                 if (!done && slice.IsEndOfStream)
                     Thread.Sleep(1); // we are waiting for server to flush its data
-            } while (!done || _stop);
+            } while (!done && !ShouldStop);
 
             if (Verbose)
                 Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",
