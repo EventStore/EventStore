@@ -456,15 +456,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 length = workItem.Reader.ReadInt32();
                 if (length <= 0)
                 {
-                    throw new ArgumentException(
+                    throw new InvalidReadException(
                         string.Format("Log record at actual pos {0} has non-positive length: {1}. "
-                                      + "Something is seriously wrong in chunk {2}.", actualPosition, length, Chunk));
+                                      + " in chunk.", actualPosition, length, Chunk));
                 }
                 if (length > TFConsts.MaxLogRecordSize)
                 {
-                    throw new ArgumentException(
+                    throw new InvalidReadException(
                         string.Format("Log record at actual pos {0} has too large length: {1} bytes, "
-                                      + "while limit is {2} bytes. Something is seriously wrong in chunk {3}.",
+                                      + "while limit is {2} bytes. In chunk {3}.",
                                       actualPosition, length, TFConsts.MaxLogRecordSize, Chunk));
                 }
                 if (actualPosition + length + 2 * sizeof(int) > Chunk.PhysicalDataSize)
@@ -504,16 +504,16 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 length = workItem.Reader.ReadInt32();
                 if (length <= 0)
                 {
-                    throw new ArgumentException(
+                    throw new InvalidReadException((
                         string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
-                                      + "Something is seriously wrong in chunk {2}.",
+                                      + "In chunk {2}.",
                                       actualPosition, length, Chunk));
                 }
                 if (length > TFConsts.MaxLogRecordSize)
                 {
                     throw new ArgumentException(
                         string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
-                                      + "while limit is {2} bytes. Something is seriously wrong in chunk {3}.",
+                                      + "while limit is {2} bytes. In chunk {3}.",
                                       actualPosition, length, TFConsts.MaxLogRecordSize, Chunk));
                 }
                 if (actualPosition < length + 2 * sizeof(int)) // no space for record + length prefix and suffix 
@@ -540,5 +540,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 return true;
             }
         }
+    }
+
+    public class InvalidReadException : Exception {
+        public InvalidReadException(string message) : base(message) {}
     }
 }
