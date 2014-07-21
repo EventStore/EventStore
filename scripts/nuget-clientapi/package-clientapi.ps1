@@ -51,7 +51,7 @@ Function Get-SourceDependencies() {
             Exec { git clone https://github.com/JamesNK/Newtonsoft.Json Newtonsoft.Json 2> $null }
             try {
                 Push-Location Newtonsoft.Json
-                Exec { git checkout 4.5.7 2> $null }
+                Exec { git checkout 6.0.1 2> $null }
             } finally {
                 Pop-Location
             }
