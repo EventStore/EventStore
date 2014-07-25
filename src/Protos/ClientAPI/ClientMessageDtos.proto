@@ -205,6 +205,22 @@ message DeletePersistentSubscription {
 	required string event_stream_id = 2;
 }
 
+message CreatePersistentSubscriptionCompleted {
+	enum CreatePersistentSubscriptionResult {
+		Success = 0;
+		AlreadyExists = 1;
+	}
+	required CreatePersistentSubscriptionResult result = 1 [default = Success];
+}
+
+message DeletePersistentSubscriptionCompleted {
+	enum DeletePersistentSubscriptionResult {
+		Success = 0;
+		AlreadyExists = 1;
+	}
+	required DeletePersistentSubscriptionResult result = 1 [default = Success];
+}
+
 message ConnectToPersistentSubscription {
 	required string subscription_id = 1;
 	required string event_stream_id = 2;
