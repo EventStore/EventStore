@@ -684,6 +684,56 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"CreatePersistentSubscriptionCompleted")]
+  public partial class CreatePersistentSubscriptionCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult Result;
+  
+    [ProtoContract(Name=@"CreatePersistentSubscriptionResult")]
+    public enum CreatePersistentSubscriptionResult
+    {
+            
+      [ProtoEnum(Name=@"Success", Value=0)]
+      Success = 0,
+            
+      [ProtoEnum(Name=@"AlreadyExists", Value=1)]
+      AlreadyExists = 1
+    }
+  
+    private CreatePersistentSubscriptionCompleted() {}
+  
+    public CreatePersistentSubscriptionCompleted(CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult result)
+    {
+        Result = result;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"DeletePersistentSubscriptionCompleted")]
+  public partial class DeletePersistentSubscriptionCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult Result;
+  
+    [ProtoContract(Name=@"DeletePersistentSubscriptionResult")]
+    public enum DeletePersistentSubscriptionResult
+    {
+            
+      [ProtoEnum(Name=@"Success", Value=0)]
+      Success = 0,
+            
+      [ProtoEnum(Name=@"AlreadyExists", Value=1)]
+      AlreadyExists = 1
+    }
+  
+    private DeletePersistentSubscriptionCompleted() {}
+  
+    public DeletePersistentSubscriptionCompleted(DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult result)
+    {
+        Result = result;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"ConnectToPersistentSubscription")]
   public partial class ConnectToPersistentSubscription
   {
