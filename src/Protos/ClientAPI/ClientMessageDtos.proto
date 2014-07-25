@@ -209,16 +209,20 @@ message CreatePersistentSubscriptionCompleted {
 	enum CreatePersistentSubscriptionResult {
 		Success = 0;
 		AlreadyExists = 1;
+		Failure = 2;
 	}
 	required CreatePersistentSubscriptionResult result = 1 [default = Success];
+	optional string reason;
 }
 
 message DeletePersistentSubscriptionCompleted {
 	enum DeletePersistentSubscriptionResult {
 		Success = 0;
 		AlreadyExists = 1;
+		Failure = 2;
 	}
 	required DeletePersistentSubscriptionResult result = 1 [default = Success];
+	optional string reason;
 }
 
 message ConnectToPersistentSubscription {
