@@ -140,11 +140,14 @@
     <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />
     <Compile Include="EventStoreTransaction.cs" />
     <Compile Include="StreamEventsSlice.cs" />
+    <Compile Include="ClientOperations\DeletePersistentSubscriptionOperation.cs" />
     <Compile Include="Exceptions\CommandNotExpectedException.cs" />
     <Compile Include="Exceptions\ConnectionClosedException.cs" />
     <Compile Include="Exceptions\NoResultException.cs" />
     <Compile Include="Exceptions\OperationTimedOutException.cs" />
     <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
+    <Compile Include="PersistentSubscriptionDeleteResult.cs" />
+    <Compile Include="PersistentSubscriptionDeleteStatus.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />
