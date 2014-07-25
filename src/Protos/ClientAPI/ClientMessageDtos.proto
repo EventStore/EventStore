@@ -195,6 +195,16 @@ message ReadAllEventsCompleted {
 	optional string error = 7;
 }
 
+message CreatePersistentSubscription {
+	required string subscription_id = 1;
+	required string event_stream_id = 2;
+}
+
+message DeletePersistentSubscription {
+	required string subscription_id = 1;
+	required string event_stream_id = 2;
+}
+
 message ConnectToPersistentSubscription {
 	required string subscription_id = 1;
 	required string event_stream_id = 2;
@@ -239,6 +249,7 @@ message SubscriptionDropped {
 	enum SubscriptionDropReason {
 		Unsubscribed = 0;
 		AccessDenied = 1;
+		PersistentSubscriptionDeleted=2;
 	}
 	
 	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];

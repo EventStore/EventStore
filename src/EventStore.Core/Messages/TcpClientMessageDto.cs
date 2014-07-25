@@ -648,6 +648,42 @@ namespace EventStore.Core.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"CreatePersistentSubscription")]
+  public partial class CreatePersistentSubscription
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    public readonly string EventStreamId;
+  
+    private CreatePersistentSubscription() {}
+  
+    public CreatePersistentSubscription(string subscriptionId, string eventStreamId)
+    {
+        SubscriptionId = subscriptionId;
+        EventStreamId = eventStreamId;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"DeletePersistentSubscription")]
+  public partial class DeletePersistentSubscription
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    public readonly string EventStreamId;
+  
+    private DeletePersistentSubscription() {}
+  
+    public DeletePersistentSubscription(string subscriptionId, string eventStreamId)
+    {
+        SubscriptionId = subscriptionId;
+        EventStreamId = eventStreamId;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"ConnectToPersistentSubscription")]
   public partial class ConnectToPersistentSubscription
   {
@@ -800,7 +836,10 @@ namespace EventStore.Core.Messages
       Unsubscribed = 0,
             
       [ProtoEnum(Name=@"AccessDenied", Value=1)]
-      AccessDenied = 1
+      AccessDenied = 1,
+            
+      [ProtoEnum(Name=@"PersistentSubscriptionDeleted", Value=2)]
+      PersistentSubscriptionDeleted = 2
     }
   
     private SubscriptionDropped() {}
