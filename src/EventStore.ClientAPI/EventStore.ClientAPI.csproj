@@ -135,6 +135,9 @@
     <Compile Include="Exceptions\InvalidTransactionException.cs" />
     <Compile Include="Exceptions\StreamDeletedException.cs" />
     <Compile Include="Exceptions\WrongExpectedVersionException.cs" />
+    <Compile Include="PersistentSubscriptionCreateResult.cs" />
+    <Compile Include="PersistentSubscriptionCreateStatus.cs" />
+    <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />
     <Compile Include="EventStoreTransaction.cs" />
     <Compile Include="StreamEventsSlice.cs" />
     <Compile Include="Exceptions\CommandNotExpectedException.cs" />

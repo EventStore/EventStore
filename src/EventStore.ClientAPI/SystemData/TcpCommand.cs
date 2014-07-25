@@ -67,6 +67,11 @@ namespace EventStore.ClientAPI.SystemData
         ConnectToPersistentSubscription = 0xF5,
         PersistentSubscriptionNotifyEventsProcessed = 0xF6,
         PersistentSubscriptionConfirmation = 0xF7,
-        PersistentSubscriptionStreamEventAppeared = 0xF8
+        PersistentSubscriptionStreamEventAppeared = 0xF8,
+        CreatePersistentSubscription = 0xf9,
+        CreatePersistentSubscriptionCompleted = 0xfa,
+        DeletePersistentSubscription = 0xfb,
+        DeletePersistentSubscriptionCompleted = 0xfc
+
    }
 }
