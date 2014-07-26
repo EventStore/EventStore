@@ -310,6 +310,22 @@ namespace EventStore.ClientAPI
             return subscription;
         }
 
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
+            return source.Task;
+        }
+
+        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
+            return source.Task;            
+        }
+
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
