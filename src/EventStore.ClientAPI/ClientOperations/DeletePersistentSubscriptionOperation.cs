@@ -55,6 +55,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return new PersistentSubscriptionDeleteResult(PersistentSubscriptionDeleteStatus.Success);
         }
 
+        
         public override string ToString()
         {
             return string.Format("Stream: {0}, Group Name: {1}", _stream, _groupName);
