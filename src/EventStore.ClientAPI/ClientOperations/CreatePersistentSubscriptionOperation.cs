@@ -31,43 +31,28 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
         {
-/*            switch (response.Result)
+            switch (response.Result)
             {
-                case ClientMessage.OperationResult.Success:
-                    if (_wasCommitTimeout)
-                        Log.Debug("IDEMPOTENT WRITE SUCCEEDED FOR {0}.", this);
+                case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success:
                     Succeed();
                     return new InspectionResult(InspectionDecision.EndOperation, "Success");
-                case ClientMessage.OperationResult.PrepareTimeout:
-                    return new InspectionResult(InspectionDecision.Retry, "PrepareTimeout");
-                case ClientMessage.OperationResult.ForwardTimeout:
-                    return new InspectionResult(InspectionDecision.Retry, "ForwardTimeout");
-                case ClientMessage.OperationResult.CommitTimeout:
-                    _wasCommitTimeout = true;
-                    return new InspectionResult(InspectionDecision.Retry, "CommitTimeout");
-                case ClientMessage.OperationResult.WrongExpectedVersion:
-                    var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}", _stream, _expectedVersion);
-                    Fail(new WrongExpectedVersionException(err));
-                    return new InspectionResult(InspectionDecision.EndOperation, "WrongExpectedVersion");
-                case ClientMessage.OperationResult.StreamDeleted:
-                    Fail(new StreamDeletedException(_stream));
-                    return new InspectionResult(InspectionDecision.EndOperation, "StreamDeleted");
-                case ClientMessage.OperationResult.InvalidTransaction:
-                    Fail(new InvalidTransactionException());
-                    return new InspectionResult(InspectionDecision.EndOperation, "InvalidTransaction");
-                case ClientMessage.OperationResult.AccessDenied:
+                case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Fail:
+                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} failed '{2}'", _groupName, _stream, response.Reason)));
+                    return new InspectionResult(InspectionDecision.EndOperation, "Fail");
+                case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied:
                     Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
+                case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists:
+                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} alreay exists", _groupName, _stream)));
+                    return new InspectionResult(InspectionDecision.EndOperation, "AlreadyExists");
                 default:
                     throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
-         */
-            return null;
         }
 
         protected override PersistentSubscriptionCreateResult TransformResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
         {
-            
+
             return new PersistentSubscriptionCreateResult(PersistentSubscriptionCreateStatus.Success);
         }
 
