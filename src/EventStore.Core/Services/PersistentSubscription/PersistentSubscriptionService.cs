@@ -17,7 +17,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<ClientMessage.ConnectToPersistentSubscription>,
                                         IHandle<StorageMessage.EventCommitted>,
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
-                                        IHandle<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>
+                                        IHandle<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>,
+                                        IHandle<ClientMessage.CreatePersistentSubscription>,
+                                        IHandle<ClientMessage.DeletePersistentSubscription>,
+                                        IHandle<MonitoringMessage.GetPersistentSubscriptionStats>
     {
         public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
 
@@ -57,6 +60,21 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(ClientMessage.UnsubscribeFromStream message)
         {
             UnsubscribeFromStream(message.CorrelationId, true);
+        }
+
+        public void Handle(ClientMessage.CreatePersistentSubscription message)
+        {
+            Log.Debug("create subscription");
+        }
+
+        public void Handle(ClientMessage.DeletePersistentSubscription message)
+        {
+            Log.Debug("delete subscription");
+        }
+
+        public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message)
+        {
+            Log.Debug("get statistics");
         }
 
         private void UnsubscribeFromStream(Guid correlationId, bool sendDropNotification)

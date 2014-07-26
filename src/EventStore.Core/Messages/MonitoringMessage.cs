@@ -7,6 +7,40 @@ namespace EventStore.Core.Messages
 {
     public static class MonitoringMessage
     {
+        public class GetPersistentSubscriptionStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly IEnvelope Envelope;
+            public readonly Func<Dictionary<string, object>, Dictionary<string, object>> StatsSelector;
+            
+            public GetPersistentSubscriptionStats(IEnvelope envelope,
+                                 Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Ensure.NotNull(statsSelector, "statsSelector");
+
+                Envelope = envelope;
+                StatsSelector = statsSelector;
+            }
+        }
+
+        public class GetPersistentSubscriptionStatsCompleted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly bool Success;
+            public readonly Dictionary<string, object> Stats;
+
+            public GetPersistentSubscriptionStatsCompleted(bool success, Dictionary<string, object> stats)
+            {
+                Success = success;
+                Stats = stats;
+            }
+        }
+
         public class GetFreshStats : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
