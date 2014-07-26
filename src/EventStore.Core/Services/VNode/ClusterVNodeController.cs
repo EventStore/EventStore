@@ -1,3 +1,4 @@
+
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -197,7 +198,6 @@ namespace EventStore.Core.Services.VNode
                     .When<ReplicationMessage.RawChunkBulk>().Ignore()
                     .When<ReplicationMessage.DataChunkBulk>().Ignore()
                     .When<ReplicationMessage.AckLogPosition>().Ignore()
-
                 .InState(VNodeState.CatchingUp)
                     .When<ReplicationMessage.CloneAssignment>().Do(Handle)
                     .When<ReplicationMessage.SlaveAssignment>().Do(Handle)

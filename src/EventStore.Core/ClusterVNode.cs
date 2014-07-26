@@ -395,12 +395,16 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher);
             var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
             var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
+            //TODO CC This should use a dispatcher (horrifically inefficient)
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscription, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscription, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNotifyEventsProcessed, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
   
             var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
@@ -409,6 +413,9 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>(persistentSubscription);
             perSubscrBus.Subscribe<StorageMessage.EventCommitted>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscription>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscription>(persistentSubscription);
+            perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
 
             // TIMER
             _timeProvider = new RealTimeProvider();
