@@ -690,6 +690,9 @@ namespace EventStore.Core.Messages
     [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
     public readonly CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult Result;
   
+    [ProtoMember(2, IsRequired = false, Name=@"reason", DataFormat = DataFormat.Default)]
+    public readonly string Reason;
+  
     [ProtoContract(Name=@"CreatePersistentSubscriptionResult")]
     public enum CreatePersistentSubscriptionResult
     {
@@ -698,14 +701,21 @@ namespace EventStore.Core.Messages
       Success = 0,
             
       [ProtoEnum(Name=@"AlreadyExists", Value=1)]
-      AlreadyExists = 1
+      AlreadyExists = 1,
+            
+      [ProtoEnum(Name=@"Fail", Value=2)]
+      Fail = 2,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=3)]
+      AccessDenied = 3
     }
   
     private CreatePersistentSubscriptionCompleted() {}
   
-    public CreatePersistentSubscriptionCompleted(CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult result)
+    public CreatePersistentSubscriptionCompleted(CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult result, string reason)
     {
         Result = result;
+        Reason = reason;
     }
   }
   
@@ -715,6 +725,9 @@ namespace EventStore.Core.Messages
     [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
     public readonly DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult Result;
   
+    [ProtoMember(2, IsRequired = false, Name=@"reason", DataFormat = DataFormat.Default)]
+    public readonly string Reason;
+  
     [ProtoContract(Name=@"DeletePersistentSubscriptionResult")]
     public enum DeletePersistentSubscriptionResult
     {
@@ -723,14 +736,21 @@ namespace EventStore.Core.Messages
       Success = 0,
             
       [ProtoEnum(Name=@"AlreadyExists", Value=1)]
-      AlreadyExists = 1
+      AlreadyExists = 1,
+            
+      [ProtoEnum(Name=@"Fail", Value=2)]
+      Fail = 2,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=3)]
+      AccessDenied = 3
     }
   
     private DeletePersistentSubscriptionCompleted() {}
   
-    public DeletePersistentSubscriptionCompleted(DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult result)
+    public DeletePersistentSubscriptionCompleted(DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult result, string reason)
     {
         Result = result;
+        Reason = reason;
     }
   }
   
