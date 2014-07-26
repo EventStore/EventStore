@@ -834,7 +834,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-                //Persistent subscriptions
+        //Persistent subscriptions
         public class ConnectToPersistentSubscription : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -858,6 +858,89 @@ namespace EventStore.Core.Messages
                 NumberOfFreeSlots = numberOfFreeSlots;
                 EventStreamId = eventStreamId;
                 ResolveLinkTos = resolveLinkTos;
+            }
+        }
+
+        public class CreatePersistentSubscription : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly string GroupName;
+            public readonly string EventStreamId;
+
+            public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+                  string eventStreamId, IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                EventStreamId = eventStreamId;
+            }
+        }
+
+        public class CreatePersistentSubscriptionCompleted : ReadResponseMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+            public readonly CreatePersistentSubscriptionResult Result;
+
+            public CreatePersistentSubscriptionCompleted(Guid correlationId, CreatePersistentSubscriptionResult result, string reason)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                CorrelationId = correlationId;
+                Result = result;
+                Reason = reason;
+            }
+
+            public enum CreatePersistentSubscriptionResult
+            {
+                Success = 0,
+                AlreadyExists = 1,
+                Fail = 2,
+                AccessDenied=3
+            }
+        }
+
+
+        public class DeletePersistentSubscription : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly string GroupName;
+            public readonly string EventStreamId;
+
+            public DeletePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+                  string eventStreamId, IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                EventStreamId = eventStreamId;
+            }
+        }
+
+        public class DeletePersistentSubscriptionCompleted : ReadResponseMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+            public readonly DeletePersistentSubscriptionResult Result;
+
+            public DeletePersistentSubscriptionCompleted(Guid correlationId, DeletePersistentSubscriptionResult result, string reason)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                CorrelationId = correlationId;
+                Result = result;
+                Reason = reason;
+            }
+
+            public enum DeletePersistentSubscriptionResult
+            {
+                Success = 0,
+                AlreadyExists = 1,
+                Fail = 2,
+                AccessDenied=3
             }
         }
 
