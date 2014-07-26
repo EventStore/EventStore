@@ -651,17 +651,17 @@ namespace EventStore.Core.Messages
   [Serializable, ProtoContract(Name=@"CreatePersistentSubscription")]
   public partial class CreatePersistentSubscription
   {
-    [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
-    public readonly string SubscriptionId;
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_group_name", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionGroupName;
   
     [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionId, string eventStreamId)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId)
     {
-        SubscriptionId = subscriptionId;
+        SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
     }
   }
@@ -669,17 +669,17 @@ namespace EventStore.Core.Messages
   [Serializable, ProtoContract(Name=@"DeletePersistentSubscription")]
   public partial class DeletePersistentSubscription
   {
-    [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
-    public readonly string SubscriptionId;
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_group_name", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionGroupName;
   
     [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
     private DeletePersistentSubscription() {}
   
-    public DeletePersistentSubscription(string subscriptionId, string eventStreamId)
+    public DeletePersistentSubscription(string subscriptionGroupName, string eventStreamId)
     {
-        SubscriptionId = subscriptionId;
+        SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
     }
   }

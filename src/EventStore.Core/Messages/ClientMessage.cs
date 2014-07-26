@@ -870,10 +870,11 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-                  string eventStreamId, IPrincipal user)
+                  string eventStreamId, string groupName, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 EventStreamId = eventStreamId;
+                GroupName = groupName;
             }
         }
 
@@ -902,7 +903,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-
         public class DeletePersistentSubscription : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -912,7 +912,7 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             public DeletePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-                  string eventStreamId, IPrincipal user)
+                  string eventStreamId, string groupName, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 EventStreamId = eventStreamId;

@@ -196,12 +196,12 @@ message ReadAllEventsCompleted {
 }
 
 message CreatePersistentSubscription {
-	required string subscription_id = 1;
+	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
 }
 
 message DeletePersistentSubscription {
-	required string subscription_id = 1;
+	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
 }
 
