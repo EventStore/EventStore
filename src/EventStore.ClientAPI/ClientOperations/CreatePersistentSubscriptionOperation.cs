@@ -67,6 +67,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override PersistentSubscriptionCreateResult TransformResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
         {
+            
             return new PersistentSubscriptionCreateResult(PersistentSubscriptionCreateStatus.Success);
         }
 
