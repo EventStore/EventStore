@@ -184,7 +184,7 @@ namespace EventStore.ClusterNode
                 if (intSecTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
             }
 
-			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.AuthenticationConfigFile);
+			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
 
 			return new ClusterVNodeSettings(Guid.NewGuid(), 0,
 	                                        intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,

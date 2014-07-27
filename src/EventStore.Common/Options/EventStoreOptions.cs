@@ -8,7 +8,10 @@ using System.Net;
 using System.Text;
 using EventStore.Common.Yaml.Serialization;
 using EventStore.Common.Yaml.Serialization.Utilities;
-
+using EventStore.Common.Yaml.Core;
+using EventStore.Common.Yaml.Core.Events;
+using EventStore.Common.Yaml.RepresentationModel;
+using System.ComponentModel;
 namespace EventStore.Common.Options
 {
     public class EventStoreOptions
@@ -51,20 +54,9 @@ namespace EventStore.Common.Options
                 if (File.Exists(options.Config))
                 {
                     var config = File.ReadAllText(options.Config);
-                    try
-                    {
-                        var deserializer = new Deserializer();
-                        TypeConverter.RegisterTypeConverter<IPEndPoint, IPEndPointConverter>();
-                        var configAsYaml = deserializer.Deserialize<TOptions>(new StringReader(config));
-                        MergeFromConfiguration(configAsYaml, options);
-                        ReEvaluateOptionsForDumping(options, FromConfigFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        var failureMessage = "Invalid configuration file specified. ";
-                        failureMessage += ex.Message;
-                        throw new OptionException(failureMessage, String.Empty);
-                    }
+                    var configAsYaml = Parse<TOptions>(config);
+                    MergeFromConfiguration(configAsYaml, options);
+                    ReEvaluateOptionsForDumping(options, FromConfigFile);
                 }
                 else
                 {
@@ -74,6 +66,90 @@ namespace EventStore.Common.Options
 
             options = SetEnvironmentVariables(options, environmentPrefix);
             return options;
+        }
+
+        public static TOptions Parse<TOptions>(string configFileContents, string groupName = "") where TOptions : new()
+        {
+            if (String.IsNullOrEmpty(configFileContents))
+            {
+                throw new ArgumentNullException("configFileContents", "The configuration file is empty");
+            }
+            var options = new TOptions();
+            var reader = new StringReader(configFileContents);
+            var yamlStream = new YamlStream();
+
+            try
+            {
+                yamlStream.Load(reader);
+            }
+            catch (SyntaxErrorException)
+            {
+                throw new OptionException("An invalid configuration file has been specified. Please ensure that the file is valid Yaml.", "config");
+            }
+
+            var yamlNode = (YamlMappingNode)yamlStream.Documents[0].RootNode;
+
+            if (!String.IsNullOrEmpty(groupName))
+            {
+                Func<KeyValuePair<YamlNode, YamlNode>, bool> predicate = x =>
+                                x.Key.ToString() == groupName && x.Value.GetType() == typeof(YamlMappingNode);
+
+                var nodeExists = yamlNode.Children.Any(predicate);
+                if (nodeExists)
+                {
+                    yamlNode = (YamlMappingNode)yamlNode.Children.First(predicate).Value;
+                }
+            }
+            foreach (var property in typeof(TOptions).GetProperties())
+            {
+                Func<KeyValuePair<YamlNode, YamlNode>, bool> predicate = x =>
+                                x.Key.ToString() == property.Name;
+
+                if (yamlNode.Children.Any(predicate))
+                {
+                    var propertyNode = yamlNode.Children.FirstOrDefault(predicate);
+                    var typeConverter = GetTypeConverter(property.PropertyType);
+
+                    object valueToConvertFrom = null;
+                    object value = null;
+                    if (property.PropertyType.BaseType == typeof(Array))
+                    {
+                        valueToConvertFrom = ((YamlSequenceNode)propertyNode.Value).Children
+                                        .Select(x => ((YamlScalarNode)x).Value.ToString());
+                    }
+                    else
+                    {
+                        valueToConvertFrom = ((YamlScalarNode)propertyNode.Value).Value;
+                    }
+                    try
+                    {
+                        value = typeConverter.ConvertFrom(valueToConvertFrom);
+                    }
+                    catch (FormatException ex)
+                    {
+                        throw new OptionException(ex.Message, property.Name);
+                    }
+                    property.SetValue(options, value, null);
+                }
+            }
+            return options;
+        }
+
+        private static Dictionary<Type, System.ComponentModel.TypeConverter> RegisteredTypeConverters =
+            new Dictionary<Type, System.ComponentModel.TypeConverter>
+            {   
+                {typeof(IPAddress), new IPAddressConverter()},
+                {typeof(IPEndPoint), new IPEndPointConverter()},
+                {typeof(IPEndPoint[]), new IPEndPointArrayConverter()}
+            };
+
+        private static System.ComponentModel.TypeConverter GetTypeConverter(Type typeToConvertTo)
+        {
+            if (RegisteredTypeConverters.ContainsKey(typeToConvertTo))
+            {
+                return RegisteredTypeConverters[typeToConvertTo];
+            }
+            return TypeDescriptor.GetConverter(typeToConvertTo);
         }
 
         public static string GetUsage<TOptions>()
