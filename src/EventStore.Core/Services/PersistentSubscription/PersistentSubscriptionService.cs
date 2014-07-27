@@ -59,6 +59,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(ClientMessage.UnsubscribeFromStream message)
         {
+            //I need a commit today
             UnsubscribeFromStream(message.CorrelationId, true);
         }
 
