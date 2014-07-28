@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.Core
         {
             return Task.Factory.StartNew(() =>
             {
-                for (int attempt = 1; attempt <= _maxDiscoverAttempts; ++attempt)
+                for (int attempt = 1; attempt <= _maxDiscoverAttempts; attempt++)
                 {
                     //_log.Info("Discovering cluster. Attempt {0}/{1}...", attempt, _maxDiscoverAttempts);
                     try
@@ -77,7 +77,7 @@ namespace EventStore.ClientAPI.Core
             var gossipCandidates = oldGossip != null
                                            ? GetGossipCandidatesFromOldGossip(oldGossip, failedEndPoint)
                                            : GetGossipCandidatesFromDns();
-            for (int i=0; i<gossipCandidates.Length; ++i)
+            for (int i=0; i<gossipCandidates.Length; i++)
             {
                 var gossip = TryGetGossipFrom(gossipCandidates[i]);
                 if (gossip == null || gossip.Members == null || gossip.Members.Length == 0)
@@ -143,7 +143,7 @@ namespace EventStore.ClientAPI.Core
             var result = new GossipSeed[members.Length];
             int i = -1;
             int j = members.Length;
-            for (int k = 0; k < members.Length; ++k)
+            for (int k = 0; k < members.Length; k++)
             {
                 if (members[k].State == ClusterMessages.VNodeState.Manager)
                     result[--j] = new GossipSeed(new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp), members[k].ExternalHttpPort));
