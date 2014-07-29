@@ -82,9 +82,9 @@ namespace EventStore.Common.Options
             {
                 yamlStream.Load(reader);
             }
-            catch (SyntaxErrorException)
+            catch (Exception ex)
             {
-                throw new OptionException("An invalid configuration file has been specified. Please ensure that the file is valid Yaml.", "config");
+                throw new OptionException(String.Format("An invalid configuration file has been specified. {0}{1}", Environment.NewLine, ex.Message), "config");
             }
 
             var yamlNode = (YamlMappingNode)yamlStream.Documents[0].RootNode;
