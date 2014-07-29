@@ -297,7 +297,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             if (message != null)
                 _publisher.Publish(message);
             else
-                SendBadRequestAndClose(package.CorrelationId,
+                SendBadRequest(package.CorrelationId,
                                        string.Format("Couldn't unwrap network package for command {0}.\n{1}", package.Command, error));
         }
 
@@ -322,6 +322,16 @@ namespace EventStore.Core.Services.Transport.Tcp
                       ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, message);
             _connection.Close(message);
         }
+
+        public void SendBadRequest(Guid correlationId, string message)
+        {
+            Ensure.NotNull(message, "message");
+
+            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Helper.UTF8NoBom.GetBytes(message)), checkQueueSize: false);
+            Log.Error("Closing connection '{0}' [{1}, L{2}, {3:B}] due to error. Reason: {4}",
+                      ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, message);
+        }
+
 
         public void Stop(string reason = null)
         {
