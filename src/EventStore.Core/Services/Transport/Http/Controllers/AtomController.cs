@@ -687,7 +687,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         SendBadRequest(manager, "Write request body invalid.");
                         return;
                     }
-    
+                    foreach(var e in events) {
+                        if(e.Data.Length + e.Metadata.Length > 4 * 1024 * 1024) {
+                            SendTooBig(manager);
+                        }
+                    }
                     var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                           manager,
                                                           Format.WriteEventsCompleted,
