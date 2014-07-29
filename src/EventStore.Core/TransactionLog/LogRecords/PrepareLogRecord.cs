@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
@@ -117,6 +118,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             EventType = eventType ?? string.Empty;
             Data = data;
             Metadata = metadata ?? NoData;
+            if(InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
         }
 
         internal PrepareLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.Prepare, version, logPosition)
@@ -140,6 +142,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             
             var metadataCount = reader.ReadInt32();
             Metadata = metadataCount == 0 ? NoData : reader.ReadBytes(metadataCount);
+            if(InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
         }
 
         public override void WriteTo(BinaryWriter writer)
