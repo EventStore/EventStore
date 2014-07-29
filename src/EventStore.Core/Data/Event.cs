@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core.Data
@@ -36,9 +35,9 @@ namespace EventStore.Core.Data
             var size = Data == null ? 0 : Data.Length;
             size += Metadata == null ? 0 : Metadata.Length;
             size += eventType.Length * 2;
-            if( size > TFConsts.MaxLogRecordSize - 10000) {
-                throw new ArgumentException("data", "Record is too big");
-            }
+
+            if( size > TFConsts.MaxLogRecordSize - 10000)
+                throw new ArgumentException("Record is too big", "data");
         }
     }
 }
