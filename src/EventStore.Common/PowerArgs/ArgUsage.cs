@@ -188,7 +188,11 @@ namespace PowerArgs
             }
 
             Aliases.AddRange(toAutoGen.Aliases.Skip(1).Select(a => "-" + a));
-
+            if (Aliases.Count == 0)
+            {
+                //add shortcut alias
+                Aliases.Add("-" + Name.ToLower());
+            }
             Type = toAutoGen.ArgumentType.Name;
             if (KnownTypeMappings.ContainsKey(Type))
             {

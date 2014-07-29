@@ -41,8 +41,13 @@ namespace EventStore.Common.Options
             TOptions options;
             try
             {
-                options = Args.Parse<TOptions>(args);
-                ReEvaluateOptionsForDumping(options, FromCommandLine);
+                var definition = new CommandLineArgumentsDefinition(typeof(TOptions));
+                options = (TOptions)Args.Parse(definition, args).Value;
+                var changedOptions = definition.Arguments.Where(x => x.RevivedValue != null).ToList();
+                foreach (var changedOption in changedOptions)
+                {
+                    SetDumpedOptions(((System.Reflection.PropertyInfo)changedOption.Source).Name, FromCommandLine, changedOption.RevivedValue);
+                }
             }
             catch (ArgException ex)
             {
@@ -56,7 +61,6 @@ namespace EventStore.Common.Options
                     var config = File.ReadAllText(options.Config);
                     var configAsYaml = Parse<TOptions>(config);
                     MergeFromConfiguration(configAsYaml, options);
-                    ReEvaluateOptionsForDumping(options, FromConfigFile);
                 }
                 else
                 {
@@ -82,9 +86,9 @@ namespace EventStore.Common.Options
             {
                 yamlStream.Load(reader);
             }
-            catch (SyntaxErrorException)
+            catch (Exception ex)
             {
-                throw new OptionException("An invalid configuration file has been specified. Please ensure that the file is valid Yaml.", "config");
+                throw new OptionException(String.Format("An invalid configuration file has been specified. {0}{1}", Environment.NewLine, ex.Message), "config");
             }
 
             var yamlNode = (YamlMappingNode)yamlStream.Documents[0].RootNode;
@@ -125,11 +129,12 @@ namespace EventStore.Common.Options
                     {
                         value = typeConverter.ConvertFrom(valueToConvertFrom);
                     }
-                    catch (FormatException ex)
+                    catch (Exception ex)
                     {
                         throw new OptionException(ex.Message, property.Name);
                     }
                     property.SetValue(options, value, null);
+                    SetDumpedOptions(property.Name, FromConfigFile, value);
                 }
             }
             return options;
@@ -227,13 +232,14 @@ namespace EventStore.Common.Options
                 {
                     try
                     {
-                        var valueToUse = Convert.ChangeType(environmentVariableValue, property.PropertyType);
+                        var typeConverter = GetTypeConverter(property.PropertyType);
+                        var valueToUse = typeConverter.ConvertFrom(environmentVariableValue);
                         SetDumpedOptions(property.Name, FromEnvironmentVariable, valueToUse);
                         property.SetValue(eventStoreArguments, valueToUse, null);
                     }
-                    catch (FormatException ex)
+                    catch (Exception ex)
                     {
-                        throw new OptionException(ex.Message, String.Empty);
+                        throw new OptionException(ex.Message, property.Name);
                     }
                 }
             }
