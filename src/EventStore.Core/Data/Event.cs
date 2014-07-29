@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 using EventStore.Common.Utils;
-
+using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core.Data
 {
     public class Event
@@ -30,7 +30,9 @@ namespace EventStore.Core.Data
             EventId = eventId;
             EventType = eventType;
             IsJson = isJson;
-
+            if(Data.Length + Metadata.Length + (eventType.Length * 2) > TFConsts.MaxLogRecordSize - 10000) {
+                throw new ArgumentException("data", "Record is too big");
+            }
             Data = data ?? Empty.ByteArray;
             Metadata = metadata ?? Empty.ByteArray;
         }
