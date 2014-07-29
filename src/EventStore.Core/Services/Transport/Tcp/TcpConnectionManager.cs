@@ -286,12 +286,19 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void UnwrapAndPublishPackage(TcpPackage package, IPrincipal user, string login, string password)
         {
-            var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this);
+            Message message = null;
+            string error = "";
+            try {
+                message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this);
+            }
+            catch(Exception ex) {
+                error = ex.Message;
+            }
             if (message != null)
                 _publisher.Publish(message);
             else
                 SendBadRequestAndClose(package.CorrelationId,
-                                       string.Format("Couldn't unwrap network package for command {0}.", package.Command));
+                                       string.Format("Couldn't unwrap network package for command {0}.\n{1}", package.Command, error));
         }
 
         private void ReplyNotAuthenticated(Guid correlationId, string description)
