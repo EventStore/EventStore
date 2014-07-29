@@ -30,7 +30,10 @@ namespace EventStore.Core.Data
             EventId = eventId;
             EventType = eventType;
             IsJson = isJson;
-            if(Data.Length + Metadata.Length + (eventType.Length * 2) > TFConsts.MaxLogRecordSize - 10000) {
+            var size = Data == null ? 0 : Data.Length;
+            size += Metadata == null ? 0 : Metadata.Length;
+            size += eventType.Length * 2;
+            if( size > TFConsts.MaxLogRecordSize - 10000) {
                 throw new ArgumentException("data", "Record is too big");
             }
             Data = data ?? Empty.ByteArray;
