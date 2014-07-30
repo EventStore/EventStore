@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         [Test]
         public void should_use_the_environment_variable_over_the_default_value()
         {
-            Environment.SetEnvironmentVariable("ES_HTTP_PORT", "2111");
+            Environment.SetEnvironmentVariable(String.Format("{0}HTTP_PORT", Opts.EnvPrefix), "2111");
             var args = new string[] { };
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual(2111, testArgs.HttpPort);

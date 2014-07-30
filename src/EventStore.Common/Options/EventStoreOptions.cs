@@ -134,7 +134,10 @@ namespace EventStore.Common.Options
                         throw new OptionException(ex.Message, property.Name);
                     }
                     property.SetValue(options, value, null);
-                    SetDumpedOptions(property.Name, FromConfigFile, value);
+                    if (String.IsNullOrEmpty(groupName))
+                    {
+                        SetDumpedOptions(property.Name, FromConfigFile, value);
+                    }
                 }
             }
             return options;
