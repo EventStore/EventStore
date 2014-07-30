@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Common
         public int HttpPort { get; set; }
         public TestArgs()
         {
-            HttpPort = 2111;
+            HttpPort = 2112;
             Log = "~/logs";
         }
     }
