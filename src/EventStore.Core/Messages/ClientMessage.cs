@@ -843,11 +843,10 @@ namespace EventStore.Core.Messages
             public readonly Guid ConnectionId;
             public readonly string SubscriptionId;
             public readonly string EventStreamId;
-            public readonly bool ResolveLinkTos;
             public readonly int NumberOfFreeSlots;
 
             public ConnectToPersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
-                string subscriptionId, string eventStreamId, bool resolveLinkTos, int numberOfFreeSlots, IPrincipal user)
+                string subscriptionId, string eventStreamId, int numberOfFreeSlots, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 Ensure.NotEmptyGuid(connectionId, "connectionId");
@@ -857,7 +856,6 @@ namespace EventStore.Core.Messages
                 ConnectionId = connectionId;
                 NumberOfFreeSlots = numberOfFreeSlots;
                 EventStreamId = eventStreamId;
-                ResolveLinkTos = resolveLinkTos;
             }
         }
 
@@ -865,14 +863,16 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
+            public readonly bool ResolveLinkTos;
 
             public readonly string GroupName;
             public readonly string EventStreamId;
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-                  string eventStreamId, string groupName, IPrincipal user)
+                  string eventStreamId, string groupName, bool resolveLinkTos, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
+                ResolveLinkTos = resolveLinkTos;
                 EventStreamId = eventStreamId;
                 GroupName = groupName;
             }

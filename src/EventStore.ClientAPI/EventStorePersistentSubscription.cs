@@ -20,7 +20,6 @@ namespace EventStore.ClientAPI
 
         private readonly string _subscriptionId;
         private readonly string _streamId;
-        private readonly bool _resolveLinkTos;
         private readonly Action<EventStorePersistentSubscription, ResolvedEvent> _eventAppeared;
         private readonly Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly UserCredentials _userCredentials;
@@ -40,7 +39,6 @@ namespace EventStore.ClientAPI
 
         internal EventStorePersistentSubscription(string subscriptionId, 
             string streamId, 
-            bool resolveLinkTos,
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials,
@@ -52,7 +50,6 @@ namespace EventStore.ClientAPI
         {
             _subscriptionId = subscriptionId;
             _streamId = streamId;
-            _resolveLinkTos = resolveLinkTos;
             _eventAppeared = eventAppeared;
             _subscriptionDropped = subscriptionDropped;
             _userCredentials = userCredentials;
@@ -76,7 +73,7 @@ namespace EventStore.ClientAPI
             _stopped.Reset();
 
             var source = new TaskCompletionSource<PersistentEventStoreSubscription>();
-            _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, _subscriptionId, _streamId, _resolveLinkTos, DefaultBufferSize,
+            _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, _subscriptionId, _streamId, DefaultBufferSize,
                                                                  _userCredentials, OnEventAppeared,
                                                                  OnSubscriptionDropped, _settings.MaxRetries, _settings.OperationTimeout));
             source.Task.Wait();

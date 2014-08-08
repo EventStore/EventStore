@@ -436,7 +436,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.CreatePersistentSubscription>();
             if(dto == null) return null;
             return new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
-                            dto.EventStreamId, dto.SubscriptionGroupName, user);
+                            dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, user);
         }
 
         private ClientMessage.DeletePersistentSubscription UnwrapDeletePersistentSubscription(
@@ -465,7 +465,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.ConnectToPersistentSubscription>();
             if (dto == null) return null;
             return new ClientMessage.ConnectToPersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
-                connection.ConnectionId, dto.SubscriptionId, dto.EventStreamId, dto.ResolveLinkTos, dto.NumberOfFreeSlots, user);
+                connection.ConnectionId, dto.SubscriptionId, dto.EventStreamId, dto.NumberOfFreeSlots, user);
         }
 
         private ClientMessage.PersistentSubscriptionNotifyEventsProcessed UnwrapPersistentSubscriptionNotifyEventsProcessed(
