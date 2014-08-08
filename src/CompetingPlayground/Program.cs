@@ -9,8 +9,8 @@ namespace CompetingPlayground
 {
     class Program
     {
-        private const string Stream = "FOO";
-        private const string SubName = "TEST";
+        private const string Stream = "stream";
+        private const string SubName = "subscription";
         static void Main(string[] args)
         {
             BasicTest();
