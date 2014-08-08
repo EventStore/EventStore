@@ -26,7 +26,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.DeletePersistentSubscription(_stream, _groupName);
+            return new ClientMessage.DeletePersistentSubscription(_groupName, _stream);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.DeletePersistentSubscriptionCompleted response)

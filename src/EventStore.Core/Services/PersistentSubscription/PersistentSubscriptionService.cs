@@ -116,9 +116,19 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
             }
             List<PersistentSubscription> subscribers;
-            if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
+            _subscriptionsById.Remove(message.GroupName);
+            if (_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
-                
+                for (int i = 0; i < subscribers.Count; i++)
+                {
+                    var sub = subscribers[i];
+                    if (sub.SubscriptionId == message.GroupName)
+                    {
+                        sub.Shutdown();
+                        subscribers.RemoveAt(i);
+                        break;
+                    }
+                }
             }
 
             message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
