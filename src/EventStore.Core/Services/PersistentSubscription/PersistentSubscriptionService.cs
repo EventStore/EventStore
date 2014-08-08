@@ -59,7 +59,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(ClientMessage.UnsubscribeFromStream message)
         {
-            //I need a commit today
             UnsubscribeFromStream(message.CorrelationId, true);
         }
 
@@ -73,6 +72,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Log.Debug("delete subscription");
         }
 
+        //should we also call statistics from the stastics subsystem to write into stream?
         public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message)
         {
             Log.Debug("get statistics");
