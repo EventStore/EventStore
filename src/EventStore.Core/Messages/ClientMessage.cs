@@ -915,6 +915,7 @@ namespace EventStore.Core.Messages
                   string eventStreamId, string groupName, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
+                GroupName = groupName;
                 EventStreamId = eventStreamId;
             }
         }
