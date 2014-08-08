@@ -657,12 +657,16 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
+    [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
+        ResolveLinkTos = resolveLinkTos;
     }
   }
   
@@ -763,19 +767,15 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
-    [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
-    public readonly bool ResolveLinkTos;
-  
-    [ProtoMember(4, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
+    [ProtoMember(3, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
     public readonly int NumberOfFreeSlots;
   
     private ConnectToPersistentSubscription() {}
   
-    public ConnectToPersistentSubscription(string subscriptionId, string eventStreamId, bool resolveLinkTos, int numberOfFreeSlots)
+    public ConnectToPersistentSubscription(string subscriptionId, string eventStreamId, int numberOfFreeSlots)
     {
         SubscriptionId = subscriptionId;
         EventStreamId = eventStreamId;
-        ResolveLinkTos = resolveLinkTos;
         NumberOfFreeSlots = numberOfFreeSlots;
     }
   }
