@@ -28,7 +28,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.CreatePersistentSubscription(_stream, _groupName, _resolveLinkTos);
+            return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
