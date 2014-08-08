@@ -275,7 +275,6 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="subscriptionId">The subscription group to connect to</param>
         /// <param name="stream">The stream to subscribe to</param>
-        /// <param name="resolveLinkTos">whether or not to resolve links when reading events</param>
         /// <param name="eventAppeared">An action invoked when an event appears</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
@@ -284,7 +283,6 @@ namespace EventStore.ClientAPI
         EventStorePersistentSubscription ConnectToPersistentSubscription(
             string subscriptionId, 
             string stream, 
-            bool resolveLinkTos,
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
@@ -333,9 +331,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="stream">The name of the stream to create the persistent subscription on</param>
         /// <param name="groupName">The name of the group to create</param>
+        /// <param name="resolveLinkTos">Whether or not to resolved link tos on this subscription group</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <returns>A <see cref="PersistentSubscriptionCreateResult"/>.</returns>
-        Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null);
+        Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Asynchronously delete a persistent subscription group on a stream

@@ -64,12 +64,50 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(ClientMessage.CreatePersistentSubscription message)
         {
-            Log.Debug("create subscription");
+            Log.Debug("create subscription " + message.GroupName);
+            //TODO revisit for permissions. maybe make admin only?
+            /*var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.AllStream, StreamAccessType.Write, message.User);
+
+            if (!streamAccess.Granted)
+            {
+                message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
+                                    ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied,
+                                    "You do not have permissions to create streams"));
+                return;
+            }*/
+
+            if (_subscriptionsById.ContainsKey(message.GroupName))
+            {
+                message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
+                    ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists, 
+                    "Group " + message.GroupName + " already exists."));
+                return;
+            }
+            List<PersistentSubscription> subscribers;
+            if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
+            {
+                subscribers = new List<PersistentSubscription>();
+                _subscriptionTopics.Add(message.EventStreamId, subscribers);
+            }
+
+            var subscription = new PersistentSubscription(
+                message.ResolveLinkTos, message.GroupName,
+                message.EventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : message.EventStreamId,
+                _eventLoader, _checkpointReader, new PersistentSubscriptionCheckpointWriter(message.GroupName, _ioDispatcher));
+            _subscriptionsById[message.GroupName] = subscription;
+            subscribers.Add(subscription);
+            Log.Debug("New persistent subscription {0}.", message.GroupName);
+
+            message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
+                ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, ""));
         }
 
         public void Handle(ClientMessage.DeletePersistentSubscription message)
         {
-            Log.Debug("delete subscription");
+            Log.Debug("delete subscription " + message.GroupName);
+            message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
+    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success, ""));
+
         }
 
         //should we also call statistics from the stastics subsystem to write into stream?
@@ -143,20 +181,17 @@ namespace EventStore.Core.Services.PersistentSubscription
             List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
-                subscribers = new List<PersistentSubscription>();
-                _subscriptionTopics.Add(message.EventStreamId, subscribers);
+                //TODO this is subscription doesnt exist.
+                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.AccessDenied));
+                return;
             }
 
             PersistentSubscription subscription;
             if (!_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
-                subscription = new PersistentSubscription(
-                    message.ResolveLinkTos, message.SubscriptionId,
-                    message.EventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : message.EventStreamId,
-                    _eventLoader,_checkpointReader, new PersistentSubscriptionCheckpointWriter(message.SubscriptionId, _ioDispatcher));
-                _subscriptionsById[message.SubscriptionId] = subscription;
-                subscribers.Add(subscription);
-                Log.Debug("New persistent subscription {0}.",message.SubscriptionId);
+                //TODO this is subscription doesnt exist
+                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.AccessDenied));
+                return;
             }
             Log.Debug("New connection to persistent subscription {0}.", message.SubscriptionId);
             var lastEventNumber = _readIndex.GetStreamLastEventNumber(message.EventStreamId);

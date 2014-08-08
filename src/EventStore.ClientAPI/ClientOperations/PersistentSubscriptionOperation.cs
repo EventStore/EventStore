@@ -12,8 +12,8 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _subscriptionId;
         private readonly int _bufferSize;
 
-        public PersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, int bufferSize, string streamId, bool resolveLinkTos, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
-            : base(log, source, streamId, resolveLinkTos, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
+        public PersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, int bufferSize, string streamId, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
+            : base(log, source, streamId, false, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
         {
             _subscriptionId = subscriptionId;
             _bufferSize = bufferSize;
@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected override TcpPackage CreateSubscriptionPackage()
         {
-            var dto = new ClientMessage.ConnectToPersistentSubscription(_subscriptionId, _streamId, _resolveLinkTos, _bufferSize);
+            var dto = new ClientMessage.ConnectToPersistentSubscription(_subscriptionId, _streamId, _bufferSize);
             return new TcpPackage(TcpCommand.ConnectToPersistentSubscription,
                                   _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   _correlationId,

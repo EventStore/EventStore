@@ -291,7 +291,6 @@ namespace EventStore.ClientAPI
         public EventStorePersistentSubscription ConnectToPersistentSubscription(
             string subscriptionId, 
             string stream, 
-            bool resolveLinkTos,
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, 
@@ -302,7 +301,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var subscription = new EventStorePersistentSubscription(
-                subscriptionId, stream, resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
+                subscriptionId, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
                 _settings.VerboseLogging, _settings, _handler, bufferSize ?? EventStorePersistentSubscription.DefaultBufferSize);
 
             subscription.Start();
@@ -310,11 +309,11 @@ namespace EventStore.ClientAPI
             return subscription;
         }
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, bool resolveLinkTos, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, resolveLinkTos, userCredentials));
             return source.Task;
         }
 

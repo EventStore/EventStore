@@ -134,7 +134,6 @@ namespace EventStore.ClientAPI.Core
 
         public readonly string SubscriptionId;
         public readonly string StreamId;
-        public readonly bool ResolveLinkTos;
         public readonly int BufferSize;
         public readonly UserCredentials UserCredentials;
         public readonly Action<PersistentEventStoreSubscription, ResolvedEvent> EventAppeared;
@@ -143,7 +142,7 @@ namespace EventStore.ClientAPI.Core
         public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
 
-        public StartPersistentSubscriptionMessage(TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, bool resolveLinkTos, int bufferSize, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan timeout)
+        public StartPersistentSubscriptionMessage(TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan timeout)
         {
             Ensure.NotNull(source, "source");
             Ensure.NotNull(eventAppeared, "eventAppeared");
@@ -154,7 +153,6 @@ namespace EventStore.ClientAPI.Core
             BufferSize = bufferSize;
             Source = source;
             StreamId = streamId;
-            ResolveLinkTos = resolveLinkTos;
             UserCredentials = userCredentials;
             EventAppeared = eventAppeared;
             SubscriptionDropped = subscriptionDropped;

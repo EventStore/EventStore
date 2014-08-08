@@ -12,21 +12,23 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly string _stream;
         private readonly string _groupName;
-
+        private readonly bool _resolveLinkTos;
         public CreatePersistentSubscriptionOperation(ILogger log,
                                        TaskCompletionSource<PersistentSubscriptionCreateResult> source,
                                        string stream,
                                        string groupName,
+                                       bool resolveLinkTos,
                                        UserCredentials userCredentials)
             : base(log, source, TcpCommand.CreatePersistentSubscription, TcpCommand.CreatePersistentSubscriptionCompleted, userCredentials)
         {
+            _resolveLinkTos = resolveLinkTos;
             _stream = stream;
             _groupName = groupName;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.CreatePersistentSubscription(_stream, _groupName);
+            return new ClientMessage.CreatePersistentSubscription(_stream, _groupName, _resolveLinkTos);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
