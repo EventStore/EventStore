@@ -110,8 +110,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             if (!streamAccess.Granted)
             {
-                message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
-                                    ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied,
+                message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
+                                    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied,
                                     "You do not have permissions to create streams"));
                 return;
             }
@@ -151,7 +151,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         private void CleanUpDeadSubscriptions()
-        {
+        {/*
             var deadSubscriptions = _subscriptionsById.Values.Where(x => !x.HasAnyClients).ToList();
             foreach (var deadSubscription in deadSubscriptions)
             {
@@ -181,6 +181,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     _subscriptionTopics.Remove(subscriptionGroupsToRemove[i]);
                 }
             }
+          */
         }
 
         public void Handle(ClientMessage.ConnectToPersistentSubscription message)
