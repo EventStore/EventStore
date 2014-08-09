@@ -38,9 +38,13 @@ namespace CompetingPlayground
         private static EventStorePersistentSubscription ConnectToSubscription(IEventStoreConnection connection, string name)
         {
             return connection.ConnectToPersistentSubscription(SubName, Stream,
-                (sub, ev) => Console.WriteLine(name + "received: " + ev.OriginalEventNumber),
+                (sub, ev) =>
+                {
+                    Thread.Sleep(250);
+                    Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
+                },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
-                bufferSize: 4);
+                bufferSize: 1);
         }
 
         private static void WriteEvents(IEventStoreConnection connection)
