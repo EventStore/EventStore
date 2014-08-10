@@ -663,7 +663,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetFaulted(Exception ex)
         {
-            SetFaulted(ex.Message);
+            SetFaulted(ex.Message + "\r\n" + (ex.StackTrace ?? "").ToString());
         }
 
         public void SetFaulted(string reason)

@@ -11,6 +11,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Responses;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Utils;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -20,6 +21,7 @@ namespace EventStore.Projections.Core.Services.Management
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
+        private IODispatcherAsync.CancellationScope _cancellationScope;
 
         public ProjectionManagerResponseReader(IPublisher publisher, IODispatcher ioDispatcher)
         {
@@ -33,6 +35,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Starting message)
         {
+            _cancellationScope = new IODispatcherAsync.CancellationScope();
             PerformStartReader().Run();
         }
 
@@ -40,6 +43,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             yield return
                 _ioDispatcher.BeginUpdateStreamAcl(
+                    _cancellationScope,
                     ProjectionNamesBuilder._projectionsControlStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
@@ -48,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             yield return
                 _ioDispatcher.BeginUpdateStreamAcl(
+                _cancellationScope,
                     ProjectionNamesBuilder._projectionsMasterStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
@@ -55,9 +60,10 @@ namespace EventStore.Projections.Core.Services.Management
                     completed => { });
 
             ClientMessage.WriteEventsCompleted writeResult = null;
-//            Trace.WriteLine("Writing $response-reader-starting");
+            DebugLogger.Log("Writing $response-reader-starting");
             yield return
                 _ioDispatcher.BeginWriteEvents(
+                _cancellationScope,
                     ProjectionNamesBuilder._projectionsMasterStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
@@ -68,12 +74,14 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
             var from = writeResult.LastEventNumber;
-//            Trace.WriteLine("$response-reader-starting has been written. Starting event number is: " + from);
+            DebugLogger.Log("$response-reader-starting has been written. Starting event number is: " + from);
 
+            _publisher.Publish(new ProjectionManagementMessage.ReaderReady());
 
-//            Trace.WriteLine("Writing $response-reader-started");
+            DebugLogger.Log("Writing $response-reader-started");
             yield return
                 _ioDispatcher.BeginWriteEvents(
+                _cancellationScope,
                     ProjectionNamesBuilder._projectionsControlStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
@@ -83,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (writeResult.Result != OperationResult.Success)
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
-//            Trace.WriteLine("$response-reader-started has been written");
+            DebugLogger.Log("$response-reader-started has been written");
 
             while (true)
             {
@@ -91,9 +99,10 @@ namespace EventStore.Projections.Core.Services.Management
                 var subscribeFrom = default(TFPos);
                 do
                 {
-                    //Trace.WriteLine("Reading " + ProjectionNamesBuilder._projectionsMasterStream);
+                    DebugLogger.Log("Reading " + ProjectionNamesBuilder._projectionsMasterStream);
                     yield return
                         _ioDispatcher.BeginReadForward(
+                        _cancellationScope,
                             ProjectionNamesBuilder._projectionsMasterStream,
                             @from,
                             10,
@@ -101,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Management
                             SystemAccount.Principal,
                             completed =>
                             {
-                                //Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
+                                DebugLogger.Log(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
                                 if (completed.Result == ReadStreamResult.Success
                                     || completed.Result == ReadStreamResult.NoStream)
                                 {
@@ -118,25 +127,26 @@ namespace EventStore.Projections.Core.Services.Management
                                     }
                                 }
                                 else
-                                    Trace.WriteLine(
+                                    DebugLogger.Log(
                                         ProjectionNamesBuilder._projectionsMasterStream + " read completed: "
                                         + completed.Result);
                             });
                 } while (!eof);
-                //Trace.WriteLine("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
+                DebugLogger.Log("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
                 yield return
                     _ioDispatcher.BeginSubscribeAwake(
+                    _cancellationScope,
                         ProjectionNamesBuilder._projectionsMasterStream,
                         subscribeFrom,
                         message => { });
-                //Trace.WriteLine(ProjectionNamesBuilder._projectionsMasterStream + " await completed");
+                DebugLogger.Log(ProjectionNamesBuilder._projectionsMasterStream + " await completed");
             }
         }
 
         private void PublishCommand(ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            //Trace.WriteLine("Response received: " + command);
+            DebugLogger.Log("Response received: " + command);
             switch (command)
             {
                 case "$response-reader-starting":

@@ -9,6 +9,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Messages.Persisted.Responses.Slave;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Utils;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -21,6 +22,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly Guid _masterProjectionId;
         private readonly string _streamId;
 
+        private IODispatcherAsync.CancellationScope _cancellationScope;
         private bool _stopped;
         private Guid _lastAwakeCorrelationId;
 
@@ -42,11 +44,13 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Start()
         {
+            _cancellationScope = new IODispatcherAsync.CancellationScope();
             StartReaderSteps().Run();
         }
 
         public void Stop()
         {
+            _cancellationScope.Cancel();
             _stopped = true;
             _ioDispatcher.UnsubscribeAwake(_lastAwakeCorrelationId);
         }
@@ -55,6 +59,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             yield return
                 _ioDispatcher.BeginUpdateStreamAcl(
+                _cancellationScope,
                     _streamId,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
@@ -69,9 +74,10 @@ namespace EventStore.Projections.Core.Services.Management
                 var subscribeFrom = default(TFPos);
                 do
                 {
-                    //Trace.WriteLine("Reading " + _streamId);
+                    DebugLogger.Log("Reading " + _streamId);
                     yield return
                         _ioDispatcher.BeginReadForward(
+                            _cancellationScope,
                             _streamId,
                             @from,
                             10,
@@ -79,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Management
                             SystemAccount.Principal,
                             completed =>
                             {
-                                //Trace.WriteLine(_streamId + " read completed: " + completed.Result);
+                                DebugLogger.Log(_streamId + " read completed: " + completed.Result);
                                 if (completed.Result == ReadStreamResult.Success
                                     || completed.Result == ReadStreamResult.NoStream)
                                 {
@@ -96,15 +102,15 @@ namespace EventStore.Projections.Core.Services.Management
                                     }
                                 }
                                 else
-                                    Trace.WriteLine(_streamId + " read completed: " + completed.Result);
+                                    DebugLogger.Log(_streamId + " read completed: " + completed.Result);
                             });
                 } while (!eof);
-                //Trace.WriteLine("Awaiting " + _streamId);
+                DebugLogger.Log("Awaiting " + _streamId);
                 _lastAwakeCorrelationId = Guid.NewGuid();
                 yield return
-                    _ioDispatcher.BeginSubscribeAwake(_streamId, subscribeFrom, message => { }, _lastAwakeCorrelationId)
+                    _ioDispatcher.BeginSubscribeAwake(_cancellationScope, _streamId, subscribeFrom, message => { }, _lastAwakeCorrelationId)
                     ;
-                //Trace.WriteLine(_streamId + " await completed");
+                DebugLogger.Log(_streamId + " await completed");
             }
             // unlikely we can ever get here, but still possible - do nothing
         }
@@ -112,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void PublishCommand(ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            //Trace.WriteLine("Response received: " + command);
+            DebugLogger.Log("Response received: " + command);
             switch (command)
             {
                 case "$measured":

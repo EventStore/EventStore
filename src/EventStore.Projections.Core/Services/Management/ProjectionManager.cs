@@ -45,7 +45,8 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionStatusMessage.StatisticsReport>,
             IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
             IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
-            IHandle<CoreProjectionStatusMessage.ProjectionWorkerStarted>
+            IHandle<CoreProjectionStatusMessage.ProjectionWorkerStarted>, 
+            IHandle<ProjectionManagementMessage.ReaderReady>
 
     {
         public const int ProjectionQueryId = -2;
@@ -145,6 +146,10 @@ namespace EventStore.Projections.Core.Services.Management
         private void Start()
         {
             _publisher.Publish(new ProjectionManagementMessage.Starting());
+        }
+
+        public void Handle(ProjectionManagementMessage.ReaderReady message)
+        {
             if (_runProjections >= ProjectionType.System)
                 StartExistingProjections(
                     () =>
@@ -153,6 +158,7 @@ namespace EventStore.Projections.Core.Services.Management
                         ScheduleExpire();
                     });
         }
+
 
         private void ScheduleExpire()
         {
@@ -1044,5 +1050,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             //
         }
+
     }
 }

@@ -57,6 +57,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CallbackSubscriber.cs" />
     <Compile Include="ClientAPI\Cluster\specification_with_standard_projections_runnning.cs" />
     <Compile Include="ClientAPI\event_by_type_index.cs" />
     <Compile Include="ClientAPI\event_by_type_index\when_reverting_after_index_catches_up.cs" />

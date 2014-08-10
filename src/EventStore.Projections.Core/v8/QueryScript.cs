@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.v8
 {
@@ -72,7 +73,7 @@ namespace EventStore.Projections.Core.v8
                         DoEmit(commandBody);
                         break;
                     default:
-                        Console.WriteLine("Ignoring unknown reverse command: '{0}'", commandName);
+                        DebugLogger.Log("Ignoring unknown reverse command: '{0}'", commandName);
                         break;
                 }
             }
@@ -133,7 +134,7 @@ namespace EventStore.Projections.Core.v8
                     // ignore - browser based debugging only
                     break;
                 default:
-                    Console.WriteLine(
+                    DebugLogger.Log(
                         string.Format("Unknown command handler registered. Command name: {0}", commandName));
                     break;
             }

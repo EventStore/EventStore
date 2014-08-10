@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private bool Busy;
         private readonly List<Item> Items = new List<Item>();
+        private IODispatcherAsync.CancellationScope _cancellationScope;
 
         private class Item
         {
@@ -28,6 +29,7 @@ namespace EventStore.Projections.Core.Services.Management
         public ResponseWriter(IODispatcher ioDispatcher)
         {
             _ioDispatcher = ioDispatcher;
+            _cancellationScope = new IODispatcherAsync.CancellationScope();
         }
 
         public void PublishCommand(string command, object body)
@@ -45,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Management
             var events = Items.Select(CreateEvent).ToArray();
             Items.Clear();
             _ioDispatcher.BeginWriteEvents(
+                _cancellationScope,
                 ProjectionNamesBuilder._projectionsMasterStream,
                 ExpectedVersion.Any,
                 SystemAccount.Principal,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.v8
 {
@@ -86,7 +87,7 @@ namespace EventStore.Projections.Core.v8
             if (_logger != null)
                 _logger(message, new object[] {});
             else
-                Console.WriteLine(message);
+                DebugLogger.Log(message);
         }
 
         private IntPtr GetModule(string moduleName)

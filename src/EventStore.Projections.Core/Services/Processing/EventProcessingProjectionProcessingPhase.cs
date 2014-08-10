@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -436,7 +437,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!(_state == PhaseState.Running || _state == PhaseState.Starting))
             {
-                Console.WriteLine("Starting a checkpoint in non-runnable state");
+                DebugLogger.Log("Starting a checkpoint in non-runnable state");
                 return;
             }
             var checkpointHandler = _projectionStateHandler as IProjectionCheckpointHandler;

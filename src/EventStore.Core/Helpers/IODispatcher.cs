@@ -220,7 +220,7 @@ namespace EventStore.Core.Helpers
                     action);
         }
 
-        public void DeleteStream(
+        public Guid DeleteStream(
             string streamId,
             int expectedVersion,
             bool hardDelete,
@@ -228,7 +228,7 @@ namespace EventStore.Core.Helpers
             Action<ClientMessage.DeleteStreamCompleted> action)
         {
             var corrId = Guid.NewGuid();
-            StreamDeleter.Publish(
+            return StreamDeleter.Publish(
                 new ClientMessage.DeleteStream(
                     corrId,
                     corrId,

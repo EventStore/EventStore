@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -16,10 +17,12 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly ILogger _logger = LogManager.GetLoggerFor<MultiStreamMessageWriter>();
 
         private readonly Dictionary<Guid, Queue> _queues = new Dictionary<Guid, Queue>();
+        private IODispatcherAsync.CancellationScope _cancellationScope;
 
         public MultiStreamMessageWriter(IODispatcher ioDispatcher)
         {
             _ioDispatcher = ioDispatcher;
+            _cancellationScope = new IODispatcherAsync.CancellationScope();
         }
 
         public void PublishResponse(string command, Guid workerId, object body)
@@ -44,13 +47,19 @@ namespace EventStore.Projections.Core.Services.Management
             var events = queue.Items.Select(CreateEvent).ToArray();
             queue.Items.Clear();
             var streamId = "$projections-$" + workerId.ToString("N");
+            foreach (var e in events)
+            {
+              DebugLogger.Log("Writing a {0} command to {1}", e.EventType, streamId);
+            }
             _ioDispatcher.BeginWriteEvents(
+                _cancellationScope,
                 streamId,
                 ExpectedVersion.Any,
                 SystemAccount.Principal,
                 events,
                 completed =>
                 {
+                    DebugLogger.Log("Writing to {0} completed", streamId);
                     queue.Busy = false;
                     if (completed.Result != OperationResult.Success)
                     {

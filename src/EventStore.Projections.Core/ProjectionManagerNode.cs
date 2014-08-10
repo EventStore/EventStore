@@ -102,6 +102,7 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(projectionManager);
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(projectionManager);
                 mainBus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(projectionManager);
+                mainBus.Subscribe<ProjectionManagementMessage.ReaderReady>(projectionManager);
 //                mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManagerMessageDispatcher);
 //                mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerMessageDispatcher);
                 mainBus.Subscribe<ProjectionManagementMessage.Starting>(projectionManagerResponseReader);

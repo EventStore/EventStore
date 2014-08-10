@@ -843,6 +843,12 @@ namespace EventStore.Projections.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
         }
 
+        public class ReaderReady : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+        }
+
         public class SlaveProjectionsStarted : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
@@ -881,5 +887,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return _workerId; }
             }
         }
+
     }
 }

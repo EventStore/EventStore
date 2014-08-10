@@ -6,6 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -43,11 +44,16 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(SystemMessage.StateChangeMessage message)
         {
-            if (message.State == VNodeState.Master || message.State == VNodeState.Clone
+            DebugLogger.Log();
+            DebugLogger.Log();
+            DebugLogger.Log();
+            DebugLogger.Log("=======================" + message.State + "================");
+            if (message.State == VNodeState.Master // || message.State == VNodeState.Clone
                 || message.State == VNodeState.Slave)
             {
                 if (!_started)
                 {
+                    DebugLogger.Log("*** STARTING PROJECTION CORE ***");
                     Start();
                 }
             }
@@ -55,6 +61,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 if (_started)
                 {
+                    DebugLogger.Log("*** STOPPING PROJECTION CORE ***");
                     Stop();
                 }
             }

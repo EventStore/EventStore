@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             private void Unexpected(string message)
             {
-                _managedProjection.SetFaulted(message + "in " + this.GetType().Name);
+                _managedProjection.SetFaulted(message + " in " + this.GetType().Name);
             }
 
             protected void SetFaulted(string reason)
