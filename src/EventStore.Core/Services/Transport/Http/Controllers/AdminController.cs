@@ -21,23 +21,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
-            service.RegisterAction(new ControllerAction("/admin/halt", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostHalt);
             service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
             service.RegisterAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
-        }
-
-        private void OnPostHalt(HttpEntityManager entity, UriTemplateMatch match)
-        {
-            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
-            {
-                Log.Info("Request shut down of node because halt command has been received.");
-                Publish(new ClientMessage.RequestShutdown(exitProcess: false));
-                entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
-            }
-            else
-            {
-                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
-            }
         }
 
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
