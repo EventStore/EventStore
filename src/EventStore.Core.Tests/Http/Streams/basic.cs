@@ -691,7 +691,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void the_event_is_gone()
             {
-                Assert.AreEqual(HttpStatusCode.Gone, _lastResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
             }
         }
 
@@ -819,7 +819,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
                     new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
                         Encoding.UTF8.GetBytes("0@" + DeletedStreamName), new byte[0])).Wait();
-                conn.DeleteStreamAsync(DeletedStreamName, ExpectedVersion.Any);
+                conn.DeleteStreamAsync(DeletedStreamName, ExpectedVersion.Any).Wait();
             }
         }
     }
