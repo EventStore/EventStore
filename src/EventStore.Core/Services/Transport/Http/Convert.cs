@@ -95,7 +95,7 @@ namespace EventStore.Core.Services.Transport.Http
             var feed = new FeedElement();
             feed.SetTitle("All events");
             feed.SetId(self);
-            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
 
             feed.AddLink("self", self);
@@ -124,7 +124,7 @@ namespace EventStore.Core.Services.Transport.Http
             var feed = new FeedElement();
             feed.SetTitle(string.Format("All events"));
             feed.SetId(self);
-            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
 
             feed.AddLink("self", self);
