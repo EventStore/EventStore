@@ -3,7 +3,6 @@ using System.Text;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Messages;
 
 namespace EventStore.Core.Tests.ClientAPI
 {

@@ -1,3 +1,4 @@
+using System.Net;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
@@ -9,6 +10,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private MiniNode _node;
         protected IEventStoreConnection _conn;
+        protected IPEndPoint _HttpEndPoint;
 
         protected abstract void When();
 
@@ -18,6 +20,7 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TestFixtureSetUp();
             _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
             _node.Start();
+            _HttpEndPoint = _node.HttpEndPoint;
             _conn = TestConnection.Create(_node.TcpEndPoint);
             _conn.ConnectAsync().Wait();
             When();

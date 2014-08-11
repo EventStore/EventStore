@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using EventStore.ClientAPI.Common;
+using EventStore.Core.Tests.ClientAPI;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
@@ -676,6 +677,14 @@ namespace EventStore.Core.Tests.Http.Streams
 
         }
 
+        [TestFixture, Category("LongRunning")]
+        public class when_requesting_a_single_event_that_is_deleted_linkto : HttpSpecificationWithLinkToToDeletedEvents
+        {
+            protected override void When()
+            {
+                
+            }
+        }
 
 
         [TestFixture, Category("LongRunning")]
@@ -779,6 +788,37 @@ namespace EventStore.Core.Tests.Http.Streams
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             }
 
+        }
+
+    }
+    public abstract class HttpSpecificationWithLinkToToDeletedEvents : SpecificationWithLinkToToDeletedEvents
+    {
+        protected HttpWebRequest CreateRequest(
+    string path, string extra, string method, string contentType, ICredentials credentials = null)
+        {
+            var uri = MakeUrl(path, extra);
+            var request = WebRequest.Create(uri);
+            var httpWebRequest = (HttpWebRequest)request;
+            httpWebRequest.ConnectionGroupName = "foo";
+            httpWebRequest.Method = method;
+            httpWebRequest.ContentType = contentType;
+            httpWebRequest.UseDefaultCredentials = false;
+            if (credentials != null)
+            {
+                httpWebRequest.Credentials = credentials;
+                httpWebRequest.PreAuthenticate = true;
+            }
+            return httpWebRequest;
+        }
+
+        protected Uri MakeUrl(string path, string extra = "")
+        {
+            var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
+            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
+                return supplied;
+
+            var httpEndPoint = _HttpEndPoint;
+            return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path, extra).Uri;
         }
 
     }

@@ -163,7 +163,7 @@ namespace EventStore.Core.Tests.Http
             }
             return httpWebRequest;
         }
-
+        
         protected Uri MakeUrl(string path, string extra = "")
         {
             var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
