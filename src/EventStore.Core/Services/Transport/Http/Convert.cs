@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
             feed.StreamId = msg.EventStreamId;
             feed.SetId(self);
-            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
             feed.SetHeadOfStream(headOfStream); //TODO AN: remove this ?
             feed.SetSelfUrl(self);
