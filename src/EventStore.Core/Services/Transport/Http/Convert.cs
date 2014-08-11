@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -25,7 +26,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
             feed.StreamId = msg.EventStreamId;
             feed.SetId(self);
-            feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
 
             var prevEventNumber = Math.Min(msg.FromEventNumber + msg.MaxCount - 1, msg.LastEventNumber) + 1;
@@ -147,11 +148,11 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static EntryElement ToEntry(ResolvedEvent eventLinkPair, Uri requestedUrl, EmbedLevel embedContent, bool singleEntry = false)
         {
-            if (eventLinkPair.Event == null || requestedUrl == null)
+            if (requestedUrl == null)
                 return null;
 
             var evnt = eventLinkPair.Event;
-
+            var link = eventLinkPair.Link;
             EntryElement entry;
             if (embedContent > EmbedLevel.Content)
             {
@@ -165,7 +166,7 @@ namespace EventStore.Core.Services.Transport.Http
                 richEntry.PositionEventNumber = eventLinkPair.OriginalEvent.EventNumber;
                 richEntry.PositionStreamId = eventLinkPair.OriginalEvent.EventStreamId;
                 richEntry.IsJson = (evnt.Flags & PrepareFlags.IsJson) != 0;
-                if (embedContent >= EmbedLevel.Body)
+                if (embedContent >= EmbedLevel.Body && eventLinkPair.Event != null)
                 {
                     if (richEntry.IsJson)
                     {
@@ -236,19 +237,35 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 entry = new EntryElement();
             }
-
-            var escapedStreamId = Uri.EscapeDataString(evnt.EventStreamId);
-            entry.SetTitle(evnt.EventNumber + "@" + evnt.EventStreamId);
-            entry.SetId(HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
-            entry.SetUpdated(evnt.TimeStamp);
-            entry.SetAuthor(AtomSpecs.Author);
-            entry.SetSummary(evnt.EventType);
-            if ((singleEntry || embedContent == EmbedLevel.Content) && ((evnt.Flags & PrepareFlags.IsJson) != 0))
-                entry.SetContent(AutoEventConverter.CreateDataDto(eventLinkPair));
-            entry.AddLink("edit", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
-            entry.AddLink("alternate", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, evnt.EventNumber));
-
+            if (evnt != null)
+            {
+                SetEntryProperties(evnt.EventStreamId, evnt.EventNumber, evnt.TimeStamp, requestedUrl, entry);
+                entry.SetSummary(evnt.EventType);
+                if ((singleEntry || embedContent == EmbedLevel.Content) && ((evnt.Flags & PrepareFlags.IsJson) != 0))
+                    entry.SetContent(AutoEventConverter.CreateDataDto(eventLinkPair));
+            }
+            else if (link != null)
+            {
+                var pieces = Encoding.UTF8.GetString(link.Data).Split('@');
+                if(pieces.Length != 2) throw new Exception("link not in proper format.");
+                var eventNumber = int.Parse(pieces[0]);
+                var streamId = pieces[1];
+                SetEntryProperties(streamId, eventNumber, link.TimeStamp, requestedUrl, entry);
+            }
             return entry;
+        }
+
+        private static void SetEntryProperties(string stream, int eventNumber, DateTime timestamp, Uri requestedUrl,EntryElement entry)
+        {
+            var escapedStreamId = Uri.EscapeDataString(stream);
+            entry.SetTitle(eventNumber + "@" + stream);
+            entry.SetId(HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
+            entry.SetUpdated(timestamp);
+            entry.SetAuthor(AtomSpecs.Author);
+            entry.AddLink("edit",
+                HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
+            entry.AddLink("alternate",
+                HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
         }
 
         private static string FormatJson(string unformattedjson)

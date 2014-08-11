@@ -691,10 +691,10 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void the_event_is_gone()
             {
+
                 Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
             }
         }
-
 
         [TestFixture, Category("LongRunning")]
         public class when_requesting_a_single_event_in_the_stream_as_event_json
