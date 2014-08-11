@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Text;
+using EventStore.ClientAPI.Common;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
