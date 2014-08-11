@@ -44,6 +44,9 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EmbeddedEventStoreConnection.cs" />
+    <Compile Include="EmbeddedEventStoreLogicHandler.cs" />
+    <Compile Include="EventStoreEmbeddedConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

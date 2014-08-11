@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Embedded;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
 
@@ -42,4 +43,33 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             return settings;
         }
     }
+
+    public static class EmbeddedTestConnection
+    {
+        private static int _nextConnId = -1;
+
+        public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType, UserCredentials userCredentials = null)
+        {
+            return EmbeddedEventStoreConnection.Create(miniNode.Node, Settings(tcpType, userCredentials),
+                                               string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
+        }
+
+        private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials)
+        {
+            var settings = ConnectionSettings.Create()
+                                             .SetDefaultUserCredentials(userCredentials)
+                                             .UseCustomLogger(ClientApiLoggerBridge.Default)
+                                             .EnableVerboseLogging()
+                                             .LimitReconnectionsTo(10)
+                                             .LimitRetriesForOperationTo(100)
+                                             .SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
+                                             .SetReconnectionDelayTo(TimeSpan.Zero)
+                                             .FailOnNoServerResponse()
+                                             .SetOperationTimeoutTo(TimeSpan.FromDays(1));
+            if (tcpType == TcpType.Ssl)
+                settings.UseSslConnection("ES", false);
+            return settings;
+        }
+    }
+
 }

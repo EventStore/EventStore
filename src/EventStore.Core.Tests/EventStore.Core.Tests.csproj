@@ -77,6 +77,7 @@
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <Compile Include="ClientAPI\Embedded\append_to_stream.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_hard_deleted_stream_should.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_soft_deleted_stream_should.cs" />
     <Compile Include="ClientAPI\read_stream_events_with_unresolved_linkto.cs" />
@@ -475,6 +476,10 @@
     <Compile Include="mono_filestream_bug.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
+      <Project>{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}</Project>
+      <Name>EventStore.ClientAPI.Embedded</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
       <Project>{c7c0a3c2-a0eb-4ff4-a0cd-67eadf3f553f}</Project>
       <Name>EventStore.ClientAPI</Name>

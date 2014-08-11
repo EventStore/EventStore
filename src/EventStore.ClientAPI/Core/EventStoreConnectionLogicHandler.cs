@@ -11,7 +11,7 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.Core
 {
-    internal class EventStoreConnectionLogicHandler
+    internal class EventStoreConnectionLogicHandler : IEventStoreConnectionLogicHandler
     {
         private static readonly TimerTickMessage TimerTickMessage = new TimerTickMessage();
 

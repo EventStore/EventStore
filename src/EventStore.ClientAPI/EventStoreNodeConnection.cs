@@ -11,51 +11,35 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
-    /// <summary>
-    /// Maintains a full duplex connection to the EventStore
-    /// </summary>
-    /// <remarks>
-    /// An <see cref="EventStoreConnection"/> operates quite differently than say a <see cref="SqlConnection"/>. Normally
-    /// when using an <see cref="EventStoreConnection"/> you want to keep the connection open for a much longer of time than 
-    /// when you use a SqlConnection. If you prefer the usage pattern of using(new Connection()) .. then you would likely
-    /// want to create a FlyWeight on top of the <see cref="EventStoreConnection"/>.
-    /// 
-    /// Another difference is that with the <see cref="EventStoreConnection"/> all operations are handled in a full async manner
-    /// (even if you call the synchronous behaviors). Many threads can use an <see cref="EventStoreConnection"/> at the same
-    /// time or a single thread can make many asynchronous requests. To get the most performance out of the connection
-    /// it is generally recommended to use it in this way.
-    /// </remarks>
-    internal class EventStoreNodeConnection : IEventStoreConnection, IEventStoreTransactionConnection
+    internal abstract class EventStoreConnectionBase : IEventStoreConnection, IEventStoreTransactionConnection
     {
-        public string ConnectionName { get { return _connectionName; } }
-
         private readonly string _connectionName;
-        private readonly ConnectionSettings _settings;
-        private readonly IEndPointDiscoverer _endPointDiscoverer;
-        private readonly EventStoreConnectionLogicHandler _handler;
+        protected ConnectionSettings _settings;
+        private Lazy<IEventStoreConnectionLogicHandler> _handlerLazy;
 
         /// <summary>
         /// Constructs a new instance of a <see cref="EventStoreConnection"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
-        /// <param name="endPointDiscoverer">Discoverer of destination node end point.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
-        internal EventStoreNodeConnection(ConnectionSettings settings, IEndPointDiscoverer endPointDiscoverer, string connectionName)
+        internal EventStoreConnectionBase(ConnectionSettings settings, string connectionName)
         {
             Ensure.NotNull(settings, "settings");
-            Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");
 
             _connectionName = connectionName ?? string.Format("ES-{0}", Guid.NewGuid());
             _settings = settings;
-            _endPointDiscoverer = endPointDiscoverer;
-            _handler = new EventStoreConnectionLogicHandler(this, settings);
+// ReSharper disable DoNotCallOverridableMethodsInConstructor
+            _handlerLazy = CreateHandlerLazy(_settings);
+// ReSharper restore DoNotCallOverridableMethodsInConstructor
         }
 
-        public Task ConnectAsync()
+        protected abstract Lazy<IEventStoreConnectionLogicHandler> CreateHandlerLazy(ConnectionSettings settings);
+
+        public string ConnectionName { get { return _connectionName; } }
+
+        public IEventStoreConnectionLogicHandler Handler
         {
-            var source = new TaskCompletionSource<object>();
-            _handler.EnqueueMessage(new StartConnectionMessage(source, _endPointDiscoverer));
-            return source.Task;
+            get { return _handlerLazy.Value; }
         }
 
         void IDisposable.Dispose()
@@ -63,9 +47,10 @@ namespace EventStore.ClientAPI
             Close();
         }
 
+
         public void Close()
         {
-            _handler.EnqueueMessage(new CloseConnectionMessage("Connection close requested by client.", null));
+            Handler.EnqueueMessage(new CloseConnectionMessage("Connection close requested by client.", null));
         }
 
         public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
@@ -79,7 +64,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<DeleteResult>();
             EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.RequireMaster, 
-                                                       stream, expectedVersion, hardDelete, userCredentials));
+                stream, expectedVersion, hardDelete, userCredentials));
             return source.Task;
         }
 
@@ -107,7 +92,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<WriteResult>();
             EnqueueOperation(new AppendToStreamOperation(_settings.Log, source, _settings.RequireMaster, 
-                                                         stream, expectedVersion, events, userCredentials));
+                stream, expectedVersion, events, userCredentials));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
@@ -118,7 +103,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
             EnqueueOperation(new StartTransactionOperation(_settings.Log, source, _settings.RequireMaster, 
-                                                           stream, expectedVersion, this, userCredentials));
+                stream, expectedVersion, this, userCredentials));
             return source.Task;
         }
 
@@ -136,7 +121,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<object>();
             EnqueueOperation(new TransactionalWriteOperation(_settings.Log, source, _settings.RequireMaster, 
-                                                             transaction.TransactionId, events, userCredentials));
+                transaction.TransactionId, events, userCredentials));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
         }
@@ -147,10 +132,9 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<WriteResult>();
             EnqueueOperation(new CommitTransactionOperation(_settings.Log, source, _settings.RequireMaster, 
-                                                            transaction.TransactionId, userCredentials));
+                transaction.TransactionId, userCredentials));
             return source.Task;
         }
-
 
         public Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
@@ -158,7 +142,7 @@ namespace EventStore.ClientAPI
             if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
             var source = new TaskCompletionSource<EventReadResult>();
             var operation = new ReadEventOperation(_settings.Log, source, stream, eventNumber, resolveLinkTos,
-                                                   _settings.RequireMaster, userCredentials);
+                _settings.RequireMaster, userCredentials);
             EnqueueOperation(operation);
             return source.Task;
         }
@@ -171,7 +155,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsForwardOperation(_settings.Log, source, stream, start, count,
-                                                                 resolveLinkTos, _settings.RequireMaster, userCredentials);
+                resolveLinkTos, _settings.RequireMaster, userCredentials);
             EnqueueOperation(operation);
             return source.Task;
         }
@@ -183,7 +167,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsBackwardOperation(_settings.Log, source, stream, start, count,
-                                                                  resolveLinkTos, _settings.RequireMaster, userCredentials);
+                resolveLinkTos, _settings.RequireMaster, userCredentials);
             EnqueueOperation(operation);
             return source.Task;
         }
@@ -194,7 +178,7 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsForwardOperation(_settings.Log, source, position, maxCount,
-                                                              resolveLinkTos, _settings.RequireMaster, userCredentials);
+                resolveLinkTos, _settings.RequireMaster, userCredentials);
             EnqueueOperation(operation);
             return source.Task;
         }
@@ -205,85 +189,85 @@ namespace EventStore.ClientAPI
 
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsBackwardOperation(_settings.Log, source, position, maxCount,
-                                                               resolveLinkTos, _settings.RequireMaster, userCredentials);
+                resolveLinkTos, _settings.RequireMaster, userCredentials);
             EnqueueOperation(operation);
             return source.Task;
         }
 
         private void EnqueueOperation(IClientOperation operation)
         {
-            while (_handler.TotalOperationCount >= _settings.MaxQueueSize)
+            while (Handler.TotalOperationCount >= _settings.MaxQueueSize)
             {
                 Thread.Sleep(1);
             }
-            _handler.EnqueueMessage(new StartOperationMessage(operation, _settings.MaxRetries, _settings.OperationTimeout));
+            Handler.EnqueueMessage(new StartOperationMessage(operation, _settings.MaxRetries, _settings.OperationTimeout));
         }
 
         public Task<EventStoreSubscription> SubscribeToStreamAsync(
-                string stream,
-                bool resolveLinkTos,
-                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null)
+            string stream,
+            bool resolveLinkTos,
+            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            _handler.EnqueueMessage(new StartSubscriptionMessage(source, stream, resolveLinkTos, userCredentials,
-                                                                 eventAppeared, subscriptionDropped, 
-                                                                 _settings.MaxRetries, _settings.OperationTimeout));
+            Handler.EnqueueMessage(new StartSubscriptionMessage(source, stream, resolveLinkTos, userCredentials,
+                eventAppeared, subscriptionDropped, 
+                _settings.MaxRetries, _settings.OperationTimeout));
             return source.Task;
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
-                                                                         int? lastCheckpoint,
-                                                                         bool resolveLinkTos,
-                                                                         Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                                                                         Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                                                                         UserCredentials userCredentials = null,
-                                                                         int readBatchSize = 500)
+            int? lastCheckpoint,
+            bool resolveLinkTos,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int readBatchSize = 500)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription =
-                    new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint, 
-                                                            resolveLinkTos, userCredentials, eventAppeared, 
-                                                            liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+                new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint, 
+                    resolveLinkTos, userCredentials, eventAppeared, 
+                    liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
 
         public Task<EventStoreSubscription> SubscribeToAllAsync(
-                bool resolveLinkTos, 
-                Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
-                Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null)
+            bool resolveLinkTos, 
+            Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            _handler.EnqueueMessage(new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, userCredentials,
-                                                                 eventAppeared, subscriptionDropped,
-                                                                 _settings.MaxRetries, _settings.OperationTimeout));
+            Handler.EnqueueMessage(new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, userCredentials,
+                eventAppeared, subscriptionDropped,
+                _settings.MaxRetries, _settings.OperationTimeout));
             return source.Task;
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
-                Position? lastCheckpoint,
-                bool resolveLinkTos,
-                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null,
-                int readBatchSize = 500)
+            Position? lastCheckpoint,
+            bool resolveLinkTos,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int readBatchSize = 500)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription = 
-                    new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint, resolveLinkTos,
-                                                         userCredentials, eventAppeared, liveProcessingStarted, 
-                                                         subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+                new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint, resolveLinkTos,
+                    userCredentials, eventAppeared, liveProcessingStarted, 
+                    subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
@@ -303,12 +287,12 @@ namespace EventStore.ClientAPI
 
             var metaevent = new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
             EnqueueOperation(new AppendToStreamOperation(_settings.Log,
-                                                         source,
-                                                         _settings.RequireMaster,
-                                                         SystemStreams.MetastreamOf(stream),
-                                                         expectedMetastreamVersion,
-                                                         new[] { metaevent },
-                                                         userCredentials));
+                source,
+                _settings.RequireMaster,
+                SystemStreams.MetastreamOf(stream),
+                expectedMetastreamVersion,
+                new[] { metaevent },
+                userCredentials));
             return source.Task;
         }
 
@@ -354,18 +338,18 @@ namespace EventStore.ClientAPI
         public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null)
         {
             return AppendToStreamAsync(SystemStreams.SettingsStream, ExpectedVersion.Any, userCredentials,
-                                       new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
+                new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
         }
 
         public event EventHandler<ClientConnectionEventArgs> Connected
         {
             add
             {
-                _handler.Connected += value;
+                Handler.Connected += value;
             }
             remove
             {
-                _handler.Connected -= value;
+                Handler.Connected -= value;
             }
         }
 
@@ -373,11 +357,11 @@ namespace EventStore.ClientAPI
         {
             add
             {
-                _handler.Disconnected += value;
+                Handler.Disconnected += value;
             }
             remove
             {
-                _handler.Disconnected -= value;
+                Handler.Disconnected -= value;
             }
         }
 
@@ -385,11 +369,11 @@ namespace EventStore.ClientAPI
         {
             add
             {
-                _handler.Reconnecting += value;
+                Handler.Reconnecting += value;
             }
             remove
             {
-                _handler.Reconnecting -= value;
+                Handler.Reconnecting -= value;
             }
         }
 
@@ -397,11 +381,11 @@ namespace EventStore.ClientAPI
         {
             add
             {
-                _handler.Closed += value;
+                Handler.Closed += value;
             }
             remove
             {
-                _handler.Closed -= value;
+                Handler.Closed -= value;
             }
         }
 
@@ -409,23 +393,71 @@ namespace EventStore.ClientAPI
         {
             add
             {
-                _handler.ErrorOccurred += value;
+                Handler.ErrorOccurred += value;
             }
             remove
             {
-                _handler.ErrorOccurred -= value;
+                Handler.ErrorOccurred -= value;
             }
         }
+
         public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed
         {
             add
             {
-                _handler.AuthenticationFailed += value;
+                Handler.AuthenticationFailed += value;
             }
             remove
             {
-                _handler.AuthenticationFailed -= value;
+                Handler.AuthenticationFailed -= value;
             }
+        }
+
+        public abstract Task ConnectAsync();
+    }
+
+    /// <summary>
+    /// Maintains a full duplex connection to the EventStore
+    /// </summary>
+    /// <remarks>
+    /// An <see cref="EventStoreConnection"/> operates quite differently than say a <see cref="SqlConnection"/>. Normally
+    /// when using an <see cref="EventStoreConnection"/> you want to keep the connection open for a much longer of time than 
+    /// when you use a SqlConnection. If you prefer the usage pattern of using(new Connection()) .. then you would likely
+    /// want to create a FlyWeight on top of the <see cref="EventStoreConnection"/>.
+    /// 
+    /// Another difference is that with the <see cref="EventStoreConnection"/> all operations are handled in a full async manner
+    /// (even if you call the synchronous behaviors). Many threads can use an <see cref="EventStoreConnection"/> at the same
+    /// time or a single thread can make many asynchronous requests. To get the most performance out of the connection
+    /// it is generally recommended to use it in this way.
+    /// </remarks>
+    internal class EventStoreNodeConnection : EventStoreConnectionBase
+    {
+        private readonly IEndPointDiscoverer _endPointDiscoverer;
+
+        /// <summary>
+        /// Constructs a new instance of a <see cref="EventStoreConnection"/>
+        /// </summary>
+        /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
+        /// <param name="endPointDiscoverer">Discoverer of destination node end point.</param>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        internal EventStoreNodeConnection(ConnectionSettings settings, IEndPointDiscoverer endPointDiscoverer, string connectionName)
+            : base(settings, connectionName)
+        {
+            Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");
+            _endPointDiscoverer = endPointDiscoverer;
+        }
+
+        protected override Lazy<IEventStoreConnectionLogicHandler> CreateHandlerLazy(ConnectionSettings settings)
+        {
+            return
+                new Lazy<IEventStoreConnectionLogicHandler>(() => new EventStoreConnectionLogicHandler(this, settings));
+        }
+
+        public override Task ConnectAsync()
+        {
+            var source = new TaskCompletionSource<object>();
+            Handler.EnqueueMessage(new StartConnectionMessage(source, _endPointDiscoverer));
+            return source.Task;
         }
     }
 }
