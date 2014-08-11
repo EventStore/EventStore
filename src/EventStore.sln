@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.BufferManagement", "EventStore.BufferManagement\EventStore.BufferManagement.csproj", "{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}"
 EndProject
@@ -36,6 +36,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClusterNode.Web", "EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj", "{898C5545-7749-42F0-961A-048AF92B2A79}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClusterNode", "EventStore.ClusterNode\EventStore.ClusterNode.csproj", "{0294FD68-461C-46DB-9FCF-B279BBFDA5F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI.Embedded", "EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj", "{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -110,6 +112,10 @@ Global
 		{0294FD68-461C-46DB-9FCF-B279BBFDA5F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0294FD68-461C-46DB-9FCF-B279BBFDA5F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0294FD68-461C-46DB-9FCF-B279BBFDA5F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
