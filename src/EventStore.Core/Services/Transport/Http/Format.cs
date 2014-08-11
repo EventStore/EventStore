@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Transport.Http
         public static string EventEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
         {
             var msg = message as ClientMessage.ReadEventCompleted;
-            if (msg == null || msg.Result != ReadEventResult.Success)
+            if (msg == null || msg.Result != ReadEventResult.Success || msg.Record.Event == null)
                 return string.Empty;
 
             switch (entity.ResponseCodec.ContentType)

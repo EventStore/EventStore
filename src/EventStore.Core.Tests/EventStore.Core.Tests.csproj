@@ -77,7 +77,9 @@
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <Compile Include="ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_hard_deleted_stream_should.cs" />
+    <Compile Include="ClientAPI\read_all_events_forward_with_linkto_to_deleted_event.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_soft_deleted_stream_should.cs" />
     <Compile Include="ClientAPI\read_stream_events_with_unresolved_linkto.cs" />
     <Compile Include="ClientAPI\soft_delete.cs" />
@@ -87,6 +89,7 @@
     <Compile Include="ClientAPI\Security\overriden_user_stream_security.cs" />
     <Compile Include="ClientAPI\Security\overriden_system_stream_security.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
+    <Compile Include="ClientAPI\SpecificationWithLinkToToDeletedEvents.cs" />
     <Compile Include="ClientAPI\SpecificationWithMiniNode.cs" />
     <Compile Include="ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />

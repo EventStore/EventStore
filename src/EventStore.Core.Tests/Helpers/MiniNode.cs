@@ -115,24 +115,6 @@ namespace EventStore.Core.Tests.Helpers
                                                          TimeSpan.FromSeconds(30),
                                                          TimeSpan.FromSeconds(10),
                                                          TimeSpan.FromSeconds(10));
- /*           var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint,
-                                                              TcpSecEndPoint,
-                                                              HttpEndPoint,
-                                                              new[] { HttpEndPoint.ToHttpUrl() },
-                                                              enableTrustedAuth,
-                                                              ssl_connections.GetCertificate(),
-                                                              1,
-                                                              TFConsts.MinFlushDelayMs,
-                                                              1,
-                                                              1,
-                                                              1,
-                                                              TimeSpan.FromSeconds(2),
-                                                              TimeSpan.FromSeconds(2),
-                                                              TimeSpan.FromHours(1),
-                                                              TimeSpan.FromSeconds(10),
-                                                              StatsStorage.None,
-                                                              skipInitializeStandardUsersCheck: skipInitializeStandardUsersCheck );
-*/
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"

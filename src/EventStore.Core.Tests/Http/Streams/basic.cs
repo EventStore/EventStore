@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Net;
 using System.Text;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common;
+using EventStore.ClientAPI.SystemData;
+using EventStore.Core.Tests.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
@@ -675,7 +680,21 @@ namespace EventStore.Core.Tests.Http.Streams
 
         }
 
+        [TestFixture, Category("LongRunning")]
+        public class when_requesting_a_single_event_that_is_deleted_linkto : HttpSpecificationWithLinkToToDeletedEvents
+        {
+            protected override void When()
+            {
+                Get("/streams/" + LinkedStreamName + "/0", "", "application/json");
+            }
 
+            [Test]
+            public void the_event_is_gone()
+            {
+
+                Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
+            }
+        }
 
         [TestFixture, Category("LongRunning")]
         public class when_requesting_a_single_event_in_the_stream_as_event_json
@@ -780,5 +799,28 @@ namespace EventStore.Core.Tests.Http.Streams
 
         }
 
+    }
+    public abstract class HttpSpecificationWithLinkToToDeletedEvents : HttpBehaviorSpecification
+    {
+        protected string LinkedStreamName;
+        protected string DeletedStreamName;
+
+        protected override void Given()
+        {
+            var creds = new UserCredentials("admin", "changeit");
+            LinkedStreamName = Guid.NewGuid().ToString();
+            DeletedStreamName = Guid.NewGuid().ToString();
+            using (var conn = TestConnection.Create(_node.TcpEndPoint))
+            {
+                conn.ConnectAsync().Wait();
+                conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,
+                    new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]))
+                    .Wait();
+                conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+                    new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
+                        Encoding.UTF8.GetBytes("0@" + DeletedStreamName), new byte[0])).Wait();
+                conn.DeleteStreamAsync(DeletedStreamName, ExpectedVersion.Any).Wait();
+            }
+        }
     }
 }

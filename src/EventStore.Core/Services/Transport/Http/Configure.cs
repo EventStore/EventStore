@@ -112,6 +112,10 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     case ReadEventResult.Success:
                         var codec = entity.ResponseCodec;
+                        if (msg.Record.Event == null && msg.Record.Link != null)
+                        {
+                            return NotFound();
+                        }
                         if (headEvent)
                         {
                             var etag = GetPositionETag(msg.Record.OriginalEventNumber, codec.ContentType);
