@@ -12,6 +12,10 @@ namespace EventStore.Core.Tests.ClientAPI
         protected IEventStoreConnection _conn;
         protected IPEndPoint _HttpEndPoint;
 
+        protected virtual void Given()
+        {
+        }
+
         protected abstract void When();
 
         [TestFixtureSetUp]
@@ -23,6 +27,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _HttpEndPoint = _node.HttpEndPoint;
             _conn = TestConnection.Create(_node.TcpEndPoint);
             _conn.ConnectAsync().Wait();
+            Given();
             When();
         }
 

@@ -31,7 +31,7 @@ namespace EventStore.ClientAPI
         /// Indicates whether this <see cref="ResolvedEvent"/> is a resolved link
         /// event.
         /// </summary>
-        public bool IsResolved { get { return Link != null; } }
+        public bool IsResolved { get { return Link != null && Event != null; } }
 
         /// <summary>
         /// The logical position of the <see cref="OriginalEvent"/>.
