@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Net;
 using System.Text;
+using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
+using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
@@ -682,7 +685,13 @@ namespace EventStore.Core.Tests.Http.Streams
         {
             protected override void When()
             {
-                
+                Get("/streams/" + LinkedStreamName + "/0", "", "application/json");
+            }
+
+            [Test]
+            public void the_event_is_gone()
+            {
+                Assert.AreEqual(HttpStatusCode.Gone, _lastResponse.StatusCode);
             }
         }
 
@@ -791,35 +800,27 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
     }
-    public abstract class HttpSpecificationWithLinkToToDeletedEvents : SpecificationWithLinkToToDeletedEvents
+    public abstract class HttpSpecificationWithLinkToToDeletedEvents : HttpBehaviorSpecification
     {
-        protected HttpWebRequest CreateRequest(
-    string path, string extra, string method, string contentType, ICredentials credentials = null)
+        protected string LinkedStreamName;
+        protected string DeletedStreamName;
+
+        protected override void Given()
         {
-            var uri = MakeUrl(path, extra);
-            var request = WebRequest.Create(uri);
-            var httpWebRequest = (HttpWebRequest)request;
-            httpWebRequest.ConnectionGroupName = "foo";
-            httpWebRequest.Method = method;
-            httpWebRequest.ContentType = contentType;
-            httpWebRequest.UseDefaultCredentials = false;
-            if (credentials != null)
+            var creds = new UserCredentials("admin", "changeit");
+            LinkedStreamName = Guid.NewGuid().ToString();
+            DeletedStreamName = Guid.NewGuid().ToString();
+            using (var conn = TestConnection.Create(_node.TcpEndPoint))
             {
-                httpWebRequest.Credentials = credentials;
-                httpWebRequest.PreAuthenticate = true;
+                conn.ConnectAsync().Wait();
+                conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,
+                    new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]))
+                    .Wait();
+                conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+                    new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
+                        Encoding.UTF8.GetBytes("0@" + DeletedStreamName), new byte[0])).Wait();
+                conn.DeleteStreamAsync(DeletedStreamName, ExpectedVersion.Any);
             }
-            return httpWebRequest;
         }
-
-        protected Uri MakeUrl(string path, string extra = "")
-        {
-            var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
-            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
-                return supplied;
-
-            var httpEndPoint = _HttpEndPoint;
-            return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path, extra).Uri;
-        }
-
     }
 }

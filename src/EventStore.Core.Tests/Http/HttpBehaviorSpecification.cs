@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Http
             bool createdMiniNode = false;
             if (SetUpFixture._connection != null && SetUpFixture._node != null)
             {
-                _tag = "_" + (++SetUpFixture._counter).ToString();
+                _tag = "_" + (++SetUpFixture._counter);
                 _node = SetUpFixture._node;
                 _connection = SetUpFixture._connection;
             }
