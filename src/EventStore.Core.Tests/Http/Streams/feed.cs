@@ -207,7 +207,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][0];
                 Assert.AreEqual("edit", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
 
             [Test]
@@ -215,7 +215,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
         }
 
@@ -241,7 +241,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][0];
                 Assert.AreEqual("edit", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
 
             [Test]
@@ -249,7 +249,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
         }
 
@@ -276,7 +276,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][0];
                 Assert.AreEqual("edit", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
 
             [Test]
@@ -284,7 +284,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
         }
 
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][0];
                 Assert.AreEqual("edit", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
 
             [Test]
@@ -319,7 +319,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual("http://127.0.0.1:45002/streams/" + DeletedStreamName + "/0", foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
             }
         }
 
