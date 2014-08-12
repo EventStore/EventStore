@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    internal class appending_to_implicitly_created_stream_using_transaction: SpecificationWithDirectoryPerTestFixture
+    public class appending_to_implicitly_created_stream_using_transaction : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
@@ -28,6 +28,11 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TestFixtureTearDown();
         }
 
+        virtual protected IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
+        }
+
         /*
          * sequence - events written so stream
          * 0em1 - event number 0 written with exp version -1 (minus 1)
@@ -40,7 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0em1_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_using_transaction_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0em1_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 

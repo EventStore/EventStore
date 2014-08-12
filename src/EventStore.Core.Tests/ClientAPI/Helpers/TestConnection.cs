@@ -48,16 +48,15 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
     {
         private static int _nextConnId = -1;
 
-        public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType, UserCredentials userCredentials = null)
+        public static IEventStoreConnection To(MiniNode miniNode)
         {
-            return EmbeddedEventStoreConnection.Create(miniNode.Node, Settings(tcpType, userCredentials),
+            return EmbeddedEventStoreConnection.Create(miniNode.Node, Settings(),
                                                string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
         }
 
-        private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials)
+        private static ConnectionSettingsBuilder Settings()
         {
             var settings = ConnectionSettings.Create()
-                                             .SetDefaultUserCredentials(userCredentials)
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .EnableVerboseLogging()
                                              .LimitReconnectionsTo(10)
@@ -66,8 +65,6 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                              .SetReconnectionDelayTo(TimeSpan.Zero)
                                              .FailOnNoServerResponse()
                                              .SetOperationTimeoutTo(TimeSpan.FromDays(1));
-            if (tcpType == TcpType.Ssl)
-                settings.UseSslConnection("ES", false);
             return settings;
         }
     }

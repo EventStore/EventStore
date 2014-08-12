@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class read_event_should: SpecificationWithMiniNode
+    public class read_event_should : SpecificationWithMiniNode
     {
         private Guid _eventId0;
         private Guid _eventId1;

@@ -6,6 +6,7 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Services.UserManagement;
 using TcpCommand = EventStore.Core.Services.Transport.Tcp.TcpCommand;
 using TcpFlags = EventStore.Core.Services.Transport.Tcp.TcpFlags;
 using TcpPackage = EventStore.ClientAPI.SystemData.TcpPackage;
@@ -86,7 +87,7 @@ namespace EventStore.ClientAPI.Embedded
         {
             _activeOperations.Add(operationItem.CorrelationId, operationItem);
             var package = CreateNetworkPackage(operationItem);
-            var message = _tcpDispatcher.UnwrapPackage(package, CreateEnvelope(operationItem), null, package.Login, package.Password, null);
+            var message = _tcpDispatcher.UnwrapPackage(package, CreateEnvelope(operationItem), SystemAccount.Principal, package.Login, package.Password, null);
             _publisher.Publish(message);
         }
 
