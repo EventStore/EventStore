@@ -44,8 +44,11 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientMessageConverterExtensions.cs" />
     <Compile Include="EmbeddedEventStoreConnection.cs" />
-    <Compile Include="EmbeddedEventStoreLogicHandler.cs" />
+    <Compile Include="EmbeddedResponderBase.cs" />
+    <Compile Include="EmbeddedResponders.cs" />
+    <Compile Include="EmbeddedResponseEnvelope.cs" />
     <Compile Include="EventStoreEmbeddedConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

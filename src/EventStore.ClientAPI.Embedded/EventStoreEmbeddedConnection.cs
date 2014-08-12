@@ -1,31 +1,445 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.UserManagement;
+using Message = EventStore.Core.Messaging.Message;
 
 namespace EventStore.ClientAPI.Embedded
 {
-    internal class EventStoreEmbeddedConnection : EventStoreConnectionBase
+    internal class EventStoreEmbeddedConnection : IEventStoreConnection, IEventStoreTransactionConnection
     {
+        private readonly ConnectionSettings _settings;
+        private readonly string _connectionName;
         private readonly IPublisher _publisher;
 
         public EventStoreEmbeddedConnection(ConnectionSettings settings, string connectionName, IPublisher publisher)
-            : base(settings, connectionName)
         {
+            _settings = settings;
+            _connectionName = connectionName;
             _publisher = publisher;
         }
 
-        protected override Lazy<IEventStoreConnectionLogicHandler> CreateHandlerLazy(ConnectionSettings settings)
-        {
-            return new Lazy<IEventStoreConnectionLogicHandler>(() => new EmbeddedEventStoreLogicHandler(this, settings, _publisher));
-        }
+        public string ConnectionName { get; private set; }
 
-        public override Task ConnectAsync()
+        public Task ConnectAsync()
         {
             var source = new TaskCompletionSource<object>();
             source.SetResult(null);
             return source.Task;
+        }
+
+        public void Close()
+        {
+            
+        }
+
+        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
+        {
+            return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
+        }
+
+        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<DeleteResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.DeleteStream(source, stream, expectedVersion));
+
+            Guid corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, false,
+                stream, expectedVersion, hardDelete, SystemAccount.Principal));
+
+            return source.Task;
+        }
+
+        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
+        {
+            // ReSharper disable RedundantArgumentDefaultValue
+            // ReSharper disable RedundantCast
+            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, null);
+            // ReSharper restore RedundantCast
+            // ReSharper restore RedundantArgumentDefaultValue
+        }
+
+        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
+        {
+            // ReSharper disable RedundantCast
+            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials);
+            // ReSharper restore RedundantCast
+        }
+
+        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        {
+            // ReSharper disable PossibleMultipleEnumeration
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var source = new TaskCompletionSource<WriteResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.AppendToStream(source, stream, expectedVersion));
+
+            Guid corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.WriteEvents(corrId, corrId, envelope, false,
+                stream, expectedVersion, events.ConvertToEvents(), SystemAccount.Principal));
+
+            return source.Task;
+            // ReSharper restore PossibleMultipleEnumeration
+        }
+
+        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<EventStoreTransaction>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionStart(source, this, stream, expectedVersion));
+
+            Guid corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.TransactionStart(corrId, corrId, envelope,
+                false, stream, expectedVersion, SystemAccount.Principal));
+
+            return source.Task;
+        }
+
+        public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null)
+        {
+            Ensure.Nonnegative(transactionId, "transactionId");
+            return new EventStoreTransaction(transactionId, userCredentials, this);
+        }
+
+        Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials)
+        {
+            // ReSharper disable PossibleMultipleEnumeration
+            Ensure.NotNull(transaction, "transaction");
+            Ensure.NotNull(events, "events");
+
+            var source = new TaskCompletionSource<EventStoreTransaction>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionWrite(source, this));
+
+            Guid corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.TransactionWrite(corrId, corrId, envelope,
+                false, transaction.TransactionId, events.ConvertToEvents(), SystemAccount.Principal));
+
+            return source.Task;
+
+            // ReSharper restore PossibleMultipleEnumeration
+        }
+
+        Task<WriteResult> IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials)
+        {
+            Ensure.NotNull(transaction, "transaction");
+
+            var source = new TaskCompletionSource<WriteResult>();
+            
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionCommit(source));
+
+            Guid corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.TransactionCommit(corrId, corrId, envelope,
+                false, transaction.TransactionId, SystemAccount.Principal));
+
+            return source.Task;
+        }
+
+        public Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
+
+            var source = new TaskCompletionSource<EventReadResult>();
+            
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadEvent(source, stream, eventNumber));
+
+            Guid corrId = Guid.NewGuid();
+
+            var message = new ClientMessage.ReadEvent(corrId, corrId, envelope,
+                stream, eventNumber, resolveLinkTos, false, SystemAccount.Principal);
+
+            _publisher.Publish(message);
+
+            return source.Task;
+        }
+
+        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Nonnegative(start, "start");
+            Ensure.Positive(count, "count");
+
+            var source = new TaskCompletionSource<StreamEventsSlice>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadStreamForwardEvents(source, stream, start));
+
+            Guid corrId = Guid.NewGuid();
+
+            var message = new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope,
+                stream, start, count, resolveLinkTos, false, null, SystemAccount.Principal);
+
+            _publisher.Publish(message);
+
+            return source.Task;
+        }
+
+        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Positive(count, "count");
+
+            var source = new TaskCompletionSource<StreamEventsSlice>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadStreamEventsBackward(source, stream, start));
+
+            Guid corrId = Guid.NewGuid();
+
+            var message = new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope,
+                stream, start, count, resolveLinkTos, false, null, SystemAccount.Principal);
+
+            _publisher.Publish(message);
+
+            return source.Task;
+        }
+
+        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            Ensure.Positive(maxCount, "maxCount");
+
+            Position position1 = position;
+            var source = new TaskCompletionSource<AllEventsSlice>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsForward(source));
+
+            Guid corrId = Guid.NewGuid();
+
+            var message = new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
+                position1.CommitPosition,
+                position1.PreparePosition, maxCount, resolveLinkTos, false, null, SystemAccount.Principal);
+
+            _publisher.Publish(message);
+
+            return source.Task;
+        }
+
+
+        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            Ensure.Positive(maxCount, "maxCount");
+
+            var source = new TaskCompletionSource<AllEventsSlice>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsBackward(source));
+
+            Guid corrId = Guid.NewGuid();
+
+            var message = new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
+                position.CommitPosition,
+                position.PreparePosition, maxCount, resolveLinkTos, false, null, SystemAccount.Principal);
+
+            _publisher.Publish(message);
+
+            return source.Task;
+        }
+
+        private void Publish(Message message)
+        {
+            _publisher.Publish(message);
+        }
+
+        public Task<EventStoreSubscription> SubscribeToStreamAsync(
+            string stream,
+            bool resolveLinkTos,
+            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            var source = new TaskCompletionSource<EventStoreSubscription>();
+            /*Handler.EnqueueMessage(new StartSubscriptionMessage(source, stream, resolveLinkTos, userCredentials,
+                eventAppeared, subscriptionDropped,
+                _settings.MaxRetries, _settings.OperationTimeout));*/
+            return source.Task;
+        }
+
+        public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
+            int? lastCheckpoint,
+            bool resolveLinkTos,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int readBatchSize = 500)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            var catchUpSubscription =
+                new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint,
+                    resolveLinkTos, userCredentials, eventAppeared,
+                    liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+            catchUpSubscription.Start();
+            return catchUpSubscription;
+        }
+
+        public Task<EventStoreSubscription> SubscribeToAllAsync(
+            bool resolveLinkTos,
+            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
+        {
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            var source = new TaskCompletionSource<EventStoreSubscription>();
+            //Handler.EnqueueMessage(new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, userCredentials,
+            //    eventAppeared, subscriptionDropped,
+            //    _settings.MaxRetries, _settings.OperationTimeout));
+            return source.Task;
+        }
+
+        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
+            Position? lastCheckpoint,
+            bool resolveLinkTos,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int readBatchSize = 500)
+        {
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            var catchUpSubscription =
+                new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint, resolveLinkTos,
+                    userCredentials, eventAppeared, liveProcessingStarted,
+                    subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+            catchUpSubscription.Start();
+            return catchUpSubscription;
+        }
+
+        public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
+        {
+            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);
+        }
+
+        public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            if (SystemStreams.IsMetastream(stream))
+                throw new ArgumentException(string.Format("Setting metadata for metastream '{0}' is not supported.", stream), "stream");
+
+            var metaevent = new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
+            var metastream = SystemStreams.MetastreamOf(stream);
+
+            var source = new TaskCompletionSource<WriteResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.AppendToStream(source, metastream, expectedMetastreamVersion));
+
+            var corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.WriteEvents(corrId, corrId, envelope, false, metastream, expectedMetastreamVersion, metaevent.ConvertToEvent(), SystemAccount.Principal));
+
+            return source.Task;
+        }
+
+        public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null)
+        {
+            return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                    throw t.Exception.InnerException;
+                var res = t.Result;
+                if (res.StreamMetadata == null || res.StreamMetadata.Length == 0)
+                    return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, StreamMetadata.Create());
+                var metadata = StreamMetadata.FromJsonBytes(res.StreamMetadata);
+                return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, metadata);
+            });
+        }
+
+        public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null)
+        {
+            return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, userCredentials).ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                    throw t.Exception.InnerException;
+
+                var res = t.Result;
+                switch (res.Status)
+                {
+                    case EventReadStatus.Success:
+                        if (res.Event == null) throw new Exception("Event is null while operation result is Success.");
+                        var evnt = res.Event.Value.OriginalEvent;
+                        return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
+                    case EventReadStatus.NotFound:
+                    case EventReadStatus.NoStream:
+                        return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
+                    case EventReadStatus.StreamDeleted:
+                        return new RawStreamMetadataResult(stream, true, int.MaxValue, Empty.ByteArray);
+                    default:
+                        throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", res.Status));
+                }
+            });
+        }
+
+        public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null)
+        {
+            return AppendToStreamAsync(SystemStreams.SettingsStream, ExpectedVersion.Any, userCredentials,
+                new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
+        }
+
+        public event EventHandler<ClientConnectionEventArgs> Connected;
+        public event EventHandler<ClientConnectionEventArgs> Disconnected;
+        public event EventHandler<ClientReconnectingEventArgs> Reconnecting;
+        public event EventHandler<ClientClosedEventArgs> Closed;
+        public event EventHandler<ClientErrorEventArgs> ErrorOccurred;
+        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed;
+
+        void IDisposable.Dispose()
+        {
+            Close();
+        }
+
+        public Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events,
+            UserCredentials userCredentials = null)
+        {
+            var source = new TaskCompletionSource<EventStoreTransaction>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionWrite(source, this));
+
+            Guid corrId = Guid.NewGuid();
+
+            var message = new ClientMessage.TransactionWrite(corrId, corrId, envelope,false, 
+                transaction.TransactionId, events.ConvertToEvents(), SystemAccount.Principal);
+
+            _publisher.Publish(message);
+
+            return source.Task;
+            
+        }
+
+        public Task<WriteResult> CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null)
+        {
+            var source = new TaskCompletionSource<WriteResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionCommit(source));
+
+            Guid corrId = Guid.NewGuid();
+
+            var message = new ClientMessage.TransactionCommit(corrId, corrId, envelope, false,
+                transaction.TransactionId, SystemAccount.Principal);
+
+            _publisher.Publish(message);
+
+            return source.Task;
+            
         }
     }
 }
