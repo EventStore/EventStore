@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             Log.Debug("create subscription " + message.GroupName);
             //TODO revisit for permissions. maybe make admin only?
-            var streamAccess = _readIndex.CheckStreamAccess(message.EventStreamId, StreamAccessType.Write, message.User);
+            var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
             if (!streamAccess.Granted)
             {
@@ -104,8 +104,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(ClientMessage.DeletePersistentSubscription message)
         {
             Log.Debug("delete subscription " + message.GroupName);
-            //TODO revisit for permissions. maybe make admin only?
-            var streamAccess = _readIndex.CheckStreamAccess(message.EventStreamId, StreamAccessType.Write, message.User);
+            var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.AllStream, StreamAccessType.Write, message.User);
 
             if (!streamAccess.Granted)
             {

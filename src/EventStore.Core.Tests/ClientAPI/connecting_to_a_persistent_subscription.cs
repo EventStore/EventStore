@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class connect_to_non_existing_persistent_subscription : SpecificationWithMiniNode
+    public class connect_to_non_existing_persistent_subscription_with_permissions : SpecificationWithMiniNode
     {
         private EventStorePersistentSubscription _sub;
         private SubscriptionDropReason _reason;
