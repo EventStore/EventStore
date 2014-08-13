@@ -272,7 +272,8 @@ message SubscriptionDropped {
 	enum SubscriptionDropReason {
 		Unsubscribed = 0;
 		AccessDenied = 1;
-		PersistentSubscriptionDeleted=2;
+		NotFound=2
+		PersistentSubscriptionDeleted=3;
 	}
 	
 	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];

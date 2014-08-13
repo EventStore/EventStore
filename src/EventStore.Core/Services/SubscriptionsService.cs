@@ -14,7 +14,8 @@ namespace EventStore.Core.Services
     public enum SubscriptionDropReason
     {
         Unsubscribed = 0,
-        AccessDenied = 1
+        AccessDenied = 1,
+        DoesNotExist = 2
     }
 
     public class SubscriptionsService : IHandle<SystemMessage.SystemStart>, 
