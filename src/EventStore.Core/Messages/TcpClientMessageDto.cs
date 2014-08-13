@@ -908,8 +908,11 @@ namespace EventStore.Core.Messages
       [ProtoEnum(Name=@"AccessDenied", Value=1)]
       AccessDenied = 1,
             
-      [ProtoEnum(Name=@"PersistentSubscriptionDeleted", Value=2)]
-      PersistentSubscriptionDeleted = 2
+      [ProtoEnum(Name=@"NotFound", Value=2)]
+      NotFound = 2,
+            
+      [ProtoEnum(Name=@"PersistentSubscriptionDeleted", Value=3)]
+      PersistentSubscriptionDeleted = 3
     }
   
     private SubscriptionDropped() {}
