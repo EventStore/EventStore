@@ -61,7 +61,7 @@
     <Compile Include="ClientErrorEventArgs.cs" />
     <Compile Include="ClientOperations\VolatileSubscriptionOperation.cs" />
     <Compile Include="ClientOperations\ISubscriptionOperation.cs" />
-    <Compile Include="ClientOperations\PersistentSubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\ConnectToPersistentSubscriptionOperation.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="PersistentEventStoreSubscription.cs" />
     <Compile Include="PersistentSubscription.cs" />
