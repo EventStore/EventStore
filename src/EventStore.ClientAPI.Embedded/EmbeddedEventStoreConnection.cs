@@ -5,14 +5,9 @@ namespace EventStore.ClientAPI.Embedded
 {
     public static class EmbeddedEventStoreConnection
     {
-        public static IEventStoreConnection Create(IPublisher eventStoreQueue, string connectionName = null)
+        private static IEventStoreConnection Create(IPublisher queue, ISubscriber bus, ConnectionSettings settings, string connectionName = null)
         {
-            return Create(eventStoreQueue, ConnectionSettings.Default, connectionName);
-        }
-
-        public static IEventStoreConnection Create(IPublisher eventStoreQueue, ConnectionSettings settings, string connectionName = null)
-        {
-            return new EventStoreEmbeddedConnection(settings, connectionName, eventStoreQueue);
+            return new EventStoreEmbeddedNodeConnection(settings, connectionName, queue);
         }
 
         public static IEventStoreConnection Create(ClusterVNode eventStore, string connectionName = null)
@@ -22,7 +17,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public static IEventStoreConnection Create(ClusterVNode eventStore, ConnectionSettings settings, string connectionName = null)
         {
-            return Create(eventStore.MainQueue, settings, connectionName);
+            return Create(eventStore.MainQueue, eventStore.MainBus, settings, connectionName);
         }
     }
 }

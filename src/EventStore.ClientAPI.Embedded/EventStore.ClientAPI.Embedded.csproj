@@ -49,7 +49,10 @@
     <Compile Include="EmbeddedResponderBase.cs" />
     <Compile Include="EmbeddedResponders.cs" />
     <Compile Include="EmbeddedResponseEnvelope.cs" />
-    <Compile Include="EventStoreEmbeddedConnection.cs" />
+    <Compile Include="EmbeddedSubcriptionsManager.cs" />
+    <Compile Include="EmbeddedSubscriber.cs" />
+    <Compile Include="EmbeddedSubscription.cs" />
+    <Compile Include="EventStoreEmbeddedNodeConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

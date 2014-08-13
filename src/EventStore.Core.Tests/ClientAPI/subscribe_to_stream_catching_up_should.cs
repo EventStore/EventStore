@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.ClientAPI
     public class subscribe_to_stream_catching_up_should : SpecificationWithDirectoryPerTestFixture
     {
         private static readonly EventStore.Common.Log.ILogger Log = LogManager.GetLoggerFor<subscribe_to_stream_catching_up_should>();
-        private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(500);
 
         private MiniNode _node;
 

@@ -2,30 +2,47 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
-using Message = EventStore.Core.Messaging.Message;
 
 namespace EventStore.ClientAPI.Embedded
 {
-    internal class EventStoreEmbeddedConnection : IEventStoreConnection, IEventStoreTransactionConnection
+    internal class EventStoreEmbeddedNodeConnection : IEventStoreConnection, IEventStoreTransactionConnection
     {
         private readonly ConnectionSettings _settings;
         private readonly string _connectionName;
         private readonly IPublisher _publisher;
+        private readonly IBus _subscriptionBus;
+        private readonly EmbeddedSubscriber _subscriptions;
+        private readonly Guid _connectionId;
 
-        public EventStoreEmbeddedConnection(ConnectionSettings settings, string connectionName, IPublisher publisher)
+        public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName, IPublisher publisher)
         {
+            Ensure.NotNull(publisher, "publisher");
+            Ensure.NotNull(settings, "settings");
+
             _settings = settings;
             _connectionName = connectionName;
             _publisher = publisher;
+            _subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
+            _connectionId = Guid.NewGuid();
+
+            _subscriptions = new EmbeddedSubscriber(new NoopLogger(), _connectionId);
+            
+            _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
+            _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
+            _subscriptionBus.Subscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
+            _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
+            _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
         }
 
-        public string ConnectionName { get; private set; }
+        public string ConnectionName { get { return _connectionName; } }
 
         public Task ConnectAsync()
         {
@@ -36,7 +53,9 @@ namespace EventStore.ClientAPI.Embedded
 
         public void Close()
         {
-            
+            _subscriptionBus.Unsubscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
+            _subscriptionBus.Unsubscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
+            _subscriptionBus.Unsubscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
         }
 
         public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
@@ -215,7 +234,6 @@ namespace EventStore.ClientAPI.Embedded
         {
             Ensure.Positive(maxCount, "maxCount");
 
-            Position position1 = position;
             var source = new TaskCompletionSource<AllEventsSlice>();
 
             var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsForward(source));
@@ -223,8 +241,8 @@ namespace EventStore.ClientAPI.Embedded
             Guid corrId = Guid.NewGuid();
 
             var message = new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
-                position1.CommitPosition,
-                position1.PreparePosition, maxCount, resolveLinkTos, false, null, SystemAccount.Principal);
+                position.CommitPosition,
+                position.PreparePosition, maxCount, resolveLinkTos, false, null, SystemAccount.Principal);
 
             _publisher.Publish(message);
 
@@ -250,12 +268,6 @@ namespace EventStore.ClientAPI.Embedded
 
             return source.Task;
         }
-
-        private void Publish(Message message)
-        {
-            _publisher.Publish(message);
-        }
-
         public Task<EventStoreSubscription> SubscribeToStreamAsync(
             string stream,
             bool resolveLinkTos,
@@ -267,9 +279,14 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            /*Handler.EnqueueMessage(new StartSubscriptionMessage(source, stream, resolveLinkTos, userCredentials,
-                eventAppeared, subscriptionDropped,
-                _settings.MaxRetries, _settings.OperationTimeout));*/
+
+            Guid corrId = Guid.NewGuid();
+
+            IEnvelope envelope = new PublishEnvelope(_subscriptionBus, true);
+                //new CallbackEnvelope(_subscriptions.StartSubscriptionCallback(source, eventAppeared, subscriptionDropped));
+
+            _subscriptions.Start(_subscriptionBus, corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+            
             return source.Task;
         }
 
@@ -301,9 +318,11 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-            //Handler.EnqueueMessage(new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, userCredentials,
-            //    eventAppeared, subscriptionDropped,
-            //    _settings.MaxRetries, _settings.OperationTimeout));
+        
+            Guid corrId = Guid.NewGuid();
+
+            _subscriptions.Start(_subscriptionBus, corrId, source, string.Empty, resolveLinkTos,  eventAppeared, subscriptionDropped);
+
             return source.Task;
         }
 
