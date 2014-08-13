@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI
         private readonly string _stream = Guid.NewGuid().ToString();
         protected override void When()
         {
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "group", true, new UserCredentials("admin", "changeit")).Result;
+            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "group32", true, new UserCredentials("admin", "changeit")).Result;
         }
 
         [Test]
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _result = _conn.CreatePersistentSubscriptionAsync("foo", "group", true, new UserCredentials("admin", "changeit")).Result;
+                _result = _conn.CreatePersistentSubscriptionAsync("foo", "group32", true, new UserCredentials("admin", "changeit")).Result;
                 throw new Exception("expected exception");
             }
             catch (Exception ex)
@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _result = _conn.CreatePersistentSubscriptionAsync(_stream, "group", true, null).Result;
+                _result = _conn.CreatePersistentSubscriptionAsync(_stream, "group57", true, null).Result;
                 throw new Exception("expected exception");
             }
             catch (Exception ex)

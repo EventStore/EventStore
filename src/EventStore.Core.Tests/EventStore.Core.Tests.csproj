@@ -105,6 +105,7 @@
     <Compile Include="ClientAPI\Embedded\when_working_with_stream_metadata_as_structured_info.cs" />
     <Compile Include="ClientAPI\connecting_to_a_persistent_subscription.cs" />
     <Compile Include="ClientAPI\create_persistent_subscription.cs" />
+    <Compile Include="ClientAPI\deleting_persistent_subscription.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_hard_deleted_stream_should.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_linkto_passed_max_count.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_linkto_to_deleted_event.cs" />
