@@ -869,13 +869,14 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-                  string eventStreamId, string groupName, bool resolveLinkTos, IPrincipal user)
+                  string eventStreamId, string groupName, bool resolveLinkTos, IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 ResolveLinkTos = resolveLinkTos;
                 EventStreamId = eventStreamId;
                 GroupName = groupName;
             }
+
         }
 
         public class CreatePersistentSubscriptionCompleted : ReadResponseMessage
