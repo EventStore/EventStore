@@ -46,6 +46,11 @@
         /// <summary>
         /// Subscription was dropped for an unknown reason.
         /// </summary>
-        Unknown = 100
+        Unknown = 100,
+
+        /// <summary>
+        /// Target of persistent subscription was not found. Needs to be created first
+        /// </summary>
+        NotFound
     }
 }

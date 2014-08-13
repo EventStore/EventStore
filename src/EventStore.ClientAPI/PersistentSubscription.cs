@@ -7,7 +7,7 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class PersistentSubscription
     {
-        internal PersistentSubscription(PersistentSubscriptionOperation persistentSubscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
+        internal PersistentSubscription(ConnectToPersistentSubscriptionOperation connectToPersistentSubscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
         {
             throw new System.NotImplementedException();
         }

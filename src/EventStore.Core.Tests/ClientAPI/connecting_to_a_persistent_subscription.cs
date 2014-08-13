@@ -40,9 +40,9 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        public void the_exception_is_a_not_found_exception()
+        public void the_exception_is_an_argument_exception()
         {
-            
+            Assert.IsInstanceOf<ArgumentException>(_caught.InnerException);
         }
     }
 }

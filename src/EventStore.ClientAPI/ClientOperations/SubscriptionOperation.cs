@@ -116,6 +116,10 @@ namespace EventStore.ClientAPI.ClientOperations
                                 DropSubscription(SubscriptionDropReason.AccessDenied, 
                                                  new AccessDeniedException(string.Format("Subscription to '{0}' failed due to access denied.", _streamId == string.Empty ? "<all>" : _streamId)));
                                 break;
+                            case ClientMessage.SubscriptionDropped.SubscriptionDropReason.NotFound:
+                                DropSubscription(SubscriptionDropReason.NotFound,
+                                                 new ArgumentException(string.Format("Subscription to '{0}' failed due to not found.", _streamId == string.Empty ? "<all>" : _streamId)));
+                                break;
                             default: 
                                 if (_verboseLogging) _log.Debug("Subscription dropped by server. Reason: {0}.", dto.Reason);
                                 DropSubscription(SubscriptionDropReason.Unknown, 

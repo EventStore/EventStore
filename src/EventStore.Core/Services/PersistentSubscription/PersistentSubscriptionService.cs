@@ -208,7 +208,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
                 //TODO this is subscription doesnt exist.
-                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.AccessDenied));
+                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.NotFound));
                 return;
             }
 
@@ -216,7 +216,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
                 //TODO this is subscription doesnt exist
-                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.AccessDenied));
+                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.NotFound));
                 return;
             }
             Log.Debug("New connection to persistent subscription {0}.", message.SubscriptionId);

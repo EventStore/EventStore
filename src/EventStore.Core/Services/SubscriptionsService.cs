@@ -15,7 +15,7 @@ namespace EventStore.Core.Services
     {
         Unsubscribed = 0,
         AccessDenied = 1,
-        DoesNotExist = 2
+        NotFound = 2
     }
 
     public class SubscriptionsService : IHandle<SystemMessage.SystemStart>, 
