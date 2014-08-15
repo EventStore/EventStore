@@ -25,7 +25,7 @@ namespace EventStore.ClientAPI.Embedded
                 if (response != null)
                     InspectResponse(response);
                 else
-                    _source.SetException(new NoResultException());
+                    Fail(new NoResultException(String.Format("Expected response of {0}, received {1} instead.", typeof(TResponse), message.GetType())));
 
             }
             catch (Exception ex)
