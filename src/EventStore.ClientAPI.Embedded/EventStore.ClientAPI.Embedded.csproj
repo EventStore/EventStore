@@ -71,6 +71,10 @@
       <Project>{d42a5833-4f20-4fcc-b364-6207ae016732}</Project>
       <Name>EventStore.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
+      <Project>{03e02082-e179-4730-81ff-ce914749d6e3}</Project>
+      <Name>EventStore.Projections.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
@@ -90,6 +94,12 @@ $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProject
        Other similar extension points exist, see Microsoft.Common.targets.
   -->
   <Target Name="BeforeBuild">
+    <Copy SourceFiles="..\libs\win32\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
+    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
+    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
+    <Copy SourceFiles="..\libs\win32\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
+    <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
+    <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
     <Message Text="BeforeBuild -- DefineConstants: $(DefineConstants)" />
     <Message Text="BeforeBuild -- AppendedDefineConstants: $(AppendedDefineConstants)" />
     <CreateProperty Value="$(DefineConstants);$(AppendedDefineConstants)">
