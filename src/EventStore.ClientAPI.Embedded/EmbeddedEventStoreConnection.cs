@@ -3,21 +3,37 @@ using EventStore.Core.Bus;
 
 namespace EventStore.ClientAPI.Embedded
 {
+    /// <summary>
+    /// Contains factory methods to build a connection to an in-process EventStore
+    /// </summary>
     public static class EmbeddedEventStoreConnection
     {
-        private static IEventStoreConnection Create(IPublisher queue, ConnectionSettings settings, string connectionName = null)
+        private static IEventStoreConnection Create(IPublisher queue, ConnectionSettings connectionSettings, string connectionName = null)
         {
-            return new EventStoreEmbeddedNodeConnection(settings, connectionName, queue);
+            return new EventStoreEmbeddedNodeConnection(connectionSettings, connectionName, queue);
         }
 
+        /// <summary>
+        /// Creates a new embedded <see cref="IEventStoreConnection"/> to single node with default connection settings
+        /// </summary>
+        /// <param name="eventStore">The <see cref="ClusterVNode" /> to connect to. The node must already be running.</param>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        /// <returns></returns>
         public static IEventStoreConnection Create(ClusterVNode eventStore, string connectionName = null)
         {
             return Create(eventStore, ConnectionSettings.Default, connectionName);
         }
 
-        public static IEventStoreConnection Create(ClusterVNode eventStore, ConnectionSettings settings, string connectionName = null)
+        /// <summary>
+        /// Creates a new embedded <see cref="IEventStoreConnection"/> to single node using specific <see cref="ConnectionSettings"/>
+        /// </summary>
+        /// <param name="eventStore">The <see cref="ClusterVNode" /> to connect to. The node must already be running.</param>
+        /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        /// <returns></returns>
+        public static IEventStoreConnection Create(ClusterVNode eventStore, ConnectionSettings connectionSettings, string connectionName = null)
         {
-            return Create(eventStore.MainQueue, settings, connectionName);
+            return Create(eventStore.MainQueue, connectionSettings, connectionName);
         }
     }
 }
