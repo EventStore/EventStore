@@ -1,9 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
 namespace EventStore.ClientAPI.Embedded
