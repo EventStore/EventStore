@@ -414,12 +414,12 @@ namespace EventStore.ClientAPI.Embedded
                 new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
         }
 
-        public event EventHandler<ClientConnectionEventArgs> Connected;
-        public event EventHandler<ClientConnectionEventArgs> Disconnected;
-        public event EventHandler<ClientReconnectingEventArgs> Reconnecting;
-        public event EventHandler<ClientClosedEventArgs> Closed;
-        public event EventHandler<ClientErrorEventArgs> ErrorOccurred;
-        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed;
+        public event EventHandler<ClientConnectionEventArgs> Connected = delegate { };
+        public event EventHandler<ClientConnectionEventArgs> Disconnected = delegate { };
+        public event EventHandler<ClientReconnectingEventArgs> Reconnecting = delegate { };
+        public event EventHandler<ClientClosedEventArgs> Closed = delegate { };
+        public event EventHandler<ClientErrorEventArgs> ErrorOccurred = delegate { };
+        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed = delegate { }; 
 
         void IDisposable.Dispose()
         {
