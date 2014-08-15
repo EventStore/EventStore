@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Messaging;
 
@@ -20,6 +21,8 @@ namespace EventStore.ClientAPI.Embedded
         {
             try
             {
+                Ensure.NotNull(message, "message");
+
                 var response = message as TResponse;
 
                 if (response != null)
