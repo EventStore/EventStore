@@ -9,20 +9,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
     public class when_creating : TestFixtureWithExistingEvents
     {
         private ProjectionManagerResponseReader _commandReader;
-        private Exception _exception;
 
         [SetUp]
         public new void When()
         {
-            _exception = null;
-            try
-            {
-                _commandReader = new ProjectionManagerResponseReader(_bus, _ioDispatcher);
-            }
-            catch (Exception ex)
-            {
-                _exception = ex;
-            }
+            _commandReader = new ProjectionManagerResponseReader(_bus, _ioDispatcher);
         }
 
         [Test]

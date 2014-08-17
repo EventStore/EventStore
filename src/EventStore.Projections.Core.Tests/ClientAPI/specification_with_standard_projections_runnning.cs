@@ -29,11 +29,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-#if DEBUG
-            QueueStatsCollector.InitializeIdleDetection();
-#else 
+#if (!DEBUG)
             throw new NotSupportedException("These tests require DEBUG conditional");
-#endif
+#else 
+            QueueStatsCollector.InitializeIdleDetection();
             CreateNode();
             try
             {
@@ -72,6 +71,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
                 throw;
             }
+#endif
         }
 
         private void CreateNode()
