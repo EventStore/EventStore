@@ -13,14 +13,14 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync(_stream, "groupname1", false,
-                new UserCredentials("admin", "changeit"));
+            _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", false,
+                new UserCredentials("admin", "changeit")).Wait();
         }
 
         [Test]
         public void the_delete_of_group_succeeds()
         {
-            var result = _conn.DeletePersistentSubscriptionAsync(_stream, "groupname1", new UserCredentials("admin","changeit")).Result;
+            var result = _conn.DeletePersistentSubscriptionAsync(_stream, "groupname123", new UserCredentials("admin","changeit")).Result;
             Assert.AreEqual(PersistentSubscriptionDeleteStatus.Success, result.Status);
         }
     }

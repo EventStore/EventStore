@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , true).Wait();
+            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , true, new UserCredentials("admin", "changeit")).Wait();
             _sub = _conn.ConnectToPersistentSubscription(_stream,
                 "agroupname17",
                 (sub, e) => Console.Write("appeared"),
