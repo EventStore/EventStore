@@ -9,14 +9,13 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class connect_to_non_existing_persistent_subscription_with_permissions : SpecificationWithMiniNode
     {
-        private EventStorePersistentSubscription _sub;
         private Exception _caught;
 
         protected override void When()
         {
             try
             {
-                _sub = _conn.ConnectToPersistentSubscription("foo",
+                _conn.ConnectToPersistentSubscription("foo",
                     "nonexisting2",
                     (sub, e) => Console.Write("appeared"),
                     (sub, reason, ex) =>
@@ -47,8 +46,6 @@ namespace EventStore.Core.Tests.ClientAPI
     public class connect_to_existing_persistent_subscription_with_permissions : SpecificationWithMiniNode
     {
         private EventStorePersistentSubscription _sub;
-        private SubscriptionDropReason _reason;
-        private Exception _ex;
         private readonly string _stream = Guid.NewGuid().ToString();
 
         protected override void When()
@@ -57,11 +54,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _sub = _conn.ConnectToPersistentSubscription(_stream,
                 "agroupname17",
                 (sub, e) => Console.Write("appeared"),
-                (sub, reason, ex) =>
-                {
-                    _reason = reason;
-                    _ex = ex;
-                });
+                (sub, reason, ex) => {});
         }
 
         [Test]
@@ -74,8 +67,6 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class connect_to_existing_persistent_subscription_without_permissions : SpecificationWithMiniNode
     {
-        private SubscriptionDropReason _reason;
-        private Exception _ex;
         private readonly string _stream = "$" + Guid.NewGuid();
 
         protected override void When()
@@ -92,11 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscription("agroupname55", 
                     _stream,
                     (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) =>
-                    {
-                        _reason = reason;
-                        _ex = ex;
-                    });
+                    (sub, reason, ex) => {});
                 throw new Exception("should have thrown.");
             }
             catch (Exception ex)

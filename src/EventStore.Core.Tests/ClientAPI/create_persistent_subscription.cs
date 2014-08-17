@@ -65,11 +65,10 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class create_duplicate_persistent_subscription_group : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionCreateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
         protected override void When()
         {
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "group32", true, new UserCredentials("admin", "changeit")).Result;
+            _conn.CreatePersistentSubscriptionAsync(_stream, "group32", true, new UserCredentials("admin", "changeit")).Wait();
         }
 
         [Test]
@@ -77,7 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _result = _conn.CreatePersistentSubscriptionAsync("foo", "group32", true, new UserCredentials("admin", "changeit")).Result;
+                _conn.CreatePersistentSubscriptionAsync("foo", "group32", true, new UserCredentials("admin", "changeit")).Wait();
                 throw new Exception("expected exception");
             }
             catch (Exception ex)
@@ -93,7 +92,6 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class create_persistent_subscription_group_without_permissions : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionCreateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
 
         protected override void When()
@@ -105,7 +103,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _result = _conn.CreatePersistentSubscriptionAsync(_stream, "group57", true, null).Result;
+                _conn.CreatePersistentSubscriptionAsync(_stream, "group57", true, null).Wait();
                 throw new Exception("expected exception");
             }
             catch (Exception ex)
