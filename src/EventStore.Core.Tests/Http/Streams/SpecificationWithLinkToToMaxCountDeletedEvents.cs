@@ -18,6 +18,7 @@ namespace EventStore.Core.Tests.Http.Streams
             LinkedStreamName = Guid.NewGuid().ToString();
             using (var conn = TestConnection.Create(_node.TcpEndPoint))
             {
+                conn.ConnectAsync().Wait();
                 conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,
                     new EventData(Guid.NewGuid(), "testing1", true, Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]))
                     .Wait();
