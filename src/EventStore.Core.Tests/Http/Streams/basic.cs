@@ -693,7 +693,7 @@ namespace EventStore.Core.Tests.Http.Streams
         }
 
         [TestFixture, Category("LongRunning")]
-        public class when_requesting_a_single_event_that_is_maxcount_deleted_linkto : HttpSpecificationWithLinkToToDeletedEvents
+        public class when_requesting_a_single_event_that_is_maxcount_deleted_linkto : SpecificationWithLinkToToMaxCountDeletedEvents
         {
             protected override void When()
             {
