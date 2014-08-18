@@ -168,12 +168,29 @@ namespace EventStore.Core.Tests.Http
         
         protected Uri MakeUrl(string path, string extra = "")
         {
-            var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
-            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
+			//Note: this hack fixes Mono URI encoding the `?`
+			var components = path.Split('?');
+			Console.WriteLine("Path: " + path);
+			Console.WriteLine("Components Length: " + components.Length);
+
+			var supplied = new Uri(components[0], UriKind.RelativeOrAbsolute);
+			if (components.Length > 1)
+			{
+				var builder = new UriBuilder(supplied);
+				builder.Query = components[1];
+				supplied = builder.Uri;
+			}
+
+            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file important for mono
                 return supplied;
 
             var httpEndPoint = _node.HttpEndPoint;
-            return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path, extra).Uri;
+			var finalBuilder = new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, components[0], extra);
+
+			if (components.Length > 1)
+				finalBuilder.Query = components[1];
+
+			return finalBuilder.Uri;
         }
 
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
