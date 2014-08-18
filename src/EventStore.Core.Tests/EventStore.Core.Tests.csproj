@@ -48,6 +48,7 @@
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Authentication\StubPasswordHashAlgorithm.cs" />
@@ -175,6 +176,7 @@
     <Compile Include="Http\Streams\feed.cs" />
     <Compile Include="Http\Streams\SetUpFixture.cs" />
     <Compile Include="Http\Streams\SpecificationWithLinkToToMaxCountDeletedEvents.cs" />
+    <Compile Include="Http\Streams\XDocumentAtomExtensions.cs" />
     <Compile Include="Http\TestController.cs" />
     <Compile Include="Http\TestSuiteMarkerBase.cs" />
     <Compile Include="Http\Users\StreamHelpers.cs" />

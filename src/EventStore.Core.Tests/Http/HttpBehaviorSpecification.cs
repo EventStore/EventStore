@@ -6,6 +6,8 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -259,6 +261,12 @@ namespace EventStore.Core.Tests.Http
             var request = CreateJsonPostRequest(path, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
+        }
+        
+        protected XDocument GetXml(string path, ICredentials credentials = null)
+        {
+            Get(path, "", "application/atom+xml", credentials);
+            return XDocument.Parse(_lastResponseBody);
         }
 
         protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null)
