@@ -262,7 +262,7 @@ namespace EventStore.Core.Tests.Http.Streams
             private List<JToken> _entries;
             protected override void When()
             {
-                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10/?embed=content", accept: ContentType.Json);
+                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10?embed=content", accept: ContentType.Json);
                 _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
             }
 
