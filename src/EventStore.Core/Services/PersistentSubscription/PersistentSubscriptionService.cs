@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
+using System.ServiceModel.Configuration;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -7,6 +9,8 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.UserManagement;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
@@ -33,6 +37,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IODispatcher _ioDispatcher;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
+        private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
 
         public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher)
         {
@@ -301,6 +306,48 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
                 subscription.NotifyFreeSlots(message.CorrelationId, message.NumberOfFreeSlots, message.ProcessedEventIds);
+            }
+        }
+
+        private void LoadConfiguration(Action continueWith)
+        {
+            _ioDispatcher.BeginReadBackward(SystemStreams.PersistentSubscriptionConfig, -1, 1, false,
+                SystemAccount.Principal, x => HandleLoadCompleted(continueWith, x));
+        }
+
+        private void HandleLoadCompleted(Action continueWith, ClientMessage.ReadStreamEventsBackwardCompleted readStreamEventsBackwardCompleted)
+        {
+            switch (readStreamEventsBackwardCompleted.Result)
+            {
+                case ReadStreamResult.Success:
+                    continueWith();
+                    break;
+                default:
+                    throw new Exception(readStreamEventsBackwardCompleted.Result + " is an unexpected result writing subscription configuration. Something is wrong.");
+            }
+        }
+
+        private void SaveConfiguration(Action continueWith)
+        {
+            var data = _config.GetSerializedForm();
+            var ev = new Event(Guid.NewGuid(), "PersistentConfig1", true, data, new byte[0]);
+            _ioDispatcher.WriteEvent(SystemStreams.PersistentSubscriptionConfig, ExpectedVersion.Any, ev, SystemAccount.Principal, x => HandleSaveConfigurationCompleted(continueWith, x));
+        }
+
+        private void HandleSaveConfigurationCompleted(Action continueWith, ClientMessage.WriteEventsCompleted obj)
+        {
+            switch (obj.Result)
+            {
+                case OperationResult.Success:
+                    continueWith();
+                    break;
+                case OperationResult.CommitTimeout:
+                case OperationResult.PrepareTimeout:
+                    Log.Info("Timeout while trying to save subscription configuration.");
+                    SaveConfiguration(continueWith);
+                    break;
+                default:
+                    throw new Exception(obj.Result + " is an unexpected result writing subscription configuration. Something is wrong.");
             }
         }
     }
