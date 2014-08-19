@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
-using System.ServiceModel.Configuration;
+using System.Configuration;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -17,6 +16,7 @@ namespace EventStore.Core.Services.PersistentSubscription
     public class PersistentSubscriptionService :
                                         IHandle<SystemMessage.BecomeShuttingDown>,
                                         IHandle<TcpMessage.ConnectionClosed>,
+                                        IHandle<SystemMessage.BecomeMaster>,
                                         IHandle<ClientMessage.ConnectToPersistentSubscription>,
                                         IHandle<StorageMessage.EventCommitted>,
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
@@ -29,8 +29,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionService>();
 
-        private readonly Dictionary<string, List<PersistentSubscription>> _subscriptionTopics = new Dictionary<string, List<PersistentSubscription>>();
-        private readonly Dictionary<string, PersistentSubscription> _subscriptionsById = new Dictionary<string, PersistentSubscription>(); 
+        private Dictionary<string, List<PersistentSubscription>> _subscriptionTopics;
+        private Dictionary<string, PersistentSubscription> _subscriptionsById;
 
         private readonly IQueuedHandler _queuedHandler;
         private readonly IReadIndex _readIndex;
@@ -38,6 +38,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
+        private bool _started = false;
 
         public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher)
         {
@@ -50,10 +51,18 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
             _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
             _eventLoader = new PersistentSubscriptionEventLoader(_ioDispatcher);
+            InitToEmpty();
+        }
+
+        public void InitToEmpty()
+        {
+            _subscriptionTopics = new Dictionary<string, List<PersistentSubscription>>();
+            _subscriptionsById = new Dictionary<string, PersistentSubscription>(); 
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
+            Stop();
             foreach (var subscription in _subscriptionsById.Values)
             {
                 subscription.Shutdown();
@@ -61,13 +70,25 @@ namespace EventStore.Core.Services.PersistentSubscription
             _queuedHandler.RequestStop();
         }
 
+        private void Start()
+        {
+            _started = true;
+        }
+
+        private void Stop()
+        {
+            _started = false;
+        }
+
         public void Handle(ClientMessage.UnsubscribeFromStream message)
         {
+            if (!_started) return;
             UnsubscribeFromStream(message.CorrelationId, true);
         }
 
         public void Handle(ClientMessage.CreatePersistentSubscription message)
         {
+            if (!_started) return;
             Log.Debug("create subscription " + message.GroupName);
             //TODO revisit for permissions. maybe make admin only?
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
@@ -87,27 +108,36 @@ namespace EventStore.Core.Services.PersistentSubscription
                     "Group '" + message.GroupName + "' already exists."));
                 return;
             }
+            CreateSubscriptionGroup(message.EventStreamId, message.GroupName, message.ResolveLinkTos);
+            Log.Debug("New persistent subscription {0}.", message.GroupName);
+            _config.Updated = DateTime.Now;
+            _config.UpdatedBy = message.User.Identity.Name;
+            _config.Entries.Add(new PersistentSubscriptionEntry(){Stream=message.EventStreamId, Group = message.GroupName, ResolveLinkTos = message.ResolveLinkTos});            
+            SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
+                ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, "")));
+        }
+
+        private void CreateSubscriptionGroup(string eventStreamId, string groupName, bool resolveLinkTos)
+        {
+            var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
             List<PersistentSubscription> subscribers;
-            if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
+            if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers))
             {
                 subscribers = new List<PersistentSubscription>();
-                _subscriptionTopics.Add(message.EventStreamId, subscribers);
+                _subscriptionTopics.Add(eventStreamId, subscribers);
             }
 
             var subscription = new PersistentSubscription(
-                message.ResolveLinkTos, key,
-                message.EventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : message.EventStreamId,
-                _eventLoader, _checkpointReader, new PersistentSubscriptionCheckpointWriter(message.GroupName, _ioDispatcher));
+                resolveLinkTos, key,
+                eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
+                _eventLoader, _checkpointReader, new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher));
             _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
-            Log.Debug("New persistent subscription {0}.", message.GroupName);
-
-            message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
-                ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, ""));
         }
 
         public void Handle(ClientMessage.DeletePersistentSubscription message)
         {
+            if (!_started) return;
             Log.Debug("delete subscription " + message.GroupName);
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
@@ -150,14 +180,20 @@ namespace EventStore.Core.Services.PersistentSubscription
                 }
             }
 
-            message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
-    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success, ""));
+            _config.Updated = DateTime.Now;
+            _config.UpdatedBy = message.User.Identity.Name;
+            //TODO CC better handling of config vs live data
+            var index = _config.Entries.FindLastIndex(x => x.Stream == message.EventStreamId && x.Group == message.GroupName);
+            _config.Entries.RemoveAt(index);
+            SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
+    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success, "")));
 
         }
 
         //should we also call statistics from the stastics subsystem to write into stream?
         public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message)
         {
+            if (!_started) return;
             Log.Debug("get statistics");
         }
 
@@ -172,6 +208,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(TcpMessage.ConnectionClosed message)
         {
+            if (!_started) return;
             foreach (var subscription in _subscriptionsById.Values)
             {
                 subscription.RemoveClientByConnectionId(message.Connection.ConnectionId);
@@ -215,6 +252,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(ClientMessage.ConnectToPersistentSubscription message)
         {
+            if (!_started) return;
             var streamAccess = _readIndex.CheckStreamAccess(
                 message.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : message.EventStreamId, StreamAccessType.Read, message.User);
 
@@ -253,6 +291,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(StorageMessage.EventCommitted message)
         {
+            if (!_started) return;
             var resolvedEvent = ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null);
             ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
         }
@@ -301,6 +340,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(ClientMessage.PersistentSubscriptionNotifyEventsProcessed message)
         {
+            if (!_started) return;
             PersistentSubscription subscription;
             //TODO competing adjust the naming of SubscriptionId vs GroupName
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
@@ -311,7 +351,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void LoadConfiguration(Action continueWith)
         {
-            _ioDispatcher.BeginReadBackward(SystemStreams.PersistentSubscriptionConfig, -1, 1, false,
+            _ioDispatcher.ReadBackward(SystemStreams.PersistentSubscriptionConfig, -1, 1, false,
                 SystemAccount.Principal, x => HandleLoadCompleted(continueWith, x));
         }
 
@@ -320,6 +360,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             switch (readStreamEventsBackwardCompleted.Result)
             {
                 case ReadStreamResult.Success:
+                    try
+                    {
+                        _config =
+                            PersistentSubscriptionConfig.FromSerializedForm(
+                                readStreamEventsBackwardCompleted.Events[0].Event.Data);
+                        continueWith();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("There was an error loading configuration from storage something is wrong.", ex);
+                    }
+                    break;
+                case ReadStreamResult.NoStream:
+                    _config = new PersistentSubscriptionConfig {Version = "1"};
                     continueWith();
                     break;
                 default:
@@ -329,6 +383,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void SaveConfiguration(Action continueWith)
         {
+            Log.Debug("Saving Confiugration.");
             var data = _config.GetSerializedForm();
             var ev = new Event(Guid.NewGuid(), "PersistentConfig1", true, data, new byte[0]);
             _ioDispatcher.WriteEvent(SystemStreams.PersistentSubscriptionConfig, ExpectedVersion.Any, ev, SystemAccount.Principal, x => HandleSaveConfigurationCompleted(continueWith, x));
@@ -349,6 +404,22 @@ namespace EventStore.Core.Services.PersistentSubscription
                 default:
                     throw new Exception(obj.Result + " is an unexpected result writing subscription configuration. Something is wrong.");
             }
+        }
+
+        public void LoadSubscriptionsFromConfig()
+        {
+            Log.Debug("Loading subscriptions from persisted config.");
+            InitToEmpty();
+            if(_config.Entries == null) throw new Exception("Subscription Entries should never be null.");
+            foreach (var sub in _config.Entries)
+            {
+                CreateSubscriptionGroup(sub.Stream, sub.Group, sub.ResolveLinkTos);
+            }
+        }
+
+        public void Handle(SystemMessage.BecomeMaster message)
+        {
+            LoadConfiguration(Start);
         }
     }
 }

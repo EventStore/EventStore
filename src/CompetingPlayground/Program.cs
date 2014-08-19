@@ -58,13 +58,28 @@ namespace CompetingPlayground
 
         private static void DeleteSubscription(IEventStoreConnection connection, string name)
         {
-            connection.DeletePersistentSubscriptionAsync(Stream, name).Wait();
+            try
+            {
+                connection.DeletePersistentSubscriptionAsync(Stream, name).Wait();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Unable to delete : " + ex);
+            }
         }
 
 
         private static void CreateSubscription(IEventStoreConnection connection, string name)
         {
-            connection.CreatePersistentSubscriptionAsync(Stream, name, true, new UserCredentials("admin", "changeit")).Wait();
+            try
+            {
+                connection.CreatePersistentSubscriptionAsync(Stream, name, true,
+                    new UserCredentials("admin", "changeit")).Wait();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Unable to create : " + ex);
+            }
         }
     }
 }

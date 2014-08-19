@@ -388,8 +388,9 @@ namespace EventStore.Core
 
             // PERSISTENT SUBSCRIPTIONS
             // IO DISPATCHER
-            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
+            var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
             _mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+            _mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
             _mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
             _mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
             _mainBus.Subscribe(ioDispatcher);
@@ -397,6 +398,7 @@ namespace EventStore.Core
             var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
             //TODO CC This should use a dispatcher (horrifically inefficient)
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeMaster, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscription, Message>());
@@ -408,6 +410,8 @@ namespace EventStore.Core
   
             var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
+            perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
+
             perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
