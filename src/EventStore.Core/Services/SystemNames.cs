@@ -18,7 +18,7 @@ namespace EventStore.Core.Services
 
     public static class SystemStreams
     {
-        public const string PersistentSubscriptionConfig = "persistentSubscriptionConfig";
+        public const string PersistentSubscriptionConfig = "$persistentSubscriptionConfig";
         public const string AllStream = "$all";
         public const string StreamsStream = "$streams";
         public const string SettingsStream = "$settings";

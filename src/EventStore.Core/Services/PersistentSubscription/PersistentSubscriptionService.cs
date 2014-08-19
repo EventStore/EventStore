@@ -365,6 +365,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                         _config =
                             PersistentSubscriptionConfig.FromSerializedForm(
                                 readStreamEventsBackwardCompleted.Events[0].Event.Data);
+                        foreach (var entry in _config.Entries)
+                        {
+                            CreateSubscriptionGroup(entry.Stream, entry.Group, entry.ResolveLinkTos);
+                        }
                         continueWith();
                     }
                     catch (Exception ex)
