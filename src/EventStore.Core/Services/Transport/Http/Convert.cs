@@ -154,7 +154,7 @@ namespace EventStore.Core.Services.Transport.Http
             var evnt = eventLinkPair.Event;
             var link = eventLinkPair.Link;
             EntryElement entry;
-            if (embedContent > EmbedLevel.Content)
+            if (embedContent > EmbedLevel.Content && evnt != null)
             {
                 var richEntry = new RichEntryElement();
                 entry = richEntry;
@@ -251,6 +251,7 @@ namespace EventStore.Core.Services.Transport.Http
                 var eventNumber = int.Parse(pieces[0]);
                 var streamId = pieces[1];
                 SetEntryProperties(streamId, eventNumber, link.TimeStamp, requestedUrl, entry);
+		entry.SetSummary("$>");
             }
             return entry;
         }

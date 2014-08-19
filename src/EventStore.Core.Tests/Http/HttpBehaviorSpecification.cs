@@ -6,6 +6,8 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -166,12 +168,29 @@ namespace EventStore.Core.Tests.Http
         
         protected Uri MakeUrl(string path, string extra = "")
         {
-            var supplied = new Uri(path, UriKind.RelativeOrAbsolute);
-            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
+			//Note: this hack fixes Mono URI encoding the `?`
+			var components = path.Split('?');
+			Console.WriteLine("Path: " + path);
+			Console.WriteLine("Components Length: " + components.Length);
+
+			var supplied = new Uri(components[0], UriKind.RelativeOrAbsolute);
+			if (components.Length > 1)
+			{
+				var builder = new UriBuilder(supplied);
+				builder.Query = components[1];
+				supplied = builder.Uri;
+			}
+
+            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file important for mono
                 return supplied;
 
             var httpEndPoint = _node.HttpEndPoint;
-            return new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path, extra).Uri;
+			var finalBuilder = new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, components[0], extra);
+
+			if (components.Length > 1)
+				finalBuilder.Query = components[1];
+
+			return finalBuilder.Uri;
         }
 
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
@@ -259,6 +278,12 @@ namespace EventStore.Core.Tests.Http
             var request = CreateJsonPostRequest(path, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
+        }
+        
+        protected XDocument GetXml(string path, ICredentials credentials = null)
+        {
+            Get(path, "", "application/atom+xml", credentials);
+            return XDocument.Parse(_lastResponseBody);
         }
 
         protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null)
