@@ -251,6 +251,7 @@ namespace EventStore.Core.Services.Transport.Http
                 var eventNumber = int.Parse(pieces[0]);
                 var streamId = pieces[1];
                 SetEntryProperties(streamId, eventNumber, link.TimeStamp, requestedUrl, entry);
+		entry.SetSummary("$>");
             }
             return entry;
         }
