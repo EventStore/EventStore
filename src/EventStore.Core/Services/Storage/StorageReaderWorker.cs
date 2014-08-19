@@ -75,6 +75,7 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward msg)
         {
+            if(msg.EventStreamId == SystemStreams.PersistentSubscriptionConfig) Console.Write("hello");
             msg.Envelope.ReplyWith(ReadStreamEventsBackward(msg));
         }
 

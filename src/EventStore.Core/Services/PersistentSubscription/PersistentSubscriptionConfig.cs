@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public string Version;
         public DateTime Updated;
         public string UpdatedBy;
-        public List<PersistentSubscriptionEntry> Entries;
+        public List<PersistentSubscriptionEntry> Entries = new List<PersistentSubscriptionEntry>();
 
         public byte[] GetSerializedForm()
         {
