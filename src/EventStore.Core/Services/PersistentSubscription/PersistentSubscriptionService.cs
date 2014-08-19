@@ -74,8 +74,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     "You do not have permissions to create streams"));
                 return;
             }
-
-            if (_subscriptionsById.ContainsKey(message.GroupName))
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
+            if (_subscriptionsById.ContainsKey(key))
             {
                 message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
                     ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists, 
@@ -90,10 +90,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
 
             var subscription = new PersistentSubscription(
-                message.ResolveLinkTos, message.GroupName,
+                message.ResolveLinkTos, key,
                 message.EventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : message.EventStreamId,
                 _eventLoader, _checkpointReader, new PersistentSubscriptionCheckpointWriter(message.GroupName, _ioDispatcher));
-            _subscriptionsById[message.GroupName] = subscription;
+            _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
             Log.Debug("New persistent subscription {0}.", message.GroupName);
 
@@ -113,7 +113,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     "You do not have permissions to create streams"));
                 return;
             }
-            if (!_subscriptionsById.ContainsKey(message.GroupName))
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
+            if (!_subscriptionsById.ContainsKey(key))
             {
                 message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
                     ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Fail,
@@ -129,7 +130,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             }
             List<PersistentSubscription> subscribers;
-            _subscriptionsById.Remove(message.GroupName);
+            _subscriptionsById.Remove(key);
             if (_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
                 for (int i = 0; i < subscribers.Count; i++)
@@ -225,11 +226,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                 message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.NotFound));
                 return;
             }
-
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.SubscriptionId);
             PersistentSubscription subscription;
-            if (!_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
+            if (!_subscriptionsById.TryGetValue(key, out subscription))
             {
-                //TODO this is subscription doesnt exist
                 message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.NotFound));
                 return;
             }
@@ -239,6 +239,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             var subscribedMessage = new ClientMessage.PersistentSubscriptionConfirmation(message.CorrelationId, lastCommitPos, lastEventNumber);
             message.Envelope.ReplyWith(subscribedMessage);
             subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope, message.NumberOfFreeSlots);
+        }
+
+        private static string BuildSubscriptionGroupKey(string stream, string groupName)
+        {
+            return stream + "::" + groupName;
         }
 
         public void Handle(StorageMessage.EventCommitted message)
@@ -292,6 +297,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(ClientMessage.PersistentSubscriptionNotifyEventsProcessed message)
         {
             PersistentSubscription subscription;
+            //TODO competing adjust the naming of SubscriptionId vs GroupName
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
                 subscription.NotifyFreeSlots(message.CorrelationId, message.NumberOfFreeSlots, message.ProcessedEventIds);
