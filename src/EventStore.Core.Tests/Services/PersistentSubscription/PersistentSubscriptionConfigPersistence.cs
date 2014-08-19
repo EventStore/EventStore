@@ -15,6 +15,7 @@ namespace EventStore.Core.Tests.Services
             var config = new PersistentSubscriptionConfig();
             config.Updated = new DateTime(2014,08, 14);
             config.UpdatedBy = "Greg";
+            config.Version = "1";
             config.Entries = new List<PersistentSubscriptionEntry>();
             config.Entries.Add(new PersistentSubscriptionEntry(){Group="foo", ResolveLinkTos = true, Stream = "Stream"});
             var data = config.GetSerializedForm();
