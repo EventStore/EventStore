@@ -272,6 +272,7 @@ namespace EventStore.Core
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
             var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
             var electController = new ElectController(_mainQueue);
+            var guidController = new GuidController(_mainQueue);
 
             // HTTP SENDERS
             gossipController.SubscribeSenders(httpPipe);
@@ -286,9 +287,10 @@ namespace EventStore.Core
             if(vNodeSettings.StatsOnPublic)
                 _externalHttpService.SetupController(statController);
             _externalHttpService.SetupController(atomController);
+            _externalHttpService.SetupController(guidController);
             if(vNodeSettings.GossipOnPublic)
                 _externalHttpService.SetupController(gossipController);
-            
+
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);

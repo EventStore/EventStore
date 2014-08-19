@@ -57,12 +57,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-#if DEBUG
-            QueueStatsCollector.InitializeIdleDetection();
-#else 
+#if (!DEBUG)
             throw new NotSupportedException("These tests require DEBUG conditional");
-#endif
-
+#else 
+            QueueStatsCollector.InitializeIdleDetection();
             _nodeEndpoints[0] = new Endpoints(
                 PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
                 PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
@@ -106,6 +104,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             QueueStatsCollector.WaitIdle();
             Given();
             When();
+#endif
         }
 
         private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds)

@@ -58,6 +58,14 @@
     <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
     <Compile Include="Log\NLogger.cs" />
     <Compile Include="Options\ArgDescriptionAttribute.cs" />
+    <Compile Include="Options\CommandLineParser.cs" />
+    <Compile Include="Options\DefaultOptionsProvider.cs" />
+    <Compile Include="Options\EnvironmentVariableProvider.cs" />
+    <Compile Include="Options\IOptionSourceProvider.cs" />
+    <Compile Include="Options\OptionsSourceMerger.cs" />
+    <Compile Include="Options\OptionSource.cs" />
+    <Compile Include="Options\OptionsSourceParser.cs" />
+    <Compile Include="Options\YamlParser.cs" />
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />

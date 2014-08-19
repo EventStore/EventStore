@@ -493,8 +493,8 @@ namespace EventStore.Core.Messages
                                       ResolvedEvent record, StreamMetadata streamMetadata, bool isCachePublic, string error)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                if (result == ReadEventResult.Success)
-                    Ensure.NotNull(record.Event, "record.Event");
+                //if (result == ReadEventResult.Success)
+                //    Ensure.NotNull(record.Event, "record.Event");
 
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;

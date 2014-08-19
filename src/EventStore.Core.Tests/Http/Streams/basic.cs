@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Text;
+using EventStore.Core.Tests.ClientAPI;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
@@ -675,6 +676,37 @@ namespace EventStore.Core.Tests.Http.Streams
 
         }
 
+        [TestFixture, Category("LongRunning")]
+        public class when_requesting_a_single_event_that_is_deleted_linkto : HttpSpecificationWithLinkToToDeletedEvents
+        {
+            protected override void When()
+            {
+                Get("/streams/" + LinkedStreamName + "/0", "", "application/json");
+            }
+
+            [Test]
+            public void the_event_is_gone()
+            {
+
+                Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_requesting_a_single_event_that_is_maxcount_deleted_linkto : SpecificationWithLinkToToMaxCountDeletedEvents
+        {
+            protected override void When()
+            {
+                Get("/streams/" + LinkedStreamName + "/0", "", "application/json");
+            }
+
+            [Test]
+            public void the_event_is_gone()
+            {
+
+                Assert.AreEqual(HttpStatusCode.NotFound, _lastResponse.StatusCode);
+            }
+        }
 
 
         [TestFixture, Category("LongRunning")]
