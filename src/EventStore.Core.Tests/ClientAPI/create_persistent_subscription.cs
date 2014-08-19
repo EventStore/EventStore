@@ -26,25 +26,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 
-    //[TestFixture, Category("LongRunning")]
-    //public class create_persistent_subscription_without_permissions_results_in_access_denied : SpecificationWithMiniNode
-    //{
-    //    private PersistentSubscriptionCreateResult _result;
-
-    //    protected override void When()
-    //    {
-    //        _conn.AppendToStreamAsync("foo", ExpectedVersion.Any,
-    //            new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-    //        _result = _conn.CreatePersistentSubscriptionAsync("foo", "group", true, null).Result;
-    //    }
-
-    //    [Test]
-    //    public void the_completion_succeeds()
-    //    {
-    //        Assert.AreEqual(PersistentSubscriptionCreateStatus.Success, _result.Status);
-    //    }
-    //}
-
+    
     [TestFixture, Category("LongRunning")]
     public class create_persistent_subscription_on_non_existing_stream : SpecificationWithMiniNode
     {
@@ -72,11 +54,11 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        public void the_completion_succeeds()
+        public void the_completion_fails_with_invalid_operation_exception()
         {
             try
             {
-                _conn.CreatePersistentSubscriptionAsync("foo", "group32", true, new UserCredentials("admin", "changeit")).Wait();
+                _conn.CreatePersistentSubscriptionAsync(_stream, "group32", true, new UserCredentials("admin", "changeit")).Wait();
                 throw new Exception("expected exception");
             }
             catch (Exception ex)
@@ -88,6 +70,23 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 
+    [TestFixture, Category("LongRunning")]
+    public class can_create_duplicate_persistent_subscription_group_name_on_different_streams : SpecificationWithMiniNode
+    {
+        private readonly string _stream = Guid.NewGuid().ToString();
+        private PersistentSubscriptionCreateResult _result;
+        protected override void When()
+        {
+            _conn.CreatePersistentSubscriptionAsync(_stream, "group3211", true, new UserCredentials("admin", "changeit")).Wait();
+            _result = _conn.CreatePersistentSubscriptionAsync("someother" + _stream, "group3211", true, new UserCredentials("admin", "changeit")).Result;
+        }
+
+        [Test]
+        public void the_completion_succeeds()
+        {
+            Assert.AreEqual(PersistentSubscriptionCreateStatus.Success, _result.Status);
+        }
+    }
 
     [TestFixture, Category("LongRunning")]
     public class create_persistent_subscription_group_without_permissions : SpecificationWithMiniNode
