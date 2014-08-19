@@ -267,7 +267,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _feed = GetXml("/streams/" + LinkedStreamName + "/0/forward/10?embed=content");
+                _feed = GetXml(MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content"));
                 _entries = _feed.GetEntries();
             }
 
@@ -300,7 +300,8 @@ namespace EventStore.Core.Tests.Http.Streams
             private List<JToken> _entries;
             protected override void When()
             {
-                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10?embed=content", accept: ContentType.Json);
+                var uri = MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content");
+                _feed = GetJson<JObject>(uri.ToString(), accept: ContentType.Json);
                 _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
             }
 
@@ -370,7 +371,8 @@ namespace EventStore.Core.Tests.Http.Streams
             private List<JToken> _entries;
             protected override void When()
             {
-                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/backward/1", accept: ContentType.Json);
+                var uri = MakeUrl("/streams/" + LinkedStreamName + "/0/backward/1", "embed=content");
+                _feed = GetJson<JObject>(uri.ToString(), accept: ContentType.Json);
                 _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
             }
 
@@ -409,6 +411,10 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 base.Given();
                 _head = GetJson<JObject>(TestStream, ContentType.AtomJson);
+		Console.WriteLine(new string('*', 60));
+                Console.WriteLine(_head);
+                Console.WriteLine(TestStream);
+		Console.WriteLine(new string('*', 60));
                 _previous = GetLink(_head, "previous");
                 _lastEventLocation = PostEvent(-1);
             }

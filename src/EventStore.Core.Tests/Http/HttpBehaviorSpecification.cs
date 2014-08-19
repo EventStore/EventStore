@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -165,32 +166,21 @@ namespace EventStore.Core.Tests.Http
             }
             return httpWebRequest;
         }
-        
+
         protected Uri MakeUrl(string path, string extra = "")
         {
-			//Note: this hack fixes Mono URI encoding the `?`
-			var components = path.Split('?');
-			Console.WriteLine("Path: " + path);
-			Console.WriteLine("Components Length: " + components.Length);
 
-			var supplied = new Uri(components[0], UriKind.RelativeOrAbsolute);
-			if (components.Length > 1)
-			{
-				var builder = new UriBuilder(supplied);
-				builder.Query = components[1];
-				supplied = builder.Uri;
-			}
+            var supplied = string.IsNullOrWhiteSpace(extra) ? new Uri(path, UriKind.RelativeOrAbsolute) : new Uri(path + "?" + extra, UriKind.RelativeOrAbsolute);
 
-            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file important for mono
+            if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
                 return supplied;
 
             var httpEndPoint = _node.HttpEndPoint;
-			var finalBuilder = new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, components[0], extra);
+            var x =  new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path);
+            x.Query = extra;
+	    Console.WriteLine(new string('*', 50) + Environment.NewLine + path + Environment.NewLine + extra + Environment.NewLine + x.Uri + Environment.NewLine + new string('*', 50));
 
-			if (components.Length > 1)
-				finalBuilder.Query = components[1];
-
-			return finalBuilder.Uri;
+            return x.Uri;
         }
 
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
@@ -280,9 +270,9 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
         
-        protected XDocument GetXml(string path, ICredentials credentials = null)
+        protected XDocument GetXml(Uri uri, ICredentials credentials = null)
         {
-            Get(path, "", "application/atom+xml", credentials);
+            Get(uri.ToString(), "", "application/atom+xml", credentials);
             return XDocument.Parse(_lastResponseBody);
         }
 
