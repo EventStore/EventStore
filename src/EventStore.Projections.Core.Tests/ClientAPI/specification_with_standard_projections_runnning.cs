@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         {
             base.TestFixtureSetUp();
 #if (!DEBUG)
-            throw new NotSupportedException("These tests require DEBUG conditional");
+            Assert.Ignore("These tests require DEBUG conditional");
 #else 
             QueueStatsCollector.InitializeIdleDetection();
             CreateNode();
@@ -130,8 +130,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-            _conn.Close();
-            _node.Shutdown();
+	    if (_conn != null)
+		_conn.Close();
+
+	    if (_node != null)
+		_node.Shutdown();
+
             base.TestFixtureTearDown();
 #if DEBUG
             QueueStatsCollector.InitializeIdleDetection(false);
