@@ -165,6 +165,7 @@
     <Compile Include="Services\Gossip\IGossipSeedSource.cs" />
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConfig.cs" />
     <Compile Include="Services\Replication\MasterReplicationService.cs" />
     <Compile Include="Services\Replication\ReplicaService.cs" />
     <Compile Include="Services\RequestForwardingService.cs" />
