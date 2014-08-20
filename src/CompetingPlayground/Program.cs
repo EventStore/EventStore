@@ -22,15 +22,15 @@ namespace CompetingPlayground
             using (var connection = EventStoreConnection.Create(endpoint, "foo"))
             {
                 connection.ConnectAsync().Wait();
-                CreateSubscription(connection, SubName);
+                //CreateSubscription(connection, SubName);
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
-                WriteEvents(connection);
+                //WriteEvents(connection);
                 sub.Stop(TimeSpan.FromSeconds(5));
                 WriteEvents(connection);
                 sub2.Stop(TimeSpan.FromSeconds(5));
                 Thread.Sleep(TimeSpan.FromSeconds(5));
-                DeleteSubscription(connection, SubName);
+                //DeleteSubscription(connection, SubName);
             }
         }
 
@@ -60,7 +60,7 @@ namespace CompetingPlayground
         {
             try
             {
-                connection.DeletePersistentSubscriptionAsync(Stream, name).Wait();
+                connection.DeletePersistentSubscriptionAsync(Stream, name, new UserCredentials("admin", "changeit")).Wait();
             }
             catch (Exception ex)
             {

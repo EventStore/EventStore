@@ -232,6 +232,7 @@
     <Compile Include="Services\Transport\Http\Controllers\GossipController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\InfoController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\PersistentSubscriptionController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />

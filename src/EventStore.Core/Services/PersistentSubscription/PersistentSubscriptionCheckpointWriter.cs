@@ -1,4 +1,5 @@
 using System;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -13,6 +14,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _version = ExpectedVersion.Any;
         private bool _outstandingWrite;
         private readonly string _subscriptionStateStream;
+        private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionCheckpointWriter>();
 
         public PersistentSubscriptionCheckpointWriter(string subscriptionId, IODispatcher ioDispatcher)
         {
@@ -43,6 +45,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void PublishCheckpoint(int state)
         {
+            Log.Debug("publishing checkpoint " + state);
             _outstandingWrite = true;
             var evnt = new Event(Guid.NewGuid(), "SubscriptionCheckpoint", true, state.ToJson(), null);            
             _ioDispatcher.WriteEvent(_subscriptionStateStream, _version, evnt, SystemAccount.Principal, WriteStateCompleted);
@@ -81,8 +84,13 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _outstandingWrite = false;
             if (msg.Result == OperationResult.Success)
-            {                
+            {
+                Log.Debug("state write successful");
                 _version = msg.LastEventNumber;
+            }
+            else
+            {
+                Log.Debug("error writing checkpoint " + msg.Result);
             }
         }
     }
