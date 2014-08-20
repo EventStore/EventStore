@@ -940,7 +940,7 @@ namespace EventStore.Core.Messages
             public enum DeletePersistentSubscriptionResult
             {
                 Success = 0,
-                AlreadyExists = 1,
+                DoesNotExist = 1,
                 Fail = 2,
                 AccessDenied=3
             }

@@ -110,8 +110,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                             code = HttpStatusCode.OK;
                             //TODO competing return uri to subscription
                             break;
-                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AlreadyExists:
-                            code = HttpStatusCode.Conflict;
+                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist:
+                            code = HttpStatusCode.NotFound;
                             break;
                         case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied:
                             code = HttpStatusCode.Unauthorized;

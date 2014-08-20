@@ -151,7 +151,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!_subscriptionsById.ContainsKey(key))
             {
                 message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
-                    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Fail,
+                    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist,
                     "Group '" + message.GroupName + "' doesn't exist."));
                 return;
             }

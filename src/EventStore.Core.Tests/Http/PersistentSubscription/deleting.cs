@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void returns_ok_status_code()
         {
-            Assert.AreEqual(HttpStatusCode.Gone, _response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
         }
     }
 
