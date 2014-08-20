@@ -29,14 +29,14 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly int? LastEventNumber;
 
-        private readonly SubscriptionOperation _subscriptionOperation;
         private readonly string _streamId;
+        private readonly Action _unsubscribe;
 
-        internal EventStoreSubscription(SubscriptionOperation subscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
+        internal EventStoreSubscription(Action unsubscribe, string streamId, long lastCommitPosition, int? lastEventNumber)
         {
-            Ensure.NotNull(subscriptionOperation, "subscriptionOperation");
+            Ensure.NotNull(unsubscribe, "unsubscribe");
 
-            _subscriptionOperation = subscriptionOperation;
+            _unsubscribe = unsubscribe;
             _streamId = streamId;
             LastCommitPosition = lastCommitPosition;
             LastEventNumber = lastEventNumber;
@@ -63,7 +63,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public void Unsubscribe()
         {
-            _subscriptionOperation.Unsubscribe();
+            _unsubscribe();
         }
     }
 }

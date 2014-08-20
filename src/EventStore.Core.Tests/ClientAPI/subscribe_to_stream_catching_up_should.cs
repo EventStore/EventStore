@@ -33,11 +33,16 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TestFixtureTearDown();
         }
 
+        virtual protected IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
+        }
+
         [Test, Category("LongRunning")]
         public void be_able_to_subscribe_to_non_existing_stream()
         {
             const string stream = "be_able_to_subscribe_to_non_existing_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
                 var appeared = new ManualResetEventSlim(false);
@@ -64,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_subscribe_to_non_existing_stream_and_then_catch_event()
         {
             const string stream = "be_able_to_subscribe_to_non_existing_stream_and_then_catch_event";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(1);
@@ -95,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void allow_multiple_subscriptions_to_same_stream()
         {
             const string stream = "allow_multiple_subscriptions_to_same_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(2);
@@ -138,7 +143,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void call_dropped_callback_after_stop_method_call()
         {
             const string stream = "call_dropped_callback_after_stop_method_call";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -159,7 +164,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void read_all_existing_events_and_keep_listening_to_new_ones()
         {
             const string stream = "read_all_existing_events_and_keep_listening_to_new_ones";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -209,7 +214,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void filter_events_and_keep_listening_to_new_ones()
         {
             const string stream = "filter_events_and_keep_listening_to_new_ones";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -263,7 +268,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void filter_events_and_work_if_nothing_was_written_after_subscription()
         {
             const string stream = "filter_events_and_work_if_nothing_was_written_after_subscription";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 

@@ -24,8 +24,13 @@ namespace EventStore.Core.Tests.ClientAPI
             _node = new MiniNode(PathName);
             _node.Start();
 
-            _connection = TestConnection.Create(_node.TcpEndPoint);
+            _connection = BuildConnection(_node);
             _connection.ConnectAsync().Wait();
+        }
+
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
         }
 
         [TestFixtureTearDown]

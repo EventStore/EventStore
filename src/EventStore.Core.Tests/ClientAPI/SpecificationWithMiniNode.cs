@@ -18,6 +18,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected abstract void When();
 
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
+        }
+
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
@@ -25,7 +30,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
             _node.Start();
             _HttpEndPoint = _node.HttpEndPoint;
-            _conn = TestConnection.Create(_node.TcpEndPoint);
+            _conn = BuildConnection(_node);
             _conn.ConnectAsync().Wait();
             Given();
             When();

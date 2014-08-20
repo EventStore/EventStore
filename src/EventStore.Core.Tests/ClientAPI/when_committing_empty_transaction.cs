@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _firstEvent = TestEvent.NewTestEvent();
 
-            _connection = TestConnection.Create(_node.TcpEndPoint);
+            _connection = BuildConnection(_node);
             _connection.ConnectAsync().Wait();
 
             Assert.AreEqual(2, _connection.AppendToStreamAsync("test-stream",
@@ -44,6 +44,11 @@ namespace EventStore.Core.Tests.ClientAPI
             _connection.Close();
             _node.Shutdown();
             base.TearDown();
+        }
+
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
         }
 
         [Test]

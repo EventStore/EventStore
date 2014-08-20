@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    internal class appending_to_implicitly_created_stream: SpecificationWithDirectoryPerTestFixture
+    public class appending_to_implicitly_created_stream : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
@@ -28,6 +28,12 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TestFixtureTearDown();
         }
 
+
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
+        }
+
         /*
          * sequence - events written so stream
          * 0em1 - event number 0 written with exp version -1 (minus 1)
@@ -40,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0em1_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0em1_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -59,7 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_1e0_2e1_3e2_4e3_4e4_0any_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_1e0_2e1_3e2_4e3_4e4_0any_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -78,7 +84,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e5_non_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e5_non_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -97,7 +103,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e6_wev()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e6_wev";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -115,7 +121,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e4_wev()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_1e0_2e1_3e2_4e3_5e4_0e4_wev";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -133,7 +139,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_0e0_non_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_0e0_non_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -152,7 +158,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_0any_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_0any_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -171,7 +177,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_0em1_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_0em1_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -190,7 +196,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_0em1_1e0_2e1_1any_1any_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_0em1_1e0_2e1_1any_1any_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -209,7 +215,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_0em1_1em1_E_S_0em1_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_0em1_1em1_E_S_0em1_E_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -230,7 +236,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_0em1_1em1_E_S_0any_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_0em1_1em1_E_S_0any_E_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -251,7 +257,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_0em1_1em1_E_S_1e0_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_0em1_1em1_E_S_1e0_E_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -272,7 +278,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_0em1_1em1_E_S_1any_E_idempotent()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_0em1_1em1_E_S_1any_E_idempotent";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -293,7 +299,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void sequence_S_0em1_1em1_E_S_0em1_1em1_2em1_E_idempotancy_fail()
         {
             const string stream = "appending_to_implicitly_created_stream_sequence_S_0em1_1em1_E_S_0em1_1em1_2em1_E_idempotancy_fail";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
