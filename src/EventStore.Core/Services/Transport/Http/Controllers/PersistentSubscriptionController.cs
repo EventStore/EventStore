@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Common.Log;
@@ -101,7 +102,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (args, message) => http.ResponseCodec.To(message),
                 (args, message) =>
                 {
-                    var code = HttpStatusCode.OK;
+                    int code;
                     var m = message as ClientMessage.DeletePersistentSubscriptionCompleted;
                     if (m == null) throw new Exception("unexpected message " + message);
                     switch (m.Result)
@@ -135,5 +136,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public bool ResolveLinktos { get; set; }
         }
 
+        private class SubscriptionInfo
+        {
+            public string EventStreamId { get; set; }
+            public string GroupName { get; set; }
+            public string Status { get; set; }
+            public List<ConnectionInfo> Connections { get; set; } 
+        }
+
+        private class ConnectionInfo
+        {
+            public string From { get; set; }
+            
+        }
     }
 }
