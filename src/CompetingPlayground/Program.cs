@@ -40,7 +40,7 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
-                    Thread.Sleep(250);
+                    Thread.Sleep(1000);
                     Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),

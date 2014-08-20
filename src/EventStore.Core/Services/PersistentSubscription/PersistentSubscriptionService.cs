@@ -343,6 +343,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!_started) return;
             PersistentSubscription subscription;
             //TODO competing adjust the naming of SubscriptionId vs GroupName
+            Console.WriteLine("processed " + message.ProcessedEventIds[0] + " : " + message.ProcessedEventIds.Length);
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
                 subscription.NotifyFreeSlots(message.CorrelationId, message.NumberOfFreeSlots, message.ProcessedEventIds);

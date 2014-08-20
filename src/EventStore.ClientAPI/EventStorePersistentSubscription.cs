@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Concurrent;
@@ -28,6 +30,7 @@ namespace EventStore.ClientAPI
         private readonly ConnectionSettings _settings;
         private readonly EventStoreConnectionLogicHandler _handler;
         private readonly int _bufferSize;
+        private readonly bool _autoAck;
 
         private PersistentEventStoreSubscription _subscription;
         private readonly ConcurrentQueue<ResolvedEvent> _queue = new ConcurrentQueue<ResolvedEvent>();
@@ -46,7 +49,8 @@ namespace EventStore.ClientAPI
             bool verboseLogging,
             ConnectionSettings settings, 
             EventStoreConnectionLogicHandler handler,
-            int bufferSize = DefaultBufferSize)
+            int bufferSize = DefaultBufferSize,
+            bool autoAck = true)
         {
             _subscriptionId = subscriptionId;
             _streamId = streamId;
@@ -58,6 +62,7 @@ namespace EventStore.ClientAPI
             _settings = settings;
             _handler = handler;
             _bufferSize = bufferSize;
+            _autoAck = autoAck;
         }
 
         ///<summary>
@@ -78,6 +83,29 @@ namespace EventStore.ClientAPI
                                                                  OnSubscriptionDropped, _settings.MaxRetries, _settings.OperationTimeout));
             source.Task.Wait();
             _subscription = source.Task.Result;
+        }
+
+
+        /// <summary>
+        /// Acknowledge that a message have completed processing (this will tell the server it has been processed)
+        /// </summary>
+        /// <remarks>There is no need to ack a message if you have Auto Ack enabled</remarks>
+        /// <param name="event">The <see cref="ResolvedEvent"></see> to acknowledge</param>
+        public void Acknowledge(ResolvedEvent @event)
+        {
+            _subscription.NotifyEventsProcessed(FreeSlots, new[] { @event.Event.EventId });
+        }
+
+        /// <summary>
+        /// Acknowledge that a message have completed processing (this will tell the server it has been processed)
+        /// </summary>
+        /// <remarks>There is no need to ack a message if you have Auto Ack enabled</remarks>
+        /// <param name="events">The <see cref="ResolvedEvent"></see>s to acknowledge there should be less than 2000 to ack at a time.</param>
+        public void Acknowledge(IEnumerable<ResolvedEvent> events)
+        {
+            var ids = events.Select(x => x.Event.EventId).ToArray();
+            if(ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
+            _subscription.NotifyEventsProcessed(FreeSlots, ids);
         }
 
         /// <summary>
@@ -120,6 +148,7 @@ namespace EventStore.ClientAPI
                 ThreadPool.QueueUserWorkItem(_ => ProcessQueue());
         }
 
+
         private void ProcessQueue()
         {
             do
@@ -137,7 +166,8 @@ namespace EventStore.ClientAPI
                     try
                     {
                         _eventAppeared(this, e);
-                        _subscription.NotifyEventsProcessed(FreeSlots, new[]{e.Event.EventId});
+                        if(_autoAck)
+                            _subscription.NotifyEventsProcessed(FreeSlots, new[]{e.Event.EventId});
                         if (_verbose)
                             _log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}). {5} free slots remaining.",
                                       _streamId,
