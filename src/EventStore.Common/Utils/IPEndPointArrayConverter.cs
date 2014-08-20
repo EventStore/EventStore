@@ -16,20 +16,23 @@ namespace EventStore.Common.Utils
         }
         public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
         {
-            var values = value as IEnumerable;
-            if (values != null)
+            if (value.GetType() == typeof(string))
             {
+                var valueAsString = value as string;
+                if (valueAsString != null)
+                {
+                    var ipEndPointList = valueAsString.Split(new[] { "," }, StringSplitOptions.None).Select(x => (IPEndPoint)new IPEndPointConverter().ConvertFrom(x));
+                    return ipEndPointList.ToArray();
+                }
+            }
+            else if (value.GetType().IsArray)
+            {
+                var values = value as IEnumerable;
                 var ipEndPointList = new List<IPEndPoint>();
                 foreach (var val in values)
                 {
                     ipEndPointList.Add((IPEndPoint)new IPEndPointConverter().ConvertFrom(val));
                 }
-                return ipEndPointList.ToArray();
-            }
-            var valueAsString = value as string;
-            if (valueAsString != null)
-            {
-                var ipEndPointList = valueAsString.Split(new[] { "," }, StringSplitOptions.None).Select(x => new IPEndPointConverter().ConvertFrom(x));
                 return ipEndPointList.ToArray();
             }
 

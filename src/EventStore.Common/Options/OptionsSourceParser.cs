@@ -23,18 +23,18 @@ namespace EventStore.Common.Options
                         value = optionSources.First(x => x.Name == property.Name).Value;
                         if (value == null) continue;
                         var typeConverter = GetTypeConverter(property.PropertyType);
-                        if (typeConverter.CanConvertFrom(value.GetType()) || 
+                        if (property.PropertyType == value.GetType())
+                        {
+                            property.SetValue(options, value, null);
+                        }
+                        else if (typeConverter.CanConvertFrom(value.GetType()) ||
                             typeConverter.CanConvertFrom(value.GetType().BaseType))
                         {
                             property.SetValue(options, typeConverter.ConvertFrom(value), null);
                         }
-                        else if (typeConverter.CanConvertFrom(typeof(string)))
-                        {
-                            property.SetValue(options, typeConverter.ConvertFromString(value.ToString()), null);
-                        }
                         else
                         {
-                            property.SetValue(options, value, null);
+                            property.SetValue(options, typeConverter.ConvertFromString(value.ToString()), null);
                         }
                     }
                     catch
