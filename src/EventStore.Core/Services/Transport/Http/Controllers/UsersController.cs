@@ -15,6 +15,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ICodec[] DefaultCodecs = new ICodec[] { Codec.Json, Codec.Xml };
         private static readonly ILogger Log = LogManager.GetLoggerFor<UsersController>();
 
+
         public UsersController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
