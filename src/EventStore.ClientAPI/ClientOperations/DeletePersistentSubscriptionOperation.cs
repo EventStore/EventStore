@@ -42,8 +42,8 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied:
                     Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
-                case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AlreadyExists:
-                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} alreay exists", _groupName, _stream)));
+                case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist:
+                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} does not exist", _groupName, _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AlreadyExists");
                 default:
                     throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
