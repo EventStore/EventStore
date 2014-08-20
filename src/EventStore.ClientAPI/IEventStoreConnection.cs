@@ -279,6 +279,8 @@ namespace EventStore.ClientAPI
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="bufferSize">The buffer size to use for the persistent subscription</param>
+        /// <param name="autoAck">Whether the subscription should automatically acknowledge messages processed.
+        /// If not set the receiver is required to explicitly acknowledge messages through the subscription.</param>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStorePersistentSubscription ConnectToPersistentSubscription(
             string subscriptionId, 
@@ -286,7 +288,8 @@ namespace EventStore.ClientAPI
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
-            int? bufferSize = null);
+            int? bufferSize = null,
+            bool autoAck = true);
         
         /// <summary>
         /// Subscribes to a all events. Existing events from lastCheckpoint
