@@ -1,2 +1,5 @@
 ﻿Log: ~/logDirectoryFromConfigFile
 HttpPort: 2115
+GossipSeed:
+   - 127.0.0.1:1000
+   - 127.0.0.2:2000
