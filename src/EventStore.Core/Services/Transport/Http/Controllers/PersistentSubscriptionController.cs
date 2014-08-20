@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
-            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Put, PutSubscription, DefaultCodecs, DefaultCodecs);
+            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PutSubscription, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
 
         }
@@ -58,7 +58,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (args, message) => http.ResponseCodec.To(message),
                 (args,message) =>
                 {
-                    return new ResponseConfiguration(HttpStatusCode.OK, http.ResponseCodec.ContentType,
+                    int code;
+                    var m = message as ClientMessage.CreatePersistentSubscriptionCompleted;
+                    if(m==null) throw new Exception("unexpected message " + message);
+                    switch (m.Result)
+                    {
+                        case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success:
+                            code = HttpStatusCode.OK;
+                            break;
+                        case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists:
+                            code = HttpStatusCode.Conflict;
+                            break;
+                        case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied:
+                            code = HttpStatusCode.Forbidden;
+                            break;
+                        default:
+                            code = HttpStatusCode.InternalServerError;
+                            break;
+                    }
+                    return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
                         http.ResponseCodec.Encoding);
                 });
             http.ReadTextRequestAsync(
