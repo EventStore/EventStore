@@ -289,7 +289,7 @@ namespace EventStore.ClientAPI
         }
 
         public EventStorePersistentSubscription ConnectToPersistentSubscription(
-            string subscriptionId, 
+            string groupName, 
             string stream, 
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
@@ -297,18 +297,36 @@ namespace EventStore.ClientAPI
             int? bufferSize = null,
             bool autoAck = true)
         {
-            Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var subscription = new EventStorePersistentSubscription(
-                subscriptionId, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
+                groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
                 _settings.VerboseLogging, _settings, _handler, bufferSize ?? EventStorePersistentSubscription.DefaultBufferSize, autoAck);
 
             subscription.Start();
 
             return subscription;
         }
+
+        public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
+            string groupName,
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int? bufferSize = null,
+            bool autoAck = true)
+        {
+            return ConnectToPersistentSubscription(groupName,
+                SystemStreams.AllStream,
+                eventAppeared,
+                subscriptionDropped,
+                userCredentials,
+                bufferSize,
+                autoAck);
+        }
+
 
         public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, bool resolveLinkTos, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -318,12 +336,28 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, bool resolveLinkTos, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, resolveLinkTos, userCredentials));
+            return source.Task;
+        }
+
         public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
             EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
             return source.Task;            
+        }
+
+        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, userCredentials));
+            return source.Task;
         }
 
 
