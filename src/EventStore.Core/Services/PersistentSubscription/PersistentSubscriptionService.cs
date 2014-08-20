@@ -254,7 +254,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (!_started) return;
             var streamAccess = _readIndex.CheckStreamAccess(
-                message.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : message.EventStreamId, StreamAccessType.Read, message.User);
+                message.EventStreamId, StreamAccessType.Read, message.User);
 
             if (!streamAccess.Granted)
             {
