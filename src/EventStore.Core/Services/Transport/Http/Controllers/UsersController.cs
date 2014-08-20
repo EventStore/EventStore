@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
         private static readonly ICodec[] DefaultCodecs = new ICodec[] { Codec.Json, Codec.Xml };
-        private static readonly ILogger Log = LogManager.GetLoggerFor<CommunicationController>();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<UsersController>();
 
         public UsersController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
