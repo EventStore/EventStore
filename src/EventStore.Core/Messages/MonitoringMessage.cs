@@ -7,22 +7,56 @@ namespace EventStore.Core.Messages
 {
     public static class MonitoringMessage
     {
-        public class GetPersistentSubscriptionStats : Message
+        public class GetAllPersistentSubscriptionStats : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly IEnvelope Envelope;
-            public readonly Func<Dictionary<string, object>, Dictionary<string, object>> StatsSelector;
             
-            public GetPersistentSubscriptionStats(IEnvelope envelope,
-                                 Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector)
+            public GetAllPersistentSubscriptionStats(IEnvelope envelope)
             {
                 Ensure.NotNull(envelope, "envelope");
-                Ensure.NotNull(statsSelector, "statsSelector");
-
                 Envelope = envelope;
-                StatsSelector = statsSelector;
+            }
+        }
+
+        public class GetPersistentSubscriptionStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string EventStreamId { get { return _eventStreamId; } }
+            public string GroupName { get { return _groupName; } }
+
+            public readonly IEnvelope Envelope;
+            private readonly string _eventStreamId;
+            private readonly string _groupName;
+
+            public GetPersistentSubscriptionStats(IEnvelope envelope, string eventStreamId, string groupName)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                _eventStreamId = eventStreamId;
+                _groupName = groupName;
+            }
+        }
+
+        public class GetStreamPersistentSubscriptionStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string EventStreamId { get { return _eventStreamId; } }
+
+            public readonly IEnvelope Envelope;
+            private readonly string _eventStreamId;
+
+            public GetStreamPersistentSubscriptionStats(IEnvelope envelope, string eventStreamId)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                _eventStreamId = eventStreamId;
             }
         }
 

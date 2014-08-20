@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>,
                                         IHandle<ClientMessage.CreatePersistentSubscription>,
                                         IHandle<ClientMessage.DeletePersistentSubscription>,
-                                        IHandle<MonitoringMessage.GetPersistentSubscriptionStats>
+                                        IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>
     {
         public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
 
@@ -190,7 +190,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         //should we also call statistics from the stastics subsystem to write into stream?
-        public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message)
+        public void Handle(MonitoringMessage.GetAllPersistentSubscriptionStats message)
         {
             if (!_started) return;
             Log.Debug("get statistics");
