@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
             [TestCase("%25", "%", "2", "2")] // %
             public void returns_ok_status_code(string _a, string _ra, string _b, string _rb)
             {
-                _response = GetJson2<JObject>("/test-encoding/" + _a, "?b=" + _b);
+                _response = GetJson2<JObject>("/test-encoding/" + _a, "b=" + _b);
                 Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
                 HelperExtensions.AssertJson(new { a = _ra, b = _rb }, _response);
             }
