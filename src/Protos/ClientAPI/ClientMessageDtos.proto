@@ -220,7 +220,7 @@ message CreatePersistentSubscriptionCompleted {
 message DeletePersistentSubscriptionCompleted {
 	enum DeletePersistentSubscriptionResult {
 		Success = 0;
-		AlreadyExists = 1;
+		DoesNotExist = 1;
 		Fail = 2;
 		AccessDenied = 3;
 	}
