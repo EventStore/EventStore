@@ -64,13 +64,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     switch (m.Result)
                     {
                         case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success:
-                            code = HttpStatusCode.OK;
+                            code = HttpStatusCode.Created;
+                            //TODO competing return uri to subscription
                             break;
                         case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists:
                             code = HttpStatusCode.Conflict;
                             break;
                         case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied:
-                            code = HttpStatusCode.Forbidden;
+                            code = HttpStatusCode.Unauthorized;
                             break;
                         default:
                             code = HttpStatusCode.InternalServerError;
@@ -100,7 +101,27 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (args, message) => http.ResponseCodec.To(message),
                 (args, message) =>
                 {
-                    return new ResponseConfiguration(HttpStatusCode.OK, http.ResponseCodec.ContentType,
+                    var code = HttpStatusCode.OK;
+                    var m = message as ClientMessage.DeletePersistentSubscriptionCompleted;
+                    if (m == null) throw new Exception("unexpected message " + message);
+                    switch (m.Result)
+                    {
+                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success:
+                            code = HttpStatusCode.OK;
+                            //TODO competing return uri to subscription
+                            break;
+                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AlreadyExists:
+                            code = HttpStatusCode.Conflict;
+                            break;
+                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied:
+                            code = HttpStatusCode.Unauthorized;
+                            break;
+                        default:
+                            code = HttpStatusCode.InternalServerError;
+                            break;
+                    }
+
+                    return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
                         http.ResponseCodec.Encoding);
                 });
             var groupname = match.BoundVariables["subscription"];
