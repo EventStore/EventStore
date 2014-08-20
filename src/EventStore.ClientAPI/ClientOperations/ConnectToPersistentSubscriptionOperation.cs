@@ -9,19 +9,21 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ConnectToPersistentSubscriptionOperation : SubscriptionOperation<PersistentEventStoreSubscription>
     {
-        private readonly string _subscriptionId;
+        private readonly string _groupName;
         private readonly int _bufferSize;
+        private readonly string _subscriptionId;
 
-        public ConnectToPersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, int bufferSize, string streamId, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
+        public ConnectToPersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string groupName, int bufferSize, string streamId, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
             : base(log, source, streamId, false, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
         {
-            _subscriptionId = subscriptionId;
+            _groupName = groupName;
             _bufferSize = bufferSize;
+            _subscriptionId = _streamId + "::" + _groupName;
         }
 
         protected override TcpPackage CreateSubscriptionPackage()
         {
-            var dto = new ClientMessage.ConnectToPersistentSubscription(_subscriptionId, _streamId, _bufferSize);
+            var dto = new ClientMessage.ConnectToPersistentSubscription(_groupName, _streamId, _bufferSize);
             return new TcpPackage(TcpCommand.ConnectToPersistentSubscription,
                                   _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   _correlationId,

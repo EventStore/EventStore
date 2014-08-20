@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly Guid _connectionId;
         private readonly IEnvelope _envelope;
         private int _freeSlots;
-        private List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
+        private readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
 
         public PersistentSubscriptionClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int freeSlots)
         {
