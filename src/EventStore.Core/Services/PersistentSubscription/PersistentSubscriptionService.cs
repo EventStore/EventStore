@@ -130,9 +130,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
 
             var subscription = new PersistentSubscription(
-                resolveLinkTos, key,
-                eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
-                _eventLoader, _checkpointReader, new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher));
+                                    resolveLinkTos, 
+                                    key,
+                                    eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
+                                    groupName,
+                                    _eventLoader, 
+                                    _checkpointReader, 
+                                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher));
             _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
         }
@@ -276,7 +280,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             var lastCommitPos = _readIndex.LastCommitPosition;
             var subscribedMessage = new ClientMessage.PersistentSubscriptionConfirmation(message.CorrelationId, lastCommitPos, lastEventNumber);
             message.Envelope.ReplyWith(subscribedMessage);
-            subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope, message.NumberOfFreeSlots);
+            var name = message.User == null ? "anonymous" : message.User.Identity.Name;
+            subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope, message.NumberOfFreeSlots,name,message.From);
         }
 
         private static string BuildSubscriptionGroupKey(string stream, string groupName)
@@ -426,54 +431,72 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (!_started)
             {
-                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(false, null));
+                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                    MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null)
+                );
                 return;
             }
             List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers) || subscribers == null)
             {
-                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(false, null));
+                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                    MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null)
+                );
                 return;
             }
             var subscription = subscribers.FirstOrDefault(x => x.SubscriptionId == message.GroupName);
             if (subscription == null)
             {
-                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(false, null));
+                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                    MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null)
+                );
                 return;
-            } 
-            //TODO CC make subscription return stats
-            message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(true, null));
+            }
+            var stats = new List<MonitoringMessage.SubscriptionInfo>()
+            {
+                subscription.GetStatistics()
+            };
+            message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
+            );
         }
 
         public void Handle(MonitoringMessage.GetStreamPersistentSubscriptionStats message)
         {
             if (!_started)
             {
-                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(false, null));
+                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                        MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null)
+                ); 
                 return;
             } 
             List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
-                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(false, null));
+                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                    MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null)
+                );
+                return;
             }
-            //TODO CC make subscription return stats
-            message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(true, null));
+            var stats = subscribers.Select(sub => sub.GetStatistics()).ToList();
+            message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
+            );
         }
 
         public void Handle(MonitoringMessage.GetAllPersistentSubscriptionStats message)
         {
             if (!_started)
             {
-                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(false, null));
+                message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                        MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null)
+                );
                 return;
             }
-            foreach (var subscription in _subscriptionTopics.Values)
-            {
-                //add to group
-            }
-            //TODO CC make subscription return stats
-            message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(true, null));
+            var stats = (from subscription in _subscriptionTopics.Values from sub in subscription select sub.GetStatistics()).ToList();
+            message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
+                MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
+            );
         }
     }
 }

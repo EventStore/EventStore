@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Common.Utils;
 
@@ -17,7 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly string SubscriptionId;
         public readonly bool ResolveLinkTos;
         public readonly string EventStreamId;
-
+        public readonly string GroupName;
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly Dictionary<Guid, PersistentSubscriptionClient> _clients = new Dictionary<Guid, PersistentSubscriptionClient>();
         private ResolvedEvent[] _eventBuffer = new ResolvedEvent[0];
@@ -43,6 +45,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public PersistentSubscription(bool resolveLinkTos, 
             string subscriptionId, 
             string eventStreamId, 
+            string groupName,
             IPersistentSubscriptionEventLoader eventLoader,
             IPersistentSubscriptionCheckpointReader checkpointReader,
             IPersistentSubscriptionCheckpointWriter checkpointWriter)
@@ -50,6 +53,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             ResolveLinkTos = resolveLinkTos;
             SubscriptionId = subscriptionId;
             EventStreamId = eventStreamId;
+            GroupName = groupName;
             _eventLoader = eventLoader;
             _checkpointingQueue = new CheckpointingQueue(checkpointWriter.BeginWriteState);
             checkpointReader.BeginLoadState(subscriptionId, OnStateLoaded);
@@ -70,9 +74,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int numberOfFreeSlots)
+        public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int numberOfFreeSlots, string user, string @from)
         {
-            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, numberOfFreeSlots);
+            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, numberOfFreeSlots, user, @from);
             _clients[correlationId] = client;
             if (_state != PersistentSubscriptionState.Idle)
             {
@@ -312,6 +316,22 @@ namespace EventStore.Core.Services.PersistentSubscription
         private bool CanSwitchToPushMode()
         {
             return _clients.Values.Sum(x => x.FreeSlots) > _minimumPercentageOfFreeSlotsForSwitchingToPushMode*_clients.Values.Sum(x => x.MaximumFreeSlots);
+        }
+
+        public MonitoringMessage.SubscriptionInfo GetStatistics()
+        {
+            var connections = new List<MonitoringMessage.ConnectionInfo>();
+            foreach (var conn in _clients.Values)
+            {
+                connections.Add(new MonitoringMessage.ConnectionInfo() {From=conn.From, Username = conn.Username});
+            }
+            return new MonitoringMessage.SubscriptionInfo()
+            {
+                EventStreamId=EventStreamId,
+                GroupName = GroupName,
+                Status = _state.ToString(),
+                Connections = connections
+            };
         }
     }
 }

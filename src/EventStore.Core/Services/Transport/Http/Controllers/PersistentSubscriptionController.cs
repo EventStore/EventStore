@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Common.Log;
+using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -25,9 +27,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
+            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Get, GetSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
+            Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs, DefaultCodecs);
+            Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PutSubscription, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
-
         }
 
         //private void GetUsers(HttpEntityManager http, UriTemplateMatch match)
@@ -109,7 +113,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     {
                         case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success:
                             code = HttpStatusCode.OK;
-                            //TODO competing return uri to subscription
                             break;
                         case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist:
                             code = HttpStatusCode.NotFound;
@@ -131,6 +134,96 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(cmd);
         }
 
+        private void GetAllSubscriptionInfo(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+            var envelope = new SendToHttpEnvelope(
+                _networkSendQueue, http,
+                (args, message) => http.ResponseCodec.To(ToDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+                (args, message) => StatsConfiguration(http, message));
+            var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
+            Publish(cmd);
+        }
+
+
+
+        private void GetSubscriptionInfoForStream(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+            var stream = match.BoundVariables["stream"];
+            var envelope = new SendToHttpEnvelope(
+                _networkSendQueue, http,
+                (args, message) => http.ResponseCodec.To(ToDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+                (args, message) => StatsConfiguration(http, message));
+            var cmd = new MonitoringMessage.GetStreamPersistentSubscriptionStats(envelope, stream);
+            Publish(cmd);
+        }
+
+        private void GetSubscriptionInfo(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+            var stream = match.BoundVariables["stream"];
+            var groupName = match.BoundVariables["subscription"];
+            var envelope = new SendToHttpEnvelope(
+                _networkSendQueue, http,
+                (args, message) => http.ResponseCodec.To(ToDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).FirstOrDefault()),
+                (args, message) => StatsConfiguration(http, message));
+            var cmd = new MonitoringMessage.GetPersistentSubscriptionStats(envelope, stream, groupName);
+            Publish(cmd);
+        }
+
+
+        private static ResponseConfiguration StatsConfiguration(HttpEntityManager http, Message message)
+        {
+            int code;
+            var m = message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted;
+            if (m == null) throw new Exception("unexpected message " + message);
+            switch (m.Result)
+            {
+                case MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success:
+                    code = HttpStatusCode.OK;
+                    break;
+                case MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound:
+                    code = HttpStatusCode.NotFound;
+                    break;
+                case MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady:
+                    code = HttpStatusCode.ServiceUnavailable;
+                    break;
+                default:
+                    code = HttpStatusCode.InternalServerError;
+                    break;
+            }
+
+            return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
+                http.ResponseCodec.Encoding);
+        }
+
+        private IEnumerable<SubscriptionInfo> ToDto(MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
+        {
+            if (message == null) yield break;
+            foreach (var stat in message.SubscriptionStats)
+            {
+                var info = new SubscriptionInfo
+                {
+                    EventStreamId = stat.EventStreamId,
+                    GroupName = stat.GroupName,
+                    Status = stat.Status,
+                    Connections = new List<ConnectionInfo>()
+                };
+                if (stat.Connections != null)
+                {
+                    foreach (var connection in stat.Connections)
+                    {
+                        info.Connections.Add(new ConnectionInfo {Username = connection.Username, From = connection.From});
+                    }
+                }
+                yield return info;
+            }
+        }
+
         private class PutSubscriptionData
         {
             public bool ResolveLinktos { get; set; }
@@ -147,7 +240,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private class ConnectionInfo
         {
             public string From { get; set; }
-            
+            public string Username { get; set; }
         }
     }
 }

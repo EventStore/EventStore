@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services
         public void Setup()
         {
             _checkpointReader = new FakeCheckpointReader();
-            _subscription = new PersistentSubscription(false, "sub1", "stream", new FakeEventLoader(x => _fetchFrom = x),
+            _subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x),
                 _checkpointReader, new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(null);
@@ -37,18 +37,18 @@ namespace EventStore.Core.Tests.Services
             _firstClientEnvelope = new FakeEnvelope();
             _firstClientCorrelationId = Guid.NewGuid();
             _firstClientConnectionId = Guid.NewGuid();
-            _subscription.AddClient(_firstClientCorrelationId, _firstClientConnectionId, _firstClientEnvelope, 10);
+            _subscription.AddClient(_firstClientCorrelationId, _firstClientConnectionId, _firstClientEnvelope, 10, "user", "from");
 
             _secondClientEnvelope = new FakeEnvelope();
             _secondClientCorrelationId = Guid.NewGuid();
             _secondClientConnectionId = Guid.NewGuid();
-            _subscription.AddClient(_secondClientCorrelationId, _secondClientConnectionId, _secondClientEnvelope, 10);
+            _subscription.AddClient(_secondClientCorrelationId, _secondClientConnectionId, _secondClientEnvelope, 10, "user", "from");
         }
 
         [Test]
         public void start_in_idle_mode()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
                 new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             Assert.AreEqual(PersistentSubscriptionState.Idle, subscription.State);
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void transition_to_push_mode_if_there_is_no_checkpoint()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
                 new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(null);
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void transition_to_pull_mode_if_there_is_checkpoint()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
                 new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(156);
@@ -141,7 +141,7 @@ namespace EventStore.Core.Tests.Services
 
             _fetchFrom = 0;
 
-            _subscription.AddClient(Guid.NewGuid(),Guid.NewGuid(),new FakeEnvelope(), 10);
+            _subscription.AddClient(Guid.NewGuid(),Guid.NewGuid(),new FakeEnvelope(), 10, "user", "from");
             Assert.AreEqual(PersistentSubscriptionState.Pull, _subscription.State);
             Assert.AreEqual(55, _fetchFrom);
         }
