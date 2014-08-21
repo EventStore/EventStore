@@ -1,8 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Tcp;
 using ClientMessage = EventStore.ClientAPI.Messages.ClientMessage;
 
 namespace EventStore.ClientAPI.Embedded
@@ -23,9 +22,8 @@ namespace EventStore.ClientAPI.Embedded
 
         public static ClientMessage.ResolvedIndexedEvent ConvertToResolvedIndexEvent(this EventStore.Core.Data.ResolvedEvent @event)
         {
-            var dto = new TcpClientMessageDto.ResolvedIndexedEvent(@event.Event, @event.Link);
-
-            return dto.Serialize().Deserialize<ClientMessage.ResolvedIndexedEvent>();
+            return new ClientMessage.ResolvedIndexedEvent(@event.Event.ToClientMessageEventRecord(),
+                @event.Link.ToClientMessageEventRecord());
         }
 
         public static ClientMessage.ResolvedEvent[] ConvertToResolvedEvents(this EventStore.Core.Data.ResolvedEvent[] events)
@@ -42,8 +40,9 @@ namespace EventStore.ClientAPI.Embedded
 
         public static ClientMessage.ResolvedEvent ConvertToResolvedEvent(this EventStore.Core.Data.ResolvedEvent @event)
         {
-            var dto = new TcpClientMessageDto.ResolvedEvent(@event);
-            return dto.Serialize().Deserialize<ClientMessage.ResolvedEvent>();
+            return new ClientMessage.ResolvedEvent(@event.Event.ToClientMessageEventRecord(),
+                @event.Link.ToClientMessageEventRecord(), @event.OriginalPosition.Value.CommitPosition,
+                @event.OriginalPosition.Value.PreparePosition);
         }
 
         public static Event[] ConvertToEvents(this IEnumerable<EventData> events)
@@ -54,6 +53,19 @@ namespace EventStore.ClientAPI.Embedded
         public static Event ConvertToEvent(this EventData e)
         {
             return new Event(e.EventId, e.Type, e.IsJson, e.Data, e.Metadata);
+        }
+
+        private static ClientMessage.EventRecord ToClientMessageEventRecord(this EventRecord eventRecord)
+        {
+            if (eventRecord == null) return null;
+            return new ClientMessage.EventRecord(
+                eventRecord.EventStreamId, eventRecord.EventNumber,
+                eventRecord.EventId.ToByteArray(), eventRecord.EventType, eventRecord.IsJson ? 1 : 0,
+                eventRecord.IsJson ? 1 : 0,
+                eventRecord.Data,
+                eventRecord.Metadata,
+                eventRecord.TimeStamp.ToBinary(),
+                (long)(eventRecord.TimeStamp - new DateTime(1970, 1, 1)).TotalMilliseconds);
         }
     }
 }
