@@ -10,7 +10,7 @@ namespace CompetingPlayground
     class Program
     {
         private const string Stream = "stream";
-        private const string SubName = "subscription";
+        private const string SubName = "subscription3";
         static void Main(string[] args)
         {
             BasicTest();
@@ -22,10 +22,12 @@ namespace CompetingPlayground
             using (var connection = EventStoreConnection.Create(endpoint, "foo"))
             {
                 connection.ConnectAsync().Wait();
-                //CreateSubscription(connection, SubName);
+                CreateSubscription(connection, SubName);
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
-                //WriteEvents(connection);
+                WriteEvents(connection);
+                
+                Thread.Sleep(5000);
                 sub.Stop(TimeSpan.FromSeconds(5));
                 WriteEvents(connection);
                 sub2.Stop(TimeSpan.FromSeconds(5));
@@ -40,11 +42,11 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
-                    Thread.Sleep(1000);
+                    //Thread.Sleep(1000);
                     Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
-                bufferSize: 1);
+                bufferSize: 12, autoAck: true);
         }
 
         private static void WriteEvents(IEventStoreConnection connection)
