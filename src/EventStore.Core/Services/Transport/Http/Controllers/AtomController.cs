@@ -161,6 +161,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 var header = new []
                              {new KeyValuePair<string, string>("Location", uri)};
                 manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb, "", "", header, e => { });
+                return;
             }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
