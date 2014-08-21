@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using System.Linq;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
@@ -15,14 +13,23 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly Guid _connectionId;
         private readonly IEnvelope _envelope;
         private int _freeSlots;
-        private readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
+        public readonly string Username;
+        public readonly string From;
+        public readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
 
-        public PersistentSubscriptionClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int freeSlots)
+        public PersistentSubscriptionClient(Guid correlationId, 
+                                            Guid connectionId, 
+                                            IEnvelope envelope, 
+                                            int freeSlots, 
+                                            string username, 
+                                            string from)
         {
             _correlationId = correlationId;
             _connectionId = connectionId;
             _envelope = envelope;
             _freeSlots = freeSlots;
+            Username = username;
+            From = @from;
             MaximumFreeSlots = freeSlots;
         }
 

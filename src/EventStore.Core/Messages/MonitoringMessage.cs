@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http.Controllers;
 
 namespace EventStore.Core.Messages
 {
@@ -65,14 +66,39 @@ namespace EventStore.Core.Messages
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
+            public readonly OperationStatus Result;
             public readonly bool Success;
-            public readonly Dictionary<string, object> Stats;
+            public readonly List<SubscriptionInfo> SubscriptionStats;
+            public string ErrorString;
 
-            public GetPersistentSubscriptionStatsCompleted(bool success, Dictionary<string, object> stats)
+            public GetPersistentSubscriptionStatsCompleted(OperationStatus result, List<SubscriptionInfo> subscriptionStats, string errorString="")
             {
-                Success = success;
-                Stats = stats;
+                Result = result;
+                SubscriptionStats = subscriptionStats;
+                ErrorString = errorString;
             }
+
+            public enum OperationStatus
+            {
+                Success = 0,
+                NotFound = 1,
+                Fail = 2,
+                NotReady = 3
+            }
+        }
+
+        public class SubscriptionInfo
+        {
+            public string EventStreamId { get; set; }
+            public string GroupName { get; set; }
+            public string Status { get; set; }
+            public List<ConnectionInfo> Connections { get; set; }
+        }
+
+        public class ConnectionInfo
+        {
+            public string From { get; set; }
+            public string Username { get; set; }
         }
 
         public class GetFreshStats : Message

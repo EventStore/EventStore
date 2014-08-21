@@ -844,9 +844,10 @@ namespace EventStore.Core.Messages
             public readonly string SubscriptionId;
             public readonly string EventStreamId;
             public readonly int NumberOfFreeSlots;
+            public string From;
 
             public ConnectToPersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
-                string subscriptionId, string eventStreamId, int numberOfFreeSlots, IPrincipal user)
+                string subscriptionId, string eventStreamId, int numberOfFreeSlots, string from, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 Ensure.NotEmptyGuid(connectionId, "connectionId");
@@ -856,6 +857,7 @@ namespace EventStore.Core.Messages
                 ConnectionId = connectionId;
                 NumberOfFreeSlots = numberOfFreeSlots;
                 EventStreamId = eventStreamId;
+                From = from;
             }
         }
 
