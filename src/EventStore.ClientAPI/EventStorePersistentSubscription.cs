@@ -162,7 +162,11 @@ namespace EventStore.ClientAPI
                         DropSubscription(_dropData.Reason, _dropData.Error);
                         return;
                     }
-
+                    if (_dropData != null)
+                    {
+                        DropSubscription(_dropData.Reason, _dropData.Error);
+                        return;
+                    }
                     try
                     {
                         _eventAppeared(this, e);
