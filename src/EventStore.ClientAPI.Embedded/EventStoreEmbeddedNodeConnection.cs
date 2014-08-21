@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
@@ -14,12 +16,60 @@ namespace EventStore.ClientAPI.Embedded
 {
     internal class EventStoreEmbeddedNodeConnection : IEventStoreConnection, IEventStoreTransactionConnection
     {
+        private class V8IntegrationAssemblyResolver
+        {
+            private readonly string _resourceNamespace;
+
+            public V8IntegrationAssemblyResolver()
+            {
+                string environment = Environment.Is64BitProcess
+                    ? "x64"
+                    : "win32";
+
+                _resourceNamespace = typeof (EventStoreEmbeddedNodeConnection).Namespace + ".libs." + environment;
+            }
+
+            public Assembly TryLoadAssemblyFromEmbeddedResource(object sender, ResolveEventArgs e)
+            {
+                if (!e.Name.StartsWith("js1")) return null;
+
+                byte[] rawAssembly = ReadResource("js1.dll");
+                byte[] rawSymbolStore = ReadResource("js1.pdb");
+
+                return Assembly.Load(rawAssembly, rawSymbolStore);
+            }
+
+
+            private byte[] ReadResource(string name)
+            {
+                using (Stream stream = typeof (EventStoreEmbeddedNodeConnection)
+                    .Assembly
+                    .GetManifestResourceStream(_resourceNamespace + "." + name))
+                {
+                    Ensure.NotNull(stream, "name");
+
+                    var resource = new byte[stream.Length];
+
+                    stream.Read(resource, 0, resource.Length);
+
+                    return resource;
+                }
+            }
+        }
+
         private readonly ConnectionSettings _settings;
         private readonly string _connectionName;
         private readonly IPublisher _publisher;
         private readonly IBus _subscriptionBus;
         private readonly EmbeddedSubscriber _subscriptions;
         private readonly Guid _connectionId;
+
+        static EventStoreEmbeddedNodeConnection()
+        {
+            var resolver = new V8IntegrationAssemblyResolver();
+
+            AppDomain.CurrentDomain.AssemblyResolve += resolver.TryLoadAssemblyFromEmbeddedResource;
+        }
 
         public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName, IPublisher publisher)
         {

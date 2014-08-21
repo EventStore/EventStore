@@ -76,6 +76,22 @@
       <Name>EventStore.Projections.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup Condition=" Exists('..\libs\win32\js1.dll') And $(DefineConstants.Contains('CLIENTAPI')) ">
+    <EmbeddedResource Include="..\libs\win32\js1.dll">
+      <LogicalName>$(RootNamespace).libs.win32.js1.dll</LogicalName>
+	</EmbeddedResource>
+    <EmbeddedResource Include="..\libs\win32\js1.pdb">
+	  <LogicalName>$(RootNamespace).libs.win32.js1.pdb</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition=" Exists('..\libs\x64\js1.dll') And $(DefineConstants.Contains('CLIENTAPI'))">
+    <EmbeddedResource Include="..\libs\x64\js1.dll">
+      <LogicalName>$(RootNamespace).libs.x64.js1.dll</LogicalName>
+	</EmbeddedResource>
+    <EmbeddedResource Include="..\libs\x64\js1.pdb">
+	  <LogicalName>$(RootNamespace).libs.x64.js1.pdb</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <PreBuildEvent>
