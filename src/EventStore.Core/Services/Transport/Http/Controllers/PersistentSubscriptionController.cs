@@ -205,6 +205,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private IEnumerable<SubscriptionInfo> ToDto(MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
         {
             if (message == null) yield break;
+            if (message.SubscriptionStats == null) yield break;
             foreach (var stat in message.SubscriptionStats)
             {
                 var info = new SubscriptionInfo

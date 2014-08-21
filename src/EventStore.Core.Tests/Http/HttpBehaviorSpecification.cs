@@ -73,8 +73,9 @@ namespace EventStore.Core.Tests.Http
                 Given();
                 When();
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine("Setup failed with " + ex);
                 if (createdMiniNode)
                 {
                     if (_connection != null)
