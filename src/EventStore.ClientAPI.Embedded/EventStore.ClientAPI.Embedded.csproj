@@ -34,14 +34,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net, Version=2.0.0.594, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
@@ -79,17 +71,17 @@
   <ItemGroup Condition=" Exists('..\libs\win32\js1.dll') And $(DefineConstants.Contains('CLIENTAPI')) ">
     <EmbeddedResource Include="..\libs\win32\js1.dll">
       <LogicalName>$(RootNamespace).libs.win32.js1.dll</LogicalName>
-	</EmbeddedResource>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\libs\win32\js1.pdb">
-	  <LogicalName>$(RootNamespace).libs.win32.js1.pdb</LogicalName>
+      <LogicalName>$(RootNamespace).libs.win32.js1.pdb</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition=" Exists('..\libs\x64\js1.dll') And $(DefineConstants.Contains('CLIENTAPI'))">
     <EmbeddedResource Include="..\libs\x64\js1.dll">
       <LogicalName>$(RootNamespace).libs.x64.js1.dll</LogicalName>
-	</EmbeddedResource>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\libs\x64\js1.pdb">
-	  <LogicalName>$(RootNamespace).libs.x64.js1.pdb</LogicalName>
+      <LogicalName>$(RootNamespace).libs.x64.js1.pdb</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

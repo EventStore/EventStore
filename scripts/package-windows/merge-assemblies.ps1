@@ -220,7 +220,7 @@ Function Merge-ClientAPIEmbedded
         [Parameter(Mandatory=$true)][string]$BuildDirectory,
         [Parameter(Mandatory=$true)][string]$OutputDirectory,
         [Parameter(Mandatory=$false)][string]$Executable = "EventStore.ClientAPI.Embedded.dll",
-        [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "EventStore.ClientAPI.dll", "EventStore.ClientAPI.Embedded.dll"),
+        [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "EventStore.ClientAPI.dll", "EventStore.ClientAPI.Embedded.dll", "protobuf-net.dll"),
         [Parameter(Mandatory=$false)][string]$IlMergeToolPath = (Join-Path $toolsDirectory "ilmerge\ilmerge.exe")
     )
 
