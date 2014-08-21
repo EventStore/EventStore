@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.SystemData;
@@ -33,7 +32,7 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
             _connectionId = Guid.NewGuid();
 
-            _subscriptions = new EmbeddedSubscriber(new NoopLogger(), _connectionId);
+            _subscriptions = new EmbeddedSubscriber(_settings.Log, _connectionId);
             
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
