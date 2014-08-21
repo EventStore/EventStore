@@ -220,7 +220,7 @@ Function Merge-ClientAPIEmbedded
         [Parameter(Mandatory=$true)][string]$BuildDirectory,
         [Parameter(Mandatory=$true)][string]$OutputDirectory,
         [Parameter(Mandatory=$false)][string]$Executable = "EventStore.ClientAPI.Embedded.dll",
-        [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "js1.pdb", "EventStore.ClientAPI.Embedded.dll", "EventStore.ClientAPI.dll"),
+        [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "EventStore.ClientAPI.dll", "EventStore.ClientAPI.Embedded.dll"),
         [Parameter(Mandatory=$false)][string]$IlMergeToolPath = (Join-Path $toolsDirectory "ilmerge\ilmerge.exe")
     )
 
@@ -246,13 +246,13 @@ Function Merge-ClientAPIEmbedded
 
     $outputName = "EventStore.ClientAPI.Embedded.dll"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
-
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/internalize", "/target:library", "/targetPlatform:""v4,$platformPath""", "/out:""$outputPath""", $Executable, $otherAssemblies)
-
-    if ($ExcludeAssemblies.Count -gt 0) {
-        Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |
-            Foreach-Object { Copy-Item -Force -Path $_.FullName -Destination $mergedDirectory }
-    }
+    $excludeFilePath = $outputPath + ".exclude.txt"
+	
+    Write-Output "EventStore.*" | Out-File $excludeFilePath
+	
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/wildcards", "/internalize:""$excludeFilePath""", "/target:library", "/targetPlatform:""v4,$platformPath""", "/out:""$outputPath""", $Executable, $otherAssemblies)
+	
+    Remove-Item $excludeFilePath
 }
 
 Merge-ClusterNode -BuildDirectory (Join-Path $binDirectory "clusternode") -OutputDirectory $mergedDirectory
