@@ -20,5 +20,11 @@
     <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.pdb" target="lib\net40" />
     <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.xml" target="lib\net40" />
     <file src="..\..\src\EventStore.ClientAPI.Embedded\**\*.cs" target="src\EventStore.ClientAPI.Embedded\" />
+    <file src="..\..\src\EventStore.Common\**\*.cs" target="src\EventStore.Common\" />
+    <file src="..\..\src\EventStore.Core\**\*.cs" target="src\EventStore.Core\" />
+    <file src="..\..\src\EventStore.BufferManagement\**\*.cs" target="src\EventStore.BufferManagement\" />
+    <file src="..\..\src\EventStore.Projections.Core\**\*.cs" target="src\EventStore.Projections.Core\" />
+    <file src="..\..\src\EventStore.Transport.Http\**\*.cs" target="src\EventStore.Transport.Http\" />
+    <file src="..\..\src\EventStore.Transport.Tcp\**\*.cs" target="src\EventStore.Transport.Tcp\" />
   </files>
 </package>
