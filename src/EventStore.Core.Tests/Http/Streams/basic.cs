@@ -205,7 +205,7 @@ namespace EventStore.Core.Tests.Http.Streams
             }
 
             [Test]
-            public void returns_created_status_code()
+            public void returns_bad_request_status_code()
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
             }
