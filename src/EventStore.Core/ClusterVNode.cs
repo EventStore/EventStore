@@ -408,6 +408,8 @@ namespace EventStore.Core
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNotifyEventsProcessed, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
   
             var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
@@ -421,6 +423,9 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(persistentSubscription);
+            perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
+            perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
+
 
             // TIMER
             _timeProvider = new RealTimeProvider();
