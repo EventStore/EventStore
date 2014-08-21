@@ -149,6 +149,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if(!manager.RequestCodec.HasEventTypes && includedType == null) {
                 SendBadRequest(manager, "Must include an event type with the request either in body or as ES-EventType header.");
+                return;
             }
             Guid includedId;
             if(!GetIncludedId(manager, out includedId)) {
@@ -160,6 +161,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 var header = new []
                              {new KeyValuePair<string, string>("Location", uri)};
                 manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb, "", "", header, e => { });
+                return;
             }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
@@ -681,6 +683,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     catch(Exception ex)
                     {
                         SendBadRequest(manager, ex.Message);
+                        return;
                     }
                     if (events.IsEmpty())
                     {
