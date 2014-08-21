@@ -149,6 +149,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             if(!manager.RequestCodec.HasEventTypes && includedType == null) {
                 SendBadRequest(manager, "Must include an event type with the request either in body or as ES-EventType header.");
+                return;
             }
             Guid includedId;
             if(!GetIncludedId(manager, out includedId)) {
