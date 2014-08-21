@@ -28,6 +28,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
         }
+
+        [Test]
+        public void returns_location_header()
+        {
+            Assert.AreEqual("http://" + _node.HttpEndPoint + "/subscriptions/stream/groupname334",_response.Headers["location"]);
+        }
     }
 
     [TestFixture, Category("LongRunning")]
