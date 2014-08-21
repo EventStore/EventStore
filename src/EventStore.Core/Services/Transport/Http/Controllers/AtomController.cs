@@ -683,6 +683,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     catch(Exception ex)
                     {
                         SendBadRequest(manager, ex.Message);
+                        return;
                     }
                     if (events.IsEmpty())
                     {
