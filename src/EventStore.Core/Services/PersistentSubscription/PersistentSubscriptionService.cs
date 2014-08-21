@@ -444,7 +444,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 );
                 return;
             }
-            var subscription = subscribers.FirstOrDefault(x => x.SubscriptionId == message.GroupName);
+            var subscription = subscribers.FirstOrDefault(x => x.GroupName == message.GroupName);
             if (subscription == null)
             {
                 message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
