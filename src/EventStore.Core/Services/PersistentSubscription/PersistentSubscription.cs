@@ -164,6 +164,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var processedEvents = client.ConfirmProcessing(numberOfFreeSlots, processedEventIds);
                 foreach (var processedEvent in processedEvents)
                 {
+                    //TODO CC limit size of checkpointing queue
                     _checkpointingQueue.Enqueue(processedEvent);
                 }
             }
