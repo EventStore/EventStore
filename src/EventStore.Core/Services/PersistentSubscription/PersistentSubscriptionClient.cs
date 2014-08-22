@@ -60,12 +60,12 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public IEnumerable<SequencedEvent> ConfirmProcessing(int numberOfFreeSlots, Guid[] processedEvents)
         {
-            _freeSlots = numberOfFreeSlots;
             foreach (var processedEventId in processedEvents)
             {
                 var eventIndex = _unconfirmedEvents.FindIndex(x => x.Event.Event.EventId == processedEventId);
                 if (eventIndex >= 0)
                 {
+                    _freeSlots++;
                     var evnt = _unconfirmedEvents[eventIndex];
                     _unconfirmedEvents.RemoveAt(eventIndex);
                     yield return evnt;
