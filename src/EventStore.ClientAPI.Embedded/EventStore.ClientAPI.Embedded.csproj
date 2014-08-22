@@ -20,14 +20,15 @@
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>..\..\bin\clientapiembedded\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\clientapiembedded\</OutputPath>
-    <DefineConstants>CLIENTAPI</DefineConstants>
+    <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>..\..\bin\clientapiembedded\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
@@ -68,33 +69,7 @@
       <Name>EventStore.Projections.Core</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition=" Exists('..\libs\win32\js1.dll') And $(DefineConstants.Contains('CLIENTAPI')) ">
-    <EmbeddedResource Include="..\libs\win32\js1.dll">
-      <LogicalName>$(RootNamespace).libs.win32.js1.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\libs\win32\js1.pdb">
-      <LogicalName>$(RootNamespace).libs.win32.js1.pdb</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition=" Exists('..\libs\x64\js1.dll') And $(DefineConstants.Contains('CLIENTAPI'))">
-    <EmbeddedResource Include="..\libs\x64\js1.dll">
-      <LogicalName>$(RootNamespace).libs.x64.js1.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\libs\x64\js1.pdb">
-      <LogicalName>$(RootNamespace).libs.x64.js1.pdb</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
-    </PreBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
-    <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
-    </PreBuildEvent>
-  </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent />
   </PropertyGroup>
@@ -102,18 +77,20 @@ $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProject
        Other similar extension points exist, see Microsoft.Common.targets.
   -->
   <Target Name="BeforeBuild">
+    <Copy SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy SourceFiles="..\libs\libv8.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy SourceFiles="..\libs\libicui18n.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy SourceFiles="..\libs\libicuuc.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\libv8.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\libicui18n.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\libicuuc.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
     <Copy SourceFiles="..\libs\win32\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
     <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
     <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
     <Copy SourceFiles="..\libs\win32\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
     <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
     <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
-    <Message Text="BeforeBuild -- DefineConstants: $(DefineConstants)" />
-    <Message Text="BeforeBuild -- AppendedDefineConstants: $(AppendedDefineConstants)" />
-    <CreateProperty Value="$(DefineConstants);$(AppendedDefineConstants)">
-      <Output TaskParameter="Value" PropertyName="DefineConstants" />
-    </CreateProperty>
-    <Message Text="BeforeBuild -- after merge - DefineConstants: $(DefineConstants)" />
   </Target>
   <Target Name="AfterBuild">
   </Target>
