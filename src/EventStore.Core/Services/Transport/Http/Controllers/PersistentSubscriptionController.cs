@@ -213,13 +213,23 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     EventStreamId = stat.EventStreamId,
                     GroupName = stat.GroupName,
                     Status = stat.Status,
+                    AverageItemsPerSecond = stat.AveragePerSecond,
+                    TotalItemsProcessed = stat.TotalItems,
+                    CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
                     Connections = new List<ConnectionInfo>()
                 };
                 if (stat.Connections != null)
                 {
                     foreach (var connection in stat.Connections)
                     {
-                        info.Connections.Add(new ConnectionInfo {Username = connection.Username, From = connection.From});
+                        info.Connections.Add(new ConnectionInfo
+                        {
+                            Username = connection.Username, 
+                            From = connection.From,
+                            AverageItemsPerSecond = connection.AverageItemsPerSecond,
+                            CountSinceLastMeasurement = connection.CountSinceLastMeasurement,
+                            TotalItemsProcessed = connection.TotalItems
+                        });
                     }
                 }
                 yield return info;
@@ -236,6 +246,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string EventStreamId { get; set; }
             public string GroupName { get; set; }
             public string Status { get; set; }
+            public decimal AverageItemsPerSecond { get; set; }
+            public long TotalItemsProcessed { get; set; }
+            public long CountSinceLastMeasurement { get; set; }
             public List<ConnectionInfo> Connections { get; set; } 
         }
 
@@ -243,6 +256,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             public string From { get; set; }
             public string Username { get; set; }
+            public decimal AverageItemsPerSecond { get; set; }
+            public long TotalItemsProcessed { get; set; }
+            public long CountSinceLastMeasurement { get; set; }
         }
     }
 }

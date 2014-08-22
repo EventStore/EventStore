@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Security.Principal;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -31,6 +32,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         private long _eventSequence;        
         private int _lastEventNumber = -1;
         private PersistentSubscriptionState _state;
+        private long _totalItems;
+        private Stopwatch _totalTimeWatch;
+        private TimeSpan _lastTotalTime;
+        private long _lastTotalItems;
 
         public int LastEventNumber
         {
@@ -56,6 +61,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             GroupName = groupName;
             _eventLoader = eventLoader;
             _checkpointingQueue = new CheckpointingQueue(checkpointWriter.BeginWriteState);
+            _totalTimeWatch = new Stopwatch();
+            _totalTimeWatch.Start();
             checkpointReader.BeginLoadState(subscriptionId, OnStateLoaded);
         }
 
@@ -258,6 +265,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void PushEvent(ResolvedEvent resolvedEvent, PersistentSubscriptionClient leastBusy)
         {
+            Interlocked.Increment(ref _totalItems);
             leastBusy.Push(new SequencedEvent(_eventSequence, resolvedEvent));
             _eventSequence++;
         }
@@ -274,6 +282,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             if (leastBusy != null)
             {
+                Interlocked.Increment(ref _totalItems);
                 leastBusy.Push(sequencedEvent);
             }
         }
@@ -321,17 +330,40 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public MonitoringMessage.SubscriptionInfo GetStatistics()
         {
+            var totalTime = _totalTimeWatch.Elapsed;
+            var totalItems = Interlocked.Read(ref _totalItems);
+
+            var lastRunMs = totalTime - _lastTotalTime;
+            var lastItems = totalItems - _lastTotalItems;
+
+            var avgItemsPerSecond = lastRunMs.Ticks != 0 ? (int)(TimeSpan.TicksPerSecond * lastItems / lastRunMs.Ticks) : 0;
+            _lastTotalTime = totalTime;
+            _lastTotalItems = totalItems;
             var connections = new List<MonitoringMessage.ConnectionInfo>();
             foreach (var conn in _clients.Values)
             {
-                connections.Add(new MonitoringMessage.ConnectionInfo() {From=conn.From, Username = conn.Username});
+                var connItems = conn.TotalItems;
+                var connLastItems = connItems - conn.LastTotalItems;
+                conn.LastTotalItems = connItems;
+                var connAvgItemsPerSecond = lastRunMs.Ticks != 0 ? (int)(TimeSpan.TicksPerSecond * connLastItems / lastRunMs.Ticks) : 0;
+                connections.Add(new MonitoringMessage.ConnectionInfo
+                {
+                    From=conn.From, 
+                    Username = conn.Username,
+                    AverageItemsPerSecond = connAvgItemsPerSecond,
+                    TotalItems = conn.TotalItems,
+                    CountSinceLastMeasurement = connLastItems
+                });
             }
             return new MonitoringMessage.SubscriptionInfo()
             {
                 EventStreamId=EventStreamId,
                 GroupName = GroupName,
                 Status = _state.ToString(),
-                Connections = connections
+                Connections = connections,
+                AveragePerSecond = avgItemsPerSecond,
+                TotalItems = totalItems,
+                CountSinceLastMeasurement = lastItems
             };
         }
     }

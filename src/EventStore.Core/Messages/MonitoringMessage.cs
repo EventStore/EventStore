@@ -93,12 +93,18 @@ namespace EventStore.Core.Messages
             public string GroupName { get; set; }
             public string Status { get; set; }
             public List<ConnectionInfo> Connections { get; set; }
+            public int AveragePerSecond { get; set; }
+            public long TotalItems { get; set; }
+            public long CountSinceLastMeasurement { get; set; }
         }
 
         public class ConnectionInfo
         {
             public string From { get; set; }
             public string Username { get; set; }
+            public int AverageItemsPerSecond { get; set; }
+            public long TotalItems { get; set; }
+            public long CountSinceLastMeasurement { get; set; }
         }
 
         public class GetFreshStats : Message
