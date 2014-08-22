@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>EventStore.Client.Embedded</id>
+    <version>0.0.0</version>
+    <authors>Event Store LLP</authors>
+    <owners>Event Store LLP</owners>
+    <licenseUrl>http://geteventstore.com/terms/licence/bsd/</licenseUrl>
+    <projectUrl>http://geteventstore.com</projectUrl>
+    <iconUrl>http://geteventstore.com/assets/ouro-200.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The embedded client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</description>
+    <releaseNotes>Embedded Client API for version 3 of the Event Store</releaseNotes>
+    <copyright>Copyright 2012-2013 Event Store LLP</copyright>
+    <dependencies>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.dll" target="lib\net40" />
+    <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.pdb" target="lib\net40" />
+    <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.xml" target="lib\net40" />
+    <file src="..\..\src\EventStore.ClientAPI.Embedded\**\*.cs" target="src\EventStore.ClientAPI.Embedded\" />
+    <file src="..\..\src\EventStore.Common\**\*.cs" target="src\EventStore.Common\" />
+    <file src="..\..\src\EventStore.Core\**\*.cs" target="src\EventStore.Core\" />
+    <file src="..\..\src\EventStore.BufferManagement\**\*.cs" target="src\EventStore.BufferManagement\" />
+    <file src="..\..\src\EventStore.Projections.Core\**\*.cs" target="src\EventStore.Projections.Core\" />
+    <file src="..\..\src\EventStore.Transport.Http\**\*.cs" target="src\EventStore.Transport.Http\" />
+    <file src="..\..\src\EventStore.Transport.Tcp\**\*.cs" target="src\EventStore.Transport.Tcp\" />
+  </files>
+</package>

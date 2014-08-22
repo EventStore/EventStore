@@ -16,7 +16,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture]
-    public class isjson_flag_on_event: SpecificationWithDirectory
+    public class isjson_flag_on_event : SpecificationWithDirectory
     {
         private MiniNode _node;
 
@@ -35,11 +35,16 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TearDown();
         }
 
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.To(node, TcpType.Normal);
+        }
+
         [Test, Category("LongRunning"), Category("Network")]
         public void should_be_preserved_with_all_possible_write_and_read_methods()
         {
             const string stream = "should_be_preserved_with_all_possible_write_methods";
-            using (var connection = TestConnection.To(_node, TcpType.Normal))
+            using (var connection = BuildConnection(_node))
             {
                 connection.ConnectAsync().Wait();
 

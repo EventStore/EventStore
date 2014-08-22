@@ -213,8 +213,51 @@ Function Merge-ClientAPI
     Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/internalize", "/target:library", "/targetPlatform:""v4,$platformPath""", "/out:""$outputPath""", $Executable, $otherAssemblies)
 }
 
+Function Merge-ClientAPIEmbedded
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$BuildDirectory,
+        [Parameter(Mandatory=$true)][string]$OutputDirectory,
+        [Parameter(Mandatory=$false)][string]$Executable = "EventStore.ClientAPI.Embedded.dll",
+        [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "EventStore.ClientAPI.dll", "EventStore.ClientAPI.Embedded.dll", "protobuf-net.dll"),
+        [Parameter(Mandatory=$false)][string]$IlMergeToolPath = (Join-Path $toolsDirectory "ilmerge\ilmerge.exe")
+    )
+
+    # Find the build directory as a relative path to here (in case it's absolute)
+    $relativeBuildDirectory = Resolve-Path -Relative -Path $BuildDirectory
+
+    # If the executable name isn't absolute, try searching for it in the build directory
+    if ((Test-Path $Executable) -eq $false) {
+        $Executable = Join-Path $relativeBuildDirectory $Executable
+        
+        if ((Test-Path $Executable) -eq $false) {
+            throw "Cannot find executable '$Executable'"
+        }
+    }
+
+    # Find other assemblies to merge (with some specifically excluded for e.g. native code)
+    $otherAssemblies = Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
+                       % { Join-Path $relativeBuildDirectory $_ } |
+                       Join-String -Separator " "
+
+    # Find the path of the .NET Framework DLLs
+    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
+
+    $outputName = "EventStore.ClientAPI.Embedded.dll"
+    $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
+    $excludeFilePath = $outputPath + ".exclude.txt"
+	
+    Write-Output "EventStore.*" | Out-File $excludeFilePath
+	
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/wildcards", "/internalize:""$excludeFilePath""", "/target:library", "/targetPlatform:""v4,$platformPath""", "/out:""$outputPath""", $Executable, $otherAssemblies)
+	
+    Remove-Item $excludeFilePath
+}
+
 Merge-ClusterNode -BuildDirectory (Join-Path $binDirectory "clusternode") -OutputDirectory $mergedDirectory
 Merge-TestClient -BuildDirectory (Join-Path $binDirectory "testclient") -OutputDirectory $mergedDirectory
 Merge-PAdmin -BuildDirectory (Join-Path $binDirectory "padmin") -OutputDirectory $mergedDirectory
 Merge-EsQuery -BuildDirectory (Join-Path $binDirectory "esquery") -OutputDirectory $mergedDirectory
 Merge-ClientAPI -BuildDirectory (Join-Path $binDirectory "clientapi") -OutputDirectory $mergedDirectory
+Merge-ClientAPIEmbedded -BuildDirectory (Join-Path $binDirectory "clientapiembedded") -OutputDirectory $mergedDirectory

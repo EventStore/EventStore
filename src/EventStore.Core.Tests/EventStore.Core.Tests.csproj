@@ -79,6 +79,30 @@
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
     <Compile Include="ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
+    <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream.cs" />
+    <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <Compile Include="ClientAPI\Embedded\append_to_stream.cs" />
+    <Compile Include="ClientAPI\Embedded\deleting_stream.cs" />
+    <Compile Include="ClientAPI\Embedded\isjson_flag_on_event.cs" />
+    <Compile Include="ClientAPI\Embedded\read_all_events_backward_should.cs" />
+    <Compile Include="ClientAPI\Embedded\read_all_events_forward_should.cs" />
+    <Compile Include="ClientAPI\Embedded\read_all_events_forward_with_hard_deleted_stream_should.cs" />
+    <Compile Include="ClientAPI\Embedded\read_all_events_forward_with_soft_deleted_stream_should.cs" />
+    <Compile Include="ClientAPI\Embedded\read_event_should.cs" />
+    <Compile Include="ClientAPI\Embedded\read_event_stream_backward_should.cs" />
+    <Compile Include="ClientAPI\Embedded\read_event_stream_forward_should.cs" />
+    <Compile Include="ClientAPI\Embedded\read_stream_events_with_unresolved_linkto.cs" />
+    <Compile Include="ClientAPI\Embedded\soft_delete.cs" />
+    <Compile Include="ClientAPI\Embedded\subscribe_should.cs" />
+    <Compile Include="ClientAPI\Embedded\subscribe_to_all_catching_up_should.cs" />
+    <Compile Include="ClientAPI\Embedded\subscribe_to_all_should.cs" />
+    <Compile Include="ClientAPI\Embedded\subscribe_to_stream_catching_up_should.cs" />
+    <Compile Include="ClientAPI\Embedded\transaction.cs" />
+    <Compile Include="ClientAPI\Embedded\when_committing_empty_transaction.cs" />
+    <Compile Include="ClientAPI\Embedded\when_having_max_count_set_for_stream.cs" />
+    <Compile Include="ClientAPI\Embedded\when_having_truncatebefore_set_for_stream.cs" />
+    <Compile Include="ClientAPI\Embedded\when_working_with_stream_metadata_as_byte_array.cs" />
+    <Compile Include="ClientAPI\Embedded\when_working_with_stream_metadata_as_structured_info.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_hard_deleted_stream_should.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_linkto_passed_max_count.cs" />
     <Compile Include="ClientAPI\read_all_events_forward_with_linkto_to_deleted_event.cs" />
@@ -485,6 +509,10 @@
     <Compile Include="mono_filestream_bug.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
+      <Project>{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}</Project>
+      <Name>EventStore.ClientAPI.Embedded</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
       <Project>{c7c0a3c2-a0eb-4ff4-a0cd-67eadf3f553f}</Project>
       <Name>EventStore.ClientAPI</Name>

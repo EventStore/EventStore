@@ -10,7 +10,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class subscribe_to_all_should: SpecificationWithDirectory
+    public class subscribe_to_all_should : SpecificationWithDirectory
     {
         private const int Timeout = 10000;
         
@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
             _node.Start();
 
-            _conn = TestConnection.Create(_node.TcpEndPoint);
+            _conn = BuildConnection(_node);
             _conn.ConnectAsync().Wait();
             _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
@@ -37,6 +37,11 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.Close();
             _node.Shutdown();
             base.TearDown();
+        }
+
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
         }
 
         [Test, Category("LongRunning")]

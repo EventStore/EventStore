@@ -11,7 +11,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class read_all_events_backward_should: SpecificationWithMiniNode
+    public class read_all_events_backward_should : SpecificationWithMiniNode
     {
         private EventData[] _testEvents;
 
