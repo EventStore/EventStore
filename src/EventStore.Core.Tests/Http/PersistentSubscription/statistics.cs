@@ -197,6 +197,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void When()
         {
+            //make mcs stop bitching
+            Console.WriteLine(_sub3);
+            Console.WriteLine(_sub4);
+            Console.WriteLine(_sub5);
             _json = GetJson<JArray>("/subscriptions/" + _streamName, ContentType.Json);
         }
 

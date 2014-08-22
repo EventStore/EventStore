@@ -244,7 +244,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             return false;
         }
 
-        private Random _rnd = new Random();
         private bool TryPushToAny(ResolvedEvent resolvedEvent)
         {
             PersistentSubscriptionClient leastBusy = null;
