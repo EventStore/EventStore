@@ -155,7 +155,7 @@ namespace EventStore.Core.Tests.Services
             var evnt = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             _subscription.Push(evnt);
             _subscription.NotifyFreeSlots(_firstClientCorrelationId, 2, new Guid[0]);
-            _subscription.NotifyReadCompleted(new[]{evnt}, 56);
+            _subscription.HandleReadEvents(new[]{evnt}, 56);
 
             Assert.AreEqual(PersistentSubscriptionState.Pull, _subscription.State);
             Assert.AreEqual(1, _firstClientEnvelope.Replies.Count);
@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.Services
             var evnt2 = new ResolvedEvent(new EventRecord(56, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             _subscription.Push(evnt1);
             _subscription.NotifyFreeSlots(_firstClientCorrelationId, 3, new Guid[0]);
-            _subscription.NotifyReadCompleted(new[]{evnt1, evnt2}, 57);
+            _subscription.HandleReadEvents(new[]{evnt1, evnt2}, 57);
 
             Assert.AreEqual(57, _fetchFrom);
         }
@@ -188,7 +188,7 @@ namespace EventStore.Core.Tests.Services
             _subscription.NotifyFreeSlots(_firstClientCorrelationId, 10, new Guid[0]);
             _subscription.NotifyFreeSlots(_secondClientCorrelationId, 5, new Guid[0]);
 
-            _subscription.NotifyReadCompleted(new[] { evnt1, evnt2 }, 57);
+            _subscription.HandleReadEvents(new[] { evnt1, evnt2 }, 57);
 
             Assert.AreEqual(57, _fetchFrom);
             Assert.AreEqual(PersistentSubscriptionState.TransitioningFromPullToPush, _subscription.State);
@@ -222,7 +222,7 @@ namespace EventStore.Core.Tests.Services
             _subscription.Push(evnt1);
             _subscription.NotifyFreeSlots(_firstClientCorrelationId, 1, new Guid[0]);
 
-            _subscription.NotifyReadCompleted(new ResolvedEvent[0], -1);
+            _subscription.HandleReadEvents(new ResolvedEvent[0], -1);
 
             Assert.AreEqual(PersistentSubscriptionState.TransitioningFromPullToPush, _subscription.State);
             Assert.AreEqual(55, _fetchFrom);
@@ -242,7 +242,7 @@ namespace EventStore.Core.Tests.Services
             _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
 
             _subscription.Push(evnt2);
-            _subscription.NotifyReadCompleted(new[] { evnt1, evnt2, evnt3 }, 58);
+            _subscription.HandleReadEvents(new[] { evnt1, evnt2, evnt3 }, 58);
 
             Assert.AreEqual(3, _firstClientEnvelope.Replies.Count);
             Assert.AreEqual(PersistentSubscriptionState.Push, _subscription.State);
@@ -261,7 +261,7 @@ namespace EventStore.Core.Tests.Services
             _subscription.NotifyFreeSlots(_firstClientCorrelationId, 15, new Guid[0]);
             _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
 
-            _subscription.NotifyReadCompleted(new[] { evnt1, evnt2, evnt3 }, 58);
+            _subscription.HandleReadEvents(new[] { evnt1, evnt2, evnt3 }, 58);
             _subscription.Push(evnt2);
 
             Assert.AreEqual(3, _firstClientEnvelope.Replies.Count);

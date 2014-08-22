@@ -10,8 +10,8 @@ namespace CompetingPlayground
 {
     class Program
     {
-        private static readonly string Stream = Guid.NewGuid().ToString();
-        private static readonly string SubName = Guid.NewGuid().ToString();
+        private static readonly string Stream = "greg";
+        private static readonly string SubName = "greG";
         static void Main(string[] args)
         {
             BasicTest();
