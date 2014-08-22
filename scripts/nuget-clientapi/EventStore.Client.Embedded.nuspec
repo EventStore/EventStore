@@ -19,6 +19,8 @@
     <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.dll" target="lib\net40" />
     <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.pdb" target="lib\net40" />
     <file src="..\..\bin\merged\EventStore.ClientAPI.Embedded.xml" target="lib\net40" />
+    <file src="..\..\bin\merged\js1.dll" target="lib\net40" />
+    <file src="..\..\bin\merged\js1.pdb" target="lib\net40" />
     <file src="..\..\src\EventStore.ClientAPI.Embedded\**\*.cs" target="src\EventStore.ClientAPI.Embedded\" />
     <file src="..\..\src\EventStore.Common\**\*.cs" target="src\EventStore.Common\" />
     <file src="..\..\src\EventStore.Core\**\*.cs" target="src\EventStore.Core\" />
