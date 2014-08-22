@@ -125,7 +125,7 @@ namespace EventStore.Transport.Tcp
             _receivedSinceLastRun += totalBytesReceived - connectionData.LastTotalBytesReceived;
             
             _sentTotal += _sentSinceLastRun;
-            _receivedTotal += _sentSinceLastRun;
+            _receivedTotal += _receivedSinceLastRun;
 
             _pendingSendOnLastRun += pendingSend;
             _inSendOnLastRun += inSend;
