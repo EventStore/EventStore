@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
@@ -15,6 +16,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _freeSlots;
         public readonly string Username;
         public readonly string From;
+        private long _totalItems;
+
         public readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
 
         public PersistentSubscriptionClient(Guid correlationId, 
@@ -43,6 +46,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _connectionId; }
         }
 
+        public long TotalItems
+        {
+            get { return _totalItems; }
+        }
+
+        public long LastTotalItems { get; set; }
+
         public Guid CorrelationId
         {
             get { return _correlationId; }
@@ -66,6 +76,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Push(SequencedEvent evnt)
         {
             _freeSlots--;
+            Interlocked.Increment(ref _totalItems);
             _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt.Event));
             _unconfirmedEvents.Add(evnt);
         }
