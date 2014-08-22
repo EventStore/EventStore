@@ -10,7 +10,7 @@ namespace CompetingPlayground
 {
     class Program
     {
-        private const string Stream = "foo";
+        private static readonly string Stream = Guid.NewGuid().ToString();
         private static readonly string SubName = Guid.NewGuid().ToString();
         static void Main(string[] args)
         {
@@ -29,6 +29,7 @@ namespace CompetingPlayground
                 CreateSubscription(connection, SubName);
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
+                Console.WriteLine("delaying.");
                 Task.Delay(1000).Wait();
                 WriteEvents(connection);
                 sub.Stop(TimeSpan.FromSeconds(5));
@@ -48,7 +49,7 @@ namespace CompetingPlayground
                         Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
-                bufferSize: 256, autoAck: true);
+                bufferSize: 20, autoAck: true);
         }
 
         private static void WriteEvents(IEventStoreConnection connection)
