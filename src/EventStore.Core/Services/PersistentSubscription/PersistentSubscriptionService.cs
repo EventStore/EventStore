@@ -202,7 +202,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 subscription.RemoveClientByCorrelationId(correlationId, sendDropNotification);
             }
-            CleanUpDeadSubscriptions();
         }
 
         public void Handle(TcpMessage.ConnectionClosed message)
@@ -212,41 +211,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 subscription.RemoveClientByConnectionId(message.Connection.ConnectionId);
             }
-            CleanUpDeadSubscriptions();
-        }
-
-        private void CleanUpDeadSubscriptions()
-        {/*
-            var deadSubscriptions = _subscriptionsById.Values.Where(x => !x.HasAnyClients).ToList();
-            foreach (var deadSubscription in deadSubscriptions)
-            {
-                _subscriptionsById.Remove(deadSubscription.SubscriptionId);
-                Log.Debug("Subscription {0} has no more connected clients. Removing. ", deadSubscription.SubscriptionId);
-            }
-
-            List<string> subscriptionGroupsToRemove = null;
-            foreach (var subscriptionGroup in _subscriptionTopics)
-            {
-                var subscriptions = subscriptionGroup.Value;
-                foreach (var deadSubscription in deadSubscriptions)
-                {
-                    subscriptions.Remove(deadSubscription);
-                }
-                if (subscriptions.Count == 0) // schedule removal of list instance
-                {
-                    if (subscriptionGroupsToRemove == null)
-                        subscriptionGroupsToRemove = new List<string>();
-                    subscriptionGroupsToRemove.Add(subscriptionGroup.Key);
-                }
-            }
-            if (subscriptionGroupsToRemove != null)
-            {
-                for (int i = 0, n = subscriptionGroupsToRemove.Count; i < n; ++i)
-                {
-                    _subscriptionTopics.Remove(subscriptionGroupsToRemove[i]);
-                }
-            }
-          */
         }
 
         public void Handle(ClientMessage.ConnectToPersistentSubscription message)

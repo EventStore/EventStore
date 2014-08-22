@@ -77,6 +77,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             else
             {
+                //TODO CC config for start from beginning of stream instead of current.
                 _state = PersistentSubscriptionState.Push;
             }
         }
@@ -115,7 +116,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 Log.Debug("Client {0} disconnected. Rerouting unconfirmed events.", client.ConnectionId);
                 foreach (var evnt in unconfirmedEvents)
                 {
-                    ForcePushToAny(evnt);
+                    HandleUnhandledEvent(evnt);
                 }
             }
         }
@@ -134,7 +135,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 Log.Debug("Client {0} disconnected. Rerouting unconfirmed events.", client.ConnectionId);
                 foreach (var evnt in unconfirmedEvents)
                 {
-                    ForcePushToAny(evnt);
+                    HandleUnhandledEvent(evnt);
                 }
             }
         }
@@ -182,7 +183,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void NotifyReadCompleted(ResolvedEvent[] events, int nextEventNumber)
+        public void HandleReadEvents(ResolvedEvent[] events, int nextEventNumber)
         {
             if (nextEventNumber != -1)
             {
@@ -270,13 +271,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             _eventSequence++;
         }
 
-        private void ForcePushToAny(SequencedEvent sequencedEvent)
+        private void HandleUnhandledEvent(SequencedEvent sequencedEvent)
         {
             PersistentSubscriptionClient leastBusy = null;
             foreach ( var client in _clients.Values)
             {
                 if (leastBusy == null || client.FreeSlots > leastBusy.FreeSlots)
                 {
+                    //TODO what if client is the leaving client?
                     leastBusy = client;
                 }
             }
@@ -285,6 +287,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 Interlocked.Increment(ref _totalItems);
                 leastBusy.Push(sequencedEvent);
+            }
+            else
+            {
+                HandleReadEvents(new [] {sequencedEvent.Event}, sequencedEvent.Event.OriginalEventNumber);               
             }
         }
 
@@ -311,7 +317,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _outstandingFetchRequest = true;
                 _eventBufferIndex = 0;
                 _eventBuffer = new ResolvedEvent[0];
-                _eventLoader.BeginLoadState(this, _nextEventNumber, freeSlots, NotifyReadCompleted);
+                _eventLoader.BeginLoadState(this, _nextEventNumber, freeSlots, HandleReadEvents);
                 return true;
             }
             return false;
