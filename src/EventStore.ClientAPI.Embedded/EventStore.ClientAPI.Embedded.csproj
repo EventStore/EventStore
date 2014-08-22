@@ -102,12 +102,6 @@ $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProject
        Other similar extension points exist, see Microsoft.Common.targets.
   -->
   <Target Name="BeforeBuild">
-    <Copy SourceFiles="..\libs\win32\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
-    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
-    <Copy SourceFiles="..\libs\win32\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
-    <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
     <Message Text="BeforeBuild -- DefineConstants: $(DefineConstants)" />
     <Message Text="BeforeBuild -- AppendedDefineConstants: $(AppendedDefineConstants)" />
     <CreateProperty Value="$(DefineConstants);$(AppendedDefineConstants)">
