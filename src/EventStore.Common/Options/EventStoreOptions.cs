@@ -4,14 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
-using EventStore.Common.Yaml.Serialization;
-using EventStore.Common.Yaml.Serialization.Utilities;
-using EventStore.Common.Yaml.Core;
-using EventStore.Common.Yaml.Core.Events;
-using EventStore.Common.Yaml.RepresentationModel;
-using System.ComponentModel;
+
 namespace EventStore.Common.Options
 {
     public class EventStoreOptions
@@ -31,9 +25,11 @@ namespace EventStore.Common.Options
             var defaultOptionsProvider = new DefaultOptionsProvider();
 
             OptionSource[] defaultOptionSources = defaultOptionsProvider.Get<TOptions>();
-            OptionSource[] commandLineOptionSources = null;
+            OptionSource[] commandLineOptionSources;
             OptionSource[] configurationFileOptionSources = null;
-            OptionSource[] environmentVariableOptionSources = null;
+            OptionSource[] environmentVariableOptionSources;
+
+            var validKeys = defaultOptionSources.Select(option => option.Name).ToArray();
 
             if (args == null || args.Length == 0)
             {
@@ -61,12 +57,18 @@ namespace EventStore.Common.Options
                 {
                     if (File.Exists(configOptionSource.Value.ToString()))
                     {
-                        configurationFileOptionSources = yamlParser.Parse(configOptionSource.Value.ToString(), String.Empty);
+                        var stagedConfigurationOptions = yamlParser.Parse(configOptionSource.Value.ToString(), String.Empty);
+
+                        if (stagedConfigurationOptions != null)
+                            configurationFileOptionSources = stagedConfigurationOptions.Where(option => validKeys.Contains(option.Name)).ToArray();
+                        else
+                            configurationFileOptionSources = new OptionSource[0];
                     }
                     else
                     {
-                        Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", configOptionSource.Value.ToString()));
+                        Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", configOptionSource.Value));
                     }
+
                 }
             }
 
