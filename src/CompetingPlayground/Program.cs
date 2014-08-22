@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 
@@ -9,8 +10,8 @@ namespace CompetingPlayground
 {
     class Program
     {
-        private const string Stream = "stream";
-        private const string SubName = "subscription3";
+        private const string Stream = "foo";
+        private static readonly string SubName = Guid.NewGuid().ToString();
         static void Main(string[] args)
         {
             BasicTest();
@@ -22,14 +23,15 @@ namespace CompetingPlayground
             using (var connection = EventStoreConnection.Create(endpoint, "foo"))
             {
                 connection.ConnectAsync().Wait();
+                
+                WriteEvents(connection);
+                
                 CreateSubscription(connection, SubName);
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
+                Task.Delay(1000).Wait();
                 WriteEvents(connection);
-                
-                Thread.Sleep(5000);
                 sub.Stop(TimeSpan.FromSeconds(5));
-                WriteEvents(connection);
                 sub2.Stop(TimeSpan.FromSeconds(5));
                 Thread.Sleep(TimeSpan.FromSeconds(5));
                 //DeleteSubscription(connection, SubName);
@@ -42,11 +44,11 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
-                    //Thread.Sleep(1000);
-                    Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
+                        //Thread.Sleep(1000);
+                        Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
-                bufferSize: 12, autoAck: true);
+                bufferSize: 256, autoAck: true);
         }
 
         private static void WriteEvents(IEventStoreConnection connection)

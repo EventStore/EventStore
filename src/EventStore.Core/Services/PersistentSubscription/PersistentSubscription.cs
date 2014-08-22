@@ -244,6 +244,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             return false;
         }
 
+        private Random _rnd = new Random();
         private bool TryPushToAny(ResolvedEvent resolvedEvent)
         {
             PersistentSubscriptionClient leastBusy = null;
@@ -280,6 +281,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     leastBusy = client;
                 }
             }
+            //TODO CC this needs to merge back!
             if (leastBusy != null)
             {
                 Interlocked.Increment(ref _totalItems);
