@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
             Assert.True(optionException.Message.Contains("UnknownOption"));
         }
         [Test]
-        public void should_warn_the_user_about_unknown_argument_when_from_environment_variable()
+        public void should_not_contain_the_unknown_option_in_the_dumping_of_the_options_environment_variable()
         {
             Environment.SetEnvironmentVariable(String.Format("{0}UNKNOWN_OPTION", Opts.EnvPrefix), "true");
             var args = new string[] { };
