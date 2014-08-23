@@ -144,6 +144,7 @@
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_a_config_file.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_arguments.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_no_arguments.cs" />
+    <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_unknown_options.cs" />
     <Compile Include="Fakes\FakeTfReader.cs" />
     <Compile Include="Helpers\CollectionsExtensions.cs" />
     <Compile Include="Helpers\HelperExtensions.cs" />
@@ -513,6 +514,9 @@
     <Folder Include="TransactionLog\Manager\" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="TestConfigs\test_config_with_unknown_option.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="TestConfigs\invalid_format_config.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

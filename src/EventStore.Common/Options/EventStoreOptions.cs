@@ -58,7 +58,12 @@ namespace EventStore.Common.Options
                     if (File.Exists(configOptionSource.Value.ToString()))
                     {
                         var stagedConfigurationOptions = yamlParser.Parse(configOptionSource.Value.ToString(), String.Empty);
-
+                        if (stagedConfigurationOptions.Any(option => !validKeys.Contains(option.Name)))
+                        {
+                            var unexpectedOptions = stagedConfigurationOptions.Where(option => !validKeys.Contains(option.Name)).Select(x => x.Name);
+                            var message = String.Format("Unexpected option(s): {0}", String.Join(",", unexpectedOptions));
+                            throw new OptionException(message, String.Empty);
+                        }
                         if (stagedConfigurationOptions != null)
                             configurationFileOptionSources = stagedConfigurationOptions.Where(option => validKeys.Contains(option.Name)).ToArray();
                         else
@@ -104,7 +109,7 @@ namespace EventStore.Common.Options
             {
                 var value = option.Value;
                 var optionName = PascalCaseNameSplitter(option.Name).ToUpper();
-                var valueToDump = value.ToString();
+                var valueToDump = value == null ? String.Empty : value.ToString();
                 var source = option.Source ?? "<DEFAULT>";
                 if (value is Array)
                 {
@@ -119,6 +124,7 @@ namespace EventStore.Common.Options
             }
             return dumpOptionsBuilder.ToString();
         }
+
         private static string PascalCaseNameSplitter(string name)
         {
             var regex = new System.Text.RegularExpressions.Regex(@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
