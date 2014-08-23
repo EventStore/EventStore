@@ -65,6 +65,7 @@
     <Compile Include="Options\OptionsSourceMerger.cs" />
     <Compile Include="Options\OptionSource.cs" />
     <Compile Include="Options\OptionsSourceParser.cs" />
+    <Compile Include="Options\OptionsSourceRulesRunner.cs" />
     <Compile Include="Options\YamlParser.cs" />
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />

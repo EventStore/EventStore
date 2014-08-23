@@ -29,8 +29,6 @@ namespace EventStore.Common.Options
             OptionSource[] configurationFileOptionSources = null;
             OptionSource[] environmentVariableOptionSources;
 
-            var validKeys = defaultOptionSources.Select(option => option.Name).ToArray();
-
             if (args == null || args.Length == 0)
             {
                 var optionSources = environmentVariableProvider.Parse<TOptions>(environmentPrefix);
@@ -57,32 +55,25 @@ namespace EventStore.Common.Options
                 {
                     if (File.Exists(configOptionSource.Value.ToString()))
                     {
-                        var stagedConfigurationOptions = yamlParser.Parse(configOptionSource.Value.ToString(), String.Empty);
-                        if (stagedConfigurationOptions.Any(option => !validKeys.Contains(option.Name)))
-                        {
-                            var unexpectedOptions = stagedConfigurationOptions.Where(option => !validKeys.Contains(option.Name)).Select(x => x.Name);
-                            var message = String.Format("Unexpected option(s): {0}", String.Join(",", unexpectedOptions));
-                            throw new OptionException(message, String.Empty);
-                        }
-                        if (stagedConfigurationOptions != null)
-                            configurationFileOptionSources = stagedConfigurationOptions.Where(option => validKeys.Contains(option.Name)).ToArray();
-                        else
-                            configurationFileOptionSources = new OptionSource[0];
+                        configurationFileOptionSources = yamlParser.Parse(configOptionSource.Value.ToString(), String.Empty);
                     }
                     else
                     {
                         Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", configOptionSource.Value));
                     }
-
                 }
             }
 
             environmentVariableOptionSources = environmentVariableProvider.Parse<TOptions>(environmentPrefix);
+
             _effectiveOptions = OptionsSourceMerger.SequentialMerge(
                         defaultOptionSources,
                         environmentVariableOptionSources,
                         configurationFileOptionSources,
                         commandLineOptionSources);
+
+            OptionsSourceRulesRunner.RunRules(defaultOptionSources.Select(option => option.Name).ToArray(),
+                                              _effectiveOptions);
             return OptionsSourceParser.Parse<TOptions>(_effectiveOptions);
         }
 
