@@ -231,7 +231,9 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(TcpMessage.ConnectionClosed message)
         {
-            if (!_started) return;
+            //TODO CC make a map for this
+            Log.Debug("Lost connection from " + message.Connection.RemoteEndPoint);
+            if (_subscriptionsById == null) return; //havn't built yet.
             foreach (var subscription in _subscriptionsById.Values)
             {
                 subscription.RemoveClientByConnectionId(message.Connection.ConnectionId);

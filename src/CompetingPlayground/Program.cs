@@ -24,8 +24,6 @@ namespace CompetingPlayground
             {
                 connection.ConnectAsync().Wait();
                 
-                WriteEvents(connection);
-                
                 CreateSubscription(connection, SubName);
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
@@ -49,7 +47,7 @@ namespace CompetingPlayground
                         Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
-                bufferSize: 20, autoAck: true);
+                bufferSize: 200, autoAck: true);
         }
 
         private static void WriteEvents(IEventStoreConnection connection)
