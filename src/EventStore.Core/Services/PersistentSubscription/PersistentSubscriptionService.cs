@@ -90,6 +90,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void ShutdownSubscriptions()
         {
+            if (_subscriptionsById == null) return;
             foreach (var subscription in _subscriptionsById.Values)
             {
                 subscription.Shutdown();

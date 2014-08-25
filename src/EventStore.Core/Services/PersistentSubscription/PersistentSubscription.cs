@@ -22,10 +22,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly string EventStreamId;
         public readonly string GroupName;
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
-        private readonly Dictionary<Guid, PersistentSubscriptionClient> _clients = new Dictionary<Guid, PersistentSubscriptionClient>();
+        private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
+        private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private Dictionary<Guid, PersistentSubscriptionClient> _clients = new Dictionary<Guid, PersistentSubscriptionClient>();
         private ResolvedEvent[] _eventBuffer = new ResolvedEvent[0];
         private List<ResolvedEvent> _transitionBuffer;
-        private readonly CheckpointingQueue _checkpointingQueue;
+        private CheckpointingQueue _checkpointingQueue;
         private bool _outstandingFetchRequest;
         private int _nextEventNumber;
         private int _eventBufferIndex;
@@ -60,10 +62,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             EventStreamId = eventStreamId;
             GroupName = groupName;
             _eventLoader = eventLoader;
-            _checkpointingQueue = new CheckpointingQueue(checkpointWriter.BeginWriteState);
+            _checkpointReader = checkpointReader;
+            _checkpointWriter = checkpointWriter;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
-            checkpointReader.BeginLoadState(subscriptionId, OnStateLoaded);
+            InitAsNew();
+        }
+
+        public void InitAsNew()
+        {
+            _state = PersistentSubscriptionState.Pull;
+            _eventBuffer = new ResolvedEvent[0];
+            _clients = new Dictionary<Guid, PersistentSubscriptionClient>();
+            _checkpointingQueue = new CheckpointingQueue(_checkpointWriter.BeginWriteState);
+            _checkpointReader.BeginLoadState(SubscriptionId, OnStateLoaded);
         }
 
         private void OnStateLoaded(int? lastProcessedEvent)
@@ -274,6 +286,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void HandleUnhandledEvent(SequencedEvent sequencedEvent)
         {
             PersistentSubscriptionClient leastBusy = null;
+            if (_clients.Count == 0) RevertToCheckPoint();
             foreach ( var client in _clients.Values)
             {
                 if (leastBusy == null || client.FreeSlots > leastBusy.FreeSlots)
@@ -292,6 +305,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 HandleReadEvents(new [] {sequencedEvent.Event}, sequencedEvent.Event.OriginalEventNumber);               
             }
+        }
+
+        private void RevertToCheckPoint()
+        {
+            Log.Debug("No clients, reverting future to checkpoint.");
+            InitAsNew();
         }
 
         private void TryPushSomeEvents()
