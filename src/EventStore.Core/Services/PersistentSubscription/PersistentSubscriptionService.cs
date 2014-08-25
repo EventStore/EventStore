@@ -41,6 +41,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
         private bool _started = false;
+        private VNodeState _state;
 
         public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher)
         {
@@ -53,7 +54,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
             _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
             _eventLoader = new PersistentSubscriptionEventLoader(_ioDispatcher);
-            InitToEmpty();
         }
 
         public void InitToEmpty()
@@ -62,14 +62,37 @@ namespace EventStore.Core.Services.PersistentSubscription
             _subscriptionsById = new Dictionary<string, PersistentSubscription>(); 
         }
 
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            _state = message.State;
+
+            if (message.State != VNodeState.Master)
+            {
+                ShutdownSubscriptions();
+                Stop();
+            }
+        }
+
+        public void Handle(SystemMessage.BecomeMaster message)
+        {
+            InitToEmpty();
+            LoadConfiguration(Start);
+        }
+
+
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
+            ShutdownSubscriptions();
             Stop();
+            _queuedHandler.RequestStop();
+        }
+
+        private void ShutdownSubscriptions()
+        {
             foreach (var subscription in _subscriptionsById.Values)
             {
                 subscription.Shutdown();
             }
-            _queuedHandler.RequestStop();
         }
 
         private void Start()
@@ -384,11 +407,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 CreateSubscriptionGroup(sub.Stream, sub.Group, sub.ResolveLinkTos);
             }
-        }
-
-        public void Handle(SystemMessage.BecomeMaster message)
-        {
-            LoadConfiguration(Start);
         }
 
         public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message)
