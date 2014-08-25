@@ -71,6 +71,11 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void InitAsNew()
         {
+            _nextEventNumber = 0;
+            _lastEventNumber = -1;
+            _eventBufferIndex = 0;
+            _outstandingFetchRequest = false;
+            _eventSequence = 0;
             _state = PersistentSubscriptionState.Pull;
             _eventBuffer = new ResolvedEvent[0];
             _clients = new Dictionary<Guid, PersistentSubscriptionClient>();
@@ -120,8 +125,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void RemoveClientByConnectionId(Guid connectionId)
         {
-            var client = _clients.Values.FirstOrDefault(x => x.ConnectionId == connectionId);
-            if (client != null)
+            var clients = _clients.Values.Where(x => x.ConnectionId == connectionId).ToList();
+            foreach(var client in clients)
             {
                 _clients.Remove(client.CorrelationId);
                 var unconfirmedEvents = client.GetUnconfirmedEvents();
@@ -132,7 +137,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 }
             }
         }
-        
+
         public void RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification)
         {
             PersistentSubscriptionClient client;
@@ -291,11 +296,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 if (leastBusy == null || client.FreeSlots > leastBusy.FreeSlots)
                 {
-                    //TODO what if client is the leaving client?
                     leastBusy = client;
                 }
             }
-            //TODO CC this needs to merge back!
+            //TODO CC this should to merge back instead of reverting!
             if (leastBusy != null)
             {
                 Interlocked.Increment(ref _totalItems);
