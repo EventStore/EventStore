@@ -17,6 +17,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<SystemMessage.BecomeShuttingDown>,
                                         IHandle<TcpMessage.ConnectionClosed>,
                                         IHandle<SystemMessage.BecomeMaster>,
+                                        IHandle<SystemMessage.StateChangeMessage>,
                                         IHandle<ClientMessage.ConnectToPersistentSubscription>,
                                         IHandle<StorageMessage.EventCommitted>,
                                         IHandle<ClientMessage.UnsubscribeFromStream>,

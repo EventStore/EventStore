@@ -400,6 +400,7 @@ namespace EventStore.Core
             //TODO CC This should use a dispatcher (horrifically inefficient)
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeMaster, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscription, Message>());
@@ -414,7 +415,7 @@ namespace EventStore.Core
             var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
-
+            perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
             perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
