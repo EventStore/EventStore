@@ -179,7 +179,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected override void Given()
         {
             base.Given();
-            _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", true,
+            _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", true,false,
                         new UserCredentials("admin", "changeit")).Wait();
             _sub3 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
@@ -334,7 +334,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
             _conn.ConnectAsync().Wait();
-            _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, true,
+            _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, true,false,
                     new UserCredentials("admin", "changeit")).Wait();
             _sub1 = _conn.ConnectToPersistentSubscription(_groupName, _streamName,
                         (subscription, @event) => Console.WriteLine(), 

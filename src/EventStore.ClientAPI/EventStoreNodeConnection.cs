@@ -328,19 +328,19 @@ namespace EventStore.ClientAPI
         }
 
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, bool resolveLinkTos, UserCredentials userCredentials = null) {
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, bool resolveLinkTos, bool startFromBeginning, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, resolveLinkTos, userCredentials));
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, resolveLinkTos, startFromBeginning, userCredentials));
             return source.Task;
         }
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, bool resolveLinkTos, bool startFromBeginning, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(groupName, "groupName");
             var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, resolveLinkTos, userCredentials));
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, resolveLinkTos, startFromBeginning, userCredentials));
             return source.Task;
         }
 

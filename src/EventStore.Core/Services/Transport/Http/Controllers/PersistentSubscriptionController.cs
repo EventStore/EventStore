@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 {
                     var data = http.RequestCodec.From<PutSubscriptionData>(s);
                     var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(),
-                                       envelope, stream, groupname, data == null || data.ResolveLinktos, http.User, "", "");
+                                       envelope, stream, groupname, data == null || data.ResolveLinktos, data.StartFromBeginning, http.User, "", "");
                     Publish(message);
                 }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
@@ -239,6 +239,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private class PutSubscriptionData
         {
             public bool ResolveLinktos { get; set; }
+            public bool StartFromBeginning { get; set; }
         }
 
         private class SubscriptionInfo

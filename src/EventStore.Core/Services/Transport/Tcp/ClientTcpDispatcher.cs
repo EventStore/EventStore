@@ -436,7 +436,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.CreatePersistentSubscription>();
             if(dto == null) return null;
             return new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
-                            dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, user, username, password);
+                            dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFromBeginning, user, username, password);
         }
 
         private ClientMessage.DeletePersistentSubscription UnwrapDeletePersistentSubscription(

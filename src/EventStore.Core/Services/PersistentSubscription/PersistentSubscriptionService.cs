@@ -135,7 +135,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     "Group '" + message.GroupName + "' already exists."));
                 return;
             }
-            CreateSubscriptionGroup(message.EventStreamId, message.GroupName, message.ResolveLinkTos);
+            CreateSubscriptionGroup(message.EventStreamId, message.GroupName, message.ResolveLinkTos, message.StartFromBeginning);
             Log.Debug("New persistent subscription {0}.", message.GroupName);
             _config.Updated = DateTime.Now;
             _config.UpdatedBy = message.User.Identity.Name;
@@ -144,7 +144,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, "")));
         }
 
-        private void CreateSubscriptionGroup(string eventStreamId, string groupName, bool resolveLinkTos)
+        private void CreateSubscriptionGroup(string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
             List<PersistentSubscription> subscribers;
@@ -161,7 +161,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     groupName,
                                     _eventLoader, 
                                     _checkpointReader, 
-                                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher));
+                                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher),
+                                    startFromBeginning);
             _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
         }
@@ -334,7 +335,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!_started) return;
             PersistentSubscription subscription;
             //TODO competing adjust the naming of SubscriptionId vs GroupName
-            Console.WriteLine("processed " + message.ProcessedEventIds[0] + " : " + message.ProcessedEventIds.Length);
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
                 subscription.NotifyFreeSlots(message.CorrelationId, message.NumberOfFreeSlots, message.ProcessedEventIds);
@@ -359,7 +359,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                 readStreamEventsBackwardCompleted.Events[0].Event.Data);
                         foreach (var entry in _config.Entries)
                         {
-                            CreateSubscriptionGroup(entry.Stream, entry.Group, entry.ResolveLinkTos);
+                            CreateSubscriptionGroup(entry.Stream, entry.Group, entry.ResolveLinkTos, entry.StartFromBeginning);
                         }
                         continueWith();
                     }
@@ -409,7 +409,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if(_config.Entries == null) throw new Exception("Subscription Entries should never be null.");
             foreach (var sub in _config.Entries)
             {
-                CreateSubscriptionGroup(sub.Stream, sub.Group, sub.ResolveLinkTos);
+                CreateSubscriptionGroup(sub.Stream, sub.Group, sub.ResolveLinkTos, sub.StartFromBeginning);
             }
         }
 

@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , true, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , true, false, new UserCredentials("admin", "changeit")).Wait();
             _sub = _conn.ConnectToPersistentSubscription(_stream,
                 "agroupname17",
                 (sub, e) => Console.Write("appeared"),
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname55", true,
+            _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname55", true, false,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", true, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", true,false, new UserCredentials("admin", "changeit")).Wait();
             _sub = _conn.ConnectToPersistentSubscriptionForAll("agroupname17",
                 (sub, e) => Console.Write("appeared"),
                 (sub, reason, ex) => { }, new UserCredentials("admin", "changeit"));
@@ -156,7 +156,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", true,
+            _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", true, false,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 

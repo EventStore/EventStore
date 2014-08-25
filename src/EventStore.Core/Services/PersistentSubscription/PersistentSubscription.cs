@@ -24,6 +24,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private readonly bool _startFromBeginning;
         private Dictionary<Guid, PersistentSubscriptionClient> _clients = new Dictionary<Guid, PersistentSubscriptionClient>();
         private ResolvedEvent[] _eventBuffer = new ResolvedEvent[0];
         private List<ResolvedEvent> _transitionBuffer;
@@ -55,7 +56,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             string groupName,
             IPersistentSubscriptionEventLoader eventLoader,
             IPersistentSubscriptionCheckpointReader checkpointReader,
-            IPersistentSubscriptionCheckpointWriter checkpointWriter)
+            IPersistentSubscriptionCheckpointWriter checkpointWriter,
+            bool startFromBeginning)
         {
             ResolveLinkTos = resolveLinkTos;
             SubscriptionId = subscriptionId;
@@ -64,6 +66,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _eventLoader = eventLoader;
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
+            _startFromBeginning = startFromBeginning;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             InitAsNew();
@@ -94,8 +97,18 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             else
             {
-                //TODO CC config for start from beginning of stream instead of current.
-                _state = PersistentSubscriptionState.Push;
+                if (_startFromBeginning)
+                {
+                    _state = PersistentSubscriptionState.Pull;
+                    _lastEventNumber = -1;
+                    _nextEventNumber = 0;
+                    FetchNewEventsBatch();
+                }
+                else
+                {
+                    _state = PersistentSubscriptionState.Push;
+                }
+                
             }
         }
 
