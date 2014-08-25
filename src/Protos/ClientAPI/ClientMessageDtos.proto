@@ -199,6 +199,7 @@ message CreatePersistentSubscription {
 	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
     required bool resolve_link_tos = 3;
+    required bool start_from_beginning = 4;
 }
 
 message DeletePersistentSubscription {

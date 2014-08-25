@@ -660,13 +660,17 @@ namespace EventStore.Core.Messages
     [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
     public readonly bool ResolveLinkTos;
   
+    [ProtoMember(4, IsRequired = true, Name=@"start_from_beginning", DataFormat = DataFormat.Default)]
+    public readonly bool StartFromBeginning;
+  
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, bool startFromBeginning)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
         ResolveLinkTos = resolveLinkTos;
+        StartFromBeginning = startFromBeginning;
     }
   }
   
