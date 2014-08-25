@@ -865,18 +865,21 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
+            public readonly bool StartFromBeginning;
+
             public readonly bool ResolveLinkTos;
 
             public readonly string GroupName;
             public readonly string EventStreamId;
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-                  string eventStreamId, string groupName, bool resolveLinkTos, IPrincipal user, string username, string password)
+                  string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning, IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 ResolveLinkTos = resolveLinkTos;
                 EventStreamId = eventStreamId;
                 GroupName = groupName;
+                StartFromBeginning = startFromBeginning;
             }
 
         }

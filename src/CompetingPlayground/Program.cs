@@ -10,8 +10,9 @@ namespace CompetingPlayground
 {
     class Program
     {
-        private static readonly string Stream = "greg";
+        private static readonly string Stream = "TestFoo";
         private static readonly string SubName = "greG";
+        private static readonly bool StartFromBeginning = false;
         static void Main(string[] args)
         {
             BasicTest();
@@ -23,7 +24,7 @@ namespace CompetingPlayground
             using (var connection = EventStoreConnection.Create(endpoint, "foo"))
             {
                 connection.ConnectAsync().Wait();
-                
+                //WriteEvents(connection);                
                 CreateSubscription(connection, SubName);
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
@@ -41,11 +42,7 @@ namespace CompetingPlayground
         private static EventStorePersistentSubscription ConnectToSubscription(IEventStoreConnection connection, string name)
         {
             return connection.ConnectToPersistentSubscription(SubName, Stream,
-                (sub, ev) =>
-                {
-                        //Thread.Sleep(1000);
-                        Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
-                },
+                (sub, ev) => Console.WriteLine(name + "received: " + ev.OriginalEventNumber),
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
                 bufferSize: 200, autoAck: true);
         }
@@ -76,7 +73,7 @@ namespace CompetingPlayground
         {
             try
             {
-                connection.CreatePersistentSubscriptionAsync(Stream, name, true,
+                connection.CreatePersistentSubscriptionAsync(Stream, name, true,StartFromBeginning,
                     new UserCredentials("admin", "changeit")).Wait();
             }
             catch (Exception ex)
@@ -84,5 +81,6 @@ namespace CompetingPlayground
                 Console.WriteLine("Unable to create : " + ex);
             }
         }
+
     }
 }

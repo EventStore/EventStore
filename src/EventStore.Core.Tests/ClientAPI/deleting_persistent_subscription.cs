@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", false,
+            _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", false, false,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 
@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("groupname123", false,
+            _conn.CreatePersistentSubscriptionForAllAsync("groupname123", false, false,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 
