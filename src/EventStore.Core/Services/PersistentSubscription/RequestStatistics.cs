@@ -38,6 +38,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public LatencyMeausrement GetMeasurementDetails()
         {
             var ret = new LatencyMeausrement();
+            if (_measurements == null || _measurements.Count == 0) return ret;
             var items = _measurements.ToArray();
             Array.Sort(items);
             ret.Measurements.Add("Mean", items.Sum()/items.Length);
