@@ -6,21 +6,19 @@ using System.Linq;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
-    internal class RequestMonitor
+    internal class RequestStatistics
     {
         private readonly Queue<int> _measurements = new Queue<int>(2000);
         private readonly ConcurrentDictionary<Guid, Operation> _operations = new ConcurrentDictionary<Guid, Operation>();
         readonly Stopwatch _watch = new Stopwatch();
 
-        public RequestMonitor()
+        public RequestStatistics()
         {
-            
             _watch.Start();
         }
 
         public void StartOperation(Guid id)
         {
-
             var record = new Operation {Start = _watch.ElapsedTicks};
             _operations.AddOrUpdate(id, record, (q, val) => record);
         }
@@ -50,10 +48,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ret.Measurements.Add(i + "%", items[GetPercentile(i*20, items.Length)]);
             }
             ret.Measurements.Add("90%", items[GetPercentile(90m, items.Length)]);
-            ret.Measurements.Add("95%", items[GetPercentile(90m, items.Length)]);
-            ret.Measurements.Add("99%", items[GetPercentile(90m, items.Length)]);
-            ret.Measurements.Add("99.5%", items[GetPercentile(90m, items.Length)]);
-            ret.Measurements.Add("99.9%", items[GetPercentile(90m, items.Length)]);
+            ret.Measurements.Add("95%", items[GetPercentile(95m, items.Length)]);
+            ret.Measurements.Add("99%", items[GetPercentile(99m, items.Length)]);
+            ret.Measurements.Add("99.5%", items[GetPercentile(99.5m, items.Length)]);
+            ret.Measurements.Add("99.9%", items[GetPercentile(99.9m, items.Length)]);
             ret.Measurements.Add("Highest", items[items.Length - 1]);
             return ret;
         }
