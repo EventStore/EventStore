@@ -29,8 +29,8 @@ namespace EventStore.Core.Tests.Services
         public void Setup()
         {
             _checkpointReader = new FakeCheckpointReader();
-            _subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x),
-                _checkpointReader, new FakeCheckpointWriter(x => _lastCheckpoint = x), false);
+            _subscription = new PersistentSubscription(false, "sub1", "stream", "groupName",false,false, new FakeEventLoader(x => _fetchFrom = x),
+                _checkpointReader, new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(null);
 
@@ -48,8 +48,8 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void start_in_idle_mode()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
-                new FakeCheckpointWriter(x => _lastCheckpoint = x), false);
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName",false,false, new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+                new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             Assert.AreEqual(PersistentSubscriptionState.Idle, subscription.State);
         }
@@ -57,8 +57,8 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void transition_to_push_mode_if_there_is_no_checkpoint()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
-                new FakeCheckpointWriter(x => _lastCheckpoint = x), false);
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", false, false,new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+                new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(null);
 
@@ -68,8 +68,8 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void transition_to_pull_mode_if_there_is_checkpoint()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
-                new FakeCheckpointWriter(x => _lastCheckpoint = x), false);
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", false, false, new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+                new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(156);
             //TODO competing FIX ME!

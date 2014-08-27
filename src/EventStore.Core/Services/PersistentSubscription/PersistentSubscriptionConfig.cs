@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public string Stream;
         public string Group;
         public bool ResolveLinkTos;
-        public bool StartFromBeginning { get; set; }
+        public bool StartFromBeginning;
+        public bool TrackLatencies;
     }
 }
