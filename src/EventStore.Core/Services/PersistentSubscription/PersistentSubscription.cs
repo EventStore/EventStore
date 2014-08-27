@@ -36,9 +36,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _lastEventNumber = -1;
         private PersistentSubscriptionState _state;
         private long _totalItems;
-        private Stopwatch _totalTimeWatch;
+        private readonly Stopwatch _totalTimeWatch;
         private TimeSpan _lastTotalTime;
         private long _lastTotalItems;
+        private bool _trackLatency;
 
         public int LastEventNumber
         {
@@ -54,10 +55,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             string subscriptionId, 
             string eventStreamId, 
             string groupName,
+            bool startFromBeginning,
+            bool trackLatency,
             IPersistentSubscriptionEventLoader eventLoader,
             IPersistentSubscriptionCheckpointReader checkpointReader,
-            IPersistentSubscriptionCheckpointWriter checkpointWriter,
-            bool startFromBeginning)
+            IPersistentSubscriptionCheckpointWriter checkpointWriter
+            )
         {
             ResolveLinkTos = resolveLinkTos;
             SubscriptionId = subscriptionId;
@@ -67,6 +70,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
             _startFromBeginning = startFromBeginning;
+            _trackLatency = trackLatency;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             InitAsNew();
@@ -114,7 +118,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int numberOfFreeSlots, string user, string @from)
         {
-            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, numberOfFreeSlots, user, @from);
+            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, numberOfFreeSlots, user, @from, _totalTimeWatch, _trackLatency);
             _clients[correlationId] = client;
             if (_state != PersistentSubscriptionState.Idle)
             {

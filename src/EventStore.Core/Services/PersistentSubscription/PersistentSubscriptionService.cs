@@ -135,7 +135,11 @@ namespace EventStore.Core.Services.PersistentSubscription
                     "Group '" + message.GroupName + "' already exists."));
                 return;
             }
-            CreateSubscriptionGroup(message.EventStreamId, message.GroupName, message.ResolveLinkTos, message.StartFromBeginning);
+            CreateSubscriptionGroup(message.EventStreamId, 
+                                    message.GroupName, 
+                                    message.ResolveLinkTos, 
+                                    message.StartFromBeginning,
+                                    false);
             Log.Debug("New persistent subscription {0}.", message.GroupName);
             _config.Updated = DateTime.Now;
             _config.UpdatedBy = message.User.Identity.Name;
@@ -144,7 +148,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, "")));
         }
 
-        private void CreateSubscriptionGroup(string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning)
+        private void CreateSubscriptionGroup(string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning, bool trackLatency)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
             List<PersistentSubscription> subscribers;
@@ -159,10 +163,11 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     key,
                                     eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
                                     groupName,
+                                    startFromBeginning,
+                                    trackLatency, 
                                     _eventLoader, 
                                     _checkpointReader, 
-                                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher),
-                                    startFromBeginning);
+                                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher));
             _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
         }
@@ -359,7 +364,11 @@ namespace EventStore.Core.Services.PersistentSubscription
                                 readStreamEventsBackwardCompleted.Events[0].Event.Data);
                         foreach (var entry in _config.Entries)
                         {
-                            CreateSubscriptionGroup(entry.Stream, entry.Group, entry.ResolveLinkTos, entry.StartFromBeginning);
+                            CreateSubscriptionGroup(entry.Stream,
+                                                    entry.Group, 
+                                                    entry.ResolveLinkTos, 
+                                                    entry.StartFromBeginning,
+                                                    false); //TODO competing use trackLatencies
                         }
                         continueWith();
                     }
@@ -409,7 +418,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             if(_config.Entries == null) throw new Exception("Subscription Entries should never be null.");
             foreach (var sub in _config.Entries)
             {
-                CreateSubscriptionGroup(sub.Stream, sub.Group, sub.ResolveLinkTos, sub.StartFromBeginning);
+                CreateSubscriptionGroup(sub.Stream, 
+                                        sub.Group, 
+                                        sub.ResolveLinkTos, 
+                                        sub.StartFromBeginning,
+                                        sub.TrackLatencies);
             }
         }
 

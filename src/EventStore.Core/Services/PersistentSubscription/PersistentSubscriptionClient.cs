@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -16,16 +17,19 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _freeSlots;
         public readonly string Username;
         public readonly string From;
+        private readonly Stopwatch _watch;
         private long _totalItems;
-
-        public readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
+        private readonly RequestStatistics _latencyStatistics;
+        private readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
 
         public PersistentSubscriptionClient(Guid correlationId, 
                                             Guid connectionId, 
                                             IEnvelope envelope, 
                                             int freeSlots, 
                                             string username, 
-                                            string from)
+                                            string from,
+                                            Stopwatch watch,
+                                            bool trackLatency)
         {
             _correlationId = correlationId;
             _connectionId = connectionId;
@@ -33,7 +37,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             _freeSlots = freeSlots;
             Username = username;
             From = @from;
+            _watch = watch;
             MaximumFreeSlots = freeSlots;
+            if (trackLatency)
+            {
+                _latencyStatistics = new RequestStatistics(watch, 1000);
+            }
         }
 
         public int FreeSlots
@@ -66,6 +75,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (eventIndex >= 0)
                 {
                     _freeSlots++;
+                    if(_latencyStatistics != null)
+                        _latencyStatistics.EndOperation(processedEventId);
                     var evnt = _unconfirmedEvents[eventIndex];
                     _unconfirmedEvents.RemoveAt(eventIndex);
                     yield return evnt;
@@ -78,6 +89,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             _freeSlots--;
             Interlocked.Increment(ref _totalItems);
             _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt.Event));
+            if (_latencyStatistics != null)
+                _latencyStatistics.StartOperation(evnt.Event.OriginalEvent.EventId);
+
             _unconfirmedEvents.Add(evnt);
         }
 
