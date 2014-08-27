@@ -8,13 +8,16 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     internal class RequestStatistics
     {
-        private readonly Queue<int> _measurements = new Queue<int>(2000);
+        private readonly Queue<int> _measurements;
         private readonly ConcurrentDictionary<Guid, Operation> _operations = new ConcurrentDictionary<Guid, Operation>();
-        readonly Stopwatch _watch = new Stopwatch();
+        readonly Stopwatch _watch;
+        private readonly int _windowSize;
 
-        public RequestStatistics()
+        public RequestStatistics(Stopwatch watch, int windowSize)
         {
-            _watch.Start();
+            _watch = watch;
+            _windowSize = windowSize;
+            _measurements = new Queue<int>(windowSize);
         }
 
         public void StartOperation(Guid id)
@@ -31,6 +34,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var current = _watch.ElapsedTicks;
                 var time = current - record.Start;
                 var ms = time / TimeSpan.TicksPerMillisecond;
+                if (_measurements.Count >= _windowSize)
+                {
+                    _measurements.Dequeue();
+                }
                 _measurements.Enqueue((int)ms);
             }
         }
