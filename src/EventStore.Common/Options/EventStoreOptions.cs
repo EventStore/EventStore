@@ -4,14 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
-using EventStore.Common.Yaml.Serialization;
-using EventStore.Common.Yaml.Serialization.Utilities;
-using EventStore.Common.Yaml.Core;
-using EventStore.Common.Yaml.Core.Events;
-using EventStore.Common.Yaml.RepresentationModel;
-using System.ComponentModel;
+
 namespace EventStore.Common.Options
 {
     public class EventStoreOptions
@@ -31,9 +25,9 @@ namespace EventStore.Common.Options
             var defaultOptionsProvider = new DefaultOptionsProvider();
 
             OptionSource[] defaultOptionSources = defaultOptionsProvider.Get<TOptions>();
-            OptionSource[] commandLineOptionSources = null;
+            OptionSource[] commandLineOptionSources;
             OptionSource[] configurationFileOptionSources = null;
-            OptionSource[] environmentVariableOptionSources = null;
+            OptionSource[] environmentVariableOptionSources;
 
             if (args == null || args.Length == 0)
             {
@@ -65,17 +59,21 @@ namespace EventStore.Common.Options
                     }
                     else
                     {
-                        Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", configOptionSource.Value.ToString()));
+                        Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", configOptionSource.Value));
                     }
                 }
             }
 
             environmentVariableOptionSources = environmentVariableProvider.Parse<TOptions>(environmentPrefix);
+
             _effectiveOptions = OptionsSourceMerger.SequentialMerge(
                         defaultOptionSources,
                         environmentVariableOptionSources,
                         configurationFileOptionSources,
                         commandLineOptionSources);
+
+            OptionsSourceRulesRunner.RunRules(defaultOptionSources.Select(option => option.Name).ToArray(),
+                                              _effectiveOptions);
             return OptionsSourceParser.Parse<TOptions>(_effectiveOptions);
         }
 
@@ -102,7 +100,7 @@ namespace EventStore.Common.Options
             {
                 var value = option.Value;
                 var optionName = PascalCaseNameSplitter(option.Name).ToUpper();
-                var valueToDump = value.ToString();
+                var valueToDump = value == null ? String.Empty : value.ToString();
                 var source = option.Source ?? "<DEFAULT>";
                 if (value is Array)
                 {
@@ -117,6 +115,7 @@ namespace EventStore.Common.Options
             }
             return dumpOptionsBuilder.ToString();
         }
+
         private static string PascalCaseNameSplitter(string name)
         {
             var regex = new System.Text.RegularExpressions.Regex(@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");

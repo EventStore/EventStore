@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace EventStore.Common.Options
 {
@@ -54,7 +53,7 @@ namespace EventStore.Common.Options
                     }
                     catch(InvalidCastException)
                     {
-                        var message = String.Format("Please ensure that {0} is a valid YAML array.{1}", yamlElement.Key.ToString(), Environment.NewLine);
+                        var message = String.Format("Please ensure that {0} is a valid YAML array.{1}", yamlElement.Key, Environment.NewLine);
                         throw new OptionException(message, yamlElement.Key.ToString());
                     }
                 }
@@ -67,7 +66,7 @@ namespace EventStore.Common.Options
         }
         public OptionSource[] GetEffectiveOptions()
         {
-            return _parsedOptions.ToArray() ?? new OptionSource[] { };
+            return _parsedOptions.ToArray();
         }
     }
 }
