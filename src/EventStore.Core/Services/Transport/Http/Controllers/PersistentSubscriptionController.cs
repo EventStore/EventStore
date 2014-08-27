@@ -228,7 +228,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                             From = connection.From,
                             AverageItemsPerSecond = connection.AverageItemsPerSecond,
                             CountSinceLastMeasurement = connection.CountSinceLastMeasurement,
-                            TotalItemsProcessed = connection.TotalItems
+                            TotalItemsProcessed = connection.TotalItems,
+                            LatencyMeasurements = connection.LatencyStats ?? new Dictionary<string, int>()
                         });
                     }
                 }
@@ -260,6 +261,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public decimal AverageItemsPerSecond { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
+            public Dictionary<string, int> LatencyMeasurements { get; set; } 
         }
     }
 }

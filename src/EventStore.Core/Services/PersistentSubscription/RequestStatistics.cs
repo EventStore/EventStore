@@ -49,11 +49,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             var items = _measurements.ToArray();
             Array.Sort(items);
             ret.Measurements.Add("Mean", items.Sum()/items.Length);
-            ret.Measurements.Add("Meadian", items[items.Length/2]);
-            ret.Measurements.Add("fastest", items[0]);
+            ret.Measurements.Add("Median", items[items.Length/2]);
+            ret.Measurements.Add("Fastest", items[0]);
             for (var i = 0; i < 5; i++)
             {
-                ret.Measurements.Add(i + "%", items[GetPercentile(i*20, items.Length)]);
+                ret.Measurements.Add("Quintile " + (i+1), items[GetPercentile(i * 20, items.Length)]);
             }
             ret.Measurements.Add("90%", items[GetPercentile(90m, items.Length)]);
             ret.Measurements.Add("95%", items[GetPercentile(95m, items.Length)]);
@@ -84,7 +84,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
     }
 
-    internal class LatencyMeausrement
+    public class LatencyMeausrement
     {
         public readonly Dictionary<string, int> Measurements = new Dictionary<string, int>();
     }

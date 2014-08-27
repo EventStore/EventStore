@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
             _startFromBeginning = startFromBeginning;
-            _trackLatency = trackLatency;
+            _trackLatency = true;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             InitAsNew();
@@ -393,13 +393,16 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var connLastItems = connItems - conn.LastTotalItems;
                 conn.LastTotalItems = connItems;
                 var connAvgItemsPerSecond = lastRunMs.Ticks != 0 ? (int)(TimeSpan.TicksPerSecond * connLastItems / lastRunMs.Ticks) : 0;
+                var latencyStats = conn.GetLatencyStats();
+                var stats = latencyStats == null ? null : latencyStats.Measurements;
                 connections.Add(new MonitoringMessage.ConnectionInfo
                 {
                     From=conn.From, 
                     Username = conn.Username,
                     AverageItemsPerSecond = connAvgItemsPerSecond,
                     TotalItems = conn.TotalItems,
-                    CountSinceLastMeasurement = connLastItems
+                    CountSinceLastMeasurement = connLastItems,
+                    LatencyStats = stats
                 });
             }
             return new MonitoringMessage.SubscriptionInfo()
