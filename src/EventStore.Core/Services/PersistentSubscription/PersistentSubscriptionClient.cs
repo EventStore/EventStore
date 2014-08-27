@@ -104,5 +104,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _envelope.ReplyWith(new ClientMessage.SubscriptionDropped(CorrelationId, SubscriptionDropReason.Unsubscribed));
         }
+
+        public LatencyMeausrement GetLatencyStats()
+        {
+            return _latencyStatistics == null ? null : _latencyStatistics.GetMeasurementDetails();
+        }
     }
 }

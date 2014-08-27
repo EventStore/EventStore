@@ -105,6 +105,7 @@ namespace EventStore.Core.Messages
             public int AverageItemsPerSecond { get; set; }
             public long TotalItems { get; set; }
             public long CountSinceLastMeasurement { get; set; }
+            public Dictionary<string, int> LatencyStats { get; set; }
         }
 
         public class GetFreshStats : Message
