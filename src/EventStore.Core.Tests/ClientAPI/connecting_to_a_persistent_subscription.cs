@@ -47,10 +47,13 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private EventStorePersistentSubscription _sub;
         private readonly string _stream = Guid.NewGuid().ToString();
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent();
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , true, false, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , _settings, new UserCredentials("admin", "changeit")).Wait();
             _sub = _conn.ConnectToPersistentSubscription(_stream,
                 "agroupname17",
                 (sub, e) => Console.Write("appeared"),
@@ -68,10 +71,12 @@ namespace EventStore.Core.Tests.ClientAPI
     public class connect_to_existing_persistent_subscription_without_permissions : SpecificationWithMiniNode
     {
         private readonly string _stream = "$" + Guid.NewGuid();
-
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent();
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname55", true, false,
+            _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname55", _settings,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 
@@ -135,10 +140,12 @@ namespace EventStore.Core.Tests.ClientAPI
     public class connect_to_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
     {
         private EventStorePersistentSubscription _sub;
-
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent();
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", true,false, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", _settings, new UserCredentials("admin", "changeit")).Wait();
             _sub = _conn.ConnectToPersistentSubscriptionForAll("agroupname17",
                 (sub, e) => Console.Write("appeared"),
                 (sub, reason, ex) => { }, new UserCredentials("admin", "changeit"));
@@ -154,9 +161,13 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class connect_to_existing_persistent_all_subscription_without_permissions : SpecificationWithMiniNode
     {
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent();
+
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", true, false,
+            _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", _settings,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 

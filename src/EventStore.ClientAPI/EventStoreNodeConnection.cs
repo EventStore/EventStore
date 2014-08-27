@@ -328,19 +328,21 @@ namespace EventStore.ClientAPI
         }
 
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, bool resolveLinkTos, bool startFromBeginning, UserCredentials userCredentials = null) {
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
             var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, resolveLinkTos, startFromBeginning, userCredentials));
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
             return source.Task;
         }
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, bool resolveLinkTos, bool startFromBeginning, UserCredentials userCredentials = null)
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
             var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, resolveLinkTos, startFromBeginning, userCredentials));
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, settings, userCredentials));
             return source.Task;
         }
 

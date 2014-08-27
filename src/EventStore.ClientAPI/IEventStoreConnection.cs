@@ -364,22 +364,20 @@ namespace EventStore.ClientAPI
         /// Asynchronously create a persistent subscription group for all events
         /// </summary>
         /// <param name="groupName">The name of the group to create</param>
-        /// <param name="resolveLinkTos">Whether or not to resolved link tos on this subscription group</param>
-        /// <param name="startFromBeginning">Whether or not to start from the beginning of the stream for the subscription.</param>
-        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <param name="settings">The <see cref="PersistentSubscriptionSettings"></see> for the subscription</param>
+        /// /// <param name="credentials">The credentials to be used for this operation.</param>
         /// <returns>A <see cref="PersistentSubscriptionCreateResult"/>.</returns>
-        Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, bool resolveLinkTos, bool startFromBeginning, UserCredentials userCredentials = null);
+        Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials);
 
         /// <summary>
         /// Asynchronously create a persistent subscription group on a stream
         /// </summary>
         /// <param name="stream">The name of the stream to create the persistent subscription on</param>
         /// <param name="groupName">The name of the group to create</param>
-        /// <param name="resolveLinkTos">Whether or not to resolved link tos on this subscription group</param>
-        /// <param name="startFromBeginning">Whether or not to start from the beginning of the stream for the subscription.</param>
-        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <param name="settings">The <see cref="PersistentSubscriptionSettings"></see> for the subscription</param>
+        /// <param name="credentials">The credentials to be used for this operation.</param>
         /// <returns>A <see cref="PersistentSubscriptionCreateResult"/>.</returns>
-        Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, bool resolveLinkTos, bool startFromBeginning, UserCredentials userCredentials = null);
+        Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials);
 
 
         /// <summary>
