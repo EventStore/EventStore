@@ -9,11 +9,14 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class deleting_existing_persistent_subscription_group_with_permissions : SpecificationWithMiniNode
     {
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                        .DoNotResolveLinkTos()
+                                                                        .StartFromCurrent();
         private readonly string _stream = Guid.NewGuid().ToString();
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", false, false,
+            _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", _settings,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 
@@ -82,9 +85,12 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class deleting_existing_persistent_subscription_group_on_all_with_permissions : SpecificationWithMiniNode
     {
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent();
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("groupname123", false, false,
+            _conn.CreatePersistentSubscriptionForAllAsync("groupname123", _settings,
                 new UserCredentials("admin", "changeit")).Wait();
         }
 

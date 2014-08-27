@@ -13,21 +13,20 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _stream;
         private readonly string _groupName;
         private readonly bool _resolveLinkTos;
-        private bool _startFromBeginning;
+        private readonly bool _startFromBeginning;
 
         public CreatePersistentSubscriptionOperation(ILogger log,
                                        TaskCompletionSource<PersistentSubscriptionCreateResult> source,
                                        string stream,
                                        string groupName,
-                                       bool resolveLinkTos,
-                                       bool startFromBeginning,
+                                       PersistentSubscriptionSettings settings,
                                        UserCredentials userCredentials)
             : base(log, source, TcpCommand.CreatePersistentSubscription, TcpCommand.CreatePersistentSubscriptionCompleted, userCredentials)
         {
-            _resolveLinkTos = resolveLinkTos;
+            _resolveLinkTos = settings.ResolveLinkTos;
             _stream = stream;
             _groupName = groupName;
-            _startFromBeginning = startFromBeginning;
+            _startFromBeginning = settings.StartFromBeginning;
         }
 
         protected override object CreateRequestDto()

@@ -171,6 +171,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     [TestFixture, Category("LongRunning")]
     public class subscription_stats_for_stream_have_right_data : SpecificationWithPersistentSubscriptionAndConnections
     {
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                    .DoNotResolveLinkTos()
+                                                    .StartFromCurrent();
+
         private JArray _json;
         private EventStorePersistentSubscription _sub4;
         private EventStorePersistentSubscription _sub3;
@@ -179,7 +183,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected override void Given()
         {
             base.Given();
-            _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", true,false,
+            _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
                         new UserCredentials("admin", "changeit")).Wait();
             _sub3 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
@@ -329,12 +333,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected IEventStoreConnection _conn;
         protected EventStorePersistentSubscription _sub1;
         protected EventStorePersistentSubscription _sub2;
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                    .DoNotResolveLinkTos()
+                                                    .StartFromCurrent();
 
         protected override void Given()
         {
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
             _conn.ConnectAsync().Wait();
-            _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, true,false,
+            _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
                     new UserCredentials("admin", "changeit")).Wait();
             _sub1 = _conn.ConnectToPersistentSubscription(_groupName, _streamName,
                         (subscription, @event) => Console.WriteLine(), 

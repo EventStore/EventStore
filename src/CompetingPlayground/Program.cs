@@ -12,7 +12,10 @@ namespace CompetingPlayground
     {
         private static readonly string Stream = "TestFoo";
         private static readonly string SubName = "greG";
-        private static readonly bool StartFromBeginning = false;
+        private static readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                                .DoNotResolveLinkTos()
+                                                                                .StartFromCurrent();
+
         static void Main(string[] args)
         {
             BasicTest();
@@ -77,7 +80,7 @@ namespace CompetingPlayground
         {
             try
             {
-                connection.CreatePersistentSubscriptionAsync(Stream, name, true,StartFromBeginning,
+                connection.CreatePersistentSubscriptionAsync(Stream, name, _settings,
                     new UserCredentials("admin", "changeit")).Wait();
             }
             catch (Exception ex)
