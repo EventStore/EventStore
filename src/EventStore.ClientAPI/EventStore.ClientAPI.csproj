@@ -66,7 +66,6 @@
     <Compile Include="ClientOperations\ConnectToPersistentSubscriptionOperation.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="PersistentEventStoreSubscription.cs" />
-    <Compile Include="PersistentSubscription.cs" />
     <Compile Include="VolatileEventStoreSubscription.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
     <Compile Include="ClientOperations\ReadEventOperation.cs" />
