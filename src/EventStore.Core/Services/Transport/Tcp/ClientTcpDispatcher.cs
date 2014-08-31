@@ -66,7 +66,8 @@ namespace EventStore.Core.Services.Transport.Tcp
 
 
             AddUnwrapper(TcpCommand.ConnectToPersistentSubscription, UnwrapConnectToPersistentSubscription);
-            AddUnwrapper(TcpCommand.PersistentSubscriptionNotifyEventsProcessed, UnwrapPersistentSubscriptionNotifyEventsProcessed);
+            AddUnwrapper(TcpCommand.PersistentSubscriptionAckEvents, UnwrapPersistentSubscriptionAckEvents);
+            AddUnwrapper(TcpCommand.PersistentSubscriptionNakEvents, UnwrapPersistentSubscriptionNakEvents);
             AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmation);
             AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppeared);
 
@@ -468,14 +469,25 @@ namespace EventStore.Core.Services.Transport.Tcp
                 connection.ConnectionId, dto.SubscriptionId, dto.EventStreamId, dto.NumberOfFreeSlots,connection.RemoteEndPoint.ToString() ,user);
         }
 
-        private ClientMessage.PersistentSubscriptionNotifyEventsProcessed UnwrapPersistentSubscriptionNotifyEventsProcessed(
+        private ClientMessage.PersistentSubscriptionAckEvents UnwrapPersistentSubscriptionAckEvents(
             TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
             TcpConnectionManager connection)
         {
-            var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionNotifyEventsProcessed>();
+            var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionAckEvents>();
             if (dto == null) return null;
-            return new ClientMessage.PersistentSubscriptionNotifyEventsProcessed(
-                Guid.NewGuid(), package.CorrelationId, envelope, dto.SubscriptionId, dto.NumberOfFreeSlots,
+            return new ClientMessage.PersistentSubscriptionAckEvents(
+                Guid.NewGuid(), package.CorrelationId, envelope, dto.SubscriptionId,
+                dto.ProcessedEventIds.Select(x => new Guid(x)).ToArray(), user);
+        }
+
+        private ClientMessage.PersistentSubscriptionNakEvents UnwrapPersistentSubscriptionNakEvents(
+    TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
+    TcpConnectionManager connection)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionAckEvents>();
+            if (dto == null) return null;
+            return new ClientMessage.PersistentSubscriptionNakEvents(
+                Guid.NewGuid(), package.CorrelationId, envelope, dto.SubscriptionId,
                 dto.ProcessedEventIds.Select(x => new Guid(x)).ToArray(), user);
         }
 

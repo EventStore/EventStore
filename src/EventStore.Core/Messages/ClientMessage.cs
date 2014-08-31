@@ -951,23 +951,39 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class PersistentSubscriptionNotifyEventsProcessed : ReadRequestMessage
+        public class PersistentSubscriptionAckEvents : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly string SubscriptionId;
-            public readonly int NumberOfFreeSlots;
             public readonly Guid[] ProcessedEventIds;
 
-            public PersistentSubscriptionNotifyEventsProcessed(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string subscriptionId, int numberOfFreeSlots, Guid[] processedEventIds, IPrincipal user)
+            public PersistentSubscriptionAckEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string subscriptionId, Guid[] processedEventIds, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
-                Ensure.Nonnegative(numberOfFreeSlots, "numberOfFreeSlots");
                 Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
                 Ensure.NotNull(processedEventIds, "processedEventIds");
 
-                NumberOfFreeSlots = numberOfFreeSlots;
+                SubscriptionId = subscriptionId;
+                ProcessedEventIds = processedEventIds;
+            }
+        }
+
+        public class PersistentSubscriptionNakEvents : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly string SubscriptionId;
+            public readonly Guid[] ProcessedEventIds;
+
+            public PersistentSubscriptionNakEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string subscriptionId, Guid[] processedEventIds, IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
+                Ensure.NotNull(processedEventIds, "processedEventIds");
+
                 SubscriptionId = subscriptionId;
                 ProcessedEventIds = processedEventIds;
             }

@@ -406,7 +406,7 @@ namespace EventStore.Core
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscription, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscription, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
-            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNotifyEventsProcessed, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionAckEvents, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
@@ -419,7 +419,7 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
-            perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionAckEvents>(persistentSubscription);
             perSubscrBus.Subscribe<StorageMessage.EventCommitted>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscription>(persistentSubscription);

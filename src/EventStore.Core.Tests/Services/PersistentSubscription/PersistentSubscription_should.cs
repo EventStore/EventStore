@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.PersistentSubscription;
@@ -80,7 +78,7 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void push_event_to_least_busy_client()
         {
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 11, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId,new Guid[0]);
 
             _subscription.Push(
                 new ResolvedEvent(
@@ -96,8 +94,8 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void switch_to_pull_mode_without_forwarding_an_event_when_all_clients_are_busy()
         {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId, new Guid[0]);
             _subscription.Push(
                 new ResolvedEvent(
                     new EventRecord(
@@ -110,28 +108,10 @@ namespace EventStore.Core.Tests.Services
         }
 
         [Test]
-        public void fetch_some_events_when_in_pull_mode_and_some_slots_become_free()
-        {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
-
-            _subscription.Push(
-                new ResolvedEvent(
-                    new EventRecord(
-                        55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson,
-                        "type", new byte[0], new byte[0])));
-
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 2, new Guid[0]);
-
-            Assert.AreEqual(PersistentSubscriptionState.Pull, _subscription.State);
-            Assert.AreEqual(55, _fetchFrom);
-        }
-        
-        [Test]
         public void fetch_some_events_when_in_pull_mode_and_new_client_connects()
         {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId,new Guid[0]);
 
             _subscription.Push(
                 new ResolvedEvent(
@@ -149,62 +129,29 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void try_to_push_some_events_when_fetch_request_is_complete()
         {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId,new Guid[0]);
 
             var evnt = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             _subscription.Push(evnt);
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 2, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
             _subscription.HandleReadEvents(new[]{evnt}, 56);
 
             Assert.AreEqual(PersistentSubscriptionState.Pull, _subscription.State);
             Assert.AreEqual(1, _firstClientEnvelope.Replies.Count);
         }
-        
-        [Test]
-        public void fetch_more_events_when_buffer_is_emptied()
-        {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
-
-            var evnt1 = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
-            var evnt2 = new ResolvedEvent(new EventRecord(56, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
-            _subscription.Push(evnt1);
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 3, new Guid[0]);
-            _subscription.HandleReadEvents(new[]{evnt1, evnt2}, 57);
-
-            Assert.AreEqual(57, _fetchFrom);
-        }
-
-        [Test]
-        public void fetch_more_events_and_start_transitioning_to_push_mode_when_buffer_is_emptied_and_there_are_enough_free_slots()
-        {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
-
-            var evnt1 = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
-            var evnt2 = new ResolvedEvent(new EventRecord(56, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
-            _subscription.Push(evnt1);
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 10, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 5, new Guid[0]);
-
-            _subscription.HandleReadEvents(new[] { evnt1, evnt2 }, 57);
-
-            Assert.AreEqual(57, _fetchFrom);
-            Assert.AreEqual(PersistentSubscriptionState.TransitioningFromPullToPush, _subscription.State);
-        }
 
         [Test]
         public void refrain_from_pushing_events_when_transitioning_from_pull_to_push_mode()
         {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId, new Guid[0]);
 
             var evnt1 = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             var evnt2 = new ResolvedEvent(new EventRecord(56, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             _subscription.Push(evnt1);
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 15, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId,new Guid[0]);
 
             _subscription.Push(evnt2);
 
@@ -213,33 +160,17 @@ namespace EventStore.Core.Tests.Services
         }
 
         [Test]
-        public void fetch_more_events_and_start_transitioning_to_push_mode_when_fetch_returns_no_results_and_there_are_free_slots()
-        {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
-
-            var evnt1 = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
-            _subscription.Push(evnt1);
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 1, new Guid[0]);
-
-            _subscription.HandleReadEvents(new ResolvedEvent[0], -1);
-
-            Assert.AreEqual(PersistentSubscriptionState.TransitioningFromPullToPush, _subscription.State);
-            Assert.AreEqual(55, _fetchFrom);
-        }
-        
-        [Test]
         public void deduplicate_events_pushed_and_fetched_when_transitioning_from_pull_to_push_mode()
         {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId, new Guid[0]);
 
             var evnt1 = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             var evnt2 = new ResolvedEvent(new EventRecord(56, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             var evnt3 = new ResolvedEvent(new EventRecord(57, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             _subscription.Push(evnt1);
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 15, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId,new Guid[0]);
 
             _subscription.Push(evnt2);
             _subscription.HandleReadEvents(new[] { evnt1, evnt2, evnt3 }, 58);
@@ -251,15 +182,15 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void deduplicate_events_pushed_and_fetched_when_transitioning_from_pull_to_push_mode_2()
         {
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 0, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId, new Guid[0]);
 
             var evnt1 = new ResolvedEvent(new EventRecord(55, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             var evnt2 = new ResolvedEvent(new EventRecord(56, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             var evnt3 = new ResolvedEvent(new EventRecord(57, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, DateTime.MinValue, PrepareFlags.IsJson, "type", new byte[0], new byte[0]));
             _subscription.Push(evnt1);
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 15, new Guid[0]);
-            _subscription.NotifyFreeSlots(_secondClientCorrelationId, 0, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new Guid[0]);
+            _subscription.AcknowledgeMessagesProcessed(_secondClientCorrelationId, new Guid[0]);
 
             _subscription.HandleReadEvents(new[] { evnt1, evnt2, evnt3 }, 58);
             _subscription.Push(evnt2);
@@ -279,7 +210,7 @@ namespace EventStore.Core.Tests.Services
             _subscription.Push(evnt2);
             _subscription.Push(evnt3);
 
-            _subscription.NotifyFreeSlots(_firstClientCorrelationId, 10, new[] { processedEventId });
+            _subscription.AcknowledgeMessagesProcessed(_firstClientCorrelationId, new[] { processedEventId });
             _subscription.RemoveClientByConnectionId(_firstClientConnectionId);
 
             Assert.AreEqual(2, _secondClientEnvelope.Replies.Count);

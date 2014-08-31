@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<ClientMessage.ConnectToPersistentSubscription>,
                                         IHandle<StorageMessage.EventCommitted>,
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
-                                        IHandle<ClientMessage.PersistentSubscriptionNotifyEventsProcessed>,
+                                        IHandle<ClientMessage.PersistentSubscriptionAckEvents>,
                                         IHandle<ClientMessage.CreatePersistentSubscription>,
                                         IHandle<ClientMessage.DeletePersistentSubscription>,
                                         IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
@@ -335,14 +335,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             return new ResolvedEvent(eventRecord, null, commitPosition);
         }
 
-        public void Handle(ClientMessage.PersistentSubscriptionNotifyEventsProcessed message)
+        public void Handle(ClientMessage.PersistentSubscriptionAckEvents message)
         {
             if (!_started) return;
             PersistentSubscription subscription;
             //TODO competing adjust the naming of SubscriptionId vs GroupName
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
-                subscription.NotifyFreeSlots(message.CorrelationId, message.NumberOfFreeSlots, message.ProcessedEventIds);
+                subscription.AcknowledgeMessagesProcessed(message.CorrelationId, message.ProcessedEventIds);
             }
         }
 

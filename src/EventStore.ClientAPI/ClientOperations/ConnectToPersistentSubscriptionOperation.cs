@@ -57,13 +57,13 @@ namespace EventStore.ClientAPI.ClientOperations
             return new PersistentEventStoreSubscription(this, _streamId, lastCommitPosition, lastEventNumber);
         }
 
-        public void NotifyEventsProcessed(int freeSlots, Guid[] processedEvents)
+        public void NotifyEventsProcessed(Guid[] processedEvents)
         {
-            var dto = new ClientMessage.PersistentSubscriptionNotifyEventsProcessed(
-                _subscriptionId, freeSlots,
+            var dto = new ClientMessage.PersistentSubscriptionAckEvents(
+                _subscriptionId,
                 processedEvents.Select(x => x.ToByteArray()).ToArray());
 
-            var package = new TcpPackage(TcpCommand.PersistentSubscriptionNotifyEventsProcessed,
+            var package = new TcpPackage(TcpCommand.PersistentSubscriptionAckEvents,
                                   _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   _correlationId,
                                   _userCredentials != null ? _userCredentials.Username : null,
