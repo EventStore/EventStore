@@ -29,7 +29,7 @@ namespace EventStore.ClientAPI
         public readonly ReadDirection ReadDirection;
 
         /// <summary>
-        /// The events read represented as <see cref="RecordedEvent"/>
+        /// The events read represented as <see cref="ResolvedEvent"/>
         /// </summary>
         public readonly ResolvedEvent[] Events;
 
