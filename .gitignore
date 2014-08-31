@@ -78,7 +78,7 @@ deploy/*
 ndependout
 *.ndproj
 NDependOut
-
+*.sublime-workspace
 *.vsp
 
 *mm_cache.bin
@@ -95,3 +95,4 @@ test_results
 
 # Mac
 .DS_Store
+
