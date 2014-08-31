@@ -238,13 +238,11 @@ message ConnectToPersistentSubscription {
 
 message PersistentSubscriptionAckEvents {
 	required string subscription_id = 1;
-	required int32 number_of_free_slots = 2;
 	repeated bytes processed_event_ids = 3;
 }
 
 message PersistentSubscriptionNakEvents {
 	required string subscription_id = 1;
-	required int32 number_of_free_slots = 2;
 	repeated bytes processed_event_ids = 3;
 }
 
