@@ -278,7 +278,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             var subscribedMessage = new ClientMessage.PersistentSubscriptionConfirmation(message.CorrelationId, lastCommitPos, lastEventNumber);
             message.Envelope.ReplyWith(subscribedMessage);
             var name = message.User == null ? "anonymous" : message.User.Identity.Name;
-            subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope, message.NumberOfFreeSlots,name,message.From);
+            subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope, message.AllowedInFlightMessages,name,message.From);
         }
 
         private static string BuildSubscriptionGroupKey(string stream, string groupName)

@@ -161,24 +161,6 @@ namespace EventStore.ClientAPI.Core
         }
     }
 
-    internal class NotifyEventsProcessed : Message
-    {
-        public readonly Guid SubscriptionId;
-        public readonly int FreeSlots;
-        public readonly Guid[] ProcessedEventIds;
-
-        public NotifyEventsProcessed(Guid subscriptionId, int freeSlots, Guid[] processedEventIds)
-        {
-            Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
-            Ensure.Nonnegative(freeSlots, "freeSlots");
-            Ensure.NotNull(processedEventIds, "processedEventIds");
-
-            SubscriptionId = subscriptionId;
-            FreeSlots = freeSlots;
-            ProcessedEventIds = processedEventIds;
-        }
-    }
-
     internal class HandleTcpPackageMessage: Message
     {
         public readonly TcpPackageConnection Connection;

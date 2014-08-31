@@ -116,9 +116,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int numberOfFreeSlots, string user, string @from)
+        public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
         {
-            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, numberOfFreeSlots, user, @from, _totalTimeWatch, _trackLatency);
+            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, maxInFlight, user, @from, _totalTimeWatch, _trackLatency);
             _clients[correlationId] = client;
             if (_state != PersistentSubscriptionState.Idle)
             {
@@ -284,12 +284,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             PersistentSubscriptionClient leastBusy = null;
             foreach ( var client in _clients.Values)
             {
-                if (leastBusy == null || client.FreeSlots > leastBusy.FreeSlots)
+                if (leastBusy == null || client.InFlightMessages > leastBusy.InFlightMessages)
                 {
                     leastBusy = client;
                 }
             }
-            if (leastBusy == null || leastBusy.FreeSlots == 0)
+            if (leastBusy == null || leastBusy.InFlightMessages == 0)
             {
                 return false;
             }
@@ -311,7 +311,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_clients.Count == 0) RevertToCheckPoint();
             foreach ( var client in _clients.Values)
             {
-                if (leastBusy == null || client.FreeSlots > leastBusy.FreeSlots)
+                if (leastBusy == null || client.InFlightMessages > leastBusy.InFlightMessages)
                 {
                     leastBusy = client;
                 }
@@ -351,13 +351,13 @@ namespace EventStore.Core.Services.PersistentSubscription
         
         private bool FetchNewEventsBatch()
         {
-            var freeSlots = _clients.Values.Sum(x => x.FreeSlots);
-            if (freeSlots > 0)
+            var inFlight = _clients.Values.Sum(x => x.InFlightMessages);
+            if (inFlight > 0)
             {
                 _outstandingFetchRequest = true;
                 _eventBufferIndex = 0;
                 _eventBuffer = new ResolvedEvent[0];
-                _eventLoader.BeginLoadState(this, _nextEventNumber, freeSlots, HandleReadEvents);
+                _eventLoader.BeginLoadState(this, _nextEventNumber, inFlight, HandleReadEvents);
                 return true;
             }
             return false;
@@ -372,7 +372,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private bool CanSwitchToPushMode()
         {
-            return _clients.Values.Sum(x => x.FreeSlots) > _minimumPercentageOfFreeSlotsForSwitchingToPushMode*_clients.Values.Sum(x => x.MaximumFreeSlots);
+            return _clients.Values.Sum(x => x.InFlightMessages) > _minimumPercentageOfFreeSlotsForSwitchingToPushMode*_clients.Values.Sum(x => x.MaximumInFlightMessages);
         }
 
         public MonitoringMessage.SubscriptionInfo GetStatistics()
