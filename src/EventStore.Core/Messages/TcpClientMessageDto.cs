@@ -771,16 +771,16 @@ namespace EventStore.Core.Messages
     [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
-    [ProtoMember(3, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
-    public readonly int NumberOfFreeSlots;
+    [ProtoMember(3, IsRequired = true, Name=@"allowed_in_flight_messages", DataFormat = DataFormat.TwosComplement)]
+    public readonly int AllowedInFlightMessages;
   
     private ConnectToPersistentSubscription() {}
   
-    public ConnectToPersistentSubscription(string subscriptionId, string eventStreamId, int numberOfFreeSlots)
+    public ConnectToPersistentSubscription(string subscriptionId, string eventStreamId, int allowedInFlightMessages)
     {
         SubscriptionId = subscriptionId;
         EventStreamId = eventStreamId;
-        NumberOfFreeSlots = numberOfFreeSlots;
+        AllowedInFlightMessages = allowedInFlightMessages;
     }
   }
   

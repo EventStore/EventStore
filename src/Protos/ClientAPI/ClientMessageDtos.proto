@@ -232,7 +232,7 @@ message DeletePersistentSubscriptionCompleted {
 message ConnectToPersistentSubscription {
 	required string subscription_id = 1;
 	required string event_stream_id = 2;
-	required int32 number_of_free_slots =3;
+	required int32 allowed_in_flight_messages = 3;
 
 }
 
