@@ -784,8 +784,8 @@ namespace EventStore.Core.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"PersistentSubscriptionNotifyEventsProcessed")]
-  public partial class PersistentSubscriptionNotifyEventsProcessed
+  [Serializable, ProtoContract(Name=@"PersistentSubscriptionAckEvents")]
+  public partial class PersistentSubscriptionAckEvents
   {
     [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
     public readonly string SubscriptionId;
@@ -796,9 +796,31 @@ namespace EventStore.Core.Messages
     [ProtoMember(3, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
     public readonly byte[][] ProcessedEventIds;
   
-    private PersistentSubscriptionNotifyEventsProcessed() {}
+    private PersistentSubscriptionAckEvents() {}
   
-    public PersistentSubscriptionNotifyEventsProcessed(string subscriptionId, int numberOfFreeSlots, byte[][] processedEventIds)
+    public PersistentSubscriptionAckEvents(string subscriptionId, int numberOfFreeSlots, byte[][] processedEventIds)
+    {
+        SubscriptionId = subscriptionId;
+        NumberOfFreeSlots = numberOfFreeSlots;
+        ProcessedEventIds = processedEventIds;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"PersistentSubscriptionNakEvents")]
+  public partial class PersistentSubscriptionNakEvents
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
+    public readonly int NumberOfFreeSlots;
+  
+    [ProtoMember(3, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
+    public readonly byte[][] ProcessedEventIds;
+  
+    private PersistentSubscriptionNakEvents() {}
+  
+    public PersistentSubscriptionNakEvents(string subscriptionId, int numberOfFreeSlots, byte[][] processedEventIds)
     {
         SubscriptionId = subscriptionId;
         NumberOfFreeSlots = numberOfFreeSlots;
