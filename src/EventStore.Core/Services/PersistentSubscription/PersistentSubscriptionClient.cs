@@ -9,12 +9,12 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     public class PersistentSubscriptionClient
     {
-        public readonly int MaximumFreeSlots;
+        public readonly int MaximumInFlightMessages;
 
         private readonly Guid _correlationId;
         private readonly Guid _connectionId;
         private readonly IEnvelope _envelope;
-        private int _freeSlots;
+        private int _inFlightMessages;
         public readonly string Username;
         public readonly string From;
         private readonly Stopwatch _watch;
@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public PersistentSubscriptionClient(Guid correlationId, 
                                             Guid connectionId, 
                                             IEnvelope envelope, 
-                                            int freeSlots, 
+                                            int inFlightMessages, 
                                             string username, 
                                             string from,
                                             Stopwatch watch,
@@ -34,20 +34,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             _correlationId = correlationId;
             _connectionId = connectionId;
             _envelope = envelope;
-            _freeSlots = freeSlots;
+            _inFlightMessages = inFlightMessages;
             Username = username;
             From = @from;
             _watch = watch;
-            MaximumFreeSlots = freeSlots;
+            MaximumInFlightMessages = inFlightMessages;
             if (trackLatency)
             {
                 _latencyStatistics = new RequestStatistics(watch, 1000);
             }
         }
 
-        public int FreeSlots
+        public int InFlightMessages
         {
-            get { return _freeSlots; }
+            get { return _inFlightMessages; }
         }
 
         public Guid ConnectionId
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var eventIndex = _unconfirmedEvents.FindIndex(x => x.Event.Event.EventId == processedEventId);
                 if (eventIndex >= 0)
                 {
-                    _freeSlots++;
+                    _inFlightMessages++;
                     if(_latencyStatistics != null)
                         _latencyStatistics.EndOperation(processedEventId);
                     var evnt = _unconfirmedEvents[eventIndex];
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Push(SequencedEvent evnt)
         {
-            _freeSlots--;
+            _inFlightMessages--;
             Interlocked.Increment(ref _totalItems);
             _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt.Event));
             if (_latencyStatistics != null)

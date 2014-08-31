@@ -843,19 +843,19 @@ namespace EventStore.Core.Messages
             public readonly Guid ConnectionId;
             public readonly string SubscriptionId;
             public readonly string EventStreamId;
-            public readonly int NumberOfFreeSlots;
-            public string From;
+            public readonly int AllowedInFlightMessages;
+            public readonly string From;
 
             public ConnectToPersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
-                string subscriptionId, string eventStreamId, int numberOfFreeSlots, string from, IPrincipal user)
+                string subscriptionId, string eventStreamId, int allowedInFlightMessages, string from, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 Ensure.NotEmptyGuid(connectionId, "connectionId");
                 Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
-                Ensure.Nonnegative(numberOfFreeSlots, "numberOfFreeSlots");
+                Ensure.Nonnegative(allowedInFlightMessages, "AllowedInFlightMessages");
                 SubscriptionId = subscriptionId;
                 ConnectionId = connectionId;
-                NumberOfFreeSlots = numberOfFreeSlots;
+                AllowedInFlightMessages = allowedInFlightMessages;
                 EventStreamId = eventStreamId;
                 From = from;
             }
