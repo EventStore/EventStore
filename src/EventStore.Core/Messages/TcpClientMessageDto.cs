@@ -790,18 +790,14 @@ namespace EventStore.Core.Messages
     [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
     public readonly string SubscriptionId;
   
-    [ProtoMember(2, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
-    public readonly int NumberOfFreeSlots;
-  
     [ProtoMember(3, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
     public readonly byte[][] ProcessedEventIds;
   
     private PersistentSubscriptionAckEvents() {}
   
-    public PersistentSubscriptionAckEvents(string subscriptionId, int numberOfFreeSlots, byte[][] processedEventIds)
+    public PersistentSubscriptionAckEvents(string subscriptionId, byte[][] processedEventIds)
     {
         SubscriptionId = subscriptionId;
-        NumberOfFreeSlots = numberOfFreeSlots;
         ProcessedEventIds = processedEventIds;
     }
   }
@@ -812,18 +808,14 @@ namespace EventStore.Core.Messages
     [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
     public readonly string SubscriptionId;
   
-    [ProtoMember(2, IsRequired = true, Name=@"number_of_free_slots", DataFormat = DataFormat.TwosComplement)]
-    public readonly int NumberOfFreeSlots;
-  
     [ProtoMember(3, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
     public readonly byte[][] ProcessedEventIds;
   
     private PersistentSubscriptionNakEvents() {}
   
-    public PersistentSubscriptionNakEvents(string subscriptionId, int numberOfFreeSlots, byte[][] processedEventIds)
+    public PersistentSubscriptionNakEvents(string subscriptionId, byte[][] processedEventIds)
     {
         SubscriptionId = subscriptionId;
-        NumberOfFreeSlots = numberOfFreeSlots;
         ProcessedEventIds = processedEventIds;
     }
   }
