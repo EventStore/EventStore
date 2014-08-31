@@ -198,12 +198,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             _checkpointingQueue.MarkCheckpoint();
         }
 
-        public void NotifyFreeSlots(Guid correlationId, int numberOfFreeSlots, Guid[] processedEventIds)
+        public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
             PersistentSubscriptionClient client;
             if (_clients.TryGetValue(correlationId, out client))
             {
-                var processedEvents = client.ConfirmProcessing(numberOfFreeSlots, processedEventIds);
+                var processedEvents = client.ConfirmProcessing(processedEventIds);
                 foreach (var processedEvent in processedEvents)
                 {
                     //TODO CC limit size of checkpointing queue

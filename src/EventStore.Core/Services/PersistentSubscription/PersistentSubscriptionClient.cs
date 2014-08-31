@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _correlationId; }
         }
 
-        public IEnumerable<SequencedEvent> ConfirmProcessing(int numberOfFreeSlots, Guid[] processedEvents)
+        public IEnumerable<SequencedEvent> ConfirmProcessing(Guid[] processedEvents)
         {
             foreach (var processedEventId in processedEvents)
             {

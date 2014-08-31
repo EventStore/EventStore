@@ -55,6 +55,15 @@ namespace EventStore.ClientAPI.SystemData
         StreamEventAppeared = 0xC2,
         UnsubscribeFromStream = 0xC3,
         SubscriptionDropped = 0xC4,
+        ConnectToPersistentSubscription = 0xC5,
+        PersistentSubscriptionConfirmation = 0xC6,
+        PersistentSubscriptionStreamEventAppeared = 0xC7,
+        CreatePersistentSubscription = 0xC8,
+        CreatePersistentSubscriptionCompleted = 0xC9,
+        DeletePersistentSubscription = 0xCA,
+        DeletePersistentSubscriptionCompleted = 0xCB,
+        PersistentSubscriptionAckEvents = 0xCC,
+        PersistentSubscriptionNakEvents = 0xCD,
 
         ScavengeDatabase = 0xD0,
         ScavengeDatabaseCompleted = 0xD1,
@@ -63,15 +72,6 @@ namespace EventStore.ClientAPI.SystemData
         NotHandled = 0xF1,
         Authenticate = 0xF2,
         Authenticated = 0xF3,
-        NotAuthenticated = 0xF4,
-        ConnectToPersistentSubscription = 0xF5,
-        PersistentSubscriptionNotifyEventsProcessed = 0xF6,
-        PersistentSubscriptionConfirmation = 0xF7,
-        PersistentSubscriptionStreamEventAppeared = 0xF8,
-        CreatePersistentSubscription = 0xf9,
-        CreatePersistentSubscriptionCompleted = 0xfa,
-        DeletePersistentSubscription = 0xfb,
-        DeletePersistentSubscriptionCompleted = 0xfc
-
+        NotAuthenticated = 0xF4
    }
 }

@@ -18,9 +18,9 @@ namespace EventStore.ClientAPI
             _subscriptionOperation.Unsubscribe();
         }
 
-        public void NotifyEventsProcessed(int freeSlots, Guid[] processedEvents)
+        public void NotifyEventsProcessed(Guid[] processedEvents)
         {
-            _subscriptionOperation.NotifyEventsProcessed(freeSlots, processedEvents);
+            _subscriptionOperation.NotifyEventsProcessed(processedEvents);
         }
     }
 }

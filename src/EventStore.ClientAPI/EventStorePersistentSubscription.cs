@@ -65,14 +65,6 @@ namespace EventStore.ClientAPI
             _autoAck = autoAck;
         }
 
-        ///<summary>
-        /// The current number of available free slots on the persistent subscription
-        ///</summary>
-        public int FreeSlots
-        {
-            get { return Math.Max(0, _bufferSize - _queue.Count); }
-        }
-
         internal void Start()
         {
             _stopped.Reset();
@@ -93,7 +85,7 @@ namespace EventStore.ClientAPI
         /// <param name="event">The <see cref="ResolvedEvent"></see> to acknowledge</param>
         public void Acknowledge(ResolvedEvent @event)
         {
-            _subscription.NotifyEventsProcessed(FreeSlots, new[] { @event.Event.EventId });
+            _subscription.NotifyEventsProcessed(new[] { @event.Event.EventId });
         }
 
         /// <summary>
@@ -105,7 +97,7 @@ namespace EventStore.ClientAPI
         {
             var ids = events.Select(x => x.Event.EventId).ToArray();
             if(ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
-            _subscription.NotifyEventsProcessed(FreeSlots, ids);
+            _subscription.NotifyEventsProcessed(ids);
         }
 
         /// <summary>
@@ -171,11 +163,11 @@ namespace EventStore.ClientAPI
                     {
                         _eventAppeared(this, e);
                         if(_autoAck)
-                            _subscription.NotifyEventsProcessed(FreeSlots, new[]{e.Event.EventId});
+                            _subscription.NotifyEventsProcessed(new[]{e.Event.EventId});
                         if (_verbose)
-                            _log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}). {5} free slots remaining.",
+                            _log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}). {5}",
                                       _streamId,
-                                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber,FreeSlots);
+                                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber);
                     }
                     catch (Exception exc)
                     {
