@@ -8,7 +8,7 @@ using EventStore.Core.Services.Monitoring;
 
 namespace EventStore.Core.Cluster.Settings
 {
-    public class ClusterVNodeSettingsBuilder
+    public class ClusterVNodeBuilder
     {
         private IPEndPoint _internalTcp;
         private IPEndPoint _internalSecureTcp;
@@ -55,10 +55,12 @@ namespace EventStore.Core.Cluster.Settings
         private bool _verifyDbHashes;
         private int _maxMemtableSize;
         private List<ISubsystem> _subsystems;
+        private int _clusterGossipPort;
 
 
-        private ClusterVNodeSettingsBuilder()
+        private ClusterVNodeBuilder()
         {
+            _clusterGossipPort = 2113;
             _subsystems = new List<ISubsystem>();
             _statsStorage = StatsStorage.None;
             _sslTargetHost = "";
@@ -84,9 +86,9 @@ namespace EventStore.Core.Cluster.Settings
         /// Returns a builder set to construct options for a single node instance
         /// </summary>
         /// <returns></returns>
-        public static ClusterVNodeSettingsBuilder AsSingleNode()
+        public static ClusterVNodeBuilder AsSingleNode()
         {
-            var ret = new ClusterVNodeSettingsBuilder
+            var ret = new ClusterVNodeBuilder
             {
                 _clusterNodeCount = 1,
                 _prepareAckCount = 1,
@@ -99,10 +101,10 @@ namespace EventStore.Core.Cluster.Settings
         /// Returns a builder set to construct options for a cluster node instance with a cluster size 
         /// </summary>
         /// <returns></returns>
-        public static ClusterVNodeSettingsBuilder AsClusterMember(int clusterSize)
+        public static ClusterVNodeBuilder AsClusterMember(int clusterSize)
         {
             int quorumSize = clusterSize/2;
-            var ret = new ClusterVNodeSettingsBuilder
+            var ret = new ClusterVNodeBuilder
             {
                 _clusterNodeCount = clusterSize,
                 _prepareAckCount = quorumSize,
@@ -114,8 +116,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets the default endpoints on localhost (1113 tcp, 2113 http)
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder OnDefaultEndpoints()
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder OnDefaultEndpoints()
         {
             _externalHttp = new IPEndPoint(IPAddress.Loopback, 2113);
             _externalTcp = new IPEndPoint(IPAddress.Loopback, 1113);
@@ -125,18 +127,28 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets the internal http endpoint to the specified value
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithInternalHttpOn(IPEndPoint endpoint)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithInternalHttpOn(IPEndPoint endpoint)
         {
             _internalHttp = endpoint;
             return this;
         }
 
         /// <summary>
+        /// Sets the internal gossip port (used when using cluster dns, this should point to a known port gossip will be running on)
+        /// </summary>
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder ClusterGossipPortOf(int port)
+        {
+            _clusterGossipPort = port;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the external http endpoint to the specified value
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithExternalHttpOn(IPEndPoint endpoint)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithExternalHttpOn(IPEndPoint endpoint)
         {
             _externalHttp = endpoint;
             return this;
@@ -145,8 +157,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets the internal tcp endpoint to the specified value
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithInternalTcpOn(IPEndPoint endpoint)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithInternalTcpOn(IPEndPoint endpoint)
         {
             _internalTcp = endpoint;
             return this;
@@ -155,8 +167,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets the internal tcp endpoint to the specified value
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithInternalSecureTcpOn(IPEndPoint endpoint)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithInternalSecureTcpOn(IPEndPoint endpoint)
         {
             _internalSecureTcp = endpoint;
             return this;
@@ -165,8 +177,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets the external tcp endpoint to the specified value
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithExternalTcpOn(IPEndPoint endpoint)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithExternalTcpOn(IPEndPoint endpoint)
         {
             _externalTcp = endpoint;
             return this;
@@ -175,8 +187,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets the external tcp endpoint to the specified value
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithExternalSecureTcpOn(IPEndPoint endpoint)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithExternalSecureTcpOn(IPEndPoint endpoint)
         {
             _externalSecureTcp = endpoint;
             return this;
@@ -186,8 +198,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets that SSL should be used on connections
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder EnableSSL()
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder EnableSSL()
         {
             _useSsl = true;
             return this;
@@ -196,8 +208,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Sets the certificate to be used with SSL
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithCertificate(X509Certificate2 certificate)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithCertificate(X509Certificate2 certificate)
         {
             _certificate = certificate;
             return this;
@@ -207,8 +219,8 @@ namespace EventStore.Core.Cluster.Settings
         /// Sets the gossip seeds this node should talk to
         /// </summary>
         /// <param name="endpoints">The gossip seeds this node should try to talk to</param>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithGossipSeeds(params IPEndPoint[] endpoints)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithGossipSeeds(params IPEndPoint[] endpoints)
         {
             _gossipSeeds = endpoints;
             _discoverViaDns = false;
@@ -219,8 +231,8 @@ namespace EventStore.Core.Cluster.Settings
         /// Sets the maximum size a memtable is allowed to reach (in count) before being moved to be a ptable
         /// </summary>
         /// <param name="size">The maximum count</param>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder MaximumMemoryTableSizeOf(int size)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder MaximumMemoryTableSizeOf(int size)
         {
             _maxMemtableSize = size;
             return this;
@@ -229,8 +241,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Marks that the existing database files should not be checked for checksums on startup.
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder DoNotVerifyDBHashes()
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder DoNotVerifyDBHashes()
         {
             _verifyDbHashes = false;
             return this;
@@ -239,8 +251,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Disables gossip on the public (client) interface
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder NoGossipOnPublicInterface()
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder NoGossipOnPublicInterface()
         {
             _gossipOnPublic = false;
             return this;
@@ -249,8 +261,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Disables the admin interface on the public (client) interface
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder NoAdminOnPublicInterface()
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder NoAdminOnPublicInterface()
         {
             _adminOnPublic = false;
             return this;
@@ -259,8 +271,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Disables statistics screens on the public (client) interface
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder NoStatsOnPublicInterface()
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder NoStatsOnPublicInterface()
         {
             _adminOnPublic = false;
             return this;
@@ -269,8 +281,8 @@ namespace EventStore.Core.Cluster.Settings
         /// <summary>
         /// Marks that the existing database files should be checked for checksums on startup.
         /// </summary>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder VerifyDBHashes()
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder VerifyDBHashes()
         {
             _verifyDbHashes = true;
             return this;
@@ -280,8 +292,8 @@ namespace EventStore.Core.Cluster.Settings
         /// Sets the dns name used for the discovery of other cluster nodes
         /// </summary>
         /// <param name="name">The dns name the node should use to discover gossip partners</param>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithClusterDnsName(string name)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithClusterDnsName(string name)
         {
             _clusterDns = name;
             _discoverViaDns = true;
@@ -292,8 +304,8 @@ namespace EventStore.Core.Cluster.Settings
         /// Sets the number of worker threads to use in shared threadpool
         /// </summary>
         /// <param name="count">The number of worker threads</param>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder WithWorkerThreads(int count)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder WithWorkerThreads(int count)
         {
             _workerThreads = count;
             return this;
@@ -303,8 +315,8 @@ namespace EventStore.Core.Cluster.Settings
         /// Adds a http prefix for the external http endpoint
         /// </summary>
         /// <param name="prefix">The prefix to add</param>
-        /// <returns>A <see cref="ClusterVNodeSettingsBuilder"/> with the options set</returns>
-        public ClusterVNodeSettingsBuilder AddHttpPrefix(string prefix)
+        /// <returns>A <see cref="ClusterVNodeBuilder"/> with the options set</returns>
+        public ClusterVNodeBuilder AddHttpPrefix(string prefix)
         {
             var prefixes = new List<string>();
             if(_httpPrefixes != null) prefixes.AddRange(_httpPrefixes);
@@ -313,7 +325,7 @@ namespace EventStore.Core.Cluster.Settings
             return this;
         }
 
-        public static implicit operator ClusterVNode(ClusterVNodeSettingsBuilder builder)
+        public static implicit operator ClusterVNode(ClusterVNodeBuilder builder)
         {
             var settings = new ClusterVNodeSettings(Guid.NewGuid(),
                 0,
@@ -353,12 +365,36 @@ namespace EventStore.Core.Cluster.Settings
                 builder._tcpTimeout,
                 builder._verifyDbHashes,
                 builder._maxMemtableSize);
-            return new ClusterVNode(null, settings, GetGossipSource(), subsystems);
+            return new ClusterVNode(null, settings, builder.GetGossipSource(), builder._subsystems.ToArray());
         }
 
-        private static IGossipSeedSource GetGossipSource()
+        private IGossipSeedSource GetGossipSource()
         {
-            return null;
+            IGossipSeedSource gossipSeedSource;
+            if (_discoverViaDns)
+            {
+                gossipSeedSource = new DnsGossipSeedSource(_clusterDns, _clusterGossipPort);
+            }
+            else
+            {
+                if (_gossipSeeds == null || _gossipSeeds.Length == 0)
+                {
+                    if (_clusterNodeCount > 1)
+                    {
+                        throw new Exception("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+                            + "Specify gossip seeds");
+                    }
+                    else
+                    {
+                        Console.WriteLine("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since"
+                            + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified"
+                            + "seeds using the --gossip-seed command line option.");
+                    }
+                }
+
+                gossipSeedSource = new KnownEndpointGossipSeedSource(_gossipSeeds);
+            }
+            return gossipSeedSource;
         }
     }
 }
