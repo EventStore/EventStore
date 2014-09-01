@@ -200,6 +200,8 @@ message CreatePersistentSubscription {
 	required string event_stream_id = 2;
     required bool resolve_link_tos = 3;
     required bool start_from_beginning = 4;
+    required int32 message_timeout_milliseconds = 5;
+    required bool latency_tracking = 6;
 }
 
 message DeletePersistentSubscription {

@@ -663,14 +663,22 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"start_from_beginning", DataFormat = DataFormat.Default)]
     public readonly bool StartFromBeginning;
   
+    [ProtoMember(5, IsRequired = true, Name=@"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
+    public readonly int MessageTimeoutMilliseconds;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"latency_tracking", DataFormat = DataFormat.Default)]
+    public readonly bool LatencyTracking;
+  
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, bool startFromBeginning)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, bool startFromBeginning, int messageTimeoutMilliseconds, bool latencyTracking)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
         ResolveLinkTos = resolveLinkTos;
         StartFromBeginning = startFromBeginning;
+        MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+        LatencyTracking = latencyTracking;
     }
   }
   
