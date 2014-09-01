@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
@@ -147,56 +146,6 @@ namespace EventStore.Core.Cluster.Settings
             TcpTimeout = tcpTimeout;
             VerifyDbHashes = verifyDbHashes;
             MaxMemtableSize = maxMemtableSize;
-        }
-
-
-
-        public override string ToString()
-        {
-            return string.Format("InstanceId: {0}\n"
-                                 + "InternalTcp: {1}\n"
-                                 + "InternalSecureTcp: {2}\n"
-                                 + "ExternalTcp: {3}\n"
-                                 + "ExternalSecureTcp: {4}\n"
-                                 + "InternalHttp: {5}\n"
-                                 + "ExternalHttp: {6}\n"
-                                 + "HttpPrefixes: {7}\n"
-                                 + "EnableTrustedAuth: {8}\n"
-                                 + "Certificate: {9}\n"
-                                 + "WorkerThreads: {10}\n"
-                                 + "DiscoverViaDns: {11}\n"
-                                 + "ClusterDns: {12}\n"
-                                 + "GossipSeeds: {13}\n"
-                                 + "ClusterNodeCount: {14}\n"
-                                 + "MinFlushDelay: {15}\n"
-                                 + "PrepareAckCount: {16}\n"
-                                 + "CommitAckCount: {17}\n"
-                                 + "PrepareTimeout: {18}\n"
-                                 + "CommitTimeout: {19}\n"
-                                 + "UseSsl: {20}\n"
-                                 + "SslTargetHost: {21}\n"
-                                 + "SslValidateServer: {22}\n"
-                                 + "StatsPeriod: {23}\n"
-                                 + "StatsStorage: {24}\n"
-                                 + "AuthenticationProviderFactory Type: {25}\n"
-                                 + "NodePriority: {26}"
-                                 + "GossipInterval: {27}\n"
-                                 + "GossipAllowedTimeDifference: {28}\n"
-                                 + "GossipTimeout: {29}\n",
-                                 NodeInfo.InstanceId,
-                                 NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
-                                 NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
-                                 NodeInfo.InternalHttp, NodeInfo.ExternalHttp,
-                                 string.Join(", ", HttpPrefixes),
-                                 EnableTrustedAuth,
-                                 Certificate == null ? "n/a" : Certificate.ToString(true),
-                                 WorkerThreads, DiscoverViaDns, ClusterDns,
-                                 string.Join(",", GossipSeeds.Select(x => x.ToString())),
-                                 ClusterNodeCount, MinFlushDelay,
-                                 PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
-                                 UseSsl, SslTargetHost, SslValidateServer,
-                                 StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
-                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout);
         }
     }
 }
