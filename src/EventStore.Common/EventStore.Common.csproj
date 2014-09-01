@@ -145,6 +145,7 @@
     <Compile Include="Streams\UnbufferedFileReadStream.cs" />
     <Compile Include="Streams\WinApi.cs" />
     <Compile Include="Utils\Application.cs" />
+    <Compile Include="Utils\BooleanTypeConverter.cs" />
     <Compile Include="Utils\FileStreamExtensions.cs" />
     <Compile Include="Utils\Empty.cs" />
     <Compile Include="Utils\IPAddressConverter.cs" />
