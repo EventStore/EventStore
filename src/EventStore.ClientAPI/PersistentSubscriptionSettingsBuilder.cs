@@ -1,3 +1,5 @@
+using System;
+
 namespace EventStore.ClientAPI
 {
     /// <summary>
@@ -8,6 +10,8 @@ namespace EventStore.ClientAPI
         private readonly bool _resolveLinkTos;
         private readonly bool _startFromBeginning;
         private readonly bool _latencyStatistics;
+        private TimeSpan _timeout
+            ;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object
@@ -15,7 +19,7 @@ namespace EventStore.ClientAPI
         /// <returns>a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object</returns>
         public static PersistentSubscriptionSettingsBuilder Create()
         {
-            return new PersistentSubscriptionSettingsBuilder(false, false, false);
+            return new PersistentSubscriptionSettingsBuilder(false, false, false, TimeSpan.FromSeconds(30));
         }
 
         /// <summary>
@@ -25,7 +29,7 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder WithExtraLatencyStatistics()
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, _startFromBeginning, true);
+            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, _startFromBeginning, true, _timeout);
         }
 
         /// <summary>
@@ -34,7 +38,7 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder ResolveLinkTos()
         {
-            return new PersistentSubscriptionSettingsBuilder(true, _startFromBeginning, _latencyStatistics);
+            return new PersistentSubscriptionSettingsBuilder(true, _startFromBeginning, _latencyStatistics, _timeout);
         }
 
         /// <summary>
@@ -43,7 +47,7 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder DoNotResolveLinkTos()
         {
-            return new PersistentSubscriptionSettingsBuilder(false, _startFromBeginning, _latencyStatistics);
+            return new PersistentSubscriptionSettingsBuilder(false, _startFromBeginning, _latencyStatistics, _timeout);
         }
 
         /// <summary>
@@ -52,7 +56,7 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder StartFromBeginning()
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, true, _latencyStatistics);
+            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, true, _latencyStatistics, _timeout);
         }
 
         /// <summary>
@@ -61,14 +65,24 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder StartFromCurrent()
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, false, _latencyStatistics);
+            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, false, _latencyStatistics, _timeout);
         }
 
-        private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, bool startFromBeginning, bool latencyStatistics)
+        private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, bool startFromBeginning, bool latencyStatistics, TimeSpan timeout)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFromBeginning = startFromBeginning;
             _latencyStatistics = latencyStatistics;
+            _timeout = timeout;
+        }
+
+        /// <summary>
+        /// Sets the timeout for a message (will be retried if an ack is not received within this timespan)
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder WithMessageTimeoutOf(TimeSpan timeout)
+        {
+            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, false, _latencyStatistics, timeout);
         }
 
         /// <summary>
@@ -80,7 +94,8 @@ namespace EventStore.ClientAPI
         {
             return new PersistentSubscriptionSettings(builder._resolveLinkTos,
                 builder._startFromBeginning,
-                builder._latencyStatistics);
+                builder._latencyStatistics,
+                builder._timeout);
         }
     }
 }

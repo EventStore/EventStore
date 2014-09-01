@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
@@ -14,6 +13,8 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _groupName;
         private readonly bool _resolveLinkTos;
         private readonly bool _startFromBeginning;
+        private readonly int _messageTimeoutMilliseconds;
+        private bool _latencyTracking;
 
         public CreatePersistentSubscriptionOperation(ILogger log,
                                        TaskCompletionSource<PersistentSubscriptionCreateResult> source,
@@ -23,15 +24,18 @@ namespace EventStore.ClientAPI.ClientOperations
                                        UserCredentials userCredentials)
             : base(log, source, TcpCommand.CreatePersistentSubscription, TcpCommand.CreatePersistentSubscriptionCompleted, userCredentials)
         {
+            Ensure.NotNull(settings, "settings");
             _resolveLinkTos = settings.ResolveLinkTos;
             _stream = stream;
             _groupName = groupName;
             _startFromBeginning = settings.StartFromBeginning;
+            _latencyTracking = settings.LatencyStatistics;
+            _messageTimeoutMilliseconds = (int) settings.MessageTimeout.TotalMilliseconds;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning);
+            return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds, _latencyTracking);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)

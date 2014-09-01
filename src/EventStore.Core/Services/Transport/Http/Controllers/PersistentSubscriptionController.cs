@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Common.Log;
@@ -34,26 +33,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PutSubscription, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
         }
-
-        //private void GetUsers(HttpEntityManager http, UriTemplateMatch match)
-        //{
-        //    if (_httpForwarder.ForwardRequest(http))
-        //        return;
-        //    var envelope = CreateReplyEnvelope<UserManagementMessage.AllUserDetailsResult>(http);
-        //    var message = new UserManagementMessage.GetAll(envelope, http.User);
-        //    Publish(message);
-        //}
-
-
-        //private void GetUser(HttpEntityManager http, UriTemplateMatch match)
-        //{
-        //    if (_httpForwarder.ForwardRequest(http))
-        //        return;
-        //    var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
-        //    var login = match.BoundVariables["login"];
-        //    var message = new UserManagementMessage.Get(envelope, http.User, login);
-        //    Publish(message);
-        //}
 
         private void PutSubscription(HttpEntityManager http, UriTemplateMatch match)
         {
@@ -92,8 +71,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (o, s) =>
                 {
                     var data = http.RequestCodec.From<PutSubscriptionData>(s);
-                    var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(),
-                                       envelope, stream, groupname, data == null || data.ResolveLinktos, data.StartFromBeginning, http.User, "", "");
+                    var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), 
+                                                                                 Guid.NewGuid(),
+                                                                                 envelope, 
+                                                                                 stream, 
+                                                                                 groupname, 
+                                                                                 data == null || data.ResolveLinktos, 
+                                                                                 data == null || data.StartFromBeginning, 
+                                                                                 data == null ? 0 : data.MessageTimeoutMilliseconds, 
+                                                                                 data == null || data.TrackLatency,
+                                                                                 http.User,
+                                                                                 "",
+                                                                                 "");
                     Publish(message);
                 }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
@@ -241,6 +230,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             public bool ResolveLinktos { get; set; }
             public bool StartFromBeginning { get; set; }
+            public int MessageTimeoutMilliseconds { get; set; }
+            public bool TrackLatency { get; set; }
         }
 
         private class SubscriptionInfo

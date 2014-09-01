@@ -39,7 +39,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly Stopwatch _totalTimeWatch;
         private TimeSpan _lastTotalTime;
         private long _lastTotalItems;
-        private bool _trackLatency;
+        private readonly bool _trackLatency;
+        private readonly TimeSpan _messageTimeout;
 
         public int LastEventNumber
         {
@@ -57,6 +58,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             string groupName,
             bool startFromBeginning,
             bool trackLatency,
+            TimeSpan messageTimeout,
             IPersistentSubscriptionEventLoader eventLoader,
             IPersistentSubscriptionCheckpointReader checkpointReader,
             IPersistentSubscriptionCheckpointWriter checkpointWriter
@@ -70,7 +72,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
             _startFromBeginning = startFromBeginning;
-            _trackLatency = true;
+            _trackLatency = trackLatency;
+            _messageTimeout = messageTimeout;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             InitAsNew();

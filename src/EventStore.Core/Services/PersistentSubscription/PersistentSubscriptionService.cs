@@ -139,7 +139,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     message.GroupName, 
                                     message.ResolveLinkTos, 
                                     message.StartFromBeginning,
-                                    false);
+                                    message.LatencyTracking,
+                                    TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds));
             Log.Debug("New persistent subscription {0}.", message.GroupName);
             _config.Updated = DateTime.Now;
             _config.UpdatedBy = message.User.Identity.Name;
@@ -148,7 +149,12 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, "")));
         }
 
-        private void CreateSubscriptionGroup(string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning, bool trackLatency)
+        private void CreateSubscriptionGroup(string eventStreamId, 
+                                             string groupName, 
+                                             bool resolveLinkTos, 
+                                             bool startFromBeginning, 
+                                             bool trackLatency, 
+                                             TimeSpan messageTimeout)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
             List<PersistentSubscription> subscribers;
@@ -165,6 +171,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     groupName,
                                     startFromBeginning,
                                     trackLatency, 
+                                    messageTimeout,
                                     _eventLoader, 
                                     _checkpointReader, 
                                     new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher));
@@ -368,7 +375,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                                     entry.Group, 
                                                     entry.ResolveLinkTos, 
                                                     entry.StartFromBeginning,
-                                                    false); //TODO competing use trackLatencies
+                                                    entry.TrackLatency,
+                                                    TimeSpan.FromMilliseconds(entry.MessageTimeout)); //TODO competing use trackLatencies
                         }
                         continueWith();
                     }
@@ -422,7 +430,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         sub.Group, 
                                         sub.ResolveLinkTos, 
                                         sub.StartFromBeginning,
-                                        sub.TrackLatencies);
+                                        sub.TrackLatency,
+                                        TimeSpan.FromMilliseconds(sub.MessageTimeout));
             }
         }
 

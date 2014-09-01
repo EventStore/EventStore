@@ -866,6 +866,8 @@ namespace EventStore.Core.Messages
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
             public readonly bool StartFromBeginning;
+            public readonly int MessageTimeoutMilliseconds;
+            public readonly bool LatencyTracking;
 
             public readonly bool ResolveLinkTos;
 
@@ -873,13 +875,15 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-                  string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning, IPrincipal user, string username, string password)
+                  string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning, int messageTimeoutMilliseconds, bool latencyTracking, IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 ResolveLinkTos = resolveLinkTos;
                 EventStreamId = eventStreamId;
                 GroupName = groupName;
                 StartFromBeginning = startFromBeginning;
+                MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+                LatencyTracking = latencyTracking;
             }
 
         }
