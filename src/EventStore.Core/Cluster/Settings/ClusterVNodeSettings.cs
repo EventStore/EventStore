@@ -47,6 +47,8 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan GossipAllowedTimeDifference;
         public readonly TimeSpan GossipTimeout;
         public readonly TimeSpan TcpTimeout;
+        public readonly bool VerifyDbHashes;
+        public readonly int MaxMemtableSize;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
@@ -82,7 +84,7 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan gossipInterval,
                                     TimeSpan gossipAllowedTimeDifference,
                                     TimeSpan gossipTimeout,
-                                    TimeSpan tcpTimeout)
+                                    TimeSpan tcpTimeout, bool verifyDbHashes, int maxMemtableSize)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -143,7 +145,11 @@ namespace EventStore.Core.Cluster.Settings
             GossipAllowedTimeDifference = gossipAllowedTimeDifference;
             GossipTimeout = gossipTimeout;
             TcpTimeout = tcpTimeout;
+            VerifyDbHashes = verifyDbHashes;
+            MaxMemtableSize = maxMemtableSize;
         }
+
+
 
         public override string ToString()
         {

@@ -101,8 +101,6 @@ namespace EventStore.ClusterNode
 
 				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
 			}
-
-            var dbVerifyHashes = !opts.SkipDbVerify;
             var runProjections = opts.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n"
@@ -122,7 +120,7 @@ namespace EventStore.ClusterNode
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
-            _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, dbVerifyHashes, opts.MaxMemTableSize, _projections);
+            _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
             RegisterUiProjections();
         }
@@ -215,7 +213,9 @@ namespace EventStore.ClusterNode
                                             TimeSpan.FromMilliseconds(options.GossipIntervalMs),
                                             TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs),
                                             TimeSpan.FromMilliseconds(options.GossipTimeoutMs),
-                                            TimeSpan.FromMilliseconds(options.TcpTimeout));
+                                            TimeSpan.FromMilliseconds(options.TcpTimeout),
+                                            !options.SkipDbVerify,
+                                            options.MaxMemTableSize);
         }
 
 	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
