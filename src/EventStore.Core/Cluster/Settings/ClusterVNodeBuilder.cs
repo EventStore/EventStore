@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Core.Authentication;
+using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
 
 namespace EventStore.Core.Cluster.Settings
@@ -53,10 +54,12 @@ namespace EventStore.Core.Cluster.Settings
         private TimeSpan _tcpTimeout;
         private bool _verifyDbHashes;
         private int _maxMemtableSize;
+        private List<ISubsystem> _subsystems;
 
 
         private ClusterVNodeSettingsBuilder()
         {
+            _subsystems = new List<ISubsystem>();
             _statsStorage = StatsStorage.None;
             _sslTargetHost = "";
             _sslValidateServer = false;
@@ -310,9 +313,9 @@ namespace EventStore.Core.Cluster.Settings
             return this;
         }
 
-        public static implicit operator ClusterVNodeSettings(ClusterVNodeSettingsBuilder builder)
+        public static implicit operator ClusterVNode(ClusterVNodeSettingsBuilder builder)
         {
-            return new ClusterVNodeSettings(Guid.NewGuid(),
+            var settings = new ClusterVNodeSettings(Guid.NewGuid(),
                 0,
                 builder._internalTcp,
                 builder._internalSecureTcp,
@@ -350,6 +353,12 @@ namespace EventStore.Core.Cluster.Settings
                 builder._tcpTimeout,
                 builder._verifyDbHashes,
                 builder._maxMemtableSize);
+            return new ClusterVNode(null, settings, GetGossipSource(), subsystems);
+        }
+
+        private static IGossipSeedSource GetGossipSource()
+        {
+            return null;
         }
     }
 }

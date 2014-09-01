@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 
@@ -71,6 +72,7 @@ namespace EventStore.ClientAPI
             _gossipTimeout = timeout;
             return this;
         }
+
 
         /// <summary>
         /// Builds a <see cref="ClusterSettings"/> object from a <see cref="GossipSeedClusterSettingsBuilder"/>.

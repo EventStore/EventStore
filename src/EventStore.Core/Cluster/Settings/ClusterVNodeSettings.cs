@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Cluster.Settings
 {
@@ -146,6 +147,16 @@ namespace EventStore.Core.Cluster.Settings
             TcpTimeout = tcpTimeout;
             VerifyDbHashes = verifyDbHashes;
             MaxMemtableSize = maxMemtableSize;
+            Verify();
+        }
+
+        private void Verify()
+        {
+            if (UseSsl)
+            {
+                if (ReferenceEquals(SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
+                if (NodeInfo.InternalSecureTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
+            }
         }
     }
 }
