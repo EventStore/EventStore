@@ -17,10 +17,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
         }
 
-        public void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int freeSlots, Action<ResolvedEvent[], int> onFetchCompleted)
+        public void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
         {
             _ioDispatcher.ReadForward(
-                subscription.EventStreamId, startEventNumber, Math.Min(freeSlots, PullBatchSize),
+                subscription.EventStreamId, startEventNumber, Math.Min(countToLoad, PullBatchSize),
                 subscription.ResolveLinkTos, SystemAccount.Principal, new ResponseHandler(onFetchCompleted).FetchCompleted);
         }
 

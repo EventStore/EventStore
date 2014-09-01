@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Services
         public void Setup()
         {
             _checkpointReader = new FakeCheckpointReader();
-            _subscription = new PersistentSubscription(false, "sub1", "stream", "groupName",false,false, new FakeEventLoader(x => _fetchFrom = x),
+            _subscription = new PersistentSubscription(false, "sub1", "stream", "groupName",false,false, TimeSpan.FromSeconds(30), new FakeEventLoader(x => _fetchFrom = x),
                 _checkpointReader, new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(null);
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void start_in_idle_mode()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName",false,false, new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", false, false, TimeSpan.FromSeconds(30), new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
                 new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             Assert.AreEqual(PersistentSubscriptionState.Idle, subscription.State);
@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void transition_to_push_mode_if_there_is_no_checkpoint()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", false, false,new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", false, false, TimeSpan.FromSeconds(30), new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
                 new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(null);
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Services
         [Test]
         public void transition_to_pull_mode_if_there_is_checkpoint()
         {
-            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", false, false, new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
+            var subscription = new PersistentSubscription(false, "sub1", "stream", "groupName", false, false, TimeSpan.FromSeconds(30), new FakeEventLoader(x => _fetchFrom = x), _checkpointReader,
                 new FakeCheckpointWriter(x => _lastCheckpoint = x));
 
             _checkpointReader.Load(156);
@@ -231,7 +231,7 @@ namespace EventStore.Core.Tests.Services
                 _action = action;
             }
 
-            public void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int freeSlots, Action<ResolvedEvent[], int> onFetchCompleted)
+            public void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
             {
                 _action(startEventNumber);
             }

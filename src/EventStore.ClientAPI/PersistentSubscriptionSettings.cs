@@ -1,3 +1,5 @@
+using System;
+
 namespace EventStore.ClientAPI
 {
     /// <summary>
@@ -23,13 +25,20 @@ namespace EventStore.ClientAPI
         public readonly bool LatencyStatistics;
 
         /// <summary>
+        /// The amount of time after which a message should be considered to be timedout and retried.
+        /// </summary>
+        public readonly TimeSpan MessageTimeout;
+
+        /// <summary>
         /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
         /// </summary>
-        internal PersistentSubscriptionSettings(bool resolveLinkTos, bool startFromBeginning, bool latencyStatistics)
+        internal PersistentSubscriptionSettings(bool resolveLinkTos, bool startFromBeginning, bool latencyStatistics, TimeSpan messageTimeout)
         {
+            MessageTimeout = messageTimeout;
             ResolveLinkTos = resolveLinkTos;
             StartFromBeginning = startFromBeginning;
             LatencyStatistics = latencyStatistics;
         }
+
     }
 }
