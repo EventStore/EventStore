@@ -51,7 +51,8 @@ namespace EventStore.Common.Options
         {   
             {typeof(IPAddress), new IPAddressConverter()},
             {typeof(IPEndPoint), new IPEndPointConverter()},
-            {typeof(IPEndPoint[]), new IPEndPointArrayConverter()}
+            {typeof(IPEndPoint[]), new IPEndPointArrayConverter()},
+            {typeof(bool), new BooleanTypeConverter()}
         };
 
         private static System.ComponentModel.TypeConverter GetTypeConverter(Type typeToConvertTo)
