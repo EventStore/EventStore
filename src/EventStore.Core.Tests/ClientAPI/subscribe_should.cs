@@ -7,7 +7,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class subscribe_should: SpecificationWithDirectoryPerTestFixture
+    public class subscribe_should : SpecificationWithDirectoryPerTestFixture
     {
         private const int Timeout = 10000;
 
@@ -28,11 +28,16 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TestFixtureTearDown();
         }
 
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint);
+        }
+
         [Test, Category("LongRunning")]
         public void be_able_to_subscribe_to_non_existing_stream_and_then_catch_new_event()
         {
             const string stream = "subscribe_should_be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(1);

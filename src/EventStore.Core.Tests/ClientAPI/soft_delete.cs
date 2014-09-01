@@ -22,16 +22,20 @@ namespace EventStore.Core.Tests.ClientAPI
             _node = new MiniNode(PathName);
             _node.Start();
 
-            _conn = EventStoreConnection.Create(_node.TcpEndPoint);
+            _conn = BuildConnection(_node);
             _conn.ConnectAsync().Wait();
         }
-
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
             _conn.Close();
             _node.Shutdown();
             base.TestFixtureTearDown();
+        }
+
+        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
+        {
+            return EventStoreConnection.Create(node.TcpEndPoint);
         }
 
         [Test, Category("LongRunning"), Category("Network")]

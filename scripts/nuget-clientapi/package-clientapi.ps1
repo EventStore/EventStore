@@ -10,7 +10,7 @@ $stagingDirectory = Join-Path $binDirectory "nuget"
 $outputDirectory = Join-Path $baseDirectory "packages"
 $toolsPath = Join-Path $baseDirectory "tools"
 $nugetPath = Join-Path $toolsPath (Join-Path "nuget" "nuget.exe")
-$nuspecPath = Join-Path $baseDirectory (Join-Path "scripts" (Join-Path "nuget-clientapi" "EventStore.Client.nuspec"))
+$nuspecDirectory = Join-Path $baseDirectory (Join-Path "scripts" "nuget-clientapi")
 
 if ((Test-Path $stagingDirectory) -eq $false) {
     New-Item -Path $stagingDirectory -ItemType Directory > $null
@@ -34,7 +34,11 @@ Function Exec
 }
 
 Function Run-NugetPack() {
-    Start-Process -NoNewWindow -Wait -FilePath $nugetPath -ArgumentList @("pack", "-symbols", "-version $Version", "$nuspecPath")
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true, Position=0)][string]$NuspecPath
+    )
+    Start-Process -NoNewWindow -Wait -FilePath $NugetPath -ArgumentList @("pack", "-symbols", "-version $Version", "$NuspecPath")
     if ($LASTEXITCODE -eq 0) {
         Move-Item -Path *.nupkg -Destination $outputDirectory
     }
@@ -62,4 +66,5 @@ Function Get-SourceDependencies() {
 }
 
 Get-SourceDependencies
-Run-NugetPack
+Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.nuspec")
+Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec")

@@ -1,0 +1,17 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Js1DllPath>$(MSBuildThisFileDirectory)..\native\x64\js1.dll</Js1DllPath>
+  </PropertyGroup>  
+
+  <Target Name="CopyJs1">
+    <Copy SourceFiles="$(Js1DllPath)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true"/>
+  </Target>
+
+  <PropertyGroup>
+    <AfterBuildDependsOn>
+      CopyJs1;
+    </AfterBuildDependsOn>
+  </PropertyGroup>
+  
+  <Target Name="AfterBuild" DependsOnTargets="$(AfterBuildDependsOn)"/>
+</Project>

@@ -229,7 +229,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 _log.Debug("Subscription {0:B} to {1}: subscribed at CommitPosition: {2}, EventNumber: {3}.",
                            _correlationId, _streamId == string.Empty ? "<all>" : _streamId, lastCommitPosition, lastEventNumber);
 
-            _subscription = new EventStoreSubscription(this, _streamId, lastCommitPosition, lastEventNumber);
+            _subscription = new EventStoreSubscription(Unsubscribe, _streamId, lastCommitPosition, lastEventNumber);
             _source.SetResult(_subscription);
         }
 

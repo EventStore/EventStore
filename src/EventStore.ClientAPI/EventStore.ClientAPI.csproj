@@ -53,6 +53,7 @@
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="Core\GossipSeedEndPointDiscoverer.cs" />
+    <Compile Include="Core\IEventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
     <Compile Include="StreamCheckpoint.cs" />
