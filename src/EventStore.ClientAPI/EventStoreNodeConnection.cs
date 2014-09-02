@@ -309,6 +309,7 @@ namespace EventStore.ClientAPI
 
             return subscription;
         }
+/*
 
         public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
             string groupName,
@@ -326,6 +327,7 @@ namespace EventStore.ClientAPI
                 bufferSize,
                 autoAck);
         }
+*/
 
 
         public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null) {
@@ -336,6 +338,7 @@ namespace EventStore.ClientAPI
             EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
             return source.Task;
         }
+/*
 
         public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
         {
@@ -346,6 +349,7 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+*/
         public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
@@ -353,6 +357,7 @@ namespace EventStore.ClientAPI
             EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
             return source.Task;            
         }
+/*
 
         public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
         {
@@ -362,6 +367,7 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+*/
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {

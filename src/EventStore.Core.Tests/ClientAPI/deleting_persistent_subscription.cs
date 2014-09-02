@@ -81,6 +81,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 //ALL
+/*
 
     [TestFixture, Category("LongRunning")]
     public class deleting_existing_persistent_subscription_group_on_all_with_permissions : SpecificationWithMiniNode
@@ -150,5 +151,6 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
     }
+*/
 
 }
