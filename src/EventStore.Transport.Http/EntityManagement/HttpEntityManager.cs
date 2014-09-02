@@ -230,12 +230,6 @@ namespace EventStore.Transport.Http.EntityManagement
 
             if (response == null || response.Length == 0)
             {
-                if (_processing == 1)
-                {
-                    DisposeStreamAndCloseConnection("Timed out.");
-                    return;
-                }
-                
                 SetResponseLength(0);
                 CloseConnection(onError);
             }
