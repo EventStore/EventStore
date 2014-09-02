@@ -295,7 +295,7 @@ namespace EventStore.ClientAPI
             UserCredentials userCredentials = null,
             int? bufferSize = null,
             bool autoAck = true);
-
+/*
         /// <summary>
         /// Subscribes a persistent subscription (competing consumer) to all events in the event store
         /// </summary>
@@ -320,7 +320,7 @@ namespace EventStore.ClientAPI
             UserCredentials userCredentials = null,
             int? bufferSize = null,
             bool autoAck = true);
-        
+        */
 
         /// <summary>
         /// Subscribes to a all events. Existing events from lastCheckpoint
@@ -359,6 +359,7 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null,
                 int readBatchSize = 500);
+/*
 
         /// <summary>
         /// Asynchronously create a persistent subscription group for all events
@@ -368,6 +369,7 @@ namespace EventStore.ClientAPI
         /// /// <param name="credentials">The credentials to be used for this operation.</param>
         /// <returns>A <see cref="PersistentSubscriptionCreateResult"/>.</returns>
         Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials);
+*/
 
         /// <summary>
         /// Asynchronously create a persistent subscription group on a stream
@@ -388,6 +390,7 @@ namespace EventStore.ClientAPI
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <returns>A <see cref="PersistentSubscriptionDeleteResult"/>.</returns>
         Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null);
+/*
 
         /// <summary>
         /// Asynchronously delete a persistent subscription group for all events
@@ -397,6 +400,7 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="PersistentSubscriptionDeleteResult"/>.</returns>
         Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null);
 
+*/
 
         /// <summary>
         /// Asynchronously sets the metadata for a stream.

@@ -129,6 +129,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 //ALL
+/*
 
     [TestFixture, Category("LongRunning")]
     public class create_persistent_subscription_on_all : SpecificationWithMiniNode
@@ -205,5 +206,6 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
     }
+*/
 
 }

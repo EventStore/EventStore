@@ -100,6 +100,9 @@ namespace EventStore.Core.Tests.ClientAPI
     }
 
     //ALL
+
+/*
+
     [TestFixture, Category("LongRunning")]
     public class connect_to_non_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
     {
@@ -188,5 +191,6 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
     }
+*/
 
 }
