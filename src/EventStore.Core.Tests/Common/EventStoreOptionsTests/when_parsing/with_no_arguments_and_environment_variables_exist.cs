@@ -19,6 +19,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
             var args = new string[] { };
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual(2111, testArgs.HttpPort);
+            Environment.SetEnvironmentVariable(String.Format("{0}HTTP_PORT", Opts.EnvPrefix), String.Empty);
         }
     }
 }
