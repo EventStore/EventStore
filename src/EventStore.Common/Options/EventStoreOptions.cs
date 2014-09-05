@@ -68,8 +68,8 @@ namespace EventStore.Common.Options
 
             _effectiveOptions = OptionsSourceMerger.SequentialMerge(
                         defaultOptionSources,
-                        environmentVariableOptionSources,
                         configurationFileOptionSources,
+                        environmentVariableOptionSources,
                         commandLineOptionSources);
 
             OptionsSourceRulesRunner.RunRules(defaultOptionSources.Select(option => option.Name).ToArray(),
