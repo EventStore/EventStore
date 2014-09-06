@@ -59,6 +59,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             Ensure.NotNull(eventLoader, "eventLoader");
             Ensure.NotNull(checkpointReader, "checkpointReader");
             Ensure.NotNull(checkpointWriter, "checkpointWriter");
+            Ensure.NotNull(subscriptionId, "subscriptionId");
+            Ensure.NotNull(eventStreamId, "eventStreamId");
+            Ensure.NotNull(groupName, "groupName");
             ResolveLinkTos = resolveLinkTos;
             SubscriptionId = subscriptionId;
             EventStreamId = eventStreamId;
@@ -179,7 +182,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             Log.Debug("No clients, reverting future to checkpoint.");
             InitAsNew();
         }
-
 
         public void InvalidateRetries()
         {
