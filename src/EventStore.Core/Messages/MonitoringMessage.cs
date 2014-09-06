@@ -96,6 +96,8 @@ namespace EventStore.Core.Messages
             public int AveragePerSecond { get; set; }
             public long TotalItems { get; set; }
             public long CountSinceLastMeasurement { get; set; }
+            public int LastProcessedEventNumber { get; set; }
+            public int LastKnownMessage { get; set; }
         }
 
         public class ConnectionInfo
