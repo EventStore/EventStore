@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -23,20 +22,17 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         //private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
         private readonly bool _startFromBeginning;
-        private PersistentSubscriptionClientCollection _pushClients = new PersistentSubscriptionClientCollection();
+        internal PersistentSubscriptionClientCollection _pushClients = new PersistentSubscriptionClientCollection();
         //private bool _outstandingFetchRequest;
-        private int _lastEventNumber = -1;
+        private readonly PersistentSubscriptionStats _statistics;
         private PersistentSubscriptionState _state;
-        private long _totalItems;
         private readonly Stopwatch _totalTimeWatch;
-        private TimeSpan _lastTotalTime;
-        private long _lastTotalItems;
         private readonly bool _trackLatency;
         private readonly TimeSpan _messageTimeout;
         private readonly OutstandingMessageCache _outstandingMessages;
-        private readonly BoundedQueue<ResolvedEvent> _liveEvents; 
+        private readonly BoundedQueue<ResolvedEvent> _cachedLiveEvents; 
 
-                public bool HasClients
+        public bool HasClients
         {
             get { return _pushClients.Count > 0; }
         }
@@ -75,15 +71,16 @@ namespace EventStore.Core.Services.PersistentSubscription
             _messageTimeout = messageTimeout;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
+            _statistics = new PersistentSubscriptionStats(this, _totalTimeWatch);
             _outstandingMessages = new OutstandingMessageCache();
             //TODO Add configuration for queue size
-            _liveEvents = new BoundedQueue<ResolvedEvent>(500);
+            _cachedLiveEvents = new BoundedQueue<ResolvedEvent>(500);
             InitAsNew();
         }
 
         public void InitAsNew()
         {
-            _lastEventNumber = -1;
+            _statistics.SetLastKnownEventNumber(-1);
             //_outstandingFetchRequest = false;
             _state = PersistentSubscriptionState.Pull;
             _pushClients = new PersistentSubscriptionClientCollection();
@@ -94,7 +91,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (lastProcessedEvent.HasValue)
             {
-                _lastEventNumber = lastProcessedEvent.Value;
+                 _statistics.SetLastKnownEventNumber(lastProcessedEvent.Value);
                 _state = PersistentSubscriptionState.Pull;
                 FetchNewEventsBatch();
             }
@@ -103,7 +100,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (_startFromBeginning)
                 {
                     _state = PersistentSubscriptionState.Pull;
-                    _lastEventNumber = -1;
+                    _statistics.SetLastKnownEventNumber(-1);
                     FetchNewEventsBatch();
                 }
                 else
@@ -120,6 +117,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             //_eventLoader.BeginLoadState(this, _nextEventNumber, inFlight, HandleReadEvents);
         }
 
+        public IEnumerable<ResolvedEvent> GetNextNOrLessMessages(int count)
+        {
+            return new ResolvedEvent[0];
+        } 
 
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
         {
@@ -145,7 +146,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent)
         {
-            _liveEvents.Enqueue(resolvedEvent);
+            _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
+            _cachedLiveEvents.Enqueue(resolvedEvent);
         }
 
         public void MarkCheckpoint()
@@ -194,45 +196,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public MonitoringMessage.SubscriptionInfo GetStatistics()
         {
-            var totalTime = _totalTimeWatch.Elapsed;
-            var totalItems = Interlocked.Read(ref _totalItems);
-
-            var lastRunMs = totalTime - _lastTotalTime;
-            var lastItems = totalItems - _lastTotalItems;
-
-            var avgItemsPerSecond = lastRunMs.Ticks != 0 ? (int)(TimeSpan.TicksPerSecond * lastItems / lastRunMs.Ticks) : 0;
-            _lastTotalTime = totalTime;
-            _lastTotalItems = totalItems;
-            var connections = new List<MonitoringMessage.ConnectionInfo>();
-            foreach (var conn in _pushClients.GetAll())
-            {
-                var connItems = conn.TotalItems;
-                var connLastItems = connItems - conn.LastTotalItems;
-                conn.LastTotalItems = connItems;
-                var connAvgItemsPerSecond = lastRunMs.Ticks != 0 ? (int)(TimeSpan.TicksPerSecond * connLastItems / lastRunMs.Ticks) : 0;
-                var latencyStats = conn.GetLatencyStats();
-                var stats = latencyStats == null ? null : latencyStats.Measurements;
-                connections.Add(new MonitoringMessage.ConnectionInfo
-                {
-                    From = conn.From,
-                    Username = conn.Username,
-                    AverageItemsPerSecond = connAvgItemsPerSecond,
-                    TotalItems = conn.TotalItems,
-                    CountSinceLastMeasurement = connLastItems,
-                    LatencyStats = stats
-                });
-            }
-
-            return new MonitoringMessage.SubscriptionInfo()
-            {
-                EventStreamId = EventStreamId,
-                GroupName = GroupName,
-                Status = _state.ToString(),
-                Connections = connections,
-                AveragePerSecond = avgItemsPerSecond,
-                TotalItems = totalItems,
-                CountSinceLastMeasurement = lastItems
-            };
+            return _statistics.GetStatistics();
         }
     }
 }

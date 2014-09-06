@@ -168,6 +168,7 @@
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionEventLoader.cs" />
     <Compile Include="Services\PersistentSubscription\OutstandingMessage.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionStats.cs" />
     <Compile Include="Services\PersistentSubscription\RetryableMessage.cs" />
     <Compile Include="Services\PersistentSubscription\OutstandingMessageCache.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscription.cs" />
