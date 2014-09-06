@@ -38,6 +38,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     _queue.Enqueue(current);
                 }
             }
+            return false;
         }
 
         public IEnumerable<ResolvedEvent> RemoveClientByConnectionId(Guid connectionId)
@@ -78,6 +79,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _hash.Values;
         }
 
+        //TODO CC Maybe its better to call directly?
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
             PersistentSubscriptionClient client;

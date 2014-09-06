@@ -2,13 +2,13 @@ using System;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
-    internal struct MessageReceipt
+    internal struct MessagePromise
     {
         public readonly Guid MessageId;
         public readonly Guid ConnectionId;
         public readonly DateTime DueTime;
 
-        public MessageReceipt(Guid messageId, Guid connectionId, DateTime dueTime)
+        public MessagePromise(Guid messageId, Guid connectionId, DateTime dueTime)
         {
             MessageId = messageId;
             ConnectionId = connectionId;

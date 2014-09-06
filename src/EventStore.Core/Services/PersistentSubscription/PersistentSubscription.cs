@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Messages;
@@ -19,12 +19,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly bool ResolveLinkTos;
         public readonly string EventStreamId;
         public readonly string GroupName;
-        private readonly IPersistentSubscriptionEventLoader _eventLoader;
+        //private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
-        private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        //private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
         private readonly bool _startFromBeginning;
-        private PersistentSubscriptionClientCollection _clients = new PersistentSubscriptionClientCollection();
-        private bool _outstandingFetchRequest;
+        private PersistentSubscriptionClientCollection _pushClients = new PersistentSubscriptionClientCollection();
+        //private bool _outstandingFetchRequest;
         private int _lastEventNumber = -1;
         private PersistentSubscriptionState _state;
         private long _totalItems;
@@ -32,10 +32,18 @@ namespace EventStore.Core.Services.PersistentSubscription
         private TimeSpan _lastTotalTime;
         private long _lastTotalItems;
         private readonly bool _trackLatency;
-        private readonly TimeSpan _messageTimeout;
-        private readonly Dictionary<Guid, ResolvedEvent> _outstandingRequests;
-        private readonly PairingHeap<MessageReceipt> _receipts = new PairingHeap<MessageReceipt>(); 
-        private readonly BoundedQueue<ResolvedEvent> _liveEvents = new BoundedQueue<ResolvedEvent>(500); 
+        //private readonly TimeSpan _messageTimeout;
+        private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
+        private readonly PairingHeap<MessagePromise> promises; 
+        private readonly BoundedQueue<ResolvedEvent> _liveEvents;
+
+        public bool HasClients
+        {
+            get { return _pushClients.Count > 0; }
+        }
+
+        public int ClientCount { get { return _pushClients.Count; } }
+
 
         public int LastEventNumber
         {
@@ -59,20 +67,24 @@ namespace EventStore.Core.Services.PersistentSubscription
             IPersistentSubscriptionCheckpointWriter checkpointWriter
             )
         {
+            Ensure.NotNull(eventLoader, "eventLoader");
+            Ensure.NotNull(checkpointReader, "checkpointReader");
+            Ensure.NotNull(checkpointWriter, "checkpointWriter");
             ResolveLinkTos = resolveLinkTos;
             SubscriptionId = subscriptionId;
             EventStreamId = eventStreamId;
             GroupName = groupName;
-            _eventLoader = eventLoader;
+            //_eventLoader = eventLoader;
             _checkpointReader = checkpointReader;
-            _checkpointWriter = checkpointWriter;
+            //_checkpointWriter = checkpointWriter;
             _startFromBeginning = startFromBeginning;
             _trackLatency = trackLatency;
-            _messageTimeout = messageTimeout;
+            //_messageTimeout = messageTimeout;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
-            _outstandingRequests = new Dictionary<Guid, ResolvedEvent>();
-            _receipts = new PairingHeap<MessageReceipt>();
+            _outstandingRequests = new Dictionary<Guid, OutstandingMessage>();
+            promises = new PairingHeap<MessagePromise>();
+            //TODO Add configuration for queue size
             _liveEvents = new BoundedQueue<ResolvedEvent>(500);
             InitAsNew();
         }
@@ -80,9 +92,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void InitAsNew()
         {
             _lastEventNumber = -1;
-            _outstandingFetchRequest = false;
+            //_outstandingFetchRequest = false;
             _state = PersistentSubscriptionState.Pull;
-            _clients = new PersistentSubscriptionClientCollection();
+            _pushClients = new PersistentSubscriptionClientCollection();
             _checkpointReader.BeginLoadState(SubscriptionId, OnStateLoaded);
         }
 
@@ -112,7 +124,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void FetchNewEventsBatch()
         {
-            _outstandingFetchRequest = true;
+            //_outstandingFetchRequest = true;
             //_eventLoader.BeginLoadState(this, _nextEventNumber, inFlight, HandleReadEvents);
         }
 
@@ -120,31 +132,26 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
         {
             var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, maxInFlight, user, @from, _totalTimeWatch, _trackLatency);
-            _clients.AddClient(client);
-        }
-
-        public bool HasAnyClients
-        {
-            get { return _clients.Count > 0; }
+            _pushClients.AddClient(client);
         }
 
         public void Shutdown()
         {
             _state = PersistentSubscriptionState.ShuttingDown;
-            _clients.ShutdownAll();
+            _pushClients.ShutdownAll();
         }
 
         public void RemoveClientByConnectionId(Guid connectionId)
         {
-            _clients.RemoveClientByConnectionId(connectionId);
+            _pushClients.RemoveClientByConnectionId(connectionId);
         }
 
         public void RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification)
         {
-            _clients.RemoveClientByCorrelationId(correlationId, sendDropNotification);
+            _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification);
         }
 
-        public void Push(ResolvedEvent resolvedEvent)
+        public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent)
         {
             _liveEvents.Enqueue(resolvedEvent);
         }
@@ -156,7 +163,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
-            _clients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
+            _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
                 _outstandingRequests.Remove(id);
@@ -178,7 +185,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void TimerInvalidate()
         {
             //check for timed out messages in pairing heap
-            while (_receipts.Count > 0 && _receipts.FindMin().DueTime <= DateTime.Now)
+            while (promises.Count > 0 && promises.FindMin().DueTime <= DateTime.Now)
             {
             }
         }
@@ -200,7 +207,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _lastTotalTime = totalTime;
             _lastTotalItems = totalItems;
             var connections = new List<MonitoringMessage.ConnectionInfo>();
-            foreach (var conn in _clients.GetAll())
+            foreach (var conn in _pushClients.GetAll())
             {
                 var connItems = conn.TotalItems;
                 var connLastItems = connItems - conn.LastTotalItems;
@@ -232,83 +239,17 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
     }
 
-    internal class PersistentSubscriptionClientCollection
+    struct OutstandingMessage
     {
-        //TODO this is likely faster with a list etc as the counts are very small
-        private readonly Dictionary<Guid, PersistentSubscriptionClient> _hash = new Dictionary<Guid, PersistentSubscriptionClient>();
-        private readonly Queue<PersistentSubscriptionClient> _queue = new Queue<PersistentSubscriptionClient>();
+        public readonly ResolvedEvent ResolvedEvent;
+        public readonly PersistentSubscriptionClient HandlingClient;
+        public readonly int RetryCount;
 
-
-        public int Count { get { return _hash.Count; } }
-
-        public void AddClient(PersistentSubscriptionClient client)
+        public OutstandingMessage(PersistentSubscriptionClient handlingClient, ResolvedEvent resolvedEvent, int retryCount) : this()
         {
-            _hash.Add(client.CorrelationId, client);
-            _queue.Enqueue(client);
-        }
-
-        public bool PushMessageToClient(ResolvedEvent ev)
-        {
-            for (int i = 0; i < _queue.Count; i++)
-            {
-                var current = _queue.Dequeue();
-                if (current.CanSend())
-                {
-                    
-                }
-            }
-        }
-
-        public IEnumerable<ResolvedEvent> RemoveClientByConnectionId(Guid connectionId)
-        {
-            var clients = _hash.Values.Where(x => x.ConnectionId == connectionId).ToList();
-            return clients.SelectMany(client => RemoveClientByCorrelationId(client.CorrelationId, false));
-        }
-
-        public void ShutdownAll()
-        {
-            while (_queue.Count > 0)
-            {
-                var client = _queue.Dequeue();
-                RemoveClientByCorrelationId(client.CorrelationId, true);
-            }
-        }
-
-        public IEnumerable<ResolvedEvent> RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification)
-        {
-            PersistentSubscriptionClient client;
-            if (!_hash.TryGetValue(correlationId, out client)) return new ResolvedEvent[0];
-            _hash.Remove(client.CorrelationId);
-            for(var i=0;i<_queue.Count;i++)
-            {
-                var current = _queue.Dequeue();
-                if (current == client) break;
-                _queue.Enqueue(current);
-            }
-            if (sendDropNotification)
-            {
-                client.SendDropNotification();
-            }
-            return client.GetUnconfirmedEvents();
-        }
-
-        public IEnumerable<PersistentSubscriptionClient> GetAll()
-        {
-            return _hash.Values;
-        }
-
-        public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
-        {
-            PersistentSubscriptionClient client;
-            if (!_hash.TryGetValue(correlationId, out client)) return;
-            client.ConfirmProcessing(processedEventIds);
-        }
-
-        public void NotAcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
-        {
-            PersistentSubscriptionClient client;
-            if (!_hash.TryGetValue(correlationId, out client)) return;
-            client.DenyProcessing(processedEventIds);
+            HandlingClient = handlingClient;
+            ResolvedEvent = resolvedEvent;
+            RetryCount = retryCount;
         }
     }
 }
