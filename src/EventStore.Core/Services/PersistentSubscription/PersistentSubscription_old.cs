@@ -360,7 +360,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _outstandingFetchRequest = true;
                 _eventBufferIndex = 0;
                 _eventBuffer = new ResolvedEvent[0];
-                _eventLoader.BeginLoadState(this, _nextEventNumber, inFlight, HandleReadEvents);
+                _eventLoader.BeginLoadState(null, _nextEventNumber, inFlight, HandleReadEvents);
                 return true;
             }
             return false;

@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _maxPullBatchSize = maxPullBatchSize;
         }
 
-        public void BeginLoadState(PersistentSubscription_old subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
+        public void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
         {
             _ioDispatcher.ReadForward(
                 subscription.EventStreamId, startEventNumber, Math.Min(countToLoad, PullBatchSize),

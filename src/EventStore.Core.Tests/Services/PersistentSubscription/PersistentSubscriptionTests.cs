@@ -1,11 +1,123 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using EventStore.Core.Data;
+using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Tests.Services.Replication;
+using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.PersistentSubscription
+namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
 {
-    class PersistentSubscriptionTests
+    [TestFixture]
+    public class when_creating_persistent_subscription
     {
+        private PersistentSubscription _sub;
+
+        [TestFixtureSetUp]
+        public void Setup()
+        {
+            _sub = new PersistentSubscription(true,
+                "subId",
+                "streamName",
+                "groupName",
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }), 
+                new FakeCheckpointReader(), 
+                new FakeCheckpointWriter(x => { }));
+        }
+
+        [Test]
+        public void subscription_id_is_set()
+        {
+            Assert.AreEqual("subId", _sub.SubscriptionId);
+        }
+
+        [Test]
+        public void stream_name_is_set()
+        {
+            Assert.AreEqual("streamName", _sub.EventStreamId);
+        }
+
+        [Test]
+        public void group_name_is_set()
+        {
+            Assert.AreEqual("groupName", _sub.GroupName);
+        }
+
+        [Test]
+        public void there_are_no_clients()
+        {
+            Assert.IsFalse(_sub.HasClients);
+            Assert.AreEqual(0, _sub.ClientCount);
+        }
+
+    }
+
+    [TestFixture]
+    public class AddingClientTests
+    {
+        [Test]
+        public void adding_a_client_adds_the_client()
+        {
+            var sub = new PersistentSubscription(true,
+                "subId",
+                "streamName",
+                "groupName",
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }),
+                new FakeCheckpointReader(),
+                new FakeCheckpointWriter(x => { }));
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), new FakeEnvelope(), 1, "foo", "bar");
+            Assert.IsTrue(sub.HasClients);
+            Assert.AreEqual(1, sub.ClientCount);
+        }
+    }
+
+
+    class FakeEventLoader : IPersistentSubscriptionEventLoader
+    {
+        private readonly Action<int> _action;
+
+        public FakeEventLoader(Action<int> action)
+        {
+            _action = action;
+        }
+
+        public void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
+        {
+            _action(startEventNumber);
+        }
+    }
+
+    class FakeCheckpointReader : IPersistentSubscriptionCheckpointReader
+    {
+        private Action<int?> _onStateLoaded;
+
+        public void BeginLoadState(string subscriptionId, Action<int?> onStateLoaded)
+        {
+            _onStateLoaded = onStateLoaded;
+        }
+
+        public void Load(int? state)
+        {
+            _onStateLoaded(state);
+        }
+    }
+
+    class FakeCheckpointWriter : IPersistentSubscriptionCheckpointWriter
+    {
+        private readonly Action<int> _action;
+
+        public FakeCheckpointWriter(Action<int> action)
+        {
+            _action = action;
+        }
+
+        public void BeginWriteState(int state)
+        {
+            _action(state);
+        }
     }
 }
