@@ -28,8 +28,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
                                         IHandle<MonitoringMessage.GetStreamPersistentSubscriptionStats>
     {
-        public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
-
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionService>();
 
         private Dictionary<string, List<PersistentSubscription_old>> _subscriptionTopics;
@@ -167,7 +165,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             var subscription = new PersistentSubscription_old(
                                     resolveLinkTos, 
                                     key,
-                                    eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
+                                    eventStreamId,
                                     groupName,
                                     startFromBeginning,
                                     trackLatency, 
@@ -296,15 +294,14 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(StorageMessage.EventCommitted message)
         {
             if (!_started) return;
-            var resolvedEvent = ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null);
-            ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
+            ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event);
         }
 
-        private ResolvedEvent? ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent)
+        private void ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt)
         {
             List<PersistentSubscription_old> subscriptions;
             if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions)) 
-                return resolvedEvent;
+                return;
             for (int i = 0, n = subscriptions.Count; i < n; i++)
             {
                 var subscr = subscriptions[i];
@@ -313,11 +310,10 @@ namespace EventStore.Core.Services.PersistentSubscription
 
                 var pair = new ResolvedEvent(evnt, null, commitPosition);
                 if (subscr.ResolveLinkTos)
-                    resolvedEvent = pair = resolvedEvent ?? ResolveLinkToEvent(evnt, commitPosition);
+                    pair = ResolveLinkToEvent(evnt, commitPosition);
 
                 subscr.Push(pair);
             }
-            return resolvedEvent;
         }
 
         private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition)

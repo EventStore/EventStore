@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
@@ -20,7 +21,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly Stopwatch _watch;
         private long _totalItems;
         private readonly RequestStatistics _latencyStatistics;
-        private readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
+        private readonly Dictionary<Guid, ResolvedEvent> _unconfirmedEvents = new Dictionary<Guid, ResolvedEvent>();
 
         public PersistentSubscriptionClient(Guid correlationId,
             Guid connectionId,
@@ -67,37 +68,46 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _correlationId; }
         }
 
-        public IEnumerable<SequencedEvent> ConfirmProcessing(Guid[] processedEvents)
+        public void ConfirmProcessing(Guid[] processedEventIds)
         {
-            foreach (var processedEventId in processedEvents)
+            foreach (var processedEventId in processedEventIds)
             {
-                var eventIndex = _unconfirmedEvents.FindIndex(x => x.Event.Event.EventId == processedEventId);
-                if (eventIndex >= 0)
+                ResolvedEvent ev;
+                if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
                 {
-                    _inFlightMessages++;
-                    if (_latencyStatistics != null)
-                        _latencyStatistics.EndOperation(processedEventId);
-                    var evnt = _unconfirmedEvents[eventIndex];
-                    _unconfirmedEvents.RemoveAt(eventIndex);
-                    yield return evnt;
+                    //it could have been timed out as well
+                    _unconfirmedEvents.Remove(processedEventId);
                 }
             }
         }
 
-        public void Push(SequencedEvent evnt)
+        public void DenyProcessing(Guid[] processedEventIds)
+        {
+            foreach (var processedEventId in processedEventIds)
+            {
+                ResolvedEvent ev;
+                if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
+                {
+                    //it could have been timed out as well
+                    _unconfirmedEvents.Remove(processedEventId);
+                }
+            }
+        }
+
+        public void Push(ResolvedEvent evnt)
         {
             _inFlightMessages--;
             Interlocked.Increment(ref _totalItems);
-            _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt.Event));
+            _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt));
             if (_latencyStatistics != null)
-                _latencyStatistics.StartOperation(evnt.Event.OriginalEvent.EventId);
+                _latencyStatistics.StartOperation(evnt.OriginalEvent.EventId);
 
-            _unconfirmedEvents.Add(evnt);
+            _unconfirmedEvents.Add(evnt.Event.EventId, evnt);
         }
 
-        public IEnumerable<SequencedEvent> GetUnconfirmedEvents()
+        public IEnumerable<ResolvedEvent> GetUnconfirmedEvents()
         {
-            return _unconfirmedEvents;
+            return _unconfirmedEvents.Values;
         }
 
         public void SendDropNotification()
@@ -108,6 +118,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         public LatencyMeausrement GetLatencyStats()
         {
             return _latencyStatistics == null ? null : _latencyStatistics.GetMeasurementDetails();
+        }
+
+        public bool CanSend()
+        {
+            return InFlightMessages > 0;
         }
     }
 }
