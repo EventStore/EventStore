@@ -7,12 +7,12 @@ namespace EventStore.Core.Services.PersistentSubscription
     public class OutstandingMessageCache
     {
         private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
-        private readonly PairingHeap<MessagePromise> _promises;
+        private readonly PairingHeap<RetryableMessage> _promises;
 
         public OutstandingMessageCache()
         {
             _outstandingRequests = new Dictionary<Guid, OutstandingMessage>();
-            _promises = new PairingHeap<MessagePromise>((x,y) => x.DueTime < y.DueTime);
+            _promises = new PairingHeap<RetryableMessage>((x,y) => x.DueTime < y.DueTime);
         }
 
         public int Count { get { return _outstandingRequests.Count; }}
@@ -25,10 +25,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void StartMessage(OutstandingMessage message, DateTime expires)
         {
             _outstandingRequests[message.EventId] = message;
-            _promises.Add(new MessagePromise(message.EventId, Guid.NewGuid(), expires));
+            _promises.Add(new RetryableMessage(message.EventId, expires));
         }
 
-        public IEnumerable<MessagePromise> GetMessagesExpiringBefore(DateTime time)
+        public IEnumerable<RetryableMessage> GetMessagesExpiringBefore(DateTime time)
         {
             while (_promises.Count > 0 && _promises.FindMin().DueTime <= time)
             {
