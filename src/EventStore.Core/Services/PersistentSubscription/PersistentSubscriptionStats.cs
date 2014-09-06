@@ -77,6 +77,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 Status = _parent.State.ToString(),
                 Connections = connections,
                 AveragePerSecond = avgItemsPerSecond,
+                LastProcessedEventNumber = _lastEventNumber,
+                LastKnownMessage = _lastKnownEventNumber,
                 TotalItems = totalItems,
                 CountSinceLastMeasurement = lastItems
             };

@@ -205,6 +205,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     AverageItemsPerSecond = stat.AveragePerSecond,
                     TotalItemsProcessed = stat.TotalItems,
                     CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
+                    LastKnownEventNumber = stat.LastProcessedEventNumber,
+                    LastProcessedEventNumber = stat.LastProcessedEventNumber,
                     Connections = new List<ConnectionInfo>()
                 };
                 if (stat.Connections != null)
@@ -242,7 +244,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public decimal AverageItemsPerSecond { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public List<ConnectionInfo> Connections { get; set; } 
+            public List<ConnectionInfo> Connections { get; set; }
+            public int LastProcessedEventNumber { get; set; }
+            public int LastKnownEventNumber { get; set; }
         }
 
         private class ConnectionInfo
