@@ -167,7 +167,8 @@
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionEventLoader.cs" />
-    <Compile Include="Services\PersistentSubscription\MessagePromise.cs" />
+    <Compile Include="Services\PersistentSubscription\OutstandingMessage.cs" />
+    <Compile Include="Services\PersistentSubscription\RetryableMessage.cs" />
     <Compile Include="Services\PersistentSubscription\OutstandingMessageCache.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscription.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClient.cs" />

@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly bool _trackLatency;
         //private readonly TimeSpan _messageTimeout;
         private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
-        private readonly PairingHeap<MessagePromise> promises; 
+        private readonly PairingHeap<RetryableMessage> promises; 
         private readonly BoundedQueue<ResolvedEvent> _liveEvents; 
 
                 public bool HasClients
@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             _outstandingRequests = new Dictionary<Guid, OutstandingMessage>();
-            promises = new PairingHeap<MessagePromise>();
+            promises = new PairingHeap<RetryableMessage>();
             //TODO Add configuration for queue size
             _liveEvents = new BoundedQueue<ResolvedEvent>(500);
             InitAsNew();
@@ -236,22 +236,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                 TotalItems = totalItems,
                 CountSinceLastMeasurement = lastItems
             };
-        }
-    }
-
-    public struct OutstandingMessage
-    {
-        public readonly ResolvedEvent ResolvedEvent;
-        public readonly PersistentSubscriptionClient HandlingClient;
-        public readonly int RetryCount;
-        public readonly Guid EventId;
-
-        public OutstandingMessage(Guid eventId, PersistentSubscriptionClient handlingClient, ResolvedEvent resolvedEvent, int retryCount) : this()
-        {
-            EventId = eventId;
-            HandlingClient = handlingClient;
-            ResolvedEvent = resolvedEvent;
-            RetryCount = retryCount;
         }
     }
 }
