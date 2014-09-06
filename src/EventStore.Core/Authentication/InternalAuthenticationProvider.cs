@@ -45,7 +45,7 @@ namespace EventStore.Core.Authentication
 			{
 				if (completed.Result != ReadStreamResult.Success)
 				{
-					authenticationRequest.Unauthorized();
+					authenticationRequest.NotReady();
 					return;
 				}
 				var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
