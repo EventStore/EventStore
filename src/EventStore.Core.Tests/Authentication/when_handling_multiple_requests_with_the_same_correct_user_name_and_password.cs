@@ -25,13 +25,13 @@ namespace EventStore.Core.Tests.Authentication
             SetUpProvider();
 
             _internalAuthenticationProvider.Authenticate(
-                new TestAuthenticationRequest("user", "password", () => { }, p => { }, () => { }));
+                new TestAuthenticationRequest("user", "password", () => { }, p => { }, () => { }, () => { }));
 
             _consumer.HandledMessages.Clear();
 
             _internalAuthenticationProvider.Authenticate(
                 new TestAuthenticationRequest(
-                    "user", "password", () => _unauthorized = true, p => _authenticatedAs = p, () => _error = true));
+                    "user", "password", () => _unauthorized = true, p => _authenticatedAs = p, () => _error = true, () => { }));
         }
 
         [Test]

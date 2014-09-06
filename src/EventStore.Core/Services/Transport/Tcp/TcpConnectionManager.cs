@@ -437,6 +437,11 @@ namespace EventStore.Core.Services.Transport.Tcp
             {
                 _manager.ReplyNotAuthenticated(_package.CorrelationId, "Internal Server Error");
             }
+
+            public override void NotReady()
+            {
+                _manager.ReplyNotAuthenticated(_package.CorrelationId, "Server not ready");
+            }
         }
 
         private class TcpDefaultAuthRequest : AuthenticationRequest
@@ -466,6 +471,11 @@ namespace EventStore.Core.Services.Transport.Tcp
             public override void Error()
             {
                 _manager.ReplyNotAuthenticated(_correlationId, "Internal Server Error");
+            }
+
+            public override void NotReady()
+            {
+                _manager.ReplyNotAuthenticated(_correlationId, "Server not yet ready");
             }
         }
 
