@@ -260,7 +260,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        public void the_subscription_gets_event_zero_as_its_first_event()
+        public void the_subscription_gets_the_written_event_as_its_first_event()
         {
             Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
             Assert.IsNotNull(_firstEvent);
