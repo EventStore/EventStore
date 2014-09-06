@@ -165,7 +165,7 @@ namespace EventStore.ClientAPI
                         if(_autoAck)
                             _subscription.NotifyEventsProcessed(new[]{e.Event.EventId});
                         if (_verbose)
-                            _log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}). {5}",
+                            _log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}).",
                                       _streamId,
                                       e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber);
                     }
