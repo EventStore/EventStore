@@ -17,6 +17,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         protected abstract void When();
+        protected virtual void Given() { }
 
         protected virtual IEventStoreConnection BuildConnection(MiniNode node)
         {

@@ -10,11 +10,12 @@ namespace CompetingPlayground
 {
     class Program
     {
-        private static readonly string Stream = "TestFoo";
+        private static readonly string Stream = "Te222stFoo";
         private static readonly string SubName = "greG";
         private static readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
                                                                                 .DoNotResolveLinkTos()
-                                                                                .StartFromCurrent();
+                                                                                .StartFromCurrent()
+                                                                                .WithExtraLatencyStatistics();
 
         static void Main(string[] args)
         {

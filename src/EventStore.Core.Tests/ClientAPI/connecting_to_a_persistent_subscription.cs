@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
@@ -96,6 +100,63 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.IsInstanceOf<AggregateException>(ex);
                 Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
             }
+        }
+    }
+
+
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_with_start_from_beginning_and_events_in_it : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromBeginning();
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private ResolvedEvent _firstEvent;
+        private List<Guid> _ids = new List<Guid>();
+
+        private const string _group = "startinbeginning1";
+
+        protected override void Given()
+        {
+            WriteEvents(_conn);
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                new UserCredentials("admin", "changeit")).Wait();
+        }
+
+        private void WriteEvents(IEventStoreConnection connection)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                _ids.Add(Guid.NewGuid());
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                    new EventData(_ids[i], "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+            }
+        }
+
+        protected override void When()
+        {
+            _conn.ConnectToPersistentSubscription(_group,
+                _stream,
+                HandleEvent,
+                (sub, reason, ex) => { },
+                userCredentials: new UserCredentials("admin", "changeit"));
+        }
+
+        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        {
+            _firstEvent = resolvedEvent;
+            _resetEvent.Set();
+        }
+
+        [Test]
+        public void the_subscription_gets_event_zero_as_its_first_event()
+        {
+            _resetEvent.WaitOne(TimeSpan.FromSeconds(10));
+            Assert.IsNotNull(_firstEvent);
+            Assert.AreEqual(0, _firstEvent.Event.EventNumber);
+            Assert.AreEqual(_ids[0], _firstEvent.Event.EventId);
         }
     }
 
