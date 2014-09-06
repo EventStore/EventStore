@@ -35,9 +35,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         //private readonly TimeSpan _messageTimeout;
         private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
         private readonly PairingHeap<MessagePromise> promises; 
-        private readonly BoundedQueue<ResolvedEvent> _liveEvents;
+        private readonly BoundedQueue<ResolvedEvent> _liveEvents; 
 
-        public bool HasClients
+                public bool HasClients
         {
             get { return _pushClients.Count > 0; }
         }
@@ -239,14 +239,16 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
     }
 
-    struct OutstandingMessage
+    public struct OutstandingMessage
     {
         public readonly ResolvedEvent ResolvedEvent;
         public readonly PersistentSubscriptionClient HandlingClient;
         public readonly int RetryCount;
+        public readonly Guid EventId;
 
-        public OutstandingMessage(PersistentSubscriptionClient handlingClient, ResolvedEvent resolvedEvent, int retryCount) : this()
+        public OutstandingMessage(Guid eventId, PersistentSubscriptionClient handlingClient, ResolvedEvent resolvedEvent, int retryCount) : this()
         {
+            EventId = eventId;
             HandlingClient = handlingClient;
             ResolvedEvent = resolvedEvent;
             RetryCount = retryCount;

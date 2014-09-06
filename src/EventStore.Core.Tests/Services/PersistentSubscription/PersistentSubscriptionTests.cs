@@ -2,6 +2,7 @@
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Tests.Services.Replication;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
@@ -9,12 +10,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
     [TestFixture]
     public class when_creating_persistent_subscription
     {
-        private PersistentSubscription _sub;
+        private EventStore.Core.Services.PersistentSubscription.PersistentSubscription _sub;
 
         [TestFixtureSetUp]
         public void Setup()
         {
-            _sub = new PersistentSubscription(true,
+            _sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(true,
                 "subId",
                 "streamName",
                 "groupName",
@@ -54,12 +55,45 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
     }
 
     [TestFixture]
+    public class LiveTests
+    {
+        [Test]
+        public void live_subscription_pushes_events_to_client()
+        {
+            var envelope = new FakeEnvelope();
+            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(true,
+                "subId",
+                "streamName",
+                "groupName",
+                false,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }),
+                new FakeCheckpointReader(),
+                new FakeCheckpointWriter(x => { }));
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(),envelope, 10, "foo", "bar");
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
+            Assert.AreEqual(1,envelope.Replies.Count);
+        }
+    }
+
+    public class Helper
+    {
+        public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, int version)
+        {
+            return
+                new ResolvedEvent(new EventRecord(1, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version,
+                    DateTime.Now, PrepareFlags.SingleWrite, type, new byte[0], new byte[0]));
+        }
+    }
+
+    [TestFixture]
     public class AddingClientTests
     {
         [Test]
         public void adding_a_client_adds_the_client()
         {
-            var sub = new PersistentSubscription(true,
+            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(true,
                 "subId",
                 "streamName",
                 "groupName",
@@ -85,7 +119,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             _action = action;
         }
 
-        public void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
+        public void BeginLoadState(EventStore.Core.Services.PersistentSubscription.PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
         {
             _action(startEventNumber);
         }
