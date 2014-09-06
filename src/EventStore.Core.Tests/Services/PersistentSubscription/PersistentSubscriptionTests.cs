@@ -52,6 +52,97 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             Assert.AreEqual(0, _sub.ClientCount);
         }
 
+        [Test]
+        public void null_checkpoint_reader_throws_argument_null()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(true,
+                "subId",
+                "streamName",
+                "groupName",
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }),
+                null,
+                new FakeCheckpointWriter(x => { })));
+        }
+
+        public void null_checkpoint_writer_throws_argument_null()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(true,
+                "subId",
+                "streamName",
+                "groupName",
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }),
+                new FakeCheckpointReader(), 
+                null));
+        }
+
+
+        [Test]
+        public void null_event_reader_throws_argument_null()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(true,
+                "subId",
+                "streamName",
+                "groupName",
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                null,
+                new FakeCheckpointReader(), 
+                new FakeCheckpointWriter(X => { })));
+        }
+
+        [Test]
+        public void null_subid_throws_argument_null()
+        {
+            Assert.Throws<ArgumentNullException>(() =>  new Core.Services.PersistentSubscription.PersistentSubscription(true,
+                null,
+                "streamName",
+                "groupName",
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }), 
+                new FakeCheckpointReader(),
+                new FakeCheckpointWriter(X => { })));
+        }
+
+
+        [Test]
+        public void null_stream_throws_argument_null()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(true,
+                "subid",
+                null,
+                "groupName",
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }),
+                new FakeCheckpointReader(),
+                new FakeCheckpointWriter(X => { })));
+        }
+
+        [Test]
+        public void null_groupname_throws_argument_null()
+        {
+            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(true,
+                "subid",
+                "stream",
+                null,
+                true,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }),
+                new FakeCheckpointReader(),
+                new FakeCheckpointWriter(X => { })));
+        }
+
     }
 
     [TestFixture]
