@@ -7,7 +7,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
-    public class PersistentSubscriptionClient
+    public class PersistentSubscriptionClient_old
     {
         public readonly int MaximumInFlightMessages;
 
@@ -22,14 +22,14 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly RequestStatistics _latencyStatistics;
         private readonly List<SequencedEvent> _unconfirmedEvents = new List<SequencedEvent>();
 
-        public PersistentSubscriptionClient(Guid correlationId,
-            Guid connectionId,
-            IEnvelope envelope,
-            int inFlightMessages,
-            string username,
-            string from,
-            Stopwatch watch,
-            bool trackLatency)
+        public PersistentSubscriptionClient_old(Guid correlationId, 
+                                            Guid connectionId, 
+                                            IEnvelope envelope, 
+                                            int inFlightMessages, 
+                                            string username, 
+                                            string from,
+                                            Stopwatch watch,
+                                            bool trackLatency)
         {
             _correlationId = correlationId;
             _connectionId = connectionId;
@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (eventIndex >= 0)
                 {
                     _inFlightMessages++;
-                    if (_latencyStatistics != null)
+                    if(_latencyStatistics != null)
                         _latencyStatistics.EndOperation(processedEventId);
                     var evnt = _unconfirmedEvents[eventIndex];
                     _unconfirmedEvents.RemoveAt(eventIndex);

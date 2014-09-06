@@ -166,6 +166,9 @@
     <Compile Include="Services\Gossip\IGossipSeedSource.cs" />
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
+    <Compile Include="Services\PersistentSubscription\MessageReceipt.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscription.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClient.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConfig.cs" />
     <Compile Include="Services\PersistentSubscription\RequestStatistics.cs" />
     <Compile Include="Services\Replication\MasterReplicationService.cs" />
@@ -186,10 +189,10 @@
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointReader.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointWriter.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionEventLoader.cs" />
-    <Compile Include="Services\PersistentSubscription\PersistentSubscription.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscription_old.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionCheckpointReader.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionCheckpointWriter.cs" />
-    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClient.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClient_old.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionEventLoader.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionService.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionState.cs" />
