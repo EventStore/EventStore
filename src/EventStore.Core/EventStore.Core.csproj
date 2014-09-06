@@ -351,6 +351,7 @@
     <Compile Include="TransactionLog\FileNamingStrategy\IFileNamingStrategy.cs" />
     <Compile Include="Util\MiniWeb.cs" />
     <Compile Include="Util\Opts.cs" />
+    <Compile Include="VNodeStatusChangeArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
