@@ -2,7 +2,7 @@ using System;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
-    internal struct MessagePromise
+    public struct MessagePromise
     {
         public readonly Guid MessageId;
         public readonly Guid ConnectionId;
