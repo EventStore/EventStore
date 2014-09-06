@@ -32,9 +32,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         private TimeSpan _lastTotalTime;
         private long _lastTotalItems;
         private readonly bool _trackLatency;
-        //private readonly TimeSpan _messageTimeout;
-        private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
-        private readonly PairingHeap<RetryableMessage> promises; 
+        private readonly TimeSpan _messageTimeout;
+        private readonly OutstandingMessageCache _outstandingMessages;
         private readonly BoundedQueue<ResolvedEvent> _liveEvents; 
 
                 public bool HasClients
@@ -43,12 +42,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         public int ClientCount { get { return _pushClients.Count; } }
-
-
-        public int LastEventNumber
-        {
-            get { return _lastEventNumber; }
-        }
 
         public PersistentSubscriptionState State
         {
@@ -79,11 +72,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             //_checkpointWriter = checkpointWriter;
             _startFromBeginning = startFromBeginning;
             _trackLatency = trackLatency;
-            //_messageTimeout = messageTimeout;
+            _messageTimeout = messageTimeout;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
-            _outstandingRequests = new Dictionary<Guid, OutstandingMessage>();
-            promises = new PairingHeap<RetryableMessage>();
+            _outstandingMessages = new OutstandingMessageCache();
             //TODO Add configuration for queue size
             _liveEvents = new BoundedQueue<ResolvedEvent>(500);
             InitAsNew();
@@ -161,12 +153,17 @@ namespace EventStore.Core.Services.PersistentSubscription
             //write checkpoint
         }
 
+        public void AddMessageAsProcessing(ResolvedEvent ev, PersistentSubscriptionClient client)
+        {
+            _outstandingMessages.StartMessage(new OutstandingMessage(ev.Event.EventId, client, ev, 0), DateTime.Now + _messageTimeout);
+        }
+
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
             _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
-                _outstandingRequests.Remove(id);
+                _outstandingMessages.MarkCompleted(id);
             }
         }
 
@@ -182,17 +179,17 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
 
-        public void TimerInvalidate()
+        public void InvalidateRetries()
         {
-            //check for timed out messages in pairing heap
-            while (promises.Count > 0 && promises.FindMin().DueTime <= DateTime.Now)
+            foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(DateTime.Now))
             {
+                RetryMessage(message);
             }
         }
 
-        private void RerouteEvent(ResolvedEvent evnt)
+        private void RetryMessage(RetryableMessage message)
         {
-            throw new NotImplementedException();
+            //Requeue
         }
 
         public MonitoringMessage.SubscriptionInfo GetStatistics()
