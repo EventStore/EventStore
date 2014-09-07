@@ -30,6 +30,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var cache = new OutstandingMessageCache();
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
             Assert.AreEqual(1, cache.Count);
+            Assert.AreEqual(0, cache.GetLowestPosition());
         }
 
         [Test]
@@ -40,6 +41,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
             Assert.AreEqual(1, cache.Count);
+            Assert.AreEqual(0, cache.GetLowestPosition());
         }
 
         [Test]
@@ -57,6 +59,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var cache = new OutstandingMessageCache();
             Assert.AreEqual(0, cache.GetMessagesExpiringBefore(DateTime.Now).Count());
+            Assert.AreEqual(int.MaxValue, cache.GetLowestPosition());
         }
 
         [Test]
