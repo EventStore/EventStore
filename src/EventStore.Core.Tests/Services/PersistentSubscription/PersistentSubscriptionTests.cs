@@ -67,6 +67,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                 new FakeCheckpointWriter(x => { })));
         }
 
+        [Test]
         public void null_checkpoint_writer_throws_argument_null()
         {
             Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(true,
