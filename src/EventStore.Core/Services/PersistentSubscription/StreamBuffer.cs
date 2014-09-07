@@ -94,6 +94,17 @@ namespace EventStore.Core.Services.PersistentSubscription
             ev = _buffer.Dequeue();
             return true;
         }
+
+        public bool TryPeek(out OutstandingMessage ev)
+        {
+            if (_buffer.Count == 0)
+            {
+                ev = new OutstandingMessage();
+                return false;
+            }
+            ev = _buffer.Peek();
+            return true;
+        }
     }
 
     public enum BufferedStreamReaderState

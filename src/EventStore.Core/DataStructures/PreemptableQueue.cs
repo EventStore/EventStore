@@ -22,5 +22,10 @@ namespace EventStore.Core.DataStructures
         {
             return _preempt.Count > 0 ? _preempt.Dequeue() : _regular.Dequeue();
         }
+
+        public T Peek()
+        {
+            return _preempt.Count > 0 ? _preempt.Peek() : _regular.Peek();
+        }
     }
 }
