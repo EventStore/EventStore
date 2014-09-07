@@ -360,7 +360,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _outstandingFetchRequest = true;
                 _eventBufferIndex = 0;
                 _eventBuffer = new ResolvedEvent[0];
-                _eventLoader.BeginLoadState(null, _nextEventNumber, inFlight, HandleReadEvents);
+                //this is highly highly odd code dont worry its being deleted.
+                _eventLoader.BeginLoadState(new PersistentSubscription(false, this.SubscriptionId, this.EventStreamId, this.GroupName,this._startFromBeginning, this._trackLatency, this._messageTimeout, _eventLoader,_checkpointReader,_checkpointWriter), _nextEventNumber, inFlight, HandleReadEvents);
                 return true;
             }
             return false;
