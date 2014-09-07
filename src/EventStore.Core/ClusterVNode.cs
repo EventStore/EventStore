@@ -98,9 +98,12 @@ namespace EventStore.Core
 
             _controller = new ClusterVNodeController(_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
+            
             _controller.SetMainQueue(_mainQueue);
 
             _subsystems = subsystems;
+            //SELF
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
 
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
