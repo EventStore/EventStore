@@ -1,5 +1,4 @@
-﻿using System.Runtime.Remoting.Messaging;
-using EventStore.Core.DataStructures;
+﻿using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {

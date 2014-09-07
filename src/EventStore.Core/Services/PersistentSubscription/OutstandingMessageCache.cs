@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public IEnumerable<RetryableMessage> GetMessagesExpiringBefore(DateTime time)
+        public IEnumerable<OutstandingMessage> GetMessagesExpiringBefore(DateTime time)
         {
             while (_byTime.Count > 0 && _byTime.FindMin().DueTime <= time)
             {
@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 OutstandingMessage m;
                 if (_outstandingRequests.TryGetValue(item.MessageId, out m))
                 {
-                    yield return item;
+                    yield return _outstandingRequests[item.MessageId];
                     _outstandingRequests.Remove(item.MessageId);
                     _bySequences.Remove(m.ResolvedEvent.OriginalEventNumber);
                 }

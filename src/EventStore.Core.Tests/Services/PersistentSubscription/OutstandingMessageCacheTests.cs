@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now.AddSeconds(-1));
             var expired = cache.GetMessagesExpiringBefore(DateTime.Now).ToList();
             Assert.AreEqual(1, expired.Count());
-            Assert.AreEqual(id, expired.FirstOrDefault().MessageId);
+            Assert.AreEqual(id, expired.FirstOrDefault().EventId);
         }
 
         [Test]
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             cache.StartMessage(new OutstandingMessage(Guid.NewGuid(), null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0), DateTime.Now.AddSeconds(1));
             var expired = cache.GetMessagesExpiringBefore(DateTime.Now).ToList();
             Assert.AreEqual(1, expired.Count());
-            Assert.AreEqual(id, expired.FirstOrDefault().MessageId);
+            Assert.AreEqual(id, expired.FirstOrDefault().EventId);
         }
 
         [Test]
