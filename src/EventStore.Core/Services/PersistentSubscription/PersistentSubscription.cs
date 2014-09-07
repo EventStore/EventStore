@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly string EventStreamId;
         public readonly string GroupName;
         //private readonly IPersistentSubscriptionEventLoader _eventLoader;
-        //private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly bool _startFromBeginning;
         internal PersistentSubscriptionClientCollection _pushClients = new PersistentSubscriptionClientCollection();
         //private bool _outstandingFetchRequest;
@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly bool _trackLatency;
         private readonly TimeSpan _messageTimeout;
         private readonly OutstandingMessageCache _outstandingMessages;
-        private readonly SubscriptionBuffer _subscriptionBuffer;
+        private SubscriptionBuffer _subscriptionBuffer;
 
         public bool HasClients
         {
@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _statistics.SetLastKnownEventNumber(-1);
             //_outstandingFetchRequest = false;
-            _subscriptionBuffer = new SubscriptionBuffer(500, _statistics);
+            _subscriptionBuffer = new SubscriptionBuffer(this, 500, _statistics, _checkpointReader);
             _pushClients = new PersistentSubscriptionClientCollection();
         }
 

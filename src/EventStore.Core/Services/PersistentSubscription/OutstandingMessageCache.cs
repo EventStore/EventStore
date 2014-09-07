@@ -8,19 +8,25 @@ namespace EventStore.Core.Services.PersistentSubscription
     {
         private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
         private readonly PairingHeap<RetryableMessage> _byTime;
-        private readonly SortedDictionary<int, Guid> _bySequences;
+        private readonly SortedList<int, int> _bySequences;
  
         public OutstandingMessageCache()
         {
             _outstandingRequests = new Dictionary<Guid, OutstandingMessage>();
             _byTime = new PairingHeap<RetryableMessage>((x,y) => x.DueTime < y.DueTime);
+            _bySequences = new SortedList<int, int>();
         }
 
         public int Count { get { return _outstandingRequests.Count; }}
 
         public void Remove(Guid messageId)
         {
-            _outstandingRequests.Remove(messageId);
+            OutstandingMessage m;
+            if (_outstandingRequests.TryGetValue(messageId, out m))
+            {
+                _outstandingRequests.Remove(messageId);
+                _bySequences.Remove(m.ResolvedEvent.OriginalEventNumber);
+            }
         }
 
         public void Remove(IEnumerable<Guid> messageIds)
@@ -30,8 +36,13 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void StartMessage(OutstandingMessage message, DateTime expires)
         {
+            bool found = _outstandingRequests.ContainsKey(message.EventId);
             _outstandingRequests[message.EventId] = message;
-            _byTime.Add(new RetryableMessage(message.EventId, expires));
+            if (!found)
+            {
+                _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
+                _byTime.Add(new RetryableMessage(message.EventId, expires));
+            }
         }
 
         public IEnumerable<RetryableMessage> GetMessagesExpiringBefore(DateTime time)
@@ -39,12 +50,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             while (_byTime.Count > 0 && _byTime.FindMin().DueTime <= time)
             {
                 var item = _byTime.DeleteMin();
-                if (_outstandingRequests.ContainsKey(item.MessageId))
+                OutstandingMessage m;
+                if (_outstandingRequests.TryGetValue(item.MessageId, out m))
                 {
                     yield return item;
                     _outstandingRequests.Remove(item.MessageId);
+                    _bySequences.Remove(m.ResolvedEvent.OriginalEventNumber);
                 }
             }
+        }
+
+        public int GetLowestPosition()
+        {
+            if (_bySequences.Count == 0) return int.MaxValue;
+            return _bySequences[0];
         }
     }
 }

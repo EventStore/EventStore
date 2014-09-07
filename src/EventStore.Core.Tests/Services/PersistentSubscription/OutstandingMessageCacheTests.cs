@@ -71,6 +71,18 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
 
         [Test]
+        public void message_that_expires_is_included_in_expired_list_with_another_that_should_not()
+        {
+            var id = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now.AddSeconds(-1));
+            cache.StartMessage(new OutstandingMessage(Guid.NewGuid(), null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0), DateTime.Now.AddSeconds(1));
+            var expired = cache.GetMessagesExpiringBefore(DateTime.Now).ToList();
+            Assert.AreEqual(1, expired.Count());
+            Assert.AreEqual(id, expired.FirstOrDefault().MessageId);
+        }
+
+        [Test]
         public void message_that_notexpired_is_not_included_in_expired_list()
         {
             var id = Guid.NewGuid();
