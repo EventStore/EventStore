@@ -43,8 +43,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             var transId = TransStart("write-stream", "user1", "pa$$1").TransactionId;
             var t2 = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
-            t2.Write(CreateEvents());
-            Expect<NotAuthenticatedException>(() => t2.Commit());
+            t2.WriteAsync(CreateEvents()).Wait();
+            Expect<NotAuthenticatedException>(() => t2.CommitAsync().Wait());
         }
 
         [Test, Category("LongRunning"), Category("Network")]
@@ -52,8 +52,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             var transId = TransStart("write-stream", "user1", "pa$$1").TransactionId;
             var t2 = Connection.ContinueTransaction(transId);
-            t2.Write();
-            Expect<AccessDeniedException>(() => t2.Commit());
+            t2.WriteAsync().Wait();
+            Expect<AccessDeniedException>(() => t2.CommitAsync().Wait());
         }
 
         [Test, Category("LongRunning"), Category("Network")]
@@ -61,8 +61,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             var transId = TransStart("write-stream", "user1", "pa$$1").TransactionId;
             var t2 = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-            t2.Write();
-            Expect<AccessDeniedException>(() => t2.Commit());
+            t2.WriteAsync().Wait();
+            Expect<AccessDeniedException>(() => t2.CommitAsync().Wait());
         }
 
         [Test, Category("LongRunning"), Category("Network")]
@@ -70,8 +70,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             var transId = TransStart("write-stream", "user1", "pa$$1").TransactionId;
             var t2 = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-            t2.Write();
-            ExpectNoException(() => t2.Commit());
+            t2.WriteAsync().Wait();
+            ExpectNoException(() => t2.CommitAsync().Wait());
         }
 
         [Test, Category("LongRunning"), Category("Network")]
@@ -79,8 +79,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         {
             var transId = TransStart("write-stream", "user1", "pa$$1").TransactionId;
             var t2 = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-            t2.Write();
-            ExpectNoException(() => t2.Commit());
+            t2.WriteAsync().Wait();
+            ExpectNoException(() => t2.CommitAsync().Wait());
         }
 
 
@@ -90,8 +90,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() =>
             {
                 var t = TransStart("noacl-stream", null, null);
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
         }
 
@@ -107,14 +107,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() =>
             {
                 var t = TransStart("noacl-stream", "user1", "pa$$1");
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
             ExpectNoException(() =>
             {
                 var t = TransStart("noacl-stream", "user2", "pa$$2");
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
         }
 
@@ -124,8 +124,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() =>
             {
                 var t = TransStart("noacl-stream", "adm", "admpa$$");
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
         }
 
@@ -136,8 +136,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() =>
             {
                 var t = TransStart("normal-all", null, null);
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
         }
 
@@ -153,14 +153,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() =>
             {
                 var t = TransStart("normal-all", "user1", "pa$$1");
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
             ExpectNoException(() =>
             {
                 var t = TransStart("normal-all", "user2", "pa$$2");
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
         }
 
@@ -170,8 +170,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() =>
             {
                 var t = TransStart("normal-all", "adm", "admpa$$");
-                t.Write(CreateEvents());
-                t.Commit();
+                t.WriteAsync(CreateEvents()).Wait();
+                t.CommitAsync().Wait();
             });
         }
     }

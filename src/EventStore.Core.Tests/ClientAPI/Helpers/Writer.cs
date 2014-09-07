@@ -76,13 +76,13 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public OngoingTransaction Write(params EventData[] events)
         {
-            _transaction.Write(events);
+            _transaction.WriteAsync(events).Wait();
             return this;
         }
 
         public WriteResult Commit()
         {
-            return _transaction.Commit();
+            return _transaction.CommitAsync().Result;
         }
     }
 }

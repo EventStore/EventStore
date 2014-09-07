@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -58,11 +55,15 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 using (var transaction = connection.StartTransactionAsync(stream, ExpectedVersion.Any).Result)
                 {
-                    transaction.Write(
-                        new EventData(Guid.NewGuid(), "some-type", true, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
-                        new EventData(Guid.NewGuid(), "some-type", true, null, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
-                        new EventData(Guid.NewGuid(), "some-type", true, Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
-                    transaction.Commit();
+                    transaction.WriteAsync(
+                        new EventData(Guid.NewGuid(), "some-type", true,
+                            Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
+                        new EventData(Guid.NewGuid(), "some-type", true, null,
+                            Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
+                        new EventData(Guid.NewGuid(), "some-type", true,
+                            Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
+                            Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"))).Wait();
+                    transaction.CommitAsync().Wait();
                 }
 
                 var done = new ManualResetEventSlim();

@@ -1,6 +1,4 @@
-﻿using System;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
+﻿using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
 using NUnit.Framework;
@@ -31,12 +29,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             ExpectNoException(() => WriteStream(stream, "user1", "pa$$1"));
             ExpectNoException(() => TransStart(stream, "user1", "pa$$1"));
-            {
-                var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
-                var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-                ExpectNoException(() => trans.Write());
-                ExpectNoException(() => trans.Commit());
-            };
+
+            var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
+            var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+            ExpectNoException(() => trans.WriteAsync().Wait());
+            ExpectNoException(() => trans.CommitAsync().Wait());
 
             ExpectNoException(() => ReadMeta(stream, "user1", "pa$$1"));
             ExpectNoException(() => WriteMeta(stream, "user1", "pa$$1", null));
@@ -56,12 +53,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             ExpectNoException(() => WriteStream(stream, null, null));
             ExpectNoException(() => TransStart(stream, null, null));
-            {
-                var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
-                var trans = Connection.ContinueTransaction(transId, null);
-                ExpectNoException(() => trans.Write());
-                ExpectNoException(() => trans.Commit());
-            };
+
+            var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
+            var trans = Connection.ContinueTransaction(transId);
+            ExpectNoException(() => trans.WriteAsync().Wait());
+            ExpectNoException(() => trans.CommitAsync().Wait());
 
             ExpectNoException(() => ReadMeta(stream, null, null));
             ExpectNoException(() => WriteMeta(stream, null, null, null));
@@ -81,12 +77,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             ExpectNoException(() => WriteStream(stream, "adm", "admpa$$"));
             ExpectNoException(() => TransStart(stream, "adm", "admpa$$"));
-            {
-                var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
-                var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-                ExpectNoException(() => trans.Write());
-                ExpectNoException(() => trans.Commit());
-            };
+
+            var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
+            var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+            ExpectNoException(() => trans.WriteAsync().Wait());
+            ExpectNoException(() => trans.CommitAsync().Wait());
 
             ExpectNoException(() => ReadMeta(stream, "adm", "admpa$$"));
             ExpectNoException(() => WriteMeta(stream, "adm", "admpa$$", null));
