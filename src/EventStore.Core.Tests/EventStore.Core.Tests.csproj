@@ -302,7 +302,7 @@
     <Compile Include="Services\ElectionsService\Randomized\TimerMessageProcessor.cs" />
     <Compile Include="Services\ElectionsService\Randomized\UpdateGossipProcessor.cs" />
     <Compile Include="Services\GossipService\gossip_service_should.cs" />
-    <Compile Include="Services\PersistentSubscription\MessageBufferTests.cs" />
+    <Compile Include="Services\PersistentSubscription\StreamBufferTests.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit.cs" />
     <Compile Include="Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
     <Compile Include="Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />
