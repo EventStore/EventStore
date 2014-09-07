@@ -175,6 +175,18 @@ namespace EventStore.ClusterNode
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
             var quorumSize = GetQuorumSize(options.ClusterSize);
             
+            if (Runtime.IsMono)
+            {
+                if (!prefixes.Contains(x => x.Contains("localhost")) && Equals(extHttp.Address, IPAddress.Loopback))
+                {
+                    var withAdditional = new List<string>(prefixes)
+                    {
+                        string.Format("http://localhost:{0}/", extHttp.Port)
+                    };
+                    prefixes = withAdditional.ToArray();
+                }
+            }
+
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);
