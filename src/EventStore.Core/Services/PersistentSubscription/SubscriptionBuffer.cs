@@ -10,7 +10,18 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly BoundedQueue<ResolvedEvent> _liveSubscriptionMessages;
 
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
+        private readonly PersistentSubscription _parentSubscription;
+        private bool _startFromBeginning = false;
         public PersistentSubscriptionState State { get { return _state; } }
+
+
+        public SubscriptionBuffer(PersistentSubscription parentSubscription, int liveSubscriptionBufferSize, PersistentSubscriptionStats statistics, IPersistentSubscriptionCheckpointReader checkpointReader)
+        {
+            _parentSubscription = parentSubscription;
+            _statistics = statistics;
+            _checkpointReader = checkpointReader;
+            _liveSubscriptionMessages = new BoundedQueue<ResolvedEvent>(liveSubscriptionBufferSize);
+        }
 
         public void AddLiveMessage(ResolvedEvent ev)
         {
@@ -24,14 +35,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Start()
         {
-            _checkpointReader.BeginLoadState(SubscriptionId, OnStateLoaded);
-        }
-
-        public SubscriptionBuffer(int liveSubscriptionBufferSize, PersistentSubscriptionStats statistics, IPersistentSubscriptionCheckpointReader checkpointReader)
-        {
-            _statistics = statistics;
-            _checkpointReader = checkpointReader;
-            _liveSubscriptionMessages = new BoundedQueue<ResolvedEvent>(liveSubscriptionBufferSize);
+            _checkpointReader.BeginLoadState(_parentSubscription.SubscriptionId, OnStateLoaded);
         }
 
         private void OnStateLoaded(int? lastProcessedEvent)
@@ -74,6 +78,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Shutdown()
         {
             _state = PersistentSubscriptionState.ShuttingDown;
+        }
+
+        public int GetLowestPosition()
+        {
+            return 0;
         }
     }
 }

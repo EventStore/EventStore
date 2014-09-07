@@ -173,7 +173,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, int version)
         {
             return
-                new ResolvedEvent(new EventRecord(1, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version,
+                new ResolvedEvent(new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version,
                     DateTime.Now, PrepareFlags.SingleWrite, type, new byte[0], new byte[0]));
         }
     }
