@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         public void can_remove_non_existing_item()
         {
             var cache = new OutstandingMessageCache();
-            Assert.DoesNotThrow(() => cache.MarkCompleted(Guid.NewGuid()));
+            Assert.DoesNotThrow(() => cache.Remove(Guid.NewGuid()));
         }
 
         [Test]
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
-            cache.MarkCompleted(id);
+            cache.Remove(id);
             Assert.AreEqual(0, cache.Count);
         }
 
