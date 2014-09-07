@@ -157,10 +157,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;   
             }
             if(!manager.RequestCodec.HasEventIds && includedId == Guid.Empty) {
-                var uri = new Uri(new Uri(match.RequestUri.ToString() + "/"), "incoming/" + Guid.NewGuid().ToString()).ToString();
+                var uri = new Uri(new Uri(match.RequestUri + "/"), "incoming/" + Guid.NewGuid()).ToString();
                 var header = new []
                              {new KeyValuePair<string, string>("Location", uri)};
-                manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb, "", "", header, e => { });
+                manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb, "Temporary Redirect", "text/plain", header, e => { });
                 return;
             }
             int expectedVersion;
