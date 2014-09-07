@@ -28,7 +28,6 @@ namespace EventStore.ClientAPI
         public readonly int? LastEventNumber;
 
         private readonly string _streamId;
-        private readonly Action _unsubscribe;
 
         internal EventStoreSubscription(string streamId, long lastCommitPosition, int? lastEventNumber)
         {
