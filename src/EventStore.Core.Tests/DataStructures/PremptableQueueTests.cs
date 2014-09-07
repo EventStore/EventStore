@@ -13,9 +13,11 @@ namespace EventStore.Core.Tests.DataStructures
             queue.Enqueue(1);
             queue.Enqueue(2);
             queue.Enqueue(3);
+            Assert.AreEqual(3, queue.Count);
             Assert.AreEqual(1, queue.Dequeue());
             Assert.AreEqual(2, queue.Dequeue());
             Assert.AreEqual(3, queue.Dequeue());
+            Assert.AreEqual(0, queue.Count);
         }
 
         [Test]
@@ -25,9 +27,11 @@ namespace EventStore.Core.Tests.DataStructures
             queue.Enqueue(1);
             queue.Enqueue(2);
             queue.Preempt(3);
+            Assert.AreEqual(3, queue.Count);
             Assert.AreEqual(3, queue.Dequeue());
             Assert.AreEqual(1, queue.Dequeue());
             Assert.AreEqual(2, queue.Dequeue());
+            Assert.AreEqual(0, queue.Count);
         }
 
         [Test]
@@ -38,10 +42,12 @@ namespace EventStore.Core.Tests.DataStructures
             queue.Enqueue(2);
             queue.Preempt(3);
             queue.Preempt(4);
+            Assert.AreEqual(4, queue.Count);
             Assert.AreEqual(3, queue.Dequeue());
             Assert.AreEqual(4,queue.Dequeue());
             Assert.AreEqual(1, queue.Dequeue());
             Assert.AreEqual(2, queue.Dequeue());
+            Assert.AreEqual(0, queue.Count);
         }
 
 
