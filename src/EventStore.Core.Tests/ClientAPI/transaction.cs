@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
@@ -48,8 +47,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
                 using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.NoStream).Result)
                 {
-                    transaction.Write(new[] { TestEvent.NewTestEvent() });
-                    Assert.AreEqual(0, transaction.Commit().NextExpectedVersion);
+                    transaction.WriteAsync(new[] {TestEvent.NewTestEvent()}).Wait();
+                    Assert.AreEqual(0, transaction.CommitAsync().Result.NextExpectedVersion);
                 }
             }
         }
@@ -64,8 +63,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
                 using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.Any).Result)
                 {
-                    transaction.Write(new[] {TestEvent.NewTestEvent()});
-                    Assert.AreEqual(0, transaction.Commit().NextExpectedVersion);
+                    transaction.WriteAsync(new[] {TestEvent.NewTestEvent()}).Wait();
+                    Assert.AreEqual(0, transaction.CommitAsync().Result.NextExpectedVersion);
                 }
             }
         }
@@ -80,8 +79,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
                 using (var transaction = store.StartTransactionAsync(stream, 1).Result)
                 {
-                    transaction.Write(TestEvent.NewTestEvent());
-                    Assert.That(() => transaction.Commit(),
+                    transaction.WriteAsync(TestEvent.NewTestEvent()).Wait();
+                    Assert.That(() => transaction.CommitAsync().Wait(),
                                 Throws.Exception.TypeOf<AggregateException>()
                                 .With.InnerException.TypeOf<WrongExpectedVersionException>());
                 }
@@ -98,7 +97,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
                 using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.NoStream).Result)
                 {
-                    Assert.AreEqual(-1, transaction.Commit().NextExpectedVersion);
+                    Assert.AreEqual(-1, transaction.CommitAsync().Result.NextExpectedVersion);
                 }
 
                 var result = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false).Result;
@@ -115,8 +114,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
                 using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.NoStream).Result)
                 {
-                    Assert.DoesNotThrow(() => transaction.Write());
-                    Assert.AreEqual(-1, transaction.Commit().NextExpectedVersion);
+                    Assert.DoesNotThrow(() => transaction.WriteAsync().Wait());
+                    Assert.AreEqual(-1, transaction.CommitAsync().Result.NextExpectedVersion);
                 }
 
                 var result = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false).Result;
@@ -135,7 +134,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (var transaction = store.StartTransactionAsync(stream, 100500).Result)
                 {
                     transaction.WriteAsync(TestEvent.NewTestEvent());
-                    Assert.That(() => transaction.Commit(),
+                    Assert.That(() => transaction.CommitAsync().Wait(),
                                 Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
                 }
             }
@@ -170,7 +169,7 @@ namespace EventStore.Core.Tests.ClientAPI
                             }
 
                             Task.WaitAll(writes.ToArray());
-                            transaction.Commit();
+                            transaction.CommitAsync().Wait();
                             transWritesCompleted.Set();
                         }
                     }
@@ -225,8 +224,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream).Result)
                 {
                     store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()}).Wait();
-                    transaction.Write(TestEvent.NewTestEvent());
-                    Assert.That(() => transaction.Commit(),
+                    transaction.WriteAsync(TestEvent.NewTestEvent()).Wait();
+                    Assert.That(() => transaction.CommitAsync().Wait(),
                                 Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
                 }
             }
@@ -242,8 +241,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (var transaction = store.StartTransactionAsync(stream, 0).Result)
                 {
                     store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()}).Wait();
-                    transaction.Write(TestEvent.NewTestEvent());
-                    Assert.AreEqual(1, transaction.Commit().NextExpectedVersion);
+                    transaction.WriteAsync(TestEvent.NewTestEvent()).Wait();
+                    Assert.AreEqual(1, transaction.CommitAsync().Result.NextExpectedVersion);
                 }
             }
         }
@@ -258,9 +257,9 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
                 using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream).Result)
                 {
-                    transaction.Write(TestEvent.NewTestEvent());
+                    transaction.WriteAsync(TestEvent.NewTestEvent()).Wait();
                     store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
-                    Assert.That(() => transaction.Commit(),
+                    Assert.That(() => transaction.CommitAsync().Wait(),
                                 Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
                 }
             }
@@ -277,12 +276,12 @@ namespace EventStore.Core.Tests.ClientAPI
                 var e = new EventData(Guid.NewGuid(), "SomethingHappened", true, Helper.UTF8NoBom.GetBytes("{Value:42}"), null);
 
                 var transaction1 = store.StartTransactionAsync(streamId, ExpectedVersion.Any).Result;
-                transaction1.Write(new[] {e});
-                Assert.AreEqual(0, transaction1.Commit().NextExpectedVersion);
+                transaction1.WriteAsync(new[] {e}).Wait();
+                Assert.AreEqual(0, transaction1.CommitAsync().Result.NextExpectedVersion);
 
                 var transaction2 = store.StartTransactionAsync(streamId, ExpectedVersion.Any).Result;
-                transaction2.Write(new[] {e});
-                Assert.AreEqual(0, transaction2.Commit().NextExpectedVersion);
+                transaction2.WriteAsync(new[] {e}).Wait();
+                Assert.AreEqual(0, transaction2.CommitAsync().Result.NextExpectedVersion);
 
                 var res = store.ReadStreamEventsForwardAsync(streamId, 0, 100, false).Result;
                 Assert.AreEqual(1, res.Events.Length);

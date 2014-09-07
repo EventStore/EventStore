@@ -39,15 +39,6 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Commits this transaction
-        /// </summary>
-        /// <returns>Expected version for following write requests</returns>
-        public WriteResult Commit()
-        {
-            return CommitAsync().Result;
-        }
-
-        /// <summary>
         /// Asynchronously commits this transaction
         /// </summary>
         /// <returns>A <see cref="Task"/> that returns expected version for following write requests</returns>
@@ -57,24 +48,6 @@ namespace EventStore.ClientAPI
             if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
             _isCommitted = true;
             return _connection.CommitTransactionAsync(this, _userCredentials);
-        }
-
-        /// <summary>
-        /// Writes to a transaction in the event store asynchronously
-        /// </summary>
-        /// <param name="events">The events to write</param>
-        public void Write(IEnumerable<EventData> events)
-        {
-            WriteAsync(events).Wait();
-        }
-
-        /// <summary>
-        /// Writes to a transaction in the event store asynchronously
-        /// </summary>
-        /// <param name="events">The events to write</param>
-        public void Write(params EventData[] events)
-        {
-            WriteAsync((IEnumerable<EventData>)events).Wait();
         }
 
         /// <summary>

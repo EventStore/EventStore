@@ -33,8 +33,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             {
                 var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
                 var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-                ExpectNoException(() => trans.Write());
-                ExpectNoException(() => trans.Commit());
+                ExpectNoException(() => trans.WriteAsync().Wait());
+                ExpectNoException(() => trans.CommitAsync().Wait());
             };
 
             ExpectNoException(() => ReadMeta(stream, "user1", "pa$$1"));
@@ -58,8 +58,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             {
                 var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
                 var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-                ExpectNoException(() => trans.Write());
-                Expect<AccessDeniedException>(() => trans.Commit());
+                ExpectNoException(() => trans.WriteAsync().Wait());
+                Expect<AccessDeniedException>(() => trans.CommitAsync().Wait());
             };
 
             Expect<AccessDeniedException>(() => ReadMeta(stream, "user2", "pa$$2"));
@@ -83,8 +83,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             {
                 var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
                 var trans = Connection.ContinueTransaction(transId);
-                ExpectNoException(() => trans.Write());
-                Expect<AccessDeniedException>(() => trans.Commit());
+                ExpectNoException(() => trans.WriteAsync().Wait());
+                Expect<AccessDeniedException>(() => trans.CommitAsync().Wait());
             };
 
             Expect<AccessDeniedException>(() => ReadMeta(stream, null, null));
@@ -108,8 +108,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             {
                 var transId = TransStart(stream, "adm", "admpa$$").TransactionId;
                 var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-                ExpectNoException(() => trans.Write());
-                ExpectNoException(() => trans.Commit());
+                ExpectNoException(() => trans.WriteAsync().Wait());
+                ExpectNoException(() => trans.CommitAsync().Wait());
             };
 
             ExpectNoException(() => ReadMeta(stream, "adm", "admpa$$"));

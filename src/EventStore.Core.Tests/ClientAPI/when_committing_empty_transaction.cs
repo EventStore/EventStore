@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             using (var transaction = _connection.StartTransactionAsync("test-stream", 2).Result)
             {
-                Assert.AreEqual(2, transaction.Commit().NextExpectedVersion);
+                Assert.AreEqual(2, transaction.CommitAsync().Result.NextExpectedVersion);
             }
         }
 

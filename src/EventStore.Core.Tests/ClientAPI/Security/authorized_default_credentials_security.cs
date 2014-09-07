@@ -25,8 +25,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() =>
             {
                 var trans = TransStart("write-stream", null, null);
-                trans.Write();
-                trans.Commit();
+                trans.WriteAsync().Wait();
+                trans.CommitAsync().Wait();
             });
 
             ExpectNoException(() => ReadMeta("metaread-stream", null, null));
@@ -48,12 +48,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             Expect<NotAuthenticatedException>(() => WriteStream("write-stream", "badlogin", "badpass"));
             Expect<NotAuthenticatedException>(() => TransStart("write-stream", "badlogin", "badpass"));
-            {
-                var transId = TransStart("write-stream", null, null).TransactionId;
-                var trans = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
-                ExpectNoException(() => trans.Write());
-                Expect<NotAuthenticatedException>(() => trans.Commit());
-            };
+
+            var transId = TransStart("write-stream", null, null).TransactionId;
+            var trans = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
+            ExpectNoException(() => trans.WriteAsync().Wait());
+            Expect<NotAuthenticatedException>(() => trans.CommitAsync().Wait());
 
             Expect<NotAuthenticatedException>(() => ReadMeta("metaread-stream", "badlogin", "badpass"));
             Expect<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass", "user1"));
@@ -74,12 +73,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
             Expect<AccessDeniedException>(() => WriteStream("write-stream", "user2", "pa$$2"));
             Expect<AccessDeniedException>(() => TransStart("write-stream", "user2", "pa$$2"));
-            {
-                var transId = TransStart("write-stream", null, null).TransactionId;
-                var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-                ExpectNoException(() => trans.Write());
-                Expect<AccessDeniedException>(() => trans.Commit());
-            };
+
+            var transId = TransStart("write-stream", null, null).TransactionId;
+            var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
+            ExpectNoException(() => trans.WriteAsync().Wait());
+            Expect<AccessDeniedException>(() => trans.CommitAsync().Wait());
 
             Expect<AccessDeniedException>(() => ReadMeta("metaread-stream", "user2", "pa$$2"));
             Expect<AccessDeniedException>(() => WriteMeta("metawrite-stream", "user2", "pa$$2", "user1"));
