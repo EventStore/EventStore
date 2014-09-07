@@ -123,6 +123,7 @@ namespace EventStore.Core.Tests.ClientAPI
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 new UserCredentials("admin", "changeit")).Wait();
+
         }
 
         private void WriteEvents(IEventStoreConnection connection)
