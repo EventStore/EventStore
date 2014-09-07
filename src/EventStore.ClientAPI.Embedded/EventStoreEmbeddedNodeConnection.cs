@@ -381,6 +381,13 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
+        public EventStorePersistentSubscription ConnectToPersistentSubscription(string groupName, string stream, Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int? bufferSize = null,
+            bool autoAck = true)
+        {
+            throw new NotImplementedException();
+        }
+
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
             Position? lastCheckpoint,
             bool resolveLinkTos,
@@ -397,6 +404,17 @@ namespace EventStore.ClientAPI.Embedded
                     subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
+        }
+
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+            UserCredentials credentials)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null)
+        {
+            throw new NotImplementedException();
         }
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
