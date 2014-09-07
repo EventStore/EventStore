@@ -167,6 +167,29 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
             Assert.AreEqual(1,envelope.Replies.Count);
         }
+
+        [Test]
+        public void live_subscription_with_two_pushes_events_to_both()
+        {
+            var envelope1 = new FakeEnvelope();
+            var envelope2 = new FakeEnvelope();
+            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(true,
+                "subId",
+                "streamName",
+                "groupName",
+                false,
+                true,
+                TimeSpan.FromSeconds(5),
+                new FakeEventLoader(x => { }),
+                new FakeCheckpointReader(),
+                new FakeCheckpointWriter(x => { }));
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1));
+            Assert.AreEqual(1, envelope1.Replies.Count);
+            Assert.AreEqual(1, envelope2.Replies.Count);
+        }
     }
 
     public class Helper

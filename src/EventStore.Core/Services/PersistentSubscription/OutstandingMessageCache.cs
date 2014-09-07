@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             //TODO is there a better way of doing this?
             if (_bySequences.Count == 0) return int.MinValue;
-            return _bySequences[0];
+            return _bySequences.Values[0];
         }
     }
 }
