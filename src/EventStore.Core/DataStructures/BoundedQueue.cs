@@ -21,9 +21,14 @@ namespace EventStore.Core.DataStructures
             _queue.Enqueue(obj);
         }
 
-        private T Dequeue()
+        public T Dequeue()
         {
             return _queue.Dequeue();
+        }
+
+        public T Peek()
+        {
+            return _queue.Peek();
         }
     }
 }

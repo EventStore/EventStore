@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public int GetLowestPosition()
         {
-            if (_bySequences.Count == 0) return int.MaxValue;
+            if (_bySequences.Count == 0) return int.MinValue;
             return _bySequences[0];
         }
     }
