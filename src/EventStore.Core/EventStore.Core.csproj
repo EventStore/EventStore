@@ -84,6 +84,7 @@
     <Compile Include="Cluster\Settings\ClusterVNodeSettings.cs" />
     <Compile Include="Cluster\VNodeInfo.cs" />
     <Compile Include="DataStructures\BoundedQueue.cs" />
+    <Compile Include="DataStructures\PreemptableQueue.cs" />
     <Compile Include="DataStructures\StickyLRUCache.cs" />
     <Compile Include="Data\LowerUpper.cs" />
     <Compile Include="Data\StreamAcl.cs" />

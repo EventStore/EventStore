@@ -144,7 +144,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             InitAsNew();
         }
 
-        public void InvalidateRetries()
+        public void InvalidateMessagesNeedingRetry()
         {
             foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(DateTime.Now))
             {

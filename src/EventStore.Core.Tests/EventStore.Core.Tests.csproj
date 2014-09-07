@@ -173,6 +173,7 @@
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_no_arguments.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_incorrectly_cased_option_in_config.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_unknown_options.cs" />
+    <Compile Include="DataStructures\PremptableQueueTests.cs" />
     <Compile Include="Fakes\FakeTfReader.cs" />
     <Compile Include="Helpers\CollectionsExtensions.cs" />
     <Compile Include="Helpers\HelperExtensions.cs" />
