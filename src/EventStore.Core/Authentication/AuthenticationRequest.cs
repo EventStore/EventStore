@@ -16,5 +16,6 @@ namespace EventStore.Core.Authentication
 		public abstract void Unauthorized();
 		public abstract void Authenticated(IPrincipal principal);
 		public abstract void Error();
+	    public abstract void NotReady();
 	}
 }

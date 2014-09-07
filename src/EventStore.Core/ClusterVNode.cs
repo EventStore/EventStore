@@ -32,7 +32,7 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core
 {
-    public class ClusterVNode
+    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
@@ -58,6 +58,14 @@ namespace EventStore.Core
 
         private readonly InMemoryBus[] _workerBuses;
         private readonly MultiQueuedHandler _workersHandler;
+        public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
+
+        protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e)
+        {
+            EventHandler<VNodeStatusChangeArgs> handler = NodeStatusChanged;
+            if (handler != null) handler(this, e);
+        }
+
 
         public ClusterVNode(TFChunkDb db,
                             ClusterVNodeSettings vNodeSettings,
@@ -90,9 +98,12 @@ namespace EventStore.Core
 
             _controller = new ClusterVNodeController(_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
+            
             _controller.SetMainQueue(_mainQueue);
 
             _subsystems = subsystems;
+            //SELF
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
 
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
@@ -458,6 +469,11 @@ namespace EventStore.Core
             if (_subsystems != null)
                 foreach (var subsystem in _subsystems)
                     subsystem.Stop();
+        }
+
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
         }
 
         public override string ToString()

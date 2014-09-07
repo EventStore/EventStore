@@ -33,13 +33,15 @@ namespace EventStore.Core.Tests.Authentication
         private readonly Action _unauthorized;
         private readonly Action<IPrincipal> _authenticated;
         private readonly Action _error;
+        private readonly Action _notReady;
 
-        public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized, Action<IPrincipal> authenticated, Action error)
+        public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized, Action<IPrincipal> authenticated, Action error, Action notReady)
             : base(name, suppliedPassword)
         {
             _unauthorized = unauthorized;
             _authenticated = authenticated;
             _error = error;
+            _notReady = notReady;
         }
 
         public override void Unauthorized()
@@ -55,6 +57,11 @@ namespace EventStore.Core.Tests.Authentication
         public override void Error()
         {
             _error();
+        }
+
+        public override void NotReady()
+        {
+            _notReady();
         }
     }
 }

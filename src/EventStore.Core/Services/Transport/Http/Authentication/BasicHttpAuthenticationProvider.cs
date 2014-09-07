@@ -59,6 +59,11 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             {
                 ReplyInternalServerError(_message.Entity);
             }
+
+            public override void NotReady()
+            {
+                ReplyNotYetAvailable(_message.Entity);
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ namespace EventStore.Transport.Http.EntityManagement
 {
     public static class HttpEntityManagerExtensions
     {
-        public static void ReplyStatus(this HttpEntityManager self, int code, string description, Action<Exception> onError)
+        public static void ReplyStatus(this HttpEntityManager self, int code, string description, Action<Exception> onError, IEnumerable<KeyValuePair<string, string>> headers = null )
         {
             self.Reply(null, code, description, null, null, null, onError);
         }
