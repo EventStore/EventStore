@@ -55,6 +55,33 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
 
         [Test]
+        public void lowest_works_on_add()
+        {
+            var id = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 10), 0), DateTime.Now);
+            Assert.AreEqual(10, cache.GetLowestPosition());
+        }
+
+        [Test]
+        public void lowest_works_on_adds_then_remove()
+        {
+            var id = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 10), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 11), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 12), 0), DateTime.Now);
+            cache.Remove(id);
+            Assert.AreEqual(11, cache.GetLowestPosition());
+        }
+
+        [Test]
+        public void lowest_on_empty_cache_returns_max()
+        {
+            var cache = new OutstandingMessageCache();
+            Assert.AreEqual(int.MaxValue, cache.GetLowestPosition());
+        }
+        [Test]
         public void get_expired_messages_returns_none_on_empty_cache()
         {
             var cache = new OutstandingMessageCache();
