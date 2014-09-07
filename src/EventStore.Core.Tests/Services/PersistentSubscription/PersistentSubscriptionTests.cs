@@ -184,7 +184,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         [Test]
         public void adding_a_client_adds_the_client()
         {
-            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(true,
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(true,
                 "subId",
                 "streamName",
                 "groupName",
@@ -210,7 +210,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             _action = action;
         }
 
-        public void BeginLoadState(EventStore.Core.Services.PersistentSubscription.PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
+        public void BeginLoadState(Core.Services.PersistentSubscription.PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
         {
             _action(startEventNumber);
         }

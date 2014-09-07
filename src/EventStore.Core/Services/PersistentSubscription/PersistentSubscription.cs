@@ -4,7 +4,6 @@ using System.Diagnostics;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
@@ -19,18 +18,16 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly string EventStreamId;
         public readonly string GroupName;
         //private readonly IPersistentSubscriptionEventLoader _eventLoader;
-        private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         //private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
         private readonly bool _startFromBeginning;
         internal PersistentSubscriptionClientCollection _pushClients = new PersistentSubscriptionClientCollection();
         //private bool _outstandingFetchRequest;
         private readonly PersistentSubscriptionStats _statistics;
-        private PersistentSubscriptionState _state;
         private readonly Stopwatch _totalTimeWatch;
         private readonly bool _trackLatency;
         private readonly TimeSpan _messageTimeout;
         private readonly OutstandingMessageCache _outstandingMessages;
-        private readonly BoundedQueue<ResolvedEvent> _cachedLiveEvents; 
+        private readonly SubscriptionBuffer _subscriptionBuffer;
 
         public bool HasClients
         {
@@ -41,7 +38,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public PersistentSubscriptionState State
         {
-            get { return _state; }
+            get { return _subscriptionBuffer.State; }
         }
 
         public PersistentSubscription(bool resolveLinkTos,
@@ -76,8 +73,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _totalTimeWatch.Start();
             _statistics = new PersistentSubscriptionStats(this, _totalTimeWatch);
             _outstandingMessages = new OutstandingMessageCache();
-            //TODO Add configuration for queue size
-            _cachedLiveEvents = new BoundedQueue<ResolvedEvent>(500);
+            //TODO make configurable
             InitAsNew();
         }
 
@@ -85,40 +81,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _statistics.SetLastKnownEventNumber(-1);
             //_outstandingFetchRequest = false;
-            _state = PersistentSubscriptionState.Pull;
+            _subscriptionBuffer = new SubscriptionBuffer(500, _statistics);
             _pushClients = new PersistentSubscriptionClientCollection();
-            _checkpointReader.BeginLoadState(SubscriptionId, OnStateLoaded);
         }
 
-        private void OnStateLoaded(int? lastProcessedEvent)
-        {
-            if (lastProcessedEvent.HasValue)
-            {
-                 _statistics.SetLastKnownEventNumber(lastProcessedEvent.Value);
-                _state = PersistentSubscriptionState.Pull;
-                FetchNewEventsBatch();
-            }
-            else
-            {
-                if (_startFromBeginning)
-                {
-                    _state = PersistentSubscriptionState.Pull;
-                    _statistics.SetLastKnownEventNumber(-1);
-                    FetchNewEventsBatch();
-                }
-                else
-                {
-                    _state = PersistentSubscriptionState.Push;
-                }
-
-            }
-        }
-
-        private void FetchNewEventsBatch()
-        {
-            //_outstandingFetchRequest = true;
-            //_eventLoader.BeginLoadState(this, _nextEventNumber, inFlight, HandleReadEvents);
-        }
 
         public IEnumerable<ResolvedEvent> GetNextNOrLessMessages(int count)
         {
@@ -133,7 +99,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Shutdown()
         {
-            _state = PersistentSubscriptionState.ShuttingDown;
+            _subscriptionBuffer.Shutdown();
             _pushClients.ShutdownAll();
         }
 
@@ -150,7 +116,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent)
         {
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
-            _cachedLiveEvents.Enqueue(resolvedEvent);
+            _subscriptionBuffer.AddLiveMessage(resolvedEvent);
         }
 
         public void MarkCheckpoint()
@@ -168,18 +134,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
-                _outstandingMessages.MarkCompleted(id);
+                _outstandingMessages.Remove(id);
             }
-        }
-
-        public void HandleReadEvents(ResolvedEvent[] events)
-        {
-            //callback from read
         }
 
         private void RevertToCheckPoint()
         {
-            Log.Debug("No clients, reverting future to checkpoint.");
+            Log.Debug("Reverting future reads to checkpoint.");
             InitAsNew();
         }
 

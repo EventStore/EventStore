@@ -7,32 +7,38 @@ namespace EventStore.Core.Services.PersistentSubscription
     public class OutstandingMessageCache
     {
         private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
-        private readonly PairingHeap<RetryableMessage> _promises;
-
+        private readonly PairingHeap<RetryableMessage> _byTime;
+        private readonly SortedDictionary<int, Guid> _bySequences;
+ 
         public OutstandingMessageCache()
         {
             _outstandingRequests = new Dictionary<Guid, OutstandingMessage>();
-            _promises = new PairingHeap<RetryableMessage>((x,y) => x.DueTime < y.DueTime);
+            _byTime = new PairingHeap<RetryableMessage>((x,y) => x.DueTime < y.DueTime);
         }
 
         public int Count { get { return _outstandingRequests.Count; }}
 
-        public void MarkCompleted(Guid messageId)
+        public void Remove(Guid messageId)
         {
             _outstandingRequests.Remove(messageId);
+        }
+
+        public void Remove(IEnumerable<Guid> messageIds)
+        {
+            foreach(var m in messageIds) Remove(m);
         }
 
         public void StartMessage(OutstandingMessage message, DateTime expires)
         {
             _outstandingRequests[message.EventId] = message;
-            _promises.Add(new RetryableMessage(message.EventId, expires));
+            _byTime.Add(new RetryableMessage(message.EventId, expires));
         }
 
         public IEnumerable<RetryableMessage> GetMessagesExpiringBefore(DateTime time)
         {
-            while (_promises.Count > 0 && _promises.FindMin().DueTime <= time)
+            while (_byTime.Count > 0 && _byTime.FindMin().DueTime <= time)
             {
-                var item = _promises.DeleteMin();
+                var item = _byTime.DeleteMin();
                 if (_outstandingRequests.ContainsKey(item.MessageId))
                 {
                     yield return item;
