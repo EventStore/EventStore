@@ -19,9 +19,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _maxBufferSize - _buffer.Count > count;
         }
 
-        public StreamBuffer(int maxBufferSize, int maxLiveBufferSize, int lastKnownSequence)
+        public StreamBuffer(int maxBufferSize, int maxLiveBufferSize, int lastKnownSequence, bool startFromBeginning)
         {
-            _live = false;
+            _live = !startFromBeginning;
             _lastKnownSequence = lastKnownSequence;
             _maxBufferSize = maxBufferSize;
             _buffer = new PreemptableQueue<OutstandingMessage>();

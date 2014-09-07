@@ -88,7 +88,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _outstandingReadRequest = false;
             //TODO make configurable buffer sizes
             //TODO allow init from position
-            _streamBuffer = new StreamBuffer(1000, 500, 0);
+            _streamBuffer = new StreamBuffer(1000, 500, 0, false);
             _pushClients = new PersistentSubscriptionClientCollection();
         }
 
@@ -129,6 +129,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
             _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null, resolvedEvent, 0));
+            TryPushingMessagesToClients();
         }
 
         public IEnumerable<ResolvedEvent> GetNextNOrLessMessages(int count)
