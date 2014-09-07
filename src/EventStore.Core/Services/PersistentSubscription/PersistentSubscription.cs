@@ -88,7 +88,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _outstandingReadRequest = false;
             //TODO make configurable buffer sizes
             //TODO allow init from position
-            _streamBuffer = new StreamBuffer(1000, 500, 0, false);
+            //TODO add checkpoint read
+            _streamBuffer = new StreamBuffer(1000, 500, -1, _startFromBeginning);
             _pushClients = new PersistentSubscriptionClientCollection();
         }
 
@@ -100,13 +101,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             _eventLoader.BeginLoadState(this, _lastPulledEvent, _readBatchSize, HandleReadCompleted);
         }
 
-        private void HandleReadCompleted(ResolvedEvent[] events, int newposition)
+        public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
         {
             _outstandingReadRequest = false; //mark not in read (even if we break the loop can be restarted then)
             foreach (var ev in events)
             {
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
+            TryPushingMessagesToClients();
             TryReadingNewBatch();
         }
 
