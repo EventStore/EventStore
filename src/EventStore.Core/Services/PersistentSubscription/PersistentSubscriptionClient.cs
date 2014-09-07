@@ -75,7 +75,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ResolvedEvent ev;
                 if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
                 {
-                    //it could have been timed out as well
                     _unconfirmedEvents.Remove(processedEventId);
                 }
             }
@@ -94,15 +93,17 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void Push(ResolvedEvent evnt)
+        public bool Push(ResolvedEvent evnt)
         {
+            if (!CanSend()) return false;
             _inFlightMessages--;
             Interlocked.Increment(ref _totalItems);
-            _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt));
             if (_latencyStatistics != null)
                 _latencyStatistics.StartOperation(evnt.OriginalEvent.EventId);
 
+            _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt));
             _unconfirmedEvents.Add(evnt.Event.EventId, evnt);
+            return true;
         }
 
         public IEnumerable<ResolvedEvent> GetUnconfirmedEvents()
@@ -120,7 +121,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _latencyStatistics == null ? null : _latencyStatistics.GetMeasurementDetails();
         }
 
-        public bool CanSend()
+        private bool CanSend()
         {
             return InFlightMessages > 0;
         }

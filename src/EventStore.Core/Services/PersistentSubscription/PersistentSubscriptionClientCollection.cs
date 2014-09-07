@@ -27,11 +27,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var current = _queue.Dequeue();
                 try
                 {
-                    if (current.CanSend())
-                    {
-                        current.Push(ev);
-                        break;
-                    }
+                    if (current.Push(ev))
+                        return true;
                 }
                 finally
                 {

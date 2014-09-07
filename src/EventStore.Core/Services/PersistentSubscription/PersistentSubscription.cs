@@ -110,6 +110,21 @@ namespace EventStore.Core.Services.PersistentSubscription
             TryReadingNewBatch();
         }
 
+        public void TryPushingMessagesToClients()
+        {
+            while(true)
+            {
+                OutstandingMessage message;
+                if (!_streamBuffer.TryPeek(out message)) return;
+                if (!_pushClients.PushMessageToClient(message.ResolvedEvent)) return;
+                if (!_streamBuffer.TryDequeue(out message))
+                {
+                    throw new WTFException("This should never happen. Something is very wrong in the threading model.");
+                }
+                MarkBeginProcessing(message);
+            }
+        }
+
         public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent)
         {
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
@@ -123,13 +138,13 @@ namespace EventStore.Core.Services.PersistentSubscription
                 OutstandingMessage message;
                 if (_streamBuffer.TryDequeue(out message))
                 {
-                    BeginProcessing(message);
+                    MarkBeginProcessing(message);
                     yield return message.ResolvedEvent;
                 }
             }
         }
 
-        private void BeginProcessing(OutstandingMessage message)
+        private void MarkBeginProcessing(OutstandingMessage message)
         {
             _outstandingMessages.StartMessage(message, DateTime.Now + _messageTimeout);
         }
@@ -203,6 +218,13 @@ namespace EventStore.Core.Services.PersistentSubscription
         public MonitoringMessage.SubscriptionInfo GetStatistics()
         {
             return _statistics.GetStatistics();
+        }
+    }
+
+    public class WTFException : Exception
+    {
+        public WTFException(string message) : base(message)
+        {
         }
     }
 }
