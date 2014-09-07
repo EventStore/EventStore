@@ -6,6 +6,7 @@ namespace EventStore.Core.DataStructures
     {
         private readonly Queue<T> _preempt = new Queue<T>();
         private readonly Queue<T> _regular = new Queue<T>();
+        public int Count { get { return _preempt.Count + _regular.Count; } }
 
         public void Preempt(T item)
         {
