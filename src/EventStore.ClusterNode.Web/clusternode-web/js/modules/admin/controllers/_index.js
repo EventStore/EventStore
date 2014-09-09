@@ -1,3 +1,0 @@
-define([
-    './AdminCtrl'
-], function () {});

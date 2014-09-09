@@ -1,4 +1,0 @@
-define([
-    './SignInCtrl',
-    './SignOutCtrl'
-], function () {});

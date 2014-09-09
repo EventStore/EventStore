@@ -1,4 +1,0 @@
-define([
-    './DashboardMapper',
-    './DashboardService'
-], function () {});

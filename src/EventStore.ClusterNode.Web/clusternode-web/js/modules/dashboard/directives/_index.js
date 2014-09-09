@@ -1,4 +1,0 @@
-define([
-    './EsQueueRow',
-    './EsQueueRowHeader'
-], function () {});

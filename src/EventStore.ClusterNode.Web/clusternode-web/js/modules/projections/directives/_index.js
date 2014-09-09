@@ -1,3 +1,0 @@
-define([
-    './EsProjDebugFrame'
-], function () {});
