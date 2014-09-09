@@ -1,0 +1,4 @@
+define([
+    './DashboardMapper',
+    './DashboardService'
+], function () {});

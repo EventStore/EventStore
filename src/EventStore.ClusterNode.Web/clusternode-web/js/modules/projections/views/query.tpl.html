@@ -1,0 +1,33 @@
+
+		<header class="page-header">
+			<h2 class="page-title">Query</h2>
+			<ul class="page-nav">
+				<li class="page-nav__item">
+					<button ng-click="run()">Run</button>
+				</li>
+				<li class="page-nav__item">
+					<button ng-click="stop()" ng-disabled="disableStop()">Break</button>
+				</li>
+				<li class="page-nav__item">
+					<button ng-click="debug()" ng-disabled="!isCreated">Debug</button>
+				</li>
+			</ul>
+		</header>
+
+		<h3 ng-visible="status">
+			{{status}}
+		</h3>
+
+		<div class="container">
+			<div class="container-left">
+				<h3 class="block-title">Source</h3>
+				<div ui-ace="aceConfig" ng-model="query"></div>
+				
+			</div>
+			<div class="container-right">
+				<h3 class="block-title">State</h3>
+		<pre>
+{{state | json}}
+		</pre>
+			</div>
+		</div>

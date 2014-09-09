@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>sprintf.js test</title>
+</head>
+<body>
+	<script src="../src/sprintf.js"></script>
+	<script>
+		echo = function(s) { document.write(s); };
+		echo("<pre>");
+		/**/
+		echo(sprintf("%7.3f<br />", 123.456));
+		echo(sprintf("%7.3f<br />", 12.46000));
+		echo(sprintf("%7.3f<br />", 3.4));
+		var n =  43951789;
+		var u = -43951789;
+		var c = 65;
+		var d = 123.45678901234567890123456789;
+		var start = (new Date()).getTime();
+		echo(sprintf("%%b = '%b'<br />", n)); // binary representation
+		echo(sprintf("%%c = '%c'<br />", c)); // print the ascii character
+		echo(sprintf("%%d = '%+d'<br />", n)); // standard integer representation
+		echo(sprintf("%%d = '%d'<br />", u)); // standard integer representation
+		echo(sprintf("%%e = '%.10e'<br />", d)); // scientific notation
+		echo(sprintf("%%u = '%u'<br />", n)); // unsigned integer representation of a positive integer
+		echo(sprintf("%%u = '%u'<br />", u)); // unsigned integer representation of a negative integer
+		echo(sprintf("%%f = '%'-10.2f' and %%f = '%010.10f'<br />", d, d)); // floating point representation
+		echo(sprintf("%%o = '%o'<br />", n)); // octal representation
+		echo(sprintf("%%s = '%100.10s'<br />", "Ala-bala-portocala")); // string representation
+		echo(sprintf("%%x = '%x'<br />", n)); // hexadecimal representation (lower-case)
+		echo(sprintf("%%X = '%X'<br />", n)); // hexadecimal representation (upper-case)
+		echo(sprintf("<br />%4$s, %3$s, %1$s, %2$s", 'c', 'd', 'b', 'a'));
+		echo('<br />'+ ((new Date()).getTime() - start) / 1000 +"<br />");
+
+		// echo(sprintf('%q', 1)); // don't know what this is
+
+		function myassert(fact, message) {
+			if(!fact) {
+				echo("Assertion failed: "+ message +"<br />");
+			}
+		}
+
+		function assert_equal(a, b, msg) {
+			myassert(a == b, '("' + a + '" != "' + b + '") ' + msg);
+		}
+
+		function test() {
+			assert_equal(sprintf('foo%1dbar', 3), 'foo3bar', 'sprintf1');
+			assert_equal(sprintf('foo%02dbar', 3), 'foo03bar', 'sprintf1');
+			assert_equal(sprintf('foo%02dbar', 42), 'foo42bar', 'sprintf1');
+			assert_equal(sprintf('foo%dbar', 123), 'foo123bar', 'sprintf1');
+			a = sprintf('%2s', 'a');
+			b = ' a';
+			assert_equal(a.length, b.length, 'sprintf2.length');
+			assert_equal(a, b, 'sprintf2');
+			a = sprintf('%2s', 'aa');
+			b = 'aa';
+			assert_equal(a.length, b.length, 'sprintf3.length');
+			assert_equal(a, b, 'sprintf3');
+			a = sprintf('%4s', 'a');
+			b = '   a';
+			assert_equal(a.length, b.length, 'sprintf4.length');
+			assert_equal(a, b, 'sprintf4');
+		}
+
+		test();
+
+		echo(sprintf("%%+d = %+d<br />", 0));
+		echo(sprintf("%%07d = %07d<br />", -314));
+
+		echo(sprintf("%%+'_10d = %+'_10d<br />", -123));
+
+		echo(sprintf("%%+.4f = %+.4f<br />", -123.456000));
+
+		echo(vsprintf("The first 4 letters of the english alphabet are: %4$s, %3$s, %1$s and %2$s<br />", ["c", "d", "b", "a"]));
+		/**/
+
+		//echo(sprintf("Hello %%d => Hello %d<br />", "Dolly"));
+		echo(sprintf("Hello %%s => Hello %s<br />", "Dolly"));
+		echo(sprintf("Hello %%1$s => Hello %1$s<br />", "Dolly"));
+		//echo(sprintf("Hello %%s, %%(name)s and %%s => Hello %s, %(name)s and %s<br />", "Molly", {name: "Dolly"}, "Polly"));
+		echo(sprintf("Hello %%(name_1)s, %%(name_2)s and %%(name_3)s => Hello %(name_1)s, %(name_2)s and %(name_3)s<br />", {name_1: "Molly", name_2: "Dolly", name_3: "Polly"}));
+
+		var foo = {
+			users: [
+				{
+					user: {
+						name: [
+							null,
+							["Dolly"]
+						]
+					}
+				}
+			]
+		}
+		echo(sprintf("Hello %%(users[0].user.name[1][0])s => Hello %(users[0].user.name[1][0])s<br />", foo));
+		echo(sprintf("Hello %%(users[0].user.name[0])s => Hello %(users[0].user.name[0])s<br />", foo));
+
+		//console.log(sprintf.cache);
+
+		var user = {
+			name: 'Dolly'
+		};
+		echo(sprintf("Hello %(name)s<br />", user));
+
+		var users = [
+			{name: 'Dolly'},
+			{name: 'Molly'},
+			{name: 'Polly'}
+		];
+		echo(sprintf("Hello %(users[0].name)s, %(users[1].name)s and %(users[2].name)s<br />", {users: users}));
+
+		echo(vsprintf('The first 4 letters of the english alphabet are: %s, %s, %s and %s<br />', ['a', 'b', 'c', 'd']));
+
+		echo(sprintf('%2$s %3$s a %1$s', 'cracker', 'Polly', 'wants'));
+
+		echo("</pre>");
+	</script>
+</body>
+</html>

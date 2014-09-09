@@ -1,0 +1,39 @@
+
+	<header class="site-header">
+		<h1 class="site-title">
+			<a href="#">
+				<img src="images/logo.svg" height="29" width="119" alt="Event Store">
+			</a>
+		</h1>
+		<ul class="site-nav">
+			<li class="site-nav__item" ng-class="{'site-nav__item--active': $state.includes('dashboard') }">
+				<a ui-sref="dashboard.list">Dashboard</a>
+			</li>
+			<li class="site-nav__item" ng-class="{'site-nav__item--active': $state.includes('streams') }">
+				<a ui-sref="streams.list">Stream Browser</a>
+			</li>
+			<li class="site-nav__item" ng-class="{'site-nav__item--active': $state.includes('projections') }">
+				<a ui-sref="projections.list">Projections</a>
+			</li>
+			<li class="site-nav__item" ng-class="{'site-nav__item--active': $state.includes('query') }">
+				<a ui-sref="query">Query</a>
+			</li>
+			<li class="site-nav__item" ng-class="{'site-nav__item--active': $state.includes('admin') }">
+				<a ui-sref="admin">Admin</a>
+			</li>
+			<li class="site-nav__item" ng-class="{'site-nav__item--active': $state.includes('users') }">
+				<a ui-sref="users.list">Users</a>
+			</li>
+			<li class="site-nav__item" ng-class="{'site-nav__item--active': $state.includes('signout') }">
+				<a ui-sref="signout">Log Out</a>
+			</li>
+		</ul>
+	</header>
+
+	<main class="site-main">
+		<div ui-view></div>
+	</main>
+
+	<footer class="site-footer">
+		<p>Event Store 2.1 &middot; <a href="http://geteventstore.com/docs/" target="_blank">Documentation</a> &middot; <a href="http://geteventstore.com/support/" target="_blank">Support</a></p>
+	</footer>

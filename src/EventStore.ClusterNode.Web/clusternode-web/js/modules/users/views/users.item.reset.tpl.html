@@ -1,0 +1,47 @@
+<header class="page-header">
+		<h2 class="page-title">Reset User {{ user.loginName }} Password</h2>
+		<ul class="page-nav">
+			<li class="page-nav__item">
+				<a ui-sref="^.details">Back</a>
+			</li>
+		</ul>
+	</header>
+
+<form novalidate name="resetPwd" ng-submit="confirm()">
+<table>
+	<tbody>
+		<tr>
+			<td>Login Name</td>
+			<td>{{ user.loginName}}</td>
+		</tr>
+		<tr>
+			<td>Password</td>
+			<td>
+				<input type="password" 
+					   name="password"	
+					   class="form-table" 
+					   ng-class="{ 'form-table--error' : resetPwd.password.$invalid && !resetPwd.password.$pristine }"
+					   ng-model="password" 
+					   required >
+			</td>
+		</tr>
+		<tr>
+			<td>Confirm Password</td>
+			<td>
+				<input type="password" class="form-table" 
+				       name="confirmPassword"	
+					   ng-model="confirmPassword" 
+					   ng-class="{ 'form-table--error' : resetPwd.confirmPassword.$invalid && !resetPwd.confirmPassword.$pristine }"
+					   es-validate-equals="password" >
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<ul>
+	<li>
+		<button type="submit" ng-disabled="resetPwd.$invalid">Reset password</button>
+	</li>
+</ul>
+
+</form>

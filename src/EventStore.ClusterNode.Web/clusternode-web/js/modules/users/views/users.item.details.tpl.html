@@ -1,0 +1,31 @@
+<div ui-view>
+<header class="page-header">
+		<h2 class="page-title">User Details {{ user.loginName }}</h2>
+		<ul class="page-nav">
+
+			<li class="page-nav__item">
+				<a ui-sref="^.edit">Edit</a>
+			</li>
+			<li class="page-nav__item">
+				<a ui-sref="^.delete">Delete</a>
+			</li>
+			<li class="page-nav__item" ng-hide="user.disabled">
+				<a ui-sref="^.disable">Disable</a>
+			</li>
+			<li class="page-nav__item" ng-show="user.disabled">
+				<a ui-sref="^.enable">Enable</a>
+			</li>
+			<li class="page-nav__item">
+				<a ui-sref="^.reset">Password reset</a>
+			</li>
+			<li class="page-nav__item">
+				<a ui-sref="^.^.list">Back</a>
+			</li>
+		</ul>
+	</header>
+
+	
+<pre>
+{{ user | json }}
+</pre>
+</div>

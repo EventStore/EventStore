@@ -1,0 +1,20 @@
+<header class="page-header">
+		<h2 class="page-title">Disable User {{ user.loginName }}</h2>
+		<ul class="page-nav">
+			<li class="page-nav__item">
+				<a ui-sref="^.details">Back</a>
+			</li>
+		</ul>
+	</header>
+
+	
+<pre>
+{{ user | json }}
+</pre>
+
+
+<ul>
+	<li>
+		<a href="#" ng-click="confirm($event)" ng-disabled="disable">Disable</a>
+	</li>
+</ul>

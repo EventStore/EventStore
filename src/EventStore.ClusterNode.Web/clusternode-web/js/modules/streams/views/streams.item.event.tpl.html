@@ -1,0 +1,63 @@
+
+<header class="page-header">
+	<h2 class="page-title">
+		{{ evt.title }} <small ng-if="isNotTheSame">Link from {{ evt.positionEventNumber + '@' + evt.positionStreamId }}</small>		
+	</h2>
+	<ul class="page-nav">
+		<li class="page-nav__item">
+			<a ui-sref="^.events">Back</a>
+		</li>
+	</ul>
+</header>
+
+<ul>
+	<li ng-if="next">
+		<a ui-sref=".({streamId: evt.streamId, eventNumber: evt.positionEventNumber + 1})">next</a>
+	</li>
+	<li ng-if="prev">
+		<a ui-sref=".({streamId: evt.streamId, eventNumber: evt.positionEventNumber - 1})">prev</a>
+	</li>
+	<li>NOT SURE WHAT EDIT/ALERNATE SHOULD DO</li>
+	<li ng-repeat="link in links">
+		<a href="#"> {{ link.relation }}</a>
+	</li>
+</ul>
+
+<table>
+	<thead>
+		<tr>
+			<th>No</th>
+			<th>Stream</th>
+			<th>Type</th>
+			<th>Timestamp</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>{{ evt.eventNumber }}</td>
+			<td><a ui-sref="^.events({streamId: evt.streamId})">{{ evt.streamId }}</a></td>
+			<td>{{ evt.eventType }}</td>
+			<td>{{ evt.updated | date:'yyyy-MM-dd HH:mm'}}</td>
+		</tr>
+		<tr ng-if="evt.isJson || evt.isMetaData || evt.isLinkMetaData">
+			<td colspan="4">
+				<div ng-if="evt.isJson">
+				<strong>Data</strong><pre>
+{{ evt.data }}
+				</pre>
+				</div>
+				<div ng-if="evt.isMetaData">
+				<strong>Metdata</strong><pre>
+{{ evt.metaData }}
+				</pre>				
+				</div>
+				<div ng-if="evt.isLinkMetaData">
+				<strong>Link metadata</strong><pre>
+{{ evt.content.linkMetaData }}
+				</pre>					
+				</div>
+			</td>
+		</tr>
+	</tbody>
+</table>
+

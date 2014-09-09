@@ -1,0 +1,4 @@
+define([
+    './EsQueueRow',
+    './EsQueueRowHeader'
+], function () {});

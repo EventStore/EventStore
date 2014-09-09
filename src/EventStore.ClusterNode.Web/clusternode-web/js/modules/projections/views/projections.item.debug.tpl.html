@@ -1,0 +1,70 @@
+<header class="page-header">
+			<h2 class="page-title">Projection Debug</h2>
+			<ul class="page-nav">
+				<li class="page-nav__item">
+					<button ng-click="runStep()" ng-disabled="isRunning">
+						Run Step
+					</button>
+				</li>
+				<li class="page-nav__item">
+					<button ng-click="stop()" ng-disabled="!isRunning">
+					Stop
+					</button>
+				</li>
+				<li class="page-nav__item">
+					<button ng-click="update()">Update</button>
+				</li>
+				<li class="page-nav__item"><a ui-sref="^.details">Back</a></li>
+			</ul>
+		</header>
+
+<h3>Current Status: <small>{{statusInfo}}</small></h3>
+
+		<div class="container">
+			<div class="container-left">
+				<h3 class="block-title">Source</h3>
+				<div ui-ace="aceConfig" ng-model="query"></div>
+				
+			</div>
+			<div class="container-right">
+				<h3 class="block-title">State {{partition}}</h3>
+				<pre>
+{{ state | json }}
+				</pre>
+				<h3 class="block-title">Events</h3>
+				<div ui-ace="aceEventsConfig" readonly="true" ng-model="events"></div>
+			</div>
+		</div>
+
+		<p>NOT SURE IF THIS SHOULD BE REPEATED</p>
+		<ul class="page-nav">
+			<li class="page-nav__item"><button ng-click="update()">Update</button></li>
+			<li class="page-nav__item">
+					<button ng-click="runStep()" ng-disabled="!isRunning">
+						Run Step
+					</button>
+				</li>
+		</ul>
+		
+		<div class="container">
+			<div class="container-left">
+				<div class="block">
+					<h3 class="block-title">Instructions</h3>
+					<ol>
+						<li>Make sure you use the Google Chrome browser.</li>
+						<li>Open a debugger (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> on Windows).</li>
+						<li>Check the debugger console for errors (occurred while running the projection definition on while loading state and events).</li>
+						<li>Click the ‘Run’ button above.</li>
+						<li>Watch for errors in the debugger console</li>
+						<li>Check the debugging status on XXXXXXXXX.</li>
+						<li>Execution will stop on ‘debugger’ statement immediately before invoking your event handler.</li>
+					</ol>
+					<p>Any log output and emitted events will appear in the log viewer.</p>
+				</div>
+			</div>
+			<div class="container-right">
+				<h3 class="block-title">Log Viewer</h3>
+
+				<div es-proj-debug-frame es-location="location"></div>
+			</div>
+		</div>

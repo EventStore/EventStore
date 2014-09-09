@@ -1,0 +1,72 @@
+.site-header {
+	display: -webkit-flex;
+	display:     -ms-flex;
+	display:         flex;
+	-webkit-flex-direction: row;
+	    -ms-flex-direction: row;
+	        flex-direction: row;
+	-webkit-align-items: center;
+	    -ms-align-items: center;
+	        align-items: center;
+	-webkit-justify-content: space-between;
+	    -ms-justify-content: space-between;
+	        justify-content: space-between;
+	padding: 0 3rem;
+	background: $green;
+	background-image: linear-gradient(45deg, transparentize($green, 0.5) 0%, transparentize($green, 0.5) 50%, transparentize($green-dark, 0.5) 50%, transparentize($green-dark, 0.5) 100%),
+		linear-gradient(135deg, transparentize($green, 0.5) 0%, transparentize($green, 0.5) 50%, transparentize($green-dark, 0.5) 50%, transparentize($green-dark, 0.5) 100%);
+	font-weight: 700;
+	@media screen and (max-width: 1270px), screen and (max-device-width: 1270px) {
+		background-image: linear-gradient(90deg, $green 0%, $green-dark 100%);
+	}
+}
+
+.site-title {
+	margin: 0 0 0 0.5rem;
+	font-size: 1rem;
+	line-height: 1rem;
+	text-transform: uppercase;
+	a {
+		color: $white;
+		text-decoration: none;
+	}
+}
+
+.site-nav {
+	display: -webkit-flex;
+	display:     -ms-flex;
+	display:         flex;
+	-webkit-flex-direction: row;
+	    -ms-flex-direction: row;
+	        flex-direction: row;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.site-nav__item {
+	a {
+		display: inline-block;
+		margin: 1rem 0.25rem;
+		padding: 0.5rem;
+		color: $white-off;
+		text-decoration: none;
+		border-radius: 0.25rem;
+		&:focus, &:hover {
+			background: $green;
+			color: $white-off;
+		}
+	}
+}
+
+.site-nav__item--active {
+	@extend .site-nav__item;
+	a {
+		background: $green;
+		color: $white;
+		&:focus, &:hover {
+			background: $green;
+			color: $white;
+		}
+	}
+}

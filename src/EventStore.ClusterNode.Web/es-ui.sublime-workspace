@@ -1,0 +1,1268 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"def",
+				"defmodule	defmodule"
+			],
+			[
+				"text",
+				"text-align"
+			],
+			[
+				"avail",
+				"availableRides	(?)"
+			],
+			[
+				"available",
+				"availableRidesShown	(?)"
+			],
+			[
+				"bearer",
+				"bearerSuccess(user, done)"
+			],
+			[
+				"auth",
+				"authRefreshWindow	(?)"
+			],
+			[
+				"email",
+				"emailBody	(str)"
+			],
+			[
+				"long",
+				"longitudeInDecimal	{}"
+			],
+			[
+				"latit",
+				"latitudeInDecimal	{}"
+			],
+			[
+				"un",
+				"uniqueSightings	[]"
+			],
+			[
+				"fieldShe",
+				"fieldSheetToDebug	(str)"
+			],
+			[
+				"total",
+				"totalMinutes	(num)"
+			],
+			[
+				"curre",
+				"currentRecord	(?)"
+			],
+			[
+				"cal",
+				"calculatedFieldSheet	(?)"
+			],
+			[
+				"getRecord",
+				"getRecordsForFieldSheet(fieldSheet, tripRecords)"
+			],
+			[
+				"trip",
+				"tripRecordsForFieldSheet	[]"
+			],
+			[
+				"records",
+				"recordsAfter	(num)"
+			],
+			[
+				"ca",
+				"calculatedFieldSheet	{}"
+			],
+			[
+				"hourly",
+				"hourlyTotals	(?)"
+			],
+			[
+				"hour",
+				"hourInMinutes	(num)"
+			],
+			[
+				"test",
+				"testHourlyTotals	[]"
+			],
+			[
+				"fieldSheet",
+				"fieldSheetToSubmit	{}"
+			],
+			[
+				"tripre",
+				"tripRecord"
+			],
+			[
+				"fieldSheetFrom",
+				"fieldSheetFromPopulateFieldSheet	(?)"
+			],
+			[
+				"field",
+				"fieldSheetFindByOneSpy	(?)"
+			],
+			[
+				"cac",
+				"calculatedFieldSheet	(?)"
+			],
+			[
+				"assert",
+				"assert.ifError(err);"
+			],
+			[
+				"getTrip",
+				"getRecordsForFieldSheet(fieldSheet, startDate, startTime}, tripRecords)"
+			],
+			[
+				"pers",
+				"persistedFieldSheet	(?)"
+			],
+			[
+				"tripRec",
+				"tripRecordsForFieldSheet	(?)"
+			],
+			[
+				"fieldShee",
+				"fieldSheetForRecord	(?)"
+			],
+			[
+				"fieldshee",
+				"fieldSheetToSubmit	{}"
+			],
+			[
+				"fieldSheetTo",
+				"fieldSheetToSubmit	(?)"
+			],
+			[
+				"response",
+				"responseReason	(?)"
+			],
+			[
+				"fi",
+				"fieldSheetToPopulate	{}"
+			],
+			[
+				"mill",
+				"millisecondsInHours	(num)"
+			],
+			[
+				"calculat",
+				"calculatePauses	(?)"
+			],
+			[
+				"fieldSh",
+				"fieldSheetToSubmit	(?)"
+			],
+			[
+				"cl",
+				"calculatePauses(tripRecords)"
+			],
+			[
+				"sightin",
+				"sightingsInTimeWindow	[]"
+			],
+			[
+				"fieldSheetCalc",
+				"FieldSheetCalculator"
+			],
+			[
+				"consoe",
+				"console.log(message);"
+			],
+			[
+				"tripRecordsForFie",
+				"tripRecordsForFieldSheet	(?)"
+			],
+			[
+				"sight",
+				"sightingsInTimeWindow	(num)"
+			],
+			[
+				"tripRecords",
+				"tripRecordsForFieldSheet	(?)"
+			],
+			[
+				"tripRe",
+				"tripRecordsForFieldSheet	(?)"
+			],
+			[
+				"startDate",
+				"StartDate"
+			],
+			[
+				"tripRecordPe",
+				"tripRecordPentad	(?)"
+			],
+			[
+				"group",
+				"groupedRecordPentad	(?)"
+			],
+			[
+				"calculatedFieldshee",
+				"calculatedFieldSheets"
+			],
+			[
+				"get",
+				"getFieldSheetForRecord(fieldSheets, tripRecord, location})"
+			],
+			[
+				"grou",
+				"groupedRecords	[]"
+			],
+			[
+				"tripReco",
+				"tripRecordPartitions	[]"
+			],
+			[
+				"create",
+				"createSpecies(data)"
+			],
+			[
+				"forEa",
+				"forEach(f, context?)"
+			],
+			[
+				"mongoo",
+				"mongooseTestRepository	{}"
+			],
+			[
+				"submit",
+				"submitFieldSheetRequest"
+			],
+			[
+				"sub",
+				"substr(from, length?)"
+			],
+			[
+				"subStr",
+				"substring(from, to?)"
+			],
+			[
+				"toDe",
+				"toDecimalDegrees(coordinate)"
+			],
+			[
+				"east",
+				"east_in_radians	(num)"
+			],
+			[
+				"south",
+				"south_in_radians	(num)"
+			],
+			[
+				"i",
+				"it	it() testing"
+			],
+			[
+				"readFile",
+				"fs.readFile(path, encoding_);"
+			],
+			[
+				"Metho",
+				"MethodImplOptions"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 81.0,
+		"selected_items":
+		[
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"mark ",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"markd",
+				"Set Syntax: Markdown"
+			],
+			[
+				"mark",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"install pak",
+				"Package Control: Install Package"
+			],
+			[
+				" install p",
+				"Package Control: Install Package"
+			],
+			[
+				"install package",
+				"Package Control: Install Package"
+			],
+			[
+				"install pa",
+				"Package Control: Install Package"
+			],
+			[
+				"install pac",
+				"Package Control: Install Package"
+			],
+			[
+				"signin",
+				"GitGutter: Show Comparing Against"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"installp",
+				"Package Control: Install Package"
+			],
+			[
+				"install ",
+				"Package Control: Install Package"
+			],
+			[
+				"install p",
+				"Package Control: Install Package"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"grunt",
+				"Grunt"
+			],
+			[
+				"remove package",
+				"Package Control: Remove Package"
+			],
+			[
+				"nodejs",
+				"Nodejs::Default File Settings"
+			],
+			[
+				"settings",
+				"Nodejs::User File Settings"
+			]
+		],
+		"width": 512.0
+	},
+	"console":
+	{
+		"height": 419.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://sublime.wbond.net/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/F/opensource/pgermishuys/EventStore.CommercialHA/oss/bin/clusternode/clusternodeconfig.yaml",
+		"/D/ISOs/Microsoft.Visual.Studio.Ultimate.2013-KOPiE.nfo.nzb-NewsHost-2081/kopie-vs2013-ultimate-en.nfo",
+		"/C/Users/Pieter/Desktop/LFJ3-GEZ9-XM7X-WAF7-49QD-P9UN",
+		"/F/opensource/pgermishuys/EventStore.UI/src/js/templates/templates.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/js/config/routes.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/js/app.js",
+		"/F/opensource/pgermishuys/EventStore.UI/gulpfile.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/js/modules/users/views/users.new.tpl.html",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/ace-builds/src-min-noconflict/mode-mushcode_high_rules.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/ace-builds/src-min-noconflict/ext-keybinding_menu.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/ace-builds/src-min/ext-settings_menu.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/ace-builds/src-min/ext-keybinding_menu.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/ace-builds/src/ext-settings_menu.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/ace-builds/src/ext-keybinding_menu.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/ace-builds/src/mode-ejs.js",
+		"/F/opensource/pgermishuys/EventStore.UI/test/main.js",
+		"/F/opensource/pgermishuys/EventStore.UI/src/index.html",
+		"/F/opensource/pgermishuys/EventStore.UI/README.md",
+		"/F/opensource/pgermishuys/EventStore.CommercialHA/src/EventStore.Manager.Web/manager-web/gossip.htm",
+		"/F/opensource/pgermishuys/EventStore/bin/clusternode/clusternodeconfig.yaml",
+		"/F/opensource/pgermishuys/EventStore.CommercialHA/oss/build.sh",
+		"/F/Vagrant/vms/ubuntu/Vagrantfile",
+		"/F/opensource/pgermishuys/EventStore.CommercialHA/src/EventStore.Manager.Web/manager-web/js/es.clusterChartsSetup.js",
+		"/F/opensource/pgermishuys/EventStore/src/Scripts/get-mono",
+		"/C/Program Files (x86)/Git/doc/git/html/git-add.html",
+		"/F/research/elixir/sample.exs",
+		"/F/research/elixir/modules.exs",
+		"/F/research/YamlDeserialization/YamlDeserialization/bin/Debug/config.yaml",
+		"/C/Users/Pieter/Downloads/localmem/localmem/cluster-node3.yaml",
+		"/C/Users/Pieter/Downloads/localmem/localmem/cluster-node1.yaml",
+		"/F/config.yaml",
+		"/C/Users/Pieter/Downloads/localmem/localmem/cluster-node2.yaml",
+		"/F/opensource/pgermishuys/EventStore.CommercialHA/oss/bin/clusternode/authconfig.yaml",
+		"/F/research/YamlDeserialization/YamlDeserialization/Program.cs",
+		"/F/opensource/pgermishuys/EventStore.UI/src/js/services/AuthService.js",
+		"/C/Program Files (x86)/Git/doc/git/html/git-remote.html",
+		"/F/opensource/pgermishuys/EventStore.UI/node_modules/karma/node_modules/rimraf/AUTHORS",
+		"/F/opensource/pgermishuys/EventStore.UI/src/bower_components/angular-ui-router/release/angular-ui-router.js",
+		"/F/opensource/pgermishuys/EventStore.CommercialHA/src/EventStore.Auth.Ldaps/LdapsConfigurationReader.cs.orig",
+		"/F/tools/EventStore.Experiments/event.txt",
+		"/F/opensource/pgermishuys/EventStore.CommercialHA/README.md",
+		"/F/opensource/pgermishuys/EventStoreUI/gulpfile.js",
+		"/F/opensource/pgermishuys/EventStoreUI/.gitignore",
+		"/F/opensource/pgermishuys/EventStore/scripts/protogen/generate-clientmessages-from-proto.ps1",
+		"/F/opensource/pgermishuys/EventStore/scripts/opts-doc-gen/generate-documentation.sh",
+		"/F/opensource/pgermishuys/EventStore/.gitignore",
+		"/F/opensource/pgermishuys/EventStore/scripts/protogen/generate-clientmessages-from-proto.sh",
+		"/F/opensource/pgermishuys/EventStore/build.sh",
+		"/F/opensource/pgermishuys/EventStore/auto.sh",
+		"/F/opensource/pgermishuys/EventStore/v8/build/gyp/test/win/asm-files/c.S",
+		"/F/opensource/pgermishuys/EventStore/.gitattributes",
+		"/F/opensource/pgermishuys/EventStore/scripts/opts-doc-gen/documentation.md",
+		"/F/opensource/pgermishuys/EventStore/scripts/opts-doc-gen/documentation.html",
+		"/F/projects/NReality/lasser/src/node.api/tests/field_sheet_calculator_tests.js",
+		"/F/projects/NReality/lasser/src/node.api/models/species.js",
+		"/F/projects/NReality/lasser/src/node.api/package.json",
+		"/F/opensource/pgermishuys/EventStore/tools/documentation-generation/documentation.md",
+		"/C/Users/Pieter/SkyDrive/Personal/sars.txt",
+		"/C/Users/Pieter/SkyDrive/Personal/house_inventory.txt",
+		"/F/opensource/pgermishuys/EventStore/etc/packages/repositories.config",
+		"/F/opensource/pgermishuys/EventStore/etc/EventStore.Documentation/bin/Release/documentation.md",
+		"/F/opensource/pgermishuys/EventStore/documentation.md",
+		"/F/opensource/pgermishuys/EventStore/scripts/opts-doc-gen/generate-documentation.ps1",
+		"/F/opensource/pgermishuys/EventStore/etc/EventStore.Documentation/bin/Debug/documentation.html",
+		"/F/opensource/pgermishuys/EventStore/etc/EventStore.Documentation/bin/Debug/documentation.md",
+		"/C/Users/Pieter/AppData/Local/Temp/23.html",
+		"/F/projects/NReality/lasser/src/node.api/node_modules/express/node_modules/commander/node_modules/keypress/README.md",
+		"/F/projects/NReality/lasser/src/node.api/node_modules/nodemailer/node_modules/mailcomposer/node_modules/follow-redirects/package.json",
+		"/F/projects/NReality/lasser/src/node.api/node_modules/mocha/lib/reporters/markdown.js",
+		"/F/projects/NReality/lasser/src/node.api/node_modules/newrelic/test/versioned/express3-mongodb-async/express3-mongodb-async.tap.js",
+		"/F/projects/NReality/lasser/src/node.api/models.js",
+		"/F/opensource/pgermishuys/EventStore/etc/EventStore.Documentation/bin/bins/documentation.html",
+		"/C/Users/Pieter/AppData/Local/Microsoft/Windows/INetCache/Content.Outlook/40ZVHM0S/xml_headers.xml",
+		"/C/Users/Pieter/AppData/Local/Microsoft/Windows/INetCache/Content.Outlook/40ZVHM0S/xml_records.xml",
+		"/F/projects/Skinny/dpj/BrokerSQL/CreateAndMigrate.xml",
+		"/F/projects/NReality/lasser/src/node.api/libs/field_sheet_converter.js",
+		"/F/projects/Skinny/dpj/Broker/Broker.csproj",
+		"/F/projects/Skinny/dpj/BrokerModel/BrokerModel.csproj",
+		"/C/Users/Pieter/Desktop/invite",
+		"/C/Chocolatey/lib/Elixir.0.14.2/tools/chocolateyInstall.ps1",
+		"/C/Program Files (x86)/Git/doc/git/html/git-push.html",
+		"/F/projects/NReality/lasser/libs/field_sheet_converter.js",
+		"/F/opensource/pgermishuys/EventStore/bin/eventstore/debug/anycpu/manager-config.yaml",
+		"/F/projects/NReality/lasser/libs/field_sheet_calculator.js",
+		"/F/opensource/pgermishuys/EventStore/bin/eventstore/debug/anycpu/cluster-node1.yaml",
+		"/F/opensource/pgermishuys/EventStore/bin/eventstore/debug/anycpu/cluster-node2.yaml",
+		"/F/opensource/pgermishuys/EventStore/bin/eventstore/debug/anycpu/cluster-node3.yaml",
+		"/F/projects/NReality/lasser/README.md",
+		"/F/projects/NReality/lasser/.deployment",
+		"/C/Program Files (x86)/Git/doc/git/html/git-stash.html",
+		"/C/Users/Pieter/Downloads/localmem/localmem/manager-config.yaml",
+		"/F/research/nodesample/index.js",
+		"/F/opensource/pgermishuys/EventStore/bin/eventstore/debug/anycpu/singlenode-config.dist.yaml",
+		"/F/opensource/pgermishuys/EventStore/bin/eventstore/debug/anycpu/cluster-node1.json",
+		"/C/Users/Pieter/Desktop/npmlog.text",
+		"/C/Users/Pieter/Desktop/email.txt",
+		"/C/Users/Pieter/Desktop/npmlog.text.part",
+		"/F/projects/H3Digital/yobuggy/poc/app/css/yobuggy.css",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientControllers/ctrlHome.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientTemplates/home.html",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientTemplates/trending.html",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientControllers/ctrlTrending.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientControllers/ctrlJoinBuggy.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/jquery/src/css.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientTemplates/joinBuggy.html",
+		"/F/projects/H3Digital/yobuggy/poc/app/index.html",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientControllers/ctrlCreateBuggy.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/clientTemplates/createBuggy.html",
+		"/F/projects/H3Digital/yobuggy/poc/app/css/bootstrap-modal-patch.css",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/bootstrap/js/modal.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/lib/markerclusterer.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/bootstrap/dist/css/bootstrap.css",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/jquery/src/effects/animatedSelector.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/example/assets/scripts/controllers/issue-432-markers-fit-clustering.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/example/assets/scripts/controllers/issue-354-window-windows-rerender-content.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/jquery/src/css/curCSS.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-resource/README.md",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/spec/coffee/usage/underscore.difference.spec.coffee",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/spec/coffee/usage/underscore.intersection.spec.coffee",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower.json",
+		"/F/projects/H3Digital/yobuggy/poc/app/app.js",
+		"/F/projects/H3Digital/yobuggy/poc/gulpfile.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-facebook/lib/angular-facebook.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/src/coffee/directives/api/models/child/polyline-child-model.coffee",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/src/coffee/directives/api/utils/fit-helper.coffee",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/example/issue-495-polyline-fit.html",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-facebook/lib/angular-facebook-phonegap.js",
+		"/F/projects/H3Digital/yobuggy/poc/app/bower_components/angular-google-maps/src/coffee/utils/LatLngArraySync.coffee"
+	],
+	"find":
+	{
+		"height": 47.0
+	},
+	"find_in_files":
+	{
+		"height": 141.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"Dashboard",
+			"Stream Browser",
+			"mono",
+			"ACTION",
+			"\n    ",
+			"EventStore.UpgradeProjections.exe",
+			"EVENTSTORE_VERSION",
+			"backto",
+			"shownav",
+			"/map",
+			"end ride",
+			"End Ride",
+			"start ride",
+			"Start ride",
+			"Start Ride",
+			"class=\"modal",
+			"modal fade ",
+			"45px",
+			"confirmBuggyToBeCreated",
+			"showPickupNotificationDetails",
+			"buggyArrivingNotificationShown",
+			"arriving in",
+			"rating",
+			"FacebookProvider",
+			":after",
+			"$animate.setClass",
+			"$animate",
+			".angular-google-map-container",
+			"cover",
+			"showJoinRide",
+			";\n",
+			"cancel_button",
+			"start ride",
+			"CreateBuggy",
+			"pickupNotificationShown",
+			"confirmCreateBuggy",
+			"confirmBooking",
+			"glyphicon",
+			"\"/>",
+			"unstyled",
+			">\n",
+			"sass",
+			"('serve'",
+			"serve",
+			">",
+			"IEvent",
+			"IHandles",
+			"Handles",
+			">\n",
+			".empty",
+			"getUserToken",
+			"bearerSuccess",
+			"Current user :",
+			"configAuth",
+			"_id",
+			"bearerSuccess",
+			"req.user",
+			"req.user.id",
+			"peter",
+			"accessToken",
+			"RestServiceTester",
+			"authenticate",
+			"accessToken =",
+			"accessToken",
+			"tester.",
+			"tester.add",
+			"authenticate",
+			"service_tester",
+			"each.series",
+			"lastUpdated =",
+			"removing:",
+			"remove:",
+			"session",
+			"session: false",
+			"_renderHeaders",
+			"bearerSuccess",
+			"jwt",
+			"console.log('results:",
+			"console.log(results:",
+			"results:",
+			"facebook-token-login",
+			"facebook-login",
+			"facebookVerify",
+			"name",
+			"'Bearer",
+			"_verify",
+			"access_token",
+			"this property:",
+			"this property",
+			"getting here",
+			"secret =",
+			"secret=",
+			"'port'",
+			"BearerStrategy",
+			"access-token",
+			"token",
+			"access-token",
+			"console.log(",
+			"deserializeUser",
+			"serializeUser",
+			"authenticate",
+			"isAuthenticated",
+			"assertIsAdmin",
+			"validPassword",
+			"authenticate(",
+			"access_token",
+			"initialize",
+			"secret",
+			"serializeUser",
+			"Nathan",
+			"'full protocol'",
+			"calculateHourlyTotals",
+			"models.Record",
+			"models.Record.find",
+			"tripRecords",
+			"floorToNearest5Minutes",
+			"userId",
+			"findOne",
+			"DaysDuration",
+			"the trip records are empty",
+			"console.log(",
+			"}\n",
+			".StartDate = ",
+			"StartDate = ",
+			"Pent_name",
+			"populated field sheet",
+			"_this",
+			"populateFieldSheet"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 47.0
+	},
+	"input":
+	{
+		"height": 44.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"project": "es-ui.sublime-project",
+	"replace":
+	{
+		"height": 90.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"gulpf",
+				"gulpfile.js"
+			],
+			[
+				"inde",
+				"src\\index.html"
+			],
+			[
+				"auth",
+				"src\\js\\services\\AuthService.js"
+			],
+			[
+				"docu.sh",
+				"scripts\\opts-doc-gen\\generate-documentation.sh"
+			],
+			[
+				"yobugy",
+				"css\\yobuggy.css"
+			],
+			[
+				"ctrlhome",
+				"clientControllers\\ctrlHome.js"
+			],
+			[
+				"ctrltren",
+				"clientControllers\\ctrlTrending.js"
+			],
+			[
+				"trending",
+				"clientTemplates\\trending.html"
+			],
+			[
+				"home.",
+				"clientTemplates\\home.html"
+			],
+			[
+				"ctrljoi",
+				"clientControllers\\ctrlJoinBuggy.js"
+			],
+			[
+				"joinbu",
+				"clientTemplates\\joinBuggy.html"
+			],
+			[
+				"home",
+				"clientTemplates\\home.html"
+			],
+			[
+				"yobuggy.css",
+				"css\\yobuggy.css"
+			],
+			[
+				"index.ht",
+				"index.html"
+			],
+			[
+				"yobuggcss",
+				"css\\yobuggy.css"
+			],
+			[
+				"create",
+				"clientControllers\\ctrlCreateBuggy.js"
+			],
+			[
+				"ctrlhom",
+				"clientControllers\\ctrlHome.js"
+			],
+			[
+				"createbuggy",
+				"clientTemplates\\createBuggy.html"
+			],
+			[
+				"join",
+				"clientTemplates\\joinBuggy.html"
+			],
+			[
+				"ctrljoin",
+				"clientControllers\\ctrlJoinBuggy.js"
+			],
+			[
+				"yobu",
+				"css\\yobuggy.css"
+			],
+			[
+				"bower",
+				"bower.json"
+			],
+			[
+				"index.html",
+				"index.html"
+			],
+			[
+				"app",
+				"app.js"
+			],
+			[
+				"yobug",
+				"css\\yobuggy.css"
+			],
+			[
+				"hom",
+				"clientTemplates\\home.html"
+			],
+			[
+				"home.js",
+				"clientControllers\\ctrlHome.js"
+			],
+			[
+				"app.js",
+				"app.js"
+			],
+			[
+				"yobuggy",
+				"css\\yobuggy.css"
+			],
+			[
+				"angular",
+				"bower_components\\angular\\angular.js"
+			],
+			[
+				"createb",
+				"clientTemplates\\createBuggy.html"
+			],
+			[
+				"joinbugg",
+				"clientTemplates\\joinBuggy.html"
+			],
+			[
+				"yob",
+				"css\\yobuggy.css"
+			],
+			[
+				"joinbuggy",
+				"clientTemplates\\joinBuggy.html"
+			],
+			[
+				"ctrl",
+				"clientControllers\\ctrlJoinBuggy.js"
+			],
+			[
+				"yobg",
+				"css\\yobuggy.css"
+			],
+			[
+				"index.php",
+				"index.php"
+			],
+			[
+				"home.html",
+				"clientTemplates\\home.html"
+			],
+			[
+				"homehtl",
+				"views\\home.html"
+			],
+			[
+				"glyph",
+				"bower_components\\bootstrap\\less\\glyphicons.less"
+			],
+			[
+				"app.css",
+				"css\\app.css"
+			],
+			[
+				"boot",
+				"bower_components\\bootstrap\\dist\\css\\bootstrap.css"
+			],
+			[
+				"index",
+				"index.html"
+			],
+			[
+				"index.",
+				"index.html"
+			],
+			[
+				"yogu",
+				"css\\yobuggy.css"
+			],
+			[
+				"ctr",
+				"controllers\\ctrlHome.js"
+			],
+			[
+				"gulp",
+				"gulpfile.js"
+			],
+			[
+				"pakc",
+				"package.json"
+			],
+			[
+				"controllers",
+				"app\\controllers\\ctrlHome.js"
+			],
+			[
+				"fieldconvert",
+				"tests\\field_sheet_converter_tests.js"
+			],
+			[
+				"fieldsheetconv",
+				"libs\\field_sheet_converter.js"
+			],
+			[
+				"fieldshee",
+				"tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"program",
+				"EventStore.Core\\ProgramBase.cs"
+			],
+			[
+				"eventstoreopt",
+				"EventStore.Common\\Options\\EventStoreOptions.cs"
+			],
+			[
+				"fieldshe",
+				"models\\field_sheet.js"
+			],
+			[
+				"fieldsheetservice",
+				"tests\\field_sheet_service_tests.js"
+			],
+			[
+				"config",
+				"config.js"
+			],
+			[
+				"fieldsheetconverter",
+				"libs\\field_sheet_converter.js"
+			],
+			[
+				"when",
+				"code\\introToJubilee\\folderToWatch\\Jsinsa.Gulp\\Jsinsa.Gulp.Specs\\when_frodo_exists.cs"
+			],
+			[
+				"intro",
+				"code\\introToJubilee\\folderToWatch\\intro.js"
+			],
+			[
+				"notes",
+				"slides\\notes.txt"
+			],
+			[
+				"fieldsheettests",
+				"tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"cheat",
+				"cheatsheet.txt"
+			],
+			[
+				"gulpfile",
+				"code\\introToGulp\\gulpfile.js"
+			],
+			[
+				"basicrest",
+				"node.api\\routes\\basic_rest_service.js"
+			],
+			[
+				"passport",
+				"node.api\\config\\passport.js"
+			],
+			[
+				"userhelper",
+				"node.api\\tests\\user_helper.js"
+			],
+			[
+				"logintest",
+				"node.api\\tests\\login_tests.js"
+			],
+			[
+				"routes",
+				"node.api\\routes.js"
+			],
+			[
+				"basicser",
+				"node.api\\routes\\basic_rest_service.js"
+			],
+			[
+				"login",
+				"node.api\\tests\\login_tests.js"
+			],
+			[
+				"authorizer",
+				"node.api\\node_modules\\authorizer\\lib\\authorizer.js"
+			],
+			[
+				"baseservice",
+				"node.api\\routes\\basic_rest_service.js"
+			],
+			[
+				"logintests",
+				"node.api\\tests\\login_tests.js"
+			],
+			[
+				"fieldsheetser",
+				"routes\\field_sheet_service.js"
+			],
+			[
+				"configauth",
+				"config\\auth.js"
+			],
+			[
+				"fieldsheetserv",
+				"routes\\field_sheet_service.js"
+			],
+			[
+				"author",
+				"node_modules\\authorizer\\lib\\authorizer.js"
+			],
+			[
+				"pass",
+				"config\\passport.js"
+			],
+			[
+				"lgintests",
+				"tests\\login_tests.js"
+			],
+			[
+				"service",
+				"routes\\basic_rest_service.js"
+			],
+			[
+				"servicetest",
+				"tests\\service_tester.js"
+			],
+			[
+				"service_tester",
+				"tests\\service_tester.js"
+			],
+			[
+				"user",
+				"models\\user.js"
+			],
+			[
+				"utils",
+				"node_modules\\mongoose\\lib\\utils.js"
+			],
+			[
+				"package",
+				"package.json"
+			],
+			[
+				"patch",
+				"node_modules\\express\\node_modules\\connect\\lib\\patch.js"
+			],
+			[
+				"logger",
+				"node_modules\\express\\node_modules\\connect\\lib\\middleware\\logger.js"
+			],
+			[
+				"logger.js",
+				"node_modules\\newrelic\\lib\\logger.js"
+			],
+			[
+				"patch.js",
+				"node_modules\\connect\\lib\\patch.js"
+			],
+			[
+				"strategy",
+				"node_modules\\passport-http-bearer\\lib\\strategy.js"
+			],
+			[
+				"response.js",
+				"node_modules\\express\\lib\\response.js"
+			],
+			[
+				"authenticate",
+				"node_modules\\passport\\lib\\middleware\\authenticate.js"
+			],
+			[
+				"request",
+				"node_modules\\express\\lib\\request.js"
+			],
+			[
+				"userhelp",
+				"tests\\user_helper.js"
+			],
+			[
+				"models",
+				"models.js"
+			],
+			[
+				"config.js",
+				"src\\node.api\\config.js"
+			],
+			[
+				"tripcard.js",
+				"src\\node.api\\models\\trip_card.js"
+			],
+			[
+				"fieldsheetcalc",
+				"node.api\\tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"field",
+				"node.api\\routes\\field_sheet_service.js"
+			],
+			[
+				"record",
+				"node.api\\models\\record.js"
+			],
+			[
+				"fieldsheetservicetests",
+				"node.api\\tests\\field_sheet_service_tests.js"
+			],
+			[
+				"fieldsheet",
+				"node.api\\models\\field_sheet.js"
+			],
+			[
+				"fieldsheetca",
+				"node.api\\libs\\field_sheet_calculator.js"
+			],
+			[
+				"should.js",
+				"node.api\\node_modules\\should\\lib\\should.js"
+			],
+			[
+				"pentad",
+				"objc\\BirdLasser\\BirdLasser\\BLMPentad.m"
+			],
+			[
+				"basic_rest",
+				"routes\\basic_rest_service.js"
+			],
+			[
+				"date",
+				"libs\\date_extensions.js"
+			],
+			[
+				"sheetcalc",
+				"tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"spec",
+				"models\\species.js"
+			],
+			[
+				"fieldsheetcal",
+				"tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"basicres",
+				"routes\\basic_rest_service.js"
+			],
+			[
+				"converter",
+				"libs\\field_sheet_converter.js"
+			],
+			[
+				"fieldsheetconverte",
+				"libs\\field_sheet_converter.js"
+			],
+			[
+				"stubs",
+				"tests\\stubs.js"
+			],
+			[
+				"fieldsheetc",
+				"libs\\field_sheet_converter.js"
+			],
+			[
+				"basic",
+				"routes\\basic_rest_service.js"
+			],
+			[
+				"calcul",
+				"tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"calculatortests",
+				"tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"calcu",
+				"libs\\field_sheet_calculator.js"
+			],
+			[
+				"fieldsheetconver",
+				"tests\\field_sheet_converter_tests.js"
+			],
+			[
+				"fieldsheetconve",
+				"libs\\field_sheet_converter.js"
+			],
+			[
+				"fieldsheetconvert",
+				"libs\\field_sheet_converter.js"
+			],
+			[
+				"fieldcalculatortest",
+				"tests\\field_sheet_calculator_tests.js"
+			],
+			[
+				"fieldh",
+				"models\\field_sheet.js"
+			],
+			[
+				"config.",
+				"config.js"
+			],
+			[
+				"calculator",
+				"libs\\field_sheet_calculator.js"
+			],
+			[
+				"fieldsheetcalculator",
+				"libs\\field_sheet_calculator.js"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"settings":
+	{
+		"_vintageous_last_buffer_search": "Query",
+		"_vintageous_last_char_search_command": "vi_f",
+		"_vintageous_last_character_search": "I",
+		"_vintageous_reset_during_init": true,
+		"vintage":
+		{
+			"_cmdline_cd": "C:\\Program Files\\Sublime Text 3"
+		}
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 427.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

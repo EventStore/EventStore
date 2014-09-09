@@ -1,0 +1,61 @@
+{
+  "name": "EventStore-UI",
+  "description": "The new user interface for Event Store",
+  "homepage": "http://geteventstore.com",
+  "version": "0.1.0",
+  "contributors": [
+    {
+      "name": "Jakub Gutkowski",
+      "email": "j.gutkowski@gmail.com",
+      "web": "https://github.com/gutek"
+    }
+  ],
+  "maintainers": [
+    {
+      "name": "EventStore",
+      "web": "https://github.com/EventStore?tab=members"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EventStore/EventStore.UI.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EventStore/EventStore.UI/issues"
+  },
+  "licence": [
+    {
+      "type": "?",
+      "url": "https://github.com/EventStore/EventStore.UI/blob/master/LICENSE"
+    }
+  ],
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "devDependencies": {
+    "karma": "~0.12.0",
+    "karma-ng-scenario": "~0.1.0",
+    "karma-script-launcher": "~0.1.0",
+    "karma-chrome-launcher": "~0.1.2",
+    "karma-requirejs": "~0.2.1",
+    "karma-html2js-preprocessor": "~0.1.0",
+    "karma-jasmine": "~0.1.5",
+    "karma-phantomjs-launcher": "~0.1.2",
+    "gulp": "latest",
+    "gulp-karma": "latest",
+    "gulp-requirejs": "latest",
+    "gulp-util": "latest",
+    "gulp-ng-html2js": "latest",
+    "gulp-concat": "latest",
+    "gulp-htmlmin": "latest",
+    "karma-coverage": "latest",
+    "tiny-lr": "latest",
+    "gulp-wrap": "latest",
+    "gulp-jshint": "latest",
+    "jshint-stylish": "~0.1.5",
+    "gulp-connect": "~1.0.7",
+    "gulp-cached": "0.0.3",
+    "gulp-bower": "0.0.3",
+    "karma-junit-reporter": "~0.2.1"
+  }
+}

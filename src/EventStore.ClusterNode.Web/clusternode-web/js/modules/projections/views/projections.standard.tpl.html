@@ -1,0 +1,50 @@
+
+
+<header class="page-header">
+	<h2 class="page-title">New Standard Projection</h2>
+	<ul class="page-nav">
+		<li class="page-nav__item">
+			<a ui-sref="^.list">Back</a>
+		</li>
+	</ul>
+</header>
+
+<form novalidate name="newProj" ng-submit="save()">
+<table>
+	<tbody>
+		<tr>
+			<td>Name</td>
+			<td>
+				<input type="text" ng-model="name" required class="form-table" name="projName"
+					   ng-class="{ 'form-table--error' : newProj.projName.$invalid && !newProj.projName.$pristine }" />
+			</td>
+		</tr>
+		<tr>
+			<td>Source</td>
+			<td>
+
+				<div ui-ace="aceConfig" required ng-model="source">
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td>Select Type</td>
+			<td>
+				<select ng-model="type" 
+						required
+						class="form-table"
+						ng-options="obj.value as obj.name for obj in types">
+				</select>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+
+	<ul class="page-nav">
+		<li class="page-nav__item">
+			<button type="submit" ng-disabled="newProj.$invalid">Create</button>
+		</li>
+	</ul>
+
+</form>

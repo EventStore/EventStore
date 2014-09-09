@@ -1,0 +1,5 @@
+{
+    "volo": {
+        "url": "https://raw.github.com/requirejs/domReady/{version}/domReady.js"
+    }
+}

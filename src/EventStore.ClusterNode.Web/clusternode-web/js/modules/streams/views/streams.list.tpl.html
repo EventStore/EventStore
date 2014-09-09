@@ -1,0 +1,58 @@
+
+
+<header class="page-header">
+	<h2 class="page-title">Stream Browser</h2>
+	<ul class="page-nav">
+		<li class="page-nav__item">
+			<form>
+				<input type="text" ui-keypress="{'enter': 'gotoStream($event)'}" ng-model="search" />
+			</form>
+		</li>
+	</ul>
+</header>
+<div class="container">
+	<div class="container-left">
+		<table>
+			<thead>
+				<tr>
+					<th>Recently Created Streams <small>issue: #1</small></th>
+				</tr>
+			</thead>
+			<tbody>
+
+				<tr ng-repeat="stream in createdStreams">
+					<td>
+						<a ui-sref="^.item.events({streamId: stream.streamId})">{{ stream.streamId }}</a>
+					</td>
+				</tr>
+				<tr ng-hide="createdStreams">
+					<td>
+						<em>No recently created streams</em>
+					</td>
+				</tr>
+
+			</tbody>
+		</table>
+	</div>
+	<div class="container-right">
+		<table>
+			<thead>
+				<tr>
+					<th>Recently Changed Streams</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="stream in changedStreams">
+					<td>
+						<a ui-sref="^.item.events({streamId: stream.streamId})">{{ stream.streamId }}</a>
+					</td>
+				</tr>
+				<tr ng-hide="changedStreams">
+					<td>
+					<em>No recently changed streams</em>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>

@@ -1,0 +1,33 @@
+{
+  "name": "sizzle",
+  "version": "1.10.18",
+  "main": "./dist/sizzle.js",
+  "devDependencies": {
+    "qunit": "1.14.0",
+    "benchmark": "1.0.0",
+    "requirejs": "2.1.10",
+    "requirejs-domready": "2.0.1",
+    "requirejs-text": "2.0.10"
+  },
+  "ignore": [
+    "**/.*",
+    "package.json",
+    "bower.json",
+    "speed",
+    "Makefile",
+    "*.md",
+    "*.txt",
+    "src",
+    "Gruntfile.js"
+  ],
+  "homepage": "https://github.com/jquery/sizzle",
+  "_release": "1.10.18",
+  "_resolution": {
+    "type": "version",
+    "tag": "1.10.18",
+    "commit": "a9eb3ca3c5e1b568057390f73da385809ac69340"
+  },
+  "_source": "git://github.com/jquery/sizzle.git",
+  "_target": "*",
+  "_originalSource": "sizzle"
+}

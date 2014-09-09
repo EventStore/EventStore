@@ -1,0 +1,43 @@
+
+<div ui-view>
+	<header class="page-header">
+		<h2 class="page-title">Users</h2>
+		<ul class="page-nav">
+			<li class="page-nav__item">
+				<a ui-sref="^.new">New User</a>
+			</li>
+		</ul>
+	</header>
+
+	<table class="table-queues">
+		<thead>
+			<tr>
+				<th>Login Name</th>
+				<th>Full Name</th>
+				<th>Groups</th>
+				<th>Disabled</th>
+				<th>Updated</th>
+			</tr>
+		</thead>
+
+		<tbody>
+
+			<tr ng-repeat="user in users">
+				<td>
+					<a ui-sref="^.item.details({username: user.loginName})">
+						{{ user.loginName }}
+					</a>
+				</td>
+				<td>{{ user.fullName }}</td>
+				<td>{{ user.groups.join(', ') }}</td>
+				<td>{{ user.disabled }}</td>
+				<td>{{ user.dateLastUpdated  | date:'short' }}</td>
+			</tr>
+			<tr ng-hide="users">
+				<td colspan="5">
+					<em>No users</em>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>

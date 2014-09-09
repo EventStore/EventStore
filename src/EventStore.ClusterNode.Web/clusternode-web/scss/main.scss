@@ -1,0 +1,40 @@
+// Variables
+
+$black:	       #424440;
+$blue:         #009CDB;
+$green:        #6BA300;
+$green-dark:   darken($green, 5%);
+$grey:         #727470;
+$grey-dark:    #525450;
+$grey-light:   #E2E4E0;
+$grey-mid:     #A2A4A0;
+$red:          #E22430;
+$red-dark:     darken($red, 45%);
+$red-light:    lighten($red, 45%);
+$white:	       #FFFFFF;
+$white-off:    #F2F4F0;
+$yellow:       #CDD939;
+$yellow-light: #FCFCCF;
+
+$sans-serif: Roboto, sans-serif;
+$monospace: "Source Code Pro", monospace;
+
+@import "fonts";
+@import "base";
+
+@import "page-login";
+
+@import "module-siteheader";
+@import "module-sitemain";
+@import "module-sitefooter";
+
+
+
+/*
+
+Icons required:
+
+- Expand table rows
+- Collapse table rows
+
+*/

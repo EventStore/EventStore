@@ -31,8 +31,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected override void SubscribeCore(IHttpService service)
         {
             _clusterNodeWeb.RegisterControllerActions(service);
-            RegisterRedirectAction(service, "", "/web/home.htm");
-            RegisterRedirectAction(service, "/web", "/web/home.htm");
+            RegisterRedirectAction(service, "", "/web/index.html");
+            RegisterRedirectAction(service, "/web", "/web/index.html");
 
             service.RegisterAction(
                 new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.Json }),

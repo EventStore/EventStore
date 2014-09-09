@@ -1,0 +1,64 @@
+
+		<header class="page-header">
+			<h2 class="page-title">Projections</h2>
+			<ul class="page-nav">
+				<li class="page-nav__item">
+					<a ng-click="disableAll($event)">Disable All</a>
+				</li>
+				<li class="page-nav__item">
+					<a ng-click="enableAll($event)">Enable All</a>
+				</li>
+				<li class="page-nav__item">
+					<input type="checkbox" ng-model="includeQueries" />Include Queries
+				</li>
+				<li class="page-nav__item">
+					<a ui-sref="^.new">New Projection</a>
+				</li>
+			</ul>
+		</header>
+		<table class="table-projections">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Status</th>
+					<th>Mode</th>
+					<th>Done</th>
+					<th>Read / Write in Progress</th>
+					<th>Write Queues</th>
+					<th>Partitions Cached</th>
+					<th>Rate (events/s)</th>
+					<th colspan="2">Events</th>
+				</tr>
+				<tr>
+					<th></th>
+					<th></th>
+					<th></th>
+					<th></th>
+					<th></th>
+					<th></th>
+					<th></th>
+					<th></th>
+					<th class="table-subheading">Processed</th>
+					<th class="table-subheading">Buffered</th>
+			</thead>
+			<tbody>
+				<tr ng-repeat="projection in projections">
+					<td><a ui-sref="^.item.details({location: projection.location})">{{ projection.name }}</a></td>
+					<td>{{ projection.status }}{{ projection.checkpointStatus }}</td>
+					<td>{{ projection.mode }}</td>
+					<td>{{ projection.progress.toFixed(1) }}%</td>
+					<td>{{ projection.readsInProgress }} / {{ projection.writesInProgress }}</td>
+					<td>{{ projection.writePendingEventsAfterCheckpoint }} / {{ projection.writePendingEventsBeforeCheckpoint }}</td>
+					<td>{{ projection.partitionsCached }}</td>
+					<td>{{ projection.eventsPerSecond }}</td>
+					<td>{{ projection.eventsProcessedAfterRestart }}</td>
+					<td>{{ projection.bufferedEvents }}</td>
+				</tr>
+				<tr ng-hide="projections">
+					<td colspan="10">
+						<em>No projections</em>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</main>

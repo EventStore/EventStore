@@ -1,0 +1,197 @@
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-thin-webfont.eot");
+// 	src: url("../fonts/roboto-thin-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-thin-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-thin-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-thin-webfont.svg#robotothin") format("svg");
+// 	font-weight: 100;
+// 	font-style: normal;
+// }
+
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-thinitalic-webfont.eot");
+// 	src: url("../fonts/roboto-thinitalic-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-thinitalic-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-thinitalic-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-thinitalic-webfont.svg#robotothin_italic") format("svg");
+// 	font-weight: 100;
+// 	font-style: italic;
+// }
+
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-light-webfont.eot");
+// 	src: url("../fonts/roboto-light-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-light-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-light-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-light-webfont.svg#robotolight") format("svg");
+// 	font-weight: 300;
+// 	font-style: normal;
+// }
+
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-lightitalic-webfont.eot");
+// 	src: url("../fonts/roboto-lightitalic-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-lightitalic-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-lightitalic-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-lightitalic-webfont.svg#robotolight_italic") format("svg");
+// 	font-weight: 300;
+// 	font-style: italic;
+// }
+
+@font-face {
+	font-family: "Roboto";
+	src: url("../fonts/roboto-regular-webfont.eot");
+	src: url("../fonts/roboto-regular-webfont.eot?#iefix") format("embedded-opentype"),
+		 url("../fonts/roboto-regular-webfont.woff") format("woff"),
+		 url("../fonts/roboto-regular-webfont.ttf") format("truetype"),
+		 url("../fonts/roboto-regular-webfont.svg#robotoregular") format("svg");
+	font-weight: 400;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Roboto";
+	src: url("../fonts/roboto-italic-webfont.eot");
+	src: url("../fonts/roboto-italic-webfont.eot?#iefix") format("embedded-opentype"),
+		 url("../fonts/roboto-italic-webfont.woff") format("woff"),
+		 url("../fonts/roboto-italic-webfont.ttf") format("truetype"),
+		 url("../fonts/roboto-italic-webfont.svg#robotoitalic") format("svg");
+	font-weight: 400;
+	font-style: italic;
+}
+
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-medium-webfont.eot");
+// 	src: url("../fonts/roboto-medium-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-medium-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-medium-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-medium-webfont.svg#robotomedium") format("svg");
+// 	font-weight: 500;
+// 	font-style: normal;
+// }
+
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-mediumitalic-webfont.eot");
+// 	src: url("../fonts/roboto-mediumitalic-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-mediumitalic-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-mediumitalic-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-mediumitalic-webfont.svg#robotomedium_italic") format("svg");
+// 	font-weight: 500;
+// 	font-style: italic;
+// }
+
+@font-face {
+	font-family: "Roboto";
+	src: url("../fonts/roboto-bold-webfont.eot");
+	src: url("../fonts/roboto-bold-webfont.eot?#iefix") format("embedded-opentype"),
+		 url("../fonts/roboto-bold-webfont.woff") format("woff"),
+		 url("../fonts/roboto-bold-webfont.ttf") format("truetype"),
+		 url("../fonts/roboto-bold-webfont.svg#robotobold") format("svg");
+	font-weight: 700;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: "Roboto";
+	src: url("../fonts/roboto-bolditalic-webfont.eot");
+	src: url("../fonts/roboto-bolditalic-webfont.eot?#iefix") format("embedded-opentype"),
+		 url("../fonts/roboto-bolditalic-webfont.woff") format("woff"),
+		 url("../fonts/roboto-bolditalic-webfont.ttf") format("truetype"),
+		 url("../fonts/roboto-bolditalic-webfont.svg#robotobold_italic") format("svg");
+	font-weight: 700;
+	font-style: italic;
+}
+
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-black-webfont.eot");
+// 	src: url("../fonts/roboto-black-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-black-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-black-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-black-webfont.svg#robotoblack") format("svg");
+// 	font-weight: 900;
+// 	font-style: normal;
+// }
+
+// @font-face {
+// 	font-family: "Roboto";
+// 	src: url("../fonts/roboto-blackitalic-webfont.eot");
+// 	src: url("../fonts/roboto-blackitalic-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/roboto-blackitalic-webfont.woff") format("woff"),
+// 		 url("../fonts/roboto-blackitalic-webfont.ttf") format("truetype"),
+// 		 url("../fonts/roboto-blackitalic-webfont.svg#robotoblack_italic") format("svg");
+// 	font-weight: 900;
+// 	font-style: italic;
+// }
+
+// @font-face {
+// 	font-family: "Source Code Pro";
+// 	src: url("../fonts/sourcecodepro-extralight-webfont.eot");
+// 	src: url("../fonts/sourcecodepro-extralight-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/sourcecodepro-extralight-webfont.woff") format("woff"),
+// 		 url("../fonts/sourcecodepro-extralight-webfont.ttf") format("truetype"),
+// 		 url("../fonts/sourcecodepro-extralight-webfont.svg#source_code_proextralight") format("svg");
+// 	font-weight: 200;
+// 	font-style: normal;
+// }
+
+// @font-face {
+// 	font-family: "Source Code Pro";
+// 	src: url("../fonts/sourcecodepro-light-webfont.eot");
+// 	src: url("../fonts/sourcecodepro-light-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/sourcecodepro-light-webfont.woff") format("woff"),
+// 		 url("../fonts/sourcecodepro-light-webfont.ttf") format("truetype"),
+// 		 url("../fonts/sourcecodepro-light-webfont.svg#source_code_prolight") format("svg");
+// 	font-weight: 300;
+// 	font-style: normal;
+// }
+
+@font-face {
+	font-family: "Source Code Pro";
+	src: url("../fonts/sourcecodepro-regular-webfont.eot");
+	src: url("../fonts/sourcecodepro-regular-webfont.eot?#iefix") format("embedded-opentype"),
+		 url("../fonts/sourcecodepro-regular-webfont.woff") format("woff"),
+		 url("../fonts/sourcecodepro-regular-webfont.ttf") format("truetype"),
+		 url("../fonts/sourcecodepro-regular-webfont.svg#source_code_proregular") format("svg");
+	font-weight: 400;
+	font-style: normal;
+}
+
+// @font-face {
+// 	font-family: "Source Code Pro";
+// 	src: url("../fonts/sourcecodepro-semibold-webfont.eot");
+// 	src: url("../fonts/sourcecodepro-semibold-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/sourcecodepro-semibold-webfont.woff") format("woff"),
+// 		 url("../fonts/sourcecodepro-semibold-webfont.ttf") format("truetype"),
+// 		 url("../fonts/sourcecodepro-semibold-webfont.svg#source_code_prosemibold") format("svg");
+// 	font-weight: 600;
+// 	font-style: normal;
+// }
+
+@font-face {
+	font-family: "Source Code Pro";
+	src: url("../fonts/sourcecodepro-bold-webfont.eot");
+	src: url("../fonts/sourcecodepro-bold-webfont.eot?#iefix") format("embedded-opentype"),
+		 url("../fonts/sourcecodepro-bold-webfont.woff") format("woff"),
+		 url("../fonts/sourcecodepro-bold-webfont.ttf") format("truetype"),
+		 url("../fonts/sourcecodepro-bold-webfont.svg#source_code_probold") format("svg");
+	font-weight: 700;
+	font-style: normal;
+}
+
+// @font-face {
+// 	font-family: "Source Code Pro";
+// 	src: url("../fonts/sourcecodepro-black-webfont.eot");
+// 	src: url("../fonts/sourcecodepro-black-webfont.eot?#iefix") format("embedded-opentype"),
+// 		 url("../fonts/sourcecodepro-black-webfont.woff") format("woff"),
+// 		 url("../fonts/sourcecodepro-black-webfont.ttf") format("truetype"),
+// 		 url("../fonts/sourcecodepro-black-webfont.svg#source_code_problack") format("svg");
+// 	font-weight: 900;
+// 	font-style: normal;
+// }

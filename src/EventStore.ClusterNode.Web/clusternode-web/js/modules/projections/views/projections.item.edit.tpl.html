@@ -1,0 +1,70 @@
+
+
+<header class="page-header">
+		<h2 class="page-title">Projection Edit</h2>
+		<ul class="page-nav">
+			<li class="page-nav__item">
+				<button ng-click="start()" 
+					ng-disabled="isRunning"
+					href="#">Start</button>
+				
+			</li>
+			<li class="page-nav__item">
+				<button ng-click="stop()" 
+				   ng-disabled="isStopped"
+				   >Stop</button>
+				
+			</li>
+			<li class="page-nav__item">
+				<button ng-click="save()" 
+				   >Save</button>
+				
+			</li>
+			<li class="page-nav__item">
+				<button ng-click="reset($event)">Reset</button>
+			</li>
+			<li class="page-nav__item">
+			<a ui-sref="^.details">Back</a>
+			</li>
+		</ul>
+	</header>
+
+<h3>
+{{stats.name}} - {{stats.status}}
+</h3>
+
+<p>
+	<strong>mode: </strong><span>{{stats.mode}}</span>
+</p>
+
+<p style="background-color: red; color: white" ng-if="stats.stateReason">
+
+{{stats.stateReason}}
+
+</p>
+
+<div class="container">
+	<div class="container-left">
+		<h3 class="block-title">Source</h3>
+		<div ui-ace="aceConfig" ng-model="query">
+			
+		</div>
+		<label><input type="checkbox" ng-model="emit">Emit enabled</label>
+	</div>
+	<div class="container-right">
+		<h3 class="block-title">
+		Results
+		<span ng-show="stream">
+			(<a ui-sref="streams.item.events({streamId: stream})">{{ stream }}</a>)
+		</span>
+		</h3>
+		<pre>
+{{result | json}}
+		</pre>
+
+		<h3 class="block-title">State</h3>
+		<pre>
+{{state | json}}
+		</pre>
+	</div>
+</div>

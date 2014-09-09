@@ -1,0 +1,4 @@
+define([
+    './SignInCtrl',
+    './SignOutCtrl'
+], function () {});

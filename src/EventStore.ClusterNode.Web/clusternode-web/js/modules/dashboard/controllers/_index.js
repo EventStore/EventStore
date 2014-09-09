@@ -1,0 +1,4 @@
+define([
+    './DashboardListCtrl',
+	'./DashboardSnapshotCtrl'
+], function () {});
