@@ -5,9 +5,9 @@ using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    public class GuidController : CommunicationController
+    public class UUIDController : CommunicationController
     {
-        public GuidController(IPublisher publisher)
+        public UUIDController(IPublisher publisher)
             : base(publisher)
         {
         }
@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected override void SubscribeCore(IHttpService service)
         {
             service.RegisterAction(
-                new ControllerAction("/new-guid", "GET", Codec.NoCodecs, new ICodec[] {Codec.Text}),
+                new ControllerAction("/new-uuid", "GET", Codec.NoCodecs, new ICodec[] {Codec.Text}),
                 (manager, match) => manager.Reply(Guid.NewGuid().ToString("D"), 200, "OK", "text/plain"));
         }
     }
