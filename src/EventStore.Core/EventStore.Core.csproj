@@ -82,7 +82,6 @@
     <Compile Include="Cluster\Settings\ClusterConsts.cs" />
     <Compile Include="Cluster\Settings\ClusterVNodeAuthenticationType.cs" />
     <Compile Include="Cluster\Settings\ClusterVNodeSettings.cs" />
-    <Compile Include="Cluster\Settings\ClusterVNodeBuilder.cs" />
     <Compile Include="Cluster\VNodeInfo.cs" />
     <Compile Include="DataStructures\StickyLRUCache.cs" />
     <Compile Include="Data\LowerUpper.cs" />
