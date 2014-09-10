@@ -266,16 +266,6 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         /// <summary>
-        /// Sets the certificate to be used with SSL
-        /// </summary>
-        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
-        public EmbeddedVNodeBuilder WithSslServerCertificate(X509Certificate2 certificate)
-        {
-            _certificate = certificate;
-            return this;
-        }
-
-        /// <summary>
         /// Sets the gossip seeds this node should talk to
         /// </summary>
         /// <param name="endpoints">The gossip seeds this node should try to talk to</param>
@@ -382,18 +372,84 @@ namespace EventStore.ClientAPI.Embedded
             _httpPrefixes.Add(prefix);
             return this;
         }
+       
+ 	/// <summary>
+ 	/// Sets the Server SSL Certificate to be loaded from a file
+ 	/// </summary>
+ 	/// <param name="path">The path to the certificate file</param>
+ 	/// <param name="password">The password for the certificate</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithServerCertificateFromFile(string path, string password)
+        {
+            var cert = new X509Certificate2(path, password);
 
-        public void EnsureHttpPrefixes()
+            _certificate = cert;
+            return this;
+        }
+
+	/// <summary>
+	/// Sets the Server SSL Certificate to be loaded from a certificate store
+	/// </summary>
+	/// <param name="storeLocation">The location of the certificate store</param>
+	/// <param name="storeName">The name of the certificate store</param>
+	/// <param name="certificateSubjectName">The subject name of the certificate</param>
+	/// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName, string certificateSubjectName, string certificateThumbprint)
+        {
+            var store = new X509Store(storeName, storeLocation);
+
+            try
+            {
+                store.Open(OpenFlags.OpenExistingOnly);
+            }
+            catch (Exception exc)
+            {
+                throw new Exception(string.Format("Couldn't open certificate store '{0}' in location {1}'.", storeName, storeLocation), exc);
+            }
+
+            if (!string.IsNullOrWhiteSpace(certificateThumbprint))
+            {
+                var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, certificateThumbprint, true);
+                if (certificates.Count == 0)
+                    throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.", certificateThumbprint));
+                
+                //Can this even happen?
+                if (certificates.Count > 1)
+                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+
+                _certificate = certificates[0];
+                return this;
+            }
+            
+            if (!string.IsNullOrWhiteSpace(certificateSubjectName))
+            {
+                var certificates = store.Certificates.Find(X509FindType.FindBySubjectName, certificateSubjectName, true);
+                if (certificates.Count == 0)
+                    throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.", certificateThumbprint));
+
+                //Can this even happen?
+                if (certificates.Count > 1)
+                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+
+                _certificate = certificates[0];
+                return this;
+            }
+            
+            throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
+        }
+
+        private void EnsureHttpPrefixes()
         {
             if (_httpPrefixes == null || _httpPrefixes.IsEmpty())
                 _httpPrefixes = new List<string>(new[] {_externalHttp.ToHttpUrl()});
 
-            if (Runtime.IsMono)
+            if (!Runtime.IsMono) 
+                return;
+
+            if (!_httpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_externalHttp.Address, IPAddress.Loopback))
             {
-                if (!_httpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_externalHttp.Address, IPAddress.Loopback))
-                {
-		    _httpPrefixes.Add(string.Format("http://localhost:{0}/", _externalHttp.Port));
-                }
+                _httpPrefixes.Add(string.Format("http://localhost:{0}/", _externalHttp.Port));
             }
         }
 
