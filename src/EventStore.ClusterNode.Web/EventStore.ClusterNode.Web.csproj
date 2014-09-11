@@ -4855,7 +4855,7 @@
     <Content Include="clusternode-web\src\js\bootstrap.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="clusternode-web\src\js\config\consts.js">
+    <Content Include="clusternode-web\src\js\config\constants.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="clusternode-web\src\js\config\http.js">
@@ -4865,6 +4865,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="clusternode-web\src\js\config\routes.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="clusternode-web\src\js\config\urls.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="clusternode-web\src\js\config\values.js">
