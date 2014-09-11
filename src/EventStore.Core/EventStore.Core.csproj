@@ -216,7 +216,6 @@
     <Compile Include="Services\Transport\Http\Controllers\ClusterWebUIController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ElectController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\GossipController.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\UUIDController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
