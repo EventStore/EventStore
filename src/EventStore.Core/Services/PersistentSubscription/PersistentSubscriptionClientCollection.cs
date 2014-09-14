@@ -88,7 +88,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             PersistentSubscriptionClient client;
             if (!_hash.TryGetValue(correlationId, out client)) return;
-            Console.WriteLine("correlation id not for client.");
             client.ConfirmProcessing(processedEventIds);
         }
 
