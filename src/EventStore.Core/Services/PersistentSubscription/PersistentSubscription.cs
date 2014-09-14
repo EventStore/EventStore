@@ -182,7 +182,14 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void RemoveClientByConnectionId(Guid connectionId)
         {
-            _pushClients.RemoveClientByConnectionId(connectionId);
+            var lostMessages = _pushClients.RemoveClientByConnectionId(connectionId);
+            //TODO this are in an arbitrary order right now it may be nicer if
+            //we would sort them (or sort them all in the outstaanding message queue
+            //eg use a priority queueu there
+            foreach (var m in lostMessages)
+            {
+                RetryMessage(m, 0);
+            }
         }
 
         public void RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification)
@@ -221,7 +228,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(DateTime.Now))
             {
                 if(!ActionTakenForPoisonMessage(message))
-                    RetryMessage(message);
+                    RetryMessage(message.ResolvedEvent, message.RetryCount + 1);
             }
         }
 
@@ -231,10 +238,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             return false;
         }
 
-        private void RetryMessage(OutstandingMessage message)
+
+        //TODO retry needs to be cleaned a bit between connections and outstanding
+        private void RetryMessage(ResolvedEvent @event, int count)
         {
-            Console.WriteLine("Retrying message.");
-            _streamBuffer.AddRetry(new OutstandingMessage(message.EventId, null, message.ResolvedEvent, message.RetryCount + 1));
+            _streamBuffer.AddRetry(new OutstandingMessage(@event.Event.EventId, null, @event, count + 1));
         }
 
         public MonitoringMessage.SubscriptionInfo GetStatistics()
