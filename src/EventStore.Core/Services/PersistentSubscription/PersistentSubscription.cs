@@ -89,7 +89,15 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (!checkpoint.HasValue)
             {
-                _lastPulledEvent = 0;
+                if (_startFromBeginning)
+                {
+                    _lastPulledEvent = 0;
+                    TryReadingNewBatch();
+                }
+            }
+            else
+            {
+                _lastPulledEvent = checkpoint.Value;
                 TryReadingNewBatch();
             }
         }
@@ -100,16 +108,23 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_outstandingReadRequest) return;
             if (!_streamBuffer.CanAccept(_readBatchSize)) return;
             _outstandingReadRequest = true;
+            Console.WriteLine("Read new batch.");
             _eventLoader.BeginLoadState(this, _lastPulledEvent, _readBatchSize, HandleReadCompleted);
         }
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
         {
             _outstandingReadRequest = false; //mark not in read (even if we break the loop can be restarted then)
+            if (events.Length == 0)
+            {
+                _streamBuffer.MoveToLive();
+                return;
+            }
             foreach (var ev in events)
             {
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
+            _lastPulledEvent = newposition;
             TryPushingMessagesToClients();
             TryReadingNewBatch();
         }
@@ -188,6 +203,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
+            Console.WriteLine("acking message");
             _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
@@ -219,6 +235,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void RetryMessage(OutstandingMessage message)
         {
+            Console.WriteLine("Retrying message.");
             _streamBuffer.AddRetry(new OutstandingMessage(message.EventId, null, message.ResolvedEvent, message.RetryCount + 1));
         }
 

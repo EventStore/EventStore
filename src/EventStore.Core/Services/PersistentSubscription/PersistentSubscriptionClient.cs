@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly Guid _correlationId;
         private readonly Guid _connectionId;
         private readonly IEnvelope _envelope;
-        private int _inFlightMessages;
+        private int _allowedMessages;
         public readonly string Username;
         public readonly string From;
         private readonly Stopwatch _watch;
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _correlationId = correlationId;
             _connectionId = connectionId;
             _envelope = envelope;
-            _inFlightMessages = inFlightMessages;
+            _allowedMessages = inFlightMessages;
             Username = username;
             From = @from;
             _watch = watch;
@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public int InFlightMessages
         {
-            get { return _inFlightMessages; }
+            get { return _allowedMessages; }
         }
 
         public Guid ConnectionId
@@ -76,6 +76,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
                 {
                     _unconfirmedEvents.Remove(processedEventId);
+                    _allowedMessages++;
                 }
             }
         }
@@ -96,7 +97,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public bool Push(ResolvedEvent evnt)
         {
             if (!CanSend()) return false;
-            _inFlightMessages--;
+            _allowedMessages--;
             Interlocked.Increment(ref _totalItems);
             if (_latencyStatistics != null)
                 _latencyStatistics.StartOperation(evnt.OriginalEvent.EventId);

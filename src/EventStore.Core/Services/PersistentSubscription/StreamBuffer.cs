@@ -105,6 +105,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             ev = _buffer.Peek();
             return true;
         }
+
+        public void MoveToLive()
+        {
+            if (_liveBuffer.Count == 0) _live = true;
+        }
     }
 
     public enum BufferedStreamReaderState
