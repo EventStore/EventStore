@@ -80,10 +80,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             _outstandingReadRequest = false;
             //TODO make configurable buffer sizes
             //TODO allow init from position
-            //TODO add checkpoint read
+            _checkpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
             _streamBuffer = new StreamBuffer(1000, 500, -1, _startFromBeginning);
             _pushClients = new PersistentSubscriptionClientCollection(_preferOne);
         }
+
+        private void OnCheckpointLoaded(int? checkpoint)
+        {
+            if (!checkpoint.HasValue)
+            {
+                _lastPulledEvent = 0;
+                TryReadingNewBatch();
+            }
+        }
+
 
         public void TryReadingNewBatch()
         {
@@ -148,6 +158,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, maxInFlight, user, @from, _totalTimeWatch, _trackLatency);
             _pushClients.AddClient(client);
+            TryPushingMessagesToClients();
         }
 
         public void Shutdown()
@@ -182,6 +193,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 _outstandingMessages.Remove(id);
             }
+            TryReadingNewBatch();
         }
 
         private void RevertToCheckPoint()

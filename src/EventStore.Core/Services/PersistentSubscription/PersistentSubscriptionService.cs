@@ -30,8 +30,8 @@ namespace EventStore.Core.Services.PersistentSubscription
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionService>();
 
-        private Dictionary<string, List<PersistentSubscription_old>> _subscriptionTopics;
-        private Dictionary<string, PersistentSubscription_old> _subscriptionsById;
+        private Dictionary<string, List<PersistentSubscription>> _subscriptionTopics;
+        private Dictionary<string, PersistentSubscription> _subscriptionsById;
 
         private readonly IQueuedHandler _queuedHandler;
         private readonly IReadIndex _readIndex;
@@ -57,8 +57,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void InitToEmpty()
         {
-            _subscriptionTopics = new Dictionary<string, List<PersistentSubscription_old>>();
-            _subscriptionsById = new Dictionary<string, PersistentSubscription_old>(); 
+            _subscriptionTopics = new Dictionary<string, List<PersistentSubscription>>();
+            _subscriptionsById = new Dictionary<string, PersistentSubscription>(); 
         }
 
         public void Handle(SystemMessage.StateChangeMessage message)
@@ -155,24 +155,26 @@ namespace EventStore.Core.Services.PersistentSubscription
                                              TimeSpan messageTimeout)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
-            List<PersistentSubscription_old> subscribers;
+            List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers))
             {
-                subscribers = new List<PersistentSubscription_old>();
+                subscribers = new List<PersistentSubscription>();
                 _subscriptionTopics.Add(eventStreamId, subscribers);
             }
 
-            var subscription = new PersistentSubscription_old(
-                                    resolveLinkTos, 
-                                    key,
-                                    eventStreamId,
-                                    groupName,
-                                    startFromBeginning,
-                                    trackLatency, 
-                                    messageTimeout,
-                                    _eventLoader, 
-                                    _checkpointReader, 
-                                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher));
+            var subscription = new PersistentSubscription(
+                new PersistentSubscriptionParams(
+                    resolveLinkTos,
+                    key,
+                    eventStreamId,
+                    groupName,
+                    startFromBeginning,
+                    trackLatency,
+                    messageTimeout,
+                    false, //TODO use from config
+                    _eventLoader,
+                    _checkpointReader,
+                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher)));
             _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
         }
@@ -206,7 +208,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
 
             }
-            List<PersistentSubscription_old> subscribers;
+            List<PersistentSubscription> subscribers;
             _subscriptionsById.Remove(key);
             if (_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
@@ -263,7 +265,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
             }
 
-            List<PersistentSubscription_old> subscribers;
+            List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
                 //TODO this is subscription doesnt exist.
@@ -271,7 +273,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
             }
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.SubscriptionId);
-            PersistentSubscription_old subscription;
+            PersistentSubscription subscription;
             if (!_subscriptionsById.TryGetValue(key, out subscription))
             {
                 message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.NotFound));
@@ -299,20 +301,16 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt)
         {
-            List<PersistentSubscription_old> subscriptions;
+            List<PersistentSubscription> subscriptions;
             if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions)) 
                 return;
             for (int i = 0, n = subscriptions.Count; i < n; i++)
             {
                 var subscr = subscriptions[i];
-                if (subscr.State == PersistentSubscriptionState.Pull || evnt.EventNumber <= subscr.LastEventNumber)
-                    continue;
-
                 var pair = new ResolvedEvent(evnt, null, commitPosition);
                 if (subscr.ResolveLinkTos)
-                    pair = ResolveLinkToEvent(evnt, commitPosition);
-
-                subscr.Push(pair);
+                    pair = ResolveLinkToEvent(evnt, commitPosition); //TODO this can be cached
+                subscr.NotifyLiveSubscriptionMessage(pair);
             }
         }
 
@@ -341,7 +339,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(ClientMessage.PersistentSubscriptionAckEvents message)
         {
             if (!_started) return;
-            PersistentSubscription_old subscription;
+            PersistentSubscription subscription;
             //TODO competing adjust the naming of SubscriptionId vs GroupName
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
@@ -440,7 +438,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 );
                 return;
             }
-            List<PersistentSubscription_old> subscribers;
+            List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers) || subscribers == null)
             {
                 message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
@@ -474,7 +472,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ); 
                 return;
             } 
-            List<PersistentSubscription_old> subscribers;
+            List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
                 message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
