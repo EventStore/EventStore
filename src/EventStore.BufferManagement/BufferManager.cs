@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace EventStore.BufferManagement
 {
@@ -201,23 +202,32 @@ namespace EventStore.BufferManagement
             var result = new ArraySegment<byte>[toGet];
             var count = 0;
             var totalReceived = 0;
-                
-            while (count < TrialsCount)
+
+            try
             {
-                ArraySegment<byte> piece;
-                while (totalReceived < toGet)
+                while (count < TrialsCount)
                 {
-                    if (!_buffers.TryPop(out piece))
-                        break;
-                    result[totalReceived] = piece;
-                    ++totalReceived;
+                    ArraySegment<byte> piece;
+                    while (totalReceived < toGet)
+                    {
+                        if (!_buffers.TryPop(out piece))
+                            break;
+                        result[totalReceived] = piece;
+                        ++totalReceived;
+                    }
+                    if (totalReceived == toGet)
+                        return result;
+                    CreateNewSegment(false);
+                    count++;
                 }
-                if (totalReceived == toGet)
-                    return result;
-                CreateNewSegment(false);
-                count++;
+                throw new UnableToAllocateBufferException();
             }
-            throw new UnableToAllocateBufferException();
+            catch
+            {
+                if (totalReceived > 0)
+                    CheckIn(result.Take(totalReceived));
+                throw;
+            }
         }
 
         /// <summary>
