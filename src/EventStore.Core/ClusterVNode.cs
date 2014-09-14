@@ -279,6 +279,7 @@ namespace EventStore.Core
 
             var adminController = new AdminController(_mainQueue);
             var pingController = new PingController();
+            var infoController = new InfoController();
             var statController = new StatController(monitoringQueue, _workersHandler);
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
             var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
@@ -294,6 +295,7 @@ namespace EventStore.Core
             if(vNodeSettings.AdminOnPublic)
                 _externalHttpService.SetupController(adminController);
             _externalHttpService.SetupController(pingController);
+            _externalHttpService.SetupController(infoController);
             if(vNodeSettings.StatsOnPublic)
                 _externalHttpService.SetupController(statController);
             _externalHttpService.SetupController(atomController);
@@ -309,6 +311,7 @@ namespace EventStore.Core
                                                        _workersHandler, _nodeInfo.InternalHttp.ToHttpUrl());
                 _internalHttpService.SetupController(adminController);
                 _internalHttpService.SetupController(pingController);
+                _internalHttpService.SetupController(infoController);
                 _internalHttpService.SetupController(statController);
                 _internalHttpService.SetupController(atomController);
                 _internalHttpService.SetupController(gossipController);
