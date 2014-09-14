@@ -14,7 +14,7 @@ namespace CompetingPlayground
         private static readonly string SubName = "greG";
         private static readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
                                                                                 .DoNotResolveLinkTos()
-                                                                                .StartFromCurrent()
+                                                                                .StartFromBeginning()
                                                                                 .WithExtraLatencyStatistics();
 
         static void Main(string[] args)
@@ -28,7 +28,7 @@ namespace CompetingPlayground
             using (var connection = EventStoreConnection.Create(endpoint, "foo"))
             {
                 connection.ConnectAsync().Wait();
-                //WriteEvents(connection);                
+                WriteEvents(connection);                
                 CreateSubscription(connection, SubName);
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
