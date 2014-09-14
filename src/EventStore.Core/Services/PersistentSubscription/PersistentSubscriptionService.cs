@@ -174,7 +174,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     false, //TODO use from config
                     _eventLoader,
                     _checkpointReader,
-                    new PersistentSubscriptionCheckpointWriter(groupName, _ioDispatcher)));
+                    new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher)));
             _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
         }

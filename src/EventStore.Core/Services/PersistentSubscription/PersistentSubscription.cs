@@ -20,6 +20,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly bool _startFromBeginning;
+        private bool _ready;
         internal PersistentSubscriptionClientCollection _pushClients;
         private bool _outstandingReadRequest;
         private readonly PersistentSubscriptionStats _statistics;
@@ -33,6 +34,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private PersistentSubscriptionState _state = PersistentSubscriptionState.Idle;
         private int _lastPulledEvent;
         private bool _preferOne;
+        private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
 
         public bool HasClients
         {
@@ -60,8 +62,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             GroupName = persistentSubscriptionParams.GroupName;
             _eventLoader = persistentSubscriptionParams.EventLoader;
             _checkpointReader = persistentSubscriptionParams.CheckpointReader;
-            //_checkpointWriter = checkpointWriter;
+            _checkpointWriter = persistentSubscriptionParams.CheckpointWriter;
             _lastPulledEvent = 0;
+            //TODO refactor to state.
+            _ready = false;
             _startFromBeginning = persistentSubscriptionParams.StartFromBeginning;
             _trackLatency = persistentSubscriptionParams.TrackLatency;
             _messageTimeout = persistentSubscriptionParams.MessageTimeout;
@@ -76,28 +80,35 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void InitAsNew()
         {
+            _ready = false;
             _statistics.SetLastKnownEventNumber(-1);
             _outstandingReadRequest = false;
             //TODO make configurable buffer sizes
             //TODO allow init from position
             _checkpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
-            _streamBuffer = new StreamBuffer(1000, 500, -1, _startFromBeginning);
             _pushClients = new PersistentSubscriptionClientCollection(_preferOne);
         }
 
         private void OnCheckpointLoaded(int? checkpoint)
         {
+            _ready = true;
             if (!checkpoint.HasValue)
             {
                 if (_startFromBeginning)
                 {
                     _lastPulledEvent = 0;
-                    TryReadingNewBatch();
+                    _streamBuffer = new StreamBuffer(1000, 500, -1, true);
                 }
+                else
+                {
+                    _streamBuffer = new StreamBuffer(1000, 500, -1, false);
+                }
+                TryReadingNewBatch();
             }
             else
             {
                 _lastPulledEvent = checkpoint.Value;
+                _streamBuffer = new StreamBuffer(1000, 500, -1, true);
                 TryReadingNewBatch();
             }
         }
@@ -113,6 +124,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
         {
+            if (!_ready) return;
             _outstandingReadRequest = false; //mark not in read (even if we break the loop can be restarted then)
             if (events.Length == 0)
             {
@@ -145,6 +157,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent)
         {
+            if (!_ready) return;
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
             _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null, resolvedEvent, 0));
             TryPushingMessagesToClients();
@@ -199,7 +212,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void MarkCheckpoint()
         {
-            //TODO write checkpoint
             //TODO we probably want some various checkpointing strategies not just
             //do every message or every n messages. time based/message count
             //are probably good. We may also want to try writing our checkpoints
@@ -207,6 +219,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             //that dont want to understand the intricacies of dealing with atleast
             //once messaging (less chance of a duplicate). This is worth a conversation
             //with james (better to teach early?)
+            var lowest = _outstandingMessages.GetLowestPosition();
+            lowest = lowest < 0 ? 0 : lowest;
+            _checkpointWriter.BeginWriteState(lowest);
+            Log.Debug("writing checkpoint. " + lowest);
         }
 
         public void AddMessageAsProcessing(ResolvedEvent ev, PersistentSubscriptionClient client)
@@ -219,6 +235,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
+                if(id.GetHashCode() % 10 == 0) MarkCheckpoint(); //TODO umm yeah please dont laugh at this.
                 _outstandingMessages.Remove(id);
             }
             TryReadingNewBatch();

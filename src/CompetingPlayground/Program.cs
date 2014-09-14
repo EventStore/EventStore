@@ -14,7 +14,6 @@ namespace CompetingPlayground
         private static readonly string SubName = "greG";
         private static readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
                                                                                 .DoNotResolveLinkTos()
-                                                                                .StartFromBeginning()
                                                                                 .WithExtraLatencyStatistics();
 
         static void Main(string[] args)
