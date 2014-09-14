@@ -17,7 +17,6 @@ using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Util;
 using EventStore.Web.Users;
 
 namespace EventStore.ClusterNode
@@ -55,8 +54,6 @@ namespace EventStore.ClusterNode
                                 "EventStore",
                                 string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-Node{1}", _startupTimeStamp, nodePort));
         }
-
-
 
         protected override void Create(ClusterNodeOptions opts)
         {
@@ -101,8 +98,6 @@ namespace EventStore.ClusterNode
 
 				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
 			}
-
-            var dbVerifyHashes = !opts.SkipDbVerify;
             var runProjections = opts.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n"
@@ -122,7 +117,7 @@ namespace EventStore.ClusterNode
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
-            _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, dbVerifyHashes, opts.MaxMemTableSize, _projections);
+            _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
             RegisterUiProjections();
         }
@@ -190,11 +185,7 @@ namespace EventStore.ClusterNode
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);
-            if (options.UseInternalSsl)
-            {
-                if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
-                if (intSecTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
-            }
+
 
 			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
 
@@ -215,7 +206,9 @@ namespace EventStore.ClusterNode
                                             TimeSpan.FromMilliseconds(options.GossipIntervalMs),
                                             TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs),
                                             TimeSpan.FromMilliseconds(options.GossipTimeoutMs),
-                                            TimeSpan.FromMilliseconds(options.TcpTimeout));
+                                            TimeSpan.FromMilliseconds(options.TcpTimeout),
+                                            !options.SkipDbVerify,
+                                            options.MaxMemTableSize);
         }
 
 	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)

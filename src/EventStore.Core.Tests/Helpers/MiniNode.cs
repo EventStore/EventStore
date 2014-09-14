@@ -114,7 +114,9 @@ namespace EventStore.Core.Tests.Helpers
                                                          TimeSpan.FromSeconds(30),
                                                          TimeSpan.FromSeconds(30),
                                                          TimeSpan.FromSeconds(10),
-                                                         TimeSpan.FromSeconds(10));
+                                                         TimeSpan.FromSeconds(10),
+                                                         false,
+                                                         1000000);
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
@@ -134,8 +136,6 @@ namespace EventStore.Core.Tests.Helpers
             Node = new ClusterVNode(Db,
                                     vNodeSettings,         
                                    new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}),
-                                   false,
-                                   memTableSize,
                                    subsystems : subsystems);
 
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));

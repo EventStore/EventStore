@@ -1,11 +1,11 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Cluster.Settings
 {
@@ -47,6 +47,8 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan GossipAllowedTimeDifference;
         public readonly TimeSpan GossipTimeout;
         public readonly TimeSpan TcpTimeout;
+        public readonly bool VerifyDbHashes;
+        public readonly int MaxMemtableSize;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
@@ -82,7 +84,7 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan gossipInterval,
                                     TimeSpan gossipAllowedTimeDifference,
                                     TimeSpan gossipTimeout,
-                                    TimeSpan tcpTimeout)
+                                    TimeSpan tcpTimeout, bool verifyDbHashes, int maxMemtableSize)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -143,54 +145,18 @@ namespace EventStore.Core.Cluster.Settings
             GossipAllowedTimeDifference = gossipAllowedTimeDifference;
             GossipTimeout = gossipTimeout;
             TcpTimeout = tcpTimeout;
+            VerifyDbHashes = verifyDbHashes;
+            MaxMemtableSize = maxMemtableSize;
+            Verify();
         }
 
-        public override string ToString()
+        private void Verify()
         {
-            return string.Format("InstanceId: {0}\n"
-                                 + "InternalTcp: {1}\n"
-                                 + "InternalSecureTcp: {2}\n"
-                                 + "ExternalTcp: {3}\n"
-                                 + "ExternalSecureTcp: {4}\n"
-                                 + "InternalHttp: {5}\n"
-                                 + "ExternalHttp: {6}\n"
-                                 + "HttpPrefixes: {7}\n"
-                                 + "EnableTrustedAuth: {8}\n"
-                                 + "Certificate: {9}\n"
-                                 + "WorkerThreads: {10}\n"
-                                 + "DiscoverViaDns: {11}\n"
-                                 + "ClusterDns: {12}\n"
-                                 + "GossipSeeds: {13}\n"
-                                 + "ClusterNodeCount: {14}\n"
-                                 + "MinFlushDelay: {15}\n"
-                                 + "PrepareAckCount: {16}\n"
-                                 + "CommitAckCount: {17}\n"
-                                 + "PrepareTimeout: {18}\n"
-                                 + "CommitTimeout: {19}\n"
-                                 + "UseSsl: {20}\n"
-                                 + "SslTargetHost: {21}\n"
-                                 + "SslValidateServer: {22}\n"
-                                 + "StatsPeriod: {23}\n"
-                                 + "StatsStorage: {24}\n"
-                                 + "AuthenticationProviderFactory Type: {25}\n"
-                                 + "NodePriority: {26}"
-                                 + "GossipInterval: {27}\n"
-                                 + "GossipAllowedTimeDifference: {28}\n"
-                                 + "GossipTimeout: {29}\n",
-                                 NodeInfo.InstanceId,
-                                 NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
-                                 NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
-                                 NodeInfo.InternalHttp, NodeInfo.ExternalHttp,
-                                 string.Join(", ", HttpPrefixes),
-                                 EnableTrustedAuth,
-                                 Certificate == null ? "n/a" : Certificate.ToString(true),
-                                 WorkerThreads, DiscoverViaDns, ClusterDns,
-                                 string.Join(",", GossipSeeds.Select(x => x.ToString())),
-                                 ClusterNodeCount, MinFlushDelay,
-                                 PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
-                                 UseSsl, SslTargetHost, SslValidateServer,
-                                 StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
-                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout);
+            if (UseSsl)
+            {
+                if (ReferenceEquals(SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
+                if (NodeInfo.InternalSecureTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
+            }
         }
     }
 }

@@ -72,6 +72,7 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+
         /// <summary>
         /// Builds a <see cref="ClusterSettings"/> object from a <see cref="GossipSeedClusterSettingsBuilder"/>.
         /// </summary>

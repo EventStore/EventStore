@@ -28,7 +28,8 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\clientapiembedded\</OutputPath>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>..\..\bin\clientapiembedded\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
@@ -41,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientMessageConverterExtensions.cs" />
+    <Compile Include="EmbeddedVNodeBuilder.cs" />
     <Compile Include="EmbeddedEventStoreConnection.cs" />
     <Compile Include="EmbeddedResponderBase.cs" />
     <Compile Include="EmbeddedResponders.cs" />

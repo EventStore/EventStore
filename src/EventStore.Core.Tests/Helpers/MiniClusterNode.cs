@@ -19,6 +19,7 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using NUnit.Framework.Constraints;
 
 namespace EventStore.Core.Tests.Helpers
 {
@@ -84,7 +85,7 @@ namespace EventStore.Core.Tests.Helpers
                 new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, adminOnPublic: true, 
                 statsOnPublic: true, gossipOnPublic: true, gossipInterval : TimeSpan.FromSeconds(1),
                 gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
-                tcpTimeout: TimeSpan.FromSeconds(10));
+                tcpTimeout: TimeSpan.FromSeconds(10), verifyDbHashes: false, maxMemtableSize: 100000);
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
@@ -99,7 +100,7 @@ namespace EventStore.Core.Tests.Helpers
                 ExternalHttpEndPoint);
 
             Node = new ClusterVNode(
-                Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: memTableSize, subsystems: subsystems,
+                Db, singleVNodeSettings, subsystems: subsystems,
                 gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
