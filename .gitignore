@@ -90,5 +90,8 @@ _dotCover.*
 
 */es-logs
 
+node_modules
+test_results
+
 # Mac
 .DS_Store

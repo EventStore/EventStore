@@ -53,6 +53,9 @@ namespace EventStore.Core.Util
                 var extensionToContentType = new Dictionary<string, string>
                 {
                     { ".png",  "image/png"} ,
+                    { ".svg",  "image/svg+xml"} ,
+                    { ".woff", "application/x-font-woff"} ,
+                    { ".ttf", "application/font-sfnt"} ,
                     { ".jpg",  "image/jpeg"} ,
                     { ".jpeg", "image/jpeg"} ,
                     { ".css",  "text/css"} ,
@@ -73,7 +76,7 @@ namespace EventStore.Core.Util
                 {
                     _logger.Info("Replying 404 for {0} ==> {1}", contentLocalPath, fullPath);
                     http.ReplyTextContent(
-                        "Not Found", 404, "Not Found", "text/plain", null, 
+                        "Not Found", 404, "Not Found", "text/plain", null,
                         ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
                 }
                 else
@@ -103,11 +106,11 @@ namespace EventStore.Core.Util
 #if RELEASE || CACHE_WEB_CONTENT
                 60*60; // 1 hour
 #else
-                null; // no caching
+ null; // no caching
 #endif
-// ReSharper disable ExpressionIsAlwaysNull
+            // ReSharper disable ExpressionIsAlwaysNull
             return Configure.Ok(contentType, encoding, null, cacheSeconds, isCachePublic: true);
-// ReSharper restore ExpressionIsAlwaysNull
+            // ReSharper restore ExpressionIsAlwaysNull
         }
 
         public static string GetWebRootFileSystemDirectory(string debugPath = null)

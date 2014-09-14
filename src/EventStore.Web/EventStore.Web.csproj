@@ -40,17 +40,6 @@
     <Compile Include="Users\UsersWebController.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Users\web\my_account.htm">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Users\web\js\Controller.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Users\web\users.htm">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{b4c9be3d-43b1-4049-a23a-5dc53db3f0b0}</Project>
       <Name>EventStore.Common</Name>
