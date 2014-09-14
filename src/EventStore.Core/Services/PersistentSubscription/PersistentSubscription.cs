@@ -199,7 +199,14 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void MarkCheckpoint()
         {
-            //write checkpoint
+            //TODO write checkpoint
+            //TODO we probably want some various checkpointing strategies not just
+            //do every message or every n messages. time based/message count
+            //are probably good. We may also want to try writing our checkpoints
+            //during a proper shutdown to make things more friendly for clients
+            //that dont want to understand the intricacies of dealing with atleast
+            //once messaging (less chance of a duplicate). This is worth a conversation
+            //with james (better to teach early?)
         }
 
         public void AddMessageAsProcessing(ResolvedEvent ev, PersistentSubscriptionClient client)
