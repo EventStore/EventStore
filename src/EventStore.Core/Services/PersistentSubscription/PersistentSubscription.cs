@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly bool _startFromBeginning;
-        internal PersistentSubscriptionClientCollection _pushClients = new PersistentSubscriptionClientCollection();
+        internal PersistentSubscriptionClientCollection _pushClients;
         private bool _outstandingReadRequest;
         private readonly PersistentSubscriptionStats _statistics;
         private readonly Stopwatch _totalTimeWatch;
@@ -32,6 +32,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private PersistentSubscriptionState _state = PersistentSubscriptionState.Idle;
         private int _lastPulledEvent;
+        private bool _preferOne;
 
         public bool HasClients
         {
@@ -45,35 +46,26 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _state; }
         }
 
-        public PersistentSubscription(bool resolveLinkTos,
-            string subscriptionId,
-            string eventStreamId,
-            string groupName,
-            bool startFromBeginning,
-            bool trackLatency,
-            TimeSpan messageTimeout,
-            IPersistentSubscriptionEventLoader eventLoader,
-            IPersistentSubscriptionCheckpointReader checkpointReader,
-            IPersistentSubscriptionCheckpointWriter checkpointWriter
-            )
+        public PersistentSubscription(PersistentSubscriptionParams persistentSubscriptionParams)
         {
-            Ensure.NotNull(eventLoader, "eventLoader");
-            Ensure.NotNull(checkpointReader, "checkpointReader");
-            Ensure.NotNull(checkpointWriter, "checkpointWriter");
-            Ensure.NotNull(subscriptionId, "subscriptionId");
-            Ensure.NotNull(eventStreamId, "eventStreamId");
-            Ensure.NotNull(groupName, "groupName");
-            ResolveLinkTos = resolveLinkTos;
-            SubscriptionId = subscriptionId;
-            EventStreamId = eventStreamId;
-            GroupName = groupName;
-            _eventLoader = eventLoader;
-            _checkpointReader = checkpointReader;
+            Ensure.NotNull(persistentSubscriptionParams.EventLoader, "eventLoader");
+            Ensure.NotNull(persistentSubscriptionParams.CheckpointReader, "checkpointReader");
+            Ensure.NotNull(persistentSubscriptionParams.CheckpointWriter, "checkpointWriter");
+            Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
+            Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
+            Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
+            ResolveLinkTos = persistentSubscriptionParams.ResolveLinkTos;
+            SubscriptionId = persistentSubscriptionParams.SubscriptionId;
+            EventStreamId = persistentSubscriptionParams.EventStreamId;
+            GroupName = persistentSubscriptionParams.GroupName;
+            _eventLoader = persistentSubscriptionParams.EventLoader;
+            _checkpointReader = persistentSubscriptionParams.CheckpointReader;
             //_checkpointWriter = checkpointWriter;
             _lastPulledEvent = 0;
-            _startFromBeginning = startFromBeginning;
-            _trackLatency = trackLatency;
-            _messageTimeout = messageTimeout;
+            _startFromBeginning = persistentSubscriptionParams.StartFromBeginning;
+            _trackLatency = persistentSubscriptionParams.TrackLatency;
+            _messageTimeout = persistentSubscriptionParams.MessageTimeout;
+            _preferOne = persistentSubscriptionParams.PreferOne;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             _statistics = new PersistentSubscriptionStats(this, _totalTimeWatch);
@@ -90,7 +82,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             //TODO allow init from position
             //TODO add checkpoint read
             _streamBuffer = new StreamBuffer(1000, 500, -1, _startFromBeginning);
-            _pushClients = new PersistentSubscriptionClientCollection();
+            _pushClients = new PersistentSubscriptionClientCollection(_preferOne);
         }
 
         public void TryReadingNewBatch()
