@@ -215,7 +215,10 @@ namespace EventStore.ClusterNode
                                             TimeSpan.FromMilliseconds(options.GossipIntervalMs),
                                             TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs),
                                             TimeSpan.FromMilliseconds(options.GossipTimeoutMs),
-                                            TimeSpan.FromMilliseconds(options.TcpTimeout));
+                                            TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatTimeout),
+                                            TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatInterval),
+                                            TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout),
+                                            TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval));
         }
 
 	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)

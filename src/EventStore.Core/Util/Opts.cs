@@ -45,8 +45,18 @@ namespace EventStore.Core.Util
         public const string ShowVersionDescr = "Show version.";
         public const bool   ShowVersionDefault = false;
 
-        public const string TcpTimeoutDescr = "Timeout for TCP sockets";
-        public const int TcpTimeoutDefault = 1000;
+        public const string ExtTcpHeartbeatTimeoutDescr = "Heartbeat timeout for external TCP sockets";
+        public const int ExtTcpHeartbeatTimeoutDefault = 1000;
+
+        public const string IntTcpHeartbeatTimeoutDescr = "Heartbeat timeout for internal TCP sockets";
+        public const int IntTcpHeartbeatTimeoutDefault = 700;
+
+        public const string ExtTcpHeartbeatIntervalDescr = "Heartbeat interval for external TCP sockets";
+        public const int ExtTcpHeartbeatIntervalDefault = 2000;
+
+        public const string IntTcpHeartbeatIntervalDescr = "Heartbeat interval for internal TCP sockets";
+        public const int IntTcpHeartbeatInvervalDefault = 700;
+
 
         public const string StatsPeriodDescr = "The number of seconds between statistics gathers.";
         public const int    StatsPeriodDefault = 30;
