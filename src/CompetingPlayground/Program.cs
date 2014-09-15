@@ -15,7 +15,8 @@ namespace CompetingPlayground
         private static readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
                                                                                 .DoNotResolveLinkTos()
                                                                                 .StartFromBeginning()
-                                                                                .WithExtraLatencyStatistics();
+                                                                                .WithExtraLatencyStatistics()
+                                                                                .WithMessageTimeoutOf(TimeSpan.FromMilliseconds(50000));
 
         static void Main(string[] args)
         {
