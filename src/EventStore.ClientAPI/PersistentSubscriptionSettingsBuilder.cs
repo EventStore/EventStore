@@ -82,7 +82,7 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder WithMessageTimeoutOf(TimeSpan timeout)
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, false, _latencyStatistics, timeout);
+            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, _startFromBeginning, _latencyStatistics, timeout);
         }
 
         /// <summary>
