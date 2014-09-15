@@ -205,7 +205,7 @@ namespace EventStore.Core
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
                                                    TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
-                                                   ESConsts.ExternalHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
+                                                   vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
                                                    authenticationProvider, null);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
@@ -216,7 +216,7 @@ namespace EventStore.Core
                 {
                     var extSecTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalSecureTcp, _workersHandler,
                                                           TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
-                                                          ESConsts.ExternalHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
+                                                          vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
                                                           authenticationProvider, vNodeSettings.Certificate);
                     _mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
                     _mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
@@ -227,7 +227,7 @@ namespace EventStore.Core
                     var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
                                                       TcpServiceType.Internal, TcpSecurityType.Normal,
                                                     new InternalTcpDispatcher(),
-                                                    ESConsts.InternalHeartbeatInterval, ESConsts.InternalHeartbeatTimeout,
+                                                    vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
                                                     authenticationProvider, null);
                     _mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
                     _mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
@@ -239,7 +239,7 @@ namespace EventStore.Core
                         var intSecTcpService = new TcpService(_mainQueue, _nodeInfo.InternalSecureTcp, _workersHandler,
                                                             TcpServiceType.Internal, TcpSecurityType.Secure,
                                                             new InternalTcpDispatcher(),
-                                                            ESConsts.InternalHeartbeatInterval, ESConsts.InternalHeartbeatTimeout,
+                                                            vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
                                                             authenticationProvider, vNodeSettings.Certificate);
                         _mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
                         _mainBus.Subscribe<SystemMessage.SystemStart>(intSecTcpService);
@@ -401,7 +401,8 @@ namespace EventStore.Core
 
                 // REPLICA REPLICATION
                 var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, authenticationProvider,
-                                                    _nodeInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer);
+                                                    _nodeInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer,
+                                                    vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
                 _mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
                 _mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
