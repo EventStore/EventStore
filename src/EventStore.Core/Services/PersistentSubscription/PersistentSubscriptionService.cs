@@ -370,7 +370,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                                     entry.ResolveLinkTos, 
                                                     entry.StartFromBeginning,
                                                     entry.TrackLatency,
-                                                    TimeSpan.FromMilliseconds(entry.MessageTimeout)); //TODO competing use trackLatencies
+                                                    TimeSpan.FromMilliseconds(entry.MessageTimeout)); 
                         }
                         continueWith();
                     }

@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly TimeSpan _messageTimeout;
         private readonly OutstandingMessageCache _outstandingMessages;
         private StreamBuffer _streamBuffer;
-        private int _readBatchSize = 50; //TODO configurable
+        private int _readBatchSize = 100; //TODO configurable
 
         private PersistentSubscriptionState _state = PersistentSubscriptionState.Idle;
         private int _lastPulledEvent;
@@ -178,6 +178,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void MarkBeginProcessing(OutstandingMessage message)
         {
+            _statistics.IncrementProcessed();
             _outstandingMessages.StartMessage(message, DateTime.Now + _messageTimeout);
         }
 
@@ -222,6 +223,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             var lowest = _outstandingMessages.GetLowestPosition();
             lowest = lowest < 0 ? 0 : lowest;
             _checkpointWriter.BeginWriteState(lowest);
+            _statistics.SetLastEventNumnber(lowest);
             Log.Debug("writing checkpoint. " + lowest);
         }
 
