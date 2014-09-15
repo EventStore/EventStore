@@ -22,7 +22,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
         {
-            var response = new HttpMessage.TextMessage("Info request successfully handled");
             entity.ReplyTextContent(Codec.Json.To(new
                                     {
                                         ESVersion = VersionInfo.Version

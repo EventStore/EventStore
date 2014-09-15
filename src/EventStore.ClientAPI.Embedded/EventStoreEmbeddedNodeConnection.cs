@@ -331,9 +331,6 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            IEnvelope envelope = new PublishEnvelope(_subscriptionBus, true);
-                //new CallbackEnvelope(_subscriptions.StartSubscriptionCallback(source, eventAppeared, subscriptionDropped));
-
             _subscriptions.Start(_subscriptionBus, corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
             
             return source.Task;
