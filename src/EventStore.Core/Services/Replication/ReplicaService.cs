@@ -41,6 +41,8 @@ namespace EventStore.Core.Services.Replication
         private readonly bool _useSsl;
         private readonly string _sslTargetHost;
         private readonly bool _sslValidateServer;
+        private readonly TimeSpan _heartbeatTimeout;
+        private readonly TimeSpan _heartbeatInterval;
 
         private readonly InternalTcpDispatcher _tcpDispatcher = new InternalTcpDispatcher();
 
@@ -55,7 +57,9 @@ namespace EventStore.Core.Services.Replication
                               VNodeInfo nodeInfo,
                               bool useSsl,
                               string sslTargetHost,
-                              bool sslValidateServer)
+                              bool sslValidateServer,
+                              TimeSpan heartbeatTimeout,
+                              TimeSpan heartbeatInterval)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(db, "db");
@@ -75,6 +79,8 @@ namespace EventStore.Core.Services.Replication
             _useSsl = useSsl;
             _sslTargetHost = sslTargetHost;
             _sslValidateServer = sslValidateServer;
+            _heartbeatTimeout = heartbeatTimeout;
+            _heartbeatInterval = heartbeatInterval;
 
             _connector = new TcpClientConnector();
         }
@@ -158,8 +164,8 @@ namespace EventStore.Core.Services.Replication
                                                    _sslValidateServer,
                                                    _networkSendQueue,
                                                    _authProvider,
-                                                   ESConsts.InternalHeartbeatInterval,
-                                                   ESConsts.InternalHeartbeatTimeout,
+                                                   _heartbeatInterval,
+                                                   _heartbeatTimeout,
                                                    OnConnectionEstablished,
                                                    OnConnectionClosed);
             _connection.StartReceiving();

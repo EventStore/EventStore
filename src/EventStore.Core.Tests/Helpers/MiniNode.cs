@@ -114,6 +114,9 @@ namespace EventStore.Core.Tests.Helpers
                                                          TimeSpan.FromSeconds(30),
                                                          TimeSpan.FromSeconds(30),
                                                          TimeSpan.FromSeconds(10),
+                                                         TimeSpan.FromSeconds(10),
+                                                         TimeSpan.FromSeconds(10),
+                                                         TimeSpan.FromSeconds(10),
                                                          TimeSpan.FromSeconds(10));
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"

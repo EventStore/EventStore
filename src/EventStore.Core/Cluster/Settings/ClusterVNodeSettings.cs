@@ -46,7 +46,10 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan GossipInterval;
         public readonly TimeSpan GossipAllowedTimeDifference;
         public readonly TimeSpan GossipTimeout;
-        public readonly TimeSpan TcpTimeout;
+        public readonly TimeSpan IntTcpHeartbeatTimeout;
+        public readonly TimeSpan IntTcpHeartbeatInterval;
+        public readonly TimeSpan ExtTcpHeartbeatTimeout;
+        public readonly TimeSpan ExtTcpHeartbeatInterval;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
@@ -82,7 +85,10 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan gossipInterval,
                                     TimeSpan gossipAllowedTimeDifference,
                                     TimeSpan gossipTimeout,
-                                    TimeSpan tcpTimeout)
+                                    TimeSpan intTcpHeartbeatTimeout,
+                                    TimeSpan intTcpHeartbeatInterval,
+                                    TimeSpan extTcpHeartbeatTimeout,
+                                    TimeSpan extTcpHeartbeatInterval)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -142,7 +148,10 @@ namespace EventStore.Core.Cluster.Settings
             GossipInterval = gossipInterval;
             GossipAllowedTimeDifference = gossipAllowedTimeDifference;
             GossipTimeout = gossipTimeout;
-            TcpTimeout = tcpTimeout;
+            IntTcpHeartbeatTimeout = intTcpHeartbeatTimeout;
+            IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
+            ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
+            ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
         }
 
         public override string ToString()
