@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authentication;
@@ -13,6 +14,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
+using EventStore.Projections.Core;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -70,6 +72,9 @@ namespace EventStore.ClientAPI.Embedded
         private int _maxMemtableSize;
         private List<ISubsystem> _subsystems;
         private int _clusterGossipPort;
+
+        private ProjectionsMode _projectionsMode;
+        private int _projectionsThreads;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         private EmbeddedVNodeBuilder()
@@ -145,7 +150,7 @@ namespace EventStore.ClientAPI.Embedded
         /// <summary>
         /// Returns a builder set to construct options for a cluster node instance with a cluster size 
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public static EmbeddedVNodeBuilder AsClusterMember(int clusterSize)
         {
             int quorumSize = clusterSize/2;
@@ -158,6 +163,34 @@ namespace EventStore.ClientAPI.Embedded
             return ret;
         }
 
+	/// <summary>
+	/// Sets the mode and the number of threads on which to run projections.
+	/// </summary>
+	/// <param name="projectionsMode">The mode in which to run the projections system</param>
+	/// <param name="numberOfThreads">The number of threads to use for projections. Defaults to 3.</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder RunProjections(ProjectionsMode projectionsMode, int numberOfThreads = Opts.ProjectionThreadsDefault)
+        {
+            _projectionsMode = projectionsMode;
+	    _projectionsThreads = numberOfThreads;
+            return this;
+        }
+
+	/// <summary>
+	/// Adds a custom subsystem to the builder. NOTE: This is an advanced use case that most people will never need!
+	/// </summary>
+	/// <param name="subsystem">The subsystem to add</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder AddCustomSubsystem(ISubsystem subsystem)
+        {
+            _subsystems.Add(subsystem);
+            return this;
+        }
+
+	/// <summary>
+	/// Returns a builder set to run in memory only
+	/// </summary>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder RunInMemory()
         {
             _inMemoryDb = true;
@@ -165,6 +198,11 @@ namespace EventStore.ClientAPI.Embedded
             return this;
         }
 
+	/// <summary>
+	/// Returns a builder set to write database files to the specified path
+	/// </summary>
+	/// <param name="path">The path on disk in which to write the database files</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder RunOnDisk(string path)
         {
             _inMemoryDb = false;
@@ -453,9 +491,30 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
+        private void SetUpProjectionsIfNeeded()
+        {
+            if (_projectionsMode == ProjectionsMode.None) 
+                return;
+
+            ProjectionType internalProjectionType;
+            switch (_projectionsMode)
+            {
+                case ProjectionsMode.System:
+                    internalProjectionType = ProjectionType.System;
+                    break;
+                case ProjectionsMode.All:
+                    internalProjectionType = ProjectionType.All;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, internalProjectionType));
+        }
+
         public static implicit operator ClusterVNode(EmbeddedVNodeBuilder builder)
         {
             builder.EnsureHttpPrefixes();
+	    builder.SetUpProjectionsIfNeeded();
 
             var dbConfig = CreateDbConfig(builder._chunkSize, builder._dbPath, builder._chunksCacheSize,
                 builder._inMemoryDb);

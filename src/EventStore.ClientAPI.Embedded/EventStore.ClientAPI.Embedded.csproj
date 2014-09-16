@@ -51,6 +51,7 @@
     <Compile Include="EmbeddedSubscriber.cs" />
     <Compile Include="EmbeddedSubscription.cs" />
     <Compile Include="EventStoreEmbeddedNodeConnection.cs" />
+    <Compile Include="ProjecttionsMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
