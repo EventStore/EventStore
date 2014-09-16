@@ -38,10 +38,10 @@ namespace EventStore.Projections.Core.Services.Http
         {
             _httpForwarder = httpForwarder;
 
-            var singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
-            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("clusternode-web", "js", "projections")));
+            var singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory();
+            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("clusternode-web", "projections")));
 
-            var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Projections.Core");
+            var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory();
             _networkSendQueue = networkSendQueue;
             _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
             _miniWebResources = new MiniWeb("/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
