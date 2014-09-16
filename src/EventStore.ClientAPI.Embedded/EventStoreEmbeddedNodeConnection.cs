@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
@@ -71,7 +72,7 @@ namespace EventStore.ClientAPI.Embedded
             AppDomain.CurrentDomain.AssemblyResolve += resolver.TryLoadAssemblyFromEmbeddedResource;
         }
 
-        public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName, IPublisher publisher)
+        public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName, IPublisher publisher, ISubscriber bus)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(settings, "settings");
@@ -89,6 +90,8 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptionBus.Subscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
+
+            bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(_ => Disconnected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)))));
         }
 
         public string ConnectionName { get { return _connectionName; } }
@@ -96,7 +99,11 @@ namespace EventStore.ClientAPI.Embedded
         public Task ConnectAsync()
         {
             var source = new TaskCompletionSource<object>();
+            
             source.SetResult(null);
+
+            Connected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)));
+
             return source.Task;
         }
 
@@ -105,6 +112,8 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptionBus.Unsubscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Unsubscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
             _subscriptionBus.Unsubscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
+
+            Closed(this, new ClientClosedEventArgs(this, "Connection close requested by client."));
         }
 
         public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
@@ -331,9 +340,6 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            IEnvelope envelope = new PublishEnvelope(_subscriptionBus, true);
-                //new CallbackEnvelope(_subscriptions.StartSubscriptionCallback(source, eventAppeared, subscriptionDropped));
-
             _subscriptions.Start(_subscriptionBus, corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
             
             return source.Task;
@@ -465,10 +471,22 @@ namespace EventStore.ClientAPI.Embedded
 
         public event EventHandler<ClientConnectionEventArgs> Connected = delegate { };
         public event EventHandler<ClientConnectionEventArgs> Disconnected = delegate { };
-        public event EventHandler<ClientReconnectingEventArgs> Reconnecting = delegate { };
+        public event EventHandler<ClientReconnectingEventArgs> Reconnecting
+        {
+            add { }
+            remove { }
+        }
         public event EventHandler<ClientClosedEventArgs> Closed = delegate { };
-        public event EventHandler<ClientErrorEventArgs> ErrorOccurred = delegate { };
-        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed = delegate { }; 
+        public event EventHandler<ClientErrorEventArgs> ErrorOccurred
+        {
+            add { }
+            remove { }
+        }
+        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed
+        {
+            add { }
+            remove { }
+        }
 
         void IDisposable.Dispose()
         {
