@@ -81,11 +81,12 @@ namespace EventStore.Core.Tests.Helpers
                 new[] {ExternalHttpEndPoint.ToHttpUrl()}, enableTrustedAuth, ssl_connections.GetCertificate(), 1, false,
                 "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
                 false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
-                new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, adminOnPublic: true, 
-                statsOnPublic: true, gossipOnPublic: true, gossipInterval : TimeSpan.FromSeconds(1),
+                new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, adminOnPublic: true,
+                statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
                 gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
                 extTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), extTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
-                intTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), intTcpHeartbeatInterval: TimeSpan.FromSeconds(10));
+                intTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), intTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
+                verifyDbHash: false, maxMemtableEntryCount: memTableSize);
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
@@ -99,9 +100,7 @@ namespace EventStore.Core.Tests.Helpers
                 ExternalTcpEndPoint, "ExTCP SECURE ENDPOINT:", ExternalTcpSecEndPoint, "ExHTTP ENDPOINT:",
                 ExternalHttpEndPoint);
 
-            Node = new ClusterVNode(
-                Db, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: memTableSize, subsystems: subsystems,
-                gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
+            Node = new ClusterVNode(Db, singleVNodeSettings, subsystems: subsystems, gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
 
@@ -161,12 +160,6 @@ namespace EventStore.Core.Tests.Helpers
                 Debug.WriteLine("Failed to remove directory {0}", directory);
                 Debug.WriteLine(e);
             }
-        }
-
-        private IPAddress GetLocalIp()
-        {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
         }
 
         private TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, long chunksCacheSize, bool inMemDb)
