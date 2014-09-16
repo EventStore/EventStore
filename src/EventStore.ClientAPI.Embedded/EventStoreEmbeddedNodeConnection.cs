@@ -471,10 +471,22 @@ namespace EventStore.ClientAPI.Embedded
 
         public event EventHandler<ClientConnectionEventArgs> Connected = delegate { };
         public event EventHandler<ClientConnectionEventArgs> Disconnected = delegate { };
-        public event EventHandler<ClientReconnectingEventArgs> Reconnecting = delegate { };
+        public event EventHandler<ClientReconnectingEventArgs> Reconnecting
+        {
+            add { }
+            remove { }
+        }
         public event EventHandler<ClientClosedEventArgs> Closed = delegate { };
-        public event EventHandler<ClientErrorEventArgs> ErrorOccurred = delegate { };
-        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed = delegate { }; 
+        public event EventHandler<ClientErrorEventArgs> ErrorOccurred
+        {
+            add { }
+            remove { }
+        }
+        public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed
+        {
+            add { }
+            remove { }
+        }
 
         void IDisposable.Dispose()
         {
