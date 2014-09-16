@@ -31,6 +31,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService
 				TimeSpan.FromSeconds(2), false, null, false, TimeSpan.FromHours(1),
 				StatsStorage.StreamAndCsv, 0, new InternalAuthenticationProviderFactory(), false, true, true, true,
                 TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(10),
                 TimeSpan.FromSeconds(10));
 
             return vnode;

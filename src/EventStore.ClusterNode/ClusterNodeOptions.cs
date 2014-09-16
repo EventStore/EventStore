@@ -36,8 +36,16 @@ namespace EventStore.ClusterNode
         public int ExtTcpPort { get; set; }
         [ArgDescription(Opts.ExternalSecureTcpPortDescr, Opts.InterfacesGroup)]
         public int ExtSecureTcpPort { get; set; }
-        [ArgDescription(Opts.TcpTimeoutDescr, Opts.InterfacesGroup)]
-        public int TcpTimeout {get; set;}
+
+        [ArgDescription(Opts.IntTcpHeartbeatTimeoutDescr, Opts.InterfacesGroup)]
+        public int IntTcpHeartbeatTimeout {get; set;}
+        [ArgDescription(Opts.ExtTcpHeartbeatTimeoutDescr, Opts.InterfacesGroup)]
+        public int ExtTcpHeartbeatTimeout { get; set; }
+        [ArgDescription(Opts.IntTcpHeartbeatIntervalDescr, Opts.InterfacesGroup)]
+        public int IntTcpHeartbeatInterval { get; set; }
+        [ArgDescription(Opts.ExtTcpHeartbeatIntervalDescr, Opts.InterfacesGroup)]
+        public int ExtTcpHeartbeatInterval { get; set; }
+
 
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
         public bool Force { get; set; }
@@ -183,7 +191,12 @@ namespace EventStore.ClusterNode
             HttpPrefixes = Opts.HttpPrefixesDefault;
             EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
 
-            TcpTimeout = Opts.TcpTimeoutDefault; 
+            ExtTcpHeartbeatTimeout = Opts.ExtTcpHeartbeatTimeoutDefault;
+            IntTcpHeartbeatTimeout = Opts.IntTcpHeartbeatTimeoutDefault;
+
+            ExtTcpHeartbeatInterval = Opts.ExtTcpHeartbeatIntervalDefault;
+            IntTcpHeartbeatInterval = Opts.IntTcpHeartbeatInvervalDefault;
+
 
             CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
             CertificateStoreName = Opts.CertificateStoreNameDefault;

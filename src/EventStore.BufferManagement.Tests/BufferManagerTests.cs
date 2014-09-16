@@ -78,6 +78,14 @@ namespace EventStore.BufferManagement.Tests
             //should be none left, boom
             Assert.Throws<UnableToCreateMemoryException>(() => manager.CheckOut());
         }
+
+        [Test]
+        public void should_release_acquired_buffers_if_size_requirement_cant_be_satisfied()
+        {
+            BufferManager manager = new BufferManager(1, 1000, 1, false);
+            Assert.Throws(Is.InstanceOf(typeof(Exception)), () => manager.CheckOut(2));
+            Assert.AreEqual(1, manager.AvailableBuffers);
+        }
     }
 
     [TestFixture]
