@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json};
 
-        private readonly MiniWeb _singleNodeJs;
+        private readonly MiniWeb _clusterNodeJs;
         private readonly MiniWeb _miniWebPrelude;
         private readonly MiniWeb _miniWebResources;
         private readonly IHttpForwarder _httpForwarder;
@@ -38,10 +38,10 @@ namespace EventStore.Projections.Core.Services.Http
         {
             _httpForwarder = httpForwarder;
 
-            var singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
-            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("clusternode-web", "js", "projections")));
+            var clusterNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory();
+            _clusterNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(clusterNodeFSRoot, Path.Combine("projections")));
 
-            var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Projections.Core");
+            var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory();
             _networkSendQueue = networkSendQueue;
             _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
             _miniWebResources = new MiniWeb("/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         protected override void SubscribeCore(IHttpService service)
         {
-            _singleNodeJs.RegisterControllerActions(service);
+            _clusterNodeJs.RegisterControllerActions(service);
 
             _miniWebPrelude.RegisterControllerActions(service);
             _miniWebResources.RegisterControllerActions(service);

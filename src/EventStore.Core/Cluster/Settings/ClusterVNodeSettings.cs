@@ -51,6 +51,9 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan ExtTcpHeartbeatTimeout;
         public readonly TimeSpan ExtTcpHeartbeatInterval;
 
+        public readonly bool VerifyDbHash;
+        public readonly int MaxMemtableEntryCount;
+
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
                                     IPEndPoint internalSecureTcpEndPoint,
@@ -88,7 +91,9 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan intTcpHeartbeatTimeout,
                                     TimeSpan intTcpHeartbeatInterval,
                                     TimeSpan extTcpHeartbeatTimeout,
-                                    TimeSpan extTcpHeartbeatInterval)
+                                    TimeSpan extTcpHeartbeatInterval,
+				    bool verifyDbHash,
+				    int maxMemtableEntryCount)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -152,6 +157,9 @@ namespace EventStore.Core.Cluster.Settings
             IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
             ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
             ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
+
+            VerifyDbHash = verifyDbHash;
+            MaxMemtableEntryCount = maxMemtableEntryCount;
         }
 
         public override string ToString()
