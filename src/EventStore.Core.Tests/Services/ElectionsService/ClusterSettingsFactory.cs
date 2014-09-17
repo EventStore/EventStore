@@ -6,6 +6,7 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.ElectionsService
 {
@@ -21,20 +22,20 @@ namespace EventStore.Core.Tests.Services.ElectionsService
                 httpIntPort = tcpIntPort + 10,
                 httpExtPort = tcpIntPort + 11;
 
-			var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 0,
-				GetLoopbackForPort(tcpIntPort), null,
-				GetLoopbackForPort(tcpExtPort), null,
-				GetLoopbackForPort(httpIntPort), GetLoopbackForPort(httpExtPort),
-				new[] { GetLoopbackForPort(httpExtPort).ToHttpUrl() },
-				false, null, 1, false, "dns", new[] { GetLoopbackForPort(ManagerPort) },
-				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
-				TimeSpan.FromSeconds(2), false, null, false, TimeSpan.FromHours(1),
-				StatsStorage.StreamAndCsv, 0, new InternalAuthenticationProviderFactory(), false, true, true, true,
+            var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 0,
+                GetLoopbackForPort(tcpIntPort), null,
+                GetLoopbackForPort(tcpExtPort), null,
+                GetLoopbackForPort(httpIntPort), GetLoopbackForPort(httpExtPort),
+                new[] { GetLoopbackForPort(httpExtPort).ToHttpUrl() },
+                false, null, 1, false, "dns", new[] { GetLoopbackForPort(ManagerPort) },
+                TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
+                TimeSpan.FromSeconds(2), false, null, false, TimeSpan.FromHours(1),
+                StatsStorage.StreamAndCsv, 0, new InternalAuthenticationProviderFactory(), false, true, true, true,
                 TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
                 TimeSpan.FromSeconds(10),
                 TimeSpan.FromSeconds(10),
                 TimeSpan.FromSeconds(10),
-                TimeSpan.FromSeconds(10));
+                TimeSpan.FromSeconds(10), true, Opts.MaxMemtableSizeDefault);
 
             return vnode;
         }

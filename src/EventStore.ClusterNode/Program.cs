@@ -102,7 +102,6 @@ namespace EventStore.ClusterNode
 				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
 			}
 
-            var dbVerifyHashes = !opts.SkipDbVerify;
             var runProjections = opts.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n"
@@ -122,7 +121,7 @@ namespace EventStore.ClusterNode
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
-            _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, dbVerifyHashes, opts.MaxMemTableSize, _projections);
+            _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
             RegisterUiProjections();
         }
@@ -199,18 +198,18 @@ namespace EventStore.ClusterNode
 			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
 
 			return new ClusterVNodeSettings(Guid.NewGuid(), 0,
-	                                        intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
-	                                        prefixes, options.EnableTrustedAuth,
-	                                        certificate,
-	                                        options.WorkerThreads, options.DiscoverViaDns,
-	                                        options.ClusterDns, options.GossipSeed,
-											TimeSpan.FromMilliseconds(options.MinFlushDelayMs), options.ClusterSize,
-	                                        prepareCount, commitCount,
-	                                        TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
-	                                        TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
-	                                        options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
-	                                        TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
-											options.NodePriority, authenticationProviderFactory, options.DisableScavengeMerging,
+                                            intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
+                                            prefixes, options.EnableTrustedAuth,
+                                            certificate,
+                                            options.WorkerThreads, options.DiscoverViaDns,
+                                            options.ClusterDns, options.GossipSeed,
+                                            TimeSpan.FromMilliseconds(options.MinFlushDelayMs), options.ClusterSize,
+                                            prepareCount, commitCount,
+                                            TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
+                                            TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
+                                            options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
+                                            TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
+                                            options.NodePriority, authenticationProviderFactory, options.DisableScavengeMerging,
                                             options.AdminOnExt, options.StatsOnExt, options.GossipOnExt,
                                             TimeSpan.FromMilliseconds(options.GossipIntervalMs),
                                             TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs),
@@ -218,7 +217,8 @@ namespace EventStore.ClusterNode
                                             TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatTimeout),
                                             TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatInterval),
                                             TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout),
-                                            TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval));
+                                            TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval),
+                                            !options.SkipDbVerify, options.MaxMemTableSize);
         }
 
 	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)

@@ -70,8 +70,6 @@ namespace EventStore.Core
         public ClusterVNode(TFChunkDb db,
                             ClusterVNodeSettings vNodeSettings,
                             IGossipSeedSource gossipSeedSource,
-                            bool dbVerifyHashes,
-                            int memTableEntryCount,
                             params ISubsystem[] subsystems)
         {
             Ensure.NotNull(db, "db");
@@ -139,15 +137,15 @@ namespace EventStore.Core
             }
 
             // STORAGE SUBSYSTEM
-            db.Open(dbVerifyHashes);
+            db.Open(vNodeSettings.VerifyDbHash);
             var indexPath = Path.Combine(db.Config.Path, "index");
             var readerPool = new ObjectPool<ITransactionFileReader>(
                 "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
                 () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             var tableIndex = new TableIndex(indexPath,
-                                            () => new HashListMemTable(maxSize: memTableEntryCount * 2),
+                                            () => new HashListMemTable(maxSize: vNodeSettings.MaxMemtableEntryCount * 2),
                                             () => new TFReaderLease(readerPool),
-                                            maxSizeForMemory: memTableEntryCount,
+                                            maxSizeForMemory: vNodeSettings.MaxMemtableEntryCount,
                                             maxTablesPerLevel: 2,
                                             inMem: db.Config.InMemDb);
 	        var hash = new XXHashUnsafe();

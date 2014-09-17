@@ -117,7 +117,9 @@ namespace EventStore.Core.Tests.Helpers
                                                          TimeSpan.FromSeconds(10),
                                                          TimeSpan.FromSeconds(10),
                                                          TimeSpan.FromSeconds(10),
-                                                         TimeSpan.FromSeconds(10));
+                                                         TimeSpan.FromSeconds(10),
+                                                         false,
+                                                         memTableSize);
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
@@ -134,12 +136,7 @@ namespace EventStore.Core.Tests.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
-            Node = new ClusterVNode(Db,
-                                    vNodeSettings,         
-                                   new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}),
-                                   false,
-                                   memTableSize,
-                                   subsystems : subsystems);
+            Node = new ClusterVNode(Db, vNodeSettings, new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}), subsystems);
 
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
