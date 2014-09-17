@@ -18,6 +18,10 @@ using EventStore.Projections.Core;
 
 namespace EventStore.ClientAPI.Embedded
 {
+    /// <summary>
+    /// Allows a client to build a <see cref="ClusterVNode" /> for use with the Embedded client API by specifying
+    /// high level options rather than using the constructor of <see cref="ClusterVNode"/> directly.
+    /// </summary>
     public class EmbeddedVNodeBuilder
     {
         // ReSharper disable FieldCanBeMadeReadOnly.Local - as more options are added
@@ -565,6 +569,11 @@ namespace EventStore.ClientAPI.Embedded
             _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, internalProjectionType));
         }
 
+	/// <summary>
+	/// Converts an <see cref="EmbeddedVNodeBuilder"/> to a <see cref="ClusterVNode"/>.
+	/// </summary>
+	/// <param name="builder"></param>
+	/// <returns></returns>
         public static implicit operator ClusterVNode(EmbeddedVNodeBuilder builder)
         {
             builder.EnsureHttpPrefixes();
