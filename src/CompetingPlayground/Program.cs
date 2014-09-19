@@ -43,19 +43,18 @@ namespace ConsoleApplication5
             subscriber1.Subscribe(msg => Console.WriteLine("Subscriber 1 received {0}", msg));
             subscriber2.Subscribe(msg => Console.WriteLine("Subscriber 2 received {0}", msg));
             Console.WriteLine("Press a letter or number to push to stream...");
-            //ConsoleKeyInfo keyIn;
-            //do
-            //{
-            //    keyIn = Console.ReadKey();
-            //    if (Char.IsLetterOrDigit(keyIn.KeyChar))
-            //    {
-            //        var asChar = keyIn.KeyChar;
-            //        WriteEvent(conn1, TheStreamName, new String(asChar, 1));
-            //    }
-            //} while (keyIn.Key != ConsoleKey.Escape);
-            //Console.ReadLine();
-            Console.WriteLine("delay");
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            ConsoleKeyInfo keyIn;
+            do
+            {
+                keyIn = Console.ReadKey();
+                if (Char.IsLetterOrDigit(keyIn.KeyChar))
+                {
+                    var asChar = keyIn.KeyChar;
+                    WriteEvent(conn1, TheStreamName, new String(asChar, 1));
+                }
+            } while (keyIn.Key != ConsoleKey.Escape);
+            Console.ReadLine();
+            
             conn1.Dispose();
             conn2.Dispose();
             conn3.Dispose();
