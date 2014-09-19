@@ -35,7 +35,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     if (current.Push(ev))
                     {
-                        Console.WriteLine("pushed message " + ev.OriginalEventNumber + " to " + current.ConnectionId);
                         return true;
                     }
                 }
