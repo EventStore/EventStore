@@ -237,7 +237,7 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 entry = new EntryElement();
             }
-            if (evnt != null)
+            if (evnt != null && link == null)
             {
                 SetEntryProperties(evnt.EventStreamId, evnt.EventNumber, evnt.TimeStamp, requestedUrl, entry);
                 entry.SetSummary(evnt.EventType);

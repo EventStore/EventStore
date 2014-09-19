@@ -222,6 +222,58 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+
+        [TestFixture, Category("LongRunning")]
+        public class when_reading_a_stream_forward_with_linkto : HttpSpecificationWithLinkToToEvents
+        {
+            private JObject _feed;
+            private List<JToken> _entries;
+            protected override void When()
+            {
+                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
+                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+            }
+
+            [Test]
+            public void the_feed_has_one_event()
+            {
+                Assert.AreEqual(2, _entries.Count());
+            }
+
+            [Test]
+            public void the_second_edit_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[1]["links"][0];
+                Assert.AreEqual("edit", foo["relation"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + Stream2Name + "/0"), foo["uri"].ToString());
+            }
+
+            [Test]
+            public void the_second_alt_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[1]["links"][1];
+                Assert.AreEqual("alternate", foo["relation"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + Stream2Name + "/0"), foo["uri"].ToString());
+            }
+
+            [Test]
+            public void the_first_edit_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[0]["links"][0];
+                Assert.AreEqual("edit", foo["relation"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
+            }
+
+            [Test]
+            public void the_first_alt_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[0]["links"][1];
+                Assert.AreEqual("alternate", foo["relation"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
+            }
+        }
+
+
         [TestFixture, Category("LongRunning")]
         public class when_reading_a_stream_forward_with_maxcount_deleted_linktos : SpecificationWithLinkToToMaxCountDeletedEvents
         {
