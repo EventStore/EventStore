@@ -681,9 +681,12 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(10, IsRequired = true, Name=@"max_retry_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int MaxRetryCount;
   
+    [ProtoMember(11, IsRequired = true, Name=@"prefer_round_robin", DataFormat = DataFormat.Default)]
+    public readonly bool PreferRoundRobin;
+  
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int historyBufferSize, int maxRetryCount)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int historyBufferSize, int maxRetryCount, bool preferRoundRobin)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
@@ -695,6 +698,7 @@ namespace EventStore.ClientAPI.Messages
         ReadBatchSize = readBatchSize;
         HistoryBufferSize = historyBufferSize;
         MaxRetryCount = maxRetryCount;
+        PreferRoundRobin = preferRoundRobin;
     }
   }
   
