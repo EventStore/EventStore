@@ -125,7 +125,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
         {
-            Console.WriteLine("Read " + events.Length + " events, new positiong " + newposition);
             if (!_ready) return;
             _outstandingReadRequest = false; //mark not in read (even if we break the loop can be restarted then)
             if (events.Length == 0)
@@ -147,7 +146,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             while(true)
             {
                 OutstandingMessage message;
-                Console.WriteLine("buffer has " + _streamBuffer.BufferCount);
                 if (!_streamBuffer.TryPeek(out message)) return;
                 if (!_pushClients.PushMessageToClient(message.ResolvedEvent)) return;
                 if (!_streamBuffer.TryDequeue(out message))
@@ -236,7 +234,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
-            Console.WriteLine("ACK ");
             _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
