@@ -1,4 +1,4 @@
-[![Ouro's 2nd Birthday Party](http://geteventstore.com/images/repo-banner.png)](http://geteventstore.com/two-years-on)
+
 
 #Event Store
 
