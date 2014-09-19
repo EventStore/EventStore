@@ -660,8 +660,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
     public readonly bool ResolveLinkTos;
   
-    [ProtoMember(4, IsRequired = true, Name=@"start_from_beginning", DataFormat = DataFormat.Default)]
-    public readonly bool StartFromBeginning;
+    [ProtoMember(4, IsRequired = true, Name=@"start_from", DataFormat = DataFormat.TwosComplement)]
+    public readonly int StartFrom;
   
     [ProtoMember(5, IsRequired = true, Name=@"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
     public readonly int MessageTimeoutMilliseconds;
@@ -669,16 +669,32 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(6, IsRequired = true, Name=@"latency_tracking", DataFormat = DataFormat.Default)]
     public readonly bool LatencyTracking;
   
+    [ProtoMember(7, IsRequired = true, Name=@"live_buffer_size", DataFormat = DataFormat.TwosComplement)]
+    public readonly int LiveBufferSize;
+  
+    [ProtoMember(8, IsRequired = true, Name=@"read_batch_size", DataFormat = DataFormat.TwosComplement)]
+    public readonly int ReadBatchSize;
+  
+    [ProtoMember(9, IsRequired = true, Name=@"history_buffer_size", DataFormat = DataFormat.TwosComplement)]
+    public readonly int HistoryBufferSize;
+  
+    [ProtoMember(10, IsRequired = true, Name=@"max_retry_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int MaxRetryCount;
+  
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, bool startFromBeginning, int messageTimeoutMilliseconds, bool latencyTracking)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int historyBufferSize, int maxRetryCount)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
         ResolveLinkTos = resolveLinkTos;
-        StartFromBeginning = startFromBeginning;
+        StartFrom = startFrom;
         MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
         LatencyTracking = latencyTracking;
+        LiveBufferSize = liveBufferSize;
+        ReadBatchSize = readBatchSize;
+        HistoryBufferSize = historyBufferSize;
+        MaxRetryCount = maxRetryCount;
     }
   }
   
