@@ -117,6 +117,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void TryReadingNewBatch()
         {
             if (_outstandingReadRequest) return;
+            if (_streamBuffer.Live) return;
             if (!_streamBuffer.CanAccept(_readBatchSize)) return;
             _outstandingReadRequest = true;
             _eventLoader.BeginLoadState(this, _lastPulledEvent, _readBatchSize, HandleReadCompleted);
@@ -124,6 +125,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
         {
+            Console.WriteLine("Read " + events.Length + " events, new positiong " + newposition);
             if (!_ready) return;
             _outstandingReadRequest = false; //mark not in read (even if we break the loop can be restarted then)
             if (events.Length == 0)
@@ -136,8 +138,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
             _lastPulledEvent = newposition;
-            TryPushingMessagesToClients();
             TryReadingNewBatch();
+            TryPushingMessagesToClients();
         }
 
         public void TryPushingMessagesToClients()
@@ -145,6 +147,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             while(true)
             {
                 OutstandingMessage message;
+                Console.WriteLine("buffer has " + _streamBuffer.BufferCount);
                 if (!_streamBuffer.TryPeek(out message)) return;
                 if (!_pushClients.PushMessageToClient(message.ResolvedEvent)) return;
                 if (!_streamBuffer.TryDequeue(out message))
@@ -224,7 +227,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             lowest = lowest < 0 ? 0 : lowest;
             _checkpointWriter.BeginWriteState(lowest);
             _statistics.SetLastEventNumnber(lowest);
-            Log.Debug("writing checkpoint. " + lowest);
         }
 
         public void AddMessageAsProcessing(ResolvedEvent ev, PersistentSubscriptionClient client)
@@ -234,6 +236,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
+            Console.WriteLine("ACK ");
             _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
@@ -241,6 +244,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _outstandingMessages.Remove(id);
             }
             TryReadingNewBatch();
+            TryPushingMessagesToClients();
         }
 
         private void RevertToCheckPoint()

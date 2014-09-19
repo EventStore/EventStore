@@ -96,7 +96,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public bool Push(ResolvedEvent evnt)
         {
-            if (!CanSend()) return false;
+            if (!CanSend()) { return false; }
             _allowedMessages--;
             Interlocked.Increment(ref _totalItems);
             if (_latencyStatistics != null)
