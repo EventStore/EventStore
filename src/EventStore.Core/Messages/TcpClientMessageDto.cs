@@ -684,9 +684,18 @@ namespace EventStore.Core.Messages
     [ProtoMember(11, IsRequired = true, Name=@"prefer_round_robin", DataFormat = DataFormat.Default)]
     public readonly bool PreferRoundRobin;
   
+    [ProtoMember(12, IsRequired = true, Name=@"checkpoint_min_time", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointMinTime;
+  
+    [ProtoMember(13, IsRequired = true, Name=@"checkpoint_max_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointMaxCount;
+  
+    [ProtoMember(14, IsRequired = true, Name=@"checkpoint_min_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointMinCount;
+  
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointMinTime, int checkpointMaxCount, int checkpointMinCount)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
@@ -699,6 +708,9 @@ namespace EventStore.Core.Messages
         BufferSize = bufferSize;
         MaxRetryCount = maxRetryCount;
         PreferRoundRobin = preferRoundRobin;
+        CheckpointMinTime = checkpointMinTime;
+        CheckpointMaxCount = checkpointMaxCount;
+        CheckpointMinCount = checkpointMinCount;
     }
   }
   
