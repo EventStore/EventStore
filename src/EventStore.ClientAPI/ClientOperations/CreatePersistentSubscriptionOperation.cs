@@ -20,6 +20,9 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _readBatchSize;
         private readonly int _bufferSize;
         private readonly bool _preferRoundRobin;
+        private readonly int _checkPointAfter;
+        private readonly int _minCheckPointCount;
+        private readonly int _maxCheckPointCount;
 
         public CreatePersistentSubscriptionOperation(ILogger log,
                                        TaskCompletionSource<PersistentSubscriptionCreateResult> source,
@@ -41,12 +44,16 @@ namespace EventStore.ClientAPI.ClientOperations
             _latencyTracking = settings.LatencyStatistics;
             _preferRoundRobin = settings.PreferRoundRobin;
             _messageTimeoutMilliseconds = (int) settings.MessageTimeout.TotalMilliseconds;
+            _checkPointAfter = (int) settings.CheckPointAfter.TotalMilliseconds;
+            _minCheckPointCount = settings.MinCheckPointCount;
+            _maxCheckPointCount = settings.MaxCheckPointCount;
         }
 
         protected override object CreateRequestDto()
         {
             return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
-                                    _latencyTracking, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin);
+                                    _latencyTracking, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin, _checkPointAfter,
+                                    _minCheckPointCount, _maxCheckPointCount);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
