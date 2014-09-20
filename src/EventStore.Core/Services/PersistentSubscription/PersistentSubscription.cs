@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -172,10 +174,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void RemoveClientByConnectionId(Guid connectionId)
         {
-            var lostMessages = _pushClients.RemoveClientByConnectionId(connectionId);
-            //TODO this are in an arbitrary order right now it may be nicer if
-            //we would sort them (or sort them all in the outstaanding message queue
-            //eg use a priority queueu there
+            var lostMessages = _pushClients.RemoveClientByConnectionId(connectionId).OrderBy(v => v.OriginalEventNumber);
             foreach (var m in lostMessages)
             {
                 RetryMessage(m, 0);
@@ -296,9 +295,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             return false;
         }
 
-
-        //TODO retry needs to be cleaned a bit between connections and outstanding
-        //currently they come out of order
         private void RetryMessage(ResolvedEvent @event, int count)
         {
             _streamBuffer.AddRetry(new OutstandingMessage(@event.Event.EventId, null, @event, count + 1));
