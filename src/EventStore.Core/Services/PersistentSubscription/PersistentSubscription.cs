@@ -12,36 +12,23 @@ namespace EventStore.Core.Services.PersistentSubscription
     public class PersistentSubscription
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscription>();
-
-        public readonly string SubscriptionId;
-        public readonly bool ResolveLinkTos;
-        public readonly string EventStreamId;
-        public readonly string GroupName;
-        private readonly IPersistentSubscriptionEventLoader _eventLoader;
-        private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
+        public string SubscriptionId { get { return _settings.SubscriptionId; } }
+        public string EventStreamId { get { return _settings.EventStreamId; } }
+        public string GroupName { get { return _settings.GroupName; } }
+        public bool ResolveLinkTos { get { return _settings.ResolveLinkTos; } }
         private readonly int _startFrom;
         private bool _ready;
         internal PersistentSubscriptionClientCollection _pushClients;
         private bool _outstandingReadRequest;
         private readonly PersistentSubscriptionStats _statistics;
         private readonly Stopwatch _totalTimeWatch;
-        private readonly bool _trackLatency;
-        private readonly TimeSpan _messageTimeout;
         private readonly OutstandingMessageCache _outstandingMessages;
         private StreamBuffer _streamBuffer;
-        private int _readBatchSize = 100; //TODO configurable
-        private int _liveBufferSize;
-        private int _bufferSize;
-        private int _maxRetryCount;
         private PersistentSubscriptionState _state = PersistentSubscriptionState.Idle;
         private int _lastPulledEvent;
-        private readonly bool _preferRoundRobin;
-        private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
         private int _lastCheckPoint;
-        private TimeSpan _checkPointAfter;
-        private int _minCheckPointCount;
-        private int _maxCheckPointCount;
         private DateTime _lastCheckPointTime = DateTime.MinValue;
+        private readonly PersistentSubscriptionParams _settings;
 
         public bool HasClients
         {
@@ -63,28 +50,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
             Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
             Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
-            ResolveLinkTos = persistentSubscriptionParams.ResolveLinkTos;
-            SubscriptionId = persistentSubscriptionParams.SubscriptionId;
-            EventStreamId = persistentSubscriptionParams.EventStreamId;
-            GroupName = persistentSubscriptionParams.GroupName;
-            _eventLoader = persistentSubscriptionParams.EventLoader;
-            _checkpointReader = persistentSubscriptionParams.CheckpointReader;
-            _checkpointWriter = persistentSubscriptionParams.CheckpointWriter;
-            _lastPulledEvent = 0;
-            
+            _lastPulledEvent = 0;            
             //TODO refactor to state.
             _ready = false;
             _startFrom = persistentSubscriptionParams.StartFrom;
-            _trackLatency = persistentSubscriptionParams.TrackLatency;
-            _messageTimeout = persistentSubscriptionParams.MessageTimeout;
-            _preferRoundRobin = persistentSubscriptionParams.PreferRoundRobin;
-            _maxRetryCount = persistentSubscriptionParams.MaxRetryCount;
-            _liveBufferSize = persistentSubscriptionParams.LiveBufferSize;
-            _bufferSize = persistentSubscriptionParams.HistoryBufferSize;
-            _checkPointAfter = persistentSubscriptionParams.CheckPointAfter;
-            _minCheckPointCount = persistentSubscriptionParams.MinCheckPointCount;
-            _maxCheckPointCount = persistentSubscriptionParams.MaxCheckPointCount;
             _totalTimeWatch = new Stopwatch();
+            _settings = persistentSubscriptionParams;
             _totalTimeWatch.Start();
             _statistics = new PersistentSubscriptionStats(this, _totalTimeWatch);
             _outstandingMessages = new OutstandingMessageCache();
@@ -97,8 +68,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _lastCheckPoint = -1;
             _statistics.SetLastKnownEventNumber(-1);
             _outstandingReadRequest = false;
-            _checkpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
-            _pushClients = new PersistentSubscriptionClientCollection(_preferRoundRobin);
+            _settings.CheckpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
+            _pushClients = new PersistentSubscriptionClientCollection(_settings.PreferRoundRobin);
         }
 
         private void OnCheckpointLoaded(int? checkpoint)
@@ -107,13 +78,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!checkpoint.HasValue)
             {
                 if (_startFrom >= 0) _lastPulledEvent = _startFrom;
-                _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, _startFrom >= 0);
+                _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, _startFrom >= 0);
                 TryReadingNewBatch();
             }
             else
             {
                 _lastPulledEvent = checkpoint.Value;
-                _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, true);
+                _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, true);
                 TryReadingNewBatch();
             }
         }
@@ -123,9 +94,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (_outstandingReadRequest) return;
             if (_streamBuffer.Live) return;
-            if (!_streamBuffer.CanAccept(_readBatchSize)) return;
+            if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
             _outstandingReadRequest = true;
-            _eventLoader.BeginLoadState(this, _lastPulledEvent, _readBatchSize, HandleReadCompleted);
+            _settings.EventLoader.BeginLoadState(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
         }
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
@@ -186,12 +157,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void MarkBeginProcessing(OutstandingMessage message)
         {
             _statistics.IncrementProcessed();
-            _outstandingMessages.StartMessage(message, DateTime.Now + _messageTimeout);
+            _outstandingMessages.StartMessage(message, DateTime.Now + _settings.MessageTimeout);
         }
 
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
         {
-            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, maxInFlight, user, @from, _totalTimeWatch, _trackLatency);
+            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, maxInFlight, user, @from, _totalTimeWatch, _settings.TrackLatency);
             _pushClients.AddClient(client);
             TryPushingMessagesToClients();
         }
@@ -224,19 +195,19 @@ namespace EventStore.Core.Services.PersistentSubscription
             var difference = lowest - _lastCheckPoint;
             var now = DateTime.Now;
             var timedifference = now - _lastCheckPointTime;
-            if(timedifference > _checkPointAfter)
-            if ((difference >= _minCheckPointCount && isTimeCheck) || difference >= _maxCheckPointCount)
+            if(timedifference > _settings.CheckPointAfter)
+            if ((difference >= _settings.MinCheckPointCount && isTimeCheck) || difference >= _settings.MaxCheckPointCount)
             {
                 _lastCheckPointTime = now;
                 _lastCheckPoint = lowest;
-                _checkpointWriter.BeginWriteState(lowest);
+                _settings.CheckpointWriter.BeginWriteState(lowest);
                 _statistics.SetLastCheckPoint(lowest);
             }
         }
 
         public void AddMessageAsProcessing(ResolvedEvent ev, PersistentSubscriptionClient client)
         {
-            _outstandingMessages.StartMessage(new OutstandingMessage(ev.Event.EventId, client, ev, 0), DateTime.Now + _messageTimeout);
+            _outstandingMessages.StartMessage(new OutstandingMessage(ev.Event.EventId, client, ev, 0), DateTime.Now + _settings.MessageTimeout);
         }
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
