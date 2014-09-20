@@ -16,7 +16,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         public string EventStreamId { get { return _settings.EventStreamId; } }
         public string GroupName { get { return _settings.GroupName; } }
         public bool ResolveLinkTos { get { return _settings.ResolveLinkTos; } }
-        private readonly int _startFrom;
         private bool _ready;
         internal PersistentSubscriptionClientCollection _pushClients;
         private bool _outstandingReadRequest;
@@ -53,7 +52,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             _lastPulledEvent = 0;            
             //TODO refactor to state.
             _ready = false;
-            _startFrom = persistentSubscriptionParams.StartFrom;
             _totalTimeWatch = new Stopwatch();
             _settings = persistentSubscriptionParams;
             _totalTimeWatch.Start();
@@ -77,8 +75,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ready = true;
             if (!checkpoint.HasValue)
             {
-                if (_startFrom >= 0) _lastPulledEvent = _startFrom;
-                _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, _startFrom >= 0);
+                if (_settings.StartFrom >= 0) _lastPulledEvent = _settings.StartFrom;
+                _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, _settings.StartFrom >= 0);
                 TryReadingNewBatch();
             }
             else
@@ -246,6 +244,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
 
         //TODO retry needs to be cleaned a bit between connections and outstanding
+        //currently they come out of order
         private void RetryMessage(ResolvedEvent @event, int count)
         {
             _streamBuffer.AddRetry(new OutstandingMessage(@event.Event.EventId, null, @event, count + 1));
