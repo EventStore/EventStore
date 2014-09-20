@@ -230,7 +230,6 @@ namespace EventStore.ClientAPI.ClientOperations
             if (_verboseLogging)
                 _log.Debug("Subscription {0:B} to {1}: subscribed at CommitPosition: {2}, EventNumber: {3}.",
                            _correlationId, _streamId == string.Empty ? "<all>" : _streamId, lastCommitPosition, lastEventNumber);
-
             _subscription = CreateSubscriptionObject(lastCommitPosition, lastEventNumber);
             _source.SetResult(_subscription);
         }
