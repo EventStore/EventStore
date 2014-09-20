@@ -248,17 +248,28 @@ message ConnectToPersistentSubscription {
 
 message PersistentSubscriptionAckEvents {
 	required string subscription_id = 1;
-	repeated bytes processed_event_ids = 3;
+	repeated bytes processed_event_ids = 2;
 }
 
 message PersistentSubscriptionNakEvents {
+	enum NakAction {
+		Unknown = 0;
+		Poison = 1;
+		Retry = 2;
+		Skip = 3;
+		Stop = 4;
+	}
+
 	required string subscription_id = 1;
-	repeated bytes processed_event_ids = 3;
+	repeated bytes processed_event_ids = 2;
+	optional string message = 3;
+	required NakAction action = 4 [default = Unknown];
 }
 
 message PersistentSubscriptionConfirmation {
 	required int64 last_commit_position = 1;
-	optional int32 last_event_number = 2;
+	required string subscription_id = 2;
+	optional int32 last_event_number = 3;
 }
 
 message PersistentSubscriptionStreamEventAppeared {

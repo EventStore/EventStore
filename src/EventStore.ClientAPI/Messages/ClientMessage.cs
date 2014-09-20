@@ -830,7 +830,7 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
     public readonly string SubscriptionId;
   
-    [ProtoMember(3, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
+    [ProtoMember(2, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
     public readonly byte[][] ProcessedEventIds;
   
     private PersistentSubscriptionAckEvents() {}
@@ -848,15 +848,43 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(1, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
     public readonly string SubscriptionId;
   
-    [ProtoMember(3, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
+    [ProtoMember(2, Name=@"processed_event_ids", DataFormat = DataFormat.Default)]
     public readonly byte[][] ProcessedEventIds;
+  
+    [ProtoMember(3, IsRequired = false, Name=@"message", DataFormat = DataFormat.Default)]
+    public readonly string Message;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"action", DataFormat = DataFormat.TwosComplement)]
+    public readonly PersistentSubscriptionNakEvents.NakAction Action;
+  
+    [ProtoContract(Name=@"NakAction")]
+    public enum NakAction
+    {
+            
+      [ProtoEnum(Name=@"Unknown", Value=0)]
+      Unknown = 0,
+            
+      [ProtoEnum(Name=@"Poison", Value=1)]
+      Poison = 1,
+            
+      [ProtoEnum(Name=@"Retry", Value=2)]
+      Retry = 2,
+            
+      [ProtoEnum(Name=@"Skip", Value=3)]
+      Skip = 3,
+            
+      [ProtoEnum(Name=@"Stop", Value=4)]
+      Stop = 4
+    }
   
     private PersistentSubscriptionNakEvents() {}
   
-    public PersistentSubscriptionNakEvents(string subscriptionId, byte[][] processedEventIds)
+    public PersistentSubscriptionNakEvents(string subscriptionId, byte[][] processedEventIds, string message, PersistentSubscriptionNakEvents.NakAction action)
     {
         SubscriptionId = subscriptionId;
         ProcessedEventIds = processedEventIds;
+        Message = message;
+        Action = action;
     }
   }
   
@@ -866,14 +894,18 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(1, IsRequired = true, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long LastCommitPosition;
   
-    [ProtoMember(2, IsRequired = false, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
+    [ProtoMember(2, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionId;
+  
+    [ProtoMember(3, IsRequired = false, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int? LastEventNumber;
   
     private PersistentSubscriptionConfirmation() {}
   
-    public PersistentSubscriptionConfirmation(long lastCommitPosition, int? lastEventNumber)
+    public PersistentSubscriptionConfirmation(long lastCommitPosition, string subscriptionId, int? lastEventNumber)
     {
         LastCommitPosition = lastCommitPosition;
+        SubscriptionId = subscriptionId;
         LastEventNumber = lastEventNumber;
     }
   }
