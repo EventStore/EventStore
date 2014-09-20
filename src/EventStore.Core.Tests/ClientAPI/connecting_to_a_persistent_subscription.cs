@@ -114,6 +114,7 @@ namespace EventStore.Core.Tests.ClientAPI
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         private ResolvedEvent _firstEvent;
         private List<Guid> _ids = new List<Guid>();
+        private bool _set = false;
 
         private const string _group = "startinbeginning1";
 
@@ -146,8 +147,12 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
         {
-            _firstEvent = resolvedEvent;
-            _resetEvent.Set();
+            if (!_set)
+            {
+                _set = true;
+                _firstEvent = resolvedEvent;
+                _resetEvent.Set();
+            }
         }
 
         [Test]

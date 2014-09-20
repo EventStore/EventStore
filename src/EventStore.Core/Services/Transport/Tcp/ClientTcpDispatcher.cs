@@ -438,7 +438,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             if(dto == null) return null;
             return new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
                             dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom, dto.MessageTimeoutMilliseconds, 
-                            dto.LatencyTracking, dto.MaxRetryCount, dto.HistoryBufferSize, dto.LiveBufferSize,
+                            dto.LatencyTracking, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
                             dto.ReadBatchSize,dto.PreferRoundRobin, user, username, password);
         }
 

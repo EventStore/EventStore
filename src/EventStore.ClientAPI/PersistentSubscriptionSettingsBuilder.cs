@@ -16,7 +16,7 @@ namespace EventStore.ClientAPI
         private int _maxRetryCount;
         private int _liveBufferSize;
         private bool _preferRoundRobin;
-        private int _historyBufferSize;
+        private int _bufferSize;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object
@@ -37,13 +37,13 @@ namespace EventStore.ClientAPI
 
 
         private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan timeout,
-                                                      int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin)
+                                                      int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
             _latencyStatistics = latencyStatistics;
             _timeout = timeout;
-            _historyBufferSize = historyBufferSize;
+            _bufferSize = bufferSize;
             _liveBufferSize = liveBufferSize;
             _maxRetryCount = maxRetryCount;
             _readBatchSize = readBatchSize;
@@ -181,7 +181,7 @@ namespace EventStore.ClientAPI
         public PersistentSubscriptionSettingsBuilder WithHistoryBufferSizeOf(int count)
         {
             Ensure.Nonnegative(count, "count");
-            _historyBufferSize = count;
+            _bufferSize = count;
             return this;
         }
 
@@ -209,7 +209,7 @@ namespace EventStore.ClientAPI
                 builder._maxRetryCount,
                 builder._liveBufferSize,
                 builder._readBatchSize,
-                builder._historyBufferSize,
+                builder._bufferSize,
                 builder._preferRoundRobin);
         }
     }
