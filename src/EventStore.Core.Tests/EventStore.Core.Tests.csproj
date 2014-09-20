@@ -417,6 +417,7 @@
     <Compile Include="Services\Transport\Http\PortableServer.cs" />
     <Compile Include="Services\Transport\Http\ping_controller_should.cs" />
     <Compile Include="MightyMooseIgnoreAttribute.cs" />
+    <Compile Include="Services\Transport\Http\proxy_headers.cs" />
     <Compile Include="Services\Transport\Http\speed_test.cs" />
     <Compile Include="Services\Transport\Http\uri_router_should.cs" />
     <Compile Include="Services\Transport\Tcp\ssl_connection.cs" />

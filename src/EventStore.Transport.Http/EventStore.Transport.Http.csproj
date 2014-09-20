@@ -68,6 +68,7 @@
     <Compile Include="ICodec.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HttpStatusCode.cs" />
+    <Compile Include="ProxyHeaders.cs" />
     <Compile Include="Server\HttpAsyncServer.cs" />
     <Compile Include="WebRequestExtensions.cs" />
   </ItemGroup>
