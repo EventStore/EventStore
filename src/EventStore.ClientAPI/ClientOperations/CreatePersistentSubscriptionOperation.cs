@@ -18,7 +18,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _maxRetryCount;
         private readonly int _liveBufferSize;
         private readonly int _readBatchSize;
-        private readonly int _historyBufferSize;
+        private readonly int _bufferSize;
         private readonly bool _preferRoundRobin;
 
         public CreatePersistentSubscriptionOperation(ILogger log,
@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _maxRetryCount = settings.MaxRetryCount;
             _liveBufferSize = settings.LiveBufferSize;
             _readBatchSize = settings.ReadBatchSize;
-            _historyBufferSize = settings.HistoryBufferSize;
+            _bufferSize = settings.HistoryBufferSize;
             _latencyTracking = settings.LatencyStatistics;
             _preferRoundRobin = settings.PreferRoundRobin;
             _messageTimeoutMilliseconds = (int) settings.MessageTimeout.TotalMilliseconds;
@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.ClientOperations
         protected override object CreateRequestDto()
         {
             return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
-                                    _latencyTracking, _liveBufferSize, _readBatchSize, _historyBufferSize, _maxRetryCount, _preferRoundRobin);
+                                    _latencyTracking, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
