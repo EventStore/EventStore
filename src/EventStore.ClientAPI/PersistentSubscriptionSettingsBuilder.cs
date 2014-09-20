@@ -17,6 +17,9 @@ namespace EventStore.ClientAPI
         private int _liveBufferSize;
         private bool _preferRoundRobin;
         private int _bufferSize;
+        private TimeSpan _checkPointAfter;
+        private int _minCheckPointCount;
+        private int _maxCheckPointCount;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object
@@ -32,12 +35,17 @@ namespace EventStore.ClientAPI
                                                              500,
                                                              10,
                                                              20,
-                                                             true);
+                                                             true,
+                                                             TimeSpan.FromSeconds(2),
+                                                             10,
+                                                             1000);
         }
 
 
         private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan timeout,
-                                                      int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin)
+                                                      int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, 
+                                                      bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount,
+                                                      int maxCheckPointCount)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
@@ -48,6 +56,9 @@ namespace EventStore.ClientAPI
             _maxRetryCount = maxRetryCount;
             _readBatchSize = readBatchSize;
             _preferRoundRobin = preferRoundRobin;
+            _checkPointAfter = checkPointAfter;
+            _minCheckPointCount = minCheckPointCount;
+            _maxCheckPointCount = maxCheckPointCount;
         }
 
 
@@ -136,6 +147,74 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Sets that the backend should try to checkpoint the subscription after some
+        /// period of time. Note that if the increment of the ceheckpoint would be below
+        /// the minimum the stream will not be checkpointed at this time.
+        /// </summary>
+        /// <remarks>
+        /// It is important to tweak checkpointing for high performance streams as they cause 
+        /// writes to happen back in the system. There is a trade off between the number of
+        /// writes that can happen in varying failure scenarios and the frequency of 
+        /// writing out the checkpoints within the system. Normally settings such
+        /// as once per second with a minimum of 5-10 messages and a high max to checkpoint should
+        /// be a good compromise for most streams though you may want to change this if you
+        /// for instance are doing hundreds of messages/second through the subscription.
+        /// </remarks>
+        /// <param name="time">The amount of time to try checkpointing after</param>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder CheckPointAfter(TimeSpan time)
+        {
+            _checkPointAfter = time;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the minimum checkpoint count. The subscription will not increment a checkpoint
+        /// below this value eg if there is one item to checkpoint and it is set to five it
+        /// will not checkpoint
+        /// </summary>
+        /// <remarks>
+        /// It is important to tweak checkpointing for high performance streams as they cause 
+        /// writes to happen back in the system. There is a trade off between the number of
+        /// writes that can happen in varying failure scenarios and the frequency of 
+        /// writing out the checkpoints within the system. Normally settings such
+        /// as once per second with a minimum of 5-10 messages and a high max to checkpoint should
+        /// be a good compromise for most streams though you may want to change this if you
+        /// for instance are doing hundreds of messages/second through the subscription.
+        /// </remarks>
+        /// <param name="count">The minimum count to checkpoint</param>
+        /// <returns></returns>
+        public PersistentSubscriptionSettingsBuilder MinimumCheckPointCountOf(int count)
+        {
+            _minCheckPointCount = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the largest increment the subscription will checkpoint. If this value is 
+        /// reached the subscription will immediately write a checkpoint. As such this value
+        /// should normally be reasonably large so as not to cause too many writes to occur in 
+        /// the subscription
+        /// </summary>
+        /// <remarks>
+        /// It is important to tweak checkpointing for high performance streams as they cause 
+        /// writes to happen back in the system. There is a trade off between the number of
+        /// writes that can happen in varying failure scenarios and the frequency of 
+        /// writing out the checkpoints within the system. Normally settings such
+        /// as once per second with a minimum of 5-10 messages and a high max to checkpoint should
+        /// be a good compromise for most streams though you may want to change this if you
+        /// for instance are doing hundreds of messages/second through the subscription.
+        /// </remarks>
+        /// <param name="count">The maximum count to checkpoint</param>
+        /// <returns></returns>
+        public PersistentSubscriptionSettingsBuilder MaximumCheckPointCountOf(int count)
+        {
+            _maxCheckPointCount = count;
+            return this;
+        }
+
+
+        /// <summary>
         /// Sets the number of times a message should be retried before being considered a bad message
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
@@ -210,7 +289,10 @@ namespace EventStore.ClientAPI
                 builder._liveBufferSize,
                 builder._readBatchSize,
                 builder._bufferSize,
-                builder._preferRoundRobin);
+                builder._preferRoundRobin,
+                builder._checkPointAfter,
+                builder._minCheckPointCount,
+                builder._maxCheckPointCount);
         }
     }
 }

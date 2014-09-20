@@ -55,11 +55,26 @@ namespace EventStore.ClientAPI
         public bool PreferRoundRobin;
 
         /// <summary>
+        /// The amount of time to try to checkpoint after 
+        /// </summary>
+        public readonly TimeSpan CheckPointAfter;
+
+        /// <summary>
+        /// The minimum number of messages to checkpoint
+        /// </summary>
+        public readonly int MinCheckPointCount;
+
+        /// <summary>
+        /// The maximum number of messages to checkpoint if this number is a reached a checkpoint will be forced.
+        /// </summary>
+        public readonly int MaxCheckPointCount;
+
+        /// <summary>
         /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
         /// </summary>
         internal PersistentSubscriptionSettings(bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan messageTimeout,
                                                 int maxRetryCount, int liveBufferSize, int readBatchSize, int historyBufferSize,
-                                                bool preferRoundRobin)
+                                                bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount)
         {
             MessageTimeout = messageTimeout;
             ResolveLinkTos = resolveLinkTos;
@@ -70,6 +85,9 @@ namespace EventStore.ClientAPI
             ReadBatchSize = readBatchSize;
             HistoryBufferSize = historyBufferSize;
             PreferRoundRobin = preferRoundRobin;
+            CheckPointAfter = checkPointAfter;
+            MinCheckPointCount = minCheckPointCount;
+            MaxCheckPointCount = maxCheckPointCount;
         }
 
     }
