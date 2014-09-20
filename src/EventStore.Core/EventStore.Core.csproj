@@ -169,6 +169,7 @@
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionEventLoader.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParams.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParamsBuilder.cs" />
     <Compile Include="Services\PersistentSubscription\StreamBuffer.cs" />
     <Compile Include="Services\PersistentSubscription\OutstandingMessage.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionStats.cs" />

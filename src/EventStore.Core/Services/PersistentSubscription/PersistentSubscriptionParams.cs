@@ -8,24 +8,37 @@ namespace EventStore.Core.Services.PersistentSubscription
         private string _subscriptionId;
         private string _eventStreamId;
         private string _groupName;
-        private bool _startFromBeginning;
+        private int _startFrom;
         private bool _trackLatency;
         private TimeSpan _messageTimeout;
-        private readonly bool _preferOne;
+        private readonly bool _preferRoundRobin;
+        private int _maxRetryCount;
+        private int _liveBufferSize;
+        private int _historyBufferSize;
+        private int _readBatchSize;
         private IPersistentSubscriptionEventLoader _eventLoader;
         private IPersistentSubscriptionCheckpointReader _checkpointReader;
         private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
 
-        public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, bool startFromBeginning, bool trackLatency, TimeSpan messageTimeout, bool preferOne, IPersistentSubscriptionEventLoader eventLoader, IPersistentSubscriptionCheckpointReader checkpointReader, IPersistentSubscriptionCheckpointWriter checkpointWriter)
+        public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
+                                           int startFrom, bool trackLatency, TimeSpan messageTimeout, bool preferRoundRobin, 
+                                           int maxRetryCount, int liveBufferSize, int historyBufferSize, int readBatchSize,
+                                           IPersistentSubscriptionEventLoader eventLoader, 
+                                           IPersistentSubscriptionCheckpointReader checkpointReader, 
+                                           IPersistentSubscriptionCheckpointWriter checkpointWriter)
         {
             _resolveLinkTos = resolveLinkTos;
             _subscriptionId = subscriptionId;
             _eventStreamId = eventStreamId;
             _groupName = groupName;
-            _startFromBeginning = startFromBeginning;
+            _startFrom = startFrom;
             _trackLatency = trackLatency;
             _messageTimeout = messageTimeout;
-            _preferOne = preferOne;
+            _preferRoundRobin = preferRoundRobin;
+            MaxRetryCount = maxRetryCount;
+            LiveBufferSize = liveBufferSize;
+            HistoryBufferSize = historyBufferSize;
+            ReadBatchSize = readBatchSize;
             _eventLoader = eventLoader;
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
@@ -51,9 +64,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _groupName; }
         }
 
-        public bool StartFromBeginning
+        public int StartFrom
         {
-            get { return _startFromBeginning; }
+            get { return _startFrom; }
         }
 
         public bool TrackLatency
@@ -81,9 +94,33 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _checkpointWriter; }
         }
 
-        public bool PreferOne
+        public bool PreferRoundRobin
         {
-            get { return _preferOne; }
+            get { return _preferRoundRobin; }
+        }
+
+        public int MaxRetryCount
+        {
+            get { return _maxRetryCount; }
+            set { _maxRetryCount = value; }
+        }
+
+        public int LiveBufferSize
+        {
+            get { return _liveBufferSize; }
+            set { _liveBufferSize = value; }
+        }
+
+        public int HistoryBufferSize
+        {
+            get { return _historyBufferSize; }
+            set { _historyBufferSize = value; }
+        }
+
+        public int ReadBatchSize
+        {
+            get { return _readBatchSize; }
+            set { _readBatchSize = value; }
         }
     }
 }

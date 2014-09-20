@@ -12,9 +12,14 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _stream;
         private readonly string _groupName;
         private readonly bool _resolveLinkTos;
-        private readonly bool _startFromBeginning;
+        private readonly int _startFromBeginning;
         private readonly int _messageTimeoutMilliseconds;
-        private bool _latencyTracking;
+        private readonly bool _latencyTracking;
+        private readonly int _maxRetryCount;
+        private readonly int _liveBufferSize;
+        private readonly int _readBatchSize;
+        private readonly int _historyBufferSize;
+        private readonly bool _preferRoundRobin;
 
         public CreatePersistentSubscriptionOperation(ILogger log,
                                        TaskCompletionSource<PersistentSubscriptionCreateResult> source,
@@ -28,14 +33,20 @@ namespace EventStore.ClientAPI.ClientOperations
             _resolveLinkTos = settings.ResolveLinkTos;
             _stream = stream;
             _groupName = groupName;
-            _startFromBeginning = settings.StartFromBeginning;
+            _startFromBeginning = settings.StartFrom;
+            _maxRetryCount = settings.MaxRetryCount;
+            _liveBufferSize = settings.LiveBufferSize;
+            _readBatchSize = settings.ReadBatchSize;
+            _historyBufferSize = settings.HistoryBufferSize;
             _latencyTracking = settings.LatencyStatistics;
+            _preferRoundRobin = settings.PreferRoundRobin;
             _messageTimeoutMilliseconds = (int) settings.MessageTimeout.TotalMilliseconds;
         }
 
         protected override object CreateRequestDto()
         {
-            return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds, _latencyTracking);
+            return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
+                                    _latencyTracking, _liveBufferSize, _readBatchSize, _historyBufferSize, _maxRetryCount, _preferRoundRobin);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)

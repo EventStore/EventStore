@@ -44,8 +44,13 @@ namespace EventStore.Core.Services.PersistentSubscription
         public string Stream;
         public string Group;
         public bool ResolveLinkTos;
-        public bool StartFromBeginning;
         public bool TrackLatency;
         public int MessageTimeout;
+        public int StartFrom;
+        public int LiveBufferSize;
+        public int HistoryBufferSize;
+        public int MaxRetryCount;
+        public int ReadBatchSize;
+        public bool PreferRoundRobin;
     }
 }

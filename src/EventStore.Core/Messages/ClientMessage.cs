@@ -865,25 +865,38 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-            public readonly bool StartFromBeginning;
+            public bool PreferRoundRobin { get; set; }
+
+            public readonly int StartFrom;
             public readonly int MessageTimeoutMilliseconds;
             public readonly bool LatencyTracking;
 
             public readonly bool ResolveLinkTos;
-
+            public readonly int MaxRetryCount;
+            public readonly int HistoryBufferSize;
+            public readonly int LiveBufferSize;
+            public readonly int ReadBatchSize;
+            
             public readonly string GroupName;
             public readonly string EventStreamId;
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-                  string eventStreamId, string groupName, bool resolveLinkTos, bool startFromBeginning, int messageTimeoutMilliseconds, bool latencyTracking, IPrincipal user, string username, string password)
+                  string eventStreamId, string groupName, bool resolveLinkTos, int startFrom, 
+                int messageTimeoutMilliseconds, bool latencyTracking, int maxRetryCount, int historyBufferSize, 
+                int liveBufferSize, int readbatchSize, bool preferRoundRobin, IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 ResolveLinkTos = resolveLinkTos;
                 EventStreamId = eventStreamId;
                 GroupName = groupName;
-                StartFromBeginning = startFromBeginning;
+                StartFrom = startFrom;
                 MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
                 LatencyTracking = latencyTracking;
+                MaxRetryCount = maxRetryCount;
+                HistoryBufferSize = historyBufferSize;
+                LiveBufferSize = liveBufferSize;
+                ReadBatchSize = readbatchSize;
+                PreferRoundRobin = preferRoundRobin;
             }
 
         }

@@ -7,17 +7,17 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     internal class PersistentSubscriptionClientCollection
     {
-        private readonly bool _preferOne;
         //TODO this is likely faster with a list etc as the counts are very small
         private readonly Dictionary<Guid, PersistentSubscriptionClient> _hash = new Dictionary<Guid, PersistentSubscriptionClient>();
         private readonly Queue<PersistentSubscriptionClient> _queue = new Queue<PersistentSubscriptionClient>();
+        private bool _preferRoundRobin;
 
 
         public int Count { get { return _hash.Count; } }
 
-        public PersistentSubscriptionClientCollection(bool preferOne)
+        public PersistentSubscriptionClientCollection(bool preferRoundRobin)
         {
-            _preferOne = preferOne;
+            _preferRoundRobin = preferRoundRobin;
         }
 
         public void AddClient(PersistentSubscriptionClient client)
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 }
                 finally
                 {
-                    if (!_preferOne) 
+                    if (_preferRoundRobin) 
                         _queue.Enqueue(_queue.Dequeue());
                 }
             }

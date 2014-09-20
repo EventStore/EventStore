@@ -153,8 +153,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test]
         public void the_subscription_gets_event_zero_as_its_first_event()
         {
-            _resetEvent.WaitOne(TimeSpan.FromSeconds(10));
-            Assert.IsNotNull(_firstEvent);
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
             Assert.AreEqual(0, _firstEvent.Event.EventNumber);
             Assert.AreEqual(_ids[0], _firstEvent.Event.EventId);
         }
@@ -165,7 +164,8 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private readonly string _stream = "$" + Guid.NewGuid();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
-                                                                .DoNotResolveLinkTos();
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent();
 
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         private ResolvedEvent _firstEvent;

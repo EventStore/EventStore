@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly string GroupName;
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
-        private readonly bool _startFromBeginning;
+        private readonly int _startFrom;
         private bool _ready;
         internal PersistentSubscriptionClientCollection _pushClients;
         private bool _outstandingReadRequest;
@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private PersistentSubscriptionState _state = PersistentSubscriptionState.Idle;
         private int _lastPulledEvent;
-        private bool _preferOne;
+        private bool _preferRoundRobin;
         private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
 
         public bool HasClients
@@ -66,10 +66,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             _lastPulledEvent = 0;
             //TODO refactor to state.
             _ready = false;
-            _startFromBeginning = persistentSubscriptionParams.StartFromBeginning;
+            _startFrom = persistentSubscriptionParams.StartFrom;
             _trackLatency = persistentSubscriptionParams.TrackLatency;
             _messageTimeout = persistentSubscriptionParams.MessageTimeout;
-            _preferOne = persistentSubscriptionParams.PreferOne;
+            _preferRoundRobin = persistentSubscriptionParams.PreferRoundRobin;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             _statistics = new PersistentSubscriptionStats(this, _totalTimeWatch);
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             //TODO make configurable buffer sizes
             //TODO allow init from position
             _checkpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
-            _pushClients = new PersistentSubscriptionClientCollection(_preferOne);
+            _pushClients = new PersistentSubscriptionClientCollection(_preferRoundRobin);
         }
 
         private void OnCheckpointLoaded(int? checkpoint)
@@ -94,9 +94,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ready = true;
             if (!checkpoint.HasValue)
             {
-                if (_startFromBeginning)
+                if (_startFrom >= 0)
                 {
-                    _lastPulledEvent = 0;
+                    _lastPulledEvent = _startFrom;
                     _streamBuffer = new StreamBuffer(1000, 500, -1, true);
                 }
                 else
@@ -143,6 +143,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void TryPushingMessagesToClients()
         {
+            if (!_ready) return;
             while(true)
             {
                 OutstandingMessage message;

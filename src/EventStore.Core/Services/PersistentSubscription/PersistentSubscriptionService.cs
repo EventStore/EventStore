@@ -136,9 +136,15 @@ namespace EventStore.Core.Services.PersistentSubscription
             CreateSubscriptionGroup(message.EventStreamId, 
                                     message.GroupName, 
                                     message.ResolveLinkTos, 
-                                    message.StartFromBeginning,
+                                    message.StartFrom,
                                     message.LatencyTracking,
-                                    TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds));
+                                    message.MaxRetryCount,
+                                    message.LiveBufferSize,
+                                    message.HistoryBufferSize,
+                                    message.ReadBatchSize,
+                                    message.PreferRoundRobin,
+                                    TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds)
+                                    );
             Log.Debug("New persistent subscription {0}.", message.GroupName);
             _config.Updated = DateTime.Now;
             _config.UpdatedBy = message.User.Identity.Name;
@@ -150,8 +156,13 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void CreateSubscriptionGroup(string eventStreamId, 
                                              string groupName, 
                                              bool resolveLinkTos, 
-                                             bool startFromBeginning, 
+                                             int startFrom, 
                                              bool trackLatency, 
+                                             int maxRetryCount,
+                                             int liveBufferSize,
+                                             int historyBufferSize,
+                                             int readBatchSize,
+                                             bool preferRoundRobin,
                                              TimeSpan messageTimeout)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
@@ -168,10 +179,14 @@ namespace EventStore.Core.Services.PersistentSubscription
                     key,
                     eventStreamId,
                     groupName,
-                    startFromBeginning,
+                    startFrom,
                     trackLatency,
                     messageTimeout,
-                    false, //TODO use from config
+                    preferRoundRobin,
+                    maxRetryCount,
+                    liveBufferSize,
+                    historyBufferSize,
+                    readBatchSize,
                     _eventLoader,
                     _checkpointReader,
                     new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher)));
@@ -368,8 +383,13 @@ namespace EventStore.Core.Services.PersistentSubscription
                             CreateSubscriptionGroup(entry.Stream,
                                                     entry.Group, 
                                                     entry.ResolveLinkTos, 
-                                                    entry.StartFromBeginning,
+                                                    entry.StartFrom,
                                                     entry.TrackLatency,
+                                                    entry.MaxRetryCount,
+                                                    entry.LiveBufferSize,
+                                                    entry.HistoryBufferSize,
+                                                    entry.ReadBatchSize,
+                                                    entry.PreferRoundRobin,
                                                     TimeSpan.FromMilliseconds(entry.MessageTimeout)); 
                         }
                         continueWith();
@@ -423,8 +443,13 @@ namespace EventStore.Core.Services.PersistentSubscription
                 CreateSubscriptionGroup(sub.Stream, 
                                         sub.Group, 
                                         sub.ResolveLinkTos, 
-                                        sub.StartFromBeginning,
+                                        sub.StartFrom,
                                         sub.TrackLatency,
+                                        sub.MaxRetryCount,
+                                        sub.LiveBufferSize,
+                                        sub.HistoryBufferSize,
+                                        sub.ReadBatchSize,
+                                        sub.PreferRoundRobin,
                                         TimeSpan.FromMilliseconds(sub.MessageTimeout));
             }
         }
