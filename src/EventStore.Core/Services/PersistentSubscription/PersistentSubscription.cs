@@ -30,10 +30,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly OutstandingMessageCache _outstandingMessages;
         private StreamBuffer _streamBuffer;
         private int _readBatchSize = 100; //TODO configurable
-
+        private int _liveBufferSize;
+        private int _bufferSize;
+        private int _maxRetryCount;
         private PersistentSubscriptionState _state = PersistentSubscriptionState.Idle;
         private int _lastPulledEvent;
-        private bool _preferRoundRobin;
+        private readonly bool _preferRoundRobin;
         private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
 
         public bool HasClients
@@ -70,6 +72,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             _trackLatency = persistentSubscriptionParams.TrackLatency;
             _messageTimeout = persistentSubscriptionParams.MessageTimeout;
             _preferRoundRobin = persistentSubscriptionParams.PreferRoundRobin;
+            _maxRetryCount = persistentSubscriptionParams.MaxRetryCount;
+            _liveBufferSize = persistentSubscriptionParams.LiveBufferSize;
+            _bufferSize = persistentSubscriptionParams.HistoryBufferSize;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             _statistics = new PersistentSubscriptionStats(this, _totalTimeWatch);
@@ -83,8 +88,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ready = false;
             _statistics.SetLastKnownEventNumber(-1);
             _outstandingReadRequest = false;
-            //TODO make configurable buffer sizes
-            //TODO allow init from position
             _checkpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
             _pushClients = new PersistentSubscriptionClientCollection(_preferRoundRobin);
         }
@@ -97,18 +100,18 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (_startFrom >= 0)
                 {
                     _lastPulledEvent = _startFrom;
-                    _streamBuffer = new StreamBuffer(1000, 500, -1, true);
+                    _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, true);
                 }
                 else
                 {
-                    _streamBuffer = new StreamBuffer(1000, 500, -1, false);
+                    _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, false);
                 }
                 TryReadingNewBatch();
             }
             else
             {
                 _lastPulledEvent = checkpoint.Value;
-                _streamBuffer = new StreamBuffer(1000, 500, -1, true);
+                _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, true);
                 TryReadingNewBatch();
             }
         }
