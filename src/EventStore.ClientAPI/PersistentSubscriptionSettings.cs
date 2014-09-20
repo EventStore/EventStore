@@ -14,10 +14,9 @@ namespace EventStore.ClientAPI
         public readonly bool ResolveLinkTos;
 
         /// <summary>
-        /// Whether the subscription should start from the beginning of the stream, if false it will start where the stream is 
-        /// currently located.
+        /// Where the subscription should start from (position)
         /// </summary>
-        public readonly bool StartFromBeginning;
+        public readonly int StartFrom;
 
         /// <summary>
         /// Whether or not in depth latency statistics should be tracked on this subscription.
@@ -30,14 +29,47 @@ namespace EventStore.ClientAPI
         public readonly TimeSpan MessageTimeout;
 
         /// <summary>
+        /// The maximum number of retries (due to timeout) before a message get considered to be a poisoned message
+        /// </summary>
+        public int MaxRetryCount;
+
+        /// <summary>
+        /// The size of the buffer listening to live messages as they happen
+        /// </summary>
+        public int LiveBufferSize;
+
+        /// <summary>
+        /// The number of events read at a time when paging in history
+        /// </summary>
+        public int ReadBatchSize;
+
+        /// <summary>
+        /// The number of events to cache when paging through history
+        /// </summary>
+        public int HistoryBufferSize;
+
+        /// <summary>
+        /// Whether the subscription should prefer round robin between clients of
+        /// sending to a single client if possible.
+        /// </summary>
+        public bool PreferRoundRobin;
+
+        /// <summary>
         /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
         /// </summary>
-        internal PersistentSubscriptionSettings(bool resolveLinkTos, bool startFromBeginning, bool latencyStatistics, TimeSpan messageTimeout)
+        internal PersistentSubscriptionSettings(bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan messageTimeout,
+                                                int maxRetryCount, int liveBufferSize, int readBatchSize, int historyBufferSize,
+                                                bool preferRoundRobin)
         {
             MessageTimeout = messageTimeout;
             ResolveLinkTos = resolveLinkTos;
-            StartFromBeginning = startFromBeginning;
+            StartFrom = startFrom;
             LatencyStatistics = latencyStatistics;
+            MaxRetryCount = maxRetryCount;
+            LiveBufferSize = liveBufferSize;
+            ReadBatchSize = readBatchSize;
+            HistoryBufferSize = historyBufferSize;
+            PreferRoundRobin = preferRoundRobin;
         }
 
     }

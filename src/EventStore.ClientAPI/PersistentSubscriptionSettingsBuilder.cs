@@ -1,4 +1,5 @@
 using System;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
@@ -7,11 +8,15 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class PersistentSubscriptionSettingsBuilder
     {
-        private readonly bool _resolveLinkTos;
-        private readonly bool _startFromBeginning;
-        private readonly bool _latencyStatistics;
-        private TimeSpan _timeout
-            ;
+        private bool _resolveLinkTos;
+        private int  _startFrom;
+        private bool _latencyStatistics;
+        private TimeSpan _timeout;
+        private int _readBatchSize;
+        private int _maxRetryCount;
+        private int _liveBufferSize;
+        private bool _preferRoundRobin;
+        private int _historyBufferSize;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object
@@ -19,8 +24,32 @@ namespace EventStore.ClientAPI
         /// <returns>a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object</returns>
         public static PersistentSubscriptionSettingsBuilder Create()
         {
-            return new PersistentSubscriptionSettingsBuilder(false, false, false, TimeSpan.FromSeconds(30));
+            return new PersistentSubscriptionSettingsBuilder(false, 
+                                                             -1, 
+                                                             false, 
+                                                             TimeSpan.FromSeconds(30),
+                                                             500,
+                                                             500,
+                                                             10,
+                                                             20,
+                                                             true);
         }
+
+
+        private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan timeout,
+                                                      int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin)
+        {
+            _resolveLinkTos = resolveLinkTos;
+            _startFrom = startFrom;
+            _latencyStatistics = latencyStatistics;
+            _timeout = timeout;
+            _historyBufferSize = historyBufferSize;
+            _liveBufferSize = liveBufferSize;
+            _maxRetryCount = maxRetryCount;
+            _readBatchSize = readBatchSize;
+            _preferRoundRobin = preferRoundRobin;
+        }
+
 
         /// <summary>
         /// Sets the option to include further latency statistics. These statistics have a cost and should not be used
@@ -29,7 +58,8 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder WithExtraLatencyStatistics()
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, _startFromBeginning, true, _timeout);
+            _latencyStatistics = true;
+            return this;
         }
 
         /// <summary>
@@ -38,7 +68,8 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder ResolveLinkTos()
         {
-            return new PersistentSubscriptionSettingsBuilder(true, _startFromBeginning, _latencyStatistics, _timeout);
+            _resolveLinkTos = true;
+            return this;
         }
 
         /// <summary>
@@ -47,7 +78,31 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder DoNotResolveLinkTos()
         {
-            return new PersistentSubscriptionSettingsBuilder(false, _startFromBeginning, _latencyStatistics, _timeout);
+            _resolveLinkTos = false;
+            return this;
+        }
+
+        /// <summary>
+        /// If set the subscription will prefer if possible to round robin between the clients that
+        /// are connected.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder PreferRoundRobin()
+        {
+            _preferRoundRobin = true;
+            return this;
+        }
+
+        /// <summary>
+        /// If set the subscription will prefer if possible to dispatch only to a single of the connected
+        /// clients. If however the buffer limits are reached on that client it will begin sending to other 
+        /// clients.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder PreferDispatchToSingle()
+        {
+            _preferRoundRobin = false;
+            return this;
         }
 
         /// <summary>
@@ -56,24 +111,18 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder StartFromBeginning()
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, true, _latencyStatistics, _timeout);
+            _startFrom = 0;
+            return this;
         }
 
         /// <summary>
-        /// Sets that the subscription should start from where the stream is when the subscription is first connected.
+        /// Sets that the subscription should start from a specified location of the stream.
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
-        public PersistentSubscriptionSettingsBuilder StartFromCurrent()
+        public PersistentSubscriptionSettingsBuilder StartFrom(int position)
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, false, _latencyStatistics, _timeout);
-        }
-
-        private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, bool startFromBeginning, bool latencyStatistics, TimeSpan timeout)
-        {
-            _resolveLinkTos = resolveLinkTos;
-            _startFromBeginning = startFromBeginning;
-            _latencyStatistics = latencyStatistics;
-            _timeout = timeout;
+            _startFrom = position;
+            return this;
         }
 
         /// <summary>
@@ -82,7 +131,68 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder WithMessageTimeoutOf(TimeSpan timeout)
         {
-            return new PersistentSubscriptionSettingsBuilder(_resolveLinkTos, _startFromBeginning, _latencyStatistics, timeout);
+            _timeout = timeout;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the number of times a message should be retried before being considered a bad message
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder WithMaxRetriesOf(int count)
+        {
+            Ensure.Nonnegative(count, "count");
+            _maxRetryCount = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the size of the live buffer for the subscription. This is the buffer used 
+        /// to cache messages while sending messages as they happen. The count is
+        /// in terms of the number of messages to cache.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder WithLiveBufferSizeOf(int count)
+        {
+            Ensure.Nonnegative(count, "count");
+            _liveBufferSize = count;
+            return this;
+        }
+
+
+        /// <summary>
+        /// Sets the size of the read batch used when paging in history for the subscription
+        /// sizes should not be too big ...
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder WithReadBatchOf(int count)
+        {
+            Ensure.Nonnegative(count, "count");
+            _readBatchSize = count;
+            return this;
+        }
+
+
+        /// <summary>
+        /// Sets the size of the read batch used when paging in history for the subscription
+        /// sizes should not be too big ...
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder WithHistoryBufferSizeOf(int count)
+        {
+            Ensure.Nonnegative(count, "count");
+            _historyBufferSize = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets that the subscription should start from where the stream is when the subscription is first connected.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder StartFromCurrent()
+        {
+            _startFrom = -1;
+            return this;
         }
 
         /// <summary>
@@ -93,9 +203,14 @@ namespace EventStore.ClientAPI
         public static implicit operator PersistentSubscriptionSettings(PersistentSubscriptionSettingsBuilder builder)
         {
             return new PersistentSubscriptionSettings(builder._resolveLinkTos,
-                builder._startFromBeginning,
+                builder._startFrom,
                 builder._latencyStatistics,
-                builder._timeout);
+                builder._timeout,
+                builder._maxRetryCount,
+                builder._liveBufferSize,
+                builder._readBatchSize,
+                builder._historyBufferSize,
+                builder._preferRoundRobin);
         }
     }
 }

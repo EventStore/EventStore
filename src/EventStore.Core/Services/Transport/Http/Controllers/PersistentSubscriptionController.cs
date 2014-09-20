@@ -77,9 +77,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                                  stream, 
                                                                                  groupname, 
                                                                                  data == null || data.ResolveLinktos, 
-                                                                                 data == null || data.StartFromBeginning, 
+                                                                                 data == null ? 0 : data.StartFrom, 
                                                                                  data == null ? 0 : data.MessageTimeoutMilliseconds, 
                                                                                  data == null || data.TrackLatency,
+                                                                                 data == null ? 10 : data.MaxRetryCount,
+                                                                                 data == null ? 500 : data.HistoryBufferSize,
+                                                                                 data == null ? 500 : data.LiveBufferSize,
+                                                                                 data == null ? 20 : data.ReadBatchSize,
+                                                                                 data == null || data.PreferRoundRobin, 
                                                                                  http.User,
                                                                                  "",
                                                                                  "");
@@ -231,9 +236,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private class PutSubscriptionData
         {
             public bool ResolveLinktos { get; set; }
-            public bool StartFromBeginning { get; set; }
+            public int StartFrom { get; set; }
             public int MessageTimeoutMilliseconds { get; set; }
             public bool TrackLatency { get; set; }
+            public int MaxRetryCount { get; set; }
+            public int LiveBufferSize { get; set; }
+            public int HistoryBufferSize { get; set; }
+            public int ReadBatchSize { get; set; }
+            public bool PreferRoundRobin { get; set; }
         }
 
         private class SubscriptionInfo

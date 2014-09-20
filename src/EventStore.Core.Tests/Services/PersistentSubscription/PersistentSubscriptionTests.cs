@@ -10,18 +10,23 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
     [TestFixture]
     public class when_creating_persistent_subscription
     {
-        private EventStore.Core.Services.PersistentSubscription.PersistentSubscription _sub;
+        private Core.Services.PersistentSubscription.PersistentSubscription _sub;
 
         [TestFixtureSetUp]
         public void Setup()
         {
-            _sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            _sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(new FakeCheckpointReader())
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
         }
 
         [Test]
         public void subscription_id_is_set()
         {
-            Assert.AreEqual("subId", _sub.SubscriptionId);
+            Assert.AreEqual("streamName:groupName", _sub.SubscriptionId);
         }
 
         [Test]
@@ -46,39 +51,72 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         [Test]
         public void null_checkpoint_reader_throws_argument_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), null, new FakeCheckpointWriter(x => { }))));
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                _sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                    PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                        .WithEventLoader(new FakeEventLoader(x => { }))
+                        .WithCheckpointReader(null)
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
+            });
         }
 
         [Test]
         public void null_checkpoint_writer_throws_argument_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), null)));
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                _sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                    PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                        .WithEventLoader(new FakeEventLoader(x => { }))
+                        .WithCheckpointReader(new FakeCheckpointReader())
+                        .WithCheckpointWriter(null));
+
+            });
         }
 
 
         [Test]
         public void null_event_reader_throws_argument_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, null, new FakeCheckpointReader(), new FakeCheckpointWriter(X => { }))));
-        }
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                _sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                    PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                        .WithEventLoader(null)
+                        .WithCheckpointReader(new FakeCheckpointReader())
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
 
-        [Test]
-        public void null_subid_throws_argument_null()
-        {
-            Assert.Throws<ArgumentNullException>(() =>  new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, null, "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(X => { }))));
+            });
         }
-
 
         [Test]
         public void null_stream_throws_argument_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subid", null, "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(X => { }))));
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                _sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                    PersistentSubscriptionParamsBuilder.CreateFor(null, "groupName")
+                        .WithEventLoader(new FakeEventLoader(x => { }))
+                        .WithCheckpointReader(new FakeCheckpointReader())
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
+            });
         }
 
         [Test]
         public void null_groupname_throws_argument_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subid", "stream", null, true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(X => { }))));
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                _sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                    PersistentSubscriptionParamsBuilder.CreateFor("streamName", null)
+                        .WithEventLoader(new FakeEventLoader(x => { }))
+                        .WithCheckpointReader(new FakeCheckpointReader())
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
+            });
         }
 
     }
@@ -90,7 +128,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         public void live_subscription_pushes_events_to_client()
         {
             var envelope = new FakeEnvelope();
-            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", false, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .StartFromCurrent());
+            reader.Load(null);        
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(),envelope, 10, "foo", "bar");
             sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
             Assert.AreEqual(1,envelope.Replies.Count);
@@ -101,7 +146,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         {
             var envelope1 = new FakeEnvelope();
             var envelope2 = new FakeEnvelope();
-            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", false, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .PreferRoundRobin()
+                    .StartFromCurrent());
+            reader.Load(null);
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
             sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
@@ -115,7 +168,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         {
             var envelope1 = new FakeEnvelope();
             var envelope2 = new FakeEnvelope();
-            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", false, true, TimeSpan.FromSeconds(5), true, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .PreferDispatchToSingle()
+                    .StartFromCurrent());
+            reader.Load(null);
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
             sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
@@ -128,10 +189,53 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         public void subscription_with_pull_sends_data_to_client()
         {
             var envelope1 = new FakeEnvelope();
-            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .StartFromBeginning());
+            reader.Load(null);
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-            sub.HandleReadCompleted(new [] {Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0)}, 1);
+            sub.HandleReadCompleted(new[] {Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0)}, 1);
             Assert.AreEqual(1, envelope1.Replies.Count);
+        }
+
+        [Test]
+        public void subscription_with_pull_does_not_crash_if_not_ready_yet()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .StartFromBeginning());
+            Assert.DoesNotThrow(() =>
+            {
+                sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+                sub.HandleReadCompleted(new[] {Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0)}, 1);
+            });
+        }
+
+        [Test]
+        public void subscription_with_live_data_does_not_crash_if_not_ready_yet()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .StartFromBeginning());
+            Assert.DoesNotThrow(() =>
+            {
+                sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+                sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
+            });
         }
 
 
@@ -139,8 +243,16 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         public void subscription_with_pull_and_round_robin_set_and_two_clients_sends_data_to_client()
         {
             var envelope1 = new FakeEnvelope();
-            var envelope2 = new FakeEnvelope(); 
-            var sub = new EventStore.Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            var envelope2 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .PreferRoundRobin()
+                    .StartFromBeginning());
+            reader.Load(null);
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
             var id1 = Guid.NewGuid();
@@ -156,11 +268,19 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
 
 
         [Test]
-        public void subscription_with_pull_and_prefer_on_set_and_two_clients_sends_data_to_one_client()
+        public void subscription_with_pull_and_prefer_one_set_and_two_clients_sends_data_to_one_client()
         {
             var envelope1 = new FakeEnvelope();
             var envelope2 = new FakeEnvelope();
-            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), true, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning());
+            reader.Load(null);
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
             var id1 = Guid.NewGuid();
@@ -190,7 +310,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         [Test]
         public void adding_a_client_adds_the_client()
         {
-            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(new PersistentSubscriptionParams(true, "subId", "streamName", "groupName", true, true, TimeSpan.FromSeconds(5), false, new FakeEventLoader(x => { }), new FakeCheckpointReader(), new FakeCheckpointWriter(x => { })));
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(new FakeCheckpointReader())
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), new FakeEnvelope(), 1, "foo", "bar");
             Assert.IsTrue(sub.HasClients);
             Assert.AreEqual(1, sub.ClientCount);
