@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -248,12 +247,17 @@ namespace EventStore.Core.Services.PersistentSubscription
                     StopSubscription();
                     break;
                 case NakAction.Skip:
-                    //nothing skips
+                    SkipMessage();
                     break;
                 default:
-                    //nothing skips
+                    SkipMessage();
                     break;
             }
+        }
+
+        private void SkipMessage()
+        {
+            //NOOP
         }
 
         private void StopSubscription()
@@ -270,14 +274,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-
         private void RevertToCheckPoint()
         {
             Log.Debug("Reverting future reads to checkpoint.");
             InitAsNew();
         }
 
-        public void NotifyClockTick()
+        public void NotifyClockTick(DateTime time)
         {
             foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(DateTime.Now))
             {
