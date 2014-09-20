@@ -71,6 +71,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (o, s) =>
                 {
                     var data = http.RequestCodec.From<PutSubscriptionData>(s);
+                    //TODO competing validate data?
                     var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), 
                                                                                  Guid.NewGuid(),
                                                                                  envelope, 
@@ -85,6 +86,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                                  data == null ? 500 : data.LiveBufferSize,
                                                                                  data == null ? 20 : data.ReadBatchSize,
                                                                                  data == null || data.PreferRoundRobin, 
+                                                                                 data == null ? 1000 : data.CheckPointAfterMilliseconds,
+                                                                                 data == null ? 10 : data.MinCheckPointCount,
+                                                                                 data == null ? 500 : data.MaxCheckPointCount,
                                                                                  http.User,
                                                                                  "",
                                                                                  "");
@@ -244,6 +248,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int HistoryBufferSize { get; set; }
             public int ReadBatchSize { get; set; }
             public bool PreferRoundRobin { get; set; }
+            public int CheckPointAfterMilliseconds { get; set; }
+            public int MinCheckPointCount { get; set; }
+            public int MaxCheckPointCount { get; set; }
         }
 
         private class SubscriptionInfo

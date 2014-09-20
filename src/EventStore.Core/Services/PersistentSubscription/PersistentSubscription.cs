@@ -66,6 +66,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _checkpointReader = persistentSubscriptionParams.CheckpointReader;
             _checkpointWriter = persistentSubscriptionParams.CheckpointWriter;
             _lastPulledEvent = 0;
+            
             //TODO refactor to state.
             _ready = false;
             _startFrom = persistentSubscriptionParams.StartFrom;

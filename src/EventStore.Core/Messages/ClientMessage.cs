@@ -873,17 +873,22 @@ namespace EventStore.Core.Messages
 
             public readonly bool ResolveLinkTos;
             public readonly int MaxRetryCount;
-            public readonly int HistoryBufferSize;
+            public readonly int BufferSize;
             public readonly int LiveBufferSize;
             public readonly int ReadBatchSize;
             
             public readonly string GroupName;
             public readonly string EventStreamId;
+            public int MaxCheckPointCount;
+            public int MinCheckPointCount;
+            public int CheckPointAfterMilliseconds;
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                   string eventStreamId, string groupName, bool resolveLinkTos, int startFrom, 
-                int messageTimeoutMilliseconds, bool latencyTracking, int maxRetryCount, int historyBufferSize, 
-                int liveBufferSize, int readbatchSize, bool preferRoundRobin, IPrincipal user, string username, string password)
+                int messageTimeoutMilliseconds, bool latencyTracking, int maxRetryCount, int bufferSize, 
+                int liveBufferSize, int readbatchSize, bool preferRoundRobin, 
+                int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
+                IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 ResolveLinkTos = resolveLinkTos;
@@ -893,10 +898,13 @@ namespace EventStore.Core.Messages
                 MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
                 LatencyTracking = latencyTracking;
                 MaxRetryCount = maxRetryCount;
-                HistoryBufferSize = historyBufferSize;
+                BufferSize = bufferSize;
                 LiveBufferSize = liveBufferSize;
                 ReadBatchSize = readbatchSize;
                 PreferRoundRobin = preferRoundRobin;
+                MaxCheckPointCount = maxCheckPointCount;
+                MinCheckPointCount = minCheckPointCount;
+                CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
             }
 
         }

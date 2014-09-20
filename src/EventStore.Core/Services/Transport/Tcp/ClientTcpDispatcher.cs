@@ -439,7 +439,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             return new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
                             dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom, dto.MessageTimeoutMilliseconds, 
                             dto.LatencyTracking, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
-                            dto.ReadBatchSize,dto.PreferRoundRobin, user, username, password);
+                            dto.ReadBatchSize,dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount, dto.CheckpointMaxCount, 
+                            user, username, password);
         }
 
         private ClientMessage.DeletePersistentSubscription UnwrapDeletePersistentSubscription(
