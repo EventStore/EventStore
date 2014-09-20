@@ -140,15 +140,32 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     message.LatencyTracking,
                                     message.MaxRetryCount,
                                     message.LiveBufferSize,
-                                    message.HistoryBufferSize,
+                                    message.BufferSize,
                                     message.ReadBatchSize,
                                     message.PreferRoundRobin,
+                                    TimeSpan.FromMilliseconds(message.CheckPointAfterMilliseconds),
+                                    message.MinCheckPointCount,
+                                    message.MaxCheckPointCount,
                                     TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds)
                                     );
             Log.Debug("New persistent subscription {0}.", message.GroupName);
             _config.Updated = DateTime.Now;
             _config.UpdatedBy = message.User.Identity.Name;
-            _config.Entries.Add(new PersistentSubscriptionEntry(){Stream=message.EventStreamId, Group = message.GroupName, ResolveLinkTos = message.ResolveLinkTos});            
+            _config.Entries.Add(new PersistentSubscriptionEntry()
+            {
+                Stream=message.EventStreamId, 
+                Group = message.GroupName, 
+                ResolveLinkTos = message.ResolveLinkTos,
+                CheckPointAfter = message.CheckPointAfterMilliseconds,
+                TrackLatency = message.LatencyTracking,
+                HistoryBufferSize = message.BufferSize,
+                LiveBufferSize = message.LiveBufferSize,
+                MaxCheckPointCount = message.MaxCheckPointCount,
+                MinCheckPointCount = message.MinCheckPointCount,
+                MaxRetryCount = message.MaxRetryCount,
+                MessageTimeout = message.MessageTimeoutMilliseconds,
+                PreferRoundRobin = message.PreferRoundRobin
+            });            
             SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
                 ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, "")));
         }
@@ -163,6 +180,9 @@ namespace EventStore.Core.Services.PersistentSubscription
                                              int historyBufferSize,
                                              int readBatchSize,
                                              bool preferRoundRobin,
+                                             TimeSpan checkPointAfter,
+                                             int minCheckPointCount,
+                                             int maxCheckPointCount,
                                              TimeSpan messageTimeout)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
@@ -187,6 +207,9 @@ namespace EventStore.Core.Services.PersistentSubscription
                     liveBufferSize,
                     historyBufferSize,
                     readBatchSize,
+                    checkPointAfter,
+                    minCheckPointCount,
+                    maxCheckPointCount,
                     _eventLoader,
                     _checkpointReader,
                     new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher)));
@@ -390,6 +413,9 @@ namespace EventStore.Core.Services.PersistentSubscription
                                                     entry.HistoryBufferSize,
                                                     entry.ReadBatchSize,
                                                     entry.PreferRoundRobin,
+                                                    TimeSpan.FromMilliseconds(entry.CheckPointAfter),
+                                                    entry.MinCheckPointCount,
+                                                    entry.MaxCheckPointCount,
                                                     TimeSpan.FromMilliseconds(entry.MessageTimeout)); 
                         }
                         continueWith();
@@ -450,6 +476,9 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         sub.HistoryBufferSize,
                                         sub.ReadBatchSize,
                                         sub.PreferRoundRobin,
+                                        TimeSpan.FromMilliseconds(sub.CheckPointAfter),
+                                        sub.MinCheckPointCount,
+                                        sub.MaxCheckPointCount,
                                         TimeSpan.FromMilliseconds(sub.MessageTimeout));
             }
         }

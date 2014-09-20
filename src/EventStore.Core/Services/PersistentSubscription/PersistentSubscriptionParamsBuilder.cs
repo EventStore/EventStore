@@ -23,6 +23,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         private IPersistentSubscriptionEventLoader _eventLoader;
         private IPersistentSubscriptionCheckpointReader _checkpointReader;
         private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private TimeSpan _checkPointAfter;
+        private int _minCheckPointCount;
+        private int _maxCheckPointCount;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionParamsBuilder"></see> object
@@ -43,12 +46,16 @@ namespace EventStore.Core.Services.PersistentSubscription
                 500,
                 10,
                 20,
-                true);
+                true,
+                TimeSpan.FromSeconds(1),
+                5,
+                1000);
         }
 
 
         private PersistentSubscriptionParamsBuilder(string subscriptionId, string streamName, string groupName, bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan timeout,
-            int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin)
+            int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin, TimeSpan checkPointAfter,
+            int minCheckPointCount, int maxCheckPointCount)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
@@ -62,6 +69,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             _eventStreamId = streamName;
             _subscriptionId = subscriptionId;
             _groupName = groupName;
+            _checkPointAfter = checkPointAfter;
+            _minCheckPointCount = minCheckPointCount;
+            _maxCheckPointCount = maxCheckPointCount;
         }
 
         /// <summary>
@@ -172,6 +182,36 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         /// <summary>
+        /// Sets the time after which the subscription should be checkpointed
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
+        public PersistentSubscriptionParamsBuilder CheckPointAfter(TimeSpan time)
+        {
+            _checkPointAfter = time;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the minimum number of items to checkpoint
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
+        public PersistentSubscriptionParamsBuilder MinimumToCheckPoint(int count)
+        {
+            _minCheckPointCount = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum number of items to checkpoint
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
+        public PersistentSubscriptionParamsBuilder MaximumToCheckPoint(int count)
+        {
+            _maxCheckPointCount = count;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the timeout for a message (will be retried if an ack is not received within this timespan)
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
@@ -260,6 +300,9 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._liveBufferSize,
                 builder._historyBufferSize,
                 builder._readBatchSize,
+                builder._checkPointAfter,
+                builder._minCheckPointCount,
+                builder._maxCheckPointCount,
                 builder._eventLoader,
                 builder._checkpointReader,
                 builder._checkpointWriter);

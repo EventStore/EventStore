@@ -4,25 +4,29 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     public class PersistentSubscriptionParams
     {
-        private bool _resolveLinkTos;
-        private string _subscriptionId;
-        private string _eventStreamId;
-        private string _groupName;
-        private int _startFrom;
-        private bool _trackLatency;
-        private TimeSpan _messageTimeout;
+        private readonly bool _resolveLinkTos;
+        private readonly string _subscriptionId;
+        private readonly string _eventStreamId;
+        private readonly string _groupName;
+        private readonly int _startFrom;
+        private readonly bool _trackLatency;
+        private readonly TimeSpan _messageTimeout;
+        private readonly TimeSpan _checkPointAfter;
+        private readonly int _minCheckPointCount;
+        private readonly int _maxCheckPointCount;
         private readonly bool _preferRoundRobin;
-        private int _maxRetryCount;
-        private int _liveBufferSize;
-        private int _historyBufferSize;
-        private int _readBatchSize;
-        private IPersistentSubscriptionEventLoader _eventLoader;
-        private IPersistentSubscriptionCheckpointReader _checkpointReader;
-        private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private readonly int _maxRetryCount;
+        private readonly int _liveBufferSize;
+        private readonly int _historyBufferSize;
+        private readonly int _readBatchSize;
+        private readonly IPersistentSubscriptionEventLoader _eventLoader;
+        private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
+        private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
 
         public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
                                            int startFrom, bool trackLatency, TimeSpan messageTimeout, bool preferRoundRobin, 
                                            int maxRetryCount, int liveBufferSize, int historyBufferSize, int readBatchSize,
+                                           TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
                                            IPersistentSubscriptionEventLoader eventLoader, 
                                            IPersistentSubscriptionCheckpointReader checkpointReader, 
                                            IPersistentSubscriptionCheckpointWriter checkpointWriter)
@@ -35,10 +39,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             _trackLatency = trackLatency;
             _messageTimeout = messageTimeout;
             _preferRoundRobin = preferRoundRobin;
-            MaxRetryCount = maxRetryCount;
-            LiveBufferSize = liveBufferSize;
-            HistoryBufferSize = historyBufferSize;
-            ReadBatchSize = readBatchSize;
+            _maxRetryCount = maxRetryCount;
+            _liveBufferSize = liveBufferSize;
+            _historyBufferSize = historyBufferSize;
+            _checkPointAfter = checkPointAfter;
+            _minCheckPointCount = minCheckPointCount;
+            _maxCheckPointCount = maxCheckPointCount;
+            _readBatchSize = readBatchSize;
             _eventLoader = eventLoader;
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
@@ -102,25 +109,36 @@ namespace EventStore.Core.Services.PersistentSubscription
         public int MaxRetryCount
         {
             get { return _maxRetryCount; }
-            set { _maxRetryCount = value; }
         }
 
         public int LiveBufferSize
         {
             get { return _liveBufferSize; }
-            set { _liveBufferSize = value; }
         }
 
         public int HistoryBufferSize
         {
             get { return _historyBufferSize; }
-            set { _historyBufferSize = value; }
         }
 
         public int ReadBatchSize
         {
             get { return _readBatchSize; }
-            set { _readBatchSize = value; }
+        }
+
+        public TimeSpan CheckPointAfter
+        {
+            get { return _checkPointAfter; }
+        }
+
+        public int MinCheckPointCount
+        {
+            get { return _minCheckPointCount; }
+        }
+
+        public int MaxCheckPointCount
+        {
+            get { return _maxCheckPointCount; }
         }
     }
 }

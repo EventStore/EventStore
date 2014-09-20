@@ -52,5 +52,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         public int MaxRetryCount;
         public int ReadBatchSize;
         public bool PreferRoundRobin;
+        public int CheckPointAfter { get; set; }
+        public int MinCheckPointCount { get; set; }
+        public int MaxCheckPointCount { get; set; }
     }
 }
