@@ -1022,12 +1022,14 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly long LastCommitPosition;
             public readonly int? LastEventNumber;
+            public string SubscriptionId;
 
-            public PersistentSubscriptionConfirmation(Guid correlationId, long lastCommitPosition, int? lastEventNumber)
+            public PersistentSubscriptionConfirmation(string subscriptionId, Guid correlationId, long lastCommitPosition, int? lastEventNumber)
             {
                 CorrelationId = correlationId;
                 LastCommitPosition = lastCommitPosition;
                 LastEventNumber = lastEventNumber;
+                SubscriptionId = subscriptionId;
             }
         }
         //End of persistens subscritions

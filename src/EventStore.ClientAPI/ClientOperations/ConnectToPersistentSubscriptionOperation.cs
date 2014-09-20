@@ -11,14 +11,13 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly string _groupName;
         private readonly int _bufferSize;
-        private readonly string _subscriptionId;
+        private string _subscriptionId;
 
         public ConnectToPersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string groupName, int bufferSize, string streamId, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
             : base(log, source, streamId, false, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
         {
             _groupName = groupName;
             _bufferSize = bufferSize;
-            _subscriptionId = _streamId + "::" + _groupName;
         }
 
         protected override TcpPackage CreateSubscriptionPackage()
@@ -39,6 +38,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 var dto = package.Data.Deserialize<ClientMessage.PersistentSubscriptionConfirmation>();
                         ConfirmSubscription(dto.LastCommitPosition, dto.LastEventNumber);
                         result = new InspectionResult(InspectionDecision.Subscribed, "SubscriptionConfirmation");
+                _subscriptionId = dto.SubscriptionId;
                 return true;
             }
             if (package.Command == TcpCommand.PersistentSubscriptionStreamEventAppeared)

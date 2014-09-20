@@ -321,7 +321,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Log.Debug("New connection to persistent subscription {0}.", message.SubscriptionId);
             var lastEventNumber = _readIndex.GetStreamLastEventNumber(message.EventStreamId);
             var lastCommitPos = _readIndex.LastCommitPosition;
-            var subscribedMessage = new ClientMessage.PersistentSubscriptionConfirmation(message.CorrelationId, lastCommitPos, lastEventNumber);
+            var subscribedMessage = new ClientMessage.PersistentSubscriptionConfirmation(key, message.CorrelationId, lastCommitPos, lastEventNumber);
             message.Envelope.ReplyWith(subscribedMessage);
             var name = message.User == null ? "anonymous" : message.User.Identity.Name;
             subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope, message.AllowedInFlightMessages,name,message.From);
