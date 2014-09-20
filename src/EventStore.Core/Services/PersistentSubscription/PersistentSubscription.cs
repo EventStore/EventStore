@@ -97,15 +97,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ready = true;
             if (!checkpoint.HasValue)
             {
-                if (_startFrom >= 0)
-                {
-                    _lastPulledEvent = _startFrom;
-                    _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, true);
-                }
-                else
-                {
-                    _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, false);
-                }
+                if (_startFrom >= 0) _lastPulledEvent = _startFrom;
+                _streamBuffer = new StreamBuffer(_bufferSize, _liveBufferSize, -1, _startFrom >= 0);
                 TryReadingNewBatch();
             }
             else
