@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly bool _preferRoundRobin;
         private readonly int _maxRetryCount;
         private readonly int _liveBufferSize;
-        private readonly int _historyBufferSize;
+        private readonly int _bufferSize;
         private readonly int _readBatchSize;
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
                                            int startFrom, bool trackLatency, TimeSpan messageTimeout, bool preferRoundRobin, 
-                                           int maxRetryCount, int liveBufferSize, int historyBufferSize, int readBatchSize,
+                                           int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
                                            TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
                                            IPersistentSubscriptionEventLoader eventLoader, 
                                            IPersistentSubscriptionCheckpointReader checkpointReader, 
@@ -41,7 +41,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _preferRoundRobin = preferRoundRobin;
             _maxRetryCount = maxRetryCount;
             _liveBufferSize = liveBufferSize;
-            _historyBufferSize = historyBufferSize;
+            _bufferSize = bufferSize;
             _checkPointAfter = checkPointAfter;
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
@@ -116,9 +116,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _liveBufferSize; }
         }
 
-        public int HistoryBufferSize
+        public int BufferSize
         {
-            get { return _historyBufferSize; }
+            get { return _bufferSize; }
         }
 
         public int ReadBatchSize

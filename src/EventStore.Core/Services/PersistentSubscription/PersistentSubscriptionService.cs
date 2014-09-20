@@ -53,6 +53,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
             _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
             _eventLoader = new PersistentSubscriptionEventLoader(_ioDispatcher, 100);
+            //TODO CC wire up timeout with timer for retry and checkpoint.
         }
 
         public void InitToEmpty()
