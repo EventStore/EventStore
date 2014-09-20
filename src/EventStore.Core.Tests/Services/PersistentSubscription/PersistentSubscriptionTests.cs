@@ -442,7 +442,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                 Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
             }, 1);
             sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
-            sub.NotifyClockTick();
+            sub.NotifyClockTick(DateTime.Now);
             Assert.AreEqual(1, cp);
         }
 
@@ -472,7 +472,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                 Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
             }, 1);
             sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
-            sub.NotifyClockTick();
+            sub.NotifyClockTick(DateTime.Now);
             Assert.AreEqual(1, cp);
         }
     }
