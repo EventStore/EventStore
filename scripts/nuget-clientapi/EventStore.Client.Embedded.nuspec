@@ -13,6 +13,7 @@
     <releaseNotes>Embedded Client API for version 3 of the Event Store</releaseNotes>
     <copyright>Copyright 2012-2013 Event Store LLP</copyright>
     <dependencies>
+      <dependency id="EventStore.Client" version="3.0.0" />
     </dependencies>
   </metadata>
   <files>
