@@ -207,7 +207,7 @@ message CreatePersistentSubscription {
 	required int32 buffer_size = 9;
 	required int32 max_retry_count = 10;
 	required bool prefer_round_robin = 11;
-	required int32 checkpoint_min_time = 12;
+	required int32 checkpoint_after_time = 12;
 	required int32 checkpoint_max_count = 13;
 	required int32 checkpoint_min_count = 14;
 }
