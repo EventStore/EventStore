@@ -22,5 +22,10 @@ namespace EventStore.ClientAPI
         {
             _subscriptionOperation.NotifyEventsProcessed(processedEvents);
         }
+
+        public void NotifyEventsFailed(Guid[] processedEvents, PersistentSubscriptionNakEventAction action, string reason)
+        {
+            _subscriptionOperation.NotifyEventsFailed(processedEvents, action, reason);
+        }
     }
 }

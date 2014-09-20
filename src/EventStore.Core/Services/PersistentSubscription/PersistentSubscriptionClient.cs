@@ -68,16 +68,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _correlationId; }
         }
 
-        public void ConfirmProcessing(Guid[] processedEventIds)
+        public void RemoveFromProcessing(Guid[] processedEventIds)
         {
             foreach (var processedEventId in processedEventIds)
             {
                 ResolvedEvent ev;
-                if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
-                {
-                    _unconfirmedEvents.Remove(processedEventId);
-                    _allowedMessages++;
-                }
+                if (!_unconfirmedEvents.TryGetValue(processedEventId, out ev)) continue;
+                _unconfirmedEvents.Remove(processedEventId);
+                _allowedMessages++;
             }
         }
 

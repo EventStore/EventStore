@@ -66,5 +66,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_bySequences.Count == 0) return int.MinValue;
             return _bySequences.Values[0];
         }
+
+        public bool GetMessageById(Guid id, out OutstandingMessage outstandingMessage)
+        {
+            return _outstandingRequests.TryGetValue(id, out outstandingMessage);
+        }
     }
 }

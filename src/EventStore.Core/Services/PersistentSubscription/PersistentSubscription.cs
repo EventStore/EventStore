@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -210,15 +211,65 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
-            _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
+            RemoveProcessingMessages(correlationId, processedEventIds);
+            TryMarkCheckpoint(false);
+            TryReadingNewBatch();
+            TryPushingMessagesToClients();
+        }
+
+        public void NotAcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds, NakAction action, string reason)
+        {
+            RemoveProcessingMessages(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
-                _outstandingMessages.Remove(id);
+                HandleNakedMessage(action, id);
             }
             TryMarkCheckpoint(false);
             TryReadingNewBatch();
             TryPushingMessagesToClients();
         }
+
+        private void HandleNakedMessage(NakAction action, Guid id)
+        {
+            switch (action)
+            {
+                case NakAction.Retry:
+                case NakAction.Unknown:
+                    OutstandingMessage e;
+                    if (_outstandingMessages.GetMessageById(id, out e))
+                    {
+                        RetryMessage(e.ResolvedEvent, e.RetryCount + 1);
+                    }
+                    break;
+                case NakAction.Poison:
+                    //TODO CC write to poison queue
+                    break;
+                case NakAction.Stop:
+                    StopSubscription();
+                    break;
+                case NakAction.Skip:
+                    //nothing skips
+                    break;
+                default:
+                    //nothing skips
+                    break;
+            }
+        }
+
+        private void StopSubscription()
+        {
+            //TODO CC Stop subscription?
+        }
+
+        private void RemoveProcessingMessages(Guid correlationId, Guid[] processedEventIds)
+        {
+            _pushClients.RemoveProcessingMessages(correlationId, processedEventIds);
+            foreach (var id in processedEventIds)
+            {
+                _outstandingMessages.Remove(id);
+            }
+        }
+
 
         private void RevertToCheckPoint()
         {

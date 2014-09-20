@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             AddUnwrapper(TcpCommand.ConnectToPersistentSubscription, UnwrapConnectToPersistentSubscription);
             AddUnwrapper(TcpCommand.PersistentSubscriptionAckEvents, UnwrapPersistentSubscriptionAckEvents);
-            AddUnwrapper(TcpCommand.PersistentSubscriptionNakEvents, UnwrapPersistentSubscriptionNakEvents);
+            AddUnwrapper(TcpCommand.PersistentSubscriptionNakEvents, UnwrapPersistentSubscriptionNackEvents);
             AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmation);
             AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppeared);
 
@@ -483,14 +483,15 @@ namespace EventStore.Core.Services.Transport.Tcp
                 dto.ProcessedEventIds.Select(x => new Guid(x)).ToArray(), user);
         }
 
-        private ClientMessage.PersistentSubscriptionNakEvents UnwrapPersistentSubscriptionNakEvents(
-    TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
-    TcpConnectionManager connection)
+        private ClientMessage.PersistentSubscriptionNackEvents UnwrapPersistentSubscriptionNackEvents(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
+            TcpConnectionManager connection)
         {
-            var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionAckEvents>();
+            var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionNakEvents>();
             if (dto == null) return null;
-            return new ClientMessage.PersistentSubscriptionNakEvents(
+            return new ClientMessage.PersistentSubscriptionNackEvents(
                 Guid.NewGuid(), package.CorrelationId, envelope, dto.SubscriptionId,
+                dto.Message, (ClientMessage.PersistentSubscriptionNackEvents.NakAction) dto.Action,
                 dto.ProcessedEventIds.Select(x => new Guid(x)).ToArray(), user);
         }
 

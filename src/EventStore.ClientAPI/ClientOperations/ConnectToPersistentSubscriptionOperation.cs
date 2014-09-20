@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
@@ -59,11 +60,31 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public void NotifyEventsProcessed(Guid[] processedEvents)
         {
+            Ensure.NotNull(processedEvents, "processedEvents");
             var dto = new ClientMessage.PersistentSubscriptionAckEvents(
                 _subscriptionId,
                 processedEvents.Select(x => x.ToByteArray()).ToArray());
 
             var package = new TcpPackage(TcpCommand.PersistentSubscriptionAckEvents,
+                                  _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+                                  _correlationId,
+                                  _userCredentials != null ? _userCredentials.Username : null,
+                                  _userCredentials != null ? _userCredentials.Password : null,
+                                  dto.Serialize());
+            EnqueueSend(package);
+        }
+
+        public void NotifyEventsFailed(Guid[] processedEvents, PersistentSubscriptionNakEventAction action, string reason)
+        {
+            Ensure.NotNull(processedEvents, "processedEvents");
+            Ensure.NotNull(reason, "reason");
+            var dto = new ClientMessage.PersistentSubscriptionNakEvents(
+                _subscriptionId,
+                processedEvents.Select(x => x.ToByteArray()).ToArray(),
+                reason,
+                (ClientMessage.PersistentSubscriptionNakEvents.NakAction) action);
+
+            var package = new TcpPackage(TcpCommand.PersistentSubscriptionNakEvents,
                                   _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   _correlationId,
                                   _userCredentials != null ? _userCredentials.Username : null,

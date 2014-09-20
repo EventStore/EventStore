@@ -85,19 +85,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _hash.Values;
         }
 
-        //TODO CC Maybe its better to call directly?
-        public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
+        public void RemoveProcessingMessages(Guid correlationId, Guid[] processedEventIds)
         {
             PersistentSubscriptionClient client;
             if (!_hash.TryGetValue(correlationId, out client)) return;
-            client.ConfirmProcessing(processedEventIds);
-        }
-
-        public void NotAcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
-        {
-            PersistentSubscriptionClient client;
-            if (!_hash.TryGetValue(correlationId, out client)) return;
-            client.DenyProcessing(processedEventIds);
+            client.RemoveFromProcessing(processedEventIds);
         }
     }
 }

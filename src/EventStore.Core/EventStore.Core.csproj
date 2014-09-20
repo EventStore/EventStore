@@ -168,6 +168,7 @@
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionEventLoader.cs" />
+    <Compile Include="Services\PersistentSubscription\NakAction.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParams.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParamsBuilder.cs" />
     <Compile Include="Services\PersistentSubscription\StreamBuffer.cs" />
