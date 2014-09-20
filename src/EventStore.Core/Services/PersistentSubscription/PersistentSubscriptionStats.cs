@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Interlocked.Increment(ref _totalItems);
         }
 
-        public void SetLastEventNumnber(int lastEventNumber)
+        public void SetLastCheckPoint(int lastEventNumber)
         {
             _lastEventNumber = lastEventNumber;
         }

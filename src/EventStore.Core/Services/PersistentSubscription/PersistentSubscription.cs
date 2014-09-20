@@ -37,6 +37,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _lastPulledEvent;
         private readonly bool _preferRoundRobin;
         private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private int _lastCheckPoint;
+        private TimeSpan _checkPointAfter;
+        private int _minCheckPointCount;
+        private int _maxCheckPointCount;
+        private DateTime _lastCheckPointTime = DateTime.MinValue;
 
         public bool HasClients
         {
@@ -76,17 +81,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             _maxRetryCount = persistentSubscriptionParams.MaxRetryCount;
             _liveBufferSize = persistentSubscriptionParams.LiveBufferSize;
             _bufferSize = persistentSubscriptionParams.HistoryBufferSize;
+            _checkPointAfter = persistentSubscriptionParams.CheckPointAfter;
+            _minCheckPointCount = persistentSubscriptionParams.MinCheckPointCount;
+            _maxCheckPointCount = persistentSubscriptionParams.MaxCheckPointCount;
             _totalTimeWatch = new Stopwatch();
             _totalTimeWatch.Start();
             _statistics = new PersistentSubscriptionStats(this, _totalTimeWatch);
             _outstandingMessages = new OutstandingMessageCache();
-            //TODO make configurable
             InitAsNew();
         }
 
         public void InitAsNew()
         {
             _ready = false;
+            _lastCheckPoint = -1;
             _statistics.SetLastKnownEventNumber(-1);
             _outstandingReadRequest = false;
             _checkpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
@@ -210,19 +218,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification);
         }
 
-        public void MarkCheckpoint()
+        public void TryMarkCheckpoint(bool isTimeCheck)
         {
-            //TODO we probably want some various checkpointing strategies not just
-            //do every message or every n messages. time based/message count
-            //are probably good. We may also want to try writing our checkpoints
-            //during a proper shutdown to make things more friendly for clients
-            //that dont want to understand the intricacies of dealing with atleast
-            //once messaging (less chance of a duplicate). This is worth a conversation
-            //with james (better to teach early?)
             var lowest = _outstandingMessages.GetLowestPosition();
-            lowest = lowest < 0 ? 0 : lowest;
-            _checkpointWriter.BeginWriteState(lowest);
-            _statistics.SetLastEventNumnber(lowest);
+            var difference = lowest - _lastCheckPoint;
+            var now = DateTime.Now;
+            var timedifference = now - _lastCheckPointTime;
+            if(timedifference > _checkPointAfter)
+            if ((difference >= _minCheckPointCount && isTimeCheck) || difference >= _maxCheckPointCount)
+            {
+                _lastCheckPointTime = now;
+                _lastCheckPoint = lowest;
+                _checkpointWriter.BeginWriteState(lowest);
+                _statistics.SetLastCheckPoint(lowest);
+            }
         }
 
         public void AddMessageAsProcessing(ResolvedEvent ev, PersistentSubscriptionClient client)
@@ -235,9 +244,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             _pushClients.AcknowledgeMessagesProcessed(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
-                if(id.GetHashCode() % 10 == 0) MarkCheckpoint(); //TODO umm yeah please dont laugh at this.
                 _outstandingMessages.Remove(id);
             }
+            TryMarkCheckpoint(false);
             TryReadingNewBatch();
             TryPushingMessagesToClients();
         }
@@ -248,13 +257,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             InitAsNew();
         }
 
-        public void InvalidateMessagesNeedingRetry()
+        public void NotifyClockTick()
         {
             foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(DateTime.Now))
             {
                 if(!ActionTakenForPoisonMessage(message))
                     RetryMessage(message.ResolvedEvent, message.RetryCount + 1);
             }
+            TryMarkCheckpoint(true);
         }
 
         private bool ActionTakenForPoisonMessage(OutstandingMessage message)
