@@ -675,8 +675,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(8, IsRequired = true, Name=@"read_batch_size", DataFormat = DataFormat.TwosComplement)]
     public readonly int ReadBatchSize;
   
-    [ProtoMember(9, IsRequired = true, Name=@"history_buffer_size", DataFormat = DataFormat.TwosComplement)]
-    public readonly int HistoryBufferSize;
+    [ProtoMember(9, IsRequired = true, Name=@"buffer_size", DataFormat = DataFormat.TwosComplement)]
+    public readonly int BufferSize;
   
     [ProtoMember(10, IsRequired = true, Name=@"max_retry_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int MaxRetryCount;
@@ -686,7 +686,7 @@ namespace EventStore.ClientAPI.Messages
   
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int historyBufferSize, int maxRetryCount, bool preferRoundRobin)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
@@ -696,7 +696,7 @@ namespace EventStore.ClientAPI.Messages
         LatencyTracking = latencyTracking;
         LiveBufferSize = liveBufferSize;
         ReadBatchSize = readBatchSize;
-        HistoryBufferSize = historyBufferSize;
+        BufferSize = bufferSize;
         MaxRetryCount = maxRetryCount;
         PreferRoundRobin = preferRoundRobin;
     }
