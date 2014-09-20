@@ -995,6 +995,43 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class PersistentSubscriptionNackEvents : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly string SubscriptionId;
+            public readonly Guid[] ProcessedEventIds;
+            public readonly string Message;
+            public readonly NakAction Action;
+
+            public PersistentSubscriptionNackEvents(Guid internalCorrId, 
+                                                    Guid correlationId, 
+                                                    IEnvelope envelope, 
+                                                    string subscriptionId, 
+                                                    string message, 
+                                                    NakAction action, 
+                                                    Guid[] processedEventIds,
+                                                    IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                SubscriptionId = subscriptionId;
+                ProcessedEventIds = processedEventIds;
+                Message = message;
+                Action = action;
+            }
+
+            public enum NakAction
+            {
+                Unknown = 0,
+                Poison = 1,
+                Retry = 2,
+                Skip = 3,
+                Stop = 4
+            }
+
+        }
+
         public class PersistentSubscriptionNakEvents : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

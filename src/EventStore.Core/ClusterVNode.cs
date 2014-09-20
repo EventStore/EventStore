@@ -397,7 +397,6 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher);
             var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
             var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
-            //TODO CC This should use a dispatcher (horrifically inefficient)
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeMaster, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
@@ -407,11 +406,13 @@ namespace EventStore.Core
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscription, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionAckEvents, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNackEvents, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
   
+            //TODO CC can have multiple threads working on subscription if partition
             var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
@@ -420,6 +421,7 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionAckEvents>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionNackEvents>(persistentSubscription);
             perSubscrBus.Subscribe<StorageMessage.EventCommitted>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscription>(persistentSubscription);

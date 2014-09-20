@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.SystemData;
@@ -99,6 +100,31 @@ namespace EventStore.ClientAPI
             if(ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
             _subscription.NotifyEventsProcessed(ids);
         }
+
+        /// <summary>
+        /// Mark a message failed processing. The server will be take action based upon the action paramter
+        /// </summary>
+        /// <param name="event">The event to mark as failed</param>
+        /// <param name="action">The <see cref="PersistentSubscriptionNakEventAction"></see> action to take</param>
+        /// <param name="reason">A string with a message as to why the failure is occuring</param>
+        public void Fail(ResolvedEvent @event, PersistentSubscriptionNakEventAction action, string reason)
+        {
+            _subscription.NotifyEventsFailed(new [] {@event.Event.EventId}, action, reason);
+        }
+
+        /// <summary>
+        /// Mark nmessages that have failed processing. The server will take action based upon the action parameter
+        /// </summary>
+        /// <param name="events">The events to mark as failed</param>
+        /// <param name="action">The <see cref="PersistentSubscriptionNakEventAction"></see> action to take</param>
+        /// <param name="reason">A string with a message as to why the failure is occuring</param>
+        public void Fail(IEnumerable<ResolvedEvent> events, PersistentSubscriptionNakEventAction action, string reason)
+        {
+            var ids = events.Select(x => x.Event.EventId).ToArray();
+            if (ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
+            _subscription.NotifyEventsFailed(ids, action, reason);
+        }
+
 
         /// <summary>
         /// Disconnects this client from the persistent subscriptions.

@@ -22,6 +22,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<StorageMessage.EventCommitted>,
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
                                         IHandle<ClientMessage.PersistentSubscriptionAckEvents>,
+                                        IHandle<ClientMessage.PersistentSubscriptionNackEvents>,
                                         IHandle<ClientMessage.CreatePersistentSubscription>,
                                         IHandle<ClientMessage.DeletePersistentSubscription>,
                                         IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
@@ -379,10 +380,19 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (!_started) return;
             PersistentSubscription subscription;
-            //TODO competing adjust the naming of SubscriptionId vs GroupName
             if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
             {
                 subscription.AcknowledgeMessagesProcessed(message.CorrelationId, message.ProcessedEventIds);
+            }
+        }
+
+        public void Handle(ClientMessage.PersistentSubscriptionNackEvents message)
+        {
+            if (!_started) return;
+            PersistentSubscription subscription;
+            if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription))
+            {
+                subscription.NotAcknowledgeMessagesProcessed(message.CorrelationId, message.ProcessedEventIds, (NakAction) message.Action, message.Message);
             }
         }
 

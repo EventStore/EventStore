@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="ClientOperations\PersistentSubscriptionNakEventAction.cs" />
     <Compile Include="Core\GossipSeedEndPointDiscoverer.cs" />
     <Compile Include="Core\IEventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\NodeEndPoints.cs" />
