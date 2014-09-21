@@ -117,7 +117,7 @@ namespace CompetingPlayground
             .DoNotResolveLinkTos()
             .StartFromBeginning()
             .WithExtraLatencyStatistics()
-            .WithMessageTimeoutOf(TimeSpan.FromMilliseconds(50000))
+            .WithMessageTimeoutOf(TimeSpan.FromMilliseconds(5000))
             .MinimumCheckPointCountOf(100)
             .MaximumCheckPointCountOf(500)
             .CheckPointAfter(TimeSpan.FromSeconds(2));

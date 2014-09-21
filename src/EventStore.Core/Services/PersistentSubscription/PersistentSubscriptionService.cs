@@ -7,7 +7,9 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -17,6 +19,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<SystemMessage.BecomeShuttingDown>,
                                         IHandle<TcpMessage.ConnectionClosed>,
                                         IHandle<SystemMessage.BecomeMaster>,
+                                        IHandle<SystemMessage.SystemInit>,
+                                        IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
                                         IHandle<SystemMessage.StateChangeMessage>,
                                         IHandle<ClientMessage.ConnectToPersistentSubscription>,
                                         IHandle<StorageMessage.EventCommitted>,
@@ -37,13 +41,15 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IQueuedHandler _queuedHandler;
         private readonly IReadIndex _readIndex;
         private readonly IODispatcher _ioDispatcher;
+        private readonly IPublisher _bus;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
         private bool _started = false;
         private VNodeState _state;
+        private TimerMessage.Schedule _tickRequestMessage;
 
-        public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher)
+        public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher, IPublisher bus)
         {
             Ensure.NotNull(queuedHandler, "queudHandler");
             Ensure.NotNull(readIndex, "readIndex");
@@ -52,9 +58,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             _queuedHandler = queuedHandler;
             _readIndex = readIndex;
             _ioDispatcher = ioDispatcher;
+            _bus = bus;
             _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
             _eventLoader = new PersistentSubscriptionEventLoader(_ioDispatcher, 100);
-            //TODO CC wire up timeout with timer for retry and checkpoint.
+            //TODO CC configurable
+            _tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000), 
+                                                   new PublishEnvelope(_bus),
+                                                   new SubscriptionMessage.PersistentSubscriptionTimerTick());
         }
 
         public void InitToEmpty()
@@ -564,6 +574,32 @@ namespace EventStore.Core.Services.PersistentSubscription
             message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
                 MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
             );
+        }
+
+        public void Handle(SystemMessage.SystemInit message)
+        {
+            _bus.Publish(_tickRequestMessage);
+        }
+
+        public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message)
+        {
+            try
+            {
+                WakeSubscriptions();
+            }
+            finally
+            {
+                _bus.Publish(_tickRequestMessage);
+            }
+        }
+
+        private void WakeSubscriptions()
+        {
+            var now = DateTime.Now;
+            foreach (var subscription in _subscriptionsById.Values)
+            {
+                subscription.NotifyClockTick(now);
+            }
         }
     }
 }

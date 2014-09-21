@@ -411,12 +411,15 @@ namespace EventStore.Core
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
-  
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.SystemInit, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionTimerTick, Message>());
+
             //TODO CC can have multiple threads working on subscription if partition
-            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher);
+            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher, _mainQueue);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
+            perSubscrBus.Subscribe<SystemMessage.SystemInit>(persistentSubscription); 
             perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
@@ -428,7 +431,8 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(persistentSubscription);
             perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
             perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
-
+            perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
+            
 
             // TIMER
             _timeProvider = new RealTimeProvider();

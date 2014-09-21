@@ -306,6 +306,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void RetryMessage(ResolvedEvent @event, int count)
         {
+            Log.Debug("Retrying message {0} {1}/{2}", SubscriptionId, @event.OriginalStreamId, @event.OriginalPosition);
             _outstandingMessages.Remove(@event.Event.EventId);
             _pushClients.RemoveProcessingMessage(@event);
             _streamBuffer.AddRetry(new OutstandingMessage(@event.Event.EventId, null, @event, count + 1));
