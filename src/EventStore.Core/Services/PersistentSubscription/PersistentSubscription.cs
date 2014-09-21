@@ -225,6 +225,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             RemoveProcessingMessages(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
+                Log.Info("Message NAK'ed id {0} action to take {1} reason '{2}'", id, action, reason ?? "");
                 HandleNakedMessage(action, id);
             }
             TryMarkCheckpoint(false);

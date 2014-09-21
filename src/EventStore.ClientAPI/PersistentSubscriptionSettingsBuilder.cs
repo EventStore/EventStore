@@ -257,7 +257,7 @@ namespace EventStore.ClientAPI
         /// sizes should not be too big ...
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
-        public PersistentSubscriptionSettingsBuilder WithHistoryBufferSizeOf(int count)
+        public PersistentSubscriptionSettingsBuilder WithBufferSizeOf(int count)
         {
             Ensure.Nonnegative(count, "count");
             _bufferSize = count;
