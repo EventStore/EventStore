@@ -112,11 +112,15 @@ namespace CompetingPlayground
     {
         private static readonly string Stream = "hhhhhhhhhhh";
         private static readonly string SubName = "greG";
+
         private static readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
-                                                                                .DoNotResolveLinkTos()
-                                                                                .StartFromBeginning()
-                                                                                .WithExtraLatencyStatistics()
-                                                                                .WithMessageTimeoutOf(TimeSpan.FromMilliseconds(50000));
+            .DoNotResolveLinkTos()
+            .StartFromBeginning()
+            .WithExtraLatencyStatistics()
+            .WithMessageTimeoutOf(TimeSpan.FromMilliseconds(50000))
+            .MinimumCheckPointCountOf(100)
+            .MaximumCheckPointCountOf(500)
+            .CheckPointAfter(TimeSpan.FromSeconds(2));
 
         static void Main(string[] args)
         {
@@ -130,7 +134,7 @@ namespace CompetingPlayground
             {
                 connection.ConnectAsync().Wait();
 
-                WriteEvents(connection);
+                //WriteEvents(connection);
                 CreateSubscription(connection, SubName);
 
                 var sub = ConnectToSubscription(connection, "sub1");

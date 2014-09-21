@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -30,6 +29,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _lastCheckPoint;
         private DateTime _lastCheckPointTime = DateTime.MinValue;
         private readonly PersistentSubscriptionParams _settings;
+        private int _lastKnownMessage;
 
         public bool HasClients
         {
@@ -129,6 +129,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     throw new WTFException("This should never happen. Something is very wrong in the threading model.");
                 }
+                if (message.ResolvedEvent.OriginalEventNumber > _lastKnownMessage) _lastKnownMessage = message.ResolvedEvent.OriginalEventNumber;
                 MarkBeginProcessing(message);
             }
         }
@@ -189,11 +190,15 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void TryMarkCheckpoint(bool isTimeCheck)
         {
             var lowest = _outstandingMessages.GetLowestPosition();
+            if (lowest == int.MinValue) lowest = _lastKnownMessage;
+            //no outstanding messages. in this case we can say that the last known
+            //event would be our checkpoint place (we have already completed it)
             var difference = lowest - _lastCheckPoint;
             var now = DateTime.Now;
             var timedifference = now - _lastCheckPointTime;
-            if(timedifference > _settings.CheckPointAfter)
-            if ((difference >= _settings.MinCheckPointCount && isTimeCheck) || difference >= _settings.MaxCheckPointCount)
+            if (timedifference < _settings.CheckPointAfter && difference < _settings.MaxCheckPointCount) return;
+            if ((difference >= _settings.MinCheckPointCount && isTimeCheck) ||
+                difference >= _settings.MaxCheckPointCount)
             {
                 _lastCheckPointTime = now;
                 _lastCheckPoint = lowest;
