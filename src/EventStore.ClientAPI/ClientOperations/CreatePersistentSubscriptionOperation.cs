@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
                                     _latencyTracking, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin, _checkPointAfter,
-                                    _maxCheckPointCount, _minCheckPointCount_minCheckPointCount);
+                                    _maxCheckPointCount, _minCheckPointCount);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)

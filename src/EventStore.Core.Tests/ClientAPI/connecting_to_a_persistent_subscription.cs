@@ -274,8 +274,196 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_with_start_from_x_set_higher_than_x_and_events_in_it_then_event_written : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+            .DoNotResolveLinkTos()
+            .StartFrom(12);
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private ResolvedEvent _firstEvent;
+        private Guid _id;
+
+        private const string _group = "startinbeginning1";
+
+        protected override void Given()
+        {
+            WriteEvents(_conn);
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                new UserCredentials("admin", "changeit")).Wait();
+            _conn.ConnectToPersistentSubscription(_group,
+                _stream,
+                HandleEvent,
+                (sub, reason, ex) => { },
+                userCredentials: new UserCredentials("admin", "changeit"));
+
+        }
+
+        private void WriteEvents(IEventStoreConnection connection)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                    new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+            }
+        }
+
+        protected override void When()
+        {
+            _id = Guid.NewGuid();
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+
+        }
+
+        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        {
+            _firstEvent = resolvedEvent;
+            _resetEvent.Set();
+        }
+
+        [Test]
+        public void the_subscription_gets_the_written_event_as_its_first_event()
+        {
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
+            Assert.IsNotNull(_firstEvent);
+            Assert.AreEqual(10, _firstEvent.Event.EventNumber);
+            Assert.AreEqual(_id, _firstEvent.Event.EventId);
+        }
+    }
 
 
+
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_with_start_from_x_set_and_events_in_it_then_event_written : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+            .DoNotResolveLinkTos()
+            .StartFrom(10);
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private ResolvedEvent _firstEvent;
+        private Guid _id;
+
+        private const string _group = "startinbeginning1";
+
+        protected override void Given()
+        {
+            WriteEvents(_conn);
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                new UserCredentials("admin", "changeit")).Wait();
+            _conn.ConnectToPersistentSubscription(_group,
+                _stream,
+                HandleEvent,
+                (sub, reason, ex) => { },
+                userCredentials: new UserCredentials("admin", "changeit"));
+
+        }
+
+        private void WriteEvents(IEventStoreConnection connection)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                    new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+            }
+        }
+
+        protected override void When()
+        {
+            _id = Guid.NewGuid();
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+
+        }
+
+        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        {
+            _firstEvent = resolvedEvent;
+            _resetEvent.Set();
+        }
+
+        [Test]
+        public void the_subscription_gets_the_written_event_as_its_first_event()
+        {
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
+            Assert.IsNotNull(_firstEvent);
+            Assert.AreEqual(10, _firstEvent.Event.EventNumber);
+            Assert.AreEqual(_id, _firstEvent.Event.EventId);
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_with_start_from_x_set_and_events_in_it : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+            .DoNotResolveLinkTos()
+            .StartFrom(4);
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private ResolvedEvent _firstEvent;
+        private Guid _id;
+        
+        private const string _group = "startinx2";
+
+        protected override void Given()
+        {
+            WriteEvents(_conn);
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                new UserCredentials("admin", "changeit")).Wait();
+            _conn.ConnectToPersistentSubscription(_group,
+                _stream,
+                HandleEvent,
+                (sub, reason, ex) => { },
+                userCredentials: new UserCredentials("admin", "changeit"));
+
+        }
+
+        private void WriteEvents(IEventStoreConnection connection)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                var id = Guid.NewGuid();
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                    new EventData(id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+                if (i == 4) _id = id;
+            }
+        }
+
+        protected override void When()
+        {
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+
+        }
+
+        private bool _set = false;
+        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        {
+            if (!_set)
+            {
+                _set = true;
+                _firstEvent = resolvedEvent;
+                _resetEvent.Set();
+            }
+        }
+
+        [Test]
+        public void the_subscription_gets_the_written_event_as_its_first_event()
+        {
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
+            Assert.IsNotNull(_firstEvent);
+            Assert.AreEqual(4, _firstEvent.Event.EventNumber);
+            Assert.AreEqual(_id, _firstEvent.Event.EventId);
+        }
+    }
     //ALL
 
 /*
