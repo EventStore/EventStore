@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription
@@ -90,6 +91,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             PersistentSubscriptionClient client;
             if (!_hash.TryGetValue(correlationId, out client)) return;
             client.RemoveFromProcessing(processedEventIds);
+        }
+
+        public void RemoveProcessingMessage(ResolvedEvent @event)
+        {
+            foreach (var client in _hash.Values)
+            {
+                if (client.Remove(@event.Event.EventId)) return;
+            }
         }
     }
 }

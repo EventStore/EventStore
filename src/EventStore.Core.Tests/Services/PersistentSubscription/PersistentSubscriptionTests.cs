@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.ClientAPI.Messages;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Tests.Services.Replication;
@@ -356,7 +357,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             Assert.AreEqual(-1, cp);
         }
 
-
         [Test]
         public void subscription_does_write_checkpoint_when_max_is_hit()
         {
@@ -474,6 +474,68 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
             sub.NotifyClockTick(DateTime.Now);
             Assert.AreEqual(1, cp);
+        }
+    }
+
+    [TestFixture]
+    public class TimeoutTests
+    {
+        [Test]
+        public void with_no_timeouts_to_happen_no_timeouts_happen()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .WithMessageTimeoutOf(TimeSpan.FromSeconds(3)));
+            reader.Load(null);
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1)
+            }, 1);
+            envelope1.Replies.Clear();
+            sub.NotifyClockTick(DateTime.Now.AddSeconds(1));
+            Assert.AreEqual(0, envelope1.Replies.Count);
+        }
+        [Test]
+        public void messages_get_timed_out_and_resent_to_clients()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeEventLoader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .WithMessageTimeoutOf(TimeSpan.FromSeconds(1)));
+            reader.Load(null);
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1)
+            }, 1);
+            envelope1.Replies.Clear();
+            sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
+            Assert.AreEqual(2, envelope1.Replies.Count);
+            var msg1 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared) envelope1.Replies[0];
+            var msg2 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared)envelope1.Replies[1];
+            Assert.AreEqual(id1, msg1.Event.Event.EventId);
+            Assert.AreEqual(id2, msg2.Event.Event.EventId);
         }
     }
 
