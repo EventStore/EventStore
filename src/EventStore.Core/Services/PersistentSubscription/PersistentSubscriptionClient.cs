@@ -124,5 +124,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             return InFlightMessages > 0;
         }
+
+        public bool Remove(Guid eventId)
+        {
+            return _unconfirmedEvents.Remove(eventId);
+        }
     }
 }

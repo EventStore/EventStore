@@ -287,15 +287,18 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotifyClockTick(DateTime time)
         {
-            foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(DateTime.Now))
+            foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(time))
             {
-                if(!ActionTakenForPoisonMessage(message))
+                if (!ActionTakenForRetriedMessage(message))
+                {
                     RetryMessage(message.ResolvedEvent, message.RetryCount + 1);
+                }
             }
+            TryPushingMessagesToClients();
             TryMarkCheckpoint(true);
         }
 
-        private bool ActionTakenForPoisonMessage(OutstandingMessage message)
+        private bool ActionTakenForRetriedMessage(OutstandingMessage message)
         {
             //TODO some configurable strategy for poison messages
             return false;
@@ -303,6 +306,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void RetryMessage(ResolvedEvent @event, int count)
         {
+            _outstandingMessages.Remove(@event.Event.EventId);
+            _pushClients.RemoveProcessingMessage(@event);
             _streamBuffer.AddRetry(new OutstandingMessage(@event.Event.EventId, null, @event, count + 1));
         }
 
