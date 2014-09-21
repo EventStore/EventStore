@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void StartMessage(OutstandingMessage message, DateTime expires)
         {
-            bool found = _outstandingRequests.ContainsKey(message.EventId);
+            var found = _outstandingRequests.ContainsKey(message.EventId);
             _outstandingRequests[message.EventId] = message;
             if (!found)
             {
