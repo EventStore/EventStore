@@ -534,8 +534,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             Assert.AreEqual(2, envelope1.Replies.Count);
             var msg1 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared) envelope1.Replies[0];
             var msg2 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared)envelope1.Replies[1];
-            Assert.AreEqual(id1, msg1.Event.Event.EventId);
-            Assert.AreEqual(id2, msg2.Event.Event.EventId);
+            Assert.IsTrue(id1 == msg1.Event.Event.EventId || id1 == msg2.Event.Event.EventId);
+            Assert.IsTrue(id2 == msg1.Event.Event.EventId || id2 == msg2.Event.Event.EventId);
         }
     }
 
