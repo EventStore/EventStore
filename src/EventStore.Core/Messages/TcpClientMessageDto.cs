@@ -864,8 +864,8 @@ namespace EventStore.Core.Messages
       [ProtoEnum(Name=@"Unknown", Value=0)]
       Unknown = 0,
             
-      [ProtoEnum(Name=@"Poison", Value=1)]
-      Poison = 1,
+      [ProtoEnum(Name=@"Park", Value=1)]
+      Park = 1,
             
       [ProtoEnum(Name=@"Retry", Value=2)]
       Retry = 2,
