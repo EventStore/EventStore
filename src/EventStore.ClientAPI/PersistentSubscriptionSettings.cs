@@ -29,7 +29,7 @@ namespace EventStore.ClientAPI
         public readonly TimeSpan MessageTimeout;
 
         /// <summary>
-        /// The maximum number of retries (due to timeout) before a message get considered to be a poisoned message
+        /// The maximum number of retries (due to timeout) before a message get considered to be parked
         /// </summary>
         public int MaxRetryCount;
 

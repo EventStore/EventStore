@@ -10,9 +10,9 @@ namespace EventStore.ClientAPI.ClientOperations
         /// </summary>
         Unknown = 0,
         /// <summary>
-        /// Poison message do not resend. Put on poison queue
+        /// Park message do not resend. Put on poison queue
         /// </summary>
-        Poison = 1,
+        Park = 1,
         /// <summary>
         /// Explicitly retry the message.
         /// </summary>
