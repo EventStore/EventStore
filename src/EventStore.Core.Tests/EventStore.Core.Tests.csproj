@@ -269,7 +269,6 @@
     <Compile Include="Services\ElectionsService\Randomized\ElectionsInstance.cs" />
     <Compile Include="Services\PersistentSubscription\OutstandingMessageCacheTests.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionTests.cs" />
-    <Compile Include="Services\PersistentSubscription\CheckpointingQueue_should.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConfigPersistence.cs" />
     <Compile Include="Services\ElectionsService\Randomized\ElectionsLogger.cs" />
     <Compile Include="Services\ElectionsService\Randomized\ElectionsProgressCondition.cs" />
