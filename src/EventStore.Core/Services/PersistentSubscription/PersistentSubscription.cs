@@ -245,8 +245,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                         RetryMessage(e.ResolvedEvent, e.RetryCount + 1);
                     }
                     break;
-                case NakAction.Poison:
-                    //TODO CC write to poison queue
+                case NakAction.Park:
+                    //TODO CC write to paark queue
                     break;
                 case NakAction.Stop:
                     StopSubscription();
