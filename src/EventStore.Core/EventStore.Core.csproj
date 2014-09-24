@@ -195,7 +195,6 @@
     <Compile Include="Services\Storage\ReaderIndex\StreamAccessType.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamAccess.cs" />
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
-    <Compile Include="Services\PersistentSubscription\CheckpointingQueue.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointReader.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointWriter.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionCheckpointReader.cs" />
