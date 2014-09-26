@@ -79,7 +79,14 @@ namespace EventStore.ClientAPI
         /// <returns></returns>
         public static implicit operator ClusterSettings(GossipSeedClusterSettingsBuilder builder)
         {
-            return new ClusterSettings(builder._gossipSeeds, builder._maxDiscoverAttempts, builder._gossipTimeout);
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// Builds a <see cref="ClusterSettings"/> object from a <see cref="GossipSeedClusterSettingsBuilder"/>.
+        /// </summary>
+        public ClusterSettings Build() {
+            return new ClusterSettings(this._gossipSeeds, this._maxDiscoverAttempts, this._gossipTimeout);
         }
     }
 }

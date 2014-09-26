@@ -33,14 +33,21 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="StreamMetadata"/>.</returns>
         public static implicit operator StreamMetadata(StreamMetadataBuilder builder)
         {
-            var acl = builder._aclRead == null
-                      && builder._aclWrite == null 
-                      && builder._aclDelete == null 
-                      && builder._aclMetaRead == null
-                      && builder._aclMetaWrite == null
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// Builds a <see cref="StreamMetadata"/> from a <see cref="StreamMetadataBuilder"/>.
+        /// </summary>
+        public StreamMetadata Build() {
+            var acl = this._aclRead == null
+                      && this._aclWrite == null 
+                      && this._aclDelete == null 
+                      && this._aclMetaRead == null
+                      && this._aclMetaWrite == null
                 ? null
-                : new StreamAcl(builder._aclRead, builder._aclWrite, builder._aclDelete, builder._aclMetaRead, builder._aclMetaWrite);
-            return new StreamMetadata(builder._maxCount, builder._maxAge, builder._truncateBefore, builder._cacheControl, acl, builder._customMetadata);
+                : new StreamAcl(this._aclRead, this._aclWrite, this._aclDelete, this._aclMetaRead, this._aclMetaWrite);
+            return new StreamMetadata(this._maxCount, this._maxAge, this._truncateBefore, this._cacheControl, acl, this._customMetadata);
         }
 
         /// <summary>

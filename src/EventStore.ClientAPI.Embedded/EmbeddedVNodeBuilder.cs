@@ -569,63 +569,71 @@ namespace EventStore.ClientAPI.Embedded
             _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, internalProjectionType));
         }
 
-	/// <summary>
-	/// Converts an <see cref="EmbeddedVNodeBuilder"/> to a <see cref="ClusterVNode"/>.
-	/// </summary>
-	/// <param name="builder"></param>
-	/// <returns></returns>
+    	/// <summary>
+    	/// Converts an <see cref="EmbeddedVNodeBuilder"/> to a <see cref="ClusterVNode"/>.
+    	/// </summary>
+    	/// <param name="builder"></param>
+    	/// <returns></returns>
         public static implicit operator ClusterVNode(EmbeddedVNodeBuilder builder)
         {
-            builder.EnsureHttpPrefixes();
-	    builder.SetUpProjectionsIfNeeded();
+            return builder.Build();
+        }
 
-            var dbConfig = CreateDbConfig(builder._chunkSize, builder._dbPath, builder._chunksCacheSize,
-                builder._inMemoryDb);
+        /// <summary>
+        /// Converts an <see cref="EmbeddedVNodeBuilder"/> to a <see cref="ClusterVNode"/>.
+        /// </summary>
+        public ClusterVNode Build() {
+            EnsureHttpPrefixes();
+            SetUpProjectionsIfNeeded();
+
+            var dbConfig = CreateDbConfig(_chunkSize, _dbPath, _chunksCacheSize,
+                _inMemoryDb);
             var db = new TFChunkDb(dbConfig);
 
             var vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
                 0,
-                builder._internalTcp,
-                builder._internalSecureTcp,
-                builder._externalTcp,
-                builder._externalSecureTcp,
-                builder._internalHttp,
-                builder._externalHttp,
-                builder._httpPrefixes.ToArray(),
-                builder._enableTrustedAuth,
-                builder._certificate,
-                builder._workerThreads,
-                builder._discoverViaDns,
-                builder._clusterDns,
-                builder._gossipSeeds.ToArray(),
-                builder._minFlushDelay,
-                builder._clusterNodeCount,
-                builder._prepareAckCount,
-                builder._commitAckCount,
-                builder._prepareTimeout,
-                builder._commitTimeout,
-                builder._useSsl,
-                builder._sslTargetHost,
-                builder._sslValidateServer,
-                builder._statsPeriod,
-                builder._statsStorage,
-                builder._nodePriority,
-                builder._authenticationProviderFactory,
-                builder._disableScavengeMerging,
-                builder._adminOnPublic,
-                builder._statsOnPublic,
-                builder._gossipOnPublic,
-                builder._gossipInterval,
-                builder._gossipAllowedTimeDifference,
-                builder._gossipTimeout,
-                builder._intTcpHeartbeatTimeout,
-                builder._intTcpHeartbeatInterval,
-                builder._extTcpHeartbeatTimeout,
-                builder._extTcpHeartbeatInterval,
-                !builder._skipVerifyDbHashes,
-                builder._maxMemtableSize);
-            return new ClusterVNode(db, vNodeSettings, builder.GetGossipSource(), builder._subsystems.ToArray());
+                _internalTcp,
+                _internalSecureTcp,
+                _externalTcp,
+                _externalSecureTcp,
+                _internalHttp,
+                _externalHttp,
+                _httpPrefixes.ToArray(),
+                _enableTrustedAuth,
+                _certificate,
+                _workerThreads,
+                _discoverViaDns,
+                _clusterDns,
+                _gossipSeeds.ToArray(),
+                _minFlushDelay,
+                _clusterNodeCount,
+                _prepareAckCount,
+                _commitAckCount,
+                _prepareTimeout,
+                _commitTimeout,
+                _useSsl,
+                _sslTargetHost,
+                _sslValidateServer,
+                _statsPeriod,
+                _statsStorage,
+                _nodePriority,
+                _authenticationProviderFactory,
+                _disableScavengeMerging,
+                _adminOnPublic,
+                _statsOnPublic,
+                _gossipOnPublic,
+                _gossipInterval,
+                _gossipAllowedTimeDifference,
+                _gossipTimeout,
+                _intTcpHeartbeatTimeout,
+                _intTcpHeartbeatInterval,
+                _extTcpHeartbeatTimeout,
+                _extTcpHeartbeatInterval,
+                !_skipVerifyDbHashes,
+                _maxMemtableSize);
+            return new ClusterVNode(db, vNodeSettings, GetGossipSource(), _subsystems.ToArray());
         }
+
 
         private IGossipSeedSource GetGossipSource()
         {
