@@ -30,7 +30,6 @@ namespace EventStore.ClientAPI
         private readonly bool _verbose;
         private readonly ConnectionSettings _settings;
         private readonly EventStoreConnectionLogicHandler _handler;
-        private readonly int _bufferSize;
         private readonly bool _autoAck;
 
         private PersistentEventStoreSubscription _subscription;
@@ -50,7 +49,6 @@ namespace EventStore.ClientAPI
             bool verboseLogging,
             ConnectionSettings settings, 
             EventStoreConnectionLogicHandler handler,
-            int bufferSize = DefaultBufferSize,
             bool autoAck = true)
         {
             _subscriptionId = subscriptionId;
@@ -62,7 +60,6 @@ namespace EventStore.ClientAPI
             _verbose = verboseLogging;
             _settings = settings;
             _handler = handler;
-            _bufferSize = bufferSize;
             _autoAck = autoAck;
         }
 

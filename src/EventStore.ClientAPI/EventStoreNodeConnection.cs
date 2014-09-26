@@ -303,7 +303,7 @@ namespace EventStore.ClientAPI
 
             var subscription = new EventStorePersistentSubscription(
                 groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
-                _settings.VerboseLogging, _settings, _handler, bufferSize ?? EventStorePersistentSubscription.DefaultBufferSize, autoAck);
+                _settings.VerboseLogging, _settings, _handler, autoAck);
 
             subscription.Start();
 
