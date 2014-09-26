@@ -5,7 +5,7 @@ using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Core
 {
-    internal class SimpleQueuedHandler
+    internal class SimpleQueuedHandler 
     {
         private readonly Common.Concurrent.ConcurrentQueue<Message> _messageQueue = new Common.Concurrent.ConcurrentQueue<Message>();
         private readonly Dictionary<Type, Action<Message>> _handlers = new Dictionary<Type, Action<Message>>();
@@ -37,7 +37,8 @@ namespace EventStore.ClientAPI.Core
                     Action<Message> handler;
                     if (!_handlers.TryGetValue(message.GetType(), out handler))
                         throw new Exception(string.Format("No handler registered for message {0}", message.GetType().Name));
-                    handler(message);
+                    var captureMessage = message;
+                    ThreadPool.QueueUserWorkItem(_ => handler(captureMessage));
                 }
 
                 Interlocked.Exchange(ref _isProcessing, 0);
