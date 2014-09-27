@@ -217,6 +217,34 @@ message DeletePersistentSubscription {
 	required string event_stream_id = 2;
 }
 
+message UpdatePersistentSubscription {
+	required string subscription_group_name = 1;
+	required string event_stream_id = 2;
+   	required bool resolve_link_tos = 3;
+   	required int32 start_from = 4;
+   	required int32 message_timeout_milliseconds = 5;
+  	required bool latency_tracking = 6;
+	required int32 live_buffer_size = 7;
+	required int32 read_batch_size = 8;
+	required int32 buffer_size = 9;
+	required int32 max_retry_count = 10;
+	required bool prefer_round_robin = 11;
+	required int32 checkpoint_after_time = 12;
+	required int32 checkpoint_max_count = 13;
+	required int32 checkpoint_min_count = 14;
+}
+
+message UpdatePersistentSubscriptionCompleted {
+	enum CreatePersistentSubscriptionResult {
+		Success = 0;
+		DoesNotExists = 1;
+		Fail = 2;
+		AccessDenied=3;
+	}
+	required CreatePersistentSubscriptionResult result = 1 [default = Success];
+	optional string reason = 2;
+}
+
 message CreatePersistentSubscriptionCompleted {
 	enum CreatePersistentSubscriptionResult {
 		Success = 0;

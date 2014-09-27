@@ -732,6 +732,107 @@ namespace EventStore.Core.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"UpdatePersistentSubscription")]
+  public partial class UpdatePersistentSubscription
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"subscription_group_name", DataFormat = DataFormat.Default)]
+    public readonly string SubscriptionGroupName;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    public readonly string EventStreamId;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"start_from", DataFormat = DataFormat.TwosComplement)]
+    public readonly int StartFrom;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
+    public readonly int MessageTimeoutMilliseconds;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"latency_tracking", DataFormat = DataFormat.Default)]
+    public readonly bool LatencyTracking;
+  
+    [ProtoMember(7, IsRequired = true, Name=@"live_buffer_size", DataFormat = DataFormat.TwosComplement)]
+    public readonly int LiveBufferSize;
+  
+    [ProtoMember(8, IsRequired = true, Name=@"read_batch_size", DataFormat = DataFormat.TwosComplement)]
+    public readonly int ReadBatchSize;
+  
+    [ProtoMember(9, IsRequired = true, Name=@"buffer_size", DataFormat = DataFormat.TwosComplement)]
+    public readonly int BufferSize;
+  
+    [ProtoMember(10, IsRequired = true, Name=@"max_retry_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int MaxRetryCount;
+  
+    [ProtoMember(11, IsRequired = true, Name=@"prefer_round_robin", DataFormat = DataFormat.Default)]
+    public readonly bool PreferRoundRobin;
+  
+    [ProtoMember(12, IsRequired = true, Name=@"checkpoint_after_time", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointAfterTime;
+  
+    [ProtoMember(13, IsRequired = true, Name=@"checkpoint_max_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointMaxCount;
+  
+    [ProtoMember(14, IsRequired = true, Name=@"checkpoint_min_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointMinCount;
+  
+    private UpdatePersistentSubscription() {}
+  
+    public UpdatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount)
+    {
+        SubscriptionGroupName = subscriptionGroupName;
+        EventStreamId = eventStreamId;
+        ResolveLinkTos = resolveLinkTos;
+        StartFrom = startFrom;
+        MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+        LatencyTracking = latencyTracking;
+        LiveBufferSize = liveBufferSize;
+        ReadBatchSize = readBatchSize;
+        BufferSize = bufferSize;
+        MaxRetryCount = maxRetryCount;
+        PreferRoundRobin = preferRoundRobin;
+        CheckpointAfterTime = checkpointAfterTime;
+        CheckpointMaxCount = checkpointMaxCount;
+        CheckpointMinCount = checkpointMinCount;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"UpdatePersistentSubscriptionCompleted")]
+  public partial class UpdatePersistentSubscriptionCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly UpdatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult Result;
+  
+    [ProtoMember(2, IsRequired = false, Name=@"reason", DataFormat = DataFormat.Default)]
+    public readonly string Reason;
+  
+    [ProtoContract(Name=@"CreatePersistentSubscriptionResult")]
+    public enum CreatePersistentSubscriptionResult
+    {
+            
+      [ProtoEnum(Name=@"Success", Value=0)]
+      Success = 0,
+            
+      [ProtoEnum(Name=@"DoesNotExists", Value=1)]
+      DoesNotExists = 1,
+            
+      [ProtoEnum(Name=@"Fail", Value=2)]
+      Fail = 2,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=3)]
+      AccessDenied = 3
+    }
+  
+    private UpdatePersistentSubscriptionCompleted() {}
+  
+    public UpdatePersistentSubscriptionCompleted(UpdatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult result, string reason)
+    {
+        Result = result;
+        Reason = reason;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"CreatePersistentSubscriptionCompleted")]
   public partial class CreatePersistentSubscriptionCompleted
   {
