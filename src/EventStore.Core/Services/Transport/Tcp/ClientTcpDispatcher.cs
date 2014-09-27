@@ -63,6 +63,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddUnwrapper(TcpCommand.DeletePersistentSubscription, UnwrapDeletePersistentSubscription);
             AddWrapper<ClientMessage.CreatePersistentSubscriptionCompleted>(WrapCreatePersistentSubscriptionCompleted);
             AddWrapper<ClientMessage.DeletePersistentSubscriptionCompleted>(WrapDeletePersistentSubscriptionCompleted);
+            AddUnwrapper(TcpCommand.UpdatePersistentSubscription, UnwrapUpdatePersistentSubscription);
+            AddWrapper<ClientMessage.UpdatePersistentSubscriptionCompleted>(WrapUpdatePersistentSubscriptionCompleted);
 
 
             AddUnwrapper(TcpCommand.ConnectToPersistentSubscription, UnwrapConnectToPersistentSubscription);
@@ -443,6 +445,21 @@ namespace EventStore.Core.Services.Transport.Tcp
                             user, username, password);
         }
 
+        private ClientMessage.UpdatePersistentSubscription UnwrapUpdatePersistentSubscription(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string username, string password,
+            TcpConnectionManager connection)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.UpdatePersistentSubscription>();
+            if (dto == null) return null;
+            return new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
+                dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom,
+                dto.MessageTimeoutMilliseconds,
+                dto.LatencyTracking, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
+                dto.ReadBatchSize, dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount,
+                dto.CheckpointMaxCount,
+                user, username, password);
+        }
+
         private ClientMessage.DeletePersistentSubscription UnwrapDeletePersistentSubscription(
             TcpPackage package, IEnvelope envelope, IPrincipal user, string username, string password,
             TcpConnectionManager connection) {
@@ -461,6 +478,13 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = new TcpClientMessageDto.CreatePersistentSubscriptionCompleted((TcpClientMessageDto.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult) msg.Result, msg.Reason);
             return new TcpPackage(TcpCommand.CreatePersistentSubscriptionCompleted, msg.CorrelationId, dto.Serialize());
         }
+
+        private TcpPackage WrapUpdatePersistentSubscriptionCompleted(ClientMessage.UpdatePersistentSubscriptionCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.UpdatePersistentSubscriptionCompleted((TcpClientMessageDto.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult)msg.Result, msg.Reason);
+            return new TcpPackage(TcpCommand.CreatePersistentSubscriptionCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
 
         private ClientMessage.ConnectToPersistentSubscription UnwrapConnectToPersistentSubscription(
             TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,

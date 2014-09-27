@@ -28,6 +28,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<ClientMessage.PersistentSubscriptionAckEvents>,
                                         IHandle<ClientMessage.PersistentSubscriptionNackEvents>,
                                         IHandle<ClientMessage.CreatePersistentSubscription>,
+                                        IHandle<ClientMessage.UpdatePersistentSubscription>,
                                         IHandle<ClientMessage.DeletePersistentSubscription>,
                                         IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
                                         IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
@@ -126,7 +127,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(ClientMessage.CreatePersistentSubscription message)
         {
             if (!_started) return;
-            Log.Debug("create subscription " + message.GroupName);
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
+            Log.Debug("create subscription " + key);
             //TODO revisit for permissions. maybe make admin only?
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
@@ -137,7 +139,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     "You do not have permissions to create streams"));
                 return;
             }
-            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
             if (_subscriptionsById.ContainsKey(key))
             {
                 message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
@@ -181,6 +182,34 @@ namespace EventStore.Core.Services.PersistentSubscription
             SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
                 ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, "")));
         }
+
+
+        public void Handle(ClientMessage.UpdatePersistentSubscription message)
+        {
+            if (!_started) return;
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
+            Log.Debug("update subscription " + key);
+            //TODO revisit for permissions. maybe make admin only?
+            var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
+
+            if (!streamAccess.Granted)
+            {
+                message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(message.CorrelationId,
+                                    ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.AccessDenied,
+                                    "You do not have permissions to update the subscription"));
+                return;
+            }
+            
+            if (!_subscriptionsById.ContainsKey(key))
+            {
+                message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(message.CorrelationId,
+                    ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.DoesNotExist,
+                    "Group '" + message.GroupName + "' does not exist."));
+                return;
+            }
+
+            //TODO handle update.
+       }
 
         private void CreateSubscriptionGroup(string eventStreamId, 
                                              string groupName, 
