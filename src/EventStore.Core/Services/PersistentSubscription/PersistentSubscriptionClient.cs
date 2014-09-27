@@ -72,6 +72,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             foreach (var processedEventId in processedEventIds)
             {
+                if (_latencyStatistics != null)
+                    _latencyStatistics.EndOperation(processedEventId);
                 ResolvedEvent ev;
                 if (!_unconfirmedEvents.TryGetValue(processedEventId, out ev)) continue;
                 _unconfirmedEvents.Remove(processedEventId);
@@ -84,6 +86,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             foreach (var processedEventId in processedEventIds)
             {
                 ResolvedEvent ev;
+                if (_latencyStatistics != null)
+                    _latencyStatistics.EndOperation(processedEventId);
                 if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
                 {
                     //it could have been timed out as well

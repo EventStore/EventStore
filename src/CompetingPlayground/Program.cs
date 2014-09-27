@@ -111,8 +111,8 @@ namespace CompetingPlayground
 {
     class Program
     {
-        private static readonly string Stream = "hhhhhhhhhhh";
-        private static readonly string SubName = "greG";
+        private static readonly string Stream = "stream";
+        private static readonly string SubName = "group";
 
         private static readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
             .DoNotResolveLinkTos()
@@ -140,8 +140,6 @@ namespace CompetingPlayground
 
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
-                WriteEvents(connection, 1000);
-                Task.Delay(1000).Wait();
                 WriteEvents(connection, 50000);
                 sub.Stop(TimeSpan.FromSeconds(5));
                 sub2.Stop(TimeSpan.FromSeconds(5));

@@ -8,6 +8,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     internal class RequestStatistics
     {
+        //TODO CC this can likely be done in a smarter way (though a few thousand ints is still pretty cheap memory wise)
         private readonly Queue<int> _measurements;
         private readonly ConcurrentDictionary<Guid, Operation> _operations = new ConcurrentDictionary<Guid, Operation>();
         readonly Stopwatch _watch;
@@ -29,17 +30,15 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void EndOperation(Guid id)
         {
             Operation record;
-            if (_operations.TryRemove(id, out record))
+            if (!_operations.TryRemove(id, out record)) return;
+            var current = _watch.ElapsedTicks;
+            var time = current - record.Start;
+            var ms = time / TimeSpan.TicksPerMillisecond;
+            if (_measurements.Count >= _windowSize)
             {
-                var current = _watch.ElapsedTicks;
-                var time = current - record.Start;
-                var ms = time / TimeSpan.TicksPerMillisecond;
-                if (_measurements.Count >= _windowSize)
-                {
-                    _measurements.Dequeue();
-                }
-                _measurements.Enqueue((int)ms);
+                _measurements.Dequeue();
             }
+            _measurements.Enqueue((int)ms);
         }
 
         public LatencyMeausrement GetMeasurementDetails()
