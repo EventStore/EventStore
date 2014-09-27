@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             http.ReadTextRequestAsync(
                 (o, s) =>
                 {
-                    var data = http.RequestCodec.From<PutSubscriptionData>(s);
+                    var data = http.RequestCodec.From<SubscriptionconfigData>(s);
                     //TODO competing validate data?
                     var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), 
                                                                                  Guid.NewGuid(),
@@ -139,7 +139,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
-                (args, message) => http.ResponseCodec.To(ToDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+                (args, message) => http.ResponseCodec.To(ToSummaryDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
                 (args, message) => StatsConfiguration(http, message));
             var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
             Publish(cmd);
@@ -236,8 +236,30 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 yield return info;
             }
         }
-
-        private class PutSubscriptionData
+        private IEnumerable<SubscriptionSummary> ToSummaryDto(MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
+        {
+            if (message == null) yield break;
+            if (message.SubscriptionStats == null) yield break;
+            foreach (var stat in message.SubscriptionStats)
+            {
+                var info = new SubscriptionSummary
+                {
+                    EventStreamId = stat.EventStreamId,
+                    GroupName = stat.GroupName,
+                    Status = stat.Status,
+                    AverageItemsPerSecond = stat.AveragePerSecond,
+                    TotalItemsProcessed = stat.TotalItems,
+                    LastKnownEventNumber = stat.LastProcessedEventNumber,
+                    LastProcessedEventNumber = stat.LastProcessedEventNumber,
+                };
+                if (stat.Connections != null)
+                {
+                    info.ConnectionCount = stat.Connections.Count;
+                }
+                yield return info;
+            }
+        }
+        private class SubscriptionconfigData
         {
             public bool ResolveLinktos { get; set; }
             public int StartFrom { get; set; }
@@ -253,6 +275,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int MaxCheckPointCount { get; set; }
         }
 
+        private class SubscriptionSummary
+        {
+            public string EventStreamId { get; set; }
+            public string GroupName { get; set; }
+            public string DetailUri { get; set; }
+            public string ParkedMessageUri { get; set; }
+            public string Status { get; set; }
+            public decimal AverageItemsPerSecond { get; set; }
+            public long TotalItemsProcessed { get; set; }
+            public int LastProcessedEventNumber { get; set; }
+            public int LastKnownEventNumber { get; set; }
+            public int ConnectionCount { get; set; }
+        }
         private class SubscriptionInfo
         {
             public string EventStreamId { get; set; }

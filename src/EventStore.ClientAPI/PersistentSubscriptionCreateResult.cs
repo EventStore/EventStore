@@ -1,6 +1,3 @@
-using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Messages;
-
 namespace EventStore.ClientAPI
 {
     /// <summary>

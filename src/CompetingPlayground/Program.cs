@@ -139,9 +139,9 @@ namespace CompetingPlayground
 
                 var sub = ConnectToSubscription(connection, "sub1");
                 var sub2 = ConnectToSubscription(connection, "sub2");
-                Console.WriteLine("delaying.");
+                WriteEvents(connection, 1000);
                 Task.Delay(1000).Wait();
-                WriteEvents(connection);
+                WriteEvents(connection, 50000);
                 sub.Stop(TimeSpan.FromSeconds(5));
                 sub2.Stop(TimeSpan.FromSeconds(5));
                 Thread.Sleep(TimeSpan.FromSeconds(5));
@@ -162,9 +162,9 @@ namespace CompetingPlayground
                 bufferSize: 200, autoAck: false);
         }
 
-        private static void WriteEvents(IEventStoreConnection connection)
+        private static void WriteEvents(IEventStoreConnection connection, int count)
         {
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < count; i++)
             {
                 connection.AppendToStreamAsync(Stream, ExpectedVersion.Any,
                     new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
