@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private string GetLinkToFor(ResolvedEvent @event)
         {
-            return string.Format("{0}@{1}", @event.OriginalEvent.EventId, @event.OriginalStreamId);
+            return string.Format("{0}@{1}", @event.OriginalEvent.EventNumber, @event.OriginalStreamId);
         }
 
         public void BeginReadEndSequence(Action<int?> completed)

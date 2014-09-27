@@ -139,13 +139,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
-                (args, message) => http.ResponseCodec.To(ToSummaryDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+                (args, message) => http.ResponseCodec.To(ToSummaryDto(http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
                 (args, message) => StatsConfiguration(http, message));
             var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
             Publish(cmd);
         }
-
-
 
         private void GetSubscriptionInfoForStream(HttpEntityManager http, UriTemplateMatch match)
         {
@@ -236,7 +234,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 yield return info;
             }
         }
-        private IEnumerable<SubscriptionSummary> ToSummaryDto(MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
+        private IEnumerable<SubscriptionSummary> ToSummaryDto(HttpEntityManager manager, MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
         {
             if (message == null) yield break;
             if (message.SubscriptionStats == null) yield break;
@@ -251,6 +249,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     TotalItemsProcessed = stat.TotalItems,
                     LastKnownEventNumber = stat.LastProcessedEventNumber,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
+                    DetailUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)),
+                    ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName))
                 };
                 if (stat.Connections != null)
                 {
@@ -294,6 +294,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string GroupName { get; set; }
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
+            public string DetailUri { get; set; }
+            public string ParkedMessageUri { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
             public List<ConnectionInfo> Connections { get; set; }

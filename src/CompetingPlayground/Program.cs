@@ -104,6 +104,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.SystemData;
 
 namespace CompetingPlayground
@@ -155,8 +156,16 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
+                    var r = new Random();
                     Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
-                    sub.Acknowledge(ev);
+                    if (r.NextDouble() < .1)
+                    {
+                        sub.Fail(ev, PersistentSubscriptionNakEventAction.Park, "Just testing!");
+                    }
+                    else
+                    {
+                        sub.Acknowledge(ev);
+                    }
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
                 bufferSize: 200, autoAck: false);
