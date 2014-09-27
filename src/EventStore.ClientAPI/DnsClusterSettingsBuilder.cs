@@ -81,10 +81,17 @@ namespace EventStore.ClientAPI
         /// <returns></returns>
         public static implicit operator ClusterSettings(DnsClusterSettingsBuilder builder)
         {
-            return new ClusterSettings(builder._clusterDns,
-                builder._maxDiscoverAttempts,
-                builder._managerExternalHttpPort,
-                builder._gossipTimeout);
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// Builds a <see cref="ClusterSettings"/> object from a <see cref="DnsClusterSettingsBuilder"/>.
+        /// </summary>
+        public ClusterSettings Build() {
+            return new ClusterSettings(this._clusterDns,
+                this._maxDiscoverAttempts,
+                this._managerExternalHttpPort,
+                this._gossipTimeout); 
         }
     }
 }

@@ -295,24 +295,33 @@ namespace EventStore.ClientAPI
         /// <returns>An immutable <see cref="ConnectionSettings"/> object with the values specified by the builder.</returns>
         public static implicit operator ConnectionSettings(ConnectionSettingsBuilder builder)
         {
-            return new ConnectionSettings(builder._log,
-                                          builder._verboseLogging,
-                                          builder._maxQueueSize,
-                                          builder._maxConcurrentItems,
-                                          builder._maxRetries,
-                                          builder._maxReconnections,
-                                          builder._requireMaster,
-                                          builder._reconnectionDelay,
-                                          builder._operationTimeout,
-                                          builder._operationTimeoutCheckPeriod,
-                                          builder._defaultUserCredentials,
-                                          builder._useSslConnection,
-                                          builder._targetHost,
-                                          builder._validateServer,
-                                          builder._failOnNoServerResponse,
-                                          builder._heartbeatInterval,
-                                          builder._heartbeatTimeout,
-                                          builder._clientConnectionTimeout);
+            return builder.Build();
         }
+
+        /// <summary>
+        /// Convert the mutable <see cref="ConnectionSettingsBuilder"/> object to an immutable
+        /// <see cref="ConnectionSettings"/> object.
+        /// </summary>
+        public ConnectionSettings Build() {
+            return new ConnectionSettings(this._log,
+                                          this._verboseLogging,
+                                          this._maxQueueSize,
+                                          this._maxConcurrentItems,
+                                          this._maxRetries,
+                                          this._maxReconnections,
+                                          this._requireMaster,
+                                          this._reconnectionDelay,
+                                          this._operationTimeout,
+                                          this._operationTimeoutCheckPeriod,
+                                          this._defaultUserCredentials,
+                                          this._useSslConnection,
+                                          this._targetHost,
+                                          this._validateServer,
+                                          this._failOnNoServerResponse,
+                                          this._heartbeatInterval,
+                                          this._heartbeatTimeout,
+                                          this._clientConnectionTimeout);
+        }
+
     }
 }

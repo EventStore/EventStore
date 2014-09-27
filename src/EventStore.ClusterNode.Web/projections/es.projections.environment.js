@@ -12,7 +12,7 @@
         if (module_name == "Projections") {
             return $projections;
         }
-        throw "Module not not found exception: " + module_name;
+        throw "Module not found exception: " + module_name;
     };
 
     function initialize_hosted_projections() {

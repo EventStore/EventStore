@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly Action<T, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
         private readonly Func<TcpPackageConnection> _getConnection;
-
+        private readonly int _maxQueueSize = 2000;
         private readonly Common.Concurrent.ConcurrentQueue<Action> _actionQueue = new Common.Concurrent.ConcurrentQueue<Action>();
         private int _actionExecuting;
         private T _subscription;
@@ -254,6 +254,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private void ExecuteActionAsync(Action action)
         {
             _actionQueue.Enqueue(action);
+            if(_actionQueue.Count > _maxQueueSize) DropSubscription(SubscriptionDropReason.UserInitiated, new Exception("client buffer too big"));
             if (Interlocked.CompareExchange(ref _actionExecuting, 1, 0) == 0)
                 ThreadPool.QueueUserWorkItem(ExecuteActions);
         }
