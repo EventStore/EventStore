@@ -236,18 +236,21 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void HandleNakedMessage(NakAction action, Guid id)
         {
+            OutstandingMessage e;
             switch (action)
             {
                 case NakAction.Retry:
                 case NakAction.Unknown:
-                    OutstandingMessage e;
                     if (_outstandingMessages.GetMessageById(id, out e))
                     {
                         RetryMessage(e.ResolvedEvent, e.RetryCount + 1);
                     }
                     break;
                 case NakAction.Park:
-                    //TODO CC write to paark queue
+                    if (_outstandingMessages.GetMessageById(id, out e))
+                    {
+                        ParkMessage(e.ResolvedEvent, "Client explicitly NAK'ed message.");
+                    }
                     break;
                 case NakAction.Stop:
                     StopSubscription();
@@ -259,6 +262,16 @@ namespace EventStore.Core.Services.PersistentSubscription
                     SkipMessage();
                     break;
             }
+        }
+
+        private void ParkMessage(ResolvedEvent resolvedEvent, string reason)
+        {
+            _settings.MessageParker.BeginParkMessage(resolvedEvent, reason, MessageParkCompleted);
+        }
+
+        private void MessageParkCompleted(ResolvedEvent e, OperationResult result)
+        {
+            //handle call back
         }
 
         private void SkipMessage()
@@ -301,8 +314,9 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private bool ActionTakenForRetriedMessage(OutstandingMessage message)
         {
-            //TODO some configurable strategy for poison messages
-            return false;
+            if (message.RetryCount < _settings.MaxRetryCount) return false;
+            ParkMessage(message.ResolvedEvent, string.Format("Reached retry count of {0}", _settings.MaxRetryCount));
+            return true;
         }
 
         private void RetryMessage(ResolvedEvent @event, int count)
