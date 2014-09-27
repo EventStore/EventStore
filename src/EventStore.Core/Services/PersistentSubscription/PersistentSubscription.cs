@@ -223,18 +223,18 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotAcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds, NakAction action, string reason)
         {
-            RemoveProcessingMessages(correlationId, processedEventIds);
             foreach (var id in processedEventIds)
             {
                 Log.Info("Message NAK'ed id {0} action to take {1} reason '{2}'", id, action, reason ?? "");
-                HandleNakedMessage(action, id);
+                HandleNakedMessage(action, id, reason);
             }
+            RemoveProcessingMessages(correlationId, processedEventIds);
             TryMarkCheckpoint(false);
             TryReadingNewBatch();
             TryPushingMessagesToClients();
         }
 
-        private void HandleNakedMessage(NakAction action, Guid id)
+        private void HandleNakedMessage(NakAction action, Guid id, string reason)
         {
             OutstandingMessage e;
             switch (action)
@@ -249,7 +249,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 case NakAction.Park:
                     if (_outstandingMessages.GetMessageById(id, out e))
                     {
-                        ParkMessage(e.ResolvedEvent, "Client explicitly NAK'ed message.");
+                        ParkMessage(e.ResolvedEvent, "Client explicitly NAK'ed message.\n" + reason);
                     }
                     break;
                 case NakAction.Stop:
