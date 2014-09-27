@@ -53,12 +53,15 @@
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\PersistentSubscriptionNakEventAction.cs" />
+    <Compile Include="ClientOperations\UpdatePersistentSubscriptionOperation.cs" />
     <Compile Include="Core\GossipSeedEndPointDiscoverer.cs" />
     <Compile Include="Core\IEventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />
     <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
+    <Compile Include="PersistentSubscriptionUpdateResult.cs" />
+    <Compile Include="PersistentSubscriptionUpdateStatus.cs" />
     <Compile Include="StreamCheckpoint.cs" />
     <Compile Include="ClientAuthenticationFailedEventArgs.cs" />
     <Compile Include="ClientErrorEventArgs.cs" />

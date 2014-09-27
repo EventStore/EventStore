@@ -372,6 +372,17 @@ namespace EventStore.ClientAPI
 */
 
         /// <summary>
+        /// Asynchronously update a persistent subscription group on a stream
+        /// </summary>
+        /// <param name="stream">The name of the stream to create the persistent subscription on</param>
+        /// <param name="groupName">The name of the group to create</param>
+        /// <param name="settings">The <see cref="PersistentSubscriptionSettings"></see> for the subscription</param>
+        /// <param name="credentials">The credentials to be used for this operation.</param>
+        /// <returns>A <see cref="PersistentSubscriptionCreateResult"/>.</returns>
+        Task<PersistentSubscriptionUpdateResult> UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials);
+
+
+        /// <summary>
         /// Asynchronously create a persistent subscription group on a stream
         /// </summary>
         /// <param name="stream">The name of the stream to create the persistent subscription on</param>
