@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Ensure.NotNull(persistentSubscriptionParams.EventLoader, "eventLoader");
             Ensure.NotNull(persistentSubscriptionParams.CheckpointReader, "checkpointReader");
             Ensure.NotNull(persistentSubscriptionParams.CheckpointWriter, "checkpointWriter");
+            Ensure.NotNull(persistentSubscriptionParams.MessageParker, "messageParker");
             Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
             Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
             Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");

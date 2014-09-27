@@ -22,6 +22,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionEventLoader _eventLoader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private IPersistentSubscriptionMessageParker _messageParker;
 
         public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
                                            int startFrom, bool trackLatency, TimeSpan messageTimeout, bool preferRoundRobin, 
@@ -29,7 +30,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                            TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
                                            IPersistentSubscriptionEventLoader eventLoader, 
                                            IPersistentSubscriptionCheckpointReader checkpointReader, 
-                                           IPersistentSubscriptionCheckpointWriter checkpointWriter)
+                                           IPersistentSubscriptionCheckpointWriter checkpointWriter,
+                                           IPersistentSubscriptionMessageParker messageParker)
         {
             _resolveLinkTos = resolveLinkTos;
             _subscriptionId = subscriptionId;
@@ -49,6 +51,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _eventLoader = eventLoader;
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
+            _messageParker = messageParker;
         }
 
         public bool ResolveLinkTos
@@ -99,6 +102,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         public IPersistentSubscriptionCheckpointWriter CheckpointWriter
         {
             get { return _checkpointWriter; }
+        }
+
+        public IPersistentSubscriptionMessageParker MessageParker
+        {
+            get { return _messageParker; }
         }
 
         public bool PreferRoundRobin

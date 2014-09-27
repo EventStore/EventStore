@@ -23,6 +23,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private IPersistentSubscriptionEventLoader _eventLoader;
         private IPersistentSubscriptionCheckpointReader _checkpointReader;
         private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+        private IPersistentSubscriptionMessageParker _messageParker;
         private TimeSpan _checkPointAfter;
         private int _minCheckPointCount;
         private int _maxCheckPointCount;
@@ -82,6 +83,17 @@ namespace EventStore.Core.Services.PersistentSubscription
         public PersistentSubscriptionParamsBuilder WithCheckpointReader(IPersistentSubscriptionCheckpointReader reader)
         {
             _checkpointReader = reader;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the message parker for the instance
+        /// </summary>
+        /// <param name="parker"></param>
+        /// <returns></returns>
+        public PersistentSubscriptionParamsBuilder WithMessageParker(IPersistentSubscriptionMessageParker parker)
+        {
+            _messageParker = parker;
             return this;
         }
 
@@ -305,7 +317,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._maxCheckPointCount,
                 builder._eventLoader,
                 builder._checkpointReader,
-                builder._checkpointWriter);
+                builder._checkpointWriter,
+                builder._messageParker);
         }
     }
 }

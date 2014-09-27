@@ -1,9 +1,8 @@
 ﻿using System;
-using EventStore.ClientAPI.Messages;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Tests.Services.Replication;
-using EventStore.Core.Tests.Services.VNode;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -21,7 +20,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                 PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(new FakeCheckpointReader())
-                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker()));
 
         }
 
@@ -59,7 +59,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
                         .WithEventLoader(new FakeEventLoader(x => { }))
                         .WithCheckpointReader(null)
-                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                        .WithMessageParker(new FakeMessageParker()));
 
             });
         }
@@ -73,7 +74,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
                         .WithEventLoader(new FakeEventLoader(x => { }))
                         .WithCheckpointReader(new FakeCheckpointReader())
-                        .WithCheckpointWriter(null));
+                        .WithCheckpointWriter(null)
+                        .WithMessageParker(new FakeMessageParker()));
 
             });
         }
@@ -88,7 +90,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
                         .WithEventLoader(null)
                         .WithCheckpointReader(new FakeCheckpointReader())
-                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                        .WithMessageParker(new FakeMessageParker()));
 
             });
         }
@@ -102,7 +105,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     PersistentSubscriptionParamsBuilder.CreateFor(null, "groupName")
                         .WithEventLoader(new FakeEventLoader(x => { }))
                         .WithCheckpointReader(new FakeCheckpointReader())
-                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                        .WithMessageParker(new FakeMessageParker()));
 
             });
         }
@@ -116,7 +120,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     PersistentSubscriptionParamsBuilder.CreateFor("streamName", null)
                         .WithEventLoader(new FakeEventLoader(x => { }))
                         .WithCheckpointReader(new FakeCheckpointReader())
-                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+                        .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                        .WithMessageParker(new FakeMessageParker()));
 
             });
         }
@@ -136,6 +141,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .StartFromCurrent());
             reader.Load(null);        
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(),envelope, 10, "foo", "bar");
@@ -154,6 +160,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferRoundRobin()
                     .StartFromCurrent());
             reader.Load(null);
@@ -176,6 +183,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromCurrent());
             reader.Load(null);
@@ -197,6 +205,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .StartFromBeginning());
             reader.Load(null);
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
@@ -214,6 +223,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .StartFromBeginning());
             Assert.DoesNotThrow(() =>
             {
@@ -232,6 +242,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .StartFromBeginning());
             Assert.DoesNotThrow(() =>
             {
@@ -252,6 +263,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferRoundRobin()
                     .StartFromBeginning());
             reader.Load(null);
@@ -280,6 +292,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning());
             reader.Load(null);
@@ -310,6 +323,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning()
                     .MinimumToCheckPoint(5)
@@ -339,6 +353,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning()
                     .MinimumToCheckPoint(1)
@@ -368,6 +383,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning()
                     .MaximumToCheckPoint(1));
@@ -396,6 +412,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning()
                     .MaximumToCheckPoint(1));
@@ -428,6 +445,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
                     .PreferDispatchToSingle()
+                    .WithMessageParker(new FakeMessageParker())
                     .StartFromBeginning()
                     .MinimumToCheckPoint(1)
                     .MaximumToCheckPoint(5));
@@ -457,6 +475,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning()
                     .MinimumToCheckPoint(2)
@@ -490,6 +509,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning()
                     .WithMessageTimeoutOf(TimeSpan.FromSeconds(3)));
@@ -516,6 +536,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(new FakeMessageParker())
                     .PreferDispatchToSingle()
                     .StartFromBeginning()
                     .WithMessageTimeoutOf(TimeSpan.FromSeconds(1)));
@@ -559,6 +580,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
                 PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
                     .WithEventLoader(new FakeEventLoader(x => { }))
                     .WithCheckpointReader(new FakeCheckpointReader())
+                    .WithMessageParker(new FakeMessageParker())
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
 
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), new FakeEnvelope(), 1, "foo", "bar");
@@ -597,6 +619,40 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             _onStateLoaded(state);
         }
     }
+
+    class FakeMessageParker : IPersistentSubscriptionMessageParker
+    {
+        private Action<int?> _readEndSequenceCompleted;
+        private Action<ResolvedEvent, OperationResult> _parkMessageCompleted;
+        private ResolvedEvent _event;
+
+        public void ReadEndSequenceCompleted(int sequence)
+        {
+            if (_readEndSequenceCompleted != null) _readEndSequenceCompleted(sequence);
+        }
+
+        public void ParkMessageCompleted(OperationResult result)
+        {
+            if (_parkMessageCompleted != null) _parkMessageCompleted(_event, result);
+        }
+
+        public void BeginParkMessage(ResolvedEvent @event, string reason, Action<ResolvedEvent, OperationResult> completed)
+        {
+            _event = @event;
+            _parkMessageCompleted = completed;
+        }
+
+        public void BeginReadEndSequence(Action<int?> completed)
+        {
+            _readEndSequenceCompleted = completed;
+        }
+
+        public void BeginMarkParkedMessagesReprocessed(int sequence)
+        {
+            
+        }
+    }
+
 
     class FakeCheckpointWriter : IPersistentSubscriptionCheckpointWriter
     {
