@@ -802,13 +802,13 @@ namespace EventStore.ClientAPI.Messages
   public partial class UpdatePersistentSubscriptionCompleted
   {
     [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly UpdatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult Result;
+    public readonly UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult Result;
   
     [ProtoMember(2, IsRequired = false, Name=@"reason", DataFormat = DataFormat.Default)]
     public readonly string Reason;
   
-    [ProtoContract(Name=@"CreatePersistentSubscriptionResult")]
-    public enum CreatePersistentSubscriptionResult
+    [ProtoContract(Name=@"UpdatePersistentSubscriptionResult")]
+    public enum UpdatePersistentSubscriptionResult
     {
             
       [ProtoEnum(Name=@"Success", Value=0)]
@@ -826,7 +826,7 @@ namespace EventStore.ClientAPI.Messages
   
     private UpdatePersistentSubscriptionCompleted() {}
   
-    public UpdatePersistentSubscriptionCompleted(UpdatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult result, string reason)
+    public UpdatePersistentSubscriptionCompleted(UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult result, string reason)
     {
         Result = result;
         Reason = reason;

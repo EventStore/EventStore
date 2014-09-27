@@ -235,13 +235,13 @@ message UpdatePersistentSubscription {
 }
 
 message UpdatePersistentSubscriptionCompleted {
-	enum CreatePersistentSubscriptionResult {
+	enum UpdatePersistentSubscriptionResult {
 		Success = 0;
 		DoesNotExists = 1;
 		Fail = 2;
 		AccessDenied=3;
 	}
-	required CreatePersistentSubscriptionResult result = 1 [default = Success];
+	required UpdatePersistentSubscriptionResult result = 1 [default = Success];
 	optional string reason = 2;
 }
 
