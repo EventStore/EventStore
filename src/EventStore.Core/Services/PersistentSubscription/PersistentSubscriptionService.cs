@@ -224,7 +224,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                     maxCheckPointCount,
                     _eventLoader,
                     _checkpointReader,
-                    new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher)));
+                    new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
+                    new PersistentSubscriptionMessageParker(key, _ioDispatcher)));
             _subscriptionsById[key] = subscription;
             subscribers.Add(subscription);
         }
