@@ -624,8 +624,10 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
             Assert.AreEqual(0, envelope1.Replies.Count);
             Assert.AreEqual(2, parker.ParkedEvents.Count);
-            Assert.AreEqual(id1, parker.ParkedEvents[0].OriginalEvent.EventId);
-            Assert.AreEqual(id2, parker.ParkedEvents[1].OriginalEvent.EventId);
+            Assert.IsTrue(id1 == parker.ParkedEvents[0].OriginalEvent.EventId ||
+                          id1 == parker.ParkedEvents[1].OriginalEvent.EventId);
+            Assert.IsTrue(id2 == parker.ParkedEvents[0].OriginalEvent.EventId ||
+                          id2 == parker.ParkedEvents[1].OriginalEvent.EventId);
         }
 
     }
@@ -689,7 +691,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         }
 
         [Test]
-        public void explicit_nak_with_default_skips_the_message()
+        public void explicit_nak_with_default_retries_the_message()
         {
             var envelope1 = new FakeEnvelope();
             var reader = new FakeCheckpointReader();
@@ -711,7 +713,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             }, 1);
             envelope1.Replies.Clear();
             sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id1 }, NakAction.Unknown, "a reason from client.");
-            Assert.AreEqual(0, envelope1.Replies.Count);
+            Assert.AreEqual(1, envelope1.Replies.Count);
             Assert.AreEqual(0, parker.ParkedEvents.Count);
         }
 
