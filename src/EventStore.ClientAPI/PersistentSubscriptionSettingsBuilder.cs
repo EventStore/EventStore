@@ -281,18 +281,27 @@ namespace EventStore.ClientAPI
         /// <returns></returns>
         public static implicit operator PersistentSubscriptionSettings(PersistentSubscriptionSettingsBuilder builder)
         {
-            return new PersistentSubscriptionSettings(builder._resolveLinkTos,
-                builder._startFrom,
-                builder._latencyStatistics,
-                builder._timeout,
-                builder._maxRetryCount,
-                builder._liveBufferSize,
-                builder._readBatchSize,
-                builder._bufferSize,
-                builder._preferRoundRobin,
-                builder._checkPointAfter,
-                builder._minCheckPointCount,
-                builder._maxCheckPointCount);
+            return builder.Build();
+        }
+
+        /// <summary>
+        /// Builds a <see cref="PersistentSubscriptionSettings"/> object from a <see cref="PersistentSubscriptionSettingsBuilder"/>.
+        /// </summary>
+        ///         /// <returns></returns>
+        public PersistentSubscriptionSettings Build()
+        {
+            return new PersistentSubscriptionSettings(_resolveLinkTos,
+                _startFrom,
+                _latencyStatistics,
+                _timeout,
+                _maxRetryCount,
+                _liveBufferSize,
+                _readBatchSize,
+                _bufferSize,
+                _preferRoundRobin,
+                _checkPointAfter,
+                _minCheckPointCount,
+                _maxCheckPointCount);
         }
     }
 }
