@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void Given()
         {
-            _response = MakeJsonPost(
+            _response = MakeJsonPut(
                 "/subscriptions/stream/groupname156",
                 new
                 {
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void Given()
         {
-            _response = MakeJsonPost(
+            _response = MakeJsonPut(
                 "/subscriptions/stream/groupname156",
                 new
                 {
