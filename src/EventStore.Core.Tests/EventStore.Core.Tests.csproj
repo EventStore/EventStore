@@ -201,6 +201,7 @@
     <Compile Include="Http\PersistentSubscription\creating.cs" />
     <Compile Include="Http\PersistentSubscription\deleting.cs" />
     <Compile Include="Http\PersistentSubscription\statistics.cs" />
+    <Compile Include="Http\PersistentSubscription\updating.cs" />
     <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />
     <Compile Include="Http\StreamSecurity\SpecificationWithUsers.cs" />
     <Compile Include="Http\StreamSecurity\stream_access.cs" />
