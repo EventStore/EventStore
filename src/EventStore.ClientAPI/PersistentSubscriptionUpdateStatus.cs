@@ -17,5 +17,9 @@ namespace EventStore.ClientAPI
         /// Some failure happened creating the subscription
         /// </summary>
         Failure = 2,
+        /// <summary>
+        /// You do not have permissions to update this subscription
+        /// </summary>
+        AccessDenied = 3,
     }
 }

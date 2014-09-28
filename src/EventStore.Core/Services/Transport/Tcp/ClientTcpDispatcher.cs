@@ -482,7 +482,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private TcpPackage WrapUpdatePersistentSubscriptionCompleted(ClientMessage.UpdatePersistentSubscriptionCompleted msg)
         {
             var dto = new TcpClientMessageDto.UpdatePersistentSubscriptionCompleted((TcpClientMessageDto.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult)msg.Result, msg.Reason);
-            return new TcpPackage(TcpCommand.CreatePersistentSubscriptionCompleted, msg.CorrelationId, dto.Serialize());
+            return new TcpPackage(TcpCommand.UpdatePersistentSubscriptionCompleted, msg.CorrelationId, dto.Serialize());
         }
 
 
