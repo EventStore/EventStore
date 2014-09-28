@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -189,7 +190,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!_started) return;
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
             Log.Debug("update subscription " + key);
-            //TODO revisit for permissions. maybe make admin only?
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
             if (!streamAccess.Granted)
@@ -207,8 +207,43 @@ namespace EventStore.Core.Services.PersistentSubscription
                     "Group '" + message.GroupName + "' does not exist."));
                 return;
             }
-
+            RemoveSubscription(message.EventStreamId, message.GroupName);
+            RemoveSubscriptionConfig(message.User.Identity.Name, message.EventStreamId, message.GroupName);
             //TODO handle update.
+            CreateSubscriptionGroup(message.EventStreamId,
+                                    message.GroupName,
+                                    message.ResolveLinkTos,
+                                    message.StartFrom,
+                                    message.LatencyTracking,
+                                    message.MaxRetryCount,
+                                    message.LiveBufferSize,
+                                    message.BufferSize,
+                                    message.ReadBatchSize,
+                                    message.PreferRoundRobin,
+                                    TimeSpan.FromMilliseconds(message.CheckPointAfterMilliseconds),
+                                    message.MinCheckPointCount,
+                                    message.MaxCheckPointCount,
+                                    TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds)
+                                    );
+            _config.Updated = DateTime.Now;
+            _config.UpdatedBy = message.User.Identity.Name;
+            _config.Entries.Add(new PersistentSubscriptionEntry()
+            {
+                Stream = message.EventStreamId,
+                Group = message.GroupName,
+                ResolveLinkTos = message.ResolveLinkTos,
+                CheckPointAfter = message.CheckPointAfterMilliseconds,
+                TrackLatency = message.LatencyTracking,
+                HistoryBufferSize = message.BufferSize,
+                LiveBufferSize = message.LiveBufferSize,
+                MaxCheckPointCount = message.MaxCheckPointCount,
+                MinCheckPointCount = message.MinCheckPointCount,
+                MaxRetryCount = message.MaxRetryCount,
+                MessageTimeout = message.MessageTimeoutMilliseconds,
+                PreferRoundRobin = message.PreferRoundRobin
+            });
+            SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(message.CorrelationId,
+    ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.Success, "")));
        }
 
         private void CreateSubscriptionGroup(string eventStreamId, 
@@ -288,14 +323,33 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
 
             }
+            RemoveSubscription(message.EventStreamId, message.GroupName);
+
+            RemoveSubscriptionConfig(message.User.Identity.Name, message.EventStreamId, message.GroupName);
+            SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
+    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success, "")));
+
+        }
+
+        private void RemoveSubscriptionConfig(string username, string eventStreamId, string groupName)
+        {
+            _config.Updated = DateTime.Now;
+            _config.UpdatedBy = username;
+            var index = _config.Entries.FindLastIndex(x => x.Stream == eventStreamId && x.Group == groupName);
+            _config.Entries.RemoveAt(index);
+        }
+
+        private void RemoveSubscription(string eventStreamId, string groupName)
+        {
             List<PersistentSubscription> subscribers;
+            var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
             _subscriptionsById.Remove(key);
-            if (_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
+            if (_subscriptionTopics.TryGetValue(eventStreamId, out subscribers))
             {
                 for (int i = 0; i < subscribers.Count; i++)
                 {
                     var sub = subscribers[i];
-                    if (sub.SubscriptionId == message.GroupName)
+                    if (sub.SubscriptionId == key)
                     {
                         sub.Shutdown();
                         subscribers.RemoveAt(i);
@@ -303,15 +357,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                     }
                 }
             }
-
-            _config.Updated = DateTime.Now;
-            _config.UpdatedBy = message.User.Identity.Name;
-            //TODO CC better handling of config vs live data
-            var index = _config.Entries.FindLastIndex(x => x.Stream == message.EventStreamId && x.Group == message.GroupName);
-            _config.Entries.RemoveAt(index);
-            SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
-    ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success, "")));
-
         }
 
         private void UnsubscribeFromStream(Guid correlationId, bool sendDropNotification)

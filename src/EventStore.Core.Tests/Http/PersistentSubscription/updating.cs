@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Threading;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.Users.users;
 using NUnit.Framework;
 
@@ -62,7 +66,11 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     {
         private HttpWebResponse _response;
         private readonly string _groupName = Guid.NewGuid().ToString();
+        private SubscriptionDropReason _droppedReason;
+        private Exception _exception;
         private const string _stream = "stream";
+        private AutoResetEvent _dropped = new AutoResetEvent(false);
+        private EventStorePersistentSubscription _sub;
 
         protected override void Given()
         {
@@ -72,6 +80,18 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 {
                     ResolveLinkTos = true
                 }, new NetworkCredential("admin", "changeit"));
+            SetupSubscription();
+        }
+
+        private void SetupSubscription()
+        {
+            _sub = _connection.ConnectToPersistentSubscription(_groupName, _stream, (x, y) => { },
+                (sub, reason, ex) =>
+                {
+                    _droppedReason = reason;
+                    _exception = ex;
+                    _dropped.Set();
+                }, new UserCredentials("admin", "changeit"));
         }
 
         protected override void When()
@@ -85,7 +105,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_created_not_found_code()
+        public void returns_created_ok_code()
         {
             Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
         }
@@ -93,7 +113,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void existing_subscriptions_are_dropped()
         {
-            Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            Assert.IsTrue(_dropped.WaitOne(TimeSpan.FromSeconds(5)));
+            Assert.AreEqual(SubscriptionDropReason.UserInitiated, _droppedReason);
+            Assert.IsNull(_exception);
         }
 
         [Test]
@@ -102,6 +124,4 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _stream, _groupName), _response.Headers["Location"]);
         }
     }
-
-
 }

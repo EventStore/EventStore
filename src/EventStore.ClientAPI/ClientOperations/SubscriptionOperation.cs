@@ -20,7 +20,7 @@ namespace EventStore.ClientAPI.ClientOperations
         protected readonly Action<T, ResolvedEvent> _eventAppeared;
         private readonly Action<T, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
-        private readonly Func<TcpPackageConnection> _getConnection;
+        protected readonly Func<TcpPackageConnection> _getConnection;
         private readonly int _maxQueueSize = 2000;
         private readonly Common.Concurrent.ConcurrentQueue<Action> _actionQueue = new Common.Concurrent.ConcurrentQueue<Action>();
         private int _actionExecuting;
