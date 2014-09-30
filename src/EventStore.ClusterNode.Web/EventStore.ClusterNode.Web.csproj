@@ -34,6 +34,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Content Include="clusternode-web\src\js\services\InfoService.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="projections\es.projections.environment.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
