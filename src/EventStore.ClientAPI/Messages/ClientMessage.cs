@@ -666,8 +666,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(5, IsRequired = true, Name=@"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
     public readonly int MessageTimeoutMilliseconds;
   
-    [ProtoMember(6, IsRequired = true, Name=@"latency_tracking", DataFormat = DataFormat.Default)]
-    public readonly bool LatencyTracking;
+    [ProtoMember(6, IsRequired = true, Name=@"record_statistics", DataFormat = DataFormat.Default)]
+    public readonly bool RecordStatistics;
   
     [ProtoMember(7, IsRequired = true, Name=@"live_buffer_size", DataFormat = DataFormat.TwosComplement)]
     public readonly int LiveBufferSize;
@@ -695,14 +695,14 @@ namespace EventStore.ClientAPI.Messages
   
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool latencyTracking, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
         ResolveLinkTos = resolveLinkTos;
         StartFrom = startFrom;
         MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
-        LatencyTracking = latencyTracking;
+        RecordStatistics = recordStatistics;
         LiveBufferSize = liveBufferSize;
         ReadBatchSize = readBatchSize;
         BufferSize = bufferSize;
