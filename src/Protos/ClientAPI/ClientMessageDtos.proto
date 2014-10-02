@@ -223,7 +223,7 @@ message UpdatePersistentSubscription {
    	required bool resolve_link_tos = 3;
    	required int32 start_from = 4;
    	required int32 message_timeout_milliseconds = 5;
-  	required bool record_statics = 6;
+  	required bool record_statistics = 6;
 	required int32 live_buffer_size = 7;
 	required int32 read_batch_size = 8;
 	required int32 buffer_size = 9;
