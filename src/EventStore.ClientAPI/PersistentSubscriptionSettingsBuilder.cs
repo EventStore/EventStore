@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI
     {
         private bool _resolveLinkTos;
         private int  _startFrom;
-        private bool _latencyStatistics;
+        private bool _timingStatistics;
         private TimeSpan _timeout;
         private int _readBatchSize;
         private int _maxRetryCount;
@@ -42,14 +42,14 @@ namespace EventStore.ClientAPI
         }
 
 
-        private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan timeout,
+        private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan timeout,
                                                       int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, 
                                                       bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount,
                                                       int maxCheckPointCount)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
-            _latencyStatistics = latencyStatistics;
+            _timingStatistics = timingStatistics;
             _timeout = timeout;
             _bufferSize = bufferSize;
             _liveBufferSize = liveBufferSize;
@@ -67,9 +67,9 @@ namespace EventStore.ClientAPI
         /// in high performance situations.
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
-        public PersistentSubscriptionSettingsBuilder WithExtraLatencyStatistics()
+        public PersistentSubscriptionSettingsBuilder WithExtraStatistics()
         {
-            _latencyStatistics = true;
+            _timingStatistics = true;
             return this;
         }
 
@@ -292,7 +292,7 @@ namespace EventStore.ClientAPI
         {
             return new PersistentSubscriptionSettings(_resolveLinkTos,
                 _startFrom,
-                _latencyStatistics,
+                _timingStatistics,
                 _timeout,
                 _maxRetryCount,
                 _liveBufferSize,

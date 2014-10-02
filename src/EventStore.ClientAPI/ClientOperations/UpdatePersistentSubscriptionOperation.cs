@@ -14,7 +14,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _resolveLinkTos;
         private readonly int _startFromBeginning;
         private readonly int _messageTimeoutMilliseconds;
-        private readonly bool _latencyTracking;
+        private readonly bool _recordStatistics;
         private readonly int _maxRetryCount;
         private readonly int _liveBufferSize;
         private readonly int _readBatchSize;
@@ -41,7 +41,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _liveBufferSize = settings.LiveBufferSize;
             _readBatchSize = settings.ReadBatchSize;
             _bufferSize = settings.HistoryBufferSize;
-            _latencyTracking = settings.LatencyStatistics;
+            _recordStatistics = settings.ExtraStatistics;
             _preferRoundRobin = settings.PreferRoundRobin;
             _messageTimeoutMilliseconds = (int)settings.MessageTimeout.TotalMilliseconds;
             _checkPointAfter = (int)settings.CheckPointAfter.TotalMilliseconds;
@@ -52,7 +52,7 @@ namespace EventStore.ClientAPI.ClientOperations
         protected override object CreateRequestDto()
         {
             return new ClientMessage.UpdatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
-                _latencyTracking, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin, _checkPointAfter,
+                _recordStatistics, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin, _checkPointAfter,
                 _maxCheckPointCount, _minCheckPointCount);
         }
 

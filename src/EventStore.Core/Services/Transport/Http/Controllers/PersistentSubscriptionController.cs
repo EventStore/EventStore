@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                                  data == null || data.ResolveLinktos, 
                                                                                  data == null ? 0 : data.StartFrom, 
                                                                                  data == null ? 0 : data.MessageTimeoutMilliseconds, 
-                                                                                 data == null || data.TrackLatency,
+                                                                                 data == null || data.ExtraStatistics,
                                                                                  data == null ? 10 : data.MaxRetryCount,
                                                                                  data == null ? 500 : data.BufferSize,
                                                                                  data == null ? 500 : data.LiveBufferSize,
@@ -144,7 +144,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                                  data == null || data.ResolveLinktos,
                                                                                  data == null ? 0 : data.StartFrom,
                                                                                  data == null ? 0 : data.MessageTimeoutMilliseconds,
-                                                                                 data == null || data.TrackLatency,
+                                                                                 data == null || data.ExtraStatistics,
                                                                                  data == null ? 10 : data.MaxRetryCount,
                                                                                  data == null ? 500 : data.BufferSize,
                                                                                  data == null ? 500 : data.LiveBufferSize,
@@ -294,7 +294,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         ReadBatchSize = stat.ReadBatchSize,
                         ResolveLinktos = stat.ResolveLinktos,
                         StartFrom = stat.StartFrom,
-                        TrackLatency = stat.TrackLatency,
+                        ExtraStatistics = stat.ExtraStatistics,
                     },
                     Connections = new List<ConnectionInfo>()
                 };
@@ -309,7 +309,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                             AverageItemsPerSecond = connection.AverageItemsPerSecond,
                             CountSinceLastMeasurement = connection.CountSinceLastMeasurement,
                             TotalItemsProcessed = connection.TotalItems,
-                            LatencyMeasurements = connection.LatencyStats ?? new Dictionary<string, int>()
+                            ExtraStatistics = connection.ObservedMeasurements ?? new Dictionary<string, int>()
                         });
                     }
                 }
@@ -347,7 +347,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public bool ResolveLinktos { get; set; }
             public int StartFrom { get; set; }
             public int MessageTimeoutMilliseconds { get; set; }
-            public bool TrackLatency { get; set; }
+            public bool ExtraStatistics { get; set; }
             public int MaxRetryCount { get; set; }
             public int LiveBufferSize { get; set; }
             public int BufferSize { get; set; }
@@ -394,7 +394,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public decimal AverageItemsPerSecond { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public Dictionary<string, int> LatencyMeasurements { get; set; } 
+            public Dictionary<string, int> ExtraStatistics { get; set; } 
         }
     }
 }

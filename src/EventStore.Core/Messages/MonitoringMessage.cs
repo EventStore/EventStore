@@ -101,7 +101,7 @@ namespace EventStore.Core.Messages
             public bool ResolveLinktos { get; set; }
             public int StartFrom { get; set; }
             public int MessageTimeoutMilliseconds { get; set; }
-            public bool TrackLatency { get; set; }
+            public bool ExtraStatistics { get; set; }
             public int MaxRetryCount { get; set; }
             public int LiveBufferSize { get; set; }
             public int BufferSize { get; set; }
@@ -119,7 +119,7 @@ namespace EventStore.Core.Messages
             public int AverageItemsPerSecond { get; set; }
             public long TotalItems { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public Dictionary<string, int> LatencyStats { get; set; }
+            public Dictionary<string, int> ObservedMeasurements { get; set; }
         }
 
         public class GetFreshStats : Message

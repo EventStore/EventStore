@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly string _eventStreamId;
         private readonly string _groupName;
         private readonly int _startFrom;
-        private readonly bool _trackLatency;
+        private readonly bool _extraStatistics;
         private readonly TimeSpan _messageTimeout;
         private readonly TimeSpan _checkPointAfter;
         private readonly int _minCheckPointCount;
@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private IPersistentSubscriptionMessageParker _messageParker;
 
         public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
-                                           int startFrom, bool trackLatency, TimeSpan messageTimeout, bool preferRoundRobin, 
+                                           int startFrom, bool extraStatistics, TimeSpan messageTimeout, bool preferRoundRobin, 
                                            int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
                                            TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
                                            IPersistentSubscriptionEventLoader eventLoader, 
@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _eventStreamId = eventStreamId;
             _groupName = groupName;
             _startFrom = startFrom;
-            _trackLatency = trackLatency;
+            _extraStatistics = extraStatistics;
             _messageTimeout = messageTimeout;
             _preferRoundRobin = preferRoundRobin;
             _maxRetryCount = maxRetryCount;
@@ -79,9 +79,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _startFrom; }
         }
 
-        public bool TrackLatency
+        public bool ExtraStatistics
         {
-            get { return _trackLatency; }
+            get { return _extraStatistics; }
         }
 
         public TimeSpan MessageTimeout

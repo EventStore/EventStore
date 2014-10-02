@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly string From;
         private readonly Stopwatch _watch;
         private long _totalItems;
-        private readonly RequestStatistics _latencyStatistics;
+        private readonly RequestStatistics _extraStatistics;
         private readonly Dictionary<Guid, ResolvedEvent> _unconfirmedEvents = new Dictionary<Guid, ResolvedEvent>();
 
         public PersistentSubscriptionClient(Guid correlationId,
@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             string username,
             string from,
             Stopwatch watch,
-            bool trackLatency)
+            bool extraStatistics)
         {
             _correlationId = correlationId;
             _connectionId = connectionId;
@@ -40,9 +40,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             From = @from;
             _watch = watch;
             MaximumInFlightMessages = inFlightMessages;
-            if (trackLatency)
+            if (extraStatistics)
             {
-                _latencyStatistics = new RequestStatistics(watch, 1000);
+                _extraStatistics = new RequestStatistics(watch, 1000);
             }
         }
 
@@ -72,8 +72,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             foreach (var processedEventId in processedEventIds)
             {
-                if (_latencyStatistics != null)
-                    _latencyStatistics.EndOperation(processedEventId);
+                if (_extraStatistics != null)
+                    _extraStatistics.EndOperation(processedEventId);
                 ResolvedEvent ev;
                 if (!_unconfirmedEvents.TryGetValue(processedEventId, out ev)) continue;
                 _unconfirmedEvents.Remove(processedEventId);
@@ -86,8 +86,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             foreach (var processedEventId in processedEventIds)
             {
                 ResolvedEvent ev;
-                if (_latencyStatistics != null)
-                    _latencyStatistics.EndOperation(processedEventId);
+                if (_extraStatistics != null)
+                    _extraStatistics.EndOperation(processedEventId);
                 if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
                 {
                     //it could have been timed out as well
@@ -101,8 +101,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!CanSend()) { return false; }
             _allowedMessages--;
             Interlocked.Increment(ref _totalItems);
-            if (_latencyStatistics != null)
-                _latencyStatistics.StartOperation(evnt.OriginalEvent.EventId);
+            if (_extraStatistics != null)
+                _extraStatistics.StartOperation(evnt.OriginalEvent.EventId);
 
             _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt));
             _unconfirmedEvents.Add(evnt.Event.EventId, evnt);
@@ -119,9 +119,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             _envelope.ReplyWith(new ClientMessage.SubscriptionDropped(CorrelationId, SubscriptionDropReason.Unsubscribed));
         }
 
-        public LatencyMeausrement GetLatencyStats()
+        public ObservedTimingMeausrement GetExtraStats()
         {
-            return _latencyStatistics == null ? null : _latencyStatistics.GetMeasurementDetails();
+            return _extraStatistics == null ? null : _extraStatistics.GetMeasurementDetails();
         }
 
         private bool CanSend()

@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Whether or not in depth latency statistics should be tracked on this subscription.
         /// </summary>
-        public readonly bool LatencyStatistics;
+        public readonly bool ExtraStatistics;
 
         /// <summary>
         /// The amount of time after which a message should be considered to be timedout and retried.
@@ -72,14 +72,14 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
         /// </summary>
-        internal PersistentSubscriptionSettings(bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan messageTimeout,
+        internal PersistentSubscriptionSettings(bool resolveLinkTos, int startFrom, bool extraStatistics, TimeSpan messageTimeout,
                                                 int maxRetryCount, int liveBufferSize, int readBatchSize, int historyBufferSize,
                                                 bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount)
         {
             MessageTimeout = messageTimeout;
             ResolveLinkTos = resolveLinkTos;
             StartFrom = startFrom;
-            LatencyStatistics = latencyStatistics;
+            ExtraStatistics = extraStatistics;
             MaxRetryCount = maxRetryCount;
             LiveBufferSize = liveBufferSize;
             ReadBatchSize = readBatchSize;

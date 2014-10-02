@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.PersistentSubscription
     {
         private bool _resolveLinkTos;
         private int _startFrom;
-        private bool _latencyStatistics;
+        private bool _recordStatistics;
         private TimeSpan _timeout;
         private int _readBatchSize;
         private int _maxRetryCount;
@@ -54,13 +54,13 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
 
-        private PersistentSubscriptionParamsBuilder(string subscriptionId, string streamName, string groupName, bool resolveLinkTos, int startFrom, bool latencyStatistics, TimeSpan timeout,
+        private PersistentSubscriptionParamsBuilder(string subscriptionId, string streamName, string groupName, bool resolveLinkTos, int startFrom, bool recordStatistics, TimeSpan timeout,
             int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin, TimeSpan checkPointAfter,
             int minCheckPointCount, int maxCheckPointCount)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
-            _latencyStatistics = latencyStatistics;
+            _recordStatistics = recordStatistics;
             _timeout = timeout;
             _historyBufferSize = historyBufferSize;
             _liveBufferSize = liveBufferSize;
@@ -124,9 +124,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         /// in high performance situations.
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
-        public PersistentSubscriptionParamsBuilder WithExtraLatencyStatistics()
+        public PersistentSubscriptionParamsBuilder WithExtraStatistics()
         {
-            _latencyStatistics = true;
+            _recordStatistics = true;
             return this;
         }
 
@@ -305,7 +305,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._eventStreamId,
                 builder._groupName,
                 builder._startFrom,
-                builder._latencyStatistics,
+                builder._recordStatistics,
                 builder._timeout,
                 builder._preferRoundRobin,
                 builder._maxRetryCount,

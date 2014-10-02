@@ -164,7 +164,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
         {
-            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, maxInFlight, user, @from, _totalTimeWatch, _settings.TrackLatency);
+            var client = new PersistentSubscriptionClient(correlationId, connectionId, envelope, maxInFlight, user, @from, _totalTimeWatch, _settings.ExtraStatistics);
             _pushClients.AddClient(client);
             TryPushingMessagesToClients();
         }

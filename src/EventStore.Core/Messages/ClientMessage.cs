@@ -869,7 +869,7 @@ namespace EventStore.Core.Messages
 
             public readonly int StartFrom;
             public readonly int MessageTimeoutMilliseconds;
-            public readonly bool LatencyTracking;
+            public readonly bool RecordStatistics;
 
             public readonly bool ResolveLinkTos;
             public readonly int MaxRetryCount;
@@ -885,7 +885,7 @@ namespace EventStore.Core.Messages
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                   string eventStreamId, string groupName, bool resolveLinkTos, int startFrom, 
-                int messageTimeoutMilliseconds, bool latencyTracking, int maxRetryCount, int bufferSize, 
+                int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize, 
                 int liveBufferSize, int readbatchSize, bool preferRoundRobin, 
                 int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
                 IPrincipal user, string username, string password)
@@ -896,7 +896,7 @@ namespace EventStore.Core.Messages
                 GroupName = groupName;
                 StartFrom = startFrom;
                 MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
-                LatencyTracking = latencyTracking;
+                RecordStatistics = recordStatistics;
                 MaxRetryCount = maxRetryCount;
                 BufferSize = bufferSize;
                 LiveBufferSize = liveBufferSize;
@@ -942,7 +942,7 @@ namespace EventStore.Core.Messages
 
             public readonly int StartFrom;
             public readonly int MessageTimeoutMilliseconds;
-            public readonly bool LatencyTracking;
+            public readonly bool RecordStatistics;
 
             public readonly bool ResolveLinkTos;
             public readonly int MaxRetryCount;
@@ -958,7 +958,7 @@ namespace EventStore.Core.Messages
 
             public UpdatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                   string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
-                int messageTimeoutMilliseconds, bool latencyTracking, int maxRetryCount, int bufferSize,
+                int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
                 int liveBufferSize, int readbatchSize, bool preferRoundRobin,
                 int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
                 IPrincipal user, string username, string password)
@@ -969,7 +969,7 @@ namespace EventStore.Core.Messages
                 GroupName = groupName;
                 StartFrom = startFrom;
                 MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
-                LatencyTracking = latencyTracking;
+                RecordStatistics = recordStatistics;
                 MaxRetryCount = maxRetryCount;
                 BufferSize = bufferSize;
                 LiveBufferSize = liveBufferSize;

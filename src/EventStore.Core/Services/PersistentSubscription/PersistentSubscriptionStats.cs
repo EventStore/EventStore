@@ -58,8 +58,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var connLastItems = connItems - conn.LastTotalItems;
                 conn.LastTotalItems = connItems;
                 var connAvgItemsPerSecond = lastRunMs.Ticks != 0 ? (int)(TimeSpan.TicksPerSecond * connLastItems / lastRunMs.Ticks) : 0;
-                var latencyStats = conn.GetLatencyStats();
-                var stats = latencyStats == null ? null : latencyStats.Measurements;
+                var extraStats = conn.GetExtraStats();
+                var stats = extraStats == null ? null : extraStats.Measurements;
                 connections.Add(new MonitoringMessage.ConnectionInfo
                 {
                     From = conn.From,
@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     AverageItemsPerSecond = connAvgItemsPerSecond,
                     TotalItems = conn.TotalItems,
                     CountSinceLastMeasurement = connLastItems,
-                    LatencyStats = stats
+                    ObservedMeasurements = stats
                 });
             }
 
@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ReadBatchSize = _settings.ReadBatchSize,
                 ResolveLinktos = _settings.ResolveLinkTos,
                 StartFrom = _settings.StartFrom,
-                TrackLatency = _settings.TrackLatency,
+                ExtraStatistics = _settings.ExtraStatistics,
             };
         }
     }

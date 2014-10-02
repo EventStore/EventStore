@@ -41,9 +41,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             _measurements.Enqueue((int)ms);
         }
 
-        public LatencyMeausrement GetMeasurementDetails()
+        public ObservedTimingMeausrement GetMeasurementDetails()
         {
-            var ret = new LatencyMeausrement();
+            var ret = new ObservedTimingMeausrement();
             if (_measurements == null || _measurements.Count == 0) return ret;
             var items = _measurements.ToArray();
             Array.Sort(items);
@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
     }
 
-    public class LatencyMeausrement
+    public class ObservedTimingMeausrement
     {
         public readonly Dictionary<string, int> Measurements = new Dictionary<string, int>();
     }
