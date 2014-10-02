@@ -934,6 +934,81 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class UpdatePersistentSubscription : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public bool PreferRoundRobin { get; set; }
+
+            public readonly int StartFrom;
+            public readonly int MessageTimeoutMilliseconds;
+            public readonly bool LatencyTracking;
+
+            public readonly bool ResolveLinkTos;
+            public readonly int MaxRetryCount;
+            public readonly int BufferSize;
+            public readonly int LiveBufferSize;
+            public readonly int ReadBatchSize;
+
+            public readonly string GroupName;
+            public readonly string EventStreamId;
+            public int MaxCheckPointCount;
+            public int MinCheckPointCount;
+            public int CheckPointAfterMilliseconds;
+
+            public UpdatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+                  string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
+                int messageTimeoutMilliseconds, bool latencyTracking, int maxRetryCount, int bufferSize,
+                int liveBufferSize, int readbatchSize, bool preferRoundRobin,
+                int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
+                IPrincipal user, string username, string password)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                ResolveLinkTos = resolveLinkTos;
+                EventStreamId = eventStreamId;
+                GroupName = groupName;
+                StartFrom = startFrom;
+                MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+                LatencyTracking = latencyTracking;
+                MaxRetryCount = maxRetryCount;
+                BufferSize = bufferSize;
+                LiveBufferSize = liveBufferSize;
+                ReadBatchSize = readbatchSize;
+                PreferRoundRobin = preferRoundRobin;
+                MaxCheckPointCount = maxCheckPointCount;
+                MinCheckPointCount = minCheckPointCount;
+                CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
+            }
+
+        }
+
+        public class UpdatePersistentSubscriptionCompleted : ReadResponseMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+            public readonly UpdatePersistentSubscriptionResult Result;
+
+            public UpdatePersistentSubscriptionCompleted(Guid correlationId, UpdatePersistentSubscriptionResult result, string reason)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                CorrelationId = correlationId;
+                Result = result;
+                Reason = reason;
+            }
+
+            public enum UpdatePersistentSubscriptionResult
+            {
+                Success = 0,
+                DoesNotExist = 1,
+                Fail = 2,
+                AccessDenied = 3
+            }
+        }
+
+
+
         public class DeletePersistentSubscription : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

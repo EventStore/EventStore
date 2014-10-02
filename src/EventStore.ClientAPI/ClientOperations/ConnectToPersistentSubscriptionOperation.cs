@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
@@ -37,8 +38,8 @@ namespace EventStore.ClientAPI.ClientOperations
             if (package.Command == TcpCommand.PersistentSubscriptionConfirmation)
             {
                 var dto = package.Data.Deserialize<ClientMessage.PersistentSubscriptionConfirmation>();
-                        ConfirmSubscription(dto.LastCommitPosition, dto.LastEventNumber);
-                        result = new InspectionResult(InspectionDecision.Subscribed, "SubscriptionConfirmation");
+                ConfirmSubscription(dto.LastCommitPosition, dto.LastEventNumber);
+                result = new InspectionResult(InspectionDecision.Subscribed, "SubscriptionConfirmation");
                 _subscriptionId = dto.SubscriptionId;
                 return true;
             }
@@ -47,6 +48,19 @@ namespace EventStore.ClientAPI.ClientOperations
                 var dto = package.Data.Deserialize<ClientMessage.PersistentSubscriptionStreamEventAppeared>();
                 EventAppeared(new ResolvedEvent(dto.Event));
                 result = new InspectionResult(InspectionDecision.DoNothing, "StreamEventAppeared");
+                return true;
+            }
+            if (package.Command == TcpCommand.SubscriptionDropped)
+            {
+                var dto = package.Data.Deserialize<ClientMessage.SubscriptionDropped>();
+                if (dto.Reason == ClientMessage.SubscriptionDropped.SubscriptionDropReason.AccessDenied)
+                {
+                    DropSubscription(SubscriptionDropReason.AccessDenied, new AccessDeniedException("You don't have access to the stream."),null);
+                    result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
+                    return true;
+                }
+                DropSubscription((SubscriptionDropReason) dto.Reason, null, _getConnection());
+                result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
                 return true;
             }
             result = null;

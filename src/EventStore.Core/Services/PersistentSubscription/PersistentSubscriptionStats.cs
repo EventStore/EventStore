@@ -16,9 +16,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _lastKnownEventNumber = -1;
         private readonly PersistentSubscription _parent;
         private readonly Stopwatch _totalTimeWatch;
-
-        public PersistentSubscriptionStats(PersistentSubscription parent, Stopwatch totalTimeWatch)
+        private readonly PersistentSubscriptionParams _settings;
+        public PersistentSubscriptionStats(PersistentSubscription parent, PersistentSubscriptionParams settings, Stopwatch totalTimeWatch)
         {
+            _settings = settings;
             _parent = parent;
             _totalTimeWatch = totalTimeWatch;
         }
@@ -80,7 +81,19 @@ namespace EventStore.Core.Services.PersistentSubscription
                 LastProcessedEventNumber = _lastEventNumber,
                 LastKnownMessage = _lastKnownEventNumber,
                 TotalItems = totalItems,
-                CountSinceLastMeasurement = lastItems
+                CountSinceLastMeasurement = lastItems,
+                CheckPointAfterMilliseconds = (int) _settings.CheckPointAfter.TotalMilliseconds,
+                BufferSize = _settings.BufferSize,
+                LiveBufferSize = _settings.LiveBufferSize,
+                MaxCheckPointCount = _settings.MaxCheckPointCount,
+                MaxRetryCount = _settings.MaxRetryCount,
+                MessageTimeoutMilliseconds = (int) _settings.MessageTimeout.TotalMilliseconds,
+                MinCheckPointCount = _settings.MinCheckPointCount,
+                PreferRoundRobin = _settings.PreferRoundRobin,
+                ReadBatchSize = _settings.ReadBatchSize,
+                ResolveLinktos = _settings.ResolveLinkTos,
+                StartFrom = _settings.StartFrom,
+                TrackLatency = _settings.TrackLatency,
             };
         }
     }

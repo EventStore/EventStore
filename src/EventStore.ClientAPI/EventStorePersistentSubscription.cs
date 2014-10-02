@@ -149,6 +149,10 @@ namespace EventStore.ClientAPI
 
         private void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)
         {
+            if (_subscriptionDropped != null)
+            {
+                _subscriptionDropped(this, reason, exception);
+            }
         }
 
         private void OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)

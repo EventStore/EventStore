@@ -338,6 +338,16 @@ namespace EventStore.ClientAPI
             EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
             return source.Task;
         }
+
+        public Task<PersistentSubscriptionUpdateResult> UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+            var source = new TaskCompletionSource<PersistentSubscriptionUpdateResult>();
+            EnqueueOperation(new UpdatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
+            return source.Task;
+        }
 /*
 
         public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)

@@ -412,6 +412,13 @@ namespace EventStore.ClientAPI.Embedded
             throw new NotImplementedException();
         }
 
+        public Task<PersistentSubscriptionUpdateResult> UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+            UserCredentials credentials)
+        {
+            throw new NotImplementedException();
+        }
+
+
         public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null)
         {
             throw new NotImplementedException();

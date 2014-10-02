@@ -121,6 +121,7 @@
     <Compile Include="ClientAPI\SpecificationWithLinkToToDeletedEvents.cs" />
     <Compile Include="ClientAPI\SpecificationWithLinkToToMaxCountDeletedEvents.cs" />
     <Compile Include="ClientAPI\SpecificationWithMiniNode.cs" />
+    <Compile Include="ClientAPI\update_persistent_subscription.cs" />
     <Compile Include="ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\read_event_should.cs" />
@@ -201,6 +202,7 @@
     <Compile Include="Http\PersistentSubscription\creating.cs" />
     <Compile Include="Http\PersistentSubscription\deleting.cs" />
     <Compile Include="Http\PersistentSubscription\statistics.cs" />
+    <Compile Include="Http\PersistentSubscription\updating.cs" />
     <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />
     <Compile Include="Http\StreamSecurity\SpecificationWithUsers.cs" />
     <Compile Include="Http\StreamSecurity\stream_access.cs" />

@@ -64,6 +64,8 @@ namespace EventStore.ClientAPI.SystemData
         DeletePersistentSubscriptionCompleted = 0xCB,
         PersistentSubscriptionAckEvents = 0xCC,
         PersistentSubscriptionNakEvents = 0xCD,
+        UpdatePersistentSubscription=0xCE,
+        UpdatePersistentSubscriptionCompleted=0xCF,
 
         ScavengeDatabase = 0xD0,
         ScavengeDatabaseCompleted = 0xD1,

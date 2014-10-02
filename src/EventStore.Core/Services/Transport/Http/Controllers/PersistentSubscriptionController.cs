@@ -30,7 +30,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Get, GetSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
             Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs, DefaultCodecs);
             Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
-            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PutSubscription, DefaultCodecs, DefaultCodecs);
+            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Put, PutSubscription, DefaultCodecs, DefaultCodecs);
+            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PostSubscription, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
         }
 
@@ -70,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             http.ReadTextRequestAsync(
                 (o, s) =>
                 {
-                    var data = http.RequestCodec.From<SubscriptionconfigData>(s);
+                    var data = http.RequestCodec.From<SubscriptionConfigData>(s);
                     //TODO competing validate data?
                     var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), 
                                                                                  Guid.NewGuid(),
@@ -82,7 +83,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                                  data == null ? 0 : data.MessageTimeoutMilliseconds, 
                                                                                  data == null || data.TrackLatency,
                                                                                  data == null ? 10 : data.MaxRetryCount,
-                                                                                 data == null ? 500 : data.HistoryBufferSize,
+                                                                                 data == null ? 500 : data.BufferSize,
                                                                                  data == null ? 500 : data.LiveBufferSize,
                                                                                  data == null ? 20 : data.ReadBatchSize,
                                                                                  data == null || data.PreferRoundRobin, 
@@ -95,6 +96,70 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     Publish(message);
                 }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
+
+
+        private void PostSubscription(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+            var groupname = match.BoundVariables["subscription"];
+            var stream = match.BoundVariables["stream"];
+            var envelope = new SendToHttpEnvelope(
+                _networkSendQueue, http,
+                (args, message) => http.ResponseCodec.To(message),
+                (args, message) =>
+                {
+                    int code;
+                    var m = message as ClientMessage.UpdatePersistentSubscriptionCompleted;
+                    if (m == null) throw new Exception("unexpected message " + message);
+                    switch (m.Result)
+                    {
+                        case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.Success:
+                            code = HttpStatusCode.OK;
+                            //TODO competing return uri to subscription
+                            break;
+                        case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.DoesNotExist:
+                            code = HttpStatusCode.NotFound;
+                            break;
+                        case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.AccessDenied:
+                            code = HttpStatusCode.Unauthorized;
+                            break;
+                        default:
+                            code = HttpStatusCode.InternalServerError;
+                            break;
+                    }
+                    return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
+                        http.ResponseCodec.Encoding, new KeyValuePair<string, string>("location", MakeUrl(http, "/subscriptions/" + stream + "/" + groupname)));
+                });
+            http.ReadTextRequestAsync(
+                (o, s) =>
+                {
+                    var data = http.RequestCodec.From<SubscriptionConfigData>(s);
+                    //TODO competing validate data?
+                    var message = new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(),
+                                                                                 Guid.NewGuid(),
+                                                                                 envelope,
+                                                                                 stream,
+                                                                                 groupname,
+                                                                                 data == null || data.ResolveLinktos,
+                                                                                 data == null ? 0 : data.StartFrom,
+                                                                                 data == null ? 0 : data.MessageTimeoutMilliseconds,
+                                                                                 data == null || data.TrackLatency,
+                                                                                 data == null ? 10 : data.MaxRetryCount,
+                                                                                 data == null ? 500 : data.BufferSize,
+                                                                                 data == null ? 500 : data.LiveBufferSize,
+                                                                                 data == null ? 20 : data.ReadBatchSize,
+                                                                                 data == null || data.PreferRoundRobin,
+                                                                                 data == null ? 1000 : data.CheckPointAfterMilliseconds,
+                                                                                 data == null ? 10 : data.MinCheckPointCount,
+                                                                                 data == null ? 500 : data.MaxCheckPointCount,
+                                                                                 http.User,
+                                                                                 "",
+                                                                                 "");
+                    Publish(message);
+                }, x => Log.DebugException(x, "Reply Text Content Failed."));
+        }
+
 
         private void DeleteSubscription(HttpEntityManager http, UriTemplateMatch match)
         {
@@ -152,7 +217,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var stream = match.BoundVariables["stream"];
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
-                (args, message) => http.ResponseCodec.To(ToDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+                (args, message) => http.ResponseCodec.To(ToSummaryDto(http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
                 (args, message) => StatsConfiguration(http, message));
             var cmd = new MonitoringMessage.GetStreamPersistentSubscriptionStats(envelope, stream);
             Publish(cmd);
@@ -166,7 +231,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var groupName = match.BoundVariables["subscription"];
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
-                (args, message) => http.ResponseCodec.To(ToDto(message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).FirstOrDefault()),
+                (args, message) => http.ResponseCodec.To(ToDto(http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).FirstOrDefault()),
                 (args, message) => StatsConfiguration(http, message));
             var cmd = new MonitoringMessage.GetPersistentSubscriptionStats(envelope, stream, groupName);
             Publish(cmd);
@@ -198,7 +263,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 http.ResponseCodec.Encoding);
         }
 
-        private IEnumerable<SubscriptionInfo> ToDto(MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
+        private IEnumerable<SubscriptionInfo> ToDto(HttpEntityManager manager, MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
         {
             if (message == null) yield break;
             if (message.SubscriptionStats == null) yield break;
@@ -214,6 +279,23 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
                     LastKnownEventNumber = stat.LastProcessedEventNumber,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
+                    DetailUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)),
+                    ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
+                    Config = new SubscriptionConfigData()
+                    {
+                        CheckPointAfterMilliseconds = stat.CheckPointAfterMilliseconds,
+                        BufferSize = stat.BufferSize,
+                        LiveBufferSize = stat.LiveBufferSize,
+                        MaxCheckPointCount = stat.MaxCheckPointCount,
+                        MaxRetryCount = stat.MaxRetryCount,
+                        MessageTimeoutMilliseconds = stat.MessageTimeoutMilliseconds,
+                        MinCheckPointCount = stat.MinCheckPointCount,
+                        PreferRoundRobin = stat.PreferRoundRobin,
+                        ReadBatchSize = stat.ReadBatchSize,
+                        ResolveLinktos = stat.ResolveLinktos,
+                        StartFrom = stat.StartFrom,
+                        TrackLatency = stat.TrackLatency,
+                    },
                     Connections = new List<ConnectionInfo>()
                 };
                 if (stat.Connections != null)
@@ -234,6 +316,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 yield return info;
             }
         }
+
         private IEnumerable<SubscriptionSummary> ToSummaryDto(HttpEntityManager manager, MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
         {
             if (message == null) yield break;
@@ -259,7 +342,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 yield return info;
             }
         }
-        private class SubscriptionconfigData
+        private class SubscriptionConfigData
         {
             public bool ResolveLinktos { get; set; }
             public int StartFrom { get; set; }
@@ -267,7 +350,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public bool TrackLatency { get; set; }
             public int MaxRetryCount { get; set; }
             public int LiveBufferSize { get; set; }
-            public int HistoryBufferSize { get; set; }
+            public int BufferSize { get; set; }
             public int ReadBatchSize { get; set; }
             public bool PreferRoundRobin { get; set; }
             public int CheckPointAfterMilliseconds { get; set; }
@@ -294,6 +377,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string GroupName { get; set; }
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
+            public SubscriptionConfigData Config { get; set; }
             public string DetailUri { get; set; }
             public string ParkedMessageUri { get; set; }
             public long TotalItemsProcessed { get; set; }
