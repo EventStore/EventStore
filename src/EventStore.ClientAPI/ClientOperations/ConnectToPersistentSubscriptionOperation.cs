@@ -59,6 +59,18 @@ namespace EventStore.ClientAPI.ClientOperations
                     result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
                     return true;
                 }
+                if (dto.Reason == ClientMessage.SubscriptionDropped.SubscriptionDropReason.NotFound)
+                {
+                    DropSubscription(SubscriptionDropReason.NotFound, new ArgumentException("Subscription not found"), null);
+                    result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
+                    return true;
+                }
+                if (dto.Reason == ClientMessage.SubscriptionDropped.SubscriptionDropReason.PersistentSubscriptionDeleted)
+                {
+                    DropSubscription(SubscriptionDropReason.NotFound, new Exception("Subscription deleted."), null);
+                    result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
+                    return true;
+                }
                 DropSubscription((SubscriptionDropReason) dto.Reason, null, _getConnection());
                 result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
                 return true;
