@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscription("agroupname55", 
                     _stream,
                     (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) => {});
+                    (sub, reason, ex) => {Console.WriteLine("dropped.");});
                 throw new Exception("should have thrown.");
             }
             catch (Exception ex)

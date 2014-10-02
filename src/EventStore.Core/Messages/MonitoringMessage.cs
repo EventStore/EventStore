@@ -98,6 +98,18 @@ namespace EventStore.Core.Messages
             public long CountSinceLastMeasurement { get; set; }
             public int LastProcessedEventNumber { get; set; }
             public int LastKnownMessage { get; set; }
+            public bool ResolveLinktos { get; set; }
+            public int StartFrom { get; set; }
+            public int MessageTimeoutMilliseconds { get; set; }
+            public bool TrackLatency { get; set; }
+            public int MaxRetryCount { get; set; }
+            public int LiveBufferSize { get; set; }
+            public int BufferSize { get; set; }
+            public int ReadBatchSize { get; set; }
+            public bool PreferRoundRobin { get; set; }
+            public int CheckPointAfterMilliseconds { get; set; }
+            public int MinCheckPointCount { get; set; }
+            public int MaxCheckPointCount { get; set; }
         }
 
         public class ConnectionInfo
