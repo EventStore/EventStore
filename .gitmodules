@@ -1,3 +1,0 @@
-[submodule "src/EventStore.ClusterNode.Web/clusternode-web"]
-	path = src/EventStore.ClusterNode.Web/clusternode-web
-	url = https://github.com/EventStore/EventStore.UI
