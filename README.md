@@ -1,5 +1,6 @@
 
 #Event Store
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/EventStore/EventStore?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **The documentation has now moved to the <a href="https://github.com/EventStore/EventStore/wiki">wiki in this repository</a>.** For a quick start, look <a href="https://github.com/EventStore/EventStore/wiki/Running-the-Event-Store">here</a>.
 
