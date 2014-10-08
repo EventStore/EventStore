@@ -15,6 +15,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Projections.Core;
+using EventStore.Core.Services.Transport.Http.Controllers;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -631,7 +632,8 @@ namespace EventStore.ClientAPI.Embedded
                 _extTcpHeartbeatInterval,
                 !_skipVerifyDbHashes,
                 _maxMemtableSize);
-            return new ClusterVNode(db, vNodeSettings, GetGossipSource(), _subsystems.ToArray());
+            var infoController = new InfoController(null);
+            return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }
 
 
