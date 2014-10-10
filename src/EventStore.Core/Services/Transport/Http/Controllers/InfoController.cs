@@ -7,7 +7,7 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Common.Options;
 using System.Collections.Generic;
-using PowerArgs;
+using EventStore.Rags;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {

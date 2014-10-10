@@ -1,5 +1,6 @@
 ﻿using EventStore.Common.Options;
 using EventStore.Core.Util;
+using EventStore.Rags;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
