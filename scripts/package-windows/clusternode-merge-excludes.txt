@@ -1,0 +1,3 @@
+﻿EventStore.Core.Messages.ClusterInfoDto
+EventStore.Core.Messages.MemberInfoDto
+EventStore.Core.Data.VNodeState
