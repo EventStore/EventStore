@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>60a544e4-4d5f-4fcf-9377-d3035577a309</ProjectGuid>
+    <ProjectGuid>{2992D4F0-F811-442E-B399-CCC861E73E12}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>RagsPlayground</RootNamespace>
