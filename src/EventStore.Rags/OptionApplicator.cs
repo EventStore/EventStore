@@ -13,11 +13,12 @@ namespace EventStore.Rags
             {
                 var property = properties.FirstOrDefault(x => x.Name == option.Name);
                 if (property == null) continue;
+                if (option.Value == null) continue;
                 if (option.IsTyped)
                 {
                     property.SetValue(revived, option.Value, null);
                 }
-                else if (option.Value != null)
+                else
                 {
                     object revivedValue = null;
                     //Let's make use of the ArgRevivers to do the heavy lifting of parsing the type, 
