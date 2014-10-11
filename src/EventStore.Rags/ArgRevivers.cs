@@ -105,48 +105,32 @@ namespace EventStore.Rags
                 var list = (IList)Activator.CreateInstance(t);
                 // TODO - Maybe support custom delimiters via an attribute on the property
                 // TODO - Maybe do a full parse of the value to check for quoted strings
-
-                if (string.IsNullOrWhiteSpace(value) == false)
+                if (string.IsNullOrWhiteSpace(value)) return list;
+                foreach (var element in value.Split(','))
                 {
-                    foreach (var element in value.Split(','))
-                    {
-                        list.Add(Revive(t.GetGenericArguments()[0], name + "_element", element));
-                    }
+                    list.Add(Revive(t.GetGenericArguments()[0], name + "_element", element));
                 }
                 return list;
             }
-            else if (t.IsArray)
+            if (t.IsArray)
             {
                 var elements = value.Split(',');
 
-                if (string.IsNullOrWhiteSpace(value) == false)
+                if (string.IsNullOrWhiteSpace(value) != false) return Array.CreateInstance(t.GetElementType(), 0);
+                var array = Array.CreateInstance(t.GetElementType(), elements.Length);
+                for (var i = 0; i < array.Length; i++)
                 {
-                    Array array = Array.CreateInstance(t.GetElementType(), elements.Length);
-                    for (int i = 0; i < array.Length; i++)
-                    {
-                        array.SetValue(Revive(t.GetElementType(), name + "[" + i + "]", elements[i]), i);
-                    }
-                    return array;
+                    array.SetValue(Revive(t.GetElementType(), name + "[" + i + "]", elements[i]), i);
                 }
-                else
-                {
-                    return Array.CreateInstance(t.GetElementType(), 0);
-                }
+                return array;
             }
-            else if (Revivers.ContainsKey(t))
-            {
+            if (Revivers.ContainsKey(t))
                 return Revivers[t].Invoke(name, value);
-            }
-            else if (System.ComponentModel.TypeDescriptor.GetConverter(t).CanConvertFrom(typeof(string)))
-            {
+            if (System.ComponentModel.TypeDescriptor.GetConverter(t).CanConvertFrom(typeof(string)))
                 return System.ComponentModel.TypeDescriptor.GetConverter(t).ConvertFromString(value);
-            }
-            else
-            {
-                // Intentionally not an InvalidArgDefinitionException.  Other internal code should call 
-                // CanRevive and this block should never be executed.
-                throw new ArgumentException("Cannot revive type " + t.FullName + ". Callers should be calling CanRevive before calling Revive()");
-            }
+            // Intentionally not an InvalidArgDefinitionException.  Other internal code should call 
+            // CanRevive and this block should never be executed.
+            throw new ArgumentException("Cannot revive type " + t.FullName + ". Callers should be calling CanRevive before calling Revive()");
         }
 
         internal static void SearchAssemblyForRevivers(Assembly a)
