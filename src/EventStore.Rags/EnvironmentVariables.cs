@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace EventStore.Rags
 {
-    public class EnvironmentVariables 
+    public static class EnvironmentVariables 
     {
-        public IEnumerable<OptionSource> Parse<TOptions>(Func<string, string> nameTranslator) where TOptions : class
+        public static IEnumerable<OptionSource> Parse<TOptions>(Func<string, string> nameTranslator) where TOptions : class
         {
             return 
                 (from property in typeof (TOptions).GetProperties() 
