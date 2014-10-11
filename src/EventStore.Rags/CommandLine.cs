@@ -6,7 +6,6 @@ namespace EventStore.Rags
 {
     public class CommandLine
     {
-        private List<OptionSource> _parsedOptions;
         public static IEnumerable<OptionSource> Parse<TOptions>(string[] args) where TOptions : class
         {
             //TODO GFY drop lower here
