@@ -28,6 +28,9 @@ namespace RagsPlayground
             var merged = sources.MergeOptions((existing, potential) => true); //last one in wins but can write your own function
             merged.Dump();
             merged.ApplyTo<SomeOptionType>();
+
+            //wouldnt this be nicer as
+            //GetConfig() |> Merge |> ApplyTo<SomeOptionType>
         }
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig()
