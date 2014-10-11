@@ -8,7 +8,7 @@ namespace EventStore.Rags
 {
     public class Yaml 
     {
-        public IEnumerable<OptionSource> FromFile(string fileName, string sectionName)
+        public static IEnumerable<OptionSource> FromFile(string fileName, string sectionName)
         {
             string source = string.Format("Yaml {0}:{1}", fileName, sectionName);
             var options = new List<OptionSource>();
