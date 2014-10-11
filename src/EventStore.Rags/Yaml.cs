@@ -49,7 +49,8 @@ namespace EventStore.Rags
                     var values = yamlSequenceNode.Children.Select(x => ((YamlScalarNode)x).Value);
                     try
                     {
-                        options.Add(new OptionSource("Config File", yamlElement.Key.ToString(), values.ToArray()));
+                        //TODO GFY DO WE PREFER STRINGS OR TYPES HERE?
+                        options.Add(OptionSource.Typed("Config File", yamlElement.Key.ToString(), values.ToArray()));
                     }
                     catch (InvalidCastException)
                     {
@@ -59,7 +60,7 @@ namespace EventStore.Rags
                 }
                 else if (yamlScalarNode != null)
                 {
-                    options.Add(new OptionSource("Config File", yamlElement.Key.ToString(), yamlElement.Value.ToString()));
+                    options.Add(OptionSource.Typed("Config File", yamlElement.Key.ToString(), yamlElement.Value));
                 }
             }
             return options;

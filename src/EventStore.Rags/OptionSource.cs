@@ -4,13 +4,25 @@
     {
         public string Source;
         public string Name;
+        public bool IsTyped;
         public object Value;
 
-        public OptionSource(string source, string name, object value)
+        public static OptionSource Typed(string source, string name, object value)
         {
-            this.Source = source;
-            this.Name = name;
-            this.Value = value;
+            return new OptionSource(source, name, true, value);
+        }
+
+        public static OptionSource String(string source, string name, object value)
+        {
+            return new OptionSource(source, name, false, value);
+        }
+
+        public OptionSource(string source, string name, bool isTyped, object value)
+        {
+            Source = source;
+            Name = name;
+            IsTyped = isTyped;
+            Value = value;
         }
     }
 }
