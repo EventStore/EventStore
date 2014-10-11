@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgDescriptionAttribute.cs" />
+    <Compile Include="CommandLine.cs" />
     <Compile Include="EnvironmentVariables.cs" />
     <Compile Include="IEnumerableExtensions.cs" />
     <Compile Include="NameTranslators.cs" />
