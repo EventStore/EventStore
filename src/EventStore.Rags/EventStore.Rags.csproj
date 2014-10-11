@@ -43,13 +43,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgDescriptionAttribute.cs" />
+    <Compile Include="ArgReviverAttribute.cs" />
+    <Compile Include="ArgRevivers.cs" />
+    <Compile Include="ArgShortcut.cs" />
+    <Compile Include="ArgShortcutPolicy.cs" />
     <Compile Include="CommandLine.cs" />
     <Compile Include="EnvironmentVariables.cs" />
-    <Compile Include="IEnumerableExtensions.cs" />
+    <Compile Include="Exceptions.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="NameTranslators.cs" />
     <Compile Include="OptionApplicator.cs" />
     <Compile Include="OptionException.cs" />
     <Compile Include="OptionSource.cs" />
+    <Compile Include="SecureStringArgument.cs" />
     <Compile Include="TypeDefaultOptions.cs" />
     <Compile Include="Yaml.cs" />
   </ItemGroup>
