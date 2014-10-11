@@ -26,11 +26,11 @@ namespace EventStore.Rags
                     if (option.Value.GetType().IsArray)
                     {
                         var commaJoined = string.Join(",", ((string[])option.Value));
-                        revivedValue = ArgRevivers.Revive(property.PropertyType, option.Name, commaJoined);
+                        revivedValue = TypeMap.Translate(property.PropertyType, option.Name, commaJoined);
                     }
                     else
                     {
-                        revivedValue = ArgRevivers.Revive(property.PropertyType, option.Name, option.Value.ToString());
+                        revivedValue = TypeMap.Translate(property.PropertyType, option.Name, option.Value.ToString());
                     }
                     property.SetValue(revived, revivedValue, null);
                 }

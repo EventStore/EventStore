@@ -9,7 +9,7 @@ namespace EventStore.Rags
     /// A PowerArgs argument type that can be used to accept user input without that input appearing on the command line.
     /// It uses secure strings under the hood.
     /// </summary>
-    internal class SecureStringArgument
+    public class SecureStringArgument
     {
         string name;
         internal SecureStringArgument(string name)
