@@ -9,7 +9,7 @@ namespace EventStore.Rags
         {
             var defaultOptions = new TOptions();
             return typeof (TOptions).GetProperties()
-                .Select(property => new OptionSource("<DEFAULT>", property.Name, property.GetValue(defaultOptions, null).ToString()));
+                .Select(property => new OptionSource("<DEFAULT>", property.Name, property.GetValue(defaultOptions, null)));
         }
     }
 }
