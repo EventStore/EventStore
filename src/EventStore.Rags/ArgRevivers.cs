@@ -36,11 +36,8 @@ namespace EventStore.Rags
                 (t.GetInterfaces().Contains(typeof(IList)) && t.IsGenericType && CanRevive(t.GetGenericArguments()[0])) ||
                 (t.IsArray && CanRevive(t.GetElementType())))
                 return true;
-            SearchAssemblyForRevivers(t.Assembly);
 
-            if (System.ComponentModel.TypeDescriptor.GetConverter(t).CanConvertFrom(typeof(string))) return true;
-
-            return Revivers.ContainsKey(t);
+            return System.ComponentModel.TypeDescriptor.GetConverter(t).CanConvertFrom(typeof(string)) || Revivers.ContainsKey(t);
         }
 
         internal static object ReviveEnum(Type t, string value, bool ignoreCase)
