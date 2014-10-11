@@ -130,87 +130,61 @@ namespace EventStore.Rags
             throw new ArgumentException("Cannot revive type " + t.FullName + ". Callers should be calling CanRevive before calling Revive()");
         }
 
-        internal static void SearchAssemblyForRevivers(Assembly a)
-        {
-            foreach (var type in a.GetTypes())
-            {
-                var revivers = from m in type.GetMethods(BindingFlags.Static | BindingFlags.Public)
-                    where m.HasAttr<ArgReviverAttribute>() &&
-                          m.GetParameters().Length == 2 &&
-                          m.GetParameters()[0].ParameterType == typeof(string) &&
-                          m.GetParameters()[1].ParameterType == typeof(string) &&
-                          m.ReturnType != typeof(void)
-                    select m;
-
-                foreach (var reviver in revivers)
-                {
-                    var r = reviver;
-                    if (Revivers.ContainsKey(r.ReturnType) == false)
-                    {
-                        Revivers.Add(r.ReturnType, (key, val) => r.Invoke(null, new object[] { key, val }));
-                    }
-                }
-            }
-        }
-
         private static void LoadDefaultRevivers(Dictionary<Type, Func<string, string, object>> revivers)
         {
-            revivers.Add(typeof(bool), (prop, val) =>
-            {
-                return val != null && val.ToLower().ToString() != "false" && val != "0"; // null means the switch value was not specified.  If it was specified then it's automatically true
-            });
+            Register((prop, val) => val != null && val.ToLower().ToString() != "false" && val != "0");
 
-            revivers.Add(typeof(Guid), (prop, val) =>
+            Register((prop, val) =>
             {
                 Guid ret;
                 if (Guid.TryParse(val, out ret) == false) throw new FormatException(String.Format("value for {0} must be a Guid: {1}", prop, val));
                 return ret;
             });
 
-            revivers.Add(typeof(byte), (prop, val) =>
+            Register((prop, val) =>
             {
                 byte ret;
                 if (byte.TryParse(val, out ret) == false) throw new FormatException(String.Format("value for {0} must be a byte: {1}", prop, val));
                 return ret;
             });
 
-            revivers.Add(typeof(int), (prop, val) =>
+            Register((prop, val) =>
             {
                 int ret;
                 if (int.TryParse(val, out ret) == false) throw new FormatException(String.Format("value for {0} must be an integer: {1}", prop, val));
                 return ret;
             });
 
-            revivers.Add(typeof(long), (prop, val) =>
+            Register((prop, val) =>
             {
                 long ret;
                 if (long.TryParse(val, out ret) == false) throw new FormatException(String.Format("value for {0} must be an integer: {1}", prop, val));
                 return ret;
             });
 
-            revivers.Add(typeof(double), (prop, val) =>
+            Register((prop, val) =>
             {
                 double ret;
                 if (double.TryParse(val, out ret) == false) throw new FormatException(String.Format("value for {0} must be a number: {1}", prop, val));
                 return ret;
             });
 
-            revivers.Add(typeof(string), (prop, val) => val);
+            Register((prop, val) => val);
 
-            revivers.Add(typeof(DateTime), (prop, val) =>
+            Register((prop, val) =>
             {
                 DateTime ret;
                 if (DateTime.TryParse(val, out ret) == false) throw new FormatException(String.Format("value for {0} must be a valid date time: {1}", prop, val));
                 return ret;
             });
 
-            revivers.Add(typeof(SecureStringArgument), (prop, val) =>
+            Register((prop, val) =>
             {
                 if (val != null) throw new ArgException("The value for " + prop + " cannot be specified on the command line");
                 return new SecureStringArgument(prop);
             });
 
-            revivers.Add(typeof(Uri), (prop, val) =>
+            Register((prop, val) =>
             {
                 try
                 {
