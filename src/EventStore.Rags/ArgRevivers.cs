@@ -23,13 +23,10 @@ namespace EventStore.Rags
             }
         }
 
-        //TODO GFY SHOW PIETER HOW TO MAKE THESE STRONGLY TYPED THEY ARE
-        //MOAR BETTER THAT WAY!
-        //TODO GFY LETS LOOK AT THE FUNCTIONAL WAY
-        public static void Register<T>(Func<string, string, object> reviver)
+        public static void Register<T>(Func<string, string, T> reviver)
         {
             if (reviver == null) throw new ArgumentNullException("reviver");
-            revivers.Add(typeof (T), reviver);
+            revivers.Add(typeof (T), (x,y) => reviver(x,y));
         }
 
         internal static bool CanRevive(Type t)
@@ -198,10 +195,7 @@ namespace EventStore.Rags
                 return ret;
             });
 
-            revivers.Add(typeof(string), (prop, val) =>
-            {
-                return val;
-            });
+            revivers.Add(typeof(string), (prop, val) => val);
 
             revivers.Add(typeof(DateTime), (prop, val) =>
             {
