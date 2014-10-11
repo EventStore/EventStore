@@ -25,6 +25,7 @@ namespace EventStore.Rags
 
         //TODO GFY SHOW PIETER HOW TO MAKE THESE STRONGLY TYPED THEY ARE
         //MOAR BETTER THAT WAY!
+        //TODO GFY LETS LOOK AT THE FUNCTIONAL WAY
         public static void Register<T>(Func<string, string, object> reviver)
         {
             if (reviver == null) throw new ArgumentNullException("reviver");
