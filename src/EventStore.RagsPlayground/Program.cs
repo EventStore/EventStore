@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
+using System.IO;
 using System.Linq;
 using EventStore.Rags;
 
@@ -9,9 +11,13 @@ namespace RagsPlayground
     public class SomeOptionType
     {
         [ArgDescription("The first string", "firstgroup")]
-        public string MyFirstOption;
+        public string MyFirstOption { get; set; }
+
         [ArgDescription("The first string", "firstgroup")]
-        public int MyFirstCount;
+        public int MyFirstCount { get; set; }
+
+        [ArgDescription("Config", "firstgroup")]
+        public string Config { get; set; }
 
         public SomeOptionType()
         {
@@ -43,16 +49,22 @@ namespace RagsPlayground
         private static OptionSource ResolvePrecedence(IGrouping<string, OptionSource> optionSources)
         {
             //go through and pick one based on your rules!
-            return optionSources.FirstOrDefault();
+            return optionSources.First();
         }
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string [] args)
         {
-            //var commandline = CommandLine.Parse<SomeOptionType>(args);
+            var commandline = CommandLine.Parse<SomeOptionType>(args);
+            var commanddict = commandline.ToDictionary(x => x.Name);
+            yield return commandline;
             yield return
                 EnvironmentVariables.Parse<SomeOptionType>(x => NameTranslators.PrefixEnvironmentVariables(x, "ES"));
-            //yield return
-            //    Yaml.FromFile(@"C:\shitbird.yaml", "foo"); //can get config file from commandline if it exists or help etc
+            var configFile = commanddict["Config"].Value as string;
+            if (configFile != null && File.Exists(configFile))
+            {
+                yield return
+                    Yaml.FromFile(@"C:\shitbird.yaml", "foo");
+            }
             yield return
                 TypeDefaultOptions.Get<SomeOptionType>();
             yield return
