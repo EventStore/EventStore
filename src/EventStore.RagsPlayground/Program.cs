@@ -58,7 +58,7 @@ namespace RagsPlayground
             var commanddict = commandline.ToDictionary(x => x.Name);
             yield return commandline;
             yield return
-                EnvironmentVariables.Parse<SomeOptionType>(x => NameTranslators.PrefixEnvironmentVariables(x, "ES"));
+                EnvironmentVariables.Parse<SomeOptionType>(x => NameTranslators.PrefixEnvironmentVariable(x, "ES"));
             var configFile = commanddict["Config"].Value as string;
             if (configFile != null && File.Exists(configFile))
             {
