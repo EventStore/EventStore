@@ -68,18 +68,7 @@ namespace EventStore.Rags
 
         private static string MakeString(IEnumerable<string> values)
         {
-            string ret = "";
-            bool first = true;
-            foreach (var v in values)
-            {
-                if (first)
-                {
-                    ret += ",";
-                    first = false;
-                }
-                ret += v;
-            }
-            return ret;
+            return string.Join(",", values);
         }
     }
 }
