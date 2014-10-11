@@ -8,7 +8,7 @@ namespace EventStore.Rags
 {
     public class Yaml 
     {
-        public static IEnumerable<OptionSource> FromFile(string fileName, string sectionName)
+        public static IEnumerable<OptionSource> FromFile(string fileName, string sectionName = null)
         {
             string source = string.Format("Yaml {0}:{1}", fileName, sectionName);
             var options = new List<OptionSource>();
@@ -50,7 +50,7 @@ namespace EventStore.Rags
                     try
                     {
                         //TODO GFY DO WE PREFER STRINGS OR TYPES HERE?
-                        options.Add(OptionSource.Typed("Config File", yamlElement.Key.ToString(), values.ToArray()));
+                        options.Add(OptionSource.String("Config File", yamlElement.Key.ToString(), values.ToArray()));
                     }
                     catch (InvalidCastException)
                     {
@@ -60,7 +60,7 @@ namespace EventStore.Rags
                 }
                 else if (yamlScalarNode != null)
                 {
-                    options.Add(OptionSource.Typed("Config File", yamlElement.Key.ToString(), yamlElement.Value));
+                    options.Add(OptionSource.String("Config File", yamlElement.Key.ToString(), yamlElement.Value.ToString()));
                 }
             }
             return options;

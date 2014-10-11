@@ -4,6 +4,7 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using EventStore.Rags;
+using System.Net;
 
 namespace RagsPlayground
 {
@@ -16,6 +17,10 @@ namespace RagsPlayground
         [ArgDescription("The first string", "firstgroup")]
         public int MyFirstCount { get; set; }
 
+        public string[] MyStringArrayOption { get; set; }
+
+        public IPAddress[] MyIPAddresses { get; set; }
+
         [ArgDescription("Config", "firstgroup")]
         public string Config { get; set; }
 
@@ -23,6 +28,8 @@ namespace RagsPlayground
         {
             MyFirstCount = 5;
             MyFirstOption = "greg";
+            MyStringArrayOption = new string[] { "first", "second" };
+            MyIPAddresses = new IPAddress[] { IPAddress.Loopback, IPAddress.Loopback };
         }
 
         public override string ToString()
@@ -39,6 +46,7 @@ namespace RagsPlayground
                 .ToLookup(x => x.Name)
                 .Select(ResolvePrecedence);
                 //.ApplyTo<SomeOptionType>();
+            var appliedConfig = resolvedConfig.ApplyTo<SomeOptionType>();
             foreach (var item in resolvedConfig)
             {
                 Console.WriteLine("{0} : {1}={2}", item.Source, item.Name, item.Value);
@@ -58,12 +66,12 @@ namespace RagsPlayground
             var commanddict = commandline.ToDictionary(x => x.Name);
             yield return commandline;
             yield return
-                EnvironmentVariables.Parse<SomeOptionType>(x => NameTranslators.PrefixEnvironmentVariable(x, "ES"));
-            var configFile = commanddict["Config"].Value as string;
+                EnvironmentVariables.Parse<SomeOptionType>(x => NameTranslators.PrefixEnvironmentVariable(x, "EVENTSTORE"));
+            var configFile = commanddict.ContainsKey("Config") ? commanddict["Config"].Value as string : null;
             if (configFile != null && File.Exists(configFile))
             {
                 yield return
-                    Yaml.FromFile(@"C:\shitbird.yaml", "foo");
+                    Yaml.FromFile(configFile);
             }
             yield return
                 TypeDefaultOptions.Get<SomeOptionType>();
