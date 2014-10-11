@@ -23,6 +23,14 @@ namespace EventStore.Rags
             }
         }
 
+        //TODO GFY SHOW PIETER HOW TO MAKE THESE STRONGLY TYPED THEY ARE
+        //MOAR BETTER THAT WAY!
+        public static void Register<T>(Func<string, string, object> reviver)
+        {
+            if (reviver == null) throw new ArgumentNullException("reviver");
+            revivers.Add(typeof (T), reviver);
+        }
+
         internal static bool CanRevive(Type t)
         {
             if (Revivers.ContainsKey(t) ||
@@ -155,12 +163,9 @@ namespace EventStore.Rags
                 foreach (var reviver in revivers)
                 {
                     var r = reviver;
-                    if (ArgRevivers.Revivers.ContainsKey(r.ReturnType) == false)
+                    if (Revivers.ContainsKey(r.ReturnType) == false)
                     {
-                        ArgRevivers.Revivers.Add(r.ReturnType, (key, val) =>
-                        {
-                            return r.Invoke(null, new object[] { key, val });
-                        });
+                        Revivers.Add(r.ReturnType, (key, val) => r.Invoke(null, new object[] { key, val }));
                     }
                 }
             }
