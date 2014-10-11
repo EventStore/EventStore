@@ -49,7 +49,7 @@ namespace EventStore.Rags
                     var values = yamlSequenceNode.Children.Select(x => ((YamlScalarNode)x).Value);
                     try
                     {
-                        options.Add(new OptionSource("Config File", yamlElement.Key.ToString(), MakeString(values)));
+                        options.Add(new OptionSource("Config File", yamlElement.Key.ToString(), values.ToArray()));
                     }
                     catch (InvalidCastException)
                     {
@@ -59,7 +59,6 @@ namespace EventStore.Rags
                 }
                 else if (yamlScalarNode != null)
                 {
-                    //TODO GFY make sure ToString actually works here.
                     options.Add(new OptionSource("Config File", yamlElement.Key.ToString(), yamlElement.Value.ToString()));
                 }
             }

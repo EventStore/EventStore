@@ -4,8 +4,9 @@
     {
         public string Source;
         public string Name;
-        public string Value;
-        public OptionSource(string source, string name, string value)
+        public object Value;
+
+        public OptionSource(string source, string name, object value)
         {
             this.Source = source;
             this.Name = name;
