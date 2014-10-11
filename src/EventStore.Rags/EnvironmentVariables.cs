@@ -13,7 +13,7 @@ namespace EventStore.Rags
                     let environmentVariableName = nameTranslator(property.Name) 
                     let environmentVariableValue = Environment.GetEnvironmentVariable(environmentVariableName) 
                     where !String.IsNullOrEmpty(environmentVariableValue) 
-                    select new OptionSource("Environment Variable", property.Name, environmentVariableValue)).ToList();
+                    select OptionSource.String("Environment Variable", property.Name, environmentVariableValue)).ToList();
         }
     }
 }

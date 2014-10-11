@@ -18,7 +18,7 @@ namespace EventStore.Rags
             foreach (var changedOption in changedOptions)
             {
                 var optionName = ((System.Reflection.PropertyInfo)changedOption.Source).Name;
-                ret.Add(new OptionSource("Command Line", optionName, changedOption.Source));
+                ret.Add(OptionSource.Typed("Command Line", optionName, changedOption.Source));
             }
             return ret;
         }

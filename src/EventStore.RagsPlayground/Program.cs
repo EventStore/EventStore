@@ -46,9 +46,9 @@ namespace RagsPlayground
         private static IEnumerable<OptionSource> MyOwnCustomDefaultsAintThatNeat()
         {
             //your function can get them however you see fit
-            yield return new OptionSource("myfunction", "shitbird", "3");
-            yield return new OptionSource("myfunction", "shitbird2", "hello");
-            yield return new OptionSource("myfunction", "answertoeverything", "42");
+            yield return OptionSource.Typed("myfunction", "shitbird", 3);
+            yield return OptionSource.Typed("myfunction", "shitbird2", "hello");
+            yield return OptionSource.String("myfunction", "answertoeverything", "42");
         }
     }
 }
