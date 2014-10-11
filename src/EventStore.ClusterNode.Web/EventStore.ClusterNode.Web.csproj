@@ -58,18 +58,44 @@
     <Folder Include="clusternode-web\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="clusternode-web\apple-touch-icon.png" />
-    <None Include="clusternode-web\es-tile.png" />
-    <None Include="clusternode-web\favicon.png" />
-    <None Include="clusternode-web\index.html" />
-    <None Include="clusternode-web\css\main.min.css" />
-    <None Include="clusternode-web\images\logo.svg" />
-    <None Include="clusternode-web\js\app.min.js" />
-    <None Include="clusternode-web\js\requirejs.min.js" />
-    <None Include="clusternode-web\js\ace\ace.js" />
-    <None Include="clusternode-web\js\ace\mode-javascript.js" />
-    <None Include="clusternode-web\js\ace\mode-json.js" />
-    <None Include="clusternode-web\js\ace\theme-monokai.js" />
-    <None Include="clusternode-web\js\ace\worker-javascript.js" />
+    <None Include="clusternode-web\apple-touch-icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\es-tile.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\favicon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\index.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\css\main.min.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\images\logo.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\js\app.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\js\requirejs.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\js\ace\ace.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\js\ace\mode-javascript.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\js\ace\mode-json.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\js\ace\theme-monokai.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="clusternode-web\js\ace\worker-javascript.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
