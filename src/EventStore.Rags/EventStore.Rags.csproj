@@ -46,6 +46,7 @@
     <Compile Include="EnvironmentVariables.cs" />
     <Compile Include="IEnumerableExtensions.cs" />
     <Compile Include="NameTranslators.cs" />
+    <Compile Include="OptionApplicator.cs" />
     <Compile Include="OptionException.cs" />
     <Compile Include="OptionSource.cs" />
     <Compile Include="TypeDefaultOptions.cs" />

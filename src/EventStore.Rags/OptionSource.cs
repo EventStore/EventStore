@@ -1,6 +1,6 @@
 ﻿namespace EventStore.Rags
 {
-    public struct OptionSource
+    public struct OptionSource 
     {
         public string Source;
         public string Name;

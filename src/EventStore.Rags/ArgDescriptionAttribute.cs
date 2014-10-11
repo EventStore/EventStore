@@ -1,6 +1,8 @@
-﻿namespace EventStore.Rags
+﻿using System;
+
+namespace EventStore.Rags
 {
-    public class ArgDescriptionAttribute
+    public class ArgDescriptionAttribute : Attribute
     {
         public string Description { get; private set; }
         public string Group { get; private set; }
