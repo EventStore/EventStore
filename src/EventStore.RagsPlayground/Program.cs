@@ -23,13 +23,11 @@ namespace RagsPlayground
         static void Main(string[] args)
         {
             var sources = GetConfig(args);
-            sources.ToList().ForEach(x => x.Dump());
             var merged = sources.MergeOptions((existing, potential) => true); //last one in wins but can write your own function
-            merged.Dump();
             merged.ApplyTo<SomeOptionType>();
 
             //wouldnt this be nicer as
-            //GetConfig() |> Merge |> ApplyTo<SomeOptionType>
+            //GetConfig |> Merge |> ApplyTo<SomeOptionType>
         }
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string [] args)
