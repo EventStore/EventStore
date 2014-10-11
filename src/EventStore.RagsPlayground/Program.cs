@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
 using EventStore.Rags;
 
 namespace RagsPlayground
 {
 
-    class SomeOptionType
+    public class SomeOptionType
     {
         [ArgDescription("The first string", "firstgroup")]
         public string MyFirstOption;
@@ -23,7 +22,7 @@ namespace RagsPlayground
     {
         static void Main(string[] args)
         {
-            var sources = GetConfig();
+            var sources = GetConfig(args);
             sources.ToList().ForEach(x => x.Dump());
             var merged = sources.MergeOptions((existing, potential) => true); //last one in wins but can write your own function
             merged.Dump();
@@ -33,9 +32,9 @@ namespace RagsPlayground
             //GetConfig() |> Merge |> ApplyTo<SomeOptionType>
         }
 
-        private static IEnumerable<IEnumerable<OptionSource>> GetConfig()
+        private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string [] args)
         {
-            //var commandline = CommandLine.Parse(args);
+            var commandline = CommandLine.Parse<SomeOptionType>(args);
             yield return
                 EnvironmentVariables.Parse<SomeOptionType>(x => NameTranslators.PrefixEnvironmentVariables(x, "ES"));
             yield return
