@@ -166,18 +166,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
-                int startEventNumber = fromEventNumber;
-                int endEventNumber = (int)Math.Min(int.MaxValue, (long)fromEventNumber + maxCount - 1);
+                var startEventNumber = fromEventNumber;
 
-                int minEventNumber = 0;
+                var minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
                     minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
                 if (metadata.TruncateBefore.HasValue)
                     minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
+                startEventNumber = Math.Max(startEventNumber, minEventNumber);
+                var endEventNumber = Math.Min(int.MaxValue, startEventNumber + maxCount - 1);
                 if (endEventNumber < minEventNumber)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
                                                      metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
-                startEventNumber = Math.Max(startEventNumber, minEventNumber);
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
