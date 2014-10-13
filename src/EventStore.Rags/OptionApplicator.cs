@@ -14,6 +14,7 @@ namespace EventStore.Rags
                 var property = properties.FirstOrDefault(x => x.Name == option.Name);
                 if (property == null) continue;
                 if (option.Value == null) continue;
+                if (!property.PropertyType.IsAssignableFrom(option.Value.GetType())) continue;
                 if (option.IsTyped)
                 {
                     property.SetValue(revived, option.Value, null);
