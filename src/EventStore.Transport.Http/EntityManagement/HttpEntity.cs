@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Specialized;
 using System.Net;
 using System.Security.Principal;
 using EventStore.Common.Utils;
@@ -19,10 +20,34 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
 
-            RequestedUrl = request.Url;
+            RequestedUrl = BuildRequestedUrl(request.Url, request.Headers);
             Request = request;
             Response = response;
             User = user;
+        }
+
+        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders)
+        {
+            var uriBuilder = new UriBuilder(requestUrl);
+
+            var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
+
+            if (!string.IsNullOrEmpty(forwardedPortHeaderValue))
+            {
+                int requestPort;
+                if (Int32.TryParse(forwardedPortHeaderValue, out requestPort))
+                {
+                    uriBuilder.Port = requestPort;
+                }
+            }
+
+            var forwardedProtoHeaderValue = requestHeaders[ProxyHeaders.XForwardedProto];
+            if (!string.IsNullOrEmpty(forwardedProtoHeaderValue))
+            {
+                uriBuilder.Scheme = forwardedProtoHeaderValue;
+            }
+
+            return uriBuilder.Uri;
         }
 
         private HttpEntity(IPrincipal user)

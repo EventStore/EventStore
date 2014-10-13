@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         new[]
                             {
                                 new KeyValuePair<string, string>(
-                                    "Location",   new Uri(match.BaseUri, toUrl).AbsoluteUri)
+                                    "Location",   new Uri(http.HttpEntity.RequestedUrl, toUrl).AbsoluteUri)
                             }, Console.WriteLine));
         }
     }
