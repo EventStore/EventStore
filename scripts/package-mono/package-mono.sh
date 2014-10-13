@@ -114,7 +114,7 @@ pushd $SCRIPTDIR/../../bin/clusternode/
 
 if [[ $OS == "Darwin" ]] ; then
     mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
-    gcc -o clusternode $ES_COMPILE_FLAGS clusternode.c clusternode.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
+    gcc -mmacosx-version-min=10.6 -o clusternode $ES_COMPILE_FLAGS clusternode.c clusternode.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
 else
     mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
     cc -o clusternode -Wall `pkg-config --cflags monosgen-2` clusternode.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` clusternode.a
