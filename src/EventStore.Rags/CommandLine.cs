@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace EventStore.Rags
@@ -14,18 +15,18 @@ namespace EventStore.Rags
             var properties = typeof(TOptions).GetProperties();
             foreach (var argument in parsedArguments)
             {
-                var property = properties.FirstOrDefault(x => string.Equals(argument.Key, x.Name, System.StringComparison.OrdinalIgnoreCase));
+                var property = properties.FirstOrDefault(x => string.Equals(argument.Item1, x.Name, System.StringComparison.OrdinalIgnoreCase));
                 if (property != null)
                 {
-                    ret.Add(OptionSource.String("Command Line", property.Name, argument.Value));
+                    ret.Add(OptionSource.String("Command Line", property.Name, argument.Item2));
                 }
             }
             return ret;
         }
 
-        internal static Dictionary<string, string> Parse(string[] args)
+        internal static IEnumerable<Tuple<string, string>> Parse(string[] args)
         {
-            var result = new Dictionary<string, string>();
+            var result = new List<Tuple<string, string>>();
             for (int i = 0; i < args.Length; i++)
             {
                 var token = args[i];
@@ -68,12 +69,7 @@ namespace EventStore.Rags
                         }
                     }
 
-                    if (result.ContainsKey(key))
-                    {
-                        throw new DuplicateArgException("Argument specified more than once: " + key);
-                    }
-
-                    result.Add(key.Replace("-", ""), value);
+                    result.Add(new Tuple<string, string>(key.Replace("-", ""), value));
                 }
             }
 
