@@ -19,6 +19,7 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Services.Transport.Http.Controllers;
 
 namespace EventStore.Core.Tests.Helpers
 {
@@ -100,7 +101,7 @@ namespace EventStore.Core.Tests.Helpers
                 ExternalTcpEndPoint, "ExTCP SECURE ENDPOINT:", ExternalTcpSecEndPoint, "ExHTTP ENDPOINT:",
                 ExternalHttpEndPoint);
 
-            Node = new ClusterVNode(Db, singleVNodeSettings, subsystems: subsystems, gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
+            Node = new ClusterVNode(Db, singleVNodeSettings, infoController: new InfoController(null), subsystems: subsystems, gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
 
