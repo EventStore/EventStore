@@ -334,7 +334,7 @@
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxage_specified.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxcount_specified.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_start_from.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_truncatebefore.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_too_big_start_from.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_big_start_from.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\when_having_stream_with_truncatebefore_specified.cs" />
