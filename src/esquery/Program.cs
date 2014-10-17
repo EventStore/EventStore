@@ -116,7 +116,7 @@ namespace esquery
             var request = WebRequest.Create(baseuri.AbsoluteUri +"projections/transient?enabled=yes");
             request.Method = "POST";
             request.ContentType = "application/json";
-            request.ContentLength = 10;
+            request.ContentLength = 0;
             request.Credentials = cred;
             request.PreAuthenticate = true;
             try
