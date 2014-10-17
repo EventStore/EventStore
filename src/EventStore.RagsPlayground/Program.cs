@@ -21,6 +21,8 @@ namespace RagsPlayground
 
         public IPAddress[] MyIPAddresses { get; set; }
 
+        public bool MyFlagOption { get; set; }
+
         [ArgDescription("Config", "firstgroup")]
         public string Config { get; set; }
 

@@ -8,12 +8,9 @@ namespace EventStore.Rags
     {
         public static IEnumerable<OptionSource> Parse<TOptions>(string[] args) where TOptions : class
         {
-            //TODO GFY drop lower here
-            //From poking around we actually want to use argParser here not all of powerargs, it needs a definition and a context
             var ret = new List<OptionSource>();
-            var parsedArguments = Parse(args);
             var properties = typeof(TOptions).GetProperties();
-            foreach (var argument in parsedArguments)
+            foreach (var argument in Parse(args).Normalize())
             {
                 var property = properties.FirstOrDefault(x => string.Equals(argument.Item1, x.Name, System.StringComparison.OrdinalIgnoreCase));
                 if (property != null)
@@ -41,12 +38,14 @@ namespace EventStore.Rags
 
                     // Handles a special case --arg-name- where we have a trailing -
                     // it's a shortcut way of disabling an option
-                    if (key.StartsWith("-") && key.EndsWith("-"))
+                    if (key.StartsWith("-") && key.EndsWith("-") || 
+                        key.StartsWith("-") && key.EndsWith("+"))
                     {
+                        value = key.Substring(key.Length - 1, 1);
                         key = key.Substring(1, key.Length - 2);
                     }
                     // Handles long form syntax --argName=argValue.
-                    if (key.StartsWith("-") && key.Contains("="))
+                    else if (key.StartsWith("-") && key.Contains("="))
                     {
                         var index = key.IndexOf("=");
                         value = key.Substring(index + 1);
@@ -69,11 +68,21 @@ namespace EventStore.Rags
                         }
                     }
 
-                    result.Add(new Tuple<string, string>(key.Replace("-", ""), value));
+                    yield return new Tuple<string, string>(key.Replace("-", ""), value);
                 }
             }
 
-            return result;
+            yield break;
+        }
+    }
+
+    public static class CommandLineExtensions
+    {
+        public static IEnumerable<Tuple<string, string>> Normalize(this IEnumerable<Tuple<string, string>> source)
+        {
+            return source.Select(x => new Tuple<string, string>(x.Item1, 
+                x.Item2 == "+" ? "True" : 
+                x.Item2 == "-" ? "False" : x.Item2));
         }
     }
 }
