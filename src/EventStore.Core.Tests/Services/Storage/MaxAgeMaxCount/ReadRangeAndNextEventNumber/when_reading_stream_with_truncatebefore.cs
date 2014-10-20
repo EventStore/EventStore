@@ -4,7 +4,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNextEventNumber
 {
-    public class when_reading_stream_with_truncatebefore: ReadIndexTestScenario
+    public class when_reading_stream_with_truncatebefore : ReadIndexTestScenario
     {
         private EventRecord _event3;
         private EventRecord _event4;
@@ -25,18 +25,34 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 0, 2);
             Assert.AreEqual(ReadStreamResult.Success, res.Result);
-            Assert.AreEqual(2, res.NextEventNumber);
+            Assert.AreEqual(4, res.NextEventNumber);
             Assert.AreEqual(4, res.LastEventNumber);
             Assert.IsFalse(res.IsEndOfStream);
 
             var records = res.Records;
-            Assert.AreEqual(0, records.Length);
+            Assert.AreEqual(2, records.Length);
         }
 
         [Test]
-        public void on_read_forward_from_start_to_active_next_event_number_is_last_read_event_plus_1_and_its_not_end_of_stream()
+        public void on_read_forward_from_start_to_active_next_event_number_is_last_read_event_plus_1_and_its_the_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 0, 4);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
+            Assert.AreEqual(5, res.NextEventNumber);
+            Assert.AreEqual(4, res.LastEventNumber);
+            Assert.IsTrue(res.IsEndOfStream);
+
+            var records = res.Records;
+            Assert.AreEqual(3, records.Length);
+            Assert.AreEqual(_event3, records[0]);
+            Assert.AreEqual(_event4, records[1]);
+            Assert.AreEqual(_event5, records[2]);
+        }
+
+        [Test]
+        public void on_read_forward_from_expired_to_active_next_event_number_is_last_read_event_plus_1_and_its_not_end_of_stream()
+        {
+            var res = ReadIndex.ReadStreamEventsForward("ES", 1, 2);
             Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(4, res.NextEventNumber);
             Assert.AreEqual(4, res.LastEventNumber);
@@ -46,20 +62,6 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
             Assert.AreEqual(2, records.Length);
             Assert.AreEqual(_event3, records[0]);
             Assert.AreEqual(_event4, records[1]);
-        }
-
-        [Test]
-        public void on_read_forward_from_expired_to_active_next_event_number_is_last_read_event_plus_1_and_its_not_end_of_stream()
-        {
-            var res = ReadIndex.ReadStreamEventsForward("ES", 1, 2);
-            Assert.AreEqual(ReadStreamResult.Success, res.Result);
-            Assert.AreEqual(3, res.NextEventNumber);
-            Assert.AreEqual(4, res.LastEventNumber);
-            Assert.IsFalse(res.IsEndOfStream);
-
-            var records = res.Records;
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual(_event3, records[0]);
         }
 
         [Test]
