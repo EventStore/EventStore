@@ -163,17 +163,12 @@ namespace EventStore.Rags
             return source.SelectMany(x => x);
         }
 
-        public static IEnumerable<OptionSource> Normalize<TOptions>(this IEnumerable<OptionSource> source)
+        public static IEnumerable<OptionSource> Normalize(this IEnumerable<OptionSource> source)
         {
-            var properties = typeof(TOptions).GetProperties();
             return source.Select(x => new OptionSource(x.Source, x.Name, x.IsTyped,
-                properties.HasBooleanNamed(x.Name) && x.Value.ToString() == "+" ? "True" :
-                properties.HasBooleanNamed(x.Name) && x.Value.ToString() == "-" ? "False" :
-                properties.HasBooleanNamed(x.Name) && x.Value.ToString() == "" ? "True" : x.Value));
-        }
-        public static bool HasBooleanNamed(this IEnumerable<PropertyInfo> properties, string name)
-        {
-            return properties.Any(x => string.Equals(name, x.Name, System.StringComparison.OrdinalIgnoreCase) && x.PropertyType == typeof(bool));
+                x.Value.ToString() == "+" ? "True" :
+                x.Value.ToString() == "-" ? "False" :
+                x.Value.ToString() == "" ? "True" : x.Value));
         }
     }
 }

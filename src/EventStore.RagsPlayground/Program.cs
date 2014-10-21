@@ -63,7 +63,7 @@ namespace RagsPlayground
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string [] args)
         {
-            var commandline = CommandLine.Parse<SomeOptionType>(args).Normalize<SomeOptionType>();
+            var commandline = CommandLine.Parse<SomeOptionType>(args).Normalize();
             var commanddict = commandline.ToDictionary(x => x.Name);
             yield return commandline;
             yield return
