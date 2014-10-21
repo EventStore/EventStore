@@ -153,7 +153,7 @@ namespace EventStore.Rags
     }
     public static class IEnumerableExtensions
     {
-        public static T ApplyTo<T>(this IEnumerable<OptionSource> source) where T:class,new()
+        public static T ApplyTo<T>(this IEnumerable<OptionSource> source) where T : class,new()
         {
             return OptionApplicator.Get<T>(source);
         }
@@ -161,6 +161,19 @@ namespace EventStore.Rags
         public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> source)
         {
             return source.SelectMany(x => x);
+        }
+
+        public static IEnumerable<OptionSource> Normalize<TOptions>(this IEnumerable<OptionSource> source)
+        {
+            var properties = typeof(TOptions).GetProperties();
+            return source.Select(x => new OptionSource(x.Source, x.Name, x.IsTyped,
+                properties.HasBooleanNamed(x.Name) && x.Value.ToString() == "+" ? "True" :
+                properties.HasBooleanNamed(x.Name) && x.Value.ToString() == "-" ? "False" :
+                properties.HasBooleanNamed(x.Name) && x.Value.ToString() == "" ? "True" : x.Value));
+        }
+        public static bool HasBooleanNamed(this IEnumerable<PropertyInfo> properties, string name)
+        {
+            return properties.Any(x => string.Equals(name, x.Name, System.StringComparison.OrdinalIgnoreCase) && x.PropertyType == typeof(bool));
         }
     }
 }

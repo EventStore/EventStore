@@ -11,7 +11,7 @@ namespace EventStore.Rags
         {
             var ret = new List<OptionSource>();
             var properties = typeof(TOptions).GetProperties();
-            foreach (var argument in Parse(args).Normalize(properties))
+            foreach (var argument in Parse(args))
             {
                 var property = properties.FirstOrDefault(x => string.Equals(argument.Item1, x.Name, System.StringComparison.OrdinalIgnoreCase));
                 if (property != null)
@@ -74,21 +74,6 @@ namespace EventStore.Rags
             }
 
             yield break;
-        }
-    }
-
-    public static class CommandLineExtensions
-    {
-        public static IEnumerable<Tuple<string, string>> Normalize(this IEnumerable<Tuple<string, string>> source, IEnumerable<PropertyInfo> properties)
-        {
-            return source.Select(x => new Tuple<string, string>(x.Item1,
-                properties.HasBooleanNamed(x.Item1) && x.Item2 == "+" ? "True" :
-                properties.HasBooleanNamed(x.Item1) && x.Item2 == "-" ? "False" :
-                properties.HasBooleanNamed(x.Item1) && x.Item2 == "" ? "True" : x.Item2));
-        }
-        public static bool HasBooleanNamed(this IEnumerable<PropertyInfo> properties, string name)
-        {
-            return properties.Any(x => string.Equals(name, x.Name, System.StringComparison.OrdinalIgnoreCase) && x.PropertyType == typeof(bool));
         }
     }
 }
