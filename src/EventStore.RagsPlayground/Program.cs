@@ -53,7 +53,6 @@ namespace RagsPlayground
             {
                 Console.WriteLine("{0} : {1}={2}", item.Source, item.Name, item.Value);
             }
-
         }
 
         private static OptionSource ResolvePrecedence(IGrouping<string, OptionSource> optionSources)
@@ -64,7 +63,7 @@ namespace RagsPlayground
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string [] args)
         {
-            var commandline = CommandLine.Parse<SomeOptionType>(args);
+            var commandline = CommandLine.Parse<SomeOptionType>(args).Normalize<SomeOptionType>();
             var commanddict = commandline.ToDictionary(x => x.Name);
             yield return commandline;
             yield return
