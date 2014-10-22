@@ -202,6 +202,7 @@
     <Compile Include="Http\Streams\idempotency.cs" />
     <Compile Include="Http\Streams\basic.cs" />
     <Compile Include="Http\Streams\feed.cs" />
+    <Compile Include="Http\Streams\metadata.cs" />
     <Compile Include="Http\Streams\SetUpFixture.cs" />
     <Compile Include="Http\Streams\SpecificationWithLinkToToMaxCountDeletedEvents.cs" />
     <Compile Include="Http\Streams\XDocumentAtomExtensions.cs" />
