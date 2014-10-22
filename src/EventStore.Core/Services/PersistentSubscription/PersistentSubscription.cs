@@ -90,7 +90,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-
         public void TryReadingNewBatch()
         {
             if (_outstandingReadRequest) return;
@@ -191,6 +190,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void TryMarkCheckpoint(bool isTimeCheck)
         {
             var lowest = _outstandingMessages.GetLowestPosition();
+            //TODO? COMPETING better to make -1? as of now we are inclusive of checkpoint.
+            //TODO COMPETING need to check if buffered has lower due to retry into buffer!
             if (lowest == int.MinValue) lowest = _lastKnownMessage;
             //no outstanding messages. in this case we can say that the last known
             //event would be our checkpoint place (we have already completed it)
