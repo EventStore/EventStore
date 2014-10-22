@@ -250,7 +250,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 case NakAction.Park:
                     if (_outstandingMessages.GetMessageById(id, out e))
                     {
-                        ParkMessage(e.ResolvedEvent, "Client explicitly NAK'ed message.\n" + reason);
+                        ParkMessage(e.ResolvedEvent, "Client explicitly NAK'ed message.\n" + reason, 0);
                     }
                     break;
                 case NakAction.Stop:
@@ -265,14 +265,24 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        private void ParkMessage(ResolvedEvent resolvedEvent, string reason)
+        private void ParkMessage(ResolvedEvent resolvedEvent, string reason, int count)
         {
-            _settings.MessageParker.BeginParkMessage(resolvedEvent, reason, MessageParkCompleted);
-        }
-
-        private void MessageParkCompleted(ResolvedEvent e, OperationResult result)
-        {
-            //handle call back
+            _settings.MessageParker.BeginParkMessage(resolvedEvent, reason, (e, result) =>
+            {
+                if (result != OperationResult.Success)
+                {
+                    if (count < 5)
+                    {
+                        Log.Info("Unable to park message {0}/{1} operation failed {2} retrying.", e.OriginalStreamId,
+                        e.OriginalEventNumber, result);
+                        ParkMessage(e, reason, count + 1);
+                        return;
+                    }
+                    Log.Error("Unable to park message {0}/{1} operation failed {2} after retries. possible message loss.", e.OriginalStreamId,
+                        e.OriginalEventNumber, result);
+                }
+                _outstandingMessages.Remove(e.Event.EventId);
+            });
         }
 
         private void SkipMessage()
@@ -316,7 +326,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private bool ActionTakenForRetriedMessage(OutstandingMessage message)
         {
             if (message.RetryCount < _settings.MaxRetryCount) return false;
-            ParkMessage(message.ResolvedEvent, string.Format("Reached retry count of {0}", _settings.MaxRetryCount));
+            ParkMessage(message.ResolvedEvent, string.Format("Reached retry count of {0}", _settings.MaxRetryCount), 0);
             return true;
         }
 
