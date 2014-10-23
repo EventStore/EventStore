@@ -33,6 +33,19 @@ Function Exec
     }
 }
 
+Function Update-DependencyVersions() {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true, Position=0)][string]$NuSpec,
+        [Parameter(Mandatory=$true, Position=0)][string]$Version
+    )
+    (Get-Content $NuSpec) |
+        Foreach-Object {
+            $_ -replace "<dependency id=`"EventStore.Client`" version.+", "<dependency id=`"EventStore.Client`" version=`"$Version`" />"
+        } |
+        Set-Content $NuSpec
+}
+
 Function Run-NugetPack() {
     [CmdletBinding()]
     param(
@@ -66,5 +79,7 @@ Function Get-SourceDependencies() {
 }
 
 Get-SourceDependencies
+Update-DependencyVersions -NuSpec (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec") -Version $Version
 Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.nuspec")
 Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec")
+Exec { git checkout (Resolve-Path -Relative (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec")) }
