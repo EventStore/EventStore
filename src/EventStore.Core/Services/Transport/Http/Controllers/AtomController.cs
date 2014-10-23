@@ -374,6 +374,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             GetIncludedType(manager, out foo);
             if(!(foo == null || foo == SystemEventTypes.StreamMetadata)) {
                 SendBadRequest(manager, "Bad Request you should not include a event type for metadata");
+                return;
             }
             const string includedType = SystemEventTypes.StreamMetadata;
             int expectedVersion;
