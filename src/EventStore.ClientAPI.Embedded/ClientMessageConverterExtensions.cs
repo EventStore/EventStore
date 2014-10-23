@@ -8,37 +8,37 @@ namespace EventStore.ClientAPI.Embedded
 {
     internal static class ClientMessageConverterExtensions
     {
-        public static ClientMessage.ResolvedIndexedEvent[] ConvertToResolvedIndexEvents(this EventStore.Core.Data.ResolvedEvent[] events)
+        public static ClientMessage.ResolvedIndexedEvent[] ConvertToClientResolvedIndexEvents(this EventStore.Core.Data.ResolvedEvent[] events)
         {
             var resolvedEvents = new ClientMessage.ResolvedIndexedEvent[events.Length];
 
             for (int i = 0; i < events.Length; i++)
             {
-                resolvedEvents[i] = events[i].ConvertToResolvedIndexEvent();
+                resolvedEvents[i] = events[i].ConvertToClientResolvedIndexEvent();
             }
 
             return resolvedEvents;
         }
 
-        public static ClientMessage.ResolvedIndexedEvent ConvertToResolvedIndexEvent(this EventStore.Core.Data.ResolvedEvent @event)
+        public static ClientMessage.ResolvedIndexedEvent ConvertToClientResolvedIndexEvent(this EventStore.Core.Data.ResolvedEvent @event)
         {
             return new ClientMessage.ResolvedIndexedEvent(@event.Event.ToClientMessageEventRecord(),
                 @event.Link.ToClientMessageEventRecord());
         }
 
-        public static ClientMessage.ResolvedEvent[] ConvertToResolvedEvents(this EventStore.Core.Data.ResolvedEvent[] events)
+        public static ClientMessage.ResolvedEvent[] ConvertToClientResolvedEvents(this EventStore.Core.Data.ResolvedEvent[] events)
         {
             var resolvedEvents = new ClientMessage.ResolvedEvent[events.Length];
 
             for (int i = 0; i < events.Length; i++)
             {
-                resolvedEvents[i] = events[i].ConvertToResolvedEvent();
+                resolvedEvents[i] = events[i].ConvertToClientResolvedEvent();
             }
 
             return resolvedEvents;
         }
 
-        public static ClientMessage.ResolvedEvent ConvertToResolvedEvent(this EventStore.Core.Data.ResolvedEvent @event)
+        public static ClientMessage.ResolvedEvent ConvertToClientResolvedEvent(this EventStore.Core.Data.ResolvedEvent @event)
         {
             return new ClientMessage.ResolvedEvent(@event.Event.ToClientMessageEventRecord(),
                 @event.Link.ToClientMessageEventRecord(), @event.OriginalPosition.Value.CommitPosition,
