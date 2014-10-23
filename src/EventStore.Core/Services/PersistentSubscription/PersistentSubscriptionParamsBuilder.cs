@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private string _subscriptionId;
         private string _eventStreamId;
         private string _groupName;
-        private IPersistentSubscriptionEventLoader _eventLoader;
+        private IPersistentSubscriptionStreamReader _streamReader;
         private IPersistentSubscriptionCheckpointReader _checkpointReader;
         private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
         private IPersistentSubscriptionMessageParker _messageParker;
@@ -113,9 +113,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         /// </summary>
         /// <param name="loader"></param>
         /// <returns></returns>
-        public PersistentSubscriptionParamsBuilder WithEventLoader(IPersistentSubscriptionEventLoader loader)
+        public PersistentSubscriptionParamsBuilder WithEventLoader(IPersistentSubscriptionStreamReader loader)
         {
-            _eventLoader = loader;
+            _streamReader = loader;
             return this;
         }
         
@@ -315,7 +315,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._checkPointAfter,
                 builder._minCheckPointCount,
                 builder._maxCheckPointCount,
-                builder._eventLoader,
+                builder._streamReader,
                 builder._checkpointReader,
                 builder._checkpointWriter,
                 builder._messageParker);

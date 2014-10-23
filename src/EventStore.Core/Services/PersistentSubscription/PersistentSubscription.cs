@@ -7,7 +7,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
@@ -47,7 +46,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public PersistentSubscription(PersistentSubscriptionParams persistentSubscriptionParams)
         {
-            Ensure.NotNull(persistentSubscriptionParams.EventLoader, "eventLoader");
+            Ensure.NotNull(persistentSubscriptionParams.StreamReader, "eventLoader");
             Ensure.NotNull(persistentSubscriptionParams.CheckpointReader, "checkpointReader");
             Ensure.NotNull(persistentSubscriptionParams.CheckpointWriter, "checkpointWriter");
             Ensure.NotNull(persistentSubscriptionParams.MessageParker, "messageParker");
@@ -98,21 +97,21 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_streamBuffer.Live) return;
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
             _outstandingReadRequest = true;
-            _settings.EventLoader.BeginReadEvents(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
+            _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, _settings.ReadBatchSize, _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
         }
 
-        public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
+        public void HandleReadCompleted(ResolvedEvent[] events, int newposition, bool isEndOfStream)
         {
             if (!_ready) return;
             _outstandingReadRequest = false; //mark not in read (even if we break the loop can be restarted then)
-            if (events.Length == 0)
-            {
-                _streamBuffer.MoveToLive();
-                return;
-            }
             foreach (var ev in events)
             {
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
+            }
+            if (isEndOfStream)
+            {
+                _streamBuffer.MoveToLive();
+                return;
             }
             _lastPulledEvent = newposition;
             TryReadingNewBatch();
@@ -301,7 +300,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (_outstandingReadParkedRequest) return;
             _outstandingReadParkedRequest = true;
-            _settings.EventLoader.BeginReadEvents(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
+            ////_settings.StreamReader.BeginReadEvents(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
         }
 
         public void HandleParkedReadCompleted(ResolvedEvent[] events, int newposition, int stop)

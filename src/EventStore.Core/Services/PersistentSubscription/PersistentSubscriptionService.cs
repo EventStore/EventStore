@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IODispatcher _ioDispatcher;
         private readonly IPublisher _bus;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
-        private readonly IPersistentSubscriptionEventLoader _eventLoader;
+        private readonly IPersistentSubscriptionStreamReader _streamReader;
         private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
         private bool _started = false;
         private VNodeState _state;
@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
             _bus = bus;
             _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
-            _eventLoader = new PersistentSubscriptionEventLoader(_ioDispatcher, 100);
+            _streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
             //TODO CC configurable
             _tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000), 
                                                    new PublishEnvelope(_bus),
@@ -288,7 +288,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     checkPointAfter,
                     minCheckPointCount,
                     maxCheckPointCount,
-                    _eventLoader,
+                    _streamReader,
                     _checkpointReader,
                     new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
                     new PersistentSubscriptionMessageParker(key, _ioDispatcher)));

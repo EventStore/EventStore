@@ -167,7 +167,7 @@
     <Compile Include="Services\Gossip\IGossipSeedSource.cs" />
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
-    <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionEventLoader.cs" />
+    <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionStreamReader.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionMessageParker.cs" />
     <Compile Include="Services\PersistentSubscription\NakAction.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionMessageParker.cs" />
@@ -201,7 +201,7 @@
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointWriter.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionCheckpointReader.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionCheckpointWriter.cs" />
-    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionEventLoader.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionStreamReader.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionService.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionState.cs" />
     <Compile Include="Services\PersistentSubscription\SequencedEvent.cs" />

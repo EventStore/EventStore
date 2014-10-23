@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly int _liveBufferSize;
         private readonly int _bufferSize;
         private readonly int _readBatchSize;
-        private readonly IPersistentSubscriptionEventLoader _eventLoader;
+        private readonly IPersistentSubscriptionStreamReader _streamReader;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
         private IPersistentSubscriptionMessageParker _messageParker;
@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                            int startFrom, bool extraStatistics, TimeSpan messageTimeout, bool preferRoundRobin, 
                                            int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
                                            TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
-                                           IPersistentSubscriptionEventLoader eventLoader, 
+                                           IPersistentSubscriptionStreamReader streamReader, 
                                            IPersistentSubscriptionCheckpointReader checkpointReader, 
                                            IPersistentSubscriptionCheckpointWriter checkpointWriter,
                                            IPersistentSubscriptionMessageParker messageParker)
@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
             _readBatchSize = readBatchSize;
-            _eventLoader = eventLoader;
+            _streamReader = streamReader;
             _checkpointReader = checkpointReader;
             _checkpointWriter = checkpointWriter;
             _messageParker = messageParker;
@@ -89,9 +89,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _messageTimeout; }
         }
 
-        public IPersistentSubscriptionEventLoader EventLoader
+        public IPersistentSubscriptionStreamReader StreamReader
         {
-            get { return _eventLoader; }
+            get { return _streamReader; }
         }
 
         public IPersistentSubscriptionCheckpointReader CheckpointReader
