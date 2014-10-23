@@ -42,7 +42,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void BeginParkMessage(ResolvedEvent @event,string reason, Action<ResolvedEvent, OperationResult> completed)
         {
-            Log.Debug("Writing message to parked ");
             var metadata = new ParkedMessageMetadata() {Added = DateTime.Now, Reason = reason};
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, GetLinkToFor(@event), metadata.ToJson());
             _ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, evnt, SystemAccount.Principal, x => WriteStateCompleted(completed, @event, x));

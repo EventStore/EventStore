@@ -9,5 +9,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         void BeginParkMessage(ResolvedEvent @event, string reason, Action<ResolvedEvent, OperationResult> completed);
         void BeginReadEndSequence(Action<int?> completed);
         void BeginMarkParkedMessagesReprocessed(int sequence);
+
     }
 }

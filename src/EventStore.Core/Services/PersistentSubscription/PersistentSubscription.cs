@@ -96,7 +96,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_streamBuffer.Live) return;
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
             _outstandingReadRequest = true;
-            _settings.EventLoader.BeginLoadState(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
+            _settings.EventLoader.BeginReadEvents(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
         }
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition)
@@ -257,10 +257,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                     StopSubscription();
                     break;
                 case NakAction.Skip:
-                    SkipMessage();
+                    SkipMessage(id);
                     break;
                 default:
-                    SkipMessage();
+                    SkipMessage(id);
                     break;
             }
         }
@@ -285,9 +285,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             });
         }
 
-        private void SkipMessage()
+        private void SkipMessage(Guid id)
         {
-            //NOOP
+            _outstandingMessages.Remove(id);
         }
 
         private void StopSubscription()

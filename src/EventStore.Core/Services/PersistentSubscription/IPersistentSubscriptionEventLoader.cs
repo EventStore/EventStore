@@ -5,6 +5,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     public interface IPersistentSubscriptionEventLoader
     {
-        void BeginLoadState(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted);
+        void BeginReadEvents(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted);
     }
 }

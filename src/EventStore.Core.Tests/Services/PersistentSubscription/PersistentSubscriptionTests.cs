@@ -785,7 +785,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
             _action = action;
         }
 
-        public void BeginLoadState(Core.Services.PersistentSubscription.PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
+        public void BeginReadEvents(Core.Services.PersistentSubscription.PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
         {
             _action(startEventNumber);
         }
