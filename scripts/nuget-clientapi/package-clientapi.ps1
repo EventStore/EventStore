@@ -49,9 +49,16 @@ Function Update-DependencyVersions() {
 Function Run-NugetPack() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true, Position=0)][string]$NuspecPath
+        [Parameter(Mandatory=$true, Position=0)][string]$NuspecPath,
+	    [Parameter(Mandatory=$false, Position=1)][bool]$Analysis = $true
     )
-    Start-Process -NoNewWindow -Wait -FilePath $NugetPath -ArgumentList @("pack", "-symbols", "-version $Version", "$NuspecPath")
+    if ($Analysis -eq $true) {
+	$ArgumentList = @("pack", "-symbols", "-version $Version", "$NuspecPath")
+    } else {
+	$ArgumentList = @("pack", "-symbols", "-version $Version", "$NuspecPath", "-NoPackageAnalysis")
+    }
+
+    Start-Process -NoNewWindow -Wait -FilePath $NugetPath -ArgumentList $ArgumentList
     if ($LASTEXITCODE -eq 0) {
         Move-Item -Path *.nupkg -Destination $outputDirectory
     }
@@ -81,5 +88,5 @@ Function Get-SourceDependencies() {
 Get-SourceDependencies
 Update-DependencyVersions -NuSpec (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec") -Version $Version
 Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.nuspec")
-Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec")
+Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec") -Analysis $false
 Exec { git checkout (Resolve-Path -Relative (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec")) }
