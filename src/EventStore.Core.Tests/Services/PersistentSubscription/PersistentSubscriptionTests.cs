@@ -837,6 +837,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         {
             
         }
+
+        public void BeginReadEvents(Core.Services.PersistentSubscription.PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
+        {
+            
+        }
     }
 
 

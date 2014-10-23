@@ -7,6 +7,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
@@ -30,6 +31,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private DateTime _lastCheckPointTime = DateTime.MinValue;
         private readonly PersistentSubscriptionParams _settings;
         private int _lastKnownMessage;
+        private bool _outstandingReadParkedRequest;
 
         public bool HasClients
         {
@@ -291,8 +293,32 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 if (!end.HasValue) return; //nothing to do.
                 //read events
-                _settings.MessageParker.BeginMarkParkedMessagesReprocessed(end.Value);
+                TryReadingParkedMessagesFrom(0, end.Value);
             });
+        }
+
+        public void TryReadingParkedMessagesFrom(int position, int stop)
+        {
+            if (_outstandingReadParkedRequest) return;
+            _outstandingReadParkedRequest = true;
+            _settings.EventLoader.BeginReadEvents(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
+        }
+
+        public void HandleParkedReadCompleted(ResolvedEvent[] events, int newposition, int stop)
+        {
+            _outstandingReadParkedRequest = false; //mark not in read (even if we break the loop can be restarted then)
+            if (!_ready) return;
+            if (events.Length == 0)
+            {
+                _settings.MessageParker.BeginMarkParkedMessagesReprocessed(stop);
+                return;
+            }
+            foreach (var ev in events)
+            {
+                _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
+            }
+            TryPushingMessagesToClients();
+            TryReadingParkedMessagesFrom(newposition, stop);
         }
 
         private void SkipMessage(Guid id)

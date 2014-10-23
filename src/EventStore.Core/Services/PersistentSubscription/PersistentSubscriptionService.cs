@@ -495,7 +495,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(SubscriptionMessage.ReplayParkedMessage message)
         {
-            throw new NotImplementedException();
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
         }
 
         private void LoadConfiguration(Action continueWith)
