@@ -121,11 +121,9 @@ else
 fi
 
 cp -r clusternode-web $PACKAGEDIRECTORY/
-cp -r es-common-web $PACKAGEDIRECTORY/
 cp -r Prelude $PACKAGEDIRECTORY/
 cp -r projections $PACKAGEDIRECTORY/
 cp -r web-resources $PACKAGEDIRECTORY/
-cp -r Users $PACKAGEDIRECTORY/
 cp libjs1.$soext $PACKAGEDIRECTORY/
 cp libv8.$soext $PACKAGEDIRECTORY/
 cp libicui18n.$soext $PACKAGEDIRECTORY/
