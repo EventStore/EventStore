@@ -62,7 +62,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public void EventAppeared(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
-            _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToResolvedIndexEvent()));
+            _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToResolvedEvent()));
         }
 
 
