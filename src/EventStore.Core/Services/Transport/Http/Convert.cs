@@ -41,7 +41,8 @@ namespace EventStore.Core.Services.Transport.Http
             }
             if (!msg.IsEndOfStream || msg.Events.Length > 0)
                 feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
-            feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
+            if(!escapedStreamId.StartsWith("$$"))
+                feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
             for (int i = msg.Events.Length - 1; i >= 0; --i)
             {
                 feed.AddEntry(ToEntry(msg.Events[i], requestedUrl, embedContent));

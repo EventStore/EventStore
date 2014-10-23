@@ -22,6 +22,17 @@ namespace EventStore.ClientAPI
     /// </remarks>
     public interface IEventStoreConnection : IDisposable
     {
+
+        /// <summary>
+        /// Returns the <see cref="ConnectionSettings"/> use to create this connection
+        /// </summary>
+        ConnectionSettings Settings { get; }
+
+        /// <summary>
+        /// Returns the <see cref="ClusterSettings"/> use to create this connection
+        /// </summary>
+        ClusterSettings ClusterSettings { get; }
+
         /// <summary>
         /// Gets the name of this connection. A connection name can be used for disambiguation
         /// in log files.
