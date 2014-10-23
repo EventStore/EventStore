@@ -285,6 +285,16 @@ namespace EventStore.Core.Services.PersistentSubscription
             });
         }
 
+        public void RetryAllParkedMessages()
+        {
+            _settings.MessageParker.BeginReadEndSequence(end =>
+            {
+                if (!end.HasValue) return; //nothing to do.
+                //read events
+                _settings.MessageParker.BeginMarkParkedMessagesReprocessed(end.Value);
+            });
+        }
+
         private void SkipMessage(Guid id)
         {
             _outstandingMessages.Remove(id);

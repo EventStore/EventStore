@@ -22,6 +22,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<SystemMessage.BecomeMaster>,
                                         IHandle<SystemMessage.SystemInit>,
                                         IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
+                                        IHandle<SubscriptionMessage.ReplayAllParkedMessages>,
+                                        IHandle<SubscriptionMessage.ReplayParkedMessage>,
                                         IHandle<SystemMessage.StateChangeMessage>,
                                         IHandle<ClientMessage.ConnectToPersistentSubscription>,
                                         IHandle<StorageMessage.EventCommitted>,
@@ -479,6 +481,21 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 subscription.NotAcknowledgeMessagesProcessed(message.CorrelationId, message.ProcessedEventIds, (NakAction) message.Action, message.Message);
             }
+        }
+
+        public void Handle(SubscriptionMessage.ReplayAllParkedMessages message)
+        {
+            PersistentSubscription subscription;
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
+            if (_subscriptionsById.TryGetValue(key, out subscription))
+            {
+                subscription.RetryAllParkedMessages();
+            }
+        }
+
+        public void Handle(SubscriptionMessage.ReplayParkedMessage message)
+        {
+            throw new NotImplementedException();
         }
 
         private void LoadConfiguration(Action continueWith)
