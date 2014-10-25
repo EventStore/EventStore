@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Rags", "EventSto
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RagsPlayground", "EventStore.RagsPlayground\RagsPlayground.csproj", "{2992D4F0-F811-442E-B399-CCC861E73E12}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Rags.Tests", "EventStore.Rags.Tests\EventStore.Rags.Tests.csproj", "{DE5DEAA4-C681-4613-A2ED-AFFC97E545FC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{2992D4F0-F811-442E-B399-CCC861E73E12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2992D4F0-F811-442E-B399-CCC861E73E12}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2992D4F0-F811-442E-B399-CCC861E73E12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE5DEAA4-C681-4613-A2ED-AFFC97E545FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE5DEAA4-C681-4613-A2ED-AFFC97E545FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE5DEAA4-C681-4613-A2ED-AFFC97E545FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE5DEAA4-C681-4613-A2ED-AFFC97E545FC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

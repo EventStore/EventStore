@@ -165,10 +165,11 @@ namespace EventStore.Rags
 
         public static IEnumerable<OptionSource> Normalize(this IEnumerable<OptionSource> source)
         {
-            return source.Select(x => new OptionSource(x.Source, x.Name, x.IsTyped,
-                x.Value.ToString() == "+" ? "True" :
-                x.Value.ToString() == "-" ? "False" :
-                x.Value.ToString() == "" ? "True" : x.Value));
+            return source.Select(x => new OptionSource(x.Source, x.Name, 
+                new string[]{"+", "-", ""}.Contains(x.Value.ToString()) ? true : x.IsTyped,
+                x.Value.ToString() == "+" ? true :
+                x.Value.ToString() == "-" ?  false :
+                x.Value.ToString() == "" ? true  : x.Value));
         }
     }
 }
