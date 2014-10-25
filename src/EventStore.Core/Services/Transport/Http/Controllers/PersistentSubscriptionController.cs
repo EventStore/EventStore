@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Common.Log;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
@@ -309,6 +313,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             {
                 var info = new SubscriptionInfo
                 {
+                    Links = new List<RelLink>()
+                    {
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)), "detail"),
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/replayParked", stat.EventStreamId,stat.GroupName)), "replayParked")
+                    },
                     EventStreamId = stat.EventStreamId,
                     GroupName = stat.GroupName,
                     Status = stat.Status,
@@ -317,7 +326,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
                     LastKnownEventNumber = stat.LastProcessedEventNumber,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
-                    DetailUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)),
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
                     Config = new SubscriptionConfigData()
                     {
@@ -363,6 +371,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             {
                 var info = new SubscriptionSummary
                 {
+                    Links = new List<RelLink>()
+                    {
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)), "detail"),
+                    },
                     EventStreamId = stat.EventStreamId,
                     GroupName = stat.GroupName,
                     Status = stat.Status,
@@ -370,7 +382,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     TotalItemsProcessed = stat.TotalItems,
                     LastKnownEventNumber = stat.LastProcessedEventNumber,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
-                    DetailUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)),
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName))
                 };
                 if (stat.Connections != null)
@@ -398,9 +409,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private class SubscriptionSummary
         {
+            public List<RelLink> Links { get; set; }
             public string EventStreamId { get; set; }
             public string GroupName { get; set; }
-            public string DetailUri { get; set; }
             public string ParkedMessageUri { get; set; }
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
@@ -411,12 +422,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
         private class SubscriptionInfo
         {
+            public List<RelLink> Links { get; set; }
             public string EventStreamId { get; set; }
             public string GroupName { get; set; }
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
             public SubscriptionConfigData Config { get; set; }
-            public string DetailUri { get; set; }
             public string ParkedMessageUri { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
@@ -433,6 +444,41 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
             public Dictionary<string, int> ExtraStatistics { get; set; } 
+        }
+    }
+
+    public class RelLink : IXmlSerializable
+    {
+        public readonly string href;
+        public readonly string rel;
+
+        public RelLink(string href, string rel)
+        {
+            this.href = href;
+            this.rel = rel;
+        }
+
+        public XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(XmlReader reader)
+        {
+            throw new NotImplementedException("Rel links not deserialized.");
+        }
+
+        public void WriteXml(XmlWriter writer)
+        {
+            if (string.IsNullOrEmpty(href))
+                throw new Exception("null href when serializing a rel link");
+
+            writer.WriteStartElement("link");
+            writer.WriteAttributeString("href", href);
+
+            if (rel != null)
+                writer.WriteAttributeString("rel", rel);
+            writer.WriteEndElement();
         }
     }
 }

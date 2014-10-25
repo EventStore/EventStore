@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.BasicAuthentication.basic_authentication;
@@ -117,6 +118,26 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
+        public void detail_rel_href_is_correct()
+        {
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, _groupName),
+                _json["links"][0]["href"].Value<string>());
+        }
+
+        [Test]
+        public void has_two_rel_links()
+        {
+            Assert.AreEqual(2,
+                _json["links"].Count());
+        }
+
+        [Test]
+        public void the_view_detail_rel_is_correct()
+        {
+            Assert.AreEqual("detail",
+                _json["links"][0]["rel"].Value<string>());
+        }
+        [Test]
         public void the_event_stream_is_correct()
         {
             Assert.AreEqual(_streamName, _json["eventStreamId"].Value<string>());
@@ -228,15 +249,45 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, _groupName), _json[0]["detailUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, _groupName), 
+                _json[0]["links"][0]["href"].Value<string>());
+        }
+
+        [Test]
+        public void the_first_event_stream_detail_has_one_link()
+        {
+            Assert.AreEqual(1,
+                _json[0]["links"].Count());
+        }
+
+        [Test]
+        public void the_first_event_stream_detail_rel_is_correct()
+        {
+            Assert.AreEqual("detail",
+                _json[0]["links"][0]["rel"].Value<string>());
         }
 
         [Test]
         public void the_second_event_stream_detail_uri_is_correct()
         {
-
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, "secondgroup"), _json[1]["detailUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, "secondgroup"), 
+                _json[1]["links"][0]["href"].Value<string>());
         }
+
+        [Test]
+        public void the_second_event_stream_detail_has_one_link()
+        {
+            Assert.AreEqual(1,
+                _json[1]["links"].Count());
+        }
+
+        [Test]
+        public void the_second_event_stream_detail_rel_is_correct()
+        {
+            Assert.AreEqual("detail",
+                _json[1]["links"][0]["rel"].Value<string>());
+        }
+
 
         [Test]
         public void the_first_parked_message_queue_uri_is_correct()
@@ -345,14 +396,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, _groupName), _json[0]["detailUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, _groupName), 
+                _json[0]["links"][0]["href"].Value<string>());
         }
 
         [Test]
         public void the_second_event_stream_detail_uri_is_correct()
         {
-
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, "secondgroup"), _json[1]["detailUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _streamName, "secondgroup"), 
+                _json[1]["links"][0]["href"].Value<string>());
         }
 
         [Test]
