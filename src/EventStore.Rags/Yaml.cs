@@ -10,7 +10,6 @@ namespace EventStore.Rags
     {
         public static IEnumerable<OptionSource> FromFile(string fileName, string sectionName = null)
         {
-            string source = string.Format("Yaml {0}:{1}", fileName, sectionName);
             var options = new List<OptionSource>();
             if (!File.Exists(fileName))
             {

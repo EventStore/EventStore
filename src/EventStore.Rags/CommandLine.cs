@@ -10,6 +10,10 @@ namespace EventStore.Rags
         public static IEnumerable<OptionSource> Parse<TOptions>(string[] args) where TOptions : class
         {
             var ret = new List<OptionSource>();
+            if (args == null || args.Length == 0)
+            {
+                return ret;
+            }
             var properties = typeof(TOptions).GetProperties();
             foreach (var argument in Parse(args))
             {
