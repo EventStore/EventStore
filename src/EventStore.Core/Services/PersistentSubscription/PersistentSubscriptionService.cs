@@ -395,7 +395,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             List<PersistentSubscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
             {
-                //TODO this is subscription doesnt exist.
                 message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.NotFound));
                 return;
             }
@@ -487,15 +486,33 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             PersistentSubscription subscription;
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-            if (_subscriptionsById.TryGetValue(key, out subscription))
+                        var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
+
+            if (!streamAccess.Granted)
             {
-                subscription.RetryAllParkedMessages();
+                message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+                                    ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
+                                    "You do not have permissions to replay messages"));
+                return;
             }
+
+            if (!_subscriptionsById.TryGetValue(key, out subscription))
+            {
+                message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+                                    ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.DoesNotExist,
+                                    "Unable to locate '" + key + "'"));
+                return;
+
+            }
+            subscription.RetryAllParkedMessages();
+                message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+                                    ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success, ""));
         }
 
         public void Handle(ClientMessage.ReplayParkedMessage message)
         {
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
+            //does nothing now.
         }
 
         private void LoadConfiguration(Action continueWith)

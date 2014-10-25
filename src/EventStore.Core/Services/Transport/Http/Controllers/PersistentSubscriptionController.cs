@@ -46,17 +46,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (args, message) =>
                 {
                     int code;
-                    var m = message as ClientMessage.DeletePersistentSubscriptionCompleted;
+                    var m = message as ClientMessage.ReplayMessagesReceived;
                     if (m == null) throw new Exception("unexpected message " + message);
                     switch (m.Result)
                     {
-                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success:
+                        case ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success:
                             code = HttpStatusCode.OK;
                             break;
-                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist:
+                        case ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.DoesNotExist:
                             code = HttpStatusCode.NotFound;
                             break;
-                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied:
+                        case ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied:
                             code = HttpStatusCode.Unauthorized;
                             break;
                         default:
@@ -69,9 +69,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 });
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
-            var cmd = new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(), envelope, stream, groupname, http.User);
+            var cmd = new ClientMessage.ReplayAllParkedMessages(Guid.NewGuid(), Guid.NewGuid(), envelope, stream, groupname, http.User);
             Publish(cmd);
-            
         }
 
         private void PutSubscription(HttpEntityManager http, UriTemplateMatch match)

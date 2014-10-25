@@ -1145,21 +1145,22 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReplayAllParkedMessages : Message
+        public class ReplayAllParkedMessages : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
             public readonly string EventStreamId;
             public readonly string GroupName;
 
-            public ReplayAllParkedMessages(string eventStreamId, string groupName)
+            public ReplayAllParkedMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string eventStreamId, string groupName, IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
             {
                 EventStreamId = eventStreamId;
                 GroupName = groupName;
             }
         }
 
-        public class ReplayParkedMessage : Message
+        public class ReplayParkedMessage : ReadRequestMessage
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
@@ -1167,11 +1168,37 @@ namespace EventStore.Core.Messages
             public readonly string GroupName;
             public readonly ResolvedEvent Event;
 
-            public ReplayParkedMessage(string streamId, string groupName, ResolvedEvent @event)
+            public ReplayParkedMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string streamId, string groupName, ResolvedEvent @event, IPrincipal user)
+                :base(internalCorrId, correlationId, envelope, user)
             {
                 EventStreamId = streamId;
                 GroupName = groupName;
                 Event = @event;
+            }
+        }
+
+        public class ReplayMessagesReceived : ReadResponseMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+            public readonly ReplayMessagesReceivedResult Result;
+
+            public ReplayMessagesReceived(Guid correlationId, ReplayMessagesReceivedResult result, string reason)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                CorrelationId = correlationId;
+                Result = result;
+                Reason = reason;
+            }
+
+            public enum ReplayMessagesReceivedResult
+            {
+                Success = 0,
+                DoesNotExist = 1,
+                Fail = 2,
+                AccessDenied = 3
             }
         }
 
