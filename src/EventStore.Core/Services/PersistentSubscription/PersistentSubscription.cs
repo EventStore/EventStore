@@ -17,20 +17,17 @@ namespace EventStore.Core.Services.PersistentSubscription
         public string EventStreamId { get { return _settings.EventStreamId; } }
         public string GroupName { get { return _settings.GroupName; } }
         public bool ResolveLinkTos { get { return _settings.ResolveLinkTos; } }
-        private bool _ready;
         internal PersistentSubscriptionClientCollection _pushClients;
-        private bool _outstandingReadRequest;
         private readonly PersistentSubscriptionStats _statistics;
         private readonly Stopwatch _totalTimeWatch;
         private readonly OutstandingMessageCache _outstandingMessages;
         private StreamBuffer _streamBuffer;
-        private PersistentSubscriptionState _state = PersistentSubscriptionState.Idle;
+        private PersistentSubscriptionState _state = PersistentSubscriptionState.NotReady;
         private int _lastPulledEvent;
         private int _lastCheckPoint;
         private DateTime _lastCheckPointTime = DateTime.MinValue;
         private readonly PersistentSubscriptionParams _settings;
         private int _lastKnownMessage;
-        private bool _outstandingReadParkedRequest;
 
         public bool HasClients
         {
@@ -54,8 +51,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
             Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
             _lastPulledEvent = 0;            
-            //TODO refactor to state.
-            _ready = false;
             _totalTimeWatch = new Stopwatch();
             _settings = persistentSubscriptionParams;
             _totalTimeWatch.Start();
@@ -66,17 +61,15 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void InitAsNew()
         {
-            _ready = false;
+            _state = PersistentSubscriptionState.NotReady;
             _lastCheckPoint = -1;
             _statistics.SetLastKnownEventNumber(-1);
-            _outstandingReadRequest = false;
             _settings.CheckpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
             _pushClients = new PersistentSubscriptionClientCollection(_settings.PreferRoundRobin);
         }
 
         private void OnCheckpointLoaded(int? checkpoint)
         {
-            _ready = true;
             if (!checkpoint.HasValue)
             {
                 if (_settings.StartFrom >= 0) _lastPulledEvent = _settings.StartFrom;
@@ -93,23 +86,23 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void TryReadingNewBatch()
         {
-            if (_outstandingReadRequest) return;
-            if (_streamBuffer.Live) return;
+            if ((_state & PersistentSubscriptionState.OutstandingPageRequest) > 0) return;
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
-            _outstandingReadRequest = true;
+            _state ^= PersistentSubscriptionState.OutstandingPageRequest;
             _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, _settings.ReadBatchSize, _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
         }
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition, bool isEndOfStream)
         {
-            if (!_ready) return;
-            _outstandingReadRequest = false; //mark not in read (even if we break the loop can be restarted then)
+            if ((_state & PersistentSubscriptionState.OutstandingPageRequest) == 0) return;
+            _state ^= PersistentSubscriptionState.OutstandingPageRequest;
             foreach (var ev in events)
             {
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
             if (isEndOfStream)
             {
+                _state ^= PersistentSubscriptionState.Live;
                 _streamBuffer.MoveToLive();
                 return;
             }
@@ -120,7 +113,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void TryPushingMessagesToClients()
         {
-            if (!_ready) return;
+            if (_state == PersistentSubscriptionState.NotReady) return;
             while(true)
             {
                 OutstandingMessage message;
@@ -137,7 +130,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent)
         {
-            if (!_ready) return;
+            if (_state == PersistentSubscriptionState.NotReady) return;
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
             _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null, resolvedEvent, 0));
             TryPushingMessagesToClients();
@@ -145,7 +138,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public IEnumerable<ResolvedEvent> GetNextNOrLessMessages(int count)
         {
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 OutstandingMessage message;
                 if (_streamBuffer.TryDequeue(out message))
@@ -217,6 +210,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
+            if (_state == PersistentSubscriptionState.NotReady) return;
             RemoveProcessingMessages(correlationId, processedEventIds);
             TryMarkCheckpoint(false);
             TryReadingNewBatch();
@@ -225,6 +219,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotAcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds, NakAction action, string reason)
         {
+            if (_state == PersistentSubscriptionState.NotReady) return;
             foreach (var id in processedEventIds)
             {
                 Log.Info("Message NAK'ed id {0} action to take {1} reason '{2}'", id, action, reason ?? "");
@@ -288,6 +283,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void RetryAllParkedMessages()
         {
+            if ((_state | PersistentSubscriptionState.Replaying) > 0) return; //already replaying
+            _state |= PersistentSubscriptionState.Replaying;
             _settings.MessageParker.BeginReadEndSequence(end =>
             {
                 if (!end.HasValue) return; //nothing to do.
@@ -295,21 +292,20 @@ namespace EventStore.Core.Services.PersistentSubscription
             });
         }
 
-        public void TryReadingParkedMessagesFrom(int position, int stopAt)
+        private void TryReadingParkedMessagesFrom(int position, int stopAt)
         {
-            if (_outstandingReadParkedRequest) return;
-            _outstandingReadParkedRequest = true;
+            if ((_state | PersistentSubscriptionState.Replaying) == 0) return; //not replaying
             var count = Math.Min(stopAt - position, _settings.ReadBatchSize);
             _settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,_settings.ReadBatchSize, true, (events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
         }
 
         public void HandleParkedReadCompleted(ResolvedEvent[] events, int newposition, bool isEndofStrem, int stopAt)
         {
-            _outstandingReadParkedRequest = false; //mark not in read (even if we break the loop can be restarted then)
-            if (!_ready) return;
+            if ((_state & PersistentSubscriptionState.Replaying) == 0) return;
             if (isEndofStrem)
             {
                 _settings.MessageParker.BeginMarkParkedMessagesReprocessed(newposition);
+                _state ^= PersistentSubscriptionState.Replaying;
                 return;
             }
             foreach (var ev in events)
@@ -317,6 +313,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (ev.OriginalEventNumber == stopAt)
                 {
                     _settings.MessageParker.BeginMarkParkedMessagesReprocessed(stopAt);
+                    _state ^= PersistentSubscriptionState.Replaying;
                     return;                    
                 }
                 _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));

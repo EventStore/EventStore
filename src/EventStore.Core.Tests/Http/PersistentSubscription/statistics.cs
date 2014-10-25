@@ -150,9 +150,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void the_status_is_idle()
+        public void the_status_is_live()
         {
-            Assert.AreEqual("Idle", _json["status"].Value<string>());
+            Assert.AreEqual("Live", _json["status"].Value<string>());
         }
 
         [Test]
@@ -302,9 +302,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void the_status_is_idle()
+        public void the_status_is_live()
         {
-            Assert.AreEqual("Idle", _json[0]["status"].Value<string>());
+            Assert.AreEqual("Live", _json[0]["status"].Value<string>());
         }
 
         [Test]
@@ -420,9 +420,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void the_status_is_idle()
+        public void the_status_is_live()
         {
-            Assert.AreEqual("Idle", _json[0]["status"].Value<string>());
+            Assert.AreEqual("Live", _json[0]["status"].Value<string>());
         }
 
         [Test]
