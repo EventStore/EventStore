@@ -8,7 +8,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     public class PersistentSubscriptionStreamReader : IPersistentSubscriptionStreamReader
     {
-        public const int PullBatchSize = 100;
+        public const int MaxPullBatchSize = 500;
 
         private readonly IODispatcher _ioDispatcher;
         private readonly int _maxPullBatchSize;
@@ -20,12 +20,18 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         public void BeginReadEvents(string stream, int startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
-            Action<ResolvedEvent[], int, bool> onFetchCompleted)
+            Action<ResolvedEvent[], int, bool> onEventsFound)
         {
+            var actualBatchSize = GetBatchSize(batchSize);
             //TODO implement reading loop here.
             _ioDispatcher.ReadForward(
-                stream, startEventNumber, Math.Min(countToLoad, PullBatchSize),
-                resolveLinkTos, SystemAccount.Principal, new ResponseHandler(onFetchCompleted).FetchCompleted);
+                stream, startEventNumber, Math.Min(countToLoad, actualBatchSize),
+                resolveLinkTos, SystemAccount.Principal, new ResponseHandler(onEventsFound).FetchCompleted);
+        }
+
+        private int GetBatchSize(int batchSize)
+        {
+            return Math.Min(batchSize, MaxPullBatchSize);
         }
 
         private class ResponseHandler

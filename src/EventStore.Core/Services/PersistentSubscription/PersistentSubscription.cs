@@ -291,33 +291,38 @@ namespace EventStore.Core.Services.PersistentSubscription
             _settings.MessageParker.BeginReadEndSequence(end =>
             {
                 if (!end.HasValue) return; //nothing to do.
-                //read events
                 TryReadingParkedMessagesFrom(0, end.Value);
             });
         }
 
-        public void TryReadingParkedMessagesFrom(int position, int stop)
+        public void TryReadingParkedMessagesFrom(int position, int stopAt)
         {
             if (_outstandingReadParkedRequest) return;
             _outstandingReadParkedRequest = true;
-            ////_settings.StreamReader.BeginReadEvents(this, _lastPulledEvent, _settings.ReadBatchSize, HandleReadCompleted);
+            var count = Math.Min(stopAt - position, _settings.ReadBatchSize);
+            _settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,_settings.ReadBatchSize, true, (events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
         }
 
-        public void HandleParkedReadCompleted(ResolvedEvent[] events, int newposition, int stop)
+        public void HandleParkedReadCompleted(ResolvedEvent[] events, int newposition, bool isEndofStrem, int stopAt)
         {
             _outstandingReadParkedRequest = false; //mark not in read (even if we break the loop can be restarted then)
             if (!_ready) return;
-            if (events.Length == 0)
+            if (isEndofStrem)
             {
-                _settings.MessageParker.BeginMarkParkedMessagesReprocessed(stop);
+                _settings.MessageParker.BeginMarkParkedMessagesReprocessed(newposition);
                 return;
             }
             foreach (var ev in events)
             {
+                if (ev.OriginalEventNumber == stopAt)
+                {
+                    _settings.MessageParker.BeginMarkParkedMessagesReprocessed(stopAt);
+                    return;                    
+                }
                 _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
             TryPushingMessagesToClients();
-            TryReadingParkedMessagesFrom(newposition, stop);
+            TryReadingParkedMessagesFrom(newposition, stopAt);
         }
 
         private void SkipMessage(Guid id)

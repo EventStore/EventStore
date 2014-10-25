@@ -148,5 +148,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             get { return _maxCheckPointCount; }
         }
+
+        public string ParkedMessageStream
+        {
+            get { return _eventStreamId + "::" + _groupName + "::parked"; }
+        }
     }
 }

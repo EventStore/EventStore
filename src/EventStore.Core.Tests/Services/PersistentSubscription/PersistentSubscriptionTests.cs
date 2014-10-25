@@ -786,7 +786,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         }
 
         public void BeginReadEvents(string stream, int startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
-            Action<ResolvedEvent[], int, bool> onFetchCompleted)
+            Action<ResolvedEvent[], int, bool> onEventsFound)
         {
             _action(startEventNumber);
         }
