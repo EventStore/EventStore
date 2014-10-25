@@ -188,9 +188,9 @@ namespace EventStore.Core.Messages
             public WriteEventsCompleted(Guid correlationId, int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
             {
                 if (firstEventNumber < -1)
-                    throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
+                    throw new ArgumentOutOfRangeException("firstEventNumber", String.Format("FirstEventNumber: {0}", firstEventNumber));
                 if (lastEventNumber - firstEventNumber + 1 < 0)
-                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+                    throw new ArgumentOutOfRangeException("lastEventNumber", String.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
 
                 CorrelationId = correlationId;
                 Result = OperationResult.Success;
@@ -357,13 +357,13 @@ namespace EventStore.Core.Messages
             public TransactionCommitCompleted(Guid correlationId, long transactionId, int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
             {
                 if (firstEventNumber < -1)
-                    throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
+                    throw new ArgumentOutOfRangeException("firstEventNumber", String.Format("FirstEventNumber: {0}", firstEventNumber));
                 if (lastEventNumber - firstEventNumber + 1 < 0)
-                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+                    throw new ArgumentOutOfRangeException("lastEventNumber", String.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
                 CorrelationId = correlationId;
                 TransactionId = transactionId;
                 Result = OperationResult.Success;
-                Message = string.Empty;
+                Message = String.Empty;
                 FirstEventNumber = firstEventNumber;
                 LastEventNumber = lastEventNumber;
                 PreparePosition = preparePosition;
@@ -1144,6 +1144,37 @@ namespace EventStore.Core.Messages
                 SubscriptionId = subscriptionId;
             }
         }
+
+        public class ReplayAllParkedMessages : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly string EventStreamId;
+            public readonly string GroupName;
+
+            public ReplayAllParkedMessages(string eventStreamId, string groupName)
+            {
+                EventStreamId = eventStreamId;
+                GroupName = groupName;
+            }
+        }
+
+        public class ReplayParkedMessage : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly string EventStreamId;
+            public readonly string GroupName;
+            public readonly ResolvedEvent Event;
+
+            public ReplayParkedMessage(string streamId, string groupName, ResolvedEvent @event)
+            {
+                EventStreamId = streamId;
+                GroupName = groupName;
+                Event = @event;
+            }
+        }
+
         //End of persistens subscritions
 
 
@@ -1291,7 +1322,7 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format("Result: {0}, Error: {1}, TotalTime: {2}, TotalSpaceSaved: {3}", Result, Error, TotalTime, TotalSpaceSaved);
+                return String.Format("Result: {0}, Error: {1}, TotalTime: {2}, TotalSpaceSaved: {3}", Result, Error, TotalTime, TotalSpaceSaved);
             }
         }
     }

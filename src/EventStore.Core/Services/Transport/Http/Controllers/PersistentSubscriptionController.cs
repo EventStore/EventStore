@@ -33,6 +33,45 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Put, PutSubscription, DefaultCodecs, DefaultCodecs);
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PostSubscription, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked", HttpMethod.Post, ReplayParkedMessages);
+        }
+
+        private void ReplayParkedMessages(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+            var envelope = new SendToHttpEnvelope(
+                _networkSendQueue, http,
+                (args, message) => http.ResponseCodec.To(message),
+                (args, message) =>
+                {
+                    int code;
+                    var m = message as ClientMessage.DeletePersistentSubscriptionCompleted;
+                    if (m == null) throw new Exception("unexpected message " + message);
+                    switch (m.Result)
+                    {
+                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success:
+                            code = HttpStatusCode.OK;
+                            break;
+                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist:
+                            code = HttpStatusCode.NotFound;
+                            break;
+                        case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied:
+                            code = HttpStatusCode.Unauthorized;
+                            break;
+                        default:
+                            code = HttpStatusCode.InternalServerError;
+                            break;
+                    }
+
+                    return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
+                        http.ResponseCodec.Encoding);
+                });
+            var groupname = match.BoundVariables["subscription"];
+            var stream = match.BoundVariables["stream"];
+            var cmd = new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(), envelope, stream, groupname, http.User);
+            Publish(cmd);
+            
         }
 
         private void PutSubscription(HttpEntityManager http, UriTemplateMatch match)

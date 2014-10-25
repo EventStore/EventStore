@@ -22,8 +22,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<SystemMessage.BecomeMaster>,
                                         IHandle<SystemMessage.SystemInit>,
                                         IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
-                                        IHandle<SubscriptionMessage.ReplayAllParkedMessages>,
-                                        IHandle<SubscriptionMessage.ReplayParkedMessage>,
+                                        IHandle<ClientMessage.ReplayAllParkedMessages>,
+                                        IHandle<ClientMessage.ReplayParkedMessage>,
                                         IHandle<SystemMessage.StateChangeMessage>,
                                         IHandle<ClientMessage.ConnectToPersistentSubscription>,
                                         IHandle<StorageMessage.EventCommitted>,
@@ -483,7 +483,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void Handle(SubscriptionMessage.ReplayAllParkedMessages message)
+        public void Handle(ClientMessage.ReplayAllParkedMessages message)
         {
             PersistentSubscription subscription;
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
@@ -493,7 +493,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void Handle(SubscriptionMessage.ReplayParkedMessage message)
+        public void Handle(ClientMessage.ReplayParkedMessage message)
         {
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
         }
