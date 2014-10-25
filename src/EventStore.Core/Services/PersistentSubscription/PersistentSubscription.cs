@@ -382,6 +382,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             return _statistics.GetStatistics();
         }
+
+        public void RetrySingleMessage(ResolvedEvent @event)
+        {
+            _streamBuffer.AddRetry(new OutstandingMessage(@event.Event.EventId, null, @event, 0));
+        }
     }
 
     public class WTFException : Exception

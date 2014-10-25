@@ -505,14 +505,35 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             }
             subscription.RetryAllParkedMessages();
-                message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
-                                    ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success, ""));
+            message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+                                ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success, ""));
         }
 
         public void Handle(ClientMessage.ReplayParkedMessage message)
         {
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-            //does nothing now.
+            PersistentSubscription subscription;
+            var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
+
+            if (!streamAccess.Granted)
+            {
+                message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+                                    ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
+                                    "You do not have permissions to replay messages"));
+                return;
+            }
+
+            if (!_subscriptionsById.TryGetValue(key, out subscription))
+            {
+                message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+                                    ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.DoesNotExist,
+                                    "Unable to locate '" + key + "'"));
+                return;
+
+            }
+            subscription.RetrySingleMessage(message.Event);
+            message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+                                ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success, ""));
         }
 
         private void LoadConfiguration(Action continueWith)
