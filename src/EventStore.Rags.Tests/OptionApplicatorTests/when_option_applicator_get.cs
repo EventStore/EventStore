@@ -46,5 +46,24 @@ namespace EventStore.Rags.Tests.OptionApplicatorTests
             Assert.AreEqual(referenceType.IpEndpoint, result.IpEndpoint);
             Assert.AreEqual(referenceType.Name, result.Name);
         }
+        [Test]
+        public void with_a_non_typed_option_that_is_an_array_should_set()
+        {
+            var result = OptionApplicator.Get<TestType>(new OptionSource[]{
+                new OptionSource("test", "Names", false, new string[]{"four", "five", "six"})
+            });
+            Assert.AreEqual(new string[] { "four", "five", "six" }, result.Names);
+        }
+        [Test]
+        public void with_a_non_typed_complex_option_that_is_an_array_should_set()
+        {
+            var result = OptionApplicator.Get<TestType>(new OptionSource[]{
+                new OptionSource("test", "IpEndpoints", false, new string[]{"10.0.0.1:2112","10.0.0.2:2113"})});
+            Assert.AreEqual(2, result.IpEndpoints.Length);
+            Assert.AreEqual(new IPEndPoint[]{
+                    new IPEndPoint(IPAddress.Parse("10.0.0.1"), 2112),
+                    new IPEndPoint(IPAddress.Parse("10.0.0.2"), 2113)},
+                result.IpEndpoints);
+        }
     }
 }
