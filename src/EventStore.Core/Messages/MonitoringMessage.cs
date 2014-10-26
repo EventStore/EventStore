@@ -112,6 +112,7 @@ namespace EventStore.Core.Messages
             public int MaxCheckPointCount { get; set; }
             public int ReadBufferCount { get; set; }
             public int LiveBufferCount { get; set; }
+            public int RetryBufferCount { get; set; }
         }
 
         public class ConnectionInfo
@@ -122,6 +123,7 @@ namespace EventStore.Core.Messages
             public long TotalItems { get; set; }
             public long CountSinceLastMeasurement { get; set; }
             public Dictionary<string, int> ObservedMeasurements { get; set; }
+            public int AvailableSlots { get; set; }
         }
 
         public class GetFreshStats : Message

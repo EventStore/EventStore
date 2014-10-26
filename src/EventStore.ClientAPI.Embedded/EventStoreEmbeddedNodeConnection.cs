@@ -382,7 +382,7 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         public EventStorePersistentSubscription ConnectToPersistentSubscription(string groupName, string stream, Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
-            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int? bufferSize = null,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
         {
             throw new NotImplementedException();

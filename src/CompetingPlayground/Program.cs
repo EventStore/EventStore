@@ -102,7 +102,6 @@ using System;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.SystemData;
@@ -135,7 +134,7 @@ namespace CompetingPlayground
             {
                 connection.ConnectAsync().Wait();
 
-                WriteEvents(connection, 1000);
+                WriteEvents(connection, 5000);
                 CreateSubscription(connection, SubName);
 
                 var sub = ConnectToSubscription(connection, "sub1");
@@ -154,16 +153,9 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
-                    var r = new Random();
-                    if (r.NextDouble() < .1)
-                    {
-                        sub.Fail(ev, PersistentSubscriptionNakEventAction.Park, "Just testing!");
-                    }
-                    else
-                    {
+                    if(ev.OriginalEventNumber % 200 == 0)
                         Console.WriteLine("acking " + ev.OriginalEventNumber);
-                        sub.Acknowledge(ev);
-                    }
+                    sub.Acknowledge(ev);
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
                 bufferSize: 200, autoAck: false);

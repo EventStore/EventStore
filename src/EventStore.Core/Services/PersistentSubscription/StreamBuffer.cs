@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public int LiveBufferCount { get { return _liveBuffer.Count; } }
         public int BufferCount { get { return _retry.Count + _buffer.Count; } }
-        public int RetryCount { get { return _retry.Count; } }
+        public int RetryBufferCount { get { return _retry.Count; } }
         public int ReadBufferCount { get { return _buffer.Count; } }
         public bool Live { get; private set; }
 

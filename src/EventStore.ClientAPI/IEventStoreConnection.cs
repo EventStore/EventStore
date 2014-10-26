@@ -293,7 +293,7 @@ namespace EventStore.ClientAPI
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
-            int? bufferSize = null,
+            int bufferSize = 10,
             bool autoAck = true);
 /*
         /// <summary>

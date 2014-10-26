@@ -328,6 +328,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
                     ReadBufferCount = stat.ReadBufferCount,
                     LiveBufferCount = stat.LiveBufferCount,
+                    RetryBufferCount = stat.RetryBufferCount,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
                     Config = new SubscriptionConfigData()
                     {
@@ -357,6 +358,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                             AverageItemsPerSecond = connection.AverageItemsPerSecond,
                             CountSinceLastMeasurement = connection.CountSinceLastMeasurement,
                             TotalItemsProcessed = connection.TotalItems,
+                            AvailableSlots = connection.AvailableSlots,
                             ExtraStatistics = connection.ObservedMeasurements ?? new Dictionary<string, int>()
                         });
                     }
@@ -438,6 +440,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int LastKnownEventNumber { get; set; }
             public int ReadBufferCount { get; set; }
             public int LiveBufferCount { get; set; }
+            public int RetryBufferCount { get; set; }
         }
 
         private class ConnectionInfo
@@ -447,7 +450,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public decimal AverageItemsPerSecond { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public Dictionary<string, int> ExtraStatistics { get; set; } 
+            public Dictionary<string, int> ExtraStatistics { get; set; }
+            public int AvailableSlots { get; set; }
         }
     }
 

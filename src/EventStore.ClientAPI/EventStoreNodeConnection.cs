@@ -294,7 +294,7 @@ namespace EventStore.ClientAPI
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, 
-            int? bufferSize = null,
+            int bufferSize = 10,
             bool autoAck = true)
         {
             Ensure.NotNullOrEmpty(groupName, "groupName");
@@ -303,7 +303,7 @@ namespace EventStore.ClientAPI
 
             var subscription = new EventStorePersistentSubscription(
                 groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
-                _settings.VerboseLogging, _settings, _handler, autoAck);
+                _settings.VerboseLogging, _settings, _handler, bufferSize, autoAck);
 
             subscription.Start();
 

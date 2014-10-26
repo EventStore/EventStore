@@ -39,6 +39,7 @@ namespace EventStore.ClientAPI
 
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
+        private int _bufferSize;
 
         internal EventStorePersistentSubscription(string subscriptionId, 
             string streamId, 
@@ -49,6 +50,7 @@ namespace EventStore.ClientAPI
             bool verboseLogging,
             ConnectionSettings settings, 
             EventStoreConnectionLogicHandler handler,
+            int bufferSize = 10,
             bool autoAck = true)
         {
             _subscriptionId = subscriptionId;
@@ -60,6 +62,7 @@ namespace EventStore.ClientAPI
             _verbose = verboseLogging;
             _settings = settings;
             _handler = handler;
+            _bufferSize = bufferSize;
             _autoAck = autoAck;
         }
 
@@ -68,7 +71,7 @@ namespace EventStore.ClientAPI
             _stopped.Reset();
 
             var source = new TaskCompletionSource<PersistentEventStoreSubscription>();
-            _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, _subscriptionId, _streamId, DefaultBufferSize,
+            _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, _subscriptionId, _streamId, _bufferSize,
                                                                  _userCredentials, OnEventAppeared,
                                                                  OnSubscriptionDropped, _settings.MaxRetries, _settings.OperationTimeout));
             source.Task.Wait();

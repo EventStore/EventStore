@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public int InFlightMessages
+        public int AvailableSlots
         {
             get { return _allowedMessages; }
         }
@@ -126,7 +126,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private bool CanSend()
         {
-            return InFlightMessages > 0;
+            return AvailableSlots > 0;
         }
 
         public bool Remove(Guid eventId)

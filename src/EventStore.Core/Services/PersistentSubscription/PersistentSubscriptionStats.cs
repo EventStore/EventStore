@@ -66,6 +66,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     Username = conn.Username,
                     AverageItemsPerSecond = connAvgItemsPerSecond,
                     TotalItems = conn.TotalItems,
+                    AvailableSlots = conn.AvailableSlots,
                     CountSinceLastMeasurement = connLastItems,
                     ObservedMeasurements = stats
                 });
@@ -94,6 +95,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ResolveLinktos = _settings.ResolveLinkTos,
                 StartFrom = _settings.StartFrom,
                 ReadBufferCount = _parent._streamBuffer.ReadBufferCount,
+                RetryBufferCount = _parent._streamBuffer.RetryBufferCount,
                 LiveBufferCount = _parent._streamBuffer.LiveBufferCount,
                 ExtraStatistics = _settings.ExtraStatistics,
             };
