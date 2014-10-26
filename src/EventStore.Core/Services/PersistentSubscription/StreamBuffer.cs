@@ -1,30 +1,33 @@
-﻿using EventStore.Core.DataStructures;
+﻿using System.Collections.Generic;
+using System.Linq;
+using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
     public class StreamBuffer
     {
         private readonly int _maxBufferSize;
-        private int _lastKnownSequence;
-        private readonly PreemptableQueue<OutstandingMessage> _buffer;
+        private readonly int _initialSequence;
+        private readonly Queue<OutstandingMessage> _retry = new Queue<OutstandingMessage>();
+        private readonly Queue<OutstandingMessage> _regular = new Queue<OutstandingMessage>();
+
         private readonly BoundedQueue<OutstandingMessage> _liveBuffer;
         private bool _live;
 
         public int LiveBufferCount { get { return _liveBuffer.Count; } }
-        public int BufferCount { get { return _buffer.Count; } }
+        public int BufferCount { get { return _retry.Count + _regular.Count; } }
         public bool Live { get { return _live; } }
 
         public bool CanAccept(int count)
         {
-            return _maxBufferSize - _buffer.Count > count;
+            return _maxBufferSize - BufferCount > count;
         }
 
-        public StreamBuffer(int maxBufferSize, int maxLiveBufferSize, int lastKnownSequence, bool startInHistory)
+        public StreamBuffer(int maxBufferSize, int maxLiveBufferSize, int initialSequence, bool startInHistory)
         {
             _live = !startInHistory;
-            _lastKnownSequence = lastKnownSequence;
+            _initialSequence = initialSequence;
             _maxBufferSize = maxBufferSize;
-            _buffer = new PreemptableQueue<OutstandingMessage>();
             _liveBuffer = new BoundedQueue<OutstandingMessage>(maxLiveBufferSize);
         }
 
@@ -32,7 +35,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             while (_liveBuffer.Count > 0)
             {
-                _buffer.Enqueue(_liveBuffer.Dequeue());
+                _regular.Enqueue(_liveBuffer.Dequeue());
             }
             _live = true;
         }
@@ -47,13 +50,13 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AddRetry(OutstandingMessage ev)
         {
-            _buffer.Preempt(ev);    
+            _retry.Enqueue(ev);    
         }
 
         public void AddLiveMessage(OutstandingMessage ev)
         {
             if(_live) 
-                _buffer.Enqueue(ev);
+                _regular.Enqueue(ev);
             else
                 _liveBuffer.Enqueue(ev);
         }
@@ -61,11 +64,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void AddReadMessage(OutstandingMessage ev)
         {
             if (_live) return;
-            if (ev.ResolvedEvent.OriginalEventNumber <= _lastKnownSequence)
+            if (ev.ResolvedEvent.OriginalEventNumber <= _initialSequence)
                 return;
             if (ev.ResolvedEvent.OriginalEventNumber < TryPeekLive())
             {
-                _buffer.Enqueue(ev);
+                _regular.Enqueue(ev);
             }
             else if (ev.ResolvedEvent.OriginalEventNumber > TryPeekLive())
             {
@@ -80,35 +83,43 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private int TryPeekLive()
         {
-            if(_liveBuffer.Count == 0) return int.MaxValue;
-            return _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber;
+            return _liveBuffer.Count == 0 ? int.MaxValue : _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber;
         }
 
         public bool TryDequeue(out OutstandingMessage ev)
         {
-            if (_buffer.Count == 0)
+            ev = new OutstandingMessage();
+            if (_retry.Count > 0)
             {
-                ev = new OutstandingMessage();
-                return false;
+                ev = _retry.Dequeue();
+                return true;
             }
-            ev = _buffer.Dequeue();
+            if (_regular.Count <= 0) return false;
+            ev = _regular.Dequeue();
             return true;
         }
 
         public bool TryPeek(out OutstandingMessage ev)
         {
-            if (_buffer.Count == 0)
+            ev = new OutstandingMessage();
+            if (_retry.Count > 0)
             {
-                ev = new OutstandingMessage();
-                return false;
+                ev = _retry.Peek();
+                return true;
             }
-            ev = _buffer.Peek();
+            if (_regular.Count <= 0) return false;
+            ev = _regular.Peek();
             return true;
         }
 
         public void MoveToLive()
         {
             if (_liveBuffer.Count == 0) _live = true;
+        }
+
+        public int GetLowestRetry()
+        {
+            return _retry.Min(x => x.ResolvedEvent.OriginalEventNumber);
         }
     }
 
