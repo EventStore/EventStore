@@ -87,15 +87,19 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void TryReadingNewBatch()
         {
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) > 0) return;
+            if ((_state & PersistentSubscriptionState.Live) > 0) return;
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
             _state ^= PersistentSubscriptionState.OutstandingPageRequest;
+            Console.WriteLine("Moved to in request. " + _state);
             _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, _settings.ReadBatchSize, _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
         }
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition, bool isEndOfStream)
         {
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) == 0) return;
+            if (_streamBuffer.Live) return;
             _state ^= PersistentSubscriptionState.OutstandingPageRequest;
+            Console.WriteLine("Moved to not in request. " + _state);
             foreach (var ev in events)
             {
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
@@ -103,6 +107,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (isEndOfStream)
             {
                 _state ^= PersistentSubscriptionState.Live;
+                Console.WriteLine("Moved to live. " + _state);
                 _streamBuffer.MoveToLive();
                 return;
             }
@@ -113,7 +118,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void TryPushingMessagesToClients()
         {
-            if (_state == PersistentSubscriptionState.NotReady) return;
             while(true)
             {
                 OutstandingMessage message;
