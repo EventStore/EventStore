@@ -110,6 +110,8 @@ namespace EventStore.Core.Messages
             public int CheckPointAfterMilliseconds { get; set; }
             public int MinCheckPointCount { get; set; }
             public int MaxCheckPointCount { get; set; }
+            public int ReadBufferCount { get; set; }
+            public int LiveBufferCount { get; set; }
         }
 
         public class ConnectionInfo

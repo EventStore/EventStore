@@ -93,6 +93,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ReadBatchSize = _settings.ReadBatchSize,
                 ResolveLinktos = _settings.ResolveLinkTos,
                 StartFrom = _settings.StartFrom,
+                ReadBufferCount = _parent._streamBuffer.ReadBufferCount,
+                LiveBufferCount = _parent._streamBuffer.LiveBufferCount,
                 ExtraStatistics = _settings.ExtraStatistics,
             };
         }

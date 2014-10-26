@@ -326,6 +326,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
                     LastKnownEventNumber = stat.LastProcessedEventNumber,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
+                    ReadBufferCount = stat.ReadBufferCount,
+                    LiveBufferCount = stat.LiveBufferCount,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
                     Config = new SubscriptionConfigData()
                     {
@@ -434,6 +436,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public List<ConnectionInfo> Connections { get; set; }
             public int LastProcessedEventNumber { get; set; }
             public int LastKnownEventNumber { get; set; }
+            public int ReadBufferCount { get; set; }
+            public int LiveBufferCount { get; set; }
         }
 
         private class ConnectionInfo

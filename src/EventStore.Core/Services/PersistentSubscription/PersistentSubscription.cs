@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly PersistentSubscriptionStats _statistics;
         private readonly Stopwatch _totalTimeWatch;
         private readonly OutstandingMessageCache _outstandingMessages;
-        private StreamBuffer _streamBuffer;
+        internal StreamBuffer _streamBuffer;
         private PersistentSubscriptionState _state = PersistentSubscriptionState.NotReady;
         private int _lastPulledEvent;
         private int _lastCheckPoint;
@@ -88,10 +88,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void TryReadingNewBatch()
         {
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) > 0) return;
-            if ((_state & PersistentSubscriptionState.Live) > 0) return;
+            if (_streamBuffer.Live) return;
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
             _state ^= PersistentSubscriptionState.OutstandingPageRequest;
-            Console.WriteLine("Moved to in request. " + _state);
             _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, _settings.ReadBatchSize, _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
         }
 
@@ -100,15 +99,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) == 0) return;
             _state ^= PersistentSubscriptionState.OutstandingPageRequest;
             if (_streamBuffer.Live) return;
-            Console.WriteLine("Moved to not in request. " + _state);
             foreach (var ev in events)
             {
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
+            if (_streamBuffer.Live) _state ^= PersistentSubscriptionState.Live;
             if (isEndOfStream)
             {
                 _state ^= PersistentSubscriptionState.Live;
-                Console.WriteLine("Moved to live. " + _state);
                 _streamBuffer.MoveToLive();
                 return;
             }
@@ -216,7 +214,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
-            Console.WriteLine("acking");
             RemoveProcessingMessages(correlationId, processedEventIds);
             TryMarkCheckpoint(false);
             TryReadingNewBatch();

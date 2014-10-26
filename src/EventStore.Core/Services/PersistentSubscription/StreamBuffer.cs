@@ -9,14 +9,15 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly int _maxBufferSize;
         private readonly int _initialSequence;
         private readonly Queue<OutstandingMessage> _retry = new Queue<OutstandingMessage>();
-        private readonly Queue<OutstandingMessage> _regular = new Queue<OutstandingMessage>();
+        private readonly Queue<OutstandingMessage> _buffer = new Queue<OutstandingMessage>();
 
         private readonly BoundedQueue<OutstandingMessage> _liveBuffer;
-        private bool _live;
 
         public int LiveBufferCount { get { return _liveBuffer.Count; } }
-        public int BufferCount { get { return _retry.Count + _regular.Count; } }
-        public bool Live { get { return _live; } }
+        public int BufferCount { get { return _retry.Count + _buffer.Count; } }
+        public int RetryCount { get { return _retry.Count; } }
+        public int ReadBufferCount { get { return _buffer.Count; } }
+        public bool Live { get; private set; }
 
         public bool CanAccept(int count)
         {
@@ -25,7 +26,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public StreamBuffer(int maxBufferSize, int maxLiveBufferSize, int initialSequence, bool startInHistory)
         {
-            _live = !startInHistory;
+            Live = !startInHistory;
             _initialSequence = initialSequence;
             _maxBufferSize = maxBufferSize;
             _liveBuffer = new BoundedQueue<OutstandingMessage>(maxLiveBufferSize);
@@ -35,9 +36,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             while (_liveBuffer.Count > 0)
             {
-                _regular.Enqueue(_liveBuffer.Dequeue());
+                _buffer.Enqueue(_liveBuffer.Dequeue());
             }
-            _live = true;
+            Live = true;
         }
         
         private void DrainLiveTo(int eventNumber)
@@ -55,20 +56,20 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AddLiveMessage(OutstandingMessage ev)
         {
-            if(_live) 
-                _regular.Enqueue(ev);
+            if(Live) 
+                _buffer.Enqueue(ev);
             else
                 _liveBuffer.Enqueue(ev);
         }
 
         public void AddReadMessage(OutstandingMessage ev)
         {
-            if (_live) return;
+            if (Live) return;
             if (ev.ResolvedEvent.OriginalEventNumber <= _initialSequence)
                 return;
             if (ev.ResolvedEvent.OriginalEventNumber < TryPeekLive())
             {
-                _regular.Enqueue(ev);
+                _buffer.Enqueue(ev);
             }
             else if (ev.ResolvedEvent.OriginalEventNumber > TryPeekLive())
             {
@@ -94,8 +95,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ev = _retry.Dequeue();
                 return true;
             }
-            if (_regular.Count <= 0) return false;
-            ev = _regular.Dequeue();
+            if (_buffer.Count <= 0) return false;
+            ev = _buffer.Dequeue();
             return true;
         }
 
@@ -107,14 +108,14 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ev = _retry.Peek();
                 return true;
             }
-            if (_regular.Count <= 0) return false;
-            ev = _regular.Peek();
+            if (_buffer.Count <= 0) return false;
+            ev = _buffer.Peek();
             return true;
         }
 
         public void MoveToLive()
         {
-            if (_liveBuffer.Count == 0) _live = true;
+            if (_liveBuffer.Count == 0) Live = true;
         }
 
         public int GetLowestRetry()
