@@ -134,7 +134,7 @@ namespace CompetingPlayground
             {
                 connection.ConnectAsync().Wait();
 
-                WriteEvents(connection, 5000);
+                WriteEvents(connection, 1000);
                 CreateSubscription(connection, SubName);
 
                 var sub = ConnectToSubscription(connection, "sub1");
@@ -153,9 +153,16 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
-                    if(ev.OriginalEventNumber % 200 == 0)
+                    var r = new Random();
+                    if (r.NextDouble() < .1)
+                    {
+                        sub.Fail(ev, PersistentSubscriptionNakEventAction.Park, "Just testing!");
+                    }
+                    else
+                    {
                         Console.WriteLine("acking " + ev.OriginalEventNumber);
-                    sub.Acknowledge(ev);
+                        sub.Acknowledge(ev);
+                    }
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
                 bufferSize: 200, autoAck: false);

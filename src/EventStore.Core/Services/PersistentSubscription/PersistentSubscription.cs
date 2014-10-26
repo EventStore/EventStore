@@ -285,7 +285,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void RetryAllParkedMessages()
         {
-            if ((_state | PersistentSubscriptionState.ReplayingParkedMessages) > 0) return; //already replaying
+            if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) > 0) return; //already replaying
             _state |= PersistentSubscriptionState.ReplayingParkedMessages;
             _settings.MessageParker.BeginReadEndSequence(end =>
             {
@@ -296,7 +296,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void TryReadingParkedMessagesFrom(int position, int stopAt)
         {
-            if ((_state | PersistentSubscriptionState.ReplayingParkedMessages) == 0) return; //not replaying
+            if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0) return; //not replaying
             var count = Math.Min(stopAt - position, _settings.ReadBatchSize);
             _settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,_settings.ReadBatchSize, true, (events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
         }
