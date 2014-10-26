@@ -119,6 +119,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public int GetLowestRetry()
         {
+            if (_retry.Count == 0) return int.MaxValue;
             return _retry.Min(x => x.ResolvedEvent.OriginalEventNumber);
         }
     }

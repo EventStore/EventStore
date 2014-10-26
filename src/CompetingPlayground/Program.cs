@@ -135,7 +135,7 @@ namespace CompetingPlayground
             {
                 connection.ConnectAsync().Wait();
 
-                //WriteEvents(connection);
+                WriteEvents(connection, 1000);
                 CreateSubscription(connection, SubName);
 
                 var sub = ConnectToSubscription(connection, "sub1");
@@ -155,13 +155,13 @@ namespace CompetingPlayground
                 (sub, ev) =>
                 {
                     var r = new Random();
-                    Console.WriteLine(name + "received: " + ev.OriginalEventNumber);
                     if (r.NextDouble() < .1)
                     {
                         sub.Fail(ev, PersistentSubscriptionNakEventAction.Park, "Just testing!");
                     }
                     else
                     {
+                        Console.WriteLine("acking " + ev.OriginalEventNumber);
                         sub.Acknowledge(ev);
                     }
                 },

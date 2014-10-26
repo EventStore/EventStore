@@ -6,8 +6,9 @@ namespace EventStore.Core.Services.PersistentSubscription
     public enum PersistentSubscriptionState
     {
         NotReady = 0x00,
-        OutstandingPageRequest = 0x01,
-        Replaying = 0x02,
-        Live = 0x04,
+        Behind = 0x01,
+        OutstandingPageRequest = 0x02,
+        ReplayingParkedMessages = 0x04,
+        Live = 0x08,
     }
 }

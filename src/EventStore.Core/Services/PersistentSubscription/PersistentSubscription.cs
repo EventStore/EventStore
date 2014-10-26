@@ -70,6 +70,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void OnCheckpointLoaded(int? checkpoint)
         {
+            _state = PersistentSubscriptionState.Behind;
             if (!checkpoint.HasValue)
             {
                 if (_settings.StartFrom >= 0) _lastPulledEvent = _settings.StartFrom;
@@ -97,8 +98,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition, bool isEndOfStream)
         {
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) == 0) return;
-            if (_streamBuffer.Live) return;
             _state ^= PersistentSubscriptionState.OutstandingPageRequest;
+            if (_streamBuffer.Live) return;
             Console.WriteLine("Moved to not in request. " + _state);
             foreach (var ev in events)
             {
@@ -215,7 +216,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds)
         {
-            if (_state == PersistentSubscriptionState.NotReady) return;
+            Console.WriteLine("acking");
             RemoveProcessingMessages(correlationId, processedEventIds);
             TryMarkCheckpoint(false);
             TryReadingNewBatch();
@@ -224,7 +225,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotAcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds, NakAction action, string reason)
         {
-            if (_state == PersistentSubscriptionState.NotReady) return;
             foreach (var id in processedEventIds)
             {
                 Log.Info("Message NAK'ed id {0} action to take {1} reason '{2}'", id, action, reason ?? "");
@@ -288,8 +288,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void RetryAllParkedMessages()
         {
-            if ((_state | PersistentSubscriptionState.Replaying) > 0) return; //already replaying
-            _state |= PersistentSubscriptionState.Replaying;
+            if ((_state | PersistentSubscriptionState.ReplayingParkedMessages) > 0) return; //already replaying
+            _state |= PersistentSubscriptionState.ReplayingParkedMessages;
             _settings.MessageParker.BeginReadEndSequence(end =>
             {
                 if (!end.HasValue) return; //nothing to do.
@@ -299,18 +299,18 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void TryReadingParkedMessagesFrom(int position, int stopAt)
         {
-            if ((_state | PersistentSubscriptionState.Replaying) == 0) return; //not replaying
+            if ((_state | PersistentSubscriptionState.ReplayingParkedMessages) == 0) return; //not replaying
             var count = Math.Min(stopAt - position, _settings.ReadBatchSize);
             _settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,_settings.ReadBatchSize, true, (events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
         }
 
         public void HandleParkedReadCompleted(ResolvedEvent[] events, int newposition, bool isEndofStrem, int stopAt)
         {
-            if ((_state & PersistentSubscriptionState.Replaying) == 0) return;
+            if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0) return;
             if (isEndofStrem)
             {
                 _settings.MessageParker.BeginMarkParkedMessagesReprocessed(newposition);
-                _state ^= PersistentSubscriptionState.Replaying;
+                _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
                 return;
             }
             foreach (var ev in events)
@@ -318,7 +318,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (ev.OriginalEventNumber == stopAt)
                 {
                     _settings.MessageParker.BeginMarkParkedMessagesReprocessed(stopAt);
-                    _state ^= PersistentSubscriptionState.Replaying;
+                    _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
                     return;                    
                 }
                 _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
