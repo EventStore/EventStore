@@ -73,6 +73,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void InitToEmpty()
         {
+            Console.WriteLine(_state);
             _subscriptionTopics = new Dictionary<string, List<PersistentSubscription>>();
             _subscriptionsById = new Dictionary<string, PersistentSubscription>(); 
         }

@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private int GetBatchSize(int batchSize)
         {
-            return Math.Min(batchSize, MaxPullBatchSize);
+            return Math.Min(Math.Min(batchSize, MaxPullBatchSize), _maxPullBatchSize);
         }
 
         private class ResponseHandler
