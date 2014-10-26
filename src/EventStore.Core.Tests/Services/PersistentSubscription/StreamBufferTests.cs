@@ -62,7 +62,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var buffer = new StreamBuffer(10, 10, -1, true);
             var id1 = Guid.NewGuid();
-            var id2 = Guid.NewGuid();
             buffer.AddReadMessage(BuildMessageAt(id1, 0));
             buffer.AddReadMessage(BuildMessageAt(id1, 0));
             Assert.AreEqual(2, buffer.BufferCount);
