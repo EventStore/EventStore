@@ -51,6 +51,7 @@
     <Compile Include="CommandLineTests\when_no_arguments_is_parsed.cs" />
     <Compile Include="EnvironmentTests\when_environment_variable_is_parsed.cs" />
     <Compile Include="ExtensionsTests\NormalizeTests\when_normalizing.cs" />
+    <Compile Include="OptionApplicatorTests\when_option_applicator_get.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestType.cs" />
     <Compile Include="YamlTests\when_config_is_parsed.cs" />

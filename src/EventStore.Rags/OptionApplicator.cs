@@ -21,8 +21,6 @@ namespace EventStore.Rags
                 else
                 {
                     object revivedValue = null;
-                    //Let's make use of the ArgRevivers to do the heavy lifting of parsing the type, 
-                    //so if it's an array, join it with a comma
                     if (option.Value.GetType().IsArray)
                     {
                         var commaJoined = string.Join(",", ((string[])option.Value));
