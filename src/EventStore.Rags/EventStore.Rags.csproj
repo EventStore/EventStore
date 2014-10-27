@@ -9,14 +9,15 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EventStore.Rags</RootNamespace>
     <AssemblyName>EventStore.Rags</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\bin\eventstore.rags\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -30,9 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.Common">
-      <HintPath>..\..\bin\clusternode\EventStore.Common.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,7 +42,6 @@
   <ItemGroup>
     <Compile Include="ArgDescriptionAttribute.cs" />
     <Compile Include="ArgReviverAttribute.cs" />
-    <Compile Include="SecureStringArgument.cs" />
     <Compile Include="Translators.cs" />
     <Compile Include="TypeMap.cs" />
     <Compile Include="ArgShortcut.cs" />
@@ -59,6 +56,169 @@
     <Compile Include="OptionSource.cs" />
     <Compile Include="TypeDefaultOptions.cs" />
     <Compile Include="Yaml.cs" />
+    <Compile Include="YamlDotNet.Dynamic\DynamicYaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="YamlDotNet.Dynamic\Extensions.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="YamlDotNet.Dynamic\YamlDoc.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="YamlDotNet\Core\AnchorNotFoundException.cs" />
+    <Compile Include="YamlDotNet\Core\CharacterAnalyzer.cs" />
+    <Compile Include="YamlDotNet\Core\Constants.cs" />
+    <Compile Include="YamlDotNet\Core\Cursor.cs" />
+    <Compile Include="YamlDotNet\Core\DuplicateAnchorException.cs" />
+    <Compile Include="YamlDotNet\Core\Emitter.cs" />
+    <Compile Include="YamlDotNet\Core\EmitterState.cs" />
+    <Compile Include="YamlDotNet\Core\EventReader.cs" />
+    <Compile Include="YamlDotNet\Core\Events\AnchorAlias.cs" />
+    <Compile Include="YamlDotNet\Core\Events\DocumentEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Events\DocumentStart.cs" />
+    <Compile Include="YamlDotNet\Core\Events\EventType.cs" />
+    <Compile Include="YamlDotNet\Core\Events\IParsingEventVisitor.cs" />
+    <Compile Include="YamlDotNet\Core\Events\MappingEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Events\MappingStart.cs" />
+    <Compile Include="YamlDotNet\Core\Events\MappingStyle.cs" />
+    <Compile Include="YamlDotNet\Core\Events\NodeEvent.cs" />
+    <Compile Include="YamlDotNet\Core\Events\ParsingEvent.cs" />
+    <Compile Include="YamlDotNet\Core\Events\Scalar.cs" />
+    <Compile Include="YamlDotNet\Core\Events\SequenceEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Events\SequenceStart.cs" />
+    <Compile Include="YamlDotNet\Core\Events\SequenceStyle.cs" />
+    <Compile Include="YamlDotNet\Core\Events\StreamEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Events\StreamStart.cs" />
+    <Compile Include="YamlDotNet\Core\FakeList.cs" />
+    <Compile Include="YamlDotNet\Core\ForwardAnchorNotSupportedException.cs" />
+    <Compile Include="YamlDotNet\Core\IEmitter.cs" />
+    <Compile Include="YamlDotNet\Core\ILookAheadBuffer.cs" />
+    <Compile Include="YamlDotNet\Core\InsertionQueue.cs" />
+    <Compile Include="YamlDotNet\Core\IParser.cs" />
+    <Compile Include="YamlDotNet\Core\IScanner.cs" />
+    <Compile Include="YamlDotNet\Core\LookAheadBuffer.cs" />
+    <Compile Include="YamlDotNet\Core\Mark.cs" />
+    <Compile Include="YamlDotNet\Core\MergingParser.cs" />
+    <Compile Include="YamlDotNet\Core\Parser.cs" />
+    <Compile Include="YamlDotNet\Core\ParserState.cs" />
+    <Compile Include="YamlDotNet\Core\ScalarStyle.cs" />
+    <Compile Include="YamlDotNet\Core\Scanner.cs" />
+    <Compile Include="YamlDotNet\Core\SemanticErrorException.cs" />
+    <Compile Include="YamlDotNet\Core\SimpleKey.cs" />
+    <Compile Include="YamlDotNet\Core\StringLookAheadBuffer.cs" />
+    <Compile Include="YamlDotNet\Core\SyntaxErrorException.cs" />
+    <Compile Include="YamlDotNet\Core\TagDirectiveCollection.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\Anchor.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\AnchorAlias.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\BlockEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\BlockEntry.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\BlockMappingStart.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\BlockSequenceStart.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\DocumentEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\DocumentStart.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\FlowEntry.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\FlowMappingEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\FlowMappingStart.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\FlowSequenceEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\FlowSequenceStart.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\Key.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\Scalar.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\StreamEnd.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\StreamStart.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\Tag.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\TagDirective.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\Token.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\Value.cs" />
+    <Compile Include="YamlDotNet\Core\Tokens\VersionDirective.cs" />
+    <Compile Include="YamlDotNet\Core\Version.cs" />
+    <Compile Include="YamlDotNet\Core\YamlException.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\DocumentLoadingState.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\EmitterState.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\IYamlVisitor.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlAliasNode.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlDocument.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlMappingNode.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlNode.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlNodeIdentityEqualityComparer.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlScalarNode.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlSequenceNode.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlStream.cs" />
+    <Compile Include="YamlDotNet\RepresentationModel\YamlVisitor.cs" />
+    <Compile Include="YamlDotNet\Serialization\Deserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\EventEmitters\ChainedEventEmitter.cs" />
+    <Compile Include="YamlDotNet\Serialization\EventEmitters\JsonEventEmitter.cs" />
+    <Compile Include="YamlDotNet\Serialization\EventEmitters\TypeAssigningEventEmitter.cs" />
+    <Compile Include="YamlDotNet\Serialization\EventEmitters\WriterEventEmitter.cs" />
+    <Compile Include="YamlDotNet\Serialization\EventInfo.cs" />
+    <Compile Include="YamlDotNet\Serialization\IAliasProvider.cs" />
+    <Compile Include="YamlDotNet\Serialization\IEventEmitter.cs" />
+    <Compile Include="YamlDotNet\Serialization\INamingConvention.cs" />
+    <Compile Include="YamlDotNet\Serialization\INodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\INodeTypeResolver.cs" />
+    <Compile Include="YamlDotNet\Serialization\IObjectDescriptor.cs" />
+    <Compile Include="YamlDotNet\Serialization\IObjectFactory.cs" />
+    <Compile Include="YamlDotNet\Serialization\IObjectGraphTraversalStrategy.cs" />
+    <Compile Include="YamlDotNet\Serialization\IObjectGraphVisitor.cs" />
+    <Compile Include="YamlDotNet\Serialization\IPropertyDescriptor.cs" />
+    <Compile Include="YamlDotNet\Serialization\ITypeInspector.cs" />
+    <Compile Include="YamlDotNet\Serialization\ITypeResolver.cs" />
+    <Compile Include="YamlDotNet\Serialization\IValueDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\IValuePromise.cs" />
+    <Compile Include="YamlDotNet\Serialization\IYamlSerializable.cs" />
+    <Compile Include="YamlDotNet\Serialization\IYamlTypeConverter.cs" />
+    <Compile Include="YamlDotNet\Serialization\NamingConventions\CamelCaseNamingConvention.cs" />
+    <Compile Include="YamlDotNet\Serialization\NamingConventions\HyphenatedNamingConvention.cs" />
+    <Compile Include="YamlDotNet\Serialization\NamingConventions\NullNamingConvention.cs" />
+    <Compile Include="YamlDotNet\Serialization\NamingConventions\PascalCaseNamingConvention.cs" />
+    <Compile Include="YamlDotNet\Serialization\NamingConventions\UnderscoredNamingConvention.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\ArrayNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\EnumerableNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\GenericCollectionNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\GenericDictionaryNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\NonGenericDictionaryNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\NonGenericListNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\NullNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\ObjectNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\ScalarNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeDeserializers\TypeConverterNodeDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeTypeResolvers\DefaultContainersNodeTypeResolver.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeTypeResolvers\TagNodeTypeResolver.cs" />
+    <Compile Include="YamlDotNet\Serialization\NodeTypeResolvers\TypeNameInTagNodeTypeResolver.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectDescriptor.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectFactories\DefaultObjectFactory.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectFactories\LambdaObjectFactory.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphTraversalStrategies\FullObjectGraphTraversalStrategy.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphTraversalStrategies\RoundtripObjectGraphTraversalStrategy.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphVisitors\AnchorAssigner.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphVisitors\AnchorAssigningObjectGraphVisitor.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphVisitors\ChainedObjectGraphVisitor.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphVisitors\CustomSerializationObjectGraphVisitor.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphVisitors\DefaultExclusiveObjectGraphVisitor.cs" />
+    <Compile Include="YamlDotNet\Serialization\ObjectGraphVisitors\EmittingObjectGraphVisitor.cs" />
+    <Compile Include="YamlDotNet\Serialization\PropertyDescriptor.cs" />
+    <Compile Include="YamlDotNet\Serialization\SerializationOptions.cs" />
+    <Compile Include="YamlDotNet\Serialization\Serializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\StreamFragment.cs" />
+    <Compile Include="YamlDotNet\Serialization\TagMappings.cs" />
+    <Compile Include="YamlDotNet\Serialization\TypeInspectors\NamingConventionTypeInspector.cs" />
+    <Compile Include="YamlDotNet\Serialization\TypeInspectors\ReadableAndWritablePropertiesTypeInspector.cs" />
+    <Compile Include="YamlDotNet\Serialization\TypeInspectors\ReadablePropertiesTypeInspector.cs" />
+    <Compile Include="YamlDotNet\Serialization\TypeInspectors\TypeInspectorSkeleton.cs" />
+    <Compile Include="YamlDotNet\Serialization\TypeResolvers\DynamicTypeResolver.cs" />
+    <Compile Include="YamlDotNet\Serialization\TypeResolvers\StaticTypeResolver.cs" />
+    <Compile Include="YamlDotNet\Serialization\Utilities\IPostDeserializationCallback.cs" />
+    <Compile Include="YamlDotNet\Serialization\Utilities\ObjectAnchorCollection.cs" />
+    <Compile Include="YamlDotNet\Serialization\Utilities\ReflectionUtility.cs" />
+    <Compile Include="YamlDotNet\Serialization\Utilities\SerializerState.cs" />
+    <Compile Include="YamlDotNet\Serialization\Utilities\StringExtensions.cs" />
+    <Compile Include="YamlDotNet\Serialization\Utilities\TypeConverter.cs" />
+    <Compile Include="YamlDotNet\Serialization\ValueDeserializers\AliasValueDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\ValueDeserializers\NodeValueDeserializer.cs" />
+    <Compile Include="YamlDotNet\Serialization\YamlAliasAttribute.cs" />
+    <Compile Include="YamlDotNet\Serialization\YamlAttributesTypeInspector.cs" />
+    <Compile Include="YamlDotNet\Serialization\YamlFormatter.cs" />
+    <Compile Include="YamlDotNet\Serialization\YamlIgnoreAttribute.cs" />
+    <Compile Include="YamlDotNet\Serialization\YamlMember.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

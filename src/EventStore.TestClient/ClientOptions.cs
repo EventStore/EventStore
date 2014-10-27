@@ -1,6 +1,7 @@
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
+using EventStore.Rags;
 
 namespace EventStore.TestClient
 {
