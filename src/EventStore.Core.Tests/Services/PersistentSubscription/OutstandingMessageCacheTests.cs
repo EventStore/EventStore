@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using EventStore.Core.Services.PersistentSubscription;
-using EventStore.Core.Tests.Services.PersistentSubscriptionTests;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription

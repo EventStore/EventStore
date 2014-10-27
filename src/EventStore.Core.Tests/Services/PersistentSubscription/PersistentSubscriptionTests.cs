@@ -7,7 +7,7 @@ using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
+namespace EventStore.Core.Tests.Services.PersistentSubscription
 {
     [TestFixture]
     public class when_creating_persistent_subscription
@@ -813,6 +813,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
         private Action<ResolvedEvent, OperationResult> _parkMessageCompleted;
         public List<ResolvedEvent> ParkedEvents = new List<ResolvedEvent>();
 
+        public int MarkedAsProcessed { get; private set; }
+
         public void ReadEndSequenceCompleted(int sequence)
         {
             if (_readEndSequenceCompleted != null) _readEndSequenceCompleted(sequence);
@@ -836,12 +838,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscriptionTests
 
         public void BeginMarkParkedMessagesReprocessed(int sequence)
         {
-            
-        }
-
-        public void BeginReadEvents(Core.Services.PersistentSubscription.PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
-        {
-            
+            MarkedAsProcessed = sequence;
         }
     }
 

@@ -79,11 +79,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         }
 
-        public void BeginReadEvents(PersistentSubscription subscription, int startEventNumber, int countToLoad, Action<ResolvedEvent[], int> onFetchCompleted)
-        {
-            throw new NotImplementedException();
-        }
-
         class ParkedMessageMetadata
         {
             public DateTime Added { get; set; }
