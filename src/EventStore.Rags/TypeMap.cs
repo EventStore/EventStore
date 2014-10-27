@@ -81,7 +81,6 @@ namespace EventStore.Rags
             Register(Rags.Translators.TranslateDouble);
             Register((prop, val) => val);
             Register(Rags.Translators.TranslateDateTime);
-            Register(Rags.Translators.TranslateSecureString);
             Register(Rags.Translators.TranslateUri);
             Register(Rags.Translators.TranlateIPAddress);
             Register(Rags.Translators.TranslateIPEndPoint);

@@ -1,5 +1,5 @@
 ﻿using EventStore.Common.Utils;
-using PowerArgs;
+using EventStore.Rags;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,83 +10,48 @@ namespace EventStore.Common.Options
 {
     public class EventStoreOptions
     {
-        private static OptionSource[] _effectiveOptions;
-
-        public static ArgAction<TOptions> InvokeAction<TOptions>(params string[] args)
-        {
-            return Args.InvokeAction<TOptions>(args);
-        }
+        private static IEnumerable<OptionSource> _effectiveOptions;
 
         public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {
-            var commandLineParser = new CommandLineParser();
-            var yamlParser = new YamlParser();
-            var environmentVariableProvider = new EnvironmentVariableProvider();
-            var defaultOptionsProvider = new DefaultOptionsProvider();
+            _effectiveOptions = GetConfig<TOptions>(args, environmentPrefix)
+                .Flatten()
+                .ToLookup(x => x.Name)
+                .Select(ResolvePrecedence);
+            return _effectiveOptions.ApplyTo<TOptions>();
+        }
 
-            OptionSource[] defaultOptionSources = defaultOptionsProvider.Get<TOptions>();
-            OptionSource[] commandLineOptionSources;
-            OptionSource[] configurationFileOptionSources = null;
-            OptionSource[] environmentVariableOptionSources;
-
-            if (args == null || args.Length == 0)
+        private static IEnumerable<IEnumerable<OptionSource>> GetConfig<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
+        {
+            var commandline = CommandLine.Parse<TOptions>(args).Normalize();
+            var commanddict = commandline.ToDictionary(x => x.Name);
+            yield return commandline;
+            yield return
+                EnvironmentVariables.Parse<TOptions>(x => NameTranslators.PrefixEnvironmentVariable(x, environmentPrefix));
+            var configFile = commanddict.ContainsKey("Config") ? commanddict["Config"].Value as string : null;
+            if (configFile != null && File.Exists(configFile))
             {
-                var optionSources = environmentVariableProvider.Parse<TOptions>(environmentPrefix);
-                _effectiveOptions = OptionsSourceMerger.SequentialMerge(
-                    defaultOptionSources,
-                    optionSources);
-                return OptionsSourceParser.Parse<TOptions>(optionSources);
+                yield return
+                    Yaml.FromFile(configFile);
             }
+            yield return
+                TypeDefaultOptions.Get<TOptions>();
+        }
 
-            try
-            {
-                commandLineOptionSources = commandLineParser.Parse<TOptions>(args);
-            }
-            catch (ArgException ex)
-            {
-                throw new OptionException(ex.Message, String.Empty);
-            }
-
-
-            if (commandLineOptionSources.Any(x => x.Name == "Config"))
-            {
-                var configOptionSource = commandLineOptionSources.First(x => x.Name == "Config");
-                if (!string.IsNullOrWhiteSpace(configOptionSource.Value.ToString()))
-                {
-                    if (File.Exists(configOptionSource.Value.ToString()))
-                    {
-                        configurationFileOptionSources = yamlParser.Parse(configOptionSource.Value.ToString(), String.Empty);
-                    }
-                    else
-                    {
-                        Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", configOptionSource.Value));
-                    }
-                }
-            }
-
-            environmentVariableOptionSources = environmentVariableProvider.Parse<TOptions>(environmentPrefix);
-
-            _effectiveOptions = OptionsSourceMerger.SequentialMerge(
-                        defaultOptionSources,
-                        configurationFileOptionSources,
-                        environmentVariableOptionSources,
-                        commandLineOptionSources);
-
-            OptionsSourceRulesRunner.RunRules(defaultOptionSources.Select(option => option.Name).ToArray(),
-                                              _effectiveOptions);
-            return OptionsSourceParser.Parse<TOptions>(_effectiveOptions);
+        private static OptionSource ResolvePrecedence(IGrouping<string, OptionSource> optionSources)
+        {
+            return optionSources.First();
         }
 
         public static TOptions Parse<TOptions>(string configFile, string sectionName = "") where TOptions : class, new()
         {
-            var yamlParser = new YamlParser();
-            var optionsSource = yamlParser.Parse(configFile, sectionName);
-            return OptionsSourceParser.Parse<TOptions>(optionsSource);
+            return Yaml.FromFile(configFile, sectionName).ApplyTo<TOptions>();
         }
 
         public static string GetUsage<TOptions>()
         {
-            return ArgUsage.GetUsage<TOptions>();
+            //return ArgUsage.GetUsage<TOptions>();
+            return String.Empty;
         }
 
         public static string DumpOptions()
@@ -101,7 +66,6 @@ namespace EventStore.Common.Options
                 var value = option.Value;
                 var optionName = PascalCaseNameSplitter(option.Name).ToUpper();
                 var valueToDump = value == null ? String.Empty : value.ToString();
-                var source = option.Source ?? "<DEFAULT>";
                 if (value is Array)
                 {
                     valueToDump = String.Empty;
@@ -111,7 +75,7 @@ namespace EventStore.Common.Options
                         valueToDump = "[ " + String.Join(", ", (IEnumerable<object>)value) + " ]";
                     }
                 }
-                dumpOptionsBuilder.AppendLine(String.Format("{0,-25} {1} ({2})", optionName + ":", String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump, source));
+                dumpOptionsBuilder.AppendLine(String.Format("{0,-25} {1} ({2})", optionName + ":", String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump, option.Source));
             }
             return dumpOptionsBuilder.ToString();
         }

@@ -38,6 +38,9 @@
     <ApplicationIcon>app2.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EventStore.Rags">
+      <HintPath>..\..\bin\eventstore.rags\EventStore.Rags.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />

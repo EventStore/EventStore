@@ -34,12 +34,6 @@ namespace EventStore.Rags
             }
         }
 
-        public static SecureStringArgument TranslateSecureString(string prop, string val)
-        {
-            if (val != null) throw new ArgException("The value for " + prop + " cannot be specified on the command line");
-            return new SecureStringArgument(prop);
-        }
-
         public static DateTime TranslateDateTime(string prop, string val)
         {
             DateTime ret;
