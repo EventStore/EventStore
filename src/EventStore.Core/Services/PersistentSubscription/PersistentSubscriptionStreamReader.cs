@@ -23,7 +23,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             Action<ResolvedEvent[], int, bool> onEventsFound)
         {
             var actualBatchSize = GetBatchSize(batchSize);
-            //TODO implement reading loop here.
             _ioDispatcher.ReadForward(
                 stream, startEventNumber, Math.Min(countToLoad, actualBatchSize),
                 resolveLinkTos, SystemAccount.Principal, new ResponseHandler(onEventsFound).FetchCompleted);
@@ -45,6 +44,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             public void FetchCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
             {
+                //TODO check error codes?
+                Console.WriteLine(msg.Result);
                 _onFetchCompleted(msg.Events, msg.NextEventNumber, msg.IsEndOfStream);
             }
         }

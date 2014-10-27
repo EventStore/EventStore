@@ -23,7 +23,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                     .WithCheckpointReader(new FakeCheckpointReader())
                     .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
                     .WithMessageParker(new FakeMessageParker()));
-
         }
 
         [Test]

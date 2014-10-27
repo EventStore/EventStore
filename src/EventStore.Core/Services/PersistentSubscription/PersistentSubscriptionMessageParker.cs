@@ -54,7 +54,28 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void BeginReadEndSequence(Action<int?> completed)
         {
-            //Read end of stream to get id.
+            _ioDispatcher.ReadBackward(_parkedStreamId,
+                int.MaxValue,
+                1,
+                false,
+                SystemAccount.Principal, comp =>
+                {
+                    switch (comp.Result)
+                    {
+                        case ReadStreamResult.Success :
+                            completed(comp.NextEventNumber);
+                            break;
+                        case ReadStreamResult.NoStream :
+                            completed(null);
+                            break;
+                        default:
+                            Log.Error("An error occured reading the last event in the parked message stream {0} due to {1}.\n" +
+                                  "Messages were not removed on retry",
+                                  _parkedStreamId,
+                                  comp.Result);
+                            break;
+                    }
+                });
         }
 
         public void BeginMarkParkedMessagesReprocessed(int sequence)

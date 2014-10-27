@@ -289,13 +289,18 @@ namespace EventStore.Core.Services.PersistentSubscription
             _state |= PersistentSubscriptionState.ReplayingParkedMessages;
             _settings.MessageParker.BeginReadEndSequence(end =>
             {
-                if (!end.HasValue) return; //nothing to do.
+                if (!end.HasValue)
+                {
+                    _state |= PersistentSubscriptionState.ReplayingParkedMessages;
+                    return; //nothing to do.
+                }
                 TryReadingParkedMessagesFrom(0, end.Value);
             });
         }
 
         private void TryReadingParkedMessagesFrom(int position, int stopAt)
         {
+            if (stopAt - position == 0) return;
             if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0) return; //not replaying
             var count = Math.Min(stopAt - position, _settings.ReadBatchSize);
             _settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,_settings.ReadBatchSize, true, (events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
@@ -306,7 +311,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0) return;
             if (isEndofStrem)
             {
-                _settings.MessageParker.BeginMarkParkedMessagesReprocessed(newposition);
+                if(newposition != -1)
+                    _settings.MessageParker.BeginMarkParkedMessagesReprocessed(newposition);
                 _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
                 return;
             }
@@ -318,6 +324,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
                     return;                    
                 }
+                Log.Debug("Retrying event {0} on subscription {1}", ev.Event.EventId, _settings.SubscriptionId);
                 _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
             TryPushingMessagesToClients();

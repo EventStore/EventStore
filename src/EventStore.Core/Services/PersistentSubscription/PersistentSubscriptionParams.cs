@@ -151,7 +151,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public string ParkedMessageStream
         {
-            get { return _eventStreamId + "::" + _groupName + "::parked"; }
+            get { return "$persistentsubscription-" + _eventStreamId + "::" + _groupName + "-parked"; }
         }
     }
 }

@@ -9,7 +9,6 @@ using EventStore.Core.Messages;
 using EventStore.Common.Log;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
-using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
