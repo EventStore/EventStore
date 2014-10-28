@@ -4,9 +4,13 @@
     {
         public static string PrefixEnvironmentVariable(string name, string prefix)
         {
+            return prefix + CombineByPascalCase(name, "_");
+        }
+
+        public static string CombineByPascalCase(string name, string token)
+        {
             var regex = new System.Text.RegularExpressions.Regex(@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
-            var convertedName = regex.Replace(name, "_");
-            return prefix + convertedName.ToUpper();            
+            return regex.Replace(name, token);
         }
 
         public static string None(string name)

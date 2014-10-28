@@ -42,6 +42,8 @@
   <ItemGroup>
     <Compile Include="ArgDescriptionAttribute.cs" />
     <Compile Include="ArgReviverAttribute.cs" />
+    <Compile Include="ArgUsage.cs" />
+    <Compile Include="ConsoleString.cs" />
     <Compile Include="Translators.cs" />
     <Compile Include="TypeMap.cs" />
     <Compile Include="ArgShortcut.cs" />

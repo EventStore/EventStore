@@ -50,8 +50,7 @@ namespace EventStore.Common.Options
 
         public static string GetUsage<TOptions>()
         {
-            //return ArgUsage.GetUsage<TOptions>();
-            return String.Empty;
+            return ArgUsage.GetUsage<TOptions>();
         }
 
         public static string DumpOptions()
