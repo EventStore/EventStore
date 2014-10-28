@@ -8,7 +8,6 @@ using System.Net;
 
 namespace RagsPlayground
 {
-
     public class SomeOptionType
     {
         [ArgDescription("The first string", "firstgroup")]
