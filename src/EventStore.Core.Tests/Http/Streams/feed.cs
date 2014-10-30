@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common;
+using EventStore.ClientAPI.SystemData;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Transport.Http;
@@ -235,7 +240,7 @@ namespace EventStore.Core.Tests.Http.Streams
             }
 
             [Test]
-            public void the_feed_has_one_event()
+            public void the_feed_has_two_events()
             {
                 Assert.AreEqual(2, _entries.Count());
             }
@@ -272,6 +277,90 @@ namespace EventStore.Core.Tests.Http.Streams
                 Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
             }
         }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_reading_a_stream_forward_with_linkto_with_at_sign_in_name : HttpBehaviorSpecification
+        {
+            protected string LinkedStreamName;
+            protected string StreamName;
+
+            protected override void Given()
+            {
+                var creds = new UserCredentials("admin", "changeit");
+                LinkedStreamName = Guid.NewGuid().ToString();
+                StreamName = Guid.NewGuid() + "@" + Guid.NewGuid() + "@";
+                using (var conn = TestConnection.Create(_node.TcpEndPoint))
+                {
+                    conn.ConnectAsync().Wait();
+                    conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+                        new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]))
+                        .Wait();
+                    conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+                        new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]))
+                        .Wait();
+                    conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+                        new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]))
+                        .Wait();
+                    conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+                        new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
+                            Encoding.UTF8.GetBytes("0@" + StreamName), new byte[0])).Wait();
+                    conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+                        new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
+                            Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0])).Wait();
+
+                }
+            }
+            private JObject _feed;
+            private List<JToken> _entries;
+            protected override void When()
+            {
+                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
+                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+            }
+
+            [Test]
+            public void the_feed_has_two_events()
+            {
+                Assert.AreEqual(2, _entries.Count());
+            }
+
+            [Test]
+            public void the_second_edit_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[1]["links"][0];
+                Assert.AreEqual("edit", foo["relation"].ToString());
+                //TODO GFY I really wish we were targeting 4.5 only so I could use Uri.EscapeDataString
+                //given the choice between this and a dependency on system.web well yeah. When we have 4.5
+                //only lets use Uri
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/0"), foo["uri"].ToString());
+            }
+
+            [Test]
+            public void the_second_alt_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[1]["links"][1];
+                Assert.AreEqual("alternate", foo["relation"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/0"), foo["uri"].ToString());
+            }
+
+            [Test]
+            public void the_first_edit_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[0]["links"][0];
+                Assert.AreEqual("edit", foo["relation"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/1"), foo["uri"].ToString());
+            }
+
+            [Test]
+            public void the_first_alt_link_to_is_to_correct_uri()
+            {
+                var foo = _entries[0]["links"][1];
+                Assert.AreEqual("alternate", foo["relation"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/1"), foo["uri"].ToString());
+            }
+        }
+
+
 
 
         [TestFixture, Category("LongRunning")]
