@@ -11,7 +11,7 @@ namespace EventStore.Rags
             var properties = revived.GetType().GetProperties();
             foreach (var option in source)
             {
-                var property = properties.FirstOrDefault(x => x.Name == option.Name);
+                var property = properties.FirstOrDefault(x => x.Name.Equals(option.Name, System.StringComparison.OrdinalIgnoreCase));
                 if (property == null) continue;
                 if (option.Value == null) continue;
                 if (option.IsTyped)

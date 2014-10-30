@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         {
             var args = new string[] { "-unknown-option", "true" };
             var optionException = Assert.Throws<OptionException>(() => { EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix); });
-            Assert.True(optionException.Message.Contains("unknown-option"));
+            Assert.True(optionException.Message.Contains("unknownoption"));
         }
         [Test]
         public void should_warn_the_user_about_unknown_argument_when_from_config_file()

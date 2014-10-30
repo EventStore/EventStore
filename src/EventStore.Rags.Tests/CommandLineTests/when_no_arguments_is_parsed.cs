@@ -13,7 +13,7 @@ namespace EventStore.Rags.Tests.CommandLineTests
         [Test]
         public void it_should_return_no_results()
         {
-            IEnumerable<OptionSource> result = CommandLine.Parse<TestType>(null);
+            IEnumerable<OptionSource> result = CommandLine.Parse(null);
             Assert.AreEqual(result.Count(), 0);
         }
     }
