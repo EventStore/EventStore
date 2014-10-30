@@ -37,10 +37,11 @@ namespace EventStore.Common.Options
                 if (!File.Exists(configFile))
                 {
                     throw new OptionException(String.Format("The specified config file {0} could not be found", configFile), "config");
-                }
+                }            
+                yield return
+                    Yaml.FromFile(configFile);
             }
-            yield return
-                Yaml.FromFile(configFile);
+
             yield return
                 TypeDefaultOptions.Get<TOptions>();
         }
