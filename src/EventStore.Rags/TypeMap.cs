@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace EventStore.Rags
 {
-    internal static class TypeMap
+    public static class TypeMap
     {
         private static Dictionary<Type, Func<string, string, object>> _translators;
         private static Dictionary<Type, Func<string, string, object>> Translators
@@ -36,7 +36,7 @@ namespace EventStore.Rags
             return System.ComponentModel.TypeDescriptor.GetConverter(t).CanConvertFrom(typeof(string)) || Translators.ContainsKey(t);
         }
 
-        internal static object Translate(Type t, string name, string value)
+        public static object Translate(Type t, string name, string value)
         {
             if (t.IsArray == false && t.GetInterfaces().Contains(typeof(IList)))
             {

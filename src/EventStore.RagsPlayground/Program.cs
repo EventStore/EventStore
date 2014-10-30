@@ -62,12 +62,12 @@ namespace RagsPlayground
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string [] args)
         {
-            var commandline = CommandLine.Parse<SomeOptionType>(args).Normalize();
+            var commandline = CommandLine.Parse(args).Normalize();
             var commanddict = commandline.ToDictionary(x => x.Name);
             yield return commandline;
             yield return
                 EnvironmentVariables.Parse<SomeOptionType>(x => NameTranslators.PrefixEnvironmentVariable(x, "EVENTSTORE"));
-            var configFile = commanddict.ContainsKey("Config") ? commanddict["Config"].Value as string : null;
+            var configFile = commanddict.ContainsKey("config") ? commanddict["config"].Value as string : null;
             if (configFile != null && File.Exists(configFile))
             {
                 yield return

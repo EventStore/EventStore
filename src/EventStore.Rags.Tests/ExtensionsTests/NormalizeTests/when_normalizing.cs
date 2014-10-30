@@ -31,11 +31,11 @@ namespace EventStore.Rags.Tests.ExtensionsTests.NormalizeTests
         [Test]
         public void with_an_empty_string_as_a_value_it_should_return_true_as_the_value()
         {
-            var normalizedValues = new OptionSource[] { new OptionSource("test", "flag", false, "-") }.Normalize();
+            var normalizedValues = new OptionSource[] { new OptionSource("test", "flag", false, "") }.Normalize();
             Assert.AreEqual(1, normalizedValues.Count());
             Assert.AreEqual("flag", normalizedValues.First().Name);
             Assert.AreEqual(true, normalizedValues.First().IsTyped);
-            Assert.AreEqual(false, normalizedValues.First().Value);
+            Assert.AreEqual(true, normalizedValues.First().Value);
         }
     }
 }

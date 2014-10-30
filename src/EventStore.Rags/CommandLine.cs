@@ -7,26 +7,21 @@ namespace EventStore.Rags
 {
     public class CommandLine
     {
-        public static IEnumerable<OptionSource> Parse<TOptions>(string[] args) where TOptions : class
+        public static IEnumerable<OptionSource> Parse(string[] args)
         {
             var ret = new List<OptionSource>();
             if (args == null || args.Length == 0)
             {
                 return ret;
             }
-            var properties = typeof(TOptions).GetProperties();
-            foreach (var argument in Parse(args))
+            foreach (var argument in ParseArgs(args))
             {
-                var property = properties.FirstOrDefault(x => string.Equals(argument.Item1, x.Name, System.StringComparison.OrdinalIgnoreCase));
-                if (property != null)
-                {
-                    ret.Add(OptionSource.String("Command Line", property.Name, argument.Item2));
-                }
+                ret.Add(OptionSource.String("Command Line", argument.Item1, argument.Item2));
             }
             return ret;
         }
 
-        internal static IEnumerable<Tuple<string, string>> Parse(string[] args)
+        internal static IEnumerable<Tuple<string, string>> ParseArgs(string[] args)
         {
             var result = new List<Tuple<string, string>>();
             for (int i = 0; i < args.Length; i++)
@@ -73,7 +68,7 @@ namespace EventStore.Rags
                         }
                     }
 
-                    yield return new Tuple<string, string>(key.Replace("-", ""), value);
+                    yield return new Tuple<string, string>(key.TrimStart(new char[]{'-'}), value);
                 }
             }
 

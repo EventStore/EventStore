@@ -45,7 +45,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandLineTests\when_an_argument_parsed_does_not_exist.cs" />
     <Compile Include="CommandLineTests\when_a_shorthand_argument_is_parsed.cs" />
     <Compile Include="CommandLineTests\when_an_argument_parsed_exists.cs" />
     <Compile Include="CommandLineTests\when_no_arguments_is_parsed.cs" />
