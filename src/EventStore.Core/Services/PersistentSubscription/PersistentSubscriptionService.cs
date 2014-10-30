@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
         private bool _started = false;
         private VNodeState _state;
-        private TimerMessage.Schedule _tickRequestMessage;
+        private readonly TimerMessage.Schedule _tickRequestMessage;
 
         public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher, IPublisher bus)
         {
@@ -82,11 +82,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _state = message.State;
 
-            if (message.State != VNodeState.Master)
-            {
-                ShutdownSubscriptions();
-                Stop();
-            }
+            if (message.State == VNodeState.Master) return;
+            //TODO handle stopping timer tick.
+            ShutdownSubscriptions();
+            Stop();
         }
 
         public void Handle(SystemMessage.BecomeMaster message)
@@ -728,6 +727,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void WakeSubscriptions()
         {
             var now = DateTime.Now;
+
             foreach (var subscription in _subscriptionsById.Values)
             {
                 subscription.NotifyClockTick(now);
