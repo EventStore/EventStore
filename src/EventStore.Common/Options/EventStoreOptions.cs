@@ -32,11 +32,15 @@ namespace EventStore.Common.Options
             yield return
                 EnvironmentVariables.Parse<TOptions>(x => NameTranslators.PrefixEnvironmentVariable(x, environmentPrefix));
             var configFile = commanddict.ContainsKey("config") ? commanddict["config"].Value as string : null;
-            if (configFile != null && File.Exists(configFile))
+            if (configFile != null)
             {
-                yield return
-                    Yaml.FromFile(configFile);
+                if (!File.Exists(configFile))
+                {
+                    throw new OptionException(String.Format("The specified config file {0} could not be found", configFile), "config");
+                }
             }
+            yield return
+                Yaml.FromFile(configFile);
             yield return
                 TypeDefaultOptions.Get<TOptions>();
         }
@@ -133,7 +137,7 @@ namespace EventStore.Common.Options
                         property.SetValue(revived, revivedValue, null);
                     }
                 }
-                catch 
+                catch
                 {
                     throw new OptionException(String.Format("The value {0} could not be converted to {1}", optionSource.Value, property.PropertyType.Name), property.Name);
                 }
