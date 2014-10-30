@@ -247,14 +247,21 @@ namespace EventStore.Core.Services.Transport.Http
             }
             else if (link != null)
             {
-                var pieces = Encoding.UTF8.GetString(link.Data).Split('@');
-                if(pieces.Length != 2) throw new Exception("link not in proper format.");
-                var eventNumber = int.Parse(pieces[0]);
-                var streamId = pieces[1];
-                SetEntryProperties(streamId, eventNumber, link.TimeStamp, requestedUrl, entry);
-		entry.SetSummary("$>");
+                var eventLoc = GetLinkData(Encoding.UTF8.GetString(link.Data));
+                SetEntryProperties(eventLoc.Item1, eventLoc.Item2, link.TimeStamp, requestedUrl, entry);
+		        entry.SetSummary("$>");
             }
             return entry;
+        }
+
+        private static Tuple<string, int> GetLinkData(string link)
+        {
+            Ensure.NotNull(link, "link data cannot be null");
+            var loc = link.IndexOf("@", StringComparison.Ordinal);
+            if(loc == -1) throw new Exception(String.Format("Unable to parse link {0}", link));
+            var position = int.Parse(link.Substring(0, loc));
+            var stream = link.Substring(loc + 1, link.Length - loc - 1);
+            return new Tuple<string, int>(stream, position);
         }
 
         private static void SetEntryProperties(string stream, int eventNumber, DateTime timestamp, Uri requestedUrl,EntryElement entry)
