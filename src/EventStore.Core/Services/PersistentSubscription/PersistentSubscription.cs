@@ -88,7 +88,13 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void TryReadingNewBatch()
         {
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) > 0) return;
-            if (_streamBuffer.Live) return;
+            if (_streamBuffer.Live)
+            {
+                if ((_state & PersistentSubscriptionState.Live) > 0) return;
+                _state ^= PersistentSubscriptionState.Behind;
+                _state ^= PersistentSubscriptionState.Live;
+                return;
+            }
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
             _state ^= PersistentSubscriptionState.OutstandingPageRequest;
             _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, _settings.ReadBatchSize, _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
@@ -115,8 +121,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             TryPushingMessagesToClients();
         }
 
-        public void TryPushingMessagesToClients()
+        private void TryPushingMessagesToClients()
         {
+            if(_state == PersistentSubscriptionState.NotReady) return;
             while(true)
             {
                 OutstandingMessage message;
