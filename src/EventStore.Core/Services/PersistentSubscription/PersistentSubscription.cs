@@ -318,7 +318,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             foreach (var ev in events)
             {
-                if (ev.OriginalEventNumber == stopAt)
+                if (ev.Link.EventNumber == stopAt)
                 {
                     _settings.MessageParker.BeginMarkParkedMessagesReprocessed(stopAt);
                     _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
