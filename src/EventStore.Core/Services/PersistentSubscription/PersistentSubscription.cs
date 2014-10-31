@@ -112,6 +112,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             _state |= PersistentSubscriptionState.Live;
         }
 
+        private void SetBehind()
+        {
+            _state |= PersistentSubscriptionState.Behind;
+            _state &= ~PersistentSubscriptionState.Live;
+        }
+
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition, bool isEndOfStream)
         {
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) == 0) return;
@@ -158,6 +164,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_state == PersistentSubscriptionState.NotReady) return;
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
             _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null, resolvedEvent, 0));
+            if (!_streamBuffer.Live)
+            {
+                SetBehind();
+            }
             TryPushingMessagesToClients();
         }
 
@@ -389,6 +399,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             TryPushingMessagesToClients();
             TryMarkCheckpoint(true);
+            if ((_state & PersistentSubscriptionState.Behind | PersistentSubscriptionState.OutstandingPageRequest) == PersistentSubscriptionState.Behind)
+                TryReadingNewBatch();
         }
 
         private bool ActionTakenForRetriedMessage(OutstandingMessage message)

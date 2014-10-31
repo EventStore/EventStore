@@ -4,20 +4,20 @@ namespace EventStore.Core.DataStructures
 {
     public class BoundedQueue<T> 
     {
-        private readonly int _capacity;
+        private readonly int _maxCapacity;
         private readonly Queue<T> _queue;
 
-        public int Capacity { get { return _capacity; } }
+        public int MaxCapacity { get { return _maxCapacity; } }
         public int Count { get { return _queue.Count; } }
-        public BoundedQueue(int capacity)
+        public BoundedQueue(int maxCapacity)
         {
-            _queue = new Queue<T>(capacity);
-            _capacity = capacity;
+            _queue = new Queue<T>(maxCapacity);
+            _maxCapacity = maxCapacity;
         }
 
         public void Enqueue(T obj)
         {
-            if (_queue.Count >= _capacity) Dequeue();
+            if (_queue.Count >= _maxCapacity) Dequeue();
             _queue.Enqueue(obj);
         }
 
@@ -29,6 +29,11 @@ namespace EventStore.Core.DataStructures
         public T Peek()
         {
             return _queue.Peek();
+        }
+
+        public bool CanAccept()
+        {
+            return _queue.Count < _maxCapacity;
         }
     }
 }
