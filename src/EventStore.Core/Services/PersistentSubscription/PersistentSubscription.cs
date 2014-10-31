@@ -163,10 +163,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (_state == PersistentSubscriptionState.NotReady) return;
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
+            bool waslive = _streamBuffer.Live; //hacky
             _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null, resolvedEvent, 0));
             if (!_streamBuffer.Live)
             {
                 SetBehind();
+                if (waslive) _lastPulledEvent = resolvedEvent.OriginalEventNumber;
             }
             TryPushingMessagesToClients();
         }

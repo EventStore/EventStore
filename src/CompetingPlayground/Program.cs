@@ -141,7 +141,7 @@ namespace CompetingPlayground
             {
                 connection.ConnectAsync().Wait();
 
-                WriteEvents(connection, 1000);
+                //WriteEvents(connection, 1000);
                 CreateSubscription(connection, SubName);
 
                 var sub = ConnectToSubscription(connection, "sub1");
@@ -160,6 +160,7 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
+                    Thread.Sleep(100);
                         Console.WriteLine("acking " + ev.OriginalEventNumber);
                         sub.Acknowledge(ev);
                 },

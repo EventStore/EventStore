@@ -56,16 +56,14 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AddLiveMessage(OutstandingMessage ev)
         {
-            if(Live) 
-                _buffer.Enqueue(ev);
-            else if (_liveBuffer.CanAccept())
+            if (Live)
             {
-                _liveBuffer.Enqueue(ev);
+                if (_buffer.Count < _maxBufferSize)
+                    _buffer.Enqueue(ev);
+                else
+                    Live = false;
             }
-            else
-            {
-                Live = false;
-            }
+            _liveBuffer.Enqueue(ev);
         }
 
         public void AddReadMessage(OutstandingMessage ev)
