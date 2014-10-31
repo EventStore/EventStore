@@ -10,6 +10,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
+    //TODO GFY REFACTOR TO USE ACTUAL STATE MACHINE
     public class PersistentSubscription
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscription>();
@@ -73,13 +74,17 @@ namespace EventStore.Core.Services.PersistentSubscription
             _state = PersistentSubscriptionState.Behind;
             if (!checkpoint.HasValue)
             {
-                if (_settings.StartFrom >= 0) _lastPulledEvent = _settings.StartFrom;
+                Log.Debug(string.Format("Subscription {0}: read no checksum.", _settings.SubscriptionId));
+
+                Log.Debug("strtfrom = " + _settings.StartFrom);
+                _lastPulledEvent = _settings.StartFrom >= 0 ? _settings.StartFrom : 0;
                 _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, _settings.StartFrom >= 0);
                 TryReadingNewBatch();
             }
             else
             {
                 _lastPulledEvent = checkpoint.Value;
+                Log.Debug(string.Format("Subscription {0}: read checksum {1}", _settings.SubscriptionId, checkpoint.Value));
                 _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, true);
                 TryReadingNewBatch();
             }
@@ -90,29 +95,36 @@ namespace EventStore.Core.Services.PersistentSubscription
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) > 0) return;
             if (_streamBuffer.Live)
             {
-                if ((_state & PersistentSubscriptionState.Live) > 0) return;
-                _state ^= PersistentSubscriptionState.Behind;
-                _state ^= PersistentSubscriptionState.Live;
+                //TODO GFY this is hacky and just trying to keep the state at this level when it 
+                //lives in the streambuffer its for reporting reasons and likely should be revisited
+                //at some point.
+                _state &= ~PersistentSubscriptionState.Behind;
+                _state |= PersistentSubscriptionState.Live;
                 return;
             }
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
-            _state ^= PersistentSubscriptionState.OutstandingPageRequest;
-            _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, _settings.ReadBatchSize, _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
+            _state |= PersistentSubscriptionState.OutstandingPageRequest;
+            _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, Math.Max(_settings.ReadBatchSize, 10), _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
         }
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition, bool isEndOfStream)
         {
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) == 0) return;
-            _state ^= PersistentSubscriptionState.OutstandingPageRequest;
+            _state &= ~PersistentSubscriptionState.OutstandingPageRequest;
             if (_streamBuffer.Live) return;
             foreach (var ev in events)
             {
                 _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
             }
-            if (_streamBuffer.Live) _state ^= PersistentSubscriptionState.Live;
+            if (_streamBuffer.Live)
+            {
+                _state &= ~PersistentSubscriptionState.Behind;
+                _state |= PersistentSubscriptionState.Live;
+            }
             if (isEndOfStream)
             {
-                _state ^= PersistentSubscriptionState.Live;
+                _state &= ~PersistentSubscriptionState.Behind;
+                _state |= PersistentSubscriptionState.Live;
                 _streamBuffer.MoveToLive();
                 return;
             }

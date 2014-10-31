@@ -129,8 +129,15 @@ namespace CompetingPlayground
 
         private static void BasicTest()
         {
-            var endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113);
-            using (var connection = EventStoreConnection.Create(endpoint, "foo"))
+            //var endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113);
+            var connSettings = ConnectionSettings.Create().PerformOnMasterOnly();
+            var clustrSettings = ClusterSettings.Create()
+                .DiscoverClusterViaGossipSeeds()
+                .SetMaxDiscoverAttempts(10)
+                .SetGossipSeedEndPoints(new GossipSeed(new IPEndPoint(IPAddress.Loopback, 1113)),
+                    new GossipSeed(new IPEndPoint(IPAddress.Loopback, 2113)),
+                    new GossipSeed(new IPEndPoint(IPAddress.Loopback, 3113)));
+            using (var connection = EventStoreConnection.Create(connSettings, clustrSettings, "foo"))
             {
                 connection.ConnectAsync().Wait();
 
@@ -153,19 +160,11 @@ namespace CompetingPlayground
             return connection.ConnectToPersistentSubscription(SubName, Stream,
                 (sub, ev) =>
                 {
-                    var r = new Random();
-                    if (r.NextDouble() < .1)
-                    {
-                        sub.Fail(ev, PersistentSubscriptionNakEventAction.Park, "Just testing!");
-                    }
-                    else
-                    {
                         Console.WriteLine("acking " + ev.OriginalEventNumber);
                         sub.Acknowledge(ev);
-                    }
                 },
                 (sub, ev, ex) => Console.WriteLine(name + "sub dropped " + ev),
-                bufferSize: 200, autoAck: false);
+                bufferSize: 10, autoAck: false);
         }
 
         private static void WriteEvents(IEventStoreConnection connection, int count)

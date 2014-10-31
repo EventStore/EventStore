@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -20,7 +19,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<SystemMessage.BecomeShuttingDown>,
                                         IHandle<TcpMessage.ConnectionClosed>,
                                         IHandle<SystemMessage.BecomeMaster>,
-                                        IHandle<SystemMessage.SystemInit>,
                                         IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
                                         IHandle<ClientMessage.ReplayAllParkedMessages>,
                                         IHandle<ClientMessage.ReplayParkedMessage>,
@@ -52,6 +50,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private bool _started = false;
         private VNodeState _state;
         private readonly TimerMessage.Schedule _tickRequestMessage;
+        private bool _handleTick;
 
         public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher, IPublisher bus)
         {
@@ -73,7 +72,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void InitToEmpty()
         {
-            Console.WriteLine(_state);
+            _handleTick = false;
             _subscriptionTopics = new Dictionary<string, List<PersistentSubscription>>();
             _subscriptionsById = new Dictionary<string, PersistentSubscription>(); 
         }
@@ -83,14 +82,17 @@ namespace EventStore.Core.Services.PersistentSubscription
             _state = message.State;
 
             if (message.State == VNodeState.Master) return;
-            //TODO handle stopping timer tick.
+            Log.Debug(string.Format("Subscriptions received state change to {0} stopping listening.", _state));
             ShutdownSubscriptions();
             Stop();
         }
 
         public void Handle(SystemMessage.BecomeMaster message)
         {
+            _handleTick = true;
+            Log.Debug("Subscriptions Became Master so now handling subscriptions");
             InitToEmpty();
+            _bus.Publish(_tickRequestMessage); 
             LoadConfiguration(Start);
         }
 
@@ -211,7 +213,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             RemoveSubscription(message.EventStreamId, message.GroupName);
             RemoveSubscriptionConfig(message.User.Identity.Name, message.EventStreamId, message.GroupName);
-            //TODO handle update.
             CreateSubscriptionGroup(message.EventStreamId,
                                     message.GroupName,
                                     message.ResolveLinkTos,
@@ -707,13 +708,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             );
         }
 
-        public void Handle(SystemMessage.SystemInit message)
-        {
-            _bus.Publish(_tickRequestMessage);
-        }
-
         public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message)
         {
+            if (!_handleTick) return;
             try
             {
                 WakeSubscriptions();
