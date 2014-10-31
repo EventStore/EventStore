@@ -64,7 +64,6 @@
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />
-    <Compile Include="Options\OptionException.cs" />
     <Compile Include="Options\ProjectionType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Streams\DriveSectorSize.cs" />

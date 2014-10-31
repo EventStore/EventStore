@@ -97,7 +97,7 @@ namespace EventStore.Common.Options
         {
             return optionSources.Select(x => new OptionSource(x.Source, x.Name.Replace("-", ""), x.IsTyped, x.Value));
         }
-        public static IEnumerable<OptionSource> EnsureExistence<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class, IOptions, new()
+        public static IEnumerable<OptionSource> EnsureExistence<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class
         {
             var properties = typeof(TOptions).GetProperties();
             foreach (var optionSource in optionSources)
@@ -109,7 +109,7 @@ namespace EventStore.Common.Options
             }
             return optionSources;
         }
-        public static IEnumerable<OptionSource> EnsureCorrectType<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class, IOptions, new()
+        public static IEnumerable<OptionSource> EnsureCorrectType<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class, new()
         {
             var properties = typeof(TOptions).GetProperties();
             var revived = new TOptions();
