@@ -44,8 +44,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             public void FetchCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
             {
-                //TODO check error codes?
-                Console.WriteLine(msg.Result);
+                //TODO mark error?
                 _onFetchCompleted(msg.Events, msg.NextEventNumber, msg.IsEndOfStream);
             }
         }

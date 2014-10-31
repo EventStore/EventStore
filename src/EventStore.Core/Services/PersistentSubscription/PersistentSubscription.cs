@@ -95,16 +95,21 @@ namespace EventStore.Core.Services.PersistentSubscription
             if ((_state & PersistentSubscriptionState.OutstandingPageRequest) > 0) return;
             if (_streamBuffer.Live)
             {
-                //TODO GFY this is hacky and just trying to keep the state at this level when it 
-                //lives in the streambuffer its for reporting reasons and likely should be revisited
-                //at some point.
-                _state &= ~PersistentSubscriptionState.Behind;
-                _state |= PersistentSubscriptionState.Live;
+                SetLive();
                 return;
             }
             if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
             _state |= PersistentSubscriptionState.OutstandingPageRequest;
             _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent, Math.Max(_settings.ReadBatchSize, 10), _settings.ReadBatchSize, _settings.ResolveLinkTos, HandleReadCompleted);
+        }
+
+        private void SetLive()
+        {
+            //TODO GFY this is hacky and just trying to keep the state at this level when it 
+            //lives in the streambuffer its for reporting reasons and likely should be revisited
+            //at some point.
+            _state &= ~PersistentSubscriptionState.Behind;
+            _state |= PersistentSubscriptionState.Live;
         }
 
         public void HandleReadCompleted(ResolvedEvent[] events, int newposition, bool isEndOfStream)
@@ -118,13 +123,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             if (_streamBuffer.Live)
             {
-                _state &= ~PersistentSubscriptionState.Behind;
-                _state |= PersistentSubscriptionState.Live;
+                SetLive();
             }
             if (isEndOfStream)
-            {
-                _state &= ~PersistentSubscriptionState.Behind;
-                _state |= PersistentSubscriptionState.Live;
+            {   
+                SetLive();
                 _streamBuffer.MoveToLive();
                 return;
             }
