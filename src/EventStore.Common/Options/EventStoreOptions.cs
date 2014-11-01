@@ -37,7 +37,7 @@ namespace EventStore.Common.Options
                 if (!File.Exists(configFile))
                 {
                     throw new OptionException(String.Format("The specified config file {0} could not be found", configFile), "config");
-                }            
+                }
                 yield return
                     Yaml.FromFile(configFile);
             }
@@ -72,8 +72,27 @@ namespace EventStore.Common.Options
                 return "No options have been parsed";
             }
             var dumpOptionsBuilder = new StringBuilder();
+            var defaultOptionsHeading = "DEFAULT OPTIONS:";
+            var displayingModifiedOptions = true;
+            dumpOptionsBuilder.AppendLine("MODIFIED OPTIONS:");
+            dumpOptionsBuilder.AppendLine();
+            if (_effectiveOptions.First().Source.ToLower().Contains("default"))
+            {
+                dumpOptionsBuilder.AppendLine("NONE");
+                dumpOptionsBuilder.AppendLine();
+                dumpOptionsBuilder.AppendLine(defaultOptionsHeading);
+                dumpOptionsBuilder.AppendLine();
+                displayingModifiedOptions = false;
+            }
             foreach (var option in _effectiveOptions)
             {
+                if (option.Source.ToLower().Contains("default") && displayingModifiedOptions)
+                {
+                    dumpOptionsBuilder.AppendLine();
+                    dumpOptionsBuilder.AppendLine(defaultOptionsHeading);
+                    dumpOptionsBuilder.AppendLine();
+                    displayingModifiedOptions = false;
+                }
                 var value = option.Value;
                 var optionName = NameTranslators.CombineByPascalCase(option.Name, " ").ToUpper();
                 var valueToDump = value == null ? String.Empty : value.ToString();
@@ -86,7 +105,7 @@ namespace EventStore.Common.Options
                         valueToDump = "[ " + String.Join(", ", (IEnumerable<object>)value) + " ]";
                     }
                 }
-                dumpOptionsBuilder.AppendLine(String.Format("{0,-25} {1} ({2})", optionName + ":", String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump, option.Source));
+                dumpOptionsBuilder.AppendLine(String.Format("\t{0,-25} {1} ({2})", optionName + ":", String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump, option.Source));
             }
             return dumpOptionsBuilder.ToString();
         }
