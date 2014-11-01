@@ -7,21 +7,21 @@ namespace EventStore.Rags
 {
     public class CommandLine
     {
-        public static IEnumerable<OptionSource> Parse(string[] args)
+        public static IEnumerable<OptionSource> Parse<T>(string[] args)
         {
             var ret = new List<OptionSource>();
             if (args == null || args.Length == 0)
             {
                 return ret;
             }
-            foreach (var argument in ParseArgs(args))
+            foreach (var argument in ParseArgs<T>(args))
             {
                 ret.Add(OptionSource.String("Command Line", argument.Item1, argument.Item2));
             }
             return ret;
         }
 
-        internal static IEnumerable<Tuple<string, string>> ParseArgs(string[] args)
+        internal static IEnumerable<Tuple<string, string>> ParseArgs<T>(string[] args)
         {
             var result = new List<Tuple<string, string>>();
             for (int i = 0; i < args.Length; i++)
@@ -61,6 +61,20 @@ namespace EventStore.Rags
                         {
                             value = "";
                         }
+                        else if (IsBool<T>(key))
+                        {
+                            var next = args[i + 1].ToLower();
+
+                            if (next == "true" || next == "false" || next == "0" || next == "1")
+                            {
+                                i++;
+                                value = next;
+                            }
+                            else
+                            {
+                                value = "true";
+                            }
+                        }
                         else
                         {
                             i++;
@@ -68,11 +82,20 @@ namespace EventStore.Rags
                         }
                     }
 
-                    yield return new Tuple<string, string>(key.TrimStart(new char[]{'-'}), value);
+                    yield return new Tuple<string, string>(key.TrimStart(new char[] { '-' }), value);
                 }
             }
 
             yield break;
+        }
+
+        internal static bool IsBool<T>(string key)
+        {
+            var propertyName = key.TrimStart(new char[] { '-' }).Replace("-", "");
+            var possibleBooleanProperty = typeof(T).GetProperties()
+                                            .FirstOrDefault(x => x.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+            if (possibleBooleanProperty == null) return false;
+            return possibleBooleanProperty.PropertyType == typeof(bool);
         }
     }
 }

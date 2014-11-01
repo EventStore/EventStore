@@ -46,7 +46,7 @@ namespace RagsPlayground
                 .Flatten()
                 .ToLookup(x => x.Name)
                 .Select(ResolvePrecedence);
-                //.ApplyTo<SomeOptionType>();
+            //.ApplyTo<SomeOptionType>();
             var appliedConfig = resolvedConfig.ApplyTo<SomeOptionType>();
             foreach (var item in resolvedConfig)
             {
@@ -60,9 +60,9 @@ namespace RagsPlayground
             return optionSources.First();
         }
 
-        private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string [] args)
+        private static IEnumerable<IEnumerable<OptionSource>> GetConfig(string[] args)
         {
-            var commandline = CommandLine.Parse(args).Normalize();
+            var commandline = CommandLine.Parse<SomeOptionType>(args).Normalize();
             var commanddict = commandline.ToDictionary(x => x.Name);
             yield return commandline;
             yield return

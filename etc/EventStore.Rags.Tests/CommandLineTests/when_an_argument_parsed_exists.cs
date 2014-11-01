@@ -13,7 +13,7 @@ namespace EventStore.Rags.Tests.CommandLineTests
         [Test]
         public void it_should_return_a_single_option_source()
         {
-            IEnumerable<OptionSource> result = CommandLine.Parse(new[] { "--name=bar" });
+            IEnumerable<OptionSource> result = CommandLine.Parse<TestType>(new[] { "--name=bar" });
             Assert.AreEqual(1, result.Count());
             Assert.AreEqual("name", result.First().Name);
             Assert.AreEqual(false, result.First().IsTyped);

@@ -26,7 +26,7 @@ namespace EventStore.Common.Options
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {
-            var commandline = CommandLine.Parse(args).Normalize();
+            var commandline = CommandLine.Parse<TOptions>(args).Normalize();
             var commanddict = commandline.ToDictionary(x => x.Name.ToLower());
             yield return commandline;
             yield return
