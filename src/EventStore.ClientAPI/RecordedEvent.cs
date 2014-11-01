@@ -54,7 +54,6 @@ namespace EventStore.ClientAPI
         /// </summary>
         public long CreatedEpoch;
 
-
 #if DEBUG
         /// <summary>
         /// Shows the event data interpreted as a UTF8-encoded string.

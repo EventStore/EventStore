@@ -78,6 +78,9 @@
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <Compile Include="ClientAPI\connecting_to_a_persistent_subscription.cs" />
+    <Compile Include="ClientAPI\create_persistent_subscription.cs" />
+    <Compile Include="ClientAPI\deleting_persistent_subscription.cs" />
     <Compile Include="ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
     <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream_using_transaction.cs" />
@@ -118,6 +121,7 @@
     <Compile Include="ClientAPI\SpecificationWithLinkToToDeletedEvents.cs" />
     <Compile Include="ClientAPI\SpecificationWithLinkToToMaxCountDeletedEvents.cs" />
     <Compile Include="ClientAPI\SpecificationWithMiniNode.cs" />
+    <Compile Include="ClientAPI\update_persistent_subscription.cs" />
     <Compile Include="ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\read_event_should.cs" />
@@ -170,6 +174,7 @@
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_no_arguments.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_incorrectly_cased_option_in_config.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_unknown_options.cs" />
+    <Compile Include="DataStructures\PremptableQueueTests.cs" />
     <Compile Include="Fakes\FakeTfReader.cs" />
     <Compile Include="Helpers\CollectionsExtensions.cs" />
     <Compile Include="Helpers\HelperExtensions.cs" />
@@ -194,6 +199,10 @@
     <Compile Include="Http\ArgumentPassing\matching.cs" />
     <Compile Include="Http\BasicAuthentication\basic_authentication.cs" />
     <Compile Include="Http\HttpBehaviorSpecification.cs" />
+    <Compile Include="Http\PersistentSubscription\creating.cs" />
+    <Compile Include="Http\PersistentSubscription\deleting.cs" />
+    <Compile Include="Http\PersistentSubscription\statistics.cs" />
+    <Compile Include="Http\PersistentSubscription\updating.cs" />
     <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />
     <Compile Include="Http\StreamSecurity\SpecificationWithUsers.cs" />
     <Compile Include="Http\StreamSecurity\stream_access.cs" />
@@ -292,6 +301,10 @@
     <Compile Include="Services\ElectionsService\Randomized\TimerMessageProcessor.cs" />
     <Compile Include="Services\ElectionsService\Randomized\UpdateGossipProcessor.cs" />
     <Compile Include="Services\GossipService\gossip_service_should.cs" />
+    <Compile Include="Services\PersistentSubscription\OutstandingMessageCacheTests.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConfigPersistence.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionTests.cs" />
+    <Compile Include="Services\PersistentSubscription\StreamBufferTests.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit.cs" />
     <Compile Include="Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
     <Compile Include="Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />

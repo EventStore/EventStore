@@ -195,6 +195,115 @@ message ReadAllEventsCompleted {
 	optional string error = 7;
 }
 
+message CreatePersistentSubscription {
+	required string subscription_group_name = 1;
+	required string event_stream_id = 2;
+   	required bool resolve_link_tos = 3;
+   	required int32 start_from = 4;
+   	required int32 message_timeout_milliseconds = 5;
+  	required bool record_statistics = 6;
+	required int32 live_buffer_size = 7;
+	required int32 read_batch_size = 8;
+	required int32 buffer_size = 9;
+	required int32 max_retry_count = 10;
+	required bool prefer_round_robin = 11;
+	required int32 checkpoint_after_time = 12;
+	required int32 checkpoint_max_count = 13;
+	required int32 checkpoint_min_count = 14;
+}
+
+message DeletePersistentSubscription {
+	required string subscription_group_name = 1;
+	required string event_stream_id = 2;
+}
+
+message UpdatePersistentSubscription {
+	required string subscription_group_name = 1;
+	required string event_stream_id = 2;
+   	required bool resolve_link_tos = 3;
+   	required int32 start_from = 4;
+   	required int32 message_timeout_milliseconds = 5;
+  	required bool record_statistics = 6;
+	required int32 live_buffer_size = 7;
+	required int32 read_batch_size = 8;
+	required int32 buffer_size = 9;
+	required int32 max_retry_count = 10;
+	required bool prefer_round_robin = 11;
+	required int32 checkpoint_after_time = 12;
+	required int32 checkpoint_max_count = 13;
+	required int32 checkpoint_min_count = 14;
+}
+
+message UpdatePersistentSubscriptionCompleted {
+	enum UpdatePersistentSubscriptionResult {
+		Success = 0;
+		DoesNotExists = 1;
+		Fail = 2;
+		AccessDenied=3;
+	}
+	required UpdatePersistentSubscriptionResult result = 1 [default = Success];
+	optional string reason = 2;
+}
+
+message CreatePersistentSubscriptionCompleted {
+	enum CreatePersistentSubscriptionResult {
+		Success = 0;
+		AlreadyExists = 1;
+		Fail = 2;
+		AccessDenied=3;
+	}
+	required CreatePersistentSubscriptionResult result = 1 [default = Success];
+	optional string reason = 2;
+}
+
+message DeletePersistentSubscriptionCompleted {
+	enum DeletePersistentSubscriptionResult {
+		Success = 0;
+		DoesNotExist = 1;
+		Fail = 2;
+		AccessDenied = 3;
+	}
+	required DeletePersistentSubscriptionResult result = 1 [default = Success];
+	optional string reason = 2;
+}
+
+message ConnectToPersistentSubscription {
+	required string subscription_id = 1;
+	required string event_stream_id = 2;
+	required int32 allowed_in_flight_messages = 3;
+
+}
+
+message PersistentSubscriptionAckEvents {
+	required string subscription_id = 1;
+	repeated bytes processed_event_ids = 2;
+}
+
+message PersistentSubscriptionNakEvents {
+	enum NakAction {
+		Unknown = 0;
+		Park = 1;
+		Retry = 2;
+		Skip = 3;
+		Stop = 4;
+	}
+
+	required string subscription_id = 1;
+	repeated bytes processed_event_ids = 2;
+	optional string message = 3;
+	required NakAction action = 4 [default = Unknown];
+}
+
+message PersistentSubscriptionConfirmation {
+	required int64 last_commit_position = 1;
+	required string subscription_id = 2;
+	optional int32 last_event_number = 3;
+}
+
+message PersistentSubscriptionStreamEventAppeared {
+	required ResolvedIndexedEvent event = 1;
+}
+
 message SubscribeToStream {
 	required string event_stream_id = 1;
 	required bool resolve_link_tos = 2;
@@ -217,6 +326,8 @@ message SubscriptionDropped {
 	enum SubscriptionDropReason {
 		Unsubscribed = 0;
 		AccessDenied = 1;
+		NotFound=2;
+		PersistentSubscriptionDeleted=3;
 	}
 	
 	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];

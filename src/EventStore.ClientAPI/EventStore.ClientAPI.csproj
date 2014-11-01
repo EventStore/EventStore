@@ -52,10 +52,27 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="EventStorePersistentSubscription.cs" />
+    <Compile Include="PersistentSubscriptionCreateResult.cs" />
+    <Compile Include="PersistentSubscriptionSettings.cs" />
+    <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
+    <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\DeletePersistentSubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\UpdatePersistentSubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\ISubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\VolatileSubscriptionOperation.cs" />
+    <Compile Include="PersistentEventStoreSubscription.cs" />
+    <Compile Include="ClientOperations\ConnectToPersistentSubscriptionOperation.cs" />
     <Compile Include="Core\GossipSeedEndPointDiscoverer.cs" />
     <Compile Include="Core\IEventStoreConnectionLogicHandler.cs" />
     <Compile Include="Core\NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
+    <Compile Include="PersistentSubscriptionCreateStatus.cs" />
+    <Compile Include="PersistentSubscriptionDeleteResult.cs" />
+    <Compile Include="PersistentSubscriptionDeleteStatus.cs" />
+    <Compile Include="PersistentSubscriptionNakEventAction.cs" />
+    <Compile Include="PersistentSubscriptionUpdateResult.cs" />
+    <Compile Include="PersistentSubscriptionUpdateStatus.cs" />
     <Compile Include="StreamCheckpoint.cs" />
     <Compile Include="ClientAuthenticationFailedEventArgs.cs" />
     <Compile Include="ClientErrorEventArgs.cs" />
@@ -91,6 +108,7 @@
     <Compile Include="RawStreamMetadataResult.cs" />
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
+    <Compile Include="VolatileEventStoreSubscription.cs" />
     <Compile Include="WriteResult.cs" />
     <Compile Include="DeleteResult.cs" />
     <Compile Include="SystemSettings.cs" />
