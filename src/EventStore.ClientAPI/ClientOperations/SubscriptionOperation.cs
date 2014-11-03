@@ -9,31 +9,32 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class SubscriptionOperation
+    internal abstract class SubscriptionOperation<T> : ISubscriptionOperation
+        where T : EventStoreSubscription
     {
         private readonly ILogger _log;
-        private readonly TaskCompletionSource<EventStoreSubscription> _source;
-        private readonly string _streamId;
-        private readonly bool _resolveLinkTos;
-        private readonly UserCredentials _userCredentials;
-        private readonly Action<EventStoreSubscription, ResolvedEvent> _eventAppeared;
-        private readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
+        private readonly TaskCompletionSource<T> _source;
+        protected readonly string _streamId;
+        protected readonly bool _resolveLinkTos;
+        protected readonly UserCredentials _userCredentials;
+        protected readonly Action<T, ResolvedEvent> _eventAppeared;
+        private readonly Action<T, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
-        private readonly Func<TcpPackageConnection> _getConnection;
+        protected readonly Func<TcpPackageConnection> _getConnection;
         private readonly int _maxQueueSize = 2000;
         private readonly Common.Concurrent.ConcurrentQueue<Action> _actionQueue = new Common.Concurrent.ConcurrentQueue<Action>();
         private int _actionExecuting;
-        private EventStoreSubscription _subscription;
+        private T _subscription;
         private int _unsubscribed;
-        private Guid _correlationId;
+        protected Guid _correlationId;
 
-        public SubscriptionOperation(ILogger log,
-                                     TaskCompletionSource<EventStoreSubscription> source,
+        protected SubscriptionOperation(ILogger log,
+                                     TaskCompletionSource<T> source,
                                      string streamId,
                                      bool resolveLinkTos,
                                      UserCredentials userCredentials,
-                                     Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-                                     Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
+                                     Action<T, ResolvedEvent> eventAppeared,
+                                     Action<T, SubscriptionDropReason, Exception> subscriptionDropped,
                                      bool verboseLogging,
                                      Func<TcpPackageConnection> getConnection)
         {
@@ -53,6 +54,11 @@ namespace EventStore.ClientAPI.ClientOperations
             _getConnection = getConnection;
         }
 
+        protected void EnqueueSend(TcpPackage package)
+        {
+            _getConnection().EnqueueSend(package);
+        }
+
         public bool Subscribe(Guid correlationId, TcpPackageConnection connection)
         {
             Ensure.NotNull(connection, "connection");
@@ -65,16 +71,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return true;
         }
 
-        private TcpPackage CreateSubscriptionPackage()
-        {
-            var dto = new ClientMessage.SubscribeToStream(_streamId, _resolveLinkTos);
-            return new TcpPackage(TcpCommand.SubscribeToStream,
-                                  _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-                                  _correlationId,
-                                  _userCredentials != null ? _userCredentials.Username : null,
-                                  _userCredentials != null ? _userCredentials.Password : null,
-                                  dto.Serialize());
-        }
+        protected abstract TcpPackage CreateSubscriptionPackage();
 
         public void Unsubscribe()
         {
@@ -86,19 +83,20 @@ namespace EventStore.ClientAPI.ClientOperations
             return new TcpPackage(TcpCommand.UnsubscribeFromStream, _correlationId, new ClientMessage.UnsubscribeFromStream().Serialize());
         }
 
+        protected abstract bool InspectPackage(TcpPackage package, out InspectionResult result);
+
         public InspectionResult InspectPackage(TcpPackage package)
         {
             try
             {
+                InspectionResult result;
+                if (InspectPackage(package, out result))
+                {
+                    return result;
+                }
+
                 switch (package.Command)
                 {
-                    case TcpCommand.SubscriptionConfirmation:
-                    {
-                        var dto = package.Data.Deserialize<ClientMessage.SubscriptionConfirmation>();
-                        ConfirmSubscription(dto.LastCommitPosition, dto.LastEventNumber);
-                        return new InspectionResult(InspectionDecision.Subscribed, "SubscriptionConfirmation");
-                    }
-
                     case TcpCommand.StreamEventAppeared:  
                     {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
@@ -117,6 +115,10 @@ namespace EventStore.ClientAPI.ClientOperations
                             case ClientMessage.SubscriptionDropped.SubscriptionDropReason.AccessDenied:
                                 DropSubscription(SubscriptionDropReason.AccessDenied, 
                                                  new AccessDeniedException(string.Format("Subscription to '{0}' failed due to access denied.", _streamId == string.Empty ? "<all>" : _streamId)));
+                                break;
+                            case ClientMessage.SubscriptionDropped.SubscriptionDropReason.NotFound:
+                                DropSubscription(SubscriptionDropReason.NotFound,
+                                                 new ArgumentException(string.Format("Subscription to '{0}' failed due to not found.", _streamId == string.Empty ? "<all>" : _streamId)));
                                 break;
                             default: 
                                 if (_verboseLogging) _log.Debug("Subscription dropped by server. Reason: {0}.", dto.Reason);
@@ -183,7 +185,7 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        internal void ConnectionClosed()
+        public void ConnectionClosed()
         {
             DropSubscription(SubscriptionDropReason.ConnectionClosed, new ConnectionClosedException("Connection was closed."));
         }
@@ -196,7 +198,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return true;
         }
 
-        internal void DropSubscription(SubscriptionDropReason reason, Exception exc, TcpPackageConnection connection = null)
+        public void DropSubscription(SubscriptionDropReason reason, Exception exc, TcpPackageConnection connection = null)
         {
             if (Interlocked.CompareExchange(ref _unsubscribed, 1, 0) == 0)
             {
@@ -218,7 +220,7 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        private void ConfirmSubscription(long lastCommitPosition, int? lastEventNumber)
+        protected void ConfirmSubscription(long lastCommitPosition, int? lastEventNumber)
         {
             if (lastCommitPosition < -1)
                 throw new ArgumentOutOfRangeException("lastCommitPosition", string.Format("Invalid lastCommitPosition {0} on subscription confirmation.", lastCommitPosition));
@@ -228,12 +230,13 @@ namespace EventStore.ClientAPI.ClientOperations
             if (_verboseLogging)
                 _log.Debug("Subscription {0:B} to {1}: subscribed at CommitPosition: {2}, EventNumber: {3}.",
                            _correlationId, _streamId == string.Empty ? "<all>" : _streamId, lastCommitPosition, lastEventNumber);
-
-            _subscription = new EventStoreSubscription(Unsubscribe, _streamId, lastCommitPosition, lastEventNumber);
+            _subscription = CreateSubscriptionObject(lastCommitPosition, lastEventNumber);
             _source.SetResult(_subscription);
         }
 
-        private void EventAppeared(ResolvedEvent e)
+        protected abstract T CreateSubscriptionObject(long lastCommitPosition, int? lastEventNumber);        
+
+        protected void EventAppeared(ResolvedEvent e)
         {
             if (_unsubscribed != 0)
                 return;

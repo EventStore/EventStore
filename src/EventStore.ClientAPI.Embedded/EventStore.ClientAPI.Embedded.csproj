@@ -50,6 +50,7 @@
     <Compile Include="EmbeddedSubscriber.cs" />
     <Compile Include="EmbeddedSubscription.cs" />
     <Compile Include="EmbeddedVNodeBuilder.cs" />
+    <Compile Include="EmbeddedVolatileEventStoreSubscription.cs" />
     <Compile Include="EventStoreEmbeddedNodeConnection.cs" />
     <Compile Include="ProjectionsMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

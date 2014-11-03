@@ -307,6 +307,97 @@ namespace EventStore.ClientAPI
             return catchUpSubscription;
         }
 
+        public EventStorePersistentSubscription ConnectToPersistentSubscription(
+            string groupName, 
+            string stream, 
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null, 
+            int bufferSize = 10,
+            bool autoAck = true)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            var subscription = new EventStorePersistentSubscription(
+                groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
+                _settings.VerboseLogging, _settings, _handler, bufferSize, autoAck);
+
+            subscription.Start();
+
+            return subscription;
+        }
+/*
+
+        public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
+            string groupName,
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int? bufferSize = null,
+            bool autoAck = true)
+        {
+            return ConnectToPersistentSubscription(groupName,
+                SystemStreams.AllStream,
+                eventAppeared,
+                subscriptionDropped,
+                userCredentials,
+                bufferSize,
+                autoAck);
+        }
+*/
+
+
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null) {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
+            return source.Task;
+        }
+
+        public Task<PersistentSubscriptionUpdateResult> UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+            var source = new TaskCompletionSource<PersistentSubscriptionUpdateResult>();
+            EnqueueOperation(new UpdatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
+            return source.Task;
+        }
+/*
+
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, settings, userCredentials));
+            return source.Task;
+        }
+
+*/
+        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
+            return source.Task;            
+        }
+/*
+
+        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, userCredentials));
+            return source.Task;
+        }
+
+*/
+
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);

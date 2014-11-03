@@ -73,8 +73,9 @@ namespace EventStore.Core.Tests.Http
                 Given();
                 When();
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine("Setup failed with " + ex);
                 if (createdMiniNode)
                 {
                     if (_connection != null)
@@ -186,6 +187,13 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
         {
             var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
+            var httpWebResponse = GetRequestResponse(request);
+            return httpWebResponse;
+        }
+
+        protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null)
+        {
+            var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }

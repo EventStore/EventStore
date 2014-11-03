@@ -1,4 +1,3 @@
-
 #Event Store
 
 **Documentation is available at [docs.geteventstore.com](http://docs.geteventstore.com)** For a quick start, look <a href="http://docs.geteventstore.com/introduction/running-the-event-store/">here</a>.

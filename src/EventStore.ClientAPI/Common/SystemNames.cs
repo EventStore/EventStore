@@ -5,6 +5,8 @@
         public const string StreamsStream = "$streams";
         public const string SettingsStream = "$settings";
         public const string StatsStreamPrefix = "$stats";
+        public const string AllStream = "$all";
+        public const string PersistentSubscriptionConfig = "$persistentSubscriptionConfig";
 
         public static string MetastreamOf(string streamId)
         {

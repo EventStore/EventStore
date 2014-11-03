@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages
@@ -28,6 +29,13 @@ namespace EventStore.Core.Messages
         }
 
         public class CheckPollTimeout: Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+        }
+
+
+        public class PersistentSubscriptionTimerTick : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
