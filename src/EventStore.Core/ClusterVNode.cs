@@ -72,6 +72,7 @@ namespace EventStore.Core
         public ClusterVNode(TFChunkDb db,
                             ClusterVNodeSettings vNodeSettings,
                             IGossipSeedSource gossipSeedSource,
+                            InfoController infoController,
                             params ISubsystem[] subsystems)
         {
             Ensure.NotNull(db, "db");
@@ -279,7 +280,6 @@ namespace EventStore.Core
 
             var adminController = new AdminController(_mainQueue);
             var pingController = new PingController();
-            var infoController = new InfoController();
             var statController = new StatController(monitoringQueue, _workersHandler);
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
             var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);

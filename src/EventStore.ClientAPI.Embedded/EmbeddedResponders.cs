@@ -141,7 +141,7 @@ namespace EventStore.ClientAPI.Embedded
                 return new AllEventsSlice(ReadDirection.Backward,
                     new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
                     new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
-                    response.Events.ConvertToResolvedEvents());
+                    response.Events.ConvertToClientResolvedEvents());
 
             }
         }
@@ -178,7 +178,7 @@ namespace EventStore.ClientAPI.Embedded
                 return new AllEventsSlice(ReadDirection.Forward,
                     new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
                     new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
-                    response.Events.ConvertToResolvedEvents());
+                    response.Events.ConvertToClientResolvedEvents());
 
             }
         }
@@ -218,7 +218,7 @@ namespace EventStore.ClientAPI.Embedded
 
             protected override EventReadResult TransformResponse(ClientMessage.ReadEventCompleted response)
             {
-                return new EventReadResult(Convert(response.Result), _stream, _eventNumber, response.Record.ConvertToResolvedIndexEvent());
+                return new EventReadResult(Convert(response.Result), _stream, _eventNumber, response.Record.ConvertToClientResolvedIndexEvent());
             }
 
 
@@ -278,7 +278,7 @@ namespace EventStore.ClientAPI.Embedded
                     _stream,
                     _fromEventNumber,
                     ReadDirection.Backward,
-                    response.Events.ConvertToResolvedIndexEvents(),
+                    response.Events.ConvertToClientResolvedIndexEvents(),
                     response.NextEventNumber,
                     response.LastEventNumber,
                     response.IsEndOfStream);
@@ -338,7 +338,7 @@ namespace EventStore.ClientAPI.Embedded
                     _stream,
                     _fromEventNumber,
                     ReadDirection.Forward,
-                    response.Events.ConvertToResolvedIndexEvents(),
+                    response.Events.ConvertToClientResolvedIndexEvents(),
                     response.NextEventNumber,
                     response.LastEventNumber,
                     response.IsEndOfStream);

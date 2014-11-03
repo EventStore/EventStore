@@ -235,7 +235,7 @@ namespace EventStore.Projections.Core.Services.Http
                 new SendToHttpWithConversionEnvelope
                     <ProjectionManagementMessage.Statistics, ProjectionStatisticsHttpFormatted>(
                     _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
-                    status => new ProjectionStatisticsHttpFormatted(status.Projections[0], s => MakeUrl(match, s)),
+                    status => new ProjectionStatisticsHttpFormatted(status.Projections[0], s => MakeUrl(http, s)),
                     ErrorsEnvelope(http));
             Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, null, match.BoundVariables["name"], true));
         }
@@ -263,7 +263,7 @@ namespace EventStore.Projections.Core.Services.Http
                 new SendToHttpWithConversionEnvelope
                     <ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
                     _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
-                    status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
+                    status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(http, s)),
                     ErrorsEnvelope(http));
             Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, null, match.BoundVariables["name"], true));
         }
@@ -324,7 +324,7 @@ namespace EventStore.Projections.Core.Services.Http
                                 fromPosition.Tag,
                                 bodyParsed.MaxEvents ?? 10));
                     },
-                x => Log.DebugException(x, "Read Requet Body Failed."));
+                x => Log.DebugException(x, "Read Request Body Failed."));
         }
 
         private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode)
@@ -335,7 +335,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope =
                 new SendToHttpWithConversionEnvelope<ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
                     _networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
-                    status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
+                    status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(http, s)),
                     ErrorsEnvelope(http));
             Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, mode, null, true));
         }
@@ -349,7 +349,7 @@ namespace EventStore.Projections.Core.Services.Http
                 _networkSendQueue, http, DefaultFormatter, (codec, message) =>
                     {
                         var localPath = string.Format("/projection/{0}", message.Name);
-                        var url = MakeUrl(match, localPath);
+                        var url = MakeUrl(http, localPath);
                         return new ResponseConfiguration(
                             201, "Created", codec.ContentType, codec.Encoding, new KeyValuePair<string, string>("Location", url));
                     }, ErrorsEnvelope(http));
@@ -542,11 +542,6 @@ namespace EventStore.Projections.Core.Services.Http
         private string ConflictFormatter(ICodec codec, ProjectionManagementMessage.OperationFailed message)
         {
             return message.Reason;
-        }
-
-        private static string MakeUrl(UriTemplateMatch match, string localPath)
-        {
-            return new Uri(match.BaseUri, localPath).AbsoluteUri;
         }
 
         private static string DefaultFormatter<T>(ICodec codec, T message)

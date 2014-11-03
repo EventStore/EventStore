@@ -16,7 +16,8 @@ Function Merge-ClusterNode
         [Parameter(Mandatory=$true)][string]$OutputDirectory,
         [Parameter(Mandatory=$false)][string]$Executable = "EventStore.ClusterNode.exe",
         [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "js1.pdb"),
-        [Parameter(Mandatory=$false)][string]$IlMergeToolPath = (Join-Path $toolsDirectory "ilmerge\ilmerge.exe")
+        [Parameter(Mandatory=$false)][string]$IlMergeToolPath = (Join-Path $toolsDirectory "ilmerge\ilmerge.exe"),
+        [Parameter(Mandatory=$false)][string]$ExcludeFile = (Join-Path $PSScriptRoot "clusternode-merge-excludes.txt")
     )
 
     # Find the build directory as a relative path to here (in case it's absolute)
@@ -42,7 +43,7 @@ Function Merge-ClusterNode
     $outputName = "EventStore.ClusterNode.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
 
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/internalize:$ExcludeFile", "/targetPlatform:""v4,$platformPath""", "/out:$outputPath", $Executable, $otherAssemblies)
     
     if ($ExcludeAssemblies.Count -gt 0) {
         Get-ChildItem -Recurse -Path $relativeBuildDirectory -Include $ExcludeAssemblies |

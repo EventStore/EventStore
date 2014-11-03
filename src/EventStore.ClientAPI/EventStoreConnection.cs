@@ -31,7 +31,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(settings, "settings");
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-            return new EventStoreNodeConnection(settings, new StaticEndPointDiscoverer(tcpEndPoint, settings.UseSslConnection), connectionName);
+            return new EventStoreNodeConnection(settings, null, new StaticEndPointDiscoverer(tcpEndPoint, settings.UseSslConnection), connectionName);
         }
         
         /// <summary>
@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI
                                                                       clusterSettings.GossipSeeds,
                                                                       clusterSettings.GossipTimeout);
 
-            return new EventStoreNodeConnection(connectionSettings, endPointDiscoverer, connectionName);
+            return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer, connectionName);
         }
     }
 }

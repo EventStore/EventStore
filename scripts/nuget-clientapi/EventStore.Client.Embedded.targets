@@ -7,9 +7,16 @@
     <Copy SourceFiles="$(Js1DllPath)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true"/>
   </Target>
 
+  <Target Name="CopyPrelude">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\prelude\1Prelude.js" DestinationFolder="$(OutDir)\Prelude" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\prelude\Modules.js" DestinationFolder="$(OutDir)\Prelude" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\prelude\ModulesExecuted.js" DestinationFolder="$(OutDir)\Prelude" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\prelude\Projections.js" DestinationFolder="$(OutDir)\Prelude" />
+  </Target>
+
   <PropertyGroup>
     <AfterBuildDependsOn>
-      CopyJs1;
+      CopyJs1; CopyPrelude;
     </AfterBuildDependsOn>
   </PropertyGroup>
   

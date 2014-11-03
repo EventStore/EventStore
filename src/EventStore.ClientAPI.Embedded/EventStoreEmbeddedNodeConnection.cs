@@ -10,7 +10,6 @@ using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.ClientAPI.Embedded
@@ -93,6 +92,10 @@ namespace EventStore.ClientAPI.Embedded
 
             bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(_ => Disconnected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)))));
         }
+
+        public ConnectionSettings Settings { get { return _settings; } }
+
+        public ClusterSettings ClusterSettings { get { return null; } }
 
         public string ConnectionName { get { return _connectionName; } }
 

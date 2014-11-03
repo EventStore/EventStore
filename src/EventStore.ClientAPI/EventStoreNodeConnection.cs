@@ -31,22 +31,41 @@ namespace EventStore.ClientAPI
 
         private readonly string _connectionName;
         private readonly ConnectionSettings _settings;
+        private readonly ClusterSettings _clusterSettings;
         private readonly IEndPointDiscoverer _endPointDiscoverer;
         private readonly EventStoreConnectionLogicHandler _handler;
+
+        /// <summary>
+        /// Returns the <see cref="ConnectionSettings"/> use to create this connection
+        /// </summary>
+        public ConnectionSettings Settings
+        {
+            get { return _settings; }
+        }
+
+        /// <summary>
+        /// Returns the <see cref="ClusterSettings"/> use to create this connection
+        /// </summary>
+        public ClusterSettings ClusterSettings
+        {
+            get { return _clusterSettings; }
+        }
 
         /// <summary>
         /// Constructs a new instance of a <see cref="EventStoreConnection"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
+        /// <param name="clusterSettings"></param>
         /// <param name="endPointDiscoverer">Discoverer of destination node end point.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
-        internal EventStoreNodeConnection(ConnectionSettings settings, IEndPointDiscoverer endPointDiscoverer, string connectionName)
+        internal EventStoreNodeConnection(ConnectionSettings settings, ClusterSettings clusterSettings, IEndPointDiscoverer endPointDiscoverer, string connectionName)
         {
             Ensure.NotNull(settings, "settings");
             Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");
 
             _connectionName = connectionName ?? string.Format("ES-{0}", Guid.NewGuid());
             _settings = settings;
+            _clusterSettings = clusterSettings;
             _endPointDiscoverer = endPointDiscoverer;
             _handler = new EventStoreConnectionLogicHandler(this, settings);
         }
