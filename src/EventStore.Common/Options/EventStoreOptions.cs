@@ -1,7 +1,10 @@
 ﻿using EventStore.Common.Utils;
 using EventStore.Rags;
+using EventStore.Rags.YamlDotNet.Serialization;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,7 +13,7 @@ namespace EventStore.Common.Options
 {
     public class EventStoreOptions
     {
-        private static IEnumerable<OptionSource> _effectiveOptions;
+        public static IEnumerable<OptionSource> _effectiveOptions;
 
         public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {
@@ -23,6 +26,17 @@ namespace EventStore.Common.Options
                 .EnsureCorrectType<TOptions>()
                 .UpdateSourceNamesFromType<TOptions>();
             return _effectiveOptions.ApplyTo<TOptions>();
+        }
+
+        public static IEnumerable<OptionSource> GetEffectiveOptions<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
+        {
+            return GetConfig<TOptions>(args, environmentPrefix)
+                           .Flatten()
+                           .Cleanup()
+                           .ToLookup(x => x.Name.ToLower())
+                           .Select(ResolvePrecedence)
+                           .EnsureExistence<TOptions>()
+                           .EnsureCorrectType<TOptions>();
         }
 
         private static IEnumerable<IEnumerable<OptionSource>> GetConfig<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
@@ -55,6 +69,31 @@ namespace EventStore.Common.Options
         public static TOptions Parse<TOptions>(string configFile, string sectionName = "") where TOptions : class, new()
         {
             return Yaml.FromFile(configFile, sectionName).ApplyTo<TOptions>();
+        }
+
+        public const string ConfigKey = "Config";
+        public static IEnumerable<OptionSource> Update(IEnumerable<OptionSource> optionSources, string defaultConfigFile = "eventstore.clusternode.config.yaml")
+        {
+            if ((_effectiveOptions.Any(x => x.Name == ConfigKey && String.IsNullOrEmpty((string)x.Value))) &&
+                (optionSources.Any(x => x.Name == ConfigKey && String.IsNullOrEmpty((string)x.Value))))
+            {
+                optionSources = optionSources.Select(x => x.Name == ConfigKey ? new OptionSource("Update", ConfigKey, true, defaultConfigFile) : x);
+            }
+            var optionsToSave = optionSources.Except(_effectiveOptions);
+            var configFile = optionsToSave.First(x => x.Name == ConfigKey);
+            var dictionary = new ExpandoObject();
+            foreach (var option in optionsToSave.ToDictionary(x => x.Name, x => x.Value))
+            {
+                (dictionary as IDictionary<string, object>).Add(new KeyValuePair<string, object>(option.Key, option.Value));
+            }
+            using (var stream = new FileStream((string)configFile.Value, FileMode.OpenOrCreate, FileAccess.Write))
+            {
+                using (var writer = new StreamWriter(stream))
+                {
+                    new Serializer().Serialize(writer, dictionary);
+                }
+            }
+            return optionsToSave;
         }
 
         public static string GetUsage<TOptions>()

@@ -180,6 +180,11 @@
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_unknown_options.cs" />
     <Compile Include="DataStructures\PremptableQueueTests.cs" />
     <Compile Include="DefaultData.cs" />
+    <Compile Include="Common\EventStoreOptionsTests\when_updating\with_a_single_change.cs" />
+    <Compile Include="Common\EventStoreOptionsTests\when_updating\with_a_single_change_when_no_config_file_is_specified.cs" />
+    <Compile Include="Common\EventStoreOptionsTests\when_updating\with_no_change.cs" />
+    <Compile Include="Common\EventStoreOptionsTests\when_updating\with_a_single_change_when_no_config_file_is_specified.cs" />
+    <Compile Include="Common\EventStoreOptionsTests\when_updating\with_no_change.cs" />
     <Compile Include="Fakes\FakeTfReader.cs" />
     <Compile Include="Helpers\CollectionsExtensions.cs" />
     <Compile Include="Helpers\HelperExtensions.cs" />
