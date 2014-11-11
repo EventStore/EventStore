@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI.Core
 {
     internal class SubscriptionItem
     {
-        public readonly SubscriptionOperation Operation;
+        public readonly ISubscriptionOperation Operation;
         public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
         public readonly DateTime CreatedTime;
@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.Core
         public int RetryCount;
         public DateTime LastUpdated;
 
-        public SubscriptionItem(SubscriptionOperation operation, int maxRetries, TimeSpan timeout)
+        public SubscriptionItem(ISubscriptionOperation operation, int maxRetries, TimeSpan timeout)
         {
             Ensure.NotNull(operation, "operation");
 

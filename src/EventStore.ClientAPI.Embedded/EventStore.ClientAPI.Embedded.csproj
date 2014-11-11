@@ -41,6 +41,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EmbeddedVolatileEventStoreSubscription.cs" />
     <Compile Include="ClientMessageConverterExtensions.cs" />
     <Compile Include="EmbeddedEventStoreConnection.cs" />
     <Compile Include="EmbeddedResponderBase.cs" />

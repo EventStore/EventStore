@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -58,6 +59,19 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream);
             AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared);
             AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped);
+            AddUnwrapper(TcpCommand.CreatePersistentSubscription, UnwrapCreatePersistentSubscription);
+            AddUnwrapper(TcpCommand.DeletePersistentSubscription, UnwrapDeletePersistentSubscription);
+            AddWrapper<ClientMessage.CreatePersistentSubscriptionCompleted>(WrapCreatePersistentSubscriptionCompleted);
+            AddWrapper<ClientMessage.DeletePersistentSubscriptionCompleted>(WrapDeletePersistentSubscriptionCompleted);
+            AddUnwrapper(TcpCommand.UpdatePersistentSubscription, UnwrapUpdatePersistentSubscription);
+            AddWrapper<ClientMessage.UpdatePersistentSubscriptionCompleted>(WrapUpdatePersistentSubscriptionCompleted);
+
+
+            AddUnwrapper(TcpCommand.ConnectToPersistentSubscription, UnwrapConnectToPersistentSubscription);
+            AddUnwrapper(TcpCommand.PersistentSubscriptionAckEvents, UnwrapPersistentSubscriptionAckEvents);
+            AddUnwrapper(TcpCommand.PersistentSubscriptionNakEvents, UnwrapPersistentSubscriptionNackEvents);
+            AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmation);
+            AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppeared);
 
             AddUnwrapper(TcpCommand.ScavengeDatabase, UnwrapScavengeDatabase);
             AddWrapper<ClientMessage.ScavengeDatabaseCompleted>(WrapScavengeDatabaseResponse);
@@ -417,6 +431,104 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new TcpClientMessageDto.SubscriptionConfirmation(msg.LastCommitPosition, msg.LastEventNumber);
             return new TcpPackage(TcpCommand.SubscriptionConfirmation, msg.CorrelationId, dto.Serialize());
+        }
+
+        private ClientMessage.CreatePersistentSubscription UnwrapCreatePersistentSubscription(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string username, string password,
+            TcpConnectionManager connection) {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.CreatePersistentSubscription>();
+            if(dto == null) return null;
+            return new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
+                            dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom, dto.MessageTimeoutMilliseconds, 
+                            dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
+                            dto.ReadBatchSize,dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount, dto.CheckpointMaxCount, 
+                            user, username, password);
+        }
+
+        private ClientMessage.UpdatePersistentSubscription UnwrapUpdatePersistentSubscription(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string username, string password,
+            TcpConnectionManager connection)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.UpdatePersistentSubscription>();
+            if (dto == null) return null;
+            return new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
+                dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom,
+                dto.MessageTimeoutMilliseconds,
+                dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
+                dto.ReadBatchSize, dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount,
+                dto.CheckpointMaxCount,
+                user, username, password);
+        }
+
+        private ClientMessage.DeletePersistentSubscription UnwrapDeletePersistentSubscription(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string username, string password,
+            TcpConnectionManager connection) {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.CreatePersistentSubscription>();
+            if(dto == null) return null;
+            return new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
+                            dto.EventStreamId, dto.SubscriptionGroupName, user);
+        }
+
+        private TcpPackage WrapDeletePersistentSubscriptionCompleted(ClientMessage.DeletePersistentSubscriptionCompleted msg) {
+            var dto = new TcpClientMessageDto.DeletePersistentSubscriptionCompleted((TcpClientMessageDto.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult) msg.Result, msg.Reason);
+            return new TcpPackage(TcpCommand.DeletePersistentSubscriptionCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+        private TcpPackage WrapCreatePersistentSubscriptionCompleted(ClientMessage.CreatePersistentSubscriptionCompleted msg) {
+            var dto = new TcpClientMessageDto.CreatePersistentSubscriptionCompleted((TcpClientMessageDto.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult) msg.Result, msg.Reason);
+            return new TcpPackage(TcpCommand.CreatePersistentSubscriptionCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+        private TcpPackage WrapUpdatePersistentSubscriptionCompleted(ClientMessage.UpdatePersistentSubscriptionCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.UpdatePersistentSubscriptionCompleted((TcpClientMessageDto.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult)msg.Result, msg.Reason);
+            return new TcpPackage(TcpCommand.UpdatePersistentSubscriptionCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+
+        private ClientMessage.ConnectToPersistentSubscription UnwrapConnectToPersistentSubscription(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
+            TcpConnectionManager connection)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.ConnectToPersistentSubscription>();
+            if (dto == null) return null;
+            return new ClientMessage.ConnectToPersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
+                connection.ConnectionId, dto.SubscriptionId, dto.EventStreamId, dto.AllowedInFlightMessages,connection.RemoteEndPoint.ToString() ,user);
+        }
+
+        private ClientMessage.PersistentSubscriptionAckEvents UnwrapPersistentSubscriptionAckEvents(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
+            TcpConnectionManager connection)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionAckEvents>();
+            if (dto == null) return null;
+            return new ClientMessage.PersistentSubscriptionAckEvents(
+                Guid.NewGuid(), package.CorrelationId, envelope, dto.SubscriptionId,
+                dto.ProcessedEventIds.Select(x => new Guid(x)).ToArray(), user);
+        }
+
+        private ClientMessage.PersistentSubscriptionNackEvents UnwrapPersistentSubscriptionNackEvents(
+            TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
+            TcpConnectionManager connection)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionNakEvents>();
+            if (dto == null) return null;
+            return new ClientMessage.PersistentSubscriptionNackEvents(
+                Guid.NewGuid(), package.CorrelationId, envelope, dto.SubscriptionId,
+                dto.Message, (ClientMessage.PersistentSubscriptionNackEvents.NakAction) dto.Action,
+                dto.ProcessedEventIds.Select(x => new Guid(x)).ToArray(), user);
+        }
+
+        private TcpPackage WrapPersistentSubscriptionConfirmation(ClientMessage.PersistentSubscriptionConfirmation msg)
+        {
+            var dto = new TcpClientMessageDto.PersistentSubscriptionConfirmation(msg.LastCommitPosition, msg.SubscriptionId, msg.LastEventNumber);
+            return new TcpPackage(TcpCommand.PersistentSubscriptionConfirmation, msg.CorrelationId, dto.Serialize());
+        }
+
+        private TcpPackage WrapPersistentSubscriptionStreamEventAppeared(ClientMessage.PersistentSubscriptionStreamEventAppeared msg)
+        {
+            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(new TcpClientMessageDto.ResolvedIndexedEvent(msg.Event.OriginalEvent, msg.Event.Link));
+            return new TcpPackage(TcpCommand.PersistentSubscriptionStreamEventAppeared, msg.CorrelationId, dto.Serialize());
         }
 
         private TcpPackage WrapStreamEventAppeared(ClientMessage.StreamEventAppeared msg)

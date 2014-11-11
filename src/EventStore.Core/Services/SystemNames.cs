@@ -18,6 +18,7 @@ namespace EventStore.Core.Services
 
     public static class SystemStreams
     {
+        public const string PersistentSubscriptionConfig = "$persistentSubscriptionConfig";
         public const string AllStream = "$all";
         public const string StreamsStream = "$streams";
         public const string SettingsStream = "$settings";
@@ -65,7 +66,7 @@ namespace EventStore.Core.Services
 
     public static class SystemEventTypes
     {
-        private static readonly char[] _linkToSeparator = new []{'@'};
+        private static readonly char[] LinkToSeparator = {'@'};
         public const string StreamDeleted = "$streamDeleted";
         public const string StatsCollection = "$statsCollected";
         public const string LinkTo = "$>";
@@ -73,24 +74,24 @@ namespace EventStore.Core.Services
         public const string StreamMetadata = "$metadata";
         public const string Settings = "$settings";
 
-        public const string V2__StreamCreated_InIndex = "StreamCreated";
-        public const string V1__StreamCreated__ = "$stream-created";
-        public const string V1__StreamCreatedImplicit__ = "$stream-created-implicit";
+        public const string V2StreamCreatedInIndex = "StreamCreated";
+        public const string V1StreamCreated = "$stream-created";
+        public const string V1StreamCreatedImplicit = "$stream-created-implicit";
 
         public static string StreamReferenceEventToStreamId(string eventType, byte[] data)
         {
-            string streamId = null;
+            string streamId;
             switch (eventType)
             {
                 case LinkTo:
                 {
-                    string[] parts = Helper.UTF8NoBom.GetString(data).Split(_linkToSeparator, 2);
+                    string[] parts = Helper.UTF8NoBom.GetString(data).Split(LinkToSeparator, 2);
                     streamId = parts[1];
                     break;
                 }
                 case StreamReference:
-                case V1__StreamCreated__:
-                case V2__StreamCreated_InIndex:
+                case V1StreamCreated:
+                case V2StreamCreatedInIndex:
                 {
                     streamId = Helper.UTF8NoBom.GetString(data);
                     break;
@@ -103,18 +104,18 @@ namespace EventStore.Core.Services
 
         public static string StreamReferenceEventToStreamId(string eventType, string data)
         {
-            string streamId = null;
+            string streamId;
             switch (eventType)
             {
                 case LinkTo:
                     {
-                        string[] parts = data.Split(_linkToSeparator, 2);
+                        string[] parts = data.Split(LinkToSeparator, 2);
                         streamId = parts[1];
                         break;
                     }
                 case StreamReference:
-                case V1__StreamCreated__:
-                case V2__StreamCreated_InIndex:
+                case V1StreamCreated:
+                case V2StreamCreatedInIndex:
                     {
                         streamId = data;
                         break;
@@ -127,7 +128,7 @@ namespace EventStore.Core.Services
 
         public static int EventLinkToEventNumber(string link)
         {
-            string[] parts = link.Split(_linkToSeparator, 2);
+            string[] parts = link.Split(LinkToSeparator, 2);
             return int.Parse(parts[0]);
         }
     }

@@ -368,8 +368,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private static bool IsV1StreamCreatedEvent(EventStore.Core.Data.ResolvedEvent e)
         {
             return e.Link == null && e.OriginalEventNumber == 0
-                   && (e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreatedImplicit__
-                       || e.OriginalEvent.EventType == SystemEventTypes.V1__StreamCreated__);
+                   && (e.OriginalEvent.EventType == SystemEventTypes.V1StreamCreatedImplicit
+                       || e.OriginalEvent.EventType == SystemEventTypes.V1StreamCreated);
         }
 
         private void ProcessWrites()

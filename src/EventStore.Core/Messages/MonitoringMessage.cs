@@ -7,6 +7,123 @@ namespace EventStore.Core.Messages
 {
     public static class MonitoringMessage
     {
+        public class GetAllPersistentSubscriptionStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly IEnvelope Envelope;
+            
+            public GetAllPersistentSubscriptionStats(IEnvelope envelope)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+            }
+        }
+
+        public class GetPersistentSubscriptionStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string EventStreamId { get { return _eventStreamId; } }
+            public string GroupName { get { return _groupName; } }
+
+            public readonly IEnvelope Envelope;
+            private readonly string _eventStreamId;
+            private readonly string _groupName;
+
+            public GetPersistentSubscriptionStats(IEnvelope envelope, string eventStreamId, string groupName)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                _eventStreamId = eventStreamId;
+                _groupName = groupName;
+            }
+        }
+
+        public class GetStreamPersistentSubscriptionStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public string EventStreamId { get { return _eventStreamId; } }
+
+            public readonly IEnvelope Envelope;
+            private readonly string _eventStreamId;
+
+            public GetStreamPersistentSubscriptionStats(IEnvelope envelope, string eventStreamId)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                _eventStreamId = eventStreamId;
+            }
+        }
+
+        public class GetPersistentSubscriptionStatsCompleted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly OperationStatus Result;
+            public readonly List<SubscriptionInfo> SubscriptionStats;
+            public string ErrorString;
+
+            public GetPersistentSubscriptionStatsCompleted(OperationStatus result, List<SubscriptionInfo> subscriptionStats, string errorString="")
+            {
+                Result = result;
+                SubscriptionStats = subscriptionStats;
+                ErrorString = errorString;
+            }
+
+            public enum OperationStatus
+            {
+                Success = 0,
+                NotFound = 1,
+                Fail = 2,
+                NotReady = 3
+            }
+        }
+
+        public class SubscriptionInfo
+        {
+            public string EventStreamId { get; set; }
+            public string GroupName { get; set; }
+            public string Status { get; set; }
+            public List<ConnectionInfo> Connections { get; set; }
+            public int AveragePerSecond { get; set; }
+            public long TotalItems { get; set; }
+            public long CountSinceLastMeasurement { get; set; }
+            public int LastProcessedEventNumber { get; set; }
+            public int LastKnownMessage { get; set; }
+            public bool ResolveLinktos { get; set; }
+            public int StartFrom { get; set; }
+            public int MessageTimeoutMilliseconds { get; set; }
+            public bool ExtraStatistics { get; set; }
+            public int MaxRetryCount { get; set; }
+            public int LiveBufferSize { get; set; }
+            public int BufferSize { get; set; }
+            public int ReadBatchSize { get; set; }
+            public bool PreferRoundRobin { get; set; }
+            public int CheckPointAfterMilliseconds { get; set; }
+            public int MinCheckPointCount { get; set; }
+            public int MaxCheckPointCount { get; set; }
+            public int ReadBufferCount { get; set; }
+            public int LiveBufferCount { get; set; }
+            public int RetryBufferCount { get; set; }
+        }
+
+        public class ConnectionInfo
+        {
+            public string From { get; set; }
+            public string Username { get; set; }
+            public int AverageItemsPerSecond { get; set; }
+            public long TotalItems { get; set; }
+            public long CountSinceLastMeasurement { get; set; }
+            public Dictionary<string, int> ObservedMeasurements { get; set; }
+            public int AvailableSlots { get; set; }
+        }
+
         public class GetFreshStats : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

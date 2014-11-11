@@ -128,6 +128,39 @@ namespace EventStore.ClientAPI.Core
         }
     }
 
+    internal class StartPersistentSubscriptionMessage : Message
+    {
+        public readonly TaskCompletionSource<PersistentEventStoreSubscription> Source;
+
+        public readonly string SubscriptionId;
+        public readonly string StreamId;
+        public readonly int BufferSize;
+        public readonly UserCredentials UserCredentials;
+        public readonly Action<PersistentEventStoreSubscription, ResolvedEvent> EventAppeared;
+        public readonly Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
+           
+        public readonly int MaxRetries;
+        public readonly TimeSpan Timeout;
+
+        public StartPersistentSubscriptionMessage(TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan timeout)
+        {
+            Ensure.NotNull(source, "source");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
+            Ensure.Nonnegative(bufferSize, "bufferSize");
+
+            SubscriptionId = subscriptionId;
+            BufferSize = bufferSize;
+            Source = source;
+            StreamId = streamId;
+            UserCredentials = userCredentials;
+            EventAppeared = eventAppeared;
+            SubscriptionDropped = subscriptionDropped;
+            MaxRetries = maxRetries;
+            Timeout = timeout;
+        }
+    }
+
     internal class HandleTcpPackageMessage: Message
     {
         public readonly TcpPackageConnection Connection;
