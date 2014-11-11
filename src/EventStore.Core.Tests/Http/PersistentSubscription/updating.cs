@@ -70,7 +70,6 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         private Exception _exception;
         private const string _stream = "stream";
         private AutoResetEvent _dropped = new AutoResetEvent(false);
-        private EventStorePersistentSubscription _sub;
 
         protected override void Given()
         {
@@ -85,7 +84,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         private void SetupSubscription()
         {
-            _sub = _connection.ConnectToPersistentSubscription(_groupName, _stream, (x, y) => { },
+            _connection.ConnectToPersistentSubscription(_groupName, _stream, (x, y) => { },
                 (sub, reason, ex) =>
                 {
                     _droppedReason = reason;

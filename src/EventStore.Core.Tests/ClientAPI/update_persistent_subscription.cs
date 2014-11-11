@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-             var res = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Result;
+            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Wait();
         }
 
         protected override void When()
@@ -45,7 +45,6 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         private AutoResetEvent _dropped = new AutoResetEvent(false);
-        private EventStorePersistentSubscription _sub;
         private SubscriptionDropReason _reason;
         private Exception _exception;
 
@@ -53,8 +52,8 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            var res = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Result;
-            _sub = _conn.ConnectToPersistentSubscription("existing", _stream, (x, y) => { },
+            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.ConnectToPersistentSubscription("existing", _stream, (x, y) => { },
                 (sub, reason, ex) =>
                 {
                     _dropped.Set();
@@ -89,7 +88,6 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class update_non_existing_persistent_subscription : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionUpdateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
                                                                 .DoNotResolveLinkTos()
@@ -105,9 +103,8 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _result =
-                    _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings,
-                        new UserCredentials("admin", "changeit")).Result;
+                _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings,
+                    new UserCredentials("admin", "changeit")).Wait();
                 Assert.Fail("should have thrown");
             }
             catch (Exception ex)
@@ -121,7 +118,6 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class update_existing_persistent_subscription_without_permissions : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionUpdateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
                                                                 .DoNotResolveLinkTos()
@@ -131,8 +127,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            var res = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Result;
-
+            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Wait();
         }
 
         [Test]
@@ -140,8 +135,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _result =
-                    _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, null).Result;
+                _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, null).Wait();
                 Assert.Fail("should have thrown");
             }
             catch (Exception ex)

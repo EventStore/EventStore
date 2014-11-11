@@ -173,7 +173,6 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
 
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
-        private ResolvedEvent _firstEvent;
 
         private const string _group = "startinbeginning1";
 
@@ -204,7 +203,6 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
         {
-            _firstEvent = resolvedEvent;
             _resetEvent.Set();
         }
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using System.ServiceModel.Configuration;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.Http.Users.users;
@@ -40,7 +39,6 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     class when_deleting_existing_subscription_with_subscribers : with_admin_user
     {
         private HttpWebResponse _response;
-        private EventStorePersistentSubscription _sub;
         private const string _stream = "astreamname";
         private readonly string _groupName = Guid.NewGuid().ToString();
         private SubscriptionDropReason _reason;
@@ -55,7 +53,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 {
                     ResolveLinkTos = true
                 }, _admin);
-            _sub = _connection.ConnectToPersistentSubscription(_groupName, _stream, (x, y) => { },
+            _connection.ConnectToPersistentSubscription(_groupName, _stream, (x, y) => { },
                 (sub, reason, e) =>
                 {
                     _dropped.Set();
