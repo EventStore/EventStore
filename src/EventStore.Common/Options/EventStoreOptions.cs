@@ -1,5 +1,5 @@
 ﻿using EventStore.Common.Utils;
-using PowerArgs;
+using EventStore.Rags;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,78 +10,54 @@ namespace EventStore.Common.Options
 {
     public class EventStoreOptions
     {
-        private static OptionSource[] _effectiveOptions;
-
-        public static ArgAction<TOptions> InvokeAction<TOptions>(params string[] args)
-        {
-            return Args.InvokeAction<TOptions>(args);
-        }
+        private static IEnumerable<OptionSource> _effectiveOptions;
 
         public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {
-            var commandLineParser = new CommandLineParser();
-            var yamlParser = new YamlParser();
-            var environmentVariableProvider = new EnvironmentVariableProvider();
-            var defaultOptionsProvider = new DefaultOptionsProvider();
+            _effectiveOptions = GetConfig<TOptions>(args, environmentPrefix)
+                .Flatten()
+                .Cleanup()
+                .ToLookup(x => x.Name.ToLower())
+                .Select(ResolvePrecedence)
+                .EnsureExistence<TOptions>()
+                .EnsureCorrectType<TOptions>();
+            return _effectiveOptions.ApplyTo<TOptions>();
+        }
 
-            OptionSource[] defaultOptionSources = defaultOptionsProvider.Get<TOptions>();
-            OptionSource[] commandLineOptionSources;
-            OptionSource[] configurationFileOptionSources = null;
-            OptionSource[] environmentVariableOptionSources;
-
-            if (args == null || args.Length == 0)
+        private static IEnumerable<IEnumerable<OptionSource>> GetConfig<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
+        {
+            var commandline = CommandLine.Parse<TOptions>(args).Normalize();
+            var commanddict = commandline.ToDictionary(x => x.Name.ToLower());
+            yield return commandline;
+            yield return
+                EnvironmentVariables.Parse<TOptions>(x => NameTranslators.PrefixEnvironmentVariable(x, environmentPrefix));
+            var configFile = commanddict.ContainsKey("config") ? commanddict["config"].Value as string : null;
+            if (configFile != null)
             {
-                var optionSources = environmentVariableProvider.Parse<TOptions>(environmentPrefix);
-                _effectiveOptions = OptionsSourceMerger.SequentialMerge(
-                    defaultOptionSources,
-                    optionSources);
-                return OptionsSourceParser.Parse<TOptions>(optionSources);
-            }
-
-            try
-            {
-                commandLineOptionSources = commandLineParser.Parse<TOptions>(args);
-            }
-            catch (ArgException ex)
-            {
-                throw new OptionException(ex.Message, String.Empty);
-            }
-
-
-            if (commandLineOptionSources.Any(x => x.Name == "Config"))
-            {
-                var configOptionSource = commandLineOptionSources.First(x => x.Name == "Config");
-                if (!string.IsNullOrWhiteSpace(configOptionSource.Value.ToString()))
+                if (!File.Exists(configFile))
                 {
-                    if (File.Exists(configOptionSource.Value.ToString()))
-                    {
-                        configurationFileOptionSources = yamlParser.Parse(configOptionSource.Value.ToString(), String.Empty);
-                    }
-                    else
-                    {
-                        Application.Exit(ExitCode.Error, string.Format("The specified configuration file {0} was not found.", configOptionSource.Value));
-                    }
+                    throw new OptionException(String.Format("The specified config file {0} could not be found", configFile), "config");
                 }
+                yield return
+                    Yaml.FromFile(configFile);
             }
 
-            environmentVariableOptionSources = environmentVariableProvider.Parse<TOptions>(environmentPrefix);
+            yield return
+                TypeDefaultOptions.Get<TOptions>();
+        }
 
-            _effectiveOptions = OptionsSourceMerger.SequentialMerge(
-                        defaultOptionSources,
-                        configurationFileOptionSources,
-                        environmentVariableOptionSources,
-                        commandLineOptionSources);
-
-            OptionsSourceRulesRunner.RunRules(defaultOptionSources.Select(option => option.Name).ToArray(),
-                                              _effectiveOptions);
-            return OptionsSourceParser.Parse<TOptions>(_effectiveOptions);
+        private static OptionSource ResolvePrecedence(IGrouping<string, OptionSource> optionSources)
+        {
+            var options = optionSources.OrderBy(x =>
+                x.Source == "Command Line" ? 0 :
+                x.Source == "Environment Variable" ? 1 :
+                x.Source == "Config File" ? 2 : 3);
+            return options.First();
         }
 
         public static TOptions Parse<TOptions>(string configFile, string sectionName = "") where TOptions : class, new()
         {
-            var yamlParser = new YamlParser();
-            var optionsSource = yamlParser.Parse(configFile, sectionName);
-            return OptionsSourceParser.Parse<TOptions>(optionsSource);
+            return Yaml.FromFile(configFile, sectionName).ApplyTo<TOptions>();
         }
 
         public static string GetUsage<TOptions>()
@@ -96,12 +72,30 @@ namespace EventStore.Common.Options
                 return "No options have been parsed";
             }
             var dumpOptionsBuilder = new StringBuilder();
+            var defaultOptionsHeading = "DEFAULT OPTIONS:";
+            var displayingModifiedOptions = true;
+            dumpOptionsBuilder.AppendLine("MODIFIED OPTIONS:");
+            dumpOptionsBuilder.AppendLine();
+            if (_effectiveOptions.First().Source.ToLower().Contains("default"))
+            {
+                dumpOptionsBuilder.AppendLine("NONE");
+                dumpOptionsBuilder.AppendLine();
+                dumpOptionsBuilder.AppendLine(defaultOptionsHeading);
+                dumpOptionsBuilder.AppendLine();
+                displayingModifiedOptions = false;
+            }
             foreach (var option in _effectiveOptions)
             {
+                if (option.Source.ToLower().Contains("default") && displayingModifiedOptions)
+                {
+                    dumpOptionsBuilder.AppendLine();
+                    dumpOptionsBuilder.AppendLine(defaultOptionsHeading);
+                    dumpOptionsBuilder.AppendLine();
+                    displayingModifiedOptions = false;
+                }
                 var value = option.Value;
-                var optionName = PascalCaseNameSplitter(option.Name).ToUpper();
+                var optionName = NameTranslators.CombineByPascalCase(option.Name, " ").ToUpper();
                 var valueToDump = value == null ? String.Empty : value.ToString();
-                var source = option.Source ?? "<DEFAULT>";
                 if (value is Array)
                 {
                     valueToDump = String.Empty;
@@ -111,16 +105,64 @@ namespace EventStore.Common.Options
                         valueToDump = "[ " + String.Join(", ", (IEnumerable<object>)value) + " ]";
                     }
                 }
-                dumpOptionsBuilder.AppendLine(String.Format("{0,-25} {1} ({2})", optionName + ":", String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump, source));
+                dumpOptionsBuilder.AppendLine(String.Format("\t{0,-25} {1} ({2})", optionName + ":", String.IsNullOrEmpty(valueToDump) ? "<empty>" : valueToDump, option.Source));
             }
             return dumpOptionsBuilder.ToString();
         }
-
-        private static string PascalCaseNameSplitter(string name)
+    }
+    public static class RagsExtensions
+    {
+        public static IEnumerable<OptionSource> Cleanup(this IEnumerable<OptionSource> optionSources)
         {
-            var regex = new System.Text.RegularExpressions.Regex(@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
-            var convertedName = regex.Replace(name, " ");
-            return convertedName;
+            return optionSources.Select(x => new OptionSource(x.Source, x.Name.Replace("-", ""), x.IsTyped, x.Value));
+        }
+        public static IEnumerable<OptionSource> EnsureExistence<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class
+        {
+            var properties = typeof(TOptions).GetProperties();
+            foreach (var optionSource in optionSources)
+            {
+                if (!properties.Any(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    throw new OptionException(String.Format("The option {0} is not a known option", optionSource.Name), optionSource.Name);
+                }
+            }
+            return optionSources;
+        }
+        public static IEnumerable<OptionSource> EnsureCorrectType<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class, new()
+        {
+            var properties = typeof(TOptions).GetProperties();
+            var revived = new TOptions();
+            foreach (var optionSource in optionSources)
+            {
+                var property = properties.First(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
+                try
+                {
+                    if (optionSource.Value == null) continue;
+                    if (optionSource.IsTyped)
+                    {
+                        property.SetValue(revived, optionSource.Value, null);
+                    }
+                    else
+                    {
+                        object revivedValue = null;
+                        if (optionSource.Value.GetType().IsArray)
+                        {
+                            var commaJoined = string.Join(",", ((string[])optionSource.Value));
+                            revivedValue = TypeMap.Translate(property.PropertyType, optionSource.Name, commaJoined);
+                        }
+                        else
+                        {
+                            revivedValue = TypeMap.Translate(property.PropertyType, optionSource.Name, optionSource.Value.ToString());
+                        }
+                        property.SetValue(revived, revivedValue, null);
+                    }
+                }
+                catch
+                {
+                    throw new OptionException(String.Format("The value {0} could not be converted to {1}", optionSource.Value, property.PropertyType.Name), property.Name);
+                }
+            }
+            return optionSources;
         }
     }
 }

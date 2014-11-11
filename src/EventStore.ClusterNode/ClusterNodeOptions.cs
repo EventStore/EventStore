@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
+using EventStore.Rags;
 
 namespace EventStore.ClusterNode
 {
-    [PowerArgs.TabCompletion]
     public class ClusterNodeOptions : IOptions
     {
         [ArgDescription(Opts.ShowHelpDescr, Opts.AppGroup)]

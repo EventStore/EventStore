@@ -12,6 +12,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
+using EventStore.Rags;
 
 namespace EventStore.Core
 {
