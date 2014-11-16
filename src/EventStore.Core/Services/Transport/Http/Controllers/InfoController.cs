@@ -71,22 +71,34 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnUpdateOptions(HttpEntityManager entity, UriTemplateMatch match)
         {
-            entity.ReadTextRequestAsync(
-                            (man, body) =>
-                            {
-                                OptionSource[] optionsToUpdate = null;
-                                try
+            //if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            //{
+                entity.ReadTextRequestAsync(
+                                (man, body) =>
                                 {
-                                    optionsToUpdate = Json.ParseJson<OptionSource[]>(body);
-                                    var updatedOptions = EventStoreOptions.Update(optionsToUpdate);
-                                    SendOk(man);
-                                }
-                                catch (Exception ex)
-                                {
-                                    SendBadRequest(man, ex.Message);
-                                }
-                            },
-                            e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
+                                    OptionSource[] optionsToUpdate = null;
+                                    try
+                                    {
+                                        optionsToUpdate = Json.ParseJson<OptionSource[]>(body);
+                                        var updatedOptions = EventStoreOptions.Update(optionsToUpdate);
+                                        man.ReplyTextContent(Codec.Json.To(updatedOptions.ToArray()),
+                                            HttpStatusCode.OK,
+                                            "OK",
+                                            entity.ResponseCodec.ContentType,
+                                            null,
+                                            e => Log.ErrorException(e, "error while writing http response (options)"));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        SendBadRequest(man, ex.Message);
+                                    }
+                                },
+                                e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
+            //}
+            //else
+            //{
+            //    entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            //}
         }
 
         protected RequestParams SendBadRequest(HttpEntityManager httpEntityManager, string reason)
