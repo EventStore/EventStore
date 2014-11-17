@@ -84,7 +84,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                     SendBadRequest(man, ex.Message);
                                     return;
                                 }
-                                var updatedOptions = EventStoreOptions.Update(optionsToUpdate);
+                                try
+                                {
+                                    var updatedOptions = EventStoreOptions.Update(optionsToUpdate);
+                                }
+                                catch (Exception ex)
+                                {
+                                    SendBadRequest(man, ex.Message);
+                                    return;
+                                }
                                 SendOk(man);
                             },
                             e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
@@ -92,9 +100,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected RequestParams SendBadRequest(HttpEntityManager httpEntityManager, string reason)
         {
-            httpEntityManager.ReplyStatus(HttpStatusCode.BadRequest,
-                                          reason,
-                                          e => Log.Debug("Error while closing http connection (bad request): {0}.", e.Message));
+            httpEntityManager.ReplyTextContent(reason,
+                                    HttpStatusCode.BadRequest,
+                                    reason,
+                                    httpEntityManager.ResponseCodec.ContentType,
+                                    null,
+                                    e => Log.Debug("Error while closing http connection (bad request): {0}.", e.Message));
             return new RequestParams(done: true);
         }
 
