@@ -65,5 +65,15 @@ return _client.Enable(_httpEndPoint, login, userCredentials);
             Ensure.NotNullOrEmpty(login, "login");
             return _client.Delete(_httpEndPoint, login, userCredentials);
         }
+        
+        /// <summary>
+        /// Asynchronously lists the logins of all users.
+        /// </summary>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        /// <returns>String of JSON containing user logins.</returns>
+        public Task<string> ListAllAsync(UserCredentials userCredentials = null)
+        { 
+            return _client.ListAll(_httpEndPoint, userCredentials);
+        }
         }
 }
