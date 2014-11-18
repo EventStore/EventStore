@@ -19,5 +19,15 @@ namespace EventStore.ClientAPI
             _operationTimeout = operationTimeout;
             _client = new HttpAsyncClient(log);
         }
+
+        internal Task Enable(IPEndPoint _httpEndPoint, string login, UserCredentials userCredentials)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal Task Disable(IPEndPoint _httpEndPoint, string login, UserCredentials userCredentials)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
