@@ -54,6 +54,8 @@
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
+    <Compile Include="Exceptions\UserCommandConflictException.cs" />
+    <Compile Include="Exceptions\UserCommandFailedException.cs" />
     <Compile Include="PersistentSubscriptionCreateResult.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />
     <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
