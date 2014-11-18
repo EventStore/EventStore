@@ -108,6 +108,8 @@
     <Compile Include="RawStreamMetadataResult.cs" />
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
+    <Compile Include="UsersClient.cs" />
+    <Compile Include="UsersManager.cs" />
     <Compile Include="VolatileEventStoreSubscription.cs" />
     <Compile Include="WriteResult.cs" />
     <Compile Include="DeleteResult.cs" />
