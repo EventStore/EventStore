@@ -34,6 +34,11 @@ public  Task Disable(IPEndPoint endPoint, string login, UserCredentials userCred
 {
     return SendDelete(endPoint.ToHttpUrl("/users/{login}", login), userCredentials, HttpStatusCode.OK);
 }
+        
+        public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials)
+        {
+            return SendGet(endPoint.ToHttpUrl("/users/"), userCredentials, HttpStatusCode.OK);
+        }
 
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
 {
