@@ -17,40 +17,28 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
         [TestFixtureSetUp]
         public void Setup()
         {
-            tempFileName = Path.GetTempPath() + "with_a_single_change_when_no_config_file_is_specified.yaml";
+            tempFileName = Path.GetTempPath() + Guid.NewGuid().ToString() + ".yaml";
             if (File.Exists(tempFileName))
             {
                 File.Delete(tempFileName);
             }
         }
         [Test]
-        public void should_save_the_changes_to_default_config_file()
+        public void should_save_the_changes_to_the_default_config_file()
         {
             var args = new string[] { };
             EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
 
             var optionsToSave = new OptionSource[] { 
-                OptionSource.Typed("<DEFAULT>", "Help", false),
-                OptionSource.Typed("<DEFAULT>", "Version", false),
-                OptionSource.Typed("<DEFAULT>", "Config", null),
-                OptionSource.Typed("<DEFAULT>", "HttpPort", 2113),
-                OptionSource.Typed("<DEFAULT>", "Log", "~/logs"),
-                OptionSource.Typed("<DEFAULT>", "Defines", null),
-                OptionSource.Typed("<DEFAULT>", "GossipSeed", null),
-                OptionSource.Typed("<DEFAULT>", "WhatIf", false),
-                OptionSource.Typed("<DEFAULT>", "Force", false),
-                OptionSource.Typed("<DEFAULT>", "RunProjections", ProjectionType.None)
+                OptionSource.Typed("Update", "HttpPort", 2115),
             };
 
             var savedOptions = EventStoreOptions.Update(optionsToSave, tempFileName);
 
-            Assert.AreEqual(2, savedOptions.Count());
-
-            Assert.AreEqual("Config", savedOptions.First().Name);
-            Assert.AreEqual(tempFileName, savedOptions.First().Value);
+            Assert.AreEqual(1, savedOptions.Count());
 
             Assert.AreEqual("HttpPort", savedOptions.Last().Name);
-            Assert.AreEqual(2113, savedOptions.Last().Value);
+            Assert.AreEqual(2115, savedOptions.Last().Value);
         }
         [TestFixtureTearDown]
         public void Cleanup()

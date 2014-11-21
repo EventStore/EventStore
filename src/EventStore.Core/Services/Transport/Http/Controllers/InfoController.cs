@@ -78,22 +78,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                 try
                                 {
                                     optionsToUpdate = Json.ParseJson<OptionSource[]>(body);
-                                }
-                                catch (Exception ex)
-                                {
-                                    SendBadRequest(man, ex.Message);
-                                    return;
-                                }
-                                try
-                                {
                                     var updatedOptions = EventStoreOptions.Update(optionsToUpdate);
+                                    SendOk(man);
                                 }
                                 catch (Exception ex)
                                 {
                                     SendBadRequest(man, ex.Message);
-                                    return;
                                 }
-                                SendOk(man);
                             },
                             e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
         }

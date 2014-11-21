@@ -72,21 +72,25 @@ namespace EventStore.Common.Options
         }
 
         public const string ConfigKey = "Config";
-        public static IEnumerable<OptionSource> Update(IEnumerable<OptionSource> optionSources, string defaultConfigFile = "eventstore.clusternode.config.yaml")
+        public static IEnumerable<OptionSource> Update(IEnumerable<OptionSource> optionSources, string configFilePath = "eventstore.config.yaml")
         {
-            if ((_effectiveOptions.Any(x => x.Name == ConfigKey && String.IsNullOrEmpty((string)x.Value))) &&
-                (optionSources.Any(x => x.Name == ConfigKey && String.IsNullOrEmpty((string)x.Value))))
-            {
-                optionSources = optionSources.Select(x => x.Name == ConfigKey ? new OptionSource("Update", ConfigKey, true, defaultConfigFile) : x);
-            }
-            var optionsToSave = optionSources.Except(_effectiveOptions);
-            var configFile = optionsToSave.First(x => x.Name == ConfigKey);
+            var effectiveOptions = _effectiveOptions;
+            var configFile = optionSources.FirstOrDefault(x => x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase)).Value ??
+                             effectiveOptions.FirstOrDefault(x => x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase)).Value ??
+                             configFilePath;
+
+            var optionsToSave = optionSources.Concat(effectiveOptions)
+                                .Where(x => x.Source != "<DEFAULT>")
+                                .Where(x => !x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase))
+                                .ToLookup(x => x.Name.ToLower())
+                                .Select(ResolveUpdatingPreference);
+
             var dictionary = new ExpandoObject();
             foreach (var option in optionsToSave.ToDictionary(x => x.Name, x => x.Value))
             {
                 (dictionary as IDictionary<string, object>).Add(new KeyValuePair<string, object>(option.Key, option.Value));
             }
-            using (var stream = new FileStream((string)configFile.Value, FileMode.OpenOrCreate, FileAccess.Write))
+            using (var stream = new FileStream((string)configFile, FileMode.Create, FileAccess.Write))
             {
                 using (var writer = new StreamWriter(stream))
                 {
@@ -94,6 +98,16 @@ namespace EventStore.Common.Options
                 }
             }
             return optionsToSave;
+        }
+
+        private static OptionSource ResolveUpdatingPreference(IGrouping<string, OptionSource> optionSources)
+        {
+            var options = optionSources.OrderBy(x =>
+                x.Source == "Update" ? 0 :
+                x.Source == "Command Line" ? 1 :
+                x.Source == "Environment Variable" ? 2 :
+                x.Source == "Config File" ? 3 : 4);
+            return options.First();
         }
 
         public static string GetUsage<TOptions>()

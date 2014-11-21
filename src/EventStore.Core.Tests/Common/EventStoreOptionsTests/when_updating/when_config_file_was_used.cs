@@ -10,8 +10,7 @@ using System.Text;
 
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
 {
-    [TestFixture]
-    public class with_a_single_change
+    public class when_config_file_was_used
     {
         private string tempFileName;
         [TestFixtureSetUp]
@@ -26,24 +25,23 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
         [Test]
         public void should_save_the_single_change()
         {
+            var args = new string[] { "--config=" + tempFileName };
             File.WriteAllLines(tempFileName, new string[]{
                 "RunProjections: All",
                 "HttpPort: 2113",
                 "Log: ~/ouroLogs"});
 
-            var args = new string[] { "--config=" + tempFileName };
             EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
 
             var optionsToSave = new OptionSource[] { 
                 OptionSource.Typed("Update", "HttpPort", 2115),
             };
 
-            var savedOptions = EventStoreOptions.Update(optionsToSave);
-
-            Assert.AreEqual(3, savedOptions.Count());
-            Assert.AreEqual(2115, savedOptions.First(x => x.Name == "HttpPort").Value);
-            Assert.AreEqual("All", savedOptions.First(x => x.Name == "RunProjections").Value);
-            Assert.AreEqual("~/ouroLogs", savedOptions.First(x => x.Name == "Log").Value);
+            EventStoreOptions.Update(optionsToSave);
+            var optionsFromConfig = EventStoreOptions.Parse<TestArgs>(tempFileName);
+            Assert.AreEqual(ProjectionType.All, optionsFromConfig.RunProjections);
+            Assert.AreEqual(2115, optionsFromConfig.HttpPort);
+            Assert.AreEqual("~/ouroLogs", optionsFromConfig.Log);
         }
         [TestFixtureTearDown]
         public void Cleanup()

@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
         [TestFixtureSetUp]
         public void Setup()
         {
-            tempFileName = Path.GetTempPath() + "with_no_change.yaml";
+            tempFileName = Path.GetTempPath() + Guid.NewGuid().ToString() + ".yaml";
             if (File.Exists(tempFileName))
             {
                 File.Delete(tempFileName);
@@ -30,22 +30,11 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
             EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
 
             var optionsToSave = new OptionSource[] { 
-                OptionSource.Typed("<DEFAULT>", "Help", false),
-                OptionSource.Typed("<DEFAULT>", "Version", false),
-                OptionSource.Typed("<DEFAULT>", "Config", null),
-                OptionSource.Typed("<DEFAULT>", "HttpPort", 2112),
-                OptionSource.Typed("<DEFAULT>", "Log", "~/logs"),
-                OptionSource.Typed("<DEFAULT>", "Defines", null),
-                OptionSource.Typed("<DEFAULT>", "GossipSeed", null),
-                OptionSource.Typed("<DEFAULT>", "WhatIf", false),
-                OptionSource.Typed("<DEFAULT>", "Force", false),
-                OptionSource.Typed("<DEFAULT>", "RunProjections", ProjectionType.None)
             };
 
-            var savedOptions = EventStoreOptions.Update(optionsToSave, tempFileName);
+            var savedOptions = EventStoreOptions.Update(optionsToSave);
 
-            Assert.AreEqual(1, savedOptions.Count());
-            Assert.AreEqual("Config", savedOptions.First().Name);
+            Assert.AreEqual(0, savedOptions.Count());
         }
         [TestFixtureTearDown]
         public void Cleanup()
