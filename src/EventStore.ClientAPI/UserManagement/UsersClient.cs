@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
-using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.UserManagement
 {
     internal class UsersClient
     {
@@ -16,36 +17,69 @@ namespace EventStore.ClientAPI
 
         public UsersClient(ILogger log, TimeSpan operationTimeout)
         {
-            _operationTimeout = operationTimeout;
-            _client = new HttpAsyncClient(log);
+            this._operationTimeout = operationTimeout;
+            this._client = new HttpAsyncClient(log);
         }
 
-public Task Enable(IPEndPoint endPoint, string login, UserCredentials userCredentials)
+public Task Enable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/users/{login}/command/enable", login), string.Empty, userCredentials, HttpStatusCode.OK);
+            return this.SendPost(endPoint.ToHttpUrl("/users/{login}/command/enable", login), string.Empty, userCredentials, HttpStatusCode.OK);
     }
 
-public  Task Disable(IPEndPoint endPoint, string login, UserCredentials userCredentials)
+public  Task Disable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/users/{login}/command/disable", login), string.Empty, userCredentials, HttpStatusCode.OK);
+            return this.SendPost(endPoint.ToHttpUrl("/users/{login}/command/disable", login), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task Delete(IPEndPoint endPoint, string login, UserCredentials userCredentials)
+        public Task Delete(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
 {
-    return SendDelete(endPoint.ToHttpUrl("/users/{login}", login), userCredentials, HttpStatusCode.OK);
+    return this.SendDelete(endPoint.ToHttpUrl("/users/{login}", login), userCredentials, HttpStatusCode.OK);
 }
         
-        public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials)
+        public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/users/"), userCredentials, HttpStatusCode.OK);
+            return this.SendGet(endPoint.ToHttpUrl("/users/"), userCredentials, HttpStatusCode.OK);
+        }
+        
+        public Task<string> GetCurrentUser(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        {
+            return this.SendGet(endPoint.ToHttpUrl("/users/$current"), userCredentials, HttpStatusCode.OK);
         }
 
+        public Task<string> GetUser(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
+        {
+            return this.SendGet(endPoint.ToHttpUrl("/users/{login}", login), userCredentials, HttpStatusCode.OK);
+        }
+        
+        public Task CreateUser(IPEndPoint endPoint, UserCreationInformation newUser, UserCredentials userCredentials = null)
+        {
+            string userJson = Json.ToJson(newUser);
+            return this.SendPost(endPoint.ToHttpUrl("/users/"), userJson, userCredentials, HttpStatusCode.Created);
+        }
+        
+        public Task UpdateUser(IPEndPoint endPoint, string login, UserUpdateInformation updatedUser, UserCredentials userCredentials)
+        {
+            string userJson = Json.ToJson(updatedUser);
+return             this.SendPut(endPoint.ToHttpUrl("/users/{login}", login), userJson, userCredentials, HttpStatusCode.OK);
+        }
+
+        public Task ChangePassword(IPEndPoint endPoint, string login, ChangePasswordDetails changePasswordDetails, UserCredentials userCredentials)
+{
+    string changePasswordJson = Json.ToJson(changePasswordDetails);
+    return this.SendPost(endPoint.ToHttpUrl("/users/{login}/command/change-password", login), changePasswordJson, userCredentials, HttpStatusCode.OK);
+}
+
+        public Task ResetPassword(IPEndPoint endPoint, string login, ResetPasswordDetails resetPasswordDetails, UserCredentials userCredentials = null)
+        {
+            string resetPasswordJson = Json.ToJson(resetPasswordDetails);
+            return this.SendPost(endPoint.ToHttpUrl("/users/{login}/command/reset-password", login), resetPasswordJson, userCredentials, HttpStatusCode.OK);
+        }
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
 {
     var source = new TaskCompletionSource<string>();
-    _client.Get(url,
+    this._client.Get(url,
                 userCredentials,
-                _operationTimeout,
+                this._operationTimeout,
                 response =>
                 {
                     if (response.HttpStatusCode == expectedCode)
@@ -65,9 +99,9 @@ public  Task Disable(IPEndPoint endPoint, string login, UserCredentials userCred
 private Task<string> SendDelete(string url, UserCredentials userCredentials, int expectedCode)
 {
     var source = new TaskCompletionSource<string>();
-    _client.Delete(url,
+    this._client.Delete(url,
                    userCredentials,
-                   _operationTimeout,
+                   this._operationTimeout,
                    response =>
                    {
                        if (response.HttpStatusCode == expectedCode)
@@ -87,11 +121,11 @@ private Task<string> SendDelete(string url, UserCredentials userCredentials, int
 private Task SendPut(string url, string content, UserCredentials userCredentials, int expectedCode)
 {
     var source = new TaskCompletionSource<object>();
-    _client.Put(url,
+    this._client.Put(url,
                 content,
                 "application/json",
                 userCredentials,
-                _operationTimeout,
+                this._operationTimeout,
                 response =>
                 {
                     if (response.HttpStatusCode == expectedCode)
@@ -111,10 +145,10 @@ private Task SendPut(string url, string content, UserCredentials userCredentials
 private Task SendPost(string url, string content, UserCredentials userCredentials, int expectedCode)
 {
     var source = new TaskCompletionSource<object>();
-    _client.Post(url,
+    this._client.Post(url,
                  content,
                  "application/json",
-                 _operationTimeout,
+                 this._operationTimeout,
                  userCredentials,
                  response =>
                  {
