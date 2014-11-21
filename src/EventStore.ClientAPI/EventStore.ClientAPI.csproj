@@ -52,6 +52,8 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="UserManagement\ResetPasswordDetails.cs" />
+    <Compile Include="UserManagement\ChangePasswordDetails.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
@@ -111,8 +113,11 @@
     <Compile Include="RawStreamMetadataResult.cs" />
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
-    <Compile Include="UsersClient.cs" />
-    <Compile Include="UsersManager.cs" />
+    <Compile Include="UserManagement\UserCreationInformation.cs" />
+    <Compile Include="UserManagement\UserDetails.cs" />
+    <Compile Include="UserManagement\UserUpdateInformation.cs" />
+    <Compile Include="UserManagement\UsersClient.cs" />
+    <Compile Include="UserManagement\UsersManager.cs" />
     <Compile Include="VolatileEventStoreSubscription.cs" />
     <Compile Include="WriteResult.cs" />
     <Compile Include="DeleteResult.cs" />
