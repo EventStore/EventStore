@@ -39,6 +39,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
 
             EventStoreOptions.Update(optionsToSave);
             var optionsFromConfig = EventStoreOptions.Parse<TestArgs>(tempFileName);
+
             Assert.AreEqual(ProjectionType.All, optionsFromConfig.RunProjections);
             Assert.AreEqual(2115, optionsFromConfig.HttpPort);
             Assert.AreEqual("~/ouroLogs", optionsFromConfig.Log);

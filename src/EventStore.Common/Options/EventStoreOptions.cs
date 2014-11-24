@@ -97,7 +97,7 @@ namespace EventStore.Common.Options
                     new Serializer().Serialize(writer, dictionary);
                 }
             }
-            return optionsToSave;
+            return optionsToSave.Except(_effectiveOptions);
         }
 
         private static OptionSource ResolveUpdatingPreference(IGrouping<string, OptionSource> optionSources)
