@@ -36,9 +36,8 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
             var savedOptions = EventStoreOptions.Update(optionsToSave, tempFileName);
 
             Assert.AreEqual(1, savedOptions.Count());
-
-            Assert.AreEqual("HttpPort", savedOptions.Last().Name);
-            Assert.AreEqual(2115, savedOptions.Last().Value);
+            Assert.AreEqual("HttpPort", savedOptions.First().Name);
+            Assert.AreEqual(2115, savedOptions.First().Value);
         }
         [TestFixtureTearDown]
         public void Cleanup()

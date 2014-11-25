@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
             }
         }
         [Test]
-        public void should_save_the_single_change()
+        public void should_save_the_single_change_in_the_config_file()
         {
             var args = new string[] { "--config=" + tempFileName };
             File.WriteAllLines(tempFileName, new string[]{
@@ -37,8 +37,10 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
                 OptionSource.Typed("Update", "HttpPort", 2115),
             };
 
-            EventStoreOptions.Update(optionsToSave);
+            var updatedOptions = EventStoreOptions.Update(optionsToSave);
             var optionsFromConfig = EventStoreOptions.Parse<TestArgs>(tempFileName);
+
+            Assert.AreEqual(1, updatedOptions.Count());
 
             Assert.AreEqual(ProjectionType.All, optionsFromConfig.RunProjections);
             Assert.AreEqual(2115, optionsFromConfig.HttpPort);
