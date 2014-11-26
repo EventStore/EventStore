@@ -113,19 +113,17 @@ mkdir $PACKAGEDIRECTORY
 pushd $SCRIPTDIR/../../bin/clusternode/
 
 if [[ $OS == "Darwin" ]] ; then
-    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Rags.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
     gcc -mmacosx-version-min=10.6 -o clusternode $ES_COMPILE_FLAGS clusternode.c clusternode.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
 else
-    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Rags.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll EventStore.Web.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
     cc -o clusternode -Wall `pkg-config --cflags monosgen-2` clusternode.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` clusternode.a
 fi
 
 cp -r clusternode-web $PACKAGEDIRECTORY/
-cp -r es-common-web $PACKAGEDIRECTORY/
 cp -r Prelude $PACKAGEDIRECTORY/
 cp -r projections $PACKAGEDIRECTORY/
 cp -r web-resources $PACKAGEDIRECTORY/
-cp -r Users $PACKAGEDIRECTORY/
 cp libjs1.$soext $PACKAGEDIRECTORY/
 cp libv8.$soext $PACKAGEDIRECTORY/
 cp libicui18n.$soext $PACKAGEDIRECTORY/
@@ -139,10 +137,10 @@ popd
 pushd $SCRIPTDIR/../../bin/testclient
 
 if [[ $OS == "Darwin" ]] ; then
-    mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Rags.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
     gcc -o testclient $ES_COMPILE_FLAGS testclient.c testclient.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
 else
-    mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+    mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Rags.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
     cc -o testclient -Wall `pkg-config --cflags monosgen-2` testclient.c  `pkg-config --libs-only-L monosgen-2` -Wl,-Bstatic -lmonosgen-2.0 -Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` testclient.a
 fi
 

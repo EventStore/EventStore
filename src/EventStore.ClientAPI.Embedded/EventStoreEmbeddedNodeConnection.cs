@@ -10,7 +10,6 @@ using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.ClientAPI.Embedded
@@ -47,7 +46,8 @@ namespace EventStore.ClientAPI.Embedded
                     .Assembly
                     .GetManifestResourceStream(_resourceNamespace + "." + name))
                 {
-                    Ensure.NotNull(stream, "name");
+                    if (stream == null)
+                        throw new ArgumentNullException("name");
 
                     var resource = new byte[stream.Length];
 
@@ -63,7 +63,6 @@ namespace EventStore.ClientAPI.Embedded
         private readonly IPublisher _publisher;
         private readonly IBus _subscriptionBus;
         private readonly EmbeddedSubscriber _subscriptions;
-        private readonly Guid _connectionId;
 
         static EventStoreEmbeddedNodeConnection()
         {
@@ -81,9 +80,9 @@ namespace EventStore.ClientAPI.Embedded
             _connectionName = connectionName;
             _publisher = publisher;
             _subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
-            _connectionId = Guid.NewGuid();
+            Guid connectionId = Guid.NewGuid();
 
-            _subscriptions = new EmbeddedSubscriber(_settings.Log, _connectionId);
+            _subscriptions = new EmbeddedSubscriber(_settings.Log, connectionId);
             
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
@@ -381,6 +380,13 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
+        public EventStorePersistentSubscription ConnectToPersistentSubscription(string groupName, string stream, Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
+            bool autoAck = true)
+        {
+            throw new NotImplementedException();
+        }
+
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
             Position? lastCheckpoint,
             bool resolveLinkTos,
@@ -397,6 +403,24 @@ namespace EventStore.ClientAPI.Embedded
                     subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
+        }
+
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+            UserCredentials credentials)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PersistentSubscriptionUpdateResult> UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+            UserCredentials credentials)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null)
+        {
+            throw new NotImplementedException();
         }
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)

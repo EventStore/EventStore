@@ -51,7 +51,6 @@ Function Stage-Build() {
     Copy-Item (Join-Path $clusterNodeDirectory "NLog.config") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "Prelude") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "clusternode-web") $stagingDirectory
-    Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "Users") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "web-resources") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "projections") $stagingDirectory
 }

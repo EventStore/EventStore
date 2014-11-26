@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Documentation", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.UpgradeProjections", "EventStore.UpgradeProjections\EventStore.UpgradeProjections.csproj", "{4D0D3CA3-D73B-425A-B969-85968218A17B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.CompetingPlayground", "EventStore.CompetingPlayground\EventStore.CompetingPlayground.csproj", "{3971B50C-F957-4925-83FE-A7DBFAC9B3C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{4D0D3CA3-D73B-425A-B969-85968218A17B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D0D3CA3-D73B-425A-B969-85968218A17B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D0D3CA3-D73B-425A-B969-85968218A17B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3971B50C-F957-4925-83FE-A7DBFAC9B3C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3971B50C-F957-4925-83FE-A7DBFAC9B3C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3971B50C-F957-4925-83FE-A7DBFAC9B3C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3971B50C-F957-4925-83FE-A7DBFAC9B3C3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

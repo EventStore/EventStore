@@ -33,6 +33,10 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EventStore.Rags, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\EventStore.Rags.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
@@ -83,6 +87,8 @@
     <Compile Include="Cluster\Settings\ClusterVNodeAuthenticationType.cs" />
     <Compile Include="Cluster\Settings\ClusterVNodeSettings.cs" />
     <Compile Include="Cluster\VNodeInfo.cs" />
+    <Compile Include="DataStructures\BoundedQueue.cs" />
+    <Compile Include="DataStructures\PreemptableQueue.cs" />
     <Compile Include="DataStructures\StickyLRUCache.cs" />
     <Compile Include="Data\LowerUpper.cs" />
     <Compile Include="Data\StreamAcl.cs" />
@@ -165,6 +171,31 @@
     <Compile Include="Services\Gossip\IGossipSeedSource.cs" />
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
+    <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointReader.cs" />
+    <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointWriter.cs" />
+    <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionMessageParker.cs" />
+    <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionStreamReader.cs" />
+    <Compile Include="Services\PersistentSubscription\NakAction.cs" />
+    <Compile Include="Services\PersistentSubscription\OutstandingMessage.cs" />
+    <Compile Include="Services\PersistentSubscription\OutstandingMessageCache.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscription.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionCheckpointReader.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionCheckpointWriter.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClient.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClientCollection.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConfig.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionMessageParker.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParams.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParamsBuilder.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionService.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionState.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionStats.cs" />
+    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionStreamReader.cs" />
+    <Compile Include="Services\PersistentSubscription\RequestStatistics.cs" />
+    <Compile Include="Services\PersistentSubscription\RetryableMessage.cs" />
+    <Compile Include="Services\PersistentSubscription\SequencedEvent.cs" />
+    <Compile Include="Services\PersistentSubscription\StreamBuffer.cs" />
+    <Compile Include="Services\PersistentSubscription\SubscriptionCollection.cs" />
     <Compile Include="Services\Replication\MasterReplicationService.cs" />
     <Compile Include="Services\Replication\ReplicaService.cs" />
     <Compile Include="Services\RequestForwardingService.cs" />
@@ -213,11 +244,13 @@
     <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
     <Compile Include="Data\UserData.cs" />
     <Compile Include="Services\Transport\Http\Authentication\TrustedHttpAuthenticationProvider.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\RelLink.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ClusterWebUIController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ElectController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\GossipController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\InfoController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\PersistentSubscriptionController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />

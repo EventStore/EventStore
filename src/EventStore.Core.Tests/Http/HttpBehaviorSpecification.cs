@@ -1,13 +1,10 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Xml;
 using System.Xml.Linq;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
@@ -73,8 +70,9 @@ namespace EventStore.Core.Tests.Http
                 Given();
                 When();
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine("Setup failed with " + ex);
                 if (createdMiniNode)
                 {
                     if (_connection != null)
@@ -186,6 +184,13 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
         {
             var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
+            var httpWebResponse = GetRequestResponse(request);
+            return httpWebResponse;
+        }
+
+        protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null)
+        {
+            var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }

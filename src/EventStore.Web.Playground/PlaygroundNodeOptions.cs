@@ -2,6 +2,7 @@
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
+using EventStore.Rags;
 
 namespace EventStore.Web.Playground
 {

@@ -62,7 +62,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public void EventAppeared(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
-            _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToResolvedIndexEvent()));
+            _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()));
         }
 
 
@@ -73,7 +73,7 @@ namespace EventStore.ClientAPI.Embedded
             if (_subscription != null)
                 throw new Exception("Double confirmation of subscription.");
 
-            _subscription = new EventStoreSubscription(Unsubscribe, _streamId, lastCommitPosition, lastEventNumber);
+            _subscription = new EmbeddedVolatileEventStoreSubscription(Unsubscribe, _streamId, lastCommitPosition, lastEventNumber);
             _source.SetResult(_subscription);
         }
 

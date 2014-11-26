@@ -8,6 +8,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -15,6 +16,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.Storage;
@@ -281,6 +283,7 @@ namespace EventStore.Core
             var statController = new StatController(monitoringQueue, _workersHandler);
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
             var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
+            var persistentSubscriptionController = new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
             var electController = new ElectController(_mainQueue);
 
             // HTTP SENDERS
@@ -290,6 +293,7 @@ namespace EventStore.Core
             // EXTERNAL HTTP
             _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
                                                     _workersHandler, vNodeSettings.HttpPrefixes);
+            _externalHttpService.SetupController(persistentSubscriptionController);
             if(vNodeSettings.AdminOnPublic)
                 _externalHttpService.SetupController(adminController);
             _externalHttpService.SetupController(pingController);
@@ -303,6 +307,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
+
             // INTERNAL HTTP
             if(!isSingleNode) {
                 _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
@@ -314,19 +319,18 @@ namespace EventStore.Core
                 _internalHttpService.SetupController(atomController);
                 _internalHttpService.SetupController(gossipController);
                 _internalHttpService.SetupController(electController);
+                _internalHttpService.SetupController(persistentSubscriptionController);
             }
-			// Authentication plugin HTTP
-	        vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, _internalHttpService, httpSendService, _mainQueue, _workersHandler);
+
+            // Authentication plugin HTTP
+            vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, _internalHttpService, httpSendService, _mainQueue, _workersHandler);
             if(_internalHttpService != null) {
                 _mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
                 _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
             }
 
-            SubscribeWorkers(bus =>
-            {
-                HttpService.CreateAndSubscribePipeline(bus, httpAuthenticationProviders.ToArray());
-            });
+            SubscribeWorkers(bus => HttpService.CreateAndSubscribePipeline(bus, httpAuthenticationProviders.ToArray()));
 
             // REQUEST FORWARDING
             var forwardingService = new RequestForwardingService(_mainQueue, forwardingProxy, TimeSpan.FromSeconds(1));
@@ -382,6 +386,56 @@ namespace EventStore.Core
             subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
             subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
             subscrBus.Subscribe<StorageMessage.EventCommitted>(subscription);
+
+            // PERSISTENT SUBSCRIPTIONS
+            // IO DISPATCHER
+            var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
+            _mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+            _mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
+            _mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
+            _mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
+            _mainBus.Subscribe(ioDispatcher);
+            var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
+            var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeMaster, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UpdatePersistentSubscription, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscription, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscription, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionAckEvents, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNackEvents, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReplayAllParkedMessages, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReplayParkedMessage, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionTimerTick, Message>());
+
+            //TODO CC can have multiple threads working on subscription if partition
+            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher, _mainQueue);
+            perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
+            perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
+            perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
+            perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionAckEvents>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionNackEvents>(persistentSubscription);
+            perSubscrBus.Subscribe<StorageMessage.EventCommitted>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscription>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscription>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.UpdatePersistentSubscription>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.ReplayAllParkedMessages>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.ReplayParkedMessage>(persistentSubscription);
+            perSubscrBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(persistentSubscription);
+            perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
+            perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
+            perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 
             // TIMER
             _timeProvider = new RealTimeProvider();
