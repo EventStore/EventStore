@@ -136,17 +136,30 @@ namespace EventStore.Core
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
                      + "{11,-25} {12}\n"
-                     + "{13,-25} {14}\n\n"
-                     + "{15}",
+                     + "{13,-25} {14}\n"
+		     + "{15,-25} {16}\n\n"
+                     + "{17}",
                      "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
                      "OS:", OS.OsFlavor, Environment.OSVersion,
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+		     "THREADPOOL:", GetThreadPoolInfoAsString(),
                      "LOGS:", LogManager.LogsDirectory,
                      EventStoreOptions.DumpOptions());
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");
+        }
+
+        private string GetThreadPoolInfoAsString()
+        {
+            int minWorkerThreads, maxWorkerThreads, minIocpThreads, maxIocpThreads;
+
+            ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
+            ThreadPool.GetMaxThreads(out maxWorkerThreads, out maxIocpThreads);
+
+            return string.Format("Worker Threads (Min: {0}, Max: {1}) - IOCP Threads: (Min: {2}, Max: {3})",
+                minWorkerThreads, maxWorkerThreads, minIocpThreads, maxIocpThreads);
         }
 
         private string FormatExceptionMessage(Exception ex)
