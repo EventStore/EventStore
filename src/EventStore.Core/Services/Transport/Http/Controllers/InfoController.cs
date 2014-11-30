@@ -1,7 +1,6 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -15,11 +14,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public class InfoController : IHttpController
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<InfoController>();
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
-        private readonly IOptions options;
-        public InfoController(IOptions options)
+        private static readonly ICodec[] SupportedCodecs = { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
+
+        private readonly IOptions _options;
+        private readonly ProjectionType _projectionType;
+
+        public InfoController(IOptions options, ProjectionType projectionType)
         {
-            this.options = options;
+            _options = options;
+            _projectionType = projectionType;
         }
 
         public void Subscribe(IHttpService service)
@@ -32,21 +35,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
         {
             entity.ReplyTextContent(Codec.Json.To(new
-            {
-                ESVersion = VersionInfo.Version
-            }),
-             HttpStatusCode.OK,
-             "OK",
-             entity.ResponseCodec.ContentType,
-             null,
-             e => Log.ErrorException(e, "Error while writing http response (info)"));
+                                    {
+                                        ESVersion = VersionInfo.Version,
+					ProjectionsMode = _projectionType
+                                    }),
+                                    HttpStatusCode.OK,
+                                    "OK",
+                                    entity.ResponseCodec.ContentType,
+                                    null,
+                                    e => Log.ErrorException(e, "Error while writing http response (info)"));
         }
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
         {
             if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
             {
-                entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(options), new[] { "CertificatePassword" })),
+                entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(_options), new[] { "CertificatePassword" })),
                                         HttpStatusCode.OK,
                                         "OK",
                                         entity.ResponseCodec.ContentType,
@@ -78,7 +82,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var optionsToSendToClient = new List<OptionStructure>();
             foreach (var property in options.GetType().GetProperties())
             {
-                var argumentDescriptionAttribute = property.HasAttr<ArgDescriptionAttribute>() == true ? property.Attr<ArgDescriptionAttribute>() : null;
+                var argumentDescriptionAttribute = property.HasAttr<ArgDescriptionAttribute>() ? property.Attr<ArgDescriptionAttribute>() : null;
                 var configFileOptionValue = property.GetValue(options, null);
                 string[] possibleValues = null;
                 if (property.PropertyType.IsEnum)
@@ -88,8 +92,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 else if (property.PropertyType.IsArray)
                 {
                     var array = configFileOptionValue as Array;
+                    if (array == null)
+                        continue;
                     var configFileOptionValueAsString = String.Empty;
-                    for (int i = 0; i < array.Length; i++)
+                    for (var i = 0; i < array.Length; i++)
                     {
                         configFileOptionValueAsString += array.GetValue(i).ToString();
                     }
@@ -98,8 +104,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 optionsToSendToClient.Add(new OptionStructure
                 {
                     Name = property.Name,
-                    Description = argumentDescriptionAttribute.Description,
-                    Group = argumentDescriptionAttribute.Group,
+                    Description = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Description,
+                    Group = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Group,
                     Value = configFileOptionValue.ToString(),
                     PossibleValues = possibleValues
                 });
