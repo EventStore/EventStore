@@ -94,13 +94,16 @@ namespace EventStore.Core
             {
                 if(GC.MaxGeneration == 0)
                 {
-                    Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
-                        "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
+                    Application.Exit(3, "It appears that we are running under Mono with the Boehm Garbage collector. This is generally not a good idea " +
+                                        "and can result in serious performance degradation compared to using the generational garbage collector included " +
+					"in later versions of Mono. Use the --gc=sgen flag on Mono to use the generational sgen collector instead. If you want to " + 
+					"run with the Boehm GC you can use --force flag on Event Store to override this error.");
                 }
                 if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
                 {
-                    Application.Exit(4, "Appears that we are running in linux with a version 2 build of mono. This is generally not a good idea." +
-                        "We recommend running with 3.0 or higher (3.2 especially). If you really want to run with this version of mono use --force to override this error.");
+                    Application.Exit(4, "It appears that we are running in Linux or MacOS with a version 2 build of Mono. This is generally not a good idea " +
+		                        "and we recommend running with Mono 3.6 or higher. If you really want to run with this version of Mono use the --force " +
+                                        "flag on Event Store to override this error.");
                 }
             }
         }
