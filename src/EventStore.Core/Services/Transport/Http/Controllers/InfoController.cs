@@ -36,15 +36,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
         {
             entity.ReplyTextContent(Codec.Json.To(new
-                                    {
+            {
                                         ESVersion = VersionInfo.Version,
 					ProjectionsMode = _projectionType
-                                    }),
-                                    HttpStatusCode.OK,
-                                    "OK",
-                                    entity.ResponseCodec.ContentType,
-                                    null,
-                                    e => Log.ErrorException(e, "Error while writing http response (info)"));
+            }),
+             HttpStatusCode.OK,
+             "OK",
+             entity.ResponseCodec.ContentType,
+             null,
+             e => Log.ErrorException(e, "Error while writing http response (info)"));
         }
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
