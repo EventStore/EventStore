@@ -52,6 +52,7 @@ namespace EventStore.Core
                 }
                 else
                 {
+                    PreInit(options);
                     Init(options);
                     CommitSuicideIfInBoehmOrOnBadVersionsOfMono(options);
                     Create(options);
@@ -86,6 +87,10 @@ namespace EventStore.Core
 
             Application.ExitSilent(_exitCode, "Normal exit.");
             return _exitCode;
+        }
+
+        protected virtual void PreInit(TOptions options)
+        {
         }
 
         private void CommitSuicideIfInBoehmOrOnBadVersionsOfMono(TOptions options)
