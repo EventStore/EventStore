@@ -45,6 +45,9 @@ namespace EventStore.Core.Util
         public const string ShowVersionDescr = "Show version.";
         public const bool   ShowVersionDefault = false;
 
+        public const string MonoMinThreadpoolSizeDescr = "Minimum number of worker threads when running under mono. Set to 0 to leave machine defaults.";
+        public const int MonoMinThreadpoolSizeDefault = 10;
+
         public const string ExtTcpHeartbeatTimeoutDescr = "Heartbeat timeout for external TCP sockets";
         public const int ExtTcpHeartbeatTimeoutDefault = 1000;
 
