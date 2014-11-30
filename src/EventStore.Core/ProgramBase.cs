@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -147,13 +148,21 @@ namespace EventStore.Core
                      "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
                      "OS:", OS.OsFlavor, Environment.OSVersion,
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
-                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+                     "GC:", GetGarbageCollectorInfo(),
 		     "THREADPOOL:", GetThreadPoolInfoAsString(),
                      "LOGS:", LogManager.LogsDirectory,
                      EventStoreOptions.DumpOptions());
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");
+        }
+
+        private string GetGarbageCollectorInfo()
+        {
+            var generations = GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1);
+            var serverMode = GCSettings.IsServerGC ? "Server Mode" : "Desktop Mode";
+
+            return string.Format("{0} ({1} - {2})", generations, serverMode, GCSettings.LatencyMode);
         }
 
         private string GetThreadPoolInfoAsString()
