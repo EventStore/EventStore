@@ -8,6 +8,7 @@ using EventStore.Transport.Http.EntityManagement;
 using EventStore.Common.Options;
 using System.Collections.Generic;
 using EventStore.Rags;
+using System.Linq;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
@@ -31,24 +32,36 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
         {
             entity.ReplyTextContent(Codec.Json.To(new
-                                    {
-                                        ESVersion = VersionInfo.Version
-                                    }),
-                                    HttpStatusCode.OK,
-                                    "OK",
-                                    entity.ResponseCodec.ContentType,
-                                    null,
-                                    e => Log.ErrorException(e, "Error while writing http response (info)"));
+            {
+                ESVersion = VersionInfo.Version
+            }),
+             HttpStatusCode.OK,
+             "OK",
+             entity.ResponseCodec.ContentType,
+             null,
+             e => Log.ErrorException(e, "Error while writing http response (info)"));
         }
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
         {
-            entity.ReplyTextContent(Codec.Json.To(GetOptionsInfo(options)),
-                                    HttpStatusCode.OK,
-                                    "OK",
-                                    entity.ResponseCodec.ContentType,
-                                    null,
-                                    e => Log.ErrorException(e, "error while writing http response (options)"));
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            {
+                entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(options), new[] { "CertificatePassword" })),
+                                        HttpStatusCode.OK,
+                                        "OK",
+                                        entity.ResponseCodec.ContentType,
+                                        null,
+                                        e => Log.ErrorException(e, "error while writing http response (options)"));
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
+        }
+
+        private void LogReplyError(Exception exc)
+        {
+            Log.Debug("Error while replying (info controller): {0}.", exc.Message);
         }
 
         public class OptionStructure
@@ -92,6 +105,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 });
             }
             return optionsToSendToClient.ToArray();
+        }
+        public OptionStructure[] Filter(OptionStructure[] optionsToBeFiltered, params string[] namesOfValuesToExclude)
+        {
+            return optionsToBeFiltered.Select(x =>
+                    new OptionStructure
+                    {
+                        Name = x.Name,
+                        Description = x.Description,
+                        Group = x.Group,
+                        PossibleValues = x.PossibleValues,
+                        Value = namesOfValuesToExclude.Contains(y => y.Equals(x.Name, StringComparison.OrdinalIgnoreCase)) ? String.Empty : x.Value
+                    }).ToArray();
         }
     }
 }
