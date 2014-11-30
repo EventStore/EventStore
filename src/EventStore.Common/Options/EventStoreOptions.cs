@@ -76,8 +76,9 @@ namespace EventStore.Common.Options
         {
             var effectiveOptions = _effectiveOptions;
             var configFile = optionSources.FirstOrDefault(x => x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase)).Value ??
-                             effectiveOptions.FirstOrDefault(x => x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase)).Value ??
-                             configFilePath;
+                             effectiveOptions.FirstOrDefault(x => x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase)).Value;
+
+            configFile = String.IsNullOrEmpty(configFile as string) ? configFilePath : configFile;
 
             var optionsToSave = optionSources.Concat(effectiveOptions)
                                 .Where(x => x.Source != "<DEFAULT>")
