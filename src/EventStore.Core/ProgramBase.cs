@@ -159,7 +159,14 @@ namespace EventStore.Core
 
         private string GetGarbageCollectorInfo()
         {
-            var generations = GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1);
+            if (!Runtime.IsMono)
+                return GC.MaxGeneration == 0
+                    ? "NON-GENERATION (PROBABLY BOEHM)"
+                    : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1);
+
+            var generations = GC.MaxGeneration == 0
+                ? "NON-GENERATION (PROBABLY BOEHM)"
+                : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1);
             var serverMode = GCSettings.IsServerGC ? "Server Mode" : "Desktop Mode";
 
             return string.Format("{0} ({1} - {2})", generations, serverMode, GCSettings.LatencyMode);
