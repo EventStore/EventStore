@@ -71,8 +71,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnUpdateOptions(HttpEntityManager entity, UriTemplateMatch match)
         {
-            //if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
-            //{
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            {
                 entity.ReadTextRequestAsync(
                                 (man, body) =>
                                 {
@@ -94,11 +94,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                     }
                                 },
                                 e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
-            //}
-            //else
-            //{
-            //    entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
-            //}
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
         }
 
         protected RequestParams SendBadRequest(HttpEntityManager httpEntityManager, string reason)
