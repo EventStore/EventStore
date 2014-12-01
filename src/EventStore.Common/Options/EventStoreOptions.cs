@@ -13,7 +13,7 @@ namespace EventStore.Common.Options
 {
     public class EventStoreOptions
     {
-        public static IEnumerable<OptionSource> _effectiveOptions;
+        private static IEnumerable<OptionSource> _effectiveOptions;
 
         public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
         {

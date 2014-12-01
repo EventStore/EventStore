@@ -112,14 +112,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return new RequestParams(done: true);
         }
 
-        protected RequestParams SendOk(HttpEntityManager httpEntityManager)
-        {
-            httpEntityManager.ReplyStatus(HttpStatusCode.OK,
-                                          "OK",
-                                          e => Log.Debug("Error while closing http connection (ok): {0}.", e.Message));
-            return new RequestParams(done: true);
-        }
-
         public class OptionStructure
         {
             public string Name { get; set; }
