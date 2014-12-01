@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -56,7 +57,29 @@ namespace EventStore.ClusterNode
                                 string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-Node{1}", _startupTimeStamp, nodePort));
         }
 
+        protected override void PreInit(ClusterNodeOptions options)
+        {
+            base.PreInit(options);
 
+	    //Never seen this problem occur on the .NET framework
+            if (!Runtime.IsMono)
+                return;
+
+	    //0 indicates we should leave the machine defaults alone
+            if (options.MonoMinThreadpoolSize == 0)
+                return;
+
+	    //Change the number of worker threads to be higher if our own setting
+	    // is higher than the current value
+            int minWorkerThreads, minIocpThreads;
+	    ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
+
+            if (minWorkerThreads >= options.MonoMinThreadpoolSize)
+                return;
+
+            if (!ThreadPool.SetMinThreads(options.MonoMinThreadpoolSize, minIocpThreads))
+                Log.Error("Cannot override the minimum number of Threadpool threads (machine default: {0}, specified value: {1})", minWorkerThreads, options.MonoMinThreadpoolSize);
+        }
 
         protected override void Create(ClusterNodeOptions opts)
         {
@@ -121,7 +144,7 @@ namespace EventStore.ClusterNode
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
-            var infoController = new InfoController(opts); 
+            var infoController = new InfoController(opts, opts.RunProjections); 
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, infoController, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
             RegisterUiProjections();

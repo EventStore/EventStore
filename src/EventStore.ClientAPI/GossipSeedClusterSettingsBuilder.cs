@@ -17,6 +17,10 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Sets gossip seed endpoints for the client.
         /// 
+        /// Note that this should be the external HTTP endpoint of the server, as it is required
+        /// for the client to exchange gossip with the server. The standard port which should be
+        /// used here is 2113.
+        /// 
         /// If the server requires a specific Host header to be sent as part of the gossip
         /// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
         /// </summary>

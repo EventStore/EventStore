@@ -84,6 +84,7 @@ namespace EventStore.ClientAPI.Embedded
         private int _clusterGossipPort;
 
         private ProjectionsMode _projectionsMode;
+        private ProjectionType _projectionType;
         private int _projectionsThreads;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -552,22 +553,24 @@ namespace EventStore.ClientAPI.Embedded
 
         private void SetUpProjectionsIfNeeded()
         {
-            if (_projectionsMode == ProjectionsMode.None) 
+            if (_projectionsMode == ProjectionsMode.None)
+            {
+                _projectionType = ProjectionType.None;
                 return;
+            }
 
-            ProjectionType internalProjectionType;
             switch (_projectionsMode)
             {
                 case ProjectionsMode.System:
-                    internalProjectionType = ProjectionType.System;
+                    _projectionType = ProjectionType.System;
                     break;
                 case ProjectionsMode.All:
-                    internalProjectionType = ProjectionType.All;
+                    _projectionType = ProjectionType.All;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, internalProjectionType));
+            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType));
         }
 
     	/// <summary>
@@ -632,7 +635,7 @@ namespace EventStore.ClientAPI.Embedded
                 _extTcpHeartbeatInterval,
                 !_skipVerifyDbHashes,
                 _maxMemtableSize);
-            var infoController = new InfoController(null);
+            var infoController = new InfoController(null, _projectionType);
             return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }
 

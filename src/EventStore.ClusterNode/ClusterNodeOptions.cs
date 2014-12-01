@@ -20,6 +20,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
         public bool WhatIf { get; set; }
 
+	[ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
+        public int MonoMinThreadpoolSize { get; set; }
+
         [ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
         public IPAddress IntIp { get; set; }
         [ArgDescription(Opts.ExternalIpDescr, Opts.InterfacesGroup)]
@@ -153,6 +156,8 @@ namespace EventStore.ClusterNode
             Log = Opts.LogsDefault;
             Defines = Opts.DefinesDefault;
             WhatIf = Opts.WhatIfDefault;
+
+            MonoMinThreadpoolSize = Opts.MonoMinThreadpoolSizeDefault;
 
             IntIp = Opts.InternalIpDefault;
             ExtIp = Opts.ExternalIpDefault;

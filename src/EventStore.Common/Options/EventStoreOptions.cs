@@ -20,7 +20,8 @@ namespace EventStore.Common.Options
                 .ToLookup(x => x.Name.ToLower())
                 .Select(ResolvePrecedence)
                 .EnsureExistence<TOptions>()
-                .EnsureCorrectType<TOptions>();
+                .EnsureCorrectType<TOptions>()
+                .UpdateSourceNamesFromType<TOptions>();
             return _effectiveOptions.ApplyTo<TOptions>();
         }
 
@@ -111,6 +112,15 @@ namespace EventStore.Common.Options
         public static IEnumerable<OptionSource> Cleanup(this IEnumerable<OptionSource> optionSources)
         {
             return optionSources.Select(x => new OptionSource(x.Source, x.Name.Replace("-", ""), x.IsTyped, x.Value));
+        }
+        public static IEnumerable<OptionSource> UpdateSourceNamesFromType<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class
+        {
+            var properties = typeof(TOptions).GetProperties();
+            return optionSources.Select(x => new OptionSource(
+                            x.Source, 
+                            properties.First(y => y.Name.Equals(x.Name, StringComparison.OrdinalIgnoreCase)).Name, 
+                            x.IsTyped, 
+                            x.Value));
         }
         public static IEnumerable<OptionSource> EnsureExistence<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class
         {

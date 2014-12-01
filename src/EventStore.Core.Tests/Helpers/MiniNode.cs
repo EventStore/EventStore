@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -137,7 +138,7 @@ namespace EventStore.Core.Tests.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", HttpEndPoint);
-            Node = new ClusterVNode(Db, vNodeSettings, new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}), new InfoController(null), subsystems);
+            Node = new ClusterVNode(Db, vNodeSettings, new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}), new InfoController(null, ProjectionType.None), subsystems);
 
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }

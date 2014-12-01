@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -52,6 +53,7 @@ namespace EventStore.Core
                 }
                 else
                 {
+                    PreInit(options);
                     Init(options);
                     CommitSuicideIfInBoehmOrOnBadVersionsOfMono(options);
                     Create(options);
@@ -88,19 +90,26 @@ namespace EventStore.Core
             return _exitCode;
         }
 
+        protected virtual void PreInit(TOptions options)
+        {
+        }
+
         private void CommitSuicideIfInBoehmOrOnBadVersionsOfMono(TOptions options)
         {
             if(!options.Force)
             {
                 if(GC.MaxGeneration == 0)
                 {
-                    Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
-                        "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
+                    Application.Exit(3, "It appears that we are running under Mono with the Boehm Garbage collector. This is generally not a good idea " +
+                                        "and can result in serious performance degradation compared to using the generational garbage collector included " +
+					"in later versions of Mono. Use the --gc=sgen flag on Mono to use the generational sgen collector instead. If you want to " + 
+					"run with the Boehm GC you can use --force flag on Event Store to override this error.");
                 }
                 if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
                 {
-                    Application.Exit(4, "Appears that we are running in linux with a version 2 build of mono. This is generally not a good idea." +
-                        "We recommend running with 3.0 or higher (3.2 especially). If you really want to run with this version of mono use --force to override this error.");
+                    Application.Exit(4, "It appears that we are running in Linux or MacOS with a version 2 build of Mono. This is generally not a good idea " +
+		                        "and we recommend running with Mono 3.6 or higher. If you really want to run with this version of Mono use the --force " +
+                                        "flag on Event Store to override this error.");
                 }
             }
         }
@@ -133,17 +142,45 @@ namespace EventStore.Core
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
                      + "{11,-25} {12}\n"
-                     + "{13,-25} {14}\n\n"
-                     + "{15}",
+                     + "{13,-25} {14}\n"
+		     + "{15,-25} {16}\n\n"
+                     + "{17}",
                      "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
                      "OS:", OS.OsFlavor, Environment.OSVersion,
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
-                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+                     "GC:", GetGarbageCollectorInfo(),
+		     "THREADPOOL:", GetThreadPoolInfoAsString(),
                      "LOGS:", LogManager.LogsDirectory,
                      EventStoreOptions.DumpOptions());
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");
+        }
+
+        private string GetGarbageCollectorInfo()
+        {
+            if (!Runtime.IsMono)
+                return GC.MaxGeneration == 0
+                    ? "NON-GENERATION (PROBABLY BOEHM)"
+                    : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1);
+
+            var generations = GC.MaxGeneration == 0
+                ? "NON-GENERATION (PROBABLY BOEHM)"
+                : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1);
+            var serverMode = GCSettings.IsServerGC ? "Server Mode" : "Desktop Mode";
+
+            return string.Format("{0} ({1} - {2})", generations, serverMode, GCSettings.LatencyMode);
+        }
+
+        private string GetThreadPoolInfoAsString()
+        {
+            int minWorkerThreads, maxWorkerThreads, minIocpThreads, maxIocpThreads;
+
+            ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
+            ThreadPool.GetMaxThreads(out maxWorkerThreads, out maxIocpThreads);
+
+            return string.Format("Worker Threads (Min: {0}, Max: {1}) - IOCP Threads: (Min: {2}, Max: {3})",
+                minWorkerThreads, maxWorkerThreads, minIocpThreads, maxIocpThreads);
         }
 
         private string FormatExceptionMessage(Exception ex)
