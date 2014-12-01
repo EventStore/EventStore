@@ -9,6 +9,27 @@ namespace EventStore.ClientAPI
     public class PersistentSubscriptionSettings
     {
         /// <summary>
+        /// Creates a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object
+        /// </summary>
+        /// <returns>a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object</returns>
+        public static PersistentSubscriptionSettingsBuilder Create()
+        {
+            return new PersistentSubscriptionSettingsBuilder(false,
+                                                             -1,
+                                                             false,
+                                                             TimeSpan.FromSeconds(30),
+                                                             500,
+                                                             500,
+                                                             10,
+                                                             20,
+                                                             true,
+                                                             TimeSpan.FromSeconds(2),
+                                                             10,
+                                                             1000);
+        }
+
+
+        /// <summary>
         /// Whether or not the <see cref="PersistentEventStoreSubscription"></see> should resolve linkTo events to their linked events.
         /// </summary>
         public readonly bool ResolveLinkTos;

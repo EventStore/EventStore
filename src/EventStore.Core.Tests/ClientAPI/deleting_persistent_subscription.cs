@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class deleting_existing_persistent_subscription_group_with_permissions : SpecificationWithMiniNode
     {
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                         .DoNotResolveLinkTos()
                                                                         .StartFromCurrent();
         private readonly string _stream = Guid.NewGuid().ToString();

@@ -21,28 +21,7 @@ namespace EventStore.ClientAPI
         private int _minCheckPointCount;
         private int _maxCheckPointCount;
 
-        /// <summary>
-        /// Creates a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object
-        /// </summary>
-        /// <returns>a new <see cref="PersistentSubscriptionSettingsBuilder"></see> object</returns>
-        public static PersistentSubscriptionSettingsBuilder Create()
-        {
-            return new PersistentSubscriptionSettingsBuilder(false, 
-                                                             -1, 
-                                                             false, 
-                                                             TimeSpan.FromSeconds(30),
-                                                             500,
-                                                             500,
-                                                             10,
-                                                             20,
-                                                             true,
-                                                             TimeSpan.FromSeconds(2),
-                                                             10,
-                                                             1000);
-        }
-
-
-        private PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan timeout,
+        internal PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan timeout,
                                                       int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, 
                                                       bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount,
                                                       int maxCheckPointCount)
