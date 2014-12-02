@@ -527,7 +527,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapPersistentSubscriptionStreamEventAppeared(ClientMessage.PersistentSubscriptionStreamEventAppeared msg)
         {
-            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(new TcpClientMessageDto.ResolvedIndexedEvent(msg.Event.OriginalEvent, msg.Event.Link));
+            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(new TcpClientMessageDto.ResolvedIndexedEvent(msg.Event.Event, msg.Event.Link));
             return new TcpPackage(TcpCommand.PersistentSubscriptionStreamEventAppeared, msg.CorrelationId, dto.Serialize());
         }
 
