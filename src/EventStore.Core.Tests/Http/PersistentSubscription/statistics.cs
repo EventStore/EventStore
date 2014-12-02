@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     [TestFixture, Category("LongRunning")]
     public class subscription_stats_summary_has_right_data : SpecificationWithPersistentSubscriptionAndConnections
     {
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
                                                     .StartFromCurrent();
 
@@ -338,7 +338,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     [TestFixture, Category("LongRunning")]
     public class subscription_stats_for_stream_have_summary_data : SpecificationWithPersistentSubscriptionAndConnections
     {
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
                                                     .StartFromCurrent();
 
@@ -458,7 +458,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected IEventStoreConnection _conn;
         protected EventStorePersistentSubscription _sub1;
         protected EventStorePersistentSubscription _sub2;
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
                                                     .StartFromCurrent();
 

@@ -195,7 +195,6 @@
     <Compile Include="Services\PersistentSubscription\RetryableMessage.cs" />
     <Compile Include="Services\PersistentSubscription\SequencedEvent.cs" />
     <Compile Include="Services\PersistentSubscription\StreamBuffer.cs" />
-    <Compile Include="Services\PersistentSubscription\SubscriptionCollection.cs" />
     <Compile Include="Services\Replication\MasterReplicationService.cs" />
     <Compile Include="Services\Replication\ReplicaService.cs" />
     <Compile Include="Services\RequestForwardingService.cs" />

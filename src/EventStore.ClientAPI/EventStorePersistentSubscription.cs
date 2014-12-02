@@ -192,7 +192,7 @@ namespace EventStore.ClientAPI
                     {
                         _eventAppeared(this, e);
                         if(_autoAck)
-                            _subscription.NotifyEventsProcessed(new[]{e.Event.EventId});
+                            _subscription.NotifyEventsProcessed(new[]{e.OriginalEvent.EventId});
                         if (_verbose)
                             _log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}).",
                                       _streamId,
@@ -200,6 +200,7 @@ namespace EventStore.ClientAPI
                     }
                     catch (Exception exc)
                     {
+                        //TODO GFY should we autonak here?
                         DropSubscription(SubscriptionDropReason.EventHandlerException, exc);
                         return;
                     }

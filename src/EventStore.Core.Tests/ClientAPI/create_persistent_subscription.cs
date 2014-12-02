@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private PersistentSubscriptionCreateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         protected override void When()
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private PersistentSubscriptionCreateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         protected override void When()
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.ClientAPI
     public class create_duplicate_persistent_subscription_group : SpecificationWithMiniNode
     {
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         protected override void When()
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private readonly string _stream = Guid.NewGuid().ToString();
         private PersistentSubscriptionCreateResult _result;
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         protected override void When()
@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.ClientAPI
     public class create_persistent_subscription_group_without_permissions : SpecificationWithMiniNode
     {
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         protected override void When()

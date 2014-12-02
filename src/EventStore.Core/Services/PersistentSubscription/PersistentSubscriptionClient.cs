@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _extraStatistics.StartOperation(evnt.OriginalEvent.EventId);
 
             _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt));
-            _unconfirmedEvents.Add(evnt.Event.EventId, evnt);
+            _unconfirmedEvents.Add(evnt.OriginalEvent.EventId, evnt);
             return true;
         }
 

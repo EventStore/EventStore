@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private PersistentSubscriptionUpdateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
 
@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private PersistentSubscriptionUpdateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         private AutoResetEvent _dropped = new AutoResetEvent(false);
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.ClientAPI
     public class update_non_existing_persistent_subscription : SpecificationWithMiniNode
     {
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
 
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.ClientAPI
     public class update_existing_persistent_subscription_without_permissions : SpecificationWithMiniNode
     {
         private readonly string _stream = Guid.NewGuid().ToString();
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
 
