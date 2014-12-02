@@ -11,7 +11,7 @@ using System.Text;
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
 {
     [TestFixture]
-    public class with_a_single_change
+    public class with_a_change_that_will_not_take_effect
     {
         private string tempFileName;
         [TestFixtureSetUp]
@@ -24,31 +24,25 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
             }
         }
         [Test]
-        public void should_save_the_single_change()
+        public void should_throw_an_exception_containing_the_possible_conflicts()
         {
-            File.WriteAllLines(tempFileName, new string[]{
-                "RunProjections: All",
-                "HttpPort: 2113",
-                "Log: ~/ouroLogs"});
+            File.WriteAllLines(tempFileName, new string[] { "HttpPort: 2113" });
+            Environment.SetEnvironmentVariable((String.Format("{0}HTTP_PORT", Opts.EnvPrefix)), "2111", EnvironmentVariableTarget.Process);
 
-            var args = new string[] { "--config=" + tempFileName };
+            var args = new string[] { "--config=" + tempFileName, "--log=~/ouroLogs" };
             EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
 
             var optionsToSave = new OptionSource[] { 
                 OptionSource.Typed("Update", "HttpPort", 2115),
+                OptionSource.Typed("Update", "Log", "~anotherLogLocation")
             };
 
-            EventStoreOptions.Update(optionsToSave);
-
-            var savedConfig = Yaml.FromFile(tempFileName);
-            Assert.AreEqual(3, savedConfig.Count());
-            Assert.AreEqual("All", savedConfig.First(x => x.Name == "RunProjections").Value);
-            Assert.AreEqual("2115", savedConfig.First(x => x.Name == "HttpPort").Value);
-            Assert.AreEqual("~/ouroLogs", savedConfig.First(x => x.Name == "Log").Value);
+            Assert.Throws<Exception>(() => { EventStoreOptions.Update(optionsToSave); });
         }
         [TestFixtureTearDown]
         public void Cleanup()
         {
+             Environment.SetEnvironmentVariable((String.Format("{0}HTTP_PORT", Opts.EnvPrefix)), null, EnvironmentVariableTarget.Process);
             if (File.Exists(tempFileName))
             {
                 File.Delete(tempFileName);

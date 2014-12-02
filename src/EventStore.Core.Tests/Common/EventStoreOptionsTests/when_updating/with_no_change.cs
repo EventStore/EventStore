@@ -26,15 +26,24 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
         [Test]
         public void should_save_no_changes()
         {
-            var args = new string[] { };
+            File.WriteAllLines(tempFileName, new string[]{
+                "RunProjections: All",
+                "HttpPort: 2113",
+                "Log: ~/ouroLogs"});
+
+            var args = new string[] { "--config=" + tempFileName };
             EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
 
             var optionsToSave = new OptionSource[] { 
             };
 
-            var savedOptions = EventStoreOptions.Update(optionsToSave);
+            EventStoreOptions.Update(optionsToSave);
 
-            Assert.AreEqual(0, savedOptions.Count());
+            var savedConfig = Yaml.FromFile(tempFileName);
+            Assert.AreEqual(3, savedConfig.Count());
+            Assert.AreEqual("All", savedConfig.First(x=>x.Name == "RunProjections").Value);
+            Assert.AreEqual("2113", savedConfig.First(x => x.Name == "HttpPort").Value);
+            Assert.AreEqual("~/ouroLogs", savedConfig.First(x => x.Name == "Log").Value);
         }
         [TestFixtureTearDown]
         public void Cleanup()

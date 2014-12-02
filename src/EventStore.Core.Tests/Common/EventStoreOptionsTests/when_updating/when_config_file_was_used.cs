@@ -28,8 +28,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
             var args = new string[] { "--config=" + tempFileName };
             File.WriteAllLines(tempFileName, new string[]{
                 "RunProjections: All",
-                "HttpPort: 2113",
-                "Log: ~/ouroLogs"});
+                "HttpPort: 2113"});
 
             EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
 
@@ -37,14 +36,12 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
                 OptionSource.Typed("Update", "HttpPort", 2115),
             };
 
-            var updatedOptions = EventStoreOptions.Update(optionsToSave);
-            var optionsFromConfig = EventStoreOptions.Parse<TestArgs>(tempFileName);
+            EventStoreOptions.Update(optionsToSave);
 
-            Assert.AreEqual(1, updatedOptions.Count());
-
-            Assert.AreEqual(ProjectionType.All, optionsFromConfig.RunProjections);
-            Assert.AreEqual(2115, optionsFromConfig.HttpPort);
-            Assert.AreEqual("~/ouroLogs", optionsFromConfig.Log);
+            var savedConfig = Yaml.FromFile(tempFileName);
+            Assert.AreEqual(2, savedConfig.Count());
+            Assert.AreEqual("All", savedConfig.First(x => x.Name == "RunProjections").Value);
+            Assert.AreEqual("2115", savedConfig.First(x => x.Name == "HttpPort").Value);
         }
         [TestFixtureTearDown]
         public void Cleanup()

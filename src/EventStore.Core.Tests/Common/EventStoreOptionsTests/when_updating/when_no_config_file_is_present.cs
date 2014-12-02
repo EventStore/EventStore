@@ -11,7 +11,7 @@ using System.Text;
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
 {
     [TestFixture]
-    public class with_a_single_change_when_no_config_file_is_specified
+    public class when_no_config_file_is_present
     {
         private string tempFileName;
         [TestFixtureSetUp]
@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
             }
         }
         [Test]
-        public void should_save_the_changes_to_the_default_config_file()
+        public void should_throw_an_exception_explaining_that_an_valid_config_file_is_needed()
         {
             var args = new string[] { };
             EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
@@ -33,11 +33,7 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_updating
                 OptionSource.Typed("Update", "HttpPort", 2115),
             };
 
-            var savedOptions = EventStoreOptions.Update(optionsToSave, tempFileName);
-
-            Assert.AreEqual(1, savedOptions.Count());
-            Assert.AreEqual("HttpPort", savedOptions.First().Name);
-            Assert.AreEqual(2115, savedOptions.First().Value);
+           Assert.Throws<Exception>(() => { EventStoreOptions.Update(optionsToSave); });
         }
         [TestFixtureTearDown]
         public void Cleanup()
