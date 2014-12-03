@@ -3,6 +3,8 @@
 
 **Documentation is available at [docs.geteventstore.com](http://docs.geteventstore.com)** For a quick start, look <a href="http://docs.geteventstore.com/introduction/running-the-event-store/">here</a>.
 
+**Please note that if you just want binaries, they are available at [download.geteventstore.com](http://geteventstore.com/downloads) - it is not necessary to build from source unless you want "bleeding edge" features.**
+
 <em>**Development is on the "dev" branch (and feature branches). Please make any pull requests to the "dev" branch**.</em>
 
 This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at http://geteventstore.com.
@@ -20,7 +22,6 @@ Binaries are available from http://geteventstore.com, however if you want to bui
 - .NET Framework v4.0+
 - Windows platform SDK with compilers (v7.1) or Visual C++ installed
 - git on PATH
-- svn on PATH
 
 ####Building the Event Store
 
