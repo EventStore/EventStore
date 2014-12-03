@@ -1,28 +1,32 @@
 ﻿using System;
 using System.Net;
-using PowerArgs;
+using EventStore.Rags;
 
 namespace EventStore.UpgradeProjections
 {
     public class UpgradeProjectionOptions
     {
-        [DefaultValue("127.0.0.1")]
         public string Ip { get; set; }
-        [DefaultValue(1113)]
         public int Port { get; set; }
-        [DefaultValue("admin")]
         public string UserName { get; set; }
-        [DefaultValue("changeit")]
         public string Password { get; set; }
-        [DefaultValue(true)]
         public bool Upgrade { get; set; }
         public bool Help { get; set; }
+        public UpgradeProjectionOptions()
+        {
+            Ip = "127.0.0.1";
+            Port = 1113;
+            UserName = "admin";
+            Password = "changeit";
+            Upgrade = true;
+        }
     }
     class UpgradeProjections
     {
         public static int Main(string[] args)
         {
-            var options = Args.Parse<UpgradeProjectionOptions>(args);
+            var options = CommandLine.Parse<UpgradeProjectionOptions>(args)
+                            .ApplyTo<UpgradeProjectionOptions>();
             if (options.Help)
             {
                 Console.Write(ArgUsage.GetUsage<UpgradeProjectionOptions>());

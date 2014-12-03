@@ -6,7 +6,9 @@ namespace EventStore.Documentation
 {
     public class DocumentationGenerationOptions
     {
+        [ArgDescription("Path to the EventStore Binaries (e.g. c:\\EventStore\\)")]
         public string[] EventStoreBinaryPaths { get; set; }
+        [ArgDescription("Output location of the generated Markdown File (e.g. c:\\generated_docs\\documentation.md)")]
         public string OutputPath { get; set; }
         public DocumentationGenerationOptions()
         {
@@ -27,6 +29,7 @@ namespace EventStore.Documentation
             }
             catch (Exception ex)
             {
+                Console.Write(ArgUsage.GetUsage<DocumentationGenerationOptions>());
                 Console.Error.WriteLine(ex.Message);
             }
             return 1;

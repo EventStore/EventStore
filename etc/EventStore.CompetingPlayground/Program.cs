@@ -12,7 +12,7 @@ namespace EventStore.CompetingPlayground
         private const string Stream = "stream";
         private const string SubName = "group";
 
-        private static readonly PersistentSubscriptionSettings Settings = PersistentSubscriptionSettingsBuilder.Create()
+        private static readonly PersistentSubscriptionSettings Settings = PersistentSubscriptionSettings.Create()
             .DoNotResolveLinkTos()
             .StartFromBeginning()
             .WithExtraStatistics()
