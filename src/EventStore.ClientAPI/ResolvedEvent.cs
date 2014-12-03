@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI
 
         internal ResolvedEvent(ClientMessage.ResolvedEvent evnt)
         {
-            Event = new RecordedEvent(evnt.Event);
+            Event = evnt.Event == null ? null : new RecordedEvent(evnt.Event);
             Link = evnt.Link == null ? null : new RecordedEvent(evnt.Link);
             OriginalPosition = new Position(evnt.CommitPosition, evnt.PreparePosition);
         }
