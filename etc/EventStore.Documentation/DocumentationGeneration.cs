@@ -22,6 +22,7 @@ namespace EventStore.Documentation
             try
             {
                 var options = CommandLine.Parse<DocumentationGenerationOptions>(args)
+                                .Cleanup()
                                 .ApplyTo<DocumentationGenerationOptions>();
                 var generator = new DocumentGenerator();
                 generator.Generate(options.EventStoreBinaryPaths, options.OutputPath);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using EventStore.Rags;
+using EventStore.Common.Options;
 
 namespace EventStore.UpgradeProjections
 {
@@ -26,6 +27,7 @@ namespace EventStore.UpgradeProjections
         public static int Main(string[] args)
         {
             var options = CommandLine.Parse<UpgradeProjectionOptions>(args)
+                            .Cleanup()
                             .ApplyTo<UpgradeProjectionOptions>();
             if (options.Help)
             {
