@@ -93,7 +93,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// <param name="login">the login for the user who's details should be retrieved.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing the specified users full name and login.</returns>
-        public Task<string> GetUserAsync(string login, UserCredentials userCredentials) //TODO GFY SHOULD RETURN OBJECT
+        public Task<UserDetails> GetUserAsync(string login, UserCredentials userCredentials) 
         {
             Ensure.NotNullOrEmpty(login, "login");
             return _client.GetUser(_httpEndPoint, login, userCredentials);
