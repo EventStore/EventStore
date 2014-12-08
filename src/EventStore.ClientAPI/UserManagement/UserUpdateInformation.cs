@@ -1,7 +1,7 @@
-﻿namespace EventStore.ClientAPI.UserManagement
-{
-    using EventStore.ClientAPI.Common.Utils;
+﻿using EventStore.ClientAPI.Common.Utils;
 
+namespace EventStore.ClientAPI.UserManagement
+{
     internal class UserUpdateInformation
     {
         public readonly string FullName;

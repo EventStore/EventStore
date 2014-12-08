@@ -7,27 +7,31 @@ namespace EventStore.ClientAPI.UserManagement
     /// </summary>
     public sealed class UserDetails
     {
-/// <summary>
+        /// <summary>
         /// The users login name.
         /// </summary>
         public readonly string LoginName;
-        
+
         /// <summary>
         /// The full name of the user.
         /// </summary>
         public readonly string FullName;
+
         /// <summary>
         /// The groups the user is a member of.
         /// </summary>
         public readonly string[] Groups;
+
         /// <summary>
         /// The date/time the user was updated in UTC format.
         /// </summary>
         public readonly DateTimeOffset? DateLastUpdated;
+
         /// <summary>
         /// Whether the user disable or not.
         /// </summary>
         public readonly bool Disabled;
+
         /// <summary>
         /// create a new <see cref="UserDetails"/> class.
         /// </summary>
@@ -39,11 +43,11 @@ namespace EventStore.ClientAPI.UserManagement
         public UserDetails(
             string loginName, string fullName, string[] groups, bool disabled, DateTimeOffset? dateLastUpdated)
         {
-            this.LoginName = loginName;
-            this.FullName = fullName;
-            this.Groups = groups;
-            this.Disabled = disabled;
-            this.DateLastUpdated = dateLastUpdated;
+            LoginName = loginName;
+            FullName = fullName;
+            Groups = groups;
+            Disabled = disabled;
+            DateLastUpdated = dateLastUpdated;
         }
-        }
+    }
 }
