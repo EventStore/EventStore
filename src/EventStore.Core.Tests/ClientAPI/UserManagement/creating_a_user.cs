@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Net;
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.UserManagement;
-using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
