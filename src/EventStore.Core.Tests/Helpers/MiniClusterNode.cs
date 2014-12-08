@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Helpers
             var shutdownEvent = new ManualResetEventSlim(false);
             Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
 
-            Node.Stop();
+            Node.StopNonblocking();
 
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");

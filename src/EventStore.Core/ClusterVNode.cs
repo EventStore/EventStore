@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -34,7 +36,7 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core
 {
-    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>
+    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>, IHandle<SystemMessage.BecomeShutdown>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
@@ -57,6 +59,8 @@ namespace EventStore.Core
         private readonly HttpService _externalHttpService;
         private readonly ITimeProvider _timeProvider;
         private readonly ISubsystem[] _subsystems;
+        private readonly ManualResetEvent _shutdownEvent = new ManualResetEvent(false);
+
 
         private readonly InMemoryBus[] _workerBuses;
         private readonly MultiQueuedHandler _workersHandler;
@@ -511,23 +515,38 @@ namespace EventStore.Core
         {
             _mainQueue.Publish(new SystemMessage.SystemInit());
 
-            if (_subsystems != null)
-                foreach (var subsystem in _subsystems)
-                    subsystem.Start();
+            if (_subsystems == null) return;
+            foreach (var subsystem in _subsystems)
+                subsystem.Start();
+        }
+
+        public void StopNonblocking()
+        {
+            _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
+
+            if (_subsystems == null) return;
+            foreach (var subsystem in _subsystems)
+                subsystem.Stop();
         }
 
         public void Stop()
         {
-            _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
+            Stop(TimeSpan.FromSeconds(15));
+        }
 
-            if (_subsystems != null)
-                foreach (var subsystem in _subsystems)
-                    subsystem.Stop();
+        public void Stop(TimeSpan timeout)
+        {
+            _shutdownEvent.WaitOne(timeout);
         }
 
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
+        }
+
+        public void Handle(SystemMessage.BecomeShutdown message)
+        {
+            _shutdownEvent.Set();
         }
 
         public override string ToString()

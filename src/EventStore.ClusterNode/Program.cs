@@ -302,7 +302,7 @@ namespace EventStore.ClusterNode
 
         public override void Stop()
         {
-            _node.Stop();
+            _node.StopNonblocking();
         }
 
         protected override void OnProgramExit()

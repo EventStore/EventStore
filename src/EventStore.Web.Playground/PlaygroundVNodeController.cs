@@ -268,11 +268,9 @@ namespace EventStore.Web.Playground
             Log.Info("========== [{0}] Service '{1}' has shut down.", _httpEndPoint, message.ServiceName);
 
             _serviceShutdownsToExpect -= 1;
-            if (_serviceShutdownsToExpect == 0)
-            {
-                Log.Info("========== [{0}] All Services Shutdown.", _httpEndPoint);
-                Shutdown();
-            }
+            if (_serviceShutdownsToExpect != 0) return;
+            Log.Info("========== [{0}] All Services Shutdown.", _httpEndPoint);
+            Shutdown();
         }
 
         private void Handle(SystemMessage.ShutdownTimeout message)
