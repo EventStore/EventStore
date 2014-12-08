@@ -200,10 +200,7 @@ namespace EventStore.Core.Messages
                 DateLastUpdated = dateLastUpdated;
             }
 
-            internal UserData()
-            {
             }
-        }
 
         public sealed class UpdateResult : ResponseMessage
         {

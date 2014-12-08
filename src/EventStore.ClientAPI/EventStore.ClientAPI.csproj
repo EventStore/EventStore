@@ -52,7 +52,11 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="UserManagement\ResetPasswordDetails.cs" />
+    <Compile Include="UserManagement\ChangePasswordDetails.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
+    <Compile Include="Exceptions\UserCommandConflictException.cs" />
+    <Compile Include="Exceptions\UserCommandFailedException.cs" />
     <Compile Include="PersistentSubscriptionCreateResult.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />
     <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
@@ -108,6 +112,11 @@
     <Compile Include="RawStreamMetadataResult.cs" />
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
+    <Compile Include="UserManagement\UserCreationInformation.cs" />
+    <Compile Include="UserManagement\UserDetails.cs" />
+    <Compile Include="UserManagement\UserUpdateInformation.cs" />
+    <Compile Include="UserManagement\UsersClient.cs" />
+    <Compile Include="UserManagement\UsersManager.cs" />
     <Compile Include="VolatileEventStoreSubscription.cs" />
     <Compile Include="WriteResult.cs" />
     <Compile Include="DeleteResult.cs" />
