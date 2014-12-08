@@ -10,7 +10,7 @@ try {
 
     $eventStoreClusterNodePath = Join-Path $baseDirectory "bin\clusternode"
 
-    Start-Process -NoNewWindow -Wait -FilePath $documentationGenPath -ArgumentList @("-b $eventStoreClusterNodePath -o $documentationOutputPath")
+    Start-Process -NoNewWindow -Wait -FilePath $documentationGenPath -ArgumentList @("--event-store-binary-paths=$eventStoreClusterNodePath --output-path=$documentationOutputPath")
 
 } finally {
     Pop-Location
