@@ -15,7 +15,7 @@ using ProtoBuf;
 
 namespace EventStore.Core.Messages
 {
-  public static partial class TcpClientMessageDto
+   static partial class TcpClientMessageDto
   {
   [Serializable, ProtoContract(Name=@"NewEvent")]
   public partial class NewEvent
