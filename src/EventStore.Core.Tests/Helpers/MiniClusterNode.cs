@@ -126,13 +126,11 @@ namespace EventStore.Core.Tests.Helpers
         {
             StoppingTime.Start();
 
-            var shutdownEvent = new ManualResetEventSlim(false);
-            Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
 
             Node.StopNonblocking();
 
-            if (!shutdownEvent.Wait(20000))
-                throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
+            if (Node.Stop(TimeSpan.FromSeconds(20)))
+                throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
 
             if (!keepPorts)
             {

@@ -529,14 +529,14 @@ namespace EventStore.Core
                 subsystem.Stop();
         }
 
-        public void Stop()
+        public bool Stop()
         {
-            Stop(TimeSpan.FromSeconds(15));
+            return Stop(TimeSpan.FromSeconds(15));
         }
 
-        public void Stop(TimeSpan timeout)
+        public bool Stop(TimeSpan timeout)
         {
-            _shutdownEvent.WaitOne(timeout);
+            return _shutdownEvent.WaitOne(timeout);
         }
 
         public void Handle(SystemMessage.StateChangeMessage message)
