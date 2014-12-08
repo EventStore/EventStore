@@ -12,8 +12,8 @@ namespace EventStore.ClientAPI.UserManagement
         {
             Ensure.NotNullOrEmpty(oldPassword, "oldPassword");
             Ensure.NotNullOrEmpty(newPassword, "newPassword");
-            this.OldPassword = oldPassword;
-            this.NewPassword = newPassword;
+            OldPassword = oldPassword;
+            NewPassword = newPassword;
         }
     }
 }
