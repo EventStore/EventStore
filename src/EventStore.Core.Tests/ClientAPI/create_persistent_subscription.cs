@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Result;
+            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "nonexistinggroup", _settings, new UserCredentials("admin", "changeit")).Result;
+            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "nonexistinggroup", _settings, DefaultData.AdminCredentials).Result;
         }
 
         [Test]
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync(_stream, "group32", _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionAsync(_stream, "group32", _settings, DefaultData.AdminCredentials).Wait();
         }
 
         [Test]
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             try
             {
-                _conn.CreatePersistentSubscriptionAsync(_stream, "group32",_settings, new UserCredentials("admin", "changeit")).Wait();
+                _conn.CreatePersistentSubscriptionAsync(_stream, "group32",_settings, DefaultData.AdminCredentials).Wait();
                 throw new Exception("expected exception");
             }
             catch (Exception ex)
@@ -90,8 +90,8 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync(_stream, "group3211", _settings, new UserCredentials("admin", "changeit")).Wait();
-            _result = _conn.CreatePersistentSubscriptionAsync("someother" + _stream, "group3211", _settings, new UserCredentials("admin", "changeit")).Result;
+            _conn.CreatePersistentSubscriptionAsync(_stream, "group3211", _settings, DefaultData.AdminCredentials).Wait();
+            _result = _conn.CreatePersistentSubscriptionAsync("someother" + _stream, "group3211", _settings, DefaultData.AdminCredentials).Result;
         }
 
         [Test]

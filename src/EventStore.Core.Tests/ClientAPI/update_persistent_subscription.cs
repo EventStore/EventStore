@@ -21,12 +21,12 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait();
         }
 
         protected override void When()
         {
-            _result = _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Result;
+            _result = _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
         }
 
         [Test]
@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription("existing", _stream, (x, y) => { },
                 (sub, reason, ex) =>
                 {
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _result = _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Result;
+            _result = _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
         }
 
         [Test]
@@ -104,7 +104,7 @@ namespace EventStore.Core.Tests.ClientAPI
             try
             {
                 _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings,
-                    new UserCredentials("admin", "changeit")).Wait();
+                    DefaultData.AdminCredentials).Wait();
                 Assert.Fail("should have thrown");
             }
             catch (Exception ex)
@@ -127,7 +127,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait();
         }
 
         [Test]

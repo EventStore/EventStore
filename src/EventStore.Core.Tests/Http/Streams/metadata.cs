@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Http.Streams
         protected override void When()
         {
             var req = CreateRawJsonPostRequest(TestStream + "/metadata", "POST", new {A = "1"},
-                new NetworkCredential("admin", "changeit"));
+                DefaultData.AdminNetworkCredentials);
             req.Headers.Add("ES-EventId", Guid.NewGuid().ToString());
             _response = (HttpWebResponse) req.GetResponse();
         }
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Http.Streams
         protected override void When()
         {
             var req = CreateRawJsonPostRequest(TestStream + "/metadata", "POST", new { A = "1" },
-                new NetworkCredential("admin", "changeit"));
+                DefaultData.AdminNetworkCredentials);
             req.Headers.Add("ES-EventId", Guid.NewGuid().ToString());
             _response = (HttpWebResponse)req.GetResponse();
         }

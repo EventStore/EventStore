@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         protected MiniNode _node;
         protected IEventStoreConnection _conn;
         protected ProjectionsSubsystem _projections;
-        protected UserCredentials _admin = new UserCredentials("admin", "changeit");
+        protected UserCredentials _admin = DefaultData.AdminCredentials;
         protected ProjectionsManager _manager;
 
         [TestFixtureSetUp]

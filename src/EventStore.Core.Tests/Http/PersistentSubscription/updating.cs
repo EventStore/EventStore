@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 new
                 {
                     ResolveLinkTos = true
-                }, new NetworkCredential("admin", "changeit"));
+                }, DefaultData.AdminNetworkCredentials);
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 new
                 {
                     ResolveLinkTos = true
-                }, new NetworkCredential("admin", "changeit"));
+                }, DefaultData.AdminNetworkCredentials);
             SetupSubscription();
         }
 
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                     _droppedReason = reason;
                     _exception = ex;
                     _dropped.Set();
-                }, new UserCredentials("admin", "changeit"));
+                }, DefaultData.AdminCredentials);
         }
 
         protected override void When()
@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 new
                 {
                     ResolveLinkTos = true
-                }, new NetworkCredential("admin", "changeit"));
+                }, DefaultData.AdminNetworkCredentials);
         }
 
         [Test]

@@ -350,7 +350,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 var request = CreateRequest("/streams/$all/", "", "GET", "application/json", null);
-                request.Credentials = new NetworkCredential("admin", "changeit");
+                request.Credentials = DefaultData.AdminNetworkCredentials;
                 request.AllowAutoRedirect = false;
                 _response = (HttpWebResponse)request.GetResponse();
             }
@@ -386,7 +386,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 var request = CreateRequest("/streams/%24all/", "", "GET", "application/json", null);
-                request.Credentials = new NetworkCredential("admin", "changeit");
+                request.Credentials = DefaultData.AdminNetworkCredentials;
                 request.AllowAutoRedirect = false;
                 _response = (HttpWebResponse)request.GetResponse();
             }
@@ -460,7 +460,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 var request = CreateRequest(TestStream + "/metadata/", "", "GET", "application/json", null);
-                request.Credentials = new NetworkCredential("admin", "changeit");
+                request.Credentials = DefaultData.AdminNetworkCredentials;
                 request.AllowAutoRedirect = false;
                 _response = (HttpWebResponse)request.GetResponse();
             }

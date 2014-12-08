@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , _settings, DefaultData.AdminCredentials).Wait();
             _sub = _conn.ConnectToPersistentSubscription(_stream,
                 "agroupname17",
                 (sub, e) => Console.Write("appeared"),
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI
         protected override void When()
         {
             _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname55", _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
         }
 
         [Test]
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
 
         }
 
@@ -131,7 +131,7 @@ namespace EventStore.Core.Tests.ClientAPI
             for (int i = 0; i < 10; i++)
             {
                 _ids.Add(Guid.NewGuid());
-                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                     new EventData(_ids[i], "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
             }
         }
@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _stream,
                 HandleEvent,
                 (sub, reason, ex) => { },
-                userCredentials: new UserCredentials("admin", "changeit"));
+                DefaultData.AdminCredentials);
         }
 
         private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
@@ -180,14 +180,14 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
         }
 
         private void WriteEvents(IEventStoreConnection connection)
         {
             for (int i = 0; i < 10; i++)
             {
-                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                     new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
             }
         }
@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _stream,
                 HandleEvent,
                 (sub, reason, ex) => { },
-                userCredentials: new UserCredentials("admin", "changeit"));
+                DefaultData.AdminCredentials);
         }
 
         private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
@@ -230,12 +230,12 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(_group,
                 _stream,
                 HandleEvent,
                 (sub, reason, ex) => { },
-                userCredentials: new UserCredentials("admin", "changeit"));
+                DefaultData.AdminCredentials);
 
         }
 
@@ -243,7 +243,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             for (int i = 0; i < 10; i++)
             {
-                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                     new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
             }
         }
@@ -251,7 +251,7 @@ namespace EventStore.Core.Tests.ClientAPI
         protected override void When()
         {
             _id = Guid.NewGuid();
-            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
 
         }
@@ -291,12 +291,12 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(_group,
                 _stream,
                 HandleEvent,
                 (sub, reason, ex) => { },
-                userCredentials: new UserCredentials("admin", "changeit"));
+                DefaultData.AdminCredentials);
 
         }
 
@@ -304,7 +304,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             for (int i = 0; i < 10; i++)
             {
-                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                     new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
             }
         }
@@ -312,7 +312,7 @@ namespace EventStore.Core.Tests.ClientAPI
         protected override void When()
         {
             _id = Guid.NewGuid();
-            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
 
         }
@@ -354,12 +354,12 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(_group,
                 _stream,
                 HandleEvent,
                 (sub, reason, ex) => { },
-                userCredentials: new UserCredentials("admin", "changeit"));
+                DefaultData.AdminCredentials);
 
         }
 
@@ -367,7 +367,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             for (int i = 0; i < 10; i++)
             {
-                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                     new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
             }
         }
@@ -375,7 +375,7 @@ namespace EventStore.Core.Tests.ClientAPI
         protected override void When()
         {
             _id = Guid.NewGuid();
-            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
 
         }
@@ -415,12 +415,12 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(_group,
                 _stream,
                 HandleEvent,
                 (sub, reason, ex) => { },
-                userCredentials: new UserCredentials("admin", "changeit"));
+                DefaultData.AdminCredentials);
 
         }
 
@@ -429,7 +429,7 @@ namespace EventStore.Core.Tests.ClientAPI
             for (int i = 0; i < 10; i++)
             {
                 var id = Guid.NewGuid();
-                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+                connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                     new EventData(id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
                 if (i == 4) _id = id;
             }
@@ -437,7 +437,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, new UserCredentials("admin", "changeit"),
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
 
         }
@@ -445,12 +445,10 @@ namespace EventStore.Core.Tests.ClientAPI
         private bool _set = false;
         private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
         {
-            if (!_set)
-            {
-                _set = true;
-                _firstEvent = resolvedEvent;
-                _resetEvent.Set();
-            }
+            if (_set) return;
+            _set = true;
+            _firstEvent = resolvedEvent;
+            _resetEvent.Set();
         }
 
         [Test]

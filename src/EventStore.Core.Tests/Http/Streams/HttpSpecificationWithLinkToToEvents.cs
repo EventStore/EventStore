@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
         protected override void Given()
         {
-            var creds = new UserCredentials("admin", "changeit");
+            var creds = DefaultData.AdminCredentials;
             LinkedStreamName = Guid.NewGuid().ToString();
             StreamName = Guid.NewGuid().ToString();
             Stream2Name = Guid.NewGuid().ToString();

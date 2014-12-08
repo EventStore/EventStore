@@ -10,8 +10,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
     {
         public abstract class with_admin_user : HttpBehaviorSpecification
         {
-            protected readonly ICredentials _admin = new NetworkCredential(
-                SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
+            protected readonly ICredentials _admin = DefaultData.AdminNetworkCredentials;
 
             protected override bool GivenSkipInitializeStandardUsersCheck()
             {

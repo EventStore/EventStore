@@ -17,13 +17,13 @@ namespace EventStore.Core.Tests.ClientAPI
         protected override void When()
         {
             _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
         }
 
         [Test]
         public void the_delete_of_group_succeeds()
         {
-            var result = _conn.DeletePersistentSubscriptionAsync(_stream, "groupname123", new UserCredentials("admin","changeit")).Result;
+            var result = _conn.DeletePersistentSubscriptionAsync(_stream, "groupname123", DefaultData.AdminCredentials).Result;
             Assert.AreEqual(PersistentSubscriptionDeleteStatus.Success, result.Status);
         }
     }
@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _conn.DeletePersistentSubscriptionAsync(_stream, Guid.NewGuid().ToString(), new UserCredentials("admin","changeit")).Wait();
+                _conn.DeletePersistentSubscriptionAsync(_stream, Guid.NewGuid().ToString(), DefaultData.AdminCredentials).Wait();
                 throw new Exception("expected exception");
             }
             catch (Exception ex)

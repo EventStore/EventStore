@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.ClientAPI
         protected string DeletedStreamName;
         protected override void Given()
         {
-            var creds = new UserCredentials("admin", "changeit");
+            var creds = DefaultData.AdminCredentials;
             DeletedStreamName = Guid.NewGuid().ToString();
             LinkedStreamName = Guid.NewGuid().ToString();
             _conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,

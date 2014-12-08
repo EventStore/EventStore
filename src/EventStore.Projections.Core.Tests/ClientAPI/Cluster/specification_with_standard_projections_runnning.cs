@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         protected Endpoints[] _nodeEndpoints = new Endpoints[3];
         protected IEventStoreConnection _conn;
         protected ProjectionsSubsystem _projections;
-        protected UserCredentials _admin = new UserCredentials("admin", "changeit");
+        protected UserCredentials _admin = DefaultData.AdminCredentials;
         protected ProjectionsManager _manager;
 
         protected class Endpoints

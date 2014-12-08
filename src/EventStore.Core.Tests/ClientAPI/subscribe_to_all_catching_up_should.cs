@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.ConnectAsync().Wait();
             _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
+                                    DefaultData.AdminCredentials).Wait();
         }
 
         [TearDown]
@@ -175,7 +175,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             },
                                                             _ => Log.Info("Live processing started."),
                                                             (x,y,z) => Log.Info("dropped"),
-                                                            new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+                                                            DefaultData.AdminCredentials);
                 if (!appeared.WaitOne(TimeSpan.FromSeconds(10)))
                 {
                     Assert.Fail("timed out waiting on subscription");

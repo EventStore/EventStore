@@ -17,8 +17,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
             PostUser("guest", "Guest", "guest!");
         }
 
-        protected readonly ICredentials _admin = new NetworkCredential(
-            SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
+        protected readonly ICredentials _admin = DefaultData.AdminNetworkCredentials;
 
         protected override bool GivenSkipInitializeStandardUsersCheck()
         {

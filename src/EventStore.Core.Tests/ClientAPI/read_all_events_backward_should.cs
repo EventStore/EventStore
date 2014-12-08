@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword))
+                                    DefaultData.AdminCredentials)
             .Wait();
 
             _testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();

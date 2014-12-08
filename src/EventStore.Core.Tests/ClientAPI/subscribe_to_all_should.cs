@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.ConnectAsync().Wait();
             _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
+                                    DefaultData.AdminCredentials).Wait();
         }
 
         [TearDown]

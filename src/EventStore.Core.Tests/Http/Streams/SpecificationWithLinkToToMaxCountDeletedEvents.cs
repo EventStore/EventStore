@@ -2,7 +2,6 @@ using System;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.Http.Streams
@@ -13,7 +12,7 @@ namespace EventStore.Core.Tests.Http.Streams
         protected string DeletedStreamName;
         protected override void Given()
         {
-            var creds = new UserCredentials("admin", "changeit");
+            var creds = DefaultData.AdminCredentials;
             DeletedStreamName = Guid.NewGuid().ToString();
             LinkedStreamName = Guid.NewGuid().ToString();
             using (var conn = TestConnection.Create(_node.TcpEndPoint))

@@ -204,18 +204,18 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             base.Given();
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
-                        new UserCredentials("admin", "changeit")).Wait();
+                        DefaultData.AdminCredentials).Wait();
             _sub3 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine());
             _sub4 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
-                        new UserCredentials("admin", "changeit"));
+                        DefaultData.AdminCredentials);
             _sub5 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
-                        new UserCredentials("admin", "changeit"));
+                        DefaultData.AdminCredentials);
 
         }
 
@@ -351,18 +351,18 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             base.Given();
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
-                        new UserCredentials("admin", "changeit")).Wait();
+                        DefaultData.AdminCredentials).Wait();
             _sub3 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine());
             _sub4 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
-                        new UserCredentials("admin", "changeit"));
+                        DefaultData.AdminCredentials);
             _sub5 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
-                        new UserCredentials("admin", "changeit"));
+                        DefaultData.AdminCredentials);
 
         }
 
@@ -467,14 +467,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             _conn = EventStoreConnection.Create(_node.TcpEndPoint);
             _conn.ConnectAsync().Wait();
             _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
-                    new UserCredentials("admin", "changeit")).Wait();
+                    DefaultData.AdminCredentials).Wait();
             _sub1 = _conn.ConnectToPersistentSubscription(_groupName, _streamName,
                         (subscription, @event) => Console.WriteLine(), 
                         (subscription, reason, arg3) => Console.WriteLine());
             _sub2 = _conn.ConnectToPersistentSubscription(_groupName, _streamName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
-                        new UserCredentials("admin", "changeit"));
+                        DefaultData.AdminCredentials);
 
         }
 
@@ -486,7 +486,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [TestFixtureTearDown]
         public void Teardown()
         {
-             _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, new UserCredentials("admin", "changeit")).Wait();
+             _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, DefaultData.AdminCredentials).Wait();
             _conn.Close();
             _conn.Dispose();
         }

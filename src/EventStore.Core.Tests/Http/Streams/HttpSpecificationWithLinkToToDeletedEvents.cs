@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
         protected override void Given()
         {
-            var creds = new UserCredentials("admin", "changeit");
+            var creds = DefaultData.AdminCredentials;
             LinkedStreamName = Guid.NewGuid().ToString();
             DeletedStreamName = Guid.NewGuid().ToString();
             using (var conn = TestConnection.Create(_node.TcpEndPoint))

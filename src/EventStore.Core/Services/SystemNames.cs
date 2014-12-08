@@ -128,7 +128,7 @@ namespace EventStore.Core.Services
 
         public static int EventLinkToEventNumber(string link)
         {
-            string[] parts = link.Split(LinkToSeparator, 2);
+            var parts = link.Split(LinkToSeparator, 2);
             return int.Parse(parts[0]);
         }
     }
