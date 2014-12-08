@@ -61,7 +61,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// <param name="login">The login of the user.</param>
         /// <param name="userCredentials">Credentials for a user with permission to delete a user</param>
         /// <returns>A task representing the operation.</returns>
-        public Task DeleteAsync(string login, UserCredentials userCredentials = null)
+        public Task DeleteUserAsync(string login, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(login, "login");
             return _client.Delete(_httpEndPoint, login, userCredentials);

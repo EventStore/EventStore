@@ -127,6 +127,7 @@
     <Compile Include="ClientAPI\SpecificationWithMiniNode.cs" />
     <Compile Include="ClientAPI\update_persistent_subscription.cs" />
     <Compile Include="ClientAPI\UserManagement\creating_a_user.cs" />
+    <Compile Include="ClientAPI\UserManagement\deleting_a_user.cs" />
     <Compile Include="ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
     <Compile Include="ClientAPI\read_event_should.cs" />
