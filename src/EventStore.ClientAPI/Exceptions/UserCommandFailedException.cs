@@ -9,6 +9,11 @@ namespace EventStore.ClientAPI.Exceptions
     public class UserCommandFailedException : EventStoreConnectionException
     {
         /// <summary>
+        /// The Http status code returned for the operation
+        /// </summary>
+        public int HttpStatusCode { get; private set; }
+
+        /// <summary>
         /// Constructs a new <see cref="UserCommandFailedException"/>.
         /// </summary>
         public UserCommandFailedException()
@@ -18,8 +23,9 @@ namespace EventStore.ClientAPI.Exceptions
         /// <summary>
         /// Constructs a new <see cref="UserCommandFailedException"/>.
         /// </summary>
-        public UserCommandFailedException(string message) : base(message)
+        public UserCommandFailedException(int httpStatusCode, string message) : base(message)
         {
+            HttpStatusCode = httpStatusCode;
         }
 
         /// <summary>
