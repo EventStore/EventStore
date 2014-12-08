@@ -23,19 +23,19 @@ namespace EventStore.ClientAPI.UserManagement
 
         public Task Enable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/users/{login}/command/enable", login), string.Empty,
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/enable", login), string.Empty,
                 userCredentials, HttpStatusCode.OK);
         }
 
         public Task Disable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/users/{login}/command/disable", login), string.Empty,
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/disable", login), string.Empty,
                 userCredentials, HttpStatusCode.OK);
         }
 
         public Task Delete(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendDelete(endPoint.ToHttpUrl("/users/{login}", login), userCredentials, HttpStatusCode.OK);
+            return SendDelete(endPoint.ToHttpUrl("/users/{0}", login), userCredentials, HttpStatusCode.OK);
         }
 
         public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI.UserManagement
 
         public Task<string> GetUser(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/users/{login}", login), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/users/{0}", login), userCredentials, HttpStatusCode.OK);
         }
 
         public Task CreateUser(IPEndPoint endPoint, UserCreationInformation newUser,
@@ -64,7 +64,7 @@ namespace EventStore.ClientAPI.UserManagement
             UserCredentials userCredentials)
         {
             var userJson = updatedUser.ToJson();
-            return SendPut(endPoint.ToHttpUrl("/users/{login}", login), userJson, userCredentials,
+            return SendPut(endPoint.ToHttpUrl("/users/{0}", login), userJson, userCredentials,
                 HttpStatusCode.OK);
         }
 
@@ -72,7 +72,7 @@ namespace EventStore.ClientAPI.UserManagement
             UserCredentials userCredentials)
         {
             var changePasswordJson = changePasswordDetails.ToJson();
-            return SendPost(endPoint.ToHttpUrl("/users/{login}/command/change-password", login), changePasswordJson,
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/change-password", login), changePasswordJson,
                 userCredentials, HttpStatusCode.OK);
         }
 
@@ -80,7 +80,7 @@ namespace EventStore.ClientAPI.UserManagement
             UserCredentials userCredentials = null)
         {
             var resetPasswordJson = resetPasswordDetails.ToJson();
-            return SendPost(endPoint.ToHttpUrl("/users/{login}/command/reset-password", login), resetPasswordJson,
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/reset-password", login), resetPasswordJson,
                 userCredentials, HttpStatusCode.OK);
         }
 
