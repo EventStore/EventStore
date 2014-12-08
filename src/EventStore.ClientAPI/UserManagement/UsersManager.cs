@@ -72,7 +72,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing user full names and logins.</returns>
-        public Task<string> ListAllAsync(UserCredentials userCredentials = null)
+        public Task<string> ListAllAsync(UserCredentials userCredentials = null) //TODO GFY SHOULD RETURN OBJECT
         {
             return _client.ListAll(_httpEndPoint, userCredentials);
         }
@@ -82,7 +82,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing the current users full name and login.</returns>
-        public Task<string> GetCurrentUserAsync(UserCredentials userCredentials)
+        public Task<string> GetCurrentUserAsync(UserCredentials userCredentials) //TODO GFY SHOULD RETURN OBJECT
         {
             return _client.GetCurrentUser(_httpEndPoint, userCredentials);
         }
@@ -93,7 +93,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// <param name="login">the login for the user who's details should be retrieved.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing the specified users full name and login.</returns>
-        public Task<string> GetUserAsync(string login, UserCredentials userCredentials)
+        public Task<string> GetUserAsync(string login, UserCredentials userCredentials) //TODO GFY SHOULD RETURN OBJECT
         {
             Ensure.NotNullOrEmpty(login, "login");
             return _client.GetUser(_httpEndPoint, login, userCredentials);
@@ -108,7 +108,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// <param name="password">The new users password.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>A task representing the operation.</returns>
-        public Task CreateUser(string login, string fullName, string[] groups, string password,
+        public Task CreateUserAsync(string login, string fullName, string[] groups, string password,
             UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(login, "login");
@@ -127,7 +127,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// <param name="groups">The groups the updated user should be a member of.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>A task representing the operation.</returns>
-        public Task UpdateUser(string login, string fullName, string[] groups, UserCredentials userCredentials = null)
+        public Task UpdateUserAsync(string login, string fullName, string[] groups, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(login, "login");
             Ensure.NotNullOrEmpty(fullName, "fullName");
@@ -143,7 +143,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// <param name="newPassword">The users new password</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>A task representing the operation.</returns>
-        public Task ChangePassword(string login, string oldPassword, string newPassword,
+        public Task ChangePasswordAsync(string login, string oldPassword, string newPassword,
             UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(login, "login");
@@ -160,7 +160,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// <param name="newPassword">The users new password</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>A task representing the operation.</returns>
-        public Task ResetPassword(string login, string newPassword, UserCredentials userCredentials = null)
+        public Task ResetPasswordAsync(string login, string newPassword, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(login, "login");
             Ensure.NotNullOrEmpty(newPassword, "newPassword");
