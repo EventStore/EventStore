@@ -109,7 +109,7 @@ namespace EventStore.Core
             _subsystems = subsystems;
             //SELF
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
-
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -536,6 +536,7 @@ namespace EventStore.Core
 
         public bool Stop(TimeSpan timeout)
         {
+            StopNonblocking();
             return _shutdownEvent.WaitOne(timeout);
         }
 

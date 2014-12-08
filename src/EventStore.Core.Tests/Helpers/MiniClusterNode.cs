@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Helpers
 
             Node.StopNonblocking();
 
-            if (Node.Stop(TimeSpan.FromSeconds(20)))
+            if (!Node.Stop(TimeSpan.FromSeconds(20)))
                 throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
 
             if (!keepPorts)
