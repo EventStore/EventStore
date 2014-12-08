@@ -96,6 +96,7 @@ namespace EventStore.ClientAPI.UserManagement
                         source.SetResult(response.Body);
                     else
                         source.SetException(new UserCommandFailedException(
+                            response.HttpStatusCode,
                             string.Format("Server returned {0} ({1}) for GET on {2}",
                                 response.HttpStatusCode,
                                 response.StatusDescription,
@@ -118,6 +119,7 @@ namespace EventStore.ClientAPI.UserManagement
                         source.SetResult(response.Body);
                     else
                         source.SetException(new UserCommandFailedException(
+                            response.HttpStatusCode,
                             string.Format("Server returned {0} ({1}) for DELETE on {2}",
                                 response.HttpStatusCode,
                                 response.StatusDescription,
@@ -142,6 +144,7 @@ namespace EventStore.ClientAPI.UserManagement
                         source.SetResult(null);
                     else
                         source.SetException(new UserCommandFailedException(
+                            response.HttpStatusCode,
                             string.Format("Server returned {0} ({1}) for PUT on {2}",
                                 response.HttpStatusCode,
                                 response.StatusDescription,
@@ -168,6 +171,7 @@ namespace EventStore.ClientAPI.UserManagement
                         source.SetException(new UserCommandConflictException(response.StatusDescription));
                     else
                         source.SetException(new UserCommandFailedException(
+                            response.HttpStatusCode,
                             string.Format("Server returned {0} ({1}) for POST on {2}",
                                 response.HttpStatusCode,
                                 response.StatusDescription,
