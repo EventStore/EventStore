@@ -55,6 +55,7 @@ namespace EventStore.Core.Util
                     { ".png",  "image/png"} ,
                     { ".svg",  "image/svg+xml"} ,
                     { ".woff", "application/x-font-woff"} ,
+                    { ".woff2", "application/x-font-woff"} ,
                     { ".ttf", "application/font-sfnt"} ,
                     { ".jpg",  "image/jpeg"} ,
                     { ".jpeg", "image/jpeg"} ,
