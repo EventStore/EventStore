@@ -1,12 +1,10 @@
 # Event Store
 
-## Useful Links
-
 - [Documentation](http://docs.geteventstore.com)
 - [Download Binaries](http://geteventstore.com/downloads)
 - [Quick Start](http://docs.geteventstore.com/server/latest)
 
-## Introduction
+## About
 
 This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at [http://geteventstore.com](http://geteventstore.com).
 
@@ -14,9 +12,9 @@ This is the repository for the open source version of Event Store, which now inc
 
 ## Building from Source
 
-Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine), it must be built for the platform on which you intend to run it.
+Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine) it must be built for the platform on which you intend to run it.
 
-Binaries are available from [http://geteventstore.com/downloads](http://geteventstore.com/downloads), however if you want to build it from source, instructions for Windows and Linux are below.
+Binaries are available from [http://geteventstore.com/downloads](http://geteventstore.com/downloads), however if you want to build it from source instructions for Windows and Linux are below.
 
 ### Debug Builds on Windows / .NET
 
@@ -28,7 +26,7 @@ Binaries are available from [http://geteventstore.com/downloads](http://getevent
 
 #### Building Event Store
 
-*If you have previously built from source, it’s possible you have V8 checked out via Git instead of Subversion. If this is the case, you should use the `clean-all` target noted below before building again.*
+*If you have previously built from source it’s possible you have V8 checked out via Git instead of Subversion. If this is the case you should use the `clean-all` target noted below before building again.*
 
 ##### From a command prompt
 
