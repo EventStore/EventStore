@@ -10,21 +10,6 @@ This is the repository for the open source version of Event Store, which now inc
 
 **Development is on the “dev” branch (and feature branches). Please make any pull requests to the “dev” branch.**
 
-### In this README
-
-- [About](#)
-  - [In this README](#)
-- [Building from Source](#)
-  - [Debug Builds on Windows / .NET](#)
-    - [Prerequisites](#)
-    - [Building Event Store](#)
-      - [From a command prompt](#)
-      - [Optional parameters (Specified using -ParameterName value)](#)
-      - [Building Event Store from Visual Studio](#)
-  - [Debug Builds on Linux (Ubuntu 12.04) or MacOS X / Mono](#)
-    - [Prerequisites](#)
-    - [Building Event Store](#)
-
 ## Building from Source
 
 Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine) it must be built for the platform on which you intend to run it.
