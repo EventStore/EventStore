@@ -6,7 +6,7 @@
 
 ## About
 
-This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at [http://geteventstore.com](http://geteventstore.com).
+This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at http://geteventstore.com.
 
 *Development is on the “dev” branch (and feature branches). Please make any pull requests to the “dev” branch.*
 
@@ -14,7 +14,7 @@ This is the repository for the open source version of Event Store, which now inc
 
 Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine) it must be built for the platform on which you intend to run it.
 
-Binaries are available from [http://geteventstore.com/downloads](http://geteventstore.com/downloads), however if you want to build it from source instructions for Windows and Linux are below.
+Binaries are available from http://geteventstore.com/downloads, however if you want to build it from source instructions for Windows and Linux are below.
 
 ### Debug Builds on Windows / .NET
 
@@ -26,25 +26,25 @@ Binaries are available from [http://geteventstore.com/downloads](http://getevent
 
 #### Building Event Store
 
-*If you have previously built from source it’s possible you have V8 checked out via Git instead of Subversion. If this is the case you should use the `clean-all` target noted below before building again.*
+If you have previously built from source it’s possible you have V8 checked out via Git instead of Subversion. If this is the case you should use the `clean-all` target noted below before building again.
 
 ##### From a command prompt
 
 | Command               | Description                |
-| --------------------- | -------------------------- |
+| :-------------------- | :------------------------- |
 | `build.cmd`           | Runs the Event Store build |
 | `build.cmd clean-all` | Cleans the repository      |
 
 ##### Optional parameters (Specified using `-ParameterName value`)
 
-| Argument                       | Values                                                                                                                                                                     |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-Platform`                    | `x64` (default) or `x86`                                                                                                                                                   |
-| `-Configuration`               | `debug` or `release` (default)                                                                                                                                             |
-| `-Version`                     | Semantic version number to give to the release. Defaults to `0.0.0.0` which should be used for all non-released builds.                                                    |
-| `-SpecificVisualStudioVersion` | `2010`, `2012`, `2013` or `Windows7.1SDK`. Defaults to whichever version is installed. This only needs to be overriden if you have multiple versions installed.            |
-| `-ForceNetwork`                | `true` if you want to force the script to get dependencies even if Windows thinks theres no network connection (otherwise we don’t try to avoid sometimes lengthy delays). |
-| `-Defines`                     | Any additional defines you want to pass to the compiler. Should be enclosed in single quotes.                                                                              |
+| Argument                       | Values                                                                                                                                                                               |
+| :----------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-Platform`                    | `x64` (default) or `x86`                                                                                                                                                             |
+| `-Configuration`               | `debug` or `release` (default)                                                                                                                                                       |
+| `-Version`                     | Semantic version number to give to the release.<br>Defaults to `0.0.0.0` which should be used for<br>all non-released builds.                                                        |
+| `-SpecificVisualStudioVersion` | `2010`, `2012`, `2013` or `Windows7.1SDK`.<br>Defaults to whichever version is installed. This<br>only needs to be overriden if you have multiple<br>versions installed.             |
+| `-ForceNetwork`                | `true` if you want to force the script to get<br>dependencies even if Windows thinks there’s<br>no network connection (otherwise we don’t try to<br>avoid sometimes lengthy delays). |
+| `-Defines`                     | Any additional defines you want to pass to<br>the compiler. Should be enclosed in single quotes.                                                                                     |
 
 #### Building Event Store from Visual Studio
 
@@ -72,7 +72,7 @@ Unfortunately Visual Studio runs these scripts in 32-bit PowerShell. Since it’
 ```
 
 | Arguments       | Values                                          |
-| --------------- | ----------------------------------------------- |
+| :-------------- | :---------------------------------------------- |
 | `target`        | `quick`, `incremental` or `full`                |
 | `version`       | Semantic version number to give to the release. |
 | `platform`      | `x64` (default) or `x86`                        |
