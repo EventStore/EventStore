@@ -384,6 +384,10 @@ namespace EventStore.ClientAPI.Embedded
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
         {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
             throw new NotImplementedException();
         }
 
@@ -408,19 +412,99 @@ namespace EventStore.ClientAPI.Embedded
         public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
             UserCredentials credentials)
         {
-            throw new NotImplementedException();
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.CreatePersistentSubscription(source, stream, groupName));
+
+            var corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.CreatePersistentSubscription(
+                corrId, 
+                corrId,
+                envelope,
+                stream,
+                groupName,
+                settings.ResolveLinkTos,
+                settings.StartFrom,
+                (int)settings.MessageTimeout.TotalMilliseconds,
+                settings.ExtraStatistics,
+                settings.MaxRetryCount,
+                settings.HistoryBufferSize,
+                settings.LiveBufferSize,
+                settings.ReadBatchSize,
+                settings.PreferRoundRobin,
+                (int)settings.CheckPointAfter.TotalMilliseconds,
+                settings.MinCheckPointCount,
+                settings.MaxCheckPointCount,
+                SystemAccount.Principal,
+                credentials.Username,
+                credentials.Password));
+
+            return source.Task;
         }
 
         public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
             UserCredentials credentials)
         {
-            throw new NotImplementedException();
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+
+            var source = new TaskCompletionSource<PersistentSubscriptionUpdateResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.UpdatePersistentSubscription(source, stream, groupName));
+
+            var corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.UpdatePersistentSubscription(
+                corrId,
+                corrId,
+                envelope,
+                stream,
+                groupName,
+                settings.ResolveLinkTos,
+                settings.StartFrom,
+                (int)settings.MessageTimeout.TotalMilliseconds,
+                settings.ExtraStatistics,
+                settings.MaxRetryCount,
+                settings.HistoryBufferSize,
+                settings.LiveBufferSize,
+                settings.ReadBatchSize,
+                settings.PreferRoundRobin,
+                (int)settings.CheckPointAfter.TotalMilliseconds,
+                settings.MinCheckPointCount,
+                settings.MaxCheckPointCount,
+                SystemAccount.Principal,
+                credentials.Username,
+                credentials.Password));
+
+            return source.Task;
         }
 
 
         public Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null)
         {
-            throw new NotImplementedException();
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.DeletePersistentSubscription(source, stream, groupName));
+
+            var corrId = Guid.NewGuid();
+
+            _publisher.Publish(new ClientMessage.DeletePersistentSubscription(
+                corrId, 
+                corrId,
+                envelope,
+                stream,
+                groupName,
+                SystemAccount.Principal));
+
+            return source.Task;
         }
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
