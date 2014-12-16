@@ -320,7 +320,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     AverageItemsPerSecond = stat.AveragePerSecond,
                     TotalItemsProcessed = stat.TotalItems,
                     CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
-                    LastKnownEventNumber = stat.LastProcessedEventNumber,
+                    LastKnownEventNumber = stat.LastKnownMessage,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
                     ReadBufferCount = stat.ReadBufferCount,
                     LiveBufferCount = stat.LiveBufferCount,
@@ -380,7 +380,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     Status = stat.Status,
                     AverageItemsPerSecond = stat.AveragePerSecond,
                     TotalItemsProcessed = stat.TotalItems,
-                    LastKnownEventNumber = stat.LastProcessedEventNumber,
+                    LastKnownEventNumber = stat.LastKnownMessage,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName))
                 };
