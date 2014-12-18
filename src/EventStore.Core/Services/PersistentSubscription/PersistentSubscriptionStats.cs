@@ -52,6 +52,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _lastTotalTime = totalTime;
             _lastTotalItems = totalItems;
             var connections = new List<MonitoringMessage.ConnectionInfo>();
+            var totalInflight = 0;
             foreach (var conn in _parent._pushClients.GetAll())
             {
                 var connItems = conn.TotalItems;
@@ -60,6 +61,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var connAvgItemsPerSecond = lastRunMs.Ticks != 0 ? (int)(TimeSpan.TicksPerSecond * connLastItems / lastRunMs.Ticks) : 0;
                 var extraStats = conn.GetExtraStats();
                 var stats = extraStats == null ? null : extraStats.Measurements;
+                totalInflight += conn.InflightMessages;
                 connections.Add(new MonitoringMessage.ConnectionInfo
                 {
                     From = conn.From,
@@ -99,6 +101,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 RetryBufferCount = _parent._streamBuffer.RetryBufferCount,
                 LiveBufferCount = _parent._streamBuffer.LiveBufferCount,
                 ExtraStatistics = _settings.ExtraStatistics,
+                TotalInFlightMessages = _parent.OutstandingMessageCount,
             };
         }
     }

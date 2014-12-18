@@ -325,8 +325,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     ReadBufferCount = stat.ReadBufferCount,
                     LiveBufferCount = stat.LiveBufferCount,
                     RetryBufferCount = stat.RetryBufferCount,
+                    TotalInFlightMessages = stat.TotalInFlightMessages,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
-                    Config = new SubscriptionConfigData()
+                    Config = new SubscriptionConfigData
                     {
                         CheckPointAfterMilliseconds = stat.CheckPointAfterMilliseconds,
                         BufferSize = stat.BufferSize,
@@ -383,7 +384,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     TotalItemsProcessed = stat.TotalItems,
                     LastKnownEventNumber = stat.LastKnownMessage,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
-                    ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName))
+                    ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
+                    TotalInFlightMessages = stat.TotalInFlightMessages,
                 };
                 if (stat.Connections != null)
                 {
@@ -420,6 +422,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int LastProcessedEventNumber { get; set; }
             public int LastKnownEventNumber { get; set; }
             public int ConnectionCount { get; set; }
+            public int TotalInFlightMessages { get; set; }
         }
         private class SubscriptionInfo
         {
@@ -438,6 +441,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int ReadBufferCount { get; set; }
             public int LiveBufferCount { get; set; }
             public int RetryBufferCount { get; set; }
+            public int TotalInFlightMessages { get; set; }
         }
 
         private class ConnectionInfo

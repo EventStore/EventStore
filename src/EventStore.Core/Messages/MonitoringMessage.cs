@@ -111,6 +111,7 @@ namespace EventStore.Core.Messages
             public int ReadBufferCount { get; set; }
             public int LiveBufferCount { get; set; }
             public int RetryBufferCount { get; set; }
+            public int TotalInFlightMessages { get; set; }
         }
 
         public class ConnectionInfo

@@ -42,6 +42,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _state; }
         }
 
+        public int OutstandingMessageCount
+        {
+            get { return _outstandingMessages.Count; } //use outstanding not connections as http shows up here too
+        }
+
         public PersistentSubscription(PersistentSubscriptionParams persistentSubscriptionParams)
         {
             Ensure.NotNull(persistentSubscriptionParams.StreamReader, "eventLoader");
