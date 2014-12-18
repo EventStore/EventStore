@@ -122,6 +122,7 @@ namespace EventStore.Core.Messages
             public long CountSinceLastMeasurement { get; set; }
             public Dictionary<string, int> ObservedMeasurements { get; set; }
             public int AvailableSlots { get; set; }
+            public int InFlightMessages { get; set; }
         }
 
         public class GetFreshStats : Message

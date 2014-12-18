@@ -66,6 +66,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     Username = conn.Username,
                     AverageItemsPerSecond = connAvgItemsPerSecond,
                     TotalItems = conn.TotalItems,
+                    InFlightMessages = conn.InflightMessages,
                     AvailableSlots = conn.AvailableSlots,
                     CountSinceLastMeasurement = connLastItems,
                     ObservedMeasurements = stats

@@ -355,6 +355,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                             CountSinceLastMeasurement = connection.CountSinceLastMeasurement,
                             TotalItemsProcessed = connection.TotalItems,
                             AvailableSlots = connection.AvailableSlots,
+                            InFlightMessages = connection.InFlightMessages,
                             ExtraStatistics = connection.ObservedMeasurements ?? new Dictionary<string, int>()
                         });
                     }
@@ -448,6 +449,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public long CountSinceLastMeasurement { get; set; }
             public Dictionary<string, int> ExtraStatistics { get; set; }
             public int AvailableSlots { get; set; }
+            public int InFlightMessages { get; set; }
         }
     }
 }

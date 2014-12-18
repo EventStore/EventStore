@@ -23,6 +23,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly RequestStatistics _extraStatistics;
         private readonly Dictionary<Guid, ResolvedEvent> _unconfirmedEvents = new Dictionary<Guid, ResolvedEvent>();
 
+        public int InflightMessages
+        {
+            get { return _unconfirmedEvents.Count; }
+        }
+
         public PersistentSubscriptionClient(Guid correlationId,
             Guid connectionId,
             IEnvelope envelope,
