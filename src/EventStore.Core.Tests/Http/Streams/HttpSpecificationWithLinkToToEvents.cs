@@ -33,10 +33,10 @@ namespace EventStore.Core.Tests.Http.Streams
                     .Wait();
                 conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
                     new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-                        Encoding.UTF8.GetBytes("0@" + Stream2Name), new byte[0])).Wait();
+                        Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0])).Wait();
                 conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
                     new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-                        Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0])).Wait();
+                        Encoding.UTF8.GetBytes("0@" + Stream2Name), new byte[0])).Wait();
 
             }
         }

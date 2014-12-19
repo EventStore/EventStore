@@ -235,7 +235,7 @@ namespace EventStore.Core.Tests.Http.Streams
             private List<JToken> _entries;
             protected override void When()
             {
-                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
+                _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10?embed=body", accept: ContentType.Json);
                 _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
             }
 
@@ -250,7 +250,31 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[1]["links"][0];
                 Assert.AreEqual("edit", foo["relation"].ToString());
-                Assert.AreEqual(MakeUrl("/streams/" + Stream2Name + "/0"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
+            }
+
+            [Test]
+            public void the_first_event_position_is_correct()
+            {
+                Assert.AreEqual(1,_entries[0]["positionEventNumber"].Value<int>());
+            }
+
+            [Test]
+            public void the_first_event_number_is_correct()
+            {
+                Assert.AreEqual(0, _entries[0]["eventNumber"].Value<int>());
+            }
+
+            [Test]
+            public void the_second_event_position_is_correct()
+            {
+                Assert.AreEqual(0, _entries[1]["positionEventNumber"].Value<int>());
+            }
+
+            [Test]
+            public void the_second_event_number_is_correct()
+            {
+                Assert.AreEqual(1, _entries[1]["eventNumber"].Value<int>());
             }
 
             [Test]
@@ -258,7 +282,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[1]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual(MakeUrl("/streams/" + Stream2Name + "/0"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
             }
 
             [Test]
@@ -266,7 +290,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][0];
                 Assert.AreEqual("edit", foo["relation"].ToString());
-                Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + Stream2Name + "/0"), foo["uri"].ToString());
             }
 
             [Test]
@@ -274,7 +298,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + Stream2Name + "/0"), foo["uri"].ToString());
             }
         }
 
