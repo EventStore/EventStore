@@ -56,7 +56,7 @@ namespace EventStore.ClientAPI.UserManagement
                 {
                     var r = JObject.Parse(x.Result);
                     return r["data"] != null ? r["data"].ToObject<UserDetails>() : null;
-                });
+                }, TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
         public Task CreateUser(IPEndPoint endPoint, UserCreationInformation newUser,

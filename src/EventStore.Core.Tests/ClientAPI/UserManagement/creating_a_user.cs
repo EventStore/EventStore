@@ -84,6 +84,8 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
             });
             Assert.AreEqual("ouro", d.LoginName);
             Assert.AreEqual("ourofull", d.FullName);
+            Assert.AreEqual("foo", d.Groups[0]);
+            Assert.AreEqual("bar", d.Groups[1]);
         }
     }
 }
