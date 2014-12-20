@@ -44,9 +44,14 @@ namespace EventStore.ClientAPI.UserManagement
             return SendGet(endPoint.ToHttpUrl("/users/"), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetCurrentUser(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<UserDetails> GetCurrentUser(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/users/$current"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/users/$current"), userCredentials, HttpStatusCode.OK)
+                    .ContinueWith(x =>
+                    {
+                        var r = JObject.Parse(x.Result);
+                        return r["data"] != null ? r["data"].ToObject<UserDetails>() : null;
+                    }, TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
         public Task<UserDetails> GetUser(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
