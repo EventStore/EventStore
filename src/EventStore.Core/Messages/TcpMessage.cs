@@ -93,6 +93,22 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class NotReady : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+
+            public NotReady(Guid correlationId, string reason)
+            {
+                CorrelationId = correlationId;
+                Reason = reason;
+            }
+        }
+
+
         public class NotAuthenticated : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
@@ -120,5 +136,6 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
             }
         }
+
     }
 }
