@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.Remoting;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
