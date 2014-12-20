@@ -304,7 +304,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void ReplyNotReady(Guid correlationId, string description)
         {
-            _tcpEnvelope.ReplyWith(new TcpMessage.NotReady(correlationId, description));
+            _tcpEnvelope.ReplyWith(new ClientMessage.NotHandled(correlationId, TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, description));
         }
 
 
