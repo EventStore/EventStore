@@ -81,8 +81,8 @@ namespace EventStore.ClientAPI.UserManagement
         /// Asynchronously gets the current users details
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing the current users full name and login.</returns>
-        public Task<string> GetCurrentUserAsync(UserCredentials userCredentials) //TODO GFY SHOULD RETURN OBJECT
+        /// <returns>A <see cref="UserDetails"/> object for the currently logged in user</returns>
+        public Task<UserDetails> GetCurrentUserAsync(UserCredentials userCredentials) 
         {
             return _client.GetCurrentUser(_httpEndPoint, userCredentials);
         }
@@ -92,7 +92,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// </summary>
         /// <param name="login">the login for the user who's details should be retrieved.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>String of JSON containing the specified users full name and login.</returns>
+        /// <returns>A <see cref="UserDetails"/> object for the user</returns>
         public Task<UserDetails> GetUserAsync(string login, UserCredentials userCredentials) 
         {
             Ensure.NotNullOrEmpty(login, "login");
