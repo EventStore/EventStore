@@ -42,8 +42,9 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
         [Test]
         public void deleting_created_user_deletes_it()
         {
-            Assert.DoesNotThrow(() => _manager.CreateUserAsync("ouro", "ourofull", new[] { "foo", "bar" }, "ouro", new UserCredentials("admin", "changeit")).Wait());
-            Assert.DoesNotThrow(() => _manager.DeleteUserAsync("ouro", new UserCredentials("admin", "changeit")).Wait());
+            var user = Guid.NewGuid().ToString();
+            Assert.DoesNotThrow(() => _manager.CreateUserAsync(user, "ourofull", new[] { "foo", "bar" }, "ouro", new UserCredentials("admin", "changeit")).Wait());
+            Assert.DoesNotThrow(() => _manager.DeleteUserAsync(user, new UserCredentials("admin", "changeit")).Wait());
         }
 
 
@@ -68,15 +69,10 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
                 var x =_manager.GetUserAsync("ouro", new UserCredentials("admin", "changeit")).Result;
             });
             _manager.DeleteUserAsync("ouro", new UserCredentials("admin", "changeit"));
-            try
-            {
-                var x = _manager.GetUserAsync("ouro", new UserCredentials("admin", "changeit")).Result;
-                Assert.Fail("should have thrown.");
-            }
-            catch (Exception ex)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, ((UserCommandFailedException) ex.InnerException).HttpStatusCode);
-            }
+            
+            var ex = Assert.Throws<AggregateException>(
+                () => { var x = _manager.GetUserAsync("ouro", new UserCredentials("admin", "changeit")).Result; }
+            );
         }
     }
 }
