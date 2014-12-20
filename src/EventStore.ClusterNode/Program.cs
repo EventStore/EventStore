@@ -61,18 +61,18 @@ namespace EventStore.ClusterNode
         {
             base.PreInit(options);
 
-	    //Never seen this problem occur on the .NET framework
+            //Never seen this problem occur on the .NET framework
             if (!Runtime.IsMono)
                 return;
 
-	    //0 indicates we should leave the machine defaults alone
+            //0 indicates we should leave the machine defaults alone
             if (options.MonoMinThreadpoolSize == 0)
                 return;
 
-	    //Change the number of worker threads to be higher if our own setting
-	    // is higher than the current value
+            //Change the number of worker threads to be higher if our own setting
+            // is higher than the current value
             int minWorkerThreads, minIocpThreads;
-	    ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
+            ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
 
             if (minWorkerThreads >= options.MonoMinThreadpoolSize)
                 return;
@@ -100,30 +100,30 @@ namespace EventStore.ClusterNode
             var db = new TFChunkDb(dbConfig);
             var vNodeSettings = GetClusterVNodeSettings(opts);
 
-	        IGossipSeedSource gossipSeedSource;
-			if (opts.DiscoverViaDns)
-			{
-				gossipSeedSource = new DnsGossipSeedSource(opts.ClusterDns, opts.ClusterGossipPort);
-			}
-			else
-			{
-				if (opts.GossipSeed.Length == 0)
-				{
-					if (opts.ClusterSize > 1)
-					{
-					    Log.Error("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-					        + "Specify gossip seeds using the --gossip-seed command line option.");
-					}
-					else
-					{
-					    Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since"
-					        + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified"
-					        + "seeds using the --gossip-seed command line option.");
-					}
-				}
+            IGossipSeedSource gossipSeedSource;
+            if (opts.DiscoverViaDns)
+            {
+                gossipSeedSource = new DnsGossipSeedSource(opts.ClusterDns, opts.ClusterGossipPort);
+            }
+            else
+            {
+                if (opts.GossipSeed.Length == 0)
+                {
+                    if (opts.ClusterSize > 1)
+                    {
+                        Log.Error("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+                            + "Specify gossip seeds using the --gossip-seed command line option.");
+                    }
+                    else
+                    {
+                        Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since"
+                            + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified"
+                            + "seeds using the --gossip-seed command line option.");
+                    }
+                }
 
-				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
-			}
+                gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
+            }
 
             var runProjections = opts.RunProjections;
 
@@ -141,10 +141,10 @@ namespace EventStore.ClusterNode
                      "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
             var enabledNodeSubsystems = runProjections >= ProjectionType.System
-                ? new[] {NodeSubsystems.Projections}
+                ? new[] { NodeSubsystems.Projections }
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
-            var infoController = new InfoController(opts, opts.RunProjections); 
+            var infoController = new InfoController(opts, opts.RunProjections);
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, infoController, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
             RegisterUiProjections();
@@ -158,7 +158,8 @@ namespace EventStore.ClusterNode
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterVNodeSettings settings)
         {
-            if(_node.InternalHttpService != null) {
+            if (_node.InternalHttpService != null)
+            {
                 _node.InternalHttpService.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
                 _node.InternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
             }
@@ -172,8 +173,8 @@ namespace EventStore.ClusterNode
 
         private static int GetQuorumSize(int clusterSize)
         {
-            if(clusterSize == 1) return 1;
-            return clusterSize/2 + 1;
+            if (clusterSize == 1) return 1;
+            return clusterSize / 2 + 1;
         }
 
         private static ClusterVNodeSettings GetClusterVNodeSettings(ClusterNodeOptions options)
@@ -197,7 +198,7 @@ namespace EventStore.ClusterNode
             var extSecTcp = options.ExtSecureTcpPort > 0 ? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort) : null;
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
             var quorumSize = GetQuorumSize(options.ClusterSize);
-            
+
             if (Runtime.IsMono)
             {
                 if (!prefixes.Contains(x => x.Contains("localhost")) && Equals(extHttp.Address, IPAddress.Loopback))
@@ -219,9 +220,9 @@ namespace EventStore.ClusterNode
                 if (intSecTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
             }
 
-			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
+            var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
 
-			return new ClusterVNodeSettings(Guid.NewGuid(), 0,
+            return new ClusterVNodeSettings(Guid.NewGuid(), 0,
                                             intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
                                             prefixes, options.EnableTrustedAuth,
                                             certificate,
@@ -245,57 +246,60 @@ namespace EventStore.ClusterNode
                                             !options.SkipDbVerify, options.MaxMemTableSize);
         }
 
-	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
-	    {
-			var catalog = new AggregateCatalog();
+        private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
+        {
+            var catalog = new AggregateCatalog();
 
-			var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			var pluginsPath = Path.Combine(currentPath ?? String.Empty, "plugins");
+            var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var pluginsPath = Path.Combine(currentPath ?? String.Empty, "plugins");
 
-		    if (Directory.Exists(pluginsPath))
-		    {
-				Log.Info("Plugins path: {0}", pluginsPath);
-			    catalog.Catalogs.Add(new DirectoryCatalog(pluginsPath));
-		    }
-		    else
-		    {
-			    Log.Info("Can't find plugins path: {0}", pluginsPath);
-		    }
+            catalog.Catalogs.Add(new AssemblyCatalog(typeof(Program).Assembly));
 
-		    var compositionContainer = new CompositionContainer(catalog);
-			var potentialPlugins = compositionContainer.GetExports<IAuthenticationPlugin>();
+            if (Directory.Exists(pluginsPath))
+            {
+                Log.Info("Plugins path: {0}", pluginsPath);
+                catalog.Catalogs.Add(new DirectoryCatalog(pluginsPath));
+            }
+            else
+            {
+                Log.Info("Can't find plugins path: {0}", pluginsPath);
+            }
 
-			var authenticationTypeToPlugin = new Dictionary<string, Func<IAuthenticationProviderFactory>> {
-				{ "internal", () => new InternalAuthenticationProviderFactory() }
-			};
+            var compositionContainer = new CompositionContainer(catalog);
+            var potentialPlugins = compositionContainer.GetExports<IAuthenticationPlugin>();
 
-		    foreach (var potentialPlugin in potentialPlugins)
-			{
-				try
-				{
-					var plugin = potentialPlugin.Value;
-					var commandLine = plugin.CommandLineName.ToLowerInvariant();
-					Log.Info("Loaded authentication plugin: {0} version {1} (Command Line: {2})", plugin.Name, plugin.Version, commandLine);
-					authenticationTypeToPlugin.Add(commandLine, () => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
-				}
-				catch (CompositionException ex)
-				{
-					Log.ErrorException(ex, "Error loading authentication plugin.");
-				}
-			}
+            var authenticationTypeToPlugin = new Dictionary<string, Func<IAuthenticationProviderFactory>>
+            {
+                {"internal", () => new InternalAuthenticationProviderFactory()}
+            };
 
-		    Func<IAuthenticationProviderFactory> factory;
-			if (!authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out factory))
-			{
-				throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " + 
-					"to be provided by an authentication plugin, confirm the plugin DLL is located in {1}.\n" +
-					"Valid options for authentication are: {2}.", authenticationType, pluginsPath, string.Join(", ", authenticationTypeToPlugin.Keys)));
-			}
+            foreach (var potentialPlugin in potentialPlugins)
+            {
+                try
+                {
+                    var plugin = potentialPlugin.Value;
+                    var commandLine = plugin.CommandLineName.ToLowerInvariant();
+                    Log.Info("Loaded authentication plugin: {0} version {1} (Command Line: {2})", plugin.Name, plugin.Version, commandLine);
+                    authenticationTypeToPlugin.Add(commandLine, () => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
+                }
+                catch (CompositionException ex)
+                {
+                    Log.ErrorException(ex, "Error loading authentication plugin.");
+                }
+            }
 
-		    return factory();
-	    }
+            Func<IAuthenticationProviderFactory> factory;
+            if (!authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out factory))
+            {
+                throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " +
+                    "to be provided by an authentication plugin, confirm the plugin DLL is located in {1}.\n" +
+                    "Valid options for authentication are: {2}.", authenticationType, pluginsPath, string.Join(", ", authenticationTypeToPlugin.Keys)));
+            }
 
-	    protected override void Start()
+            return factory();
+        }
+
+        protected override void Start()
         {
             _node.Start();
         }
