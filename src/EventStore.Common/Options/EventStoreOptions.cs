@@ -1,7 +1,10 @@
 ﻿using EventStore.Common.Utils;
 using EventStore.Rags;
+using EventStore.Rags.YamlDotNet.Serialization;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -43,7 +46,7 @@ namespace EventStore.Common.Options
             yield return TypeDefaultOptions.Get<TOptions>();
         }
 
-        private static OptionSource ResolvePrecedence(IGrouping<string, OptionSource> optionSources)
+        public static OptionSource ResolvePrecedence(IGrouping<string, OptionSource> optionSources)
         {
             var options = optionSources.OrderBy(x =>
                 x.Source == "Command Line" ? 0 :
@@ -55,6 +58,60 @@ namespace EventStore.Common.Options
         public static TOptions Parse<TOptions>(string configFile, string sectionName = "") where TOptions : class, new()
         {
             return Yaml.FromFile(configFile, sectionName).ApplyTo<TOptions>();
+        }
+
+        public const string ConfigKey = "Config";
+        public static IEnumerable<OptionSource> Update(IEnumerable<OptionSource> optionSources)
+        {
+            var effectiveOptions = _effectiveOptions;
+            var configFile = effectiveOptions.FirstOrDefault(x => x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase)).Value as string;
+            if (!File.Exists(configFile))
+            {
+                throw new Exception("A configuration file must be available for use with updating of the options.");
+            }
+
+            optionSources = optionSources
+                                .Select(x => new OptionSource("Config File", x.Name, x.IsTyped, x.Value));
+
+            var optionsToSave = Yaml.FromFile(configFile)
+                                .Concat(optionSources)
+                                .ToLookup(x => x.Name.ToLower())
+                                .Select(ResolveUpdatingPrecedence);
+
+            var conflictedOptions = effectiveOptions.DeterminePotentialPrecedenceIssues(optionSources);
+
+            if (conflictedOptions.Count() > 0)
+            {
+                Func<OptionSource, string> nameSourceAndValue = option => { return String.Format("Name: {0}, Source:{1}, Value: {2}", option.Name, option.Source, option.Value); };
+                var affectedOptions = optionSources.Where(x => conflictedOptions.Contains(y => y.Name.Equals(x.Name)));
+                string explanationOfFailure = String.Format("The following updates ({0}{1}) ", String.Join(",", affectedOptions.Select(x => nameSourceAndValue(x))), Environment.NewLine);
+                explanationOfFailure += String.Format("will be ignored due to the current configuration taking precedence over the updates being stored in the Config File. ({0})", String.Join(",", conflictedOptions.Select(x => nameSourceAndValue(x))));
+                throw new Exception(explanationOfFailure);
+            }
+
+            var dictionary = new ExpandoObject();
+            foreach (var option in optionsToSave.ToDictionary(x => x.Name, x => x.Value))
+            {
+                (dictionary as IDictionary<string, object>).Add(new KeyValuePair<string, object>(option.Key, option.Value));
+            }
+            using (var stream = new FileStream((string)configFile, FileMode.Create, FileAccess.Write))
+            {
+                using (var writer = new StreamWriter(stream))
+                {
+                    new Serializer().Serialize(writer, dictionary);
+                }
+            }
+            return optionsToSave.Except(_effectiveOptions);
+        }
+
+        private static OptionSource ResolveUpdatingPrecedence(IGrouping<string, OptionSource> optionSources)
+        {
+            var options = optionSources.OrderBy(x =>
+                x.Source == "Command Line" ? 1 :
+                x.Source == "Environment Variable" ? 2 :
+                x.Source == "Config File" ? 3 :
+                x.Source == "<DEFAULT>" ? 4 : 0);
+            return options.First();
         }
 
         public static string GetUsage<TOptions>()
@@ -109,6 +166,18 @@ namespace EventStore.Common.Options
     }
     public static class RagsExtensions
     {
+        private static readonly string[] KnownSources = new string[] { "Command Line", "Environment Variable", "Config File", "<DEFAULT>" };
+        public static IEnumerable<OptionSource> DeterminePotentialPrecedenceIssues(this IEnumerable<OptionSource> optionSources, IEnumerable<OptionSource> optionsToCompareAgainst)
+        {
+            return optionSources
+                    .Where(x => !x.Name.Equals(EventStoreOptions.ConfigKey, StringComparison.OrdinalIgnoreCase))
+                    .Where(x => x.Source != "<DEFAULT>")
+                    .Select(x => new OptionSource(!KnownSources.Contains(x.Source) ? "Config File" : x.Source, x.Name, x.IsTyped, x.Value))
+                    .Where(x => optionsToCompareAgainst.Contains(y => y.Name.Equals(x.Name) && x.Source != y.Source))
+                    .ToLookup(x => x.Name.ToLower())
+                    .Select(EventStoreOptions.ResolvePrecedence);
+        }
+
         public static IEnumerable<OptionSource> Cleanup(this IEnumerable<OptionSource> optionSources)
         {
             return optionSources.Select(x => new OptionSource(x.Source, x.Name.Replace("-", ""), x.IsTyped, x.Value));
@@ -117,9 +186,9 @@ namespace EventStore.Common.Options
         {
             var properties = typeof(TOptions).GetProperties();
             return optionSources.Select(x => new OptionSource(
-                            x.Source, 
-                            properties.First(y => y.Name.Equals(x.Name, StringComparison.OrdinalIgnoreCase)).Name, 
-                            x.IsTyped, 
+                            x.Source,
+                            properties.First(y => y.Name.Equals(x.Name, StringComparison.OrdinalIgnoreCase)).Name,
+                            x.IsTyped,
                             x.Value));
         }
         public static IEnumerable<OptionSource> EnsureExistence<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class

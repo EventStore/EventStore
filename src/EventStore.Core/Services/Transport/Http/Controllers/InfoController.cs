@@ -30,20 +30,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Ensure.NotNull(service, "service");
             service.RegisterAction(new ControllerAction("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetInfo);
             service.RegisterAction(new ControllerAction("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetOptions);
+            service.RegisterAction(new ControllerAction("/info/options", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnUpdateOptions);
         }
 
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
         {
             entity.ReplyTextContent(Codec.Json.To(new
-                                    {
+            {
                                         ESVersion = VersionInfo.Version,
 					ProjectionsMode = _projectionType
-                                    }),
-                                    HttpStatusCode.OK,
-                                    "OK",
-                                    entity.ResponseCodec.ContentType,
-                                    null,
-                                    e => Log.ErrorException(e, "Error while writing http response (info)"));
+            }),
+             HttpStatusCode.OK,
+             "OK",
+             entity.ResponseCodec.ContentType,
+             null,
+             e => Log.ErrorException(e, "Error while writing http response (info)"));
         }
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
@@ -66,6 +67,49 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void LogReplyError(Exception exc)
         {
             Log.Debug("Error while replying (info controller): {0}.", exc.Message);
+        }
+
+        private void OnUpdateOptions(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            {
+                entity.ReadTextRequestAsync(
+                                (man, body) =>
+                                {
+                                    OptionSource[] optionsToUpdate = null;
+                                    try
+                                    {
+                                        optionsToUpdate = Json.ParseJson<OptionSource[]>(body);
+                                        var updatedOptions = EventStoreOptions.Update(optionsToUpdate);
+                                        man.ReplyTextContent(Codec.Json.To(updatedOptions.ToArray()),
+                                            HttpStatusCode.OK,
+                                            "OK",
+                                            entity.ResponseCodec.ContentType,
+                                            null,
+                                            e => Log.ErrorException(e, "error while writing http response (options)"));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        SendBadRequest(man, ex.Message);
+                                    }
+                                },
+                                e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
+        }
+
+        protected RequestParams SendBadRequest(HttpEntityManager httpEntityManager, string reason)
+        {
+            httpEntityManager.ReplyTextContent(reason,
+                                    HttpStatusCode.BadRequest,
+                                    reason,
+                                    httpEntityManager.ResponseCodec.ContentType,
+                                    null,
+                                    e => Log.Debug("Error while closing http connection (bad request): {0}.", e.Message));
+            return new RequestParams(done: true);
         }
 
         public class OptionStructure
