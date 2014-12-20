@@ -2,13 +2,13 @@
 
 namespace EventStore.Core.PluginModel
 {
-	public interface IAuthenticationPlugin
-	{
-		string Name { get; }
-		string Version { get; }
+    public interface IAuthenticationPlugin
+    {
+        string Name { get; }
+        string Version { get; }
 
-		string CommandLineName { get; }
+        string CommandLineName { get; }
 
-		IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationConfigPath);
-	}
+        IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationConfigPath);
+    }
 }
