@@ -2,7 +2,6 @@
 using System.Text;
 using System.Net;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
