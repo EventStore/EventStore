@@ -31,12 +31,21 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
             base.TestFixtureTearDown();
         }
 
-        //[Test]
-        //public void deleting_non_existing_user_throws()
-        //{
-        //    var ex = Assert.Throws<UserCommandFailedException>(() => _manager.DeleteUserAsync(Guid.NewGuid().ToString(), new UserCredentials("admin", "changeit")));
-        //    Assert.AreEqual(HttpStatusCode.Forbidden, ex.HttpStatusCode);
-        //}
+        [Test]
+        public void deleting_non_existing_user_throws()
+        {
+            var ex = Assert.Throws<AggregateException>(() => _manager.DeleteUserAsync(Guid.NewGuid().ToString(), new UserCredentials("admin", "changeit")).Wait());
+            var realex = (UserCommandFailedException) ex.InnerException;
+            Assert.AreEqual(HttpStatusCode.NotFound, realex.HttpStatusCode);
+        }
+
+        [Test]
+        public void deleting_created_user_deletes_it()
+        {
+            Assert.DoesNotThrow(() => _manager.CreateUserAsync("ouro", "ourofull", new[] { "foo", "bar" }, "ouro", new UserCredentials("admin", "changeit")).Wait());
+            Assert.DoesNotThrow(() => _manager.DeleteUserAsync("ouro", new UserCredentials("admin", "changeit")).Wait());
+        }
+
 
         [Test]
         public void deleting_null_user_throws()
