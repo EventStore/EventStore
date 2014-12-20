@@ -119,7 +119,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.Positive(readBatchSize, "readBatchSize");
             Ensure.Positive(maxPushQueueSize, "maxPushQueueSize");
-            if (readBatchSize > Consts.MaxReadSize) throw new ArgumentException("Count should be less than 4096. For larger reads you should page.");
+            if (readBatchSize > Consts.MaxReadSize) throw new ArgumentException(string.Format("Read batch size should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             _connection = connection;
             Log = log;
             _streamId = string.IsNullOrEmpty(streamId) ? string.Empty : streamId;
