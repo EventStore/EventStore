@@ -80,9 +80,11 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddUnwrapper(TcpCommand.NotHandled, UnwrapNotHandled);
 
             AddWrapper<TcpMessage.NotAuthenticated>(WrapNotAuthenticated);
+            AddWrapper<TcpMessage.NotAuthenticated>(WrapNotReady);
             AddWrapper<TcpMessage.Authenticated>(WrapAuthenticated);
         }
 
+        
         private static Message UnwrapPing(TcpPackage package, IEnvelope envelope)
         {
             var data = new byte[package.Data.Count];
@@ -567,6 +569,11 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new TcpClientMessageDto.NotHandled(msg.Reason, msg.AdditionalInfo == null ? null : msg.AdditionalInfo.SerializeToArray());
             return new TcpPackage(TcpCommand.NotHandled, msg.CorrelationId, dto.Serialize());
+        }
+
+        private TcpPackage WrapNotReady(TcpMessage.NotAuthenticated msg)
+        {
+            return new TcpPackage(TcpCommand.NotHandled, msg.CorrelationId, Helper.UTF8NoBom.GetBytes(msg.Reason ?? string.Empty));
         }
 
         private TcpPackage WrapNotAuthenticated(TcpMessage.NotAuthenticated msg)

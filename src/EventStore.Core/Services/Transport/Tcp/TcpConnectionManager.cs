@@ -162,22 +162,18 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionFailed(ITcpConnection connection, SocketError socketError)
         {
-            if (Interlocked.CompareExchange(ref _isClosed, 1, 0) == 0)
-            {
-                Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.RemoteEndPoint, socketError);
-                if (_connectionClosed != null)
-                    _connectionClosed(this, socketError);
-            }
+            if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
+            Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.RemoteEndPoint, socketError);
+            if (_connectionClosed != null)
+                _connectionClosed(this, socketError);
         }
 
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
         {
-            if (Interlocked.CompareExchange(ref _isClosed, 1, 0) == 0)
-            {
-                Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.RemoteEndPoint, ConnectionId, socketError);
-                if (_connectionClosed != null)
-                    _connectionClosed(this, socketError);
-            }
+            if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
+            Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.RemoteEndPoint, ConnectionId, socketError);
+            if (_connectionClosed != null)
+                _connectionClosed(this, socketError);
         }
 
         public void StartReceiving()
@@ -240,7 +236,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     break;
                 case TcpCommand.BadRequest:
                 {
-                    string reason = string.Empty;
+                    var reason = string.Empty;
                     Helper.EatException(() => reason = Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                     var exitMessage = 
                         string.Format("Bad request received from '{0}' [{1}, L{2}, {3:B}], will stop server. CorrelationId: {4:B}, Error: {5}.",
@@ -305,6 +301,12 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             _tcpEnvelope.ReplyWith(new TcpMessage.NotAuthenticated(correlationId, description));
         }
+
+        private void ReplyNotReady(Guid correlationId, string description)
+        {
+            _tcpEnvelope.ReplyWith(new TcpMessage.NotReady(correlationId, description));
+        }
+
 
         private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, IPrincipal user)
         {
@@ -440,9 +442,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             public override void NotReady()
             {
-                _manager.ReplyNotAuthenticated(_package.CorrelationId, "Server not ready");
+                _manager.ReplyNotReady(_package.CorrelationId, "Server not ready");
             }
         }
+
 
         private class TcpDefaultAuthRequest : AuthenticationRequest
         {
