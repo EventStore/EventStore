@@ -132,6 +132,7 @@
     <Compile Include="ClientAPI\UserManagement\get_current_user.cs" />
     <Compile Include="ClientAPI\UserManagement\list_users.cs" />
     <Compile Include="ClientAPI\UserManagement\TestWithNode.cs" />
+    <Compile Include="ClientAPI\UserManagement\TestWithUser.cs" />
     <Compile Include="ClientAPI\UserManagement\updating_a_user.cs" />
     <Compile Include="ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
     <Compile Include="ClientAPI\connect.cs" />
