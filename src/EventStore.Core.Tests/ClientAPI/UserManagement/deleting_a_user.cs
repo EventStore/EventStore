@@ -46,11 +46,12 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
             {
                 var x =_manager.GetUserAsync("ouro", new UserCredentials("admin", "changeit")).Result;
             });
-            _manager.DeleteUserAsync("ouro", new UserCredentials("admin", "changeit"));
+            _manager.DeleteUserAsync("ouro", new UserCredentials("admin", "changeit")).Wait();
             
             var ex = Assert.Throws<AggregateException>(
                 () => { var x = _manager.GetUserAsync("ouro", new UserCredentials("admin", "changeit")).Result; }
             );
+            Assert.AreEqual(HttpStatusCode.NotFound, ((UserCommandFailedException) ex.InnerException.InnerException).HttpStatusCode);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
@@ -10,8 +12,9 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
         public void can_enable_disable_user()
         {
             _manager.DisableAsync(_username, new UserCredentials("admin", "changeit")).Wait();
-            Assert.Throws<AggregateException>(
+            var ex = Assert.Throws<AggregateException>(
                 () => _manager.DisableAsync("foo", new UserCredentials(_username, "password")).Wait());
+            Assert.AreEqual(HttpStatusCode.Unauthorized,((UserCommandFailedException) ex.InnerException).HttpStatusCode);
             _manager.EnableAsync(_username, new UserCredentials("admin", "changeit")).Wait();
             var c = _manager.GetCurrentUserAsync(new UserCredentials(_username, "password")).Result;
         }
