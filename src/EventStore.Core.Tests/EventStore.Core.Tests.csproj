@@ -126,6 +126,7 @@
     <Compile Include="ClientAPI\SpecificationWithLinkToToMaxCountDeletedEvents.cs" />
     <Compile Include="ClientAPI\SpecificationWithMiniNode.cs" />
     <Compile Include="ClientAPI\update_persistent_subscription.cs" />
+    <Compile Include="ClientAPI\UserManagement\reset_change_password.cs" />
     <Compile Include="ClientAPI\UserManagement\creating_a_user.cs" />
     <Compile Include="ClientAPI\UserManagement\deleting_a_user.cs" />
     <Compile Include="ClientAPI\UserManagement\enable_disable_user.cs" />
