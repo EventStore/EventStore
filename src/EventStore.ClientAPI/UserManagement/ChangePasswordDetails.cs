@@ -4,15 +4,15 @@ namespace EventStore.ClientAPI.UserManagement
 {
     internal class ChangePasswordDetails
     {
-        public readonly string OldPassword;
+        public readonly string CurrentPassword;
 
         public readonly string NewPassword;
 
-        public ChangePasswordDetails(string oldPassword, string newPassword)
+        public ChangePasswordDetails(string currentPassword, string newPassword)
         {
-            Ensure.NotNullOrEmpty(oldPassword, "oldPassword");
+            Ensure.NotNullOrEmpty(currentPassword, "currentPassword");
             Ensure.NotNullOrEmpty(newPassword, "newPassword");
-            OldPassword = oldPassword;
+            CurrentPassword = currentPassword;
             NewPassword = newPassword;
         }
     }
