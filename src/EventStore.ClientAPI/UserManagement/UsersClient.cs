@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -39,9 +40,14 @@ namespace EventStore.ClientAPI.UserManagement
             return SendDelete(endPoint.ToHttpUrl("/users/{0}", login), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<List<UserDetails>> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/users/"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/users/"), userCredentials, HttpStatusCode.OK)
+                    .ContinueWith(x =>
+                    {
+                        var r = JObject.Parse(x.Result);
+                        return r["data"] != null ? r["data"].ToObject<List<UserDetails>>() : null;
+                    }, TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
         public Task<UserDetails> GetCurrentUser(IPEndPoint endPoint, UserCredentials userCredentials = null)

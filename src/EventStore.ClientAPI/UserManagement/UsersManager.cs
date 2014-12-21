@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
@@ -72,7 +73,7 @@ namespace EventStore.ClientAPI.UserManagement
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing user full names and logins.</returns>
-        public Task<string> ListAllAsync(UserCredentials userCredentials = null) //TODO GFY SHOULD RETURN OBJECT
+        public Task<List<UserDetails>> ListAllAsync(UserCredentials userCredentials = null) 
         {
             return _client.ListAll(_httpEndPoint, userCredentials);
         }
