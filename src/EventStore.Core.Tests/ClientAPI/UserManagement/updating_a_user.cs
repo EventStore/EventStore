@@ -1,43 +1,15 @@
 ﻿using System;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
 using EventStore.ClientAPI.UserManagement;
-using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
     [TestFixture]
-    public class updating_a_user : SpecificationWithDirectoryPerTestFixture
+    public class updating_a_user : TestWithNode
     {
-        private MiniNode _node;
-        private UsersManager _manager;
-
-        [TestFixtureSetUp]
-        public override void TestFixtureSetUp()
-        {
-            base.TestFixtureSetUp();
-            _node = new MiniNode(PathName);
-            _node.Start();
-            _manager = new UsersManager(new NoopLogger(), _node.HttpEndPoint, TimeSpan.FromSeconds(5));
-        }
-
-        [TestFixtureTearDown]
-        public override void TestFixtureTearDown()
-        {
-            _node.Shutdown();
-            base.TestFixtureTearDown();
-        }
-
-        protected virtual IEventStoreConnection BuildConnection(MiniNode node)
-        {
-            return TestConnection.Create(node.TcpEndPoint);
-        }
-
         [Test]
         public void updating_a_user_with_null_username_throws()
         {
