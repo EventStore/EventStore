@@ -427,21 +427,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private class SubscriptionInfo
         {
             public List<RelLink> Links { get; set; }
+            public SubscriptionConfigData Config { get; set; }
             public string EventStreamId { get; set; }
             public string GroupName { get; set; }
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
-            public SubscriptionConfigData Config { get; set; }
             public string ParkedMessageUri { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public List<ConnectionInfo> Connections { get; set; }
             public int LastProcessedEventNumber { get; set; }
             public int LastKnownEventNumber { get; set; }
             public int ReadBufferCount { get; set; }
             public int LiveBufferCount { get; set; }
             public int RetryBufferCount { get; set; }
             public int TotalInFlightMessages { get; set; }
+            public List<ConnectionInfo> Connections { get; set; }
         }
 
         private class ConnectionInfo
