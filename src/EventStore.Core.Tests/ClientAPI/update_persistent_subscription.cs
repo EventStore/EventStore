@@ -3,7 +3,6 @@ using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.SystemData;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -11,7 +10,6 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class update_existing_persistent_subscription : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionUpdateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
@@ -26,27 +24,27 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _result = _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
+            
         }
 
         [Test]
         public void the_completion_succeeds()
         {
-            Assert.AreEqual(PersistentSubscriptionUpdateStatus.Success, _result.Status);
+            Assert.DoesNotThrow(() => _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait());
         }
     }
 
     [TestFixture, Category("LongRunning")]
     public class update_existing_persistent_subscription_with_subscribers : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionUpdateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
-        private AutoResetEvent _dropped = new AutoResetEvent(false);
+        private readonly AutoResetEvent _dropped = new AutoResetEvent(false);
         private SubscriptionDropReason _reason;
         private Exception _exception;
+        private Exception _caught = null;
 
         protected override void Given()
         {
@@ -64,13 +62,21 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _result = _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
+            try
+            {
+                _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
+                    .Wait();
+            }
+            catch (Exception ex)
+            {
+                _caught = ex;
+            }
         }
 
         [Test]
         public void the_completion_succeeds()
         {
-            Assert.AreEqual(PersistentSubscriptionUpdateStatus.Success, _result.Status);
+            Assert.IsNull(_caught);
         }
 
         [Test]

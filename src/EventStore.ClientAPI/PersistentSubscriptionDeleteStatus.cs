@@ -3,7 +3,7 @@ namespace EventStore.ClientAPI
     /// <summary>
     /// Enumeration representing the status of a single subscription delete message.
     /// </summary>
-    public enum PersistentSubscriptionDeleteStatus
+    enum PersistentSubscriptionDeleteStatus
     {
         /// <summary>
         /// The subscription was created successfully

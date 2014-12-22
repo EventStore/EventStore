@@ -349,7 +349,7 @@ namespace EventStore.ClientAPI
 */
 
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null) {
+        public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             Ensure.NotNull(settings, "settings");
@@ -358,7 +358,7 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public Task<PersistentSubscriptionUpdateResult> UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+        public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
@@ -379,12 +379,12 @@ namespace EventStore.ClientAPI
         }
 
 */
-        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
+        public Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
             EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
-            return source.Task;            
+            return source.Task;
         }
 /*
 
