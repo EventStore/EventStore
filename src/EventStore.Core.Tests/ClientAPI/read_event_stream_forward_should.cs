@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
-        public void throw_when_got_int_max_value_as_maxcount()
+        public void return_partial_slice_when_got_int_max_value_as_maxcount()
         {
             const string stream = "read_event_stream_forward_should_return_partial_slice_when_got_int_max_value_as_maxcount";
             using (var store = BuildConnection(_node))
@@ -162,7 +162,10 @@ namespace EventStore.Core.Tests.ClientAPI
                                                         Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())));
                 Assert.DoesNotThrow(write10.Wait);
 
-                Assert.Throws<ArgumentException>(() => store.ReadStreamEventsForwardAsync(stream, StreamPosition.Start, int.MaxValue, resolveLinkTos: false).Wait());
+                var read = store.ReadStreamEventsForwardAsync(stream, StreamPosition.Start, int.MaxValue, resolveLinkTos: false);
+                Assert.DoesNotThrow(read.Wait);
+
+                Assert.That(read.Result.Events.Length, Is.EqualTo(10));
             }
         }
 
