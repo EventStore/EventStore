@@ -214,5 +214,18 @@ namespace EventStore.Core.Tests.ClientAPI
                                                      read.Result.Events.Select(x => x.Event).ToArray()));
             }
         }
+
+        [Test]
+        [Category("Network")]
+        public void throw_when_got_int_max_value_as_maxcount()
+        {
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+
+                Assert.Throws<ArgumentException>(() => store.ReadStreamEventsBackwardAsync("foo", StreamPosition.Start, int.MaxValue, resolveLinkTos: false));
+
+            }
+        }
     }
 }

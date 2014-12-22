@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.ClientAPI;
@@ -80,6 +81,15 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.That(EventDataComparer.Equal(
                 _testEvents,
                 read.Events.Skip(read.Events.Length - _testEvents.Length).Select(x => x.Event).ToArray()));
+        }
+
+        [Test]
+        [Category("Network")]
+        public void throw_when_got_int_max_value_as_maxcount()
+        {
+            Assert.Throws<ArgumentException>(
+                () => _conn.ReadAllEventsForwardAsync(Position.Start, int.MaxValue, resolveLinkTos: false));
+
         }
     }
 }
