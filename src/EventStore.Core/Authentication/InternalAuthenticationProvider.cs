@@ -43,12 +43,12 @@ namespace EventStore.Core.Authentication
         {
             try
             {
-                if (completed.Result == ReadStreamResult.StreamDeleted)
+                if (completed.Result == ReadStreamResult.StreamDeleted || completed.Result == ReadStreamResult.NoStream || completed.Result == ReadStreamResult.AccessDenied)
                 {
                     authenticationRequest.Unauthorized();
                     return;
                 }
-                if (completed.Result != ReadStreamResult.Success)
+                if (completed.Result == ReadStreamResult.Error) //TODO GFY we possible need a NotReady read result
                 {
                     authenticationRequest.NotReady();
                     return;
