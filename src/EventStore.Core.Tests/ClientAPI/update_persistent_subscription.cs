@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
             _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription("existing", _stream, (x, y) => { },
+            _conn.ConnectToPersistentSubscription(_stream, "existing" , (x, y) => { },
                 (sub, reason, ex) =>
                 {
                     _dropped.Set();
