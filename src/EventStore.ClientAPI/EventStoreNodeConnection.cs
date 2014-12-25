@@ -308,8 +308,8 @@ namespace EventStore.ClientAPI
         }
 
         public EventStorePersistentSubscription ConnectToPersistentSubscription(
-            string groupName, 
-            string stream, 
+            string stream,
+            string groupName,
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, 

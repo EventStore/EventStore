@@ -205,14 +205,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             base.Given();
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
                         DefaultData.AdminCredentials).Wait();
-            _sub3 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
+            _sub3 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine());
-            _sub4 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
+            _sub4 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
-            _sub5 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
+            _sub5 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
@@ -352,14 +352,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             base.Given();
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
                         DefaultData.AdminCredentials).Wait();
-            _sub3 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
+            _sub3 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine());
-            _sub4 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
+            _sub4 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
-            _sub5 = _conn.ConnectToPersistentSubscription("secondgroup", _streamName,
+            _sub5 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
@@ -468,10 +468,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             _conn.ConnectAsync().Wait();
             _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
                     DefaultData.AdminCredentials).Wait();
-            _sub1 = _conn.ConnectToPersistentSubscription(_groupName, _streamName,
+            _sub1 = _conn.ConnectToPersistentSubscription(_streamName,_groupName,
                         (subscription, @event) => Console.WriteLine(), 
                         (subscription, reason, arg3) => Console.WriteLine());
-            _sub2 = _conn.ConnectToPersistentSubscription(_groupName, _streamName,
+            _sub2 = _conn.ConnectToPersistentSubscription(_streamName, _groupName,
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
