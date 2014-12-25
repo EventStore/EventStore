@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 {
                     ResolveLinkTos = true
                 }, _admin);
-            _connection.ConnectToPersistentSubscription(_groupName, _stream, (x, y) => { },
+            _connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => { },
                 (sub, reason, e) =>
                 {
                     _dropped.Set();

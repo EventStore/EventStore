@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         private void SetupSubscription()
         {
-            _connection.ConnectToPersistentSubscription(_groupName, _stream, (x, y) => { },
+            _connection.ConnectToPersistentSubscription(_stream,_groupName, (x, y) => { },
                 (sub, reason, ex) =>
                 {
                     _droppedReason = reason;

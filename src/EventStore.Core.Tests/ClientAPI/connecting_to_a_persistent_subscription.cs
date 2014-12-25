@@ -17,8 +17,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _conn.ConnectToPersistentSubscription("foo",
+                _conn.ConnectToPersistentSubscription(
                     "nonexisting2",
+                    "foo",
                     (sub, e) => Console.Write("appeared"),
                     (sub, reason, ex) =>
                     {
@@ -55,7 +56,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionAsync("agroupname17", _stream , _settings, DefaultData.AdminCredentials).Wait();
+            _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname17", _settings, DefaultData.AdminCredentials).Wait();
             _sub = _conn.ConnectToPersistentSubscription(_stream,
                 "agroupname17",
                 (sub, e) => Console.Write("appeared"),
@@ -87,8 +88,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _conn.ConnectToPersistentSubscription("agroupname55", 
+                _conn.ConnectToPersistentSubscription( 
                     _stream,
+                    "agroupname55",
                     (sub, e) => Console.Write("appeared"),
                     (sub, reason, ex) => {Console.WriteLine("dropped.");});
                 throw new Exception("should have thrown.");
@@ -187,8 +189,9 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
                 _stream,
+                _group,
                 HandleEvent,
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials);
@@ -243,8 +246,9 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
                 _stream,
+                _group,
                 HandleEvent,
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials);
@@ -280,8 +284,9 @@ namespace EventStore.Core.Tests.ClientAPI
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
                 _stream,
+                _group,
                 HandleEvent,
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials);
@@ -341,8 +346,9 @@ namespace EventStore.Core.Tests.ClientAPI
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
                 _stream,
+                _group,
                 HandleEvent,
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials);
@@ -460,8 +466,9 @@ namespace EventStore.Core.Tests.ClientAPI
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
                 _stream,
+                _group,
                 HandleEvent,
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials);
@@ -521,8 +528,9 @@ namespace EventStore.Core.Tests.ClientAPI
             WriteEvents(_conn);
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
                 _stream,
+                _group,
                 HandleEvent,
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials);

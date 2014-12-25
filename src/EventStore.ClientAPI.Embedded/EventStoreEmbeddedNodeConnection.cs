@@ -380,7 +380,7 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
-        public EventStorePersistentSubscription ConnectToPersistentSubscription(string groupName, string stream, Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+        public EventStorePersistentSubscription ConnectToPersistentSubscription(string stream, string groupName, Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
         {

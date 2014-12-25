@@ -69,6 +69,16 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+
+        /// <summary>
+        /// Configures the connection to output log messages to a file.
+        /// </summary>
+        public ConnectionSettingsBuilder UseFileLogger(string filename)
+        {
+            _log = new FileLogger(filename);
+            return this;
+        }
+
         /// <summary>
         /// Turns on verbose <see cref="EventStoreConnection"/> internal logic logging.
         /// </summary>

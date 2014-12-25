@@ -288,8 +288,8 @@ namespace EventStore.ClientAPI
         /// </remarks>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStorePersistentSubscription ConnectToPersistentSubscription(
-            string groupName, 
-            string stream, 
+            string stream,
+            string groupName,
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
