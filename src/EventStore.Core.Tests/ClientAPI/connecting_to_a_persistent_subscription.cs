@@ -389,7 +389,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
             .DoNotResolveLinkTos()
-            .StartFrom(12);
+            .StartFrom(11);
 
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         private ResolvedEvent _firstEvent;
@@ -413,7 +413,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private void WriteEvents(IEventStoreConnection connection)
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 11; i++)
             {
                 connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
                     new EventData(Guid.NewGuid(), "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
@@ -439,7 +439,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
             Assert.IsNotNull(_firstEvent);
-            Assert.AreEqual(10, _firstEvent.Event.EventNumber);
+            Assert.AreEqual(11, _firstEvent.Event.EventNumber);
             Assert.AreEqual(_id, _firstEvent.Event.EventId);
         }
     }
