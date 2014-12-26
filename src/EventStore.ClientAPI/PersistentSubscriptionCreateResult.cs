@@ -4,7 +4,7 @@
     /// A Persistent Subscription Create Result is the result of a single operation creating a
     /// persistent subscription in the event store
     /// </summary>
-    public class PersistentSubscriptionCreateResult
+    class PersistentSubscriptionCreateResult
     {
         /// <summary>
         /// The <see cref="PersistentSubscriptionCreateStatus"/> representing the status of this create attempt

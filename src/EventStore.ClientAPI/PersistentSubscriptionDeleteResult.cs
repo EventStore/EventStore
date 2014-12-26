@@ -4,7 +4,7 @@ namespace EventStore.ClientAPI
     /// A Persistent Subscription Delete Result is the result of a single operation deleting a
     /// persistent subscription in the event store
     /// </summary>
-    public class PersistentSubscriptionDeleteResult
+    class PersistentSubscriptionDeleteResult
     {
         /// <summary>
         /// The <see cref="PersistentSubscriptionDeleteStatus"/> representing the status of this create attempt

@@ -9,43 +9,45 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class create_persistent_subscription_on_existing_stream : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionCreateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
+
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-                                                                .DoNotResolveLinkTos()
-                                                                .StartFromCurrent();
+            .DoNotResolveLinkTos()
+            .StartFromCurrent();
+
         protected override void When()
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
         }
 
         [Test]
         public void the_completion_succeeds()
         {
-            Assert.AreEqual(PersistentSubscriptionCreateStatus.Success, _result.Status);
+            Assert.DoesNotThrow(
+                () =>
+                    _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
+                        .Wait());
         }
     }
 
-    
+
     [TestFixture, Category("LongRunning")]
     public class create_persistent_subscription_on_non_existing_stream : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionCreateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "nonexistinggroup", _settings, DefaultData.AdminCredentials).Result;
+            
         }
 
         [Test]
         public void the_completion_succeeds()
         {
-            Assert.AreEqual(PersistentSubscriptionCreateStatus.Success, _result.Status);
+            Assert.DoesNotThrow(() => _conn.CreatePersistentSubscriptionAsync(_stream, "nonexistinggroup", _settings, DefaultData.AdminCredentials).Wait());
         }
     }
 
@@ -83,20 +85,19 @@ namespace EventStore.Core.Tests.ClientAPI
     public class can_create_duplicate_persistent_subscription_group_name_on_different_streams : SpecificationWithMiniNode
     {
         private readonly string _stream = Guid.NewGuid().ToString();
-        private PersistentSubscriptionCreateResult _result;
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
                                                                 .StartFromCurrent();
         protected override void When()
         {
             _conn.CreatePersistentSubscriptionAsync(_stream, "group3211", _settings, DefaultData.AdminCredentials).Wait();
-            _result = _conn.CreatePersistentSubscriptionAsync("someother" + _stream, "group3211", _settings, DefaultData.AdminCredentials).Result;
+            
         }
 
         [Test]
         public void the_completion_succeeds()
         {
-            Assert.AreEqual(PersistentSubscriptionCreateStatus.Success, _result.Status);
+            Assert.DoesNotThrow(() => _conn.CreatePersistentSubscriptionAsync("someother" + _stream, "group3211", _settings, DefaultData.AdminCredentials).Wait());
         }
     }
 

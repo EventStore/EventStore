@@ -405,20 +405,20 @@ namespace EventStore.ClientAPI.Embedded
             return catchUpSubscription;
         }
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+        public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
             UserCredentials credentials)
         {
             throw new NotImplementedException();
         }
 
-        public Task<PersistentSubscriptionUpdateResult> UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+        public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
             UserCredentials credentials)
         {
             throw new NotImplementedException();
         }
 
 
-        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null)
+        public Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null)
         {
             throw new NotImplementedException();
         }

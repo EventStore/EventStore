@@ -22,8 +22,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test]
         public void the_delete_of_group_succeeds()
         {
-            var result = _conn.DeletePersistentSubscriptionAsync(_stream, "groupname123", DefaultData.AdminCredentials).Result;
-            Assert.AreEqual(PersistentSubscriptionDeleteStatus.Success, result.Status);
+             Assert.DoesNotThrow(() => _conn.DeletePersistentSubscriptionAsync(_stream, "groupname123", DefaultData.AdminCredentials).Wait());
         }
     }
 
