@@ -122,8 +122,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
              _stream,
+             _group,
              HandleEvent,
              (sub, reason, ex) => { },
              DefaultData.AdminCredentials);
@@ -407,8 +408,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription(_group,
+            _conn.ConnectToPersistentSubscription(
                 _stream,
+                _group,
                 HandleEvent,
                 Dropped,
                 DefaultData.AdminCredentials);
