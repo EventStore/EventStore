@@ -11,7 +11,16 @@ using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.ClientAPI.Embedded
 {
-    internal class EmbeddedSubscription
+    internal interface IEmbeddedSubscription
+    {
+        void DropSubscription(EventStore.Core.Services.SubscriptionDropReason reason);
+        void EventAppeared(EventStore.Core.Data.ResolvedEvent resolvedEvent);
+        void ConfirmSubscription(long lastCommitPosition, int? lastEventNumber);
+        void Unsubscribe();
+        void Start(Guid correlationId);
+    }
+
+    internal class EmbeddedSubscription : IEmbeddedSubscription
     {
         private readonly ILogger _log;
         private readonly IPublisher _publisher;

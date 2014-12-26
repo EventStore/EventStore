@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
@@ -12,7 +11,7 @@ namespace EventStore.ClientAPI
     /// <summary>
     /// Represents a persistent subscription connection.
     /// </summary>
-    public class EventStorePersistentSubscription
+    public abstract class EventStorePersistentSubscription
     {
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
         ///<summary>
@@ -28,7 +27,6 @@ namespace EventStore.ClientAPI
         private readonly ILogger _log;
         private readonly bool _verbose;
         private readonly ConnectionSettings _settings;
-        private readonly EventStoreConnectionLogicHandler _handler;
         private readonly bool _autoAck;
 
         private PersistentEventStoreSubscription _subscription;
@@ -48,7 +46,6 @@ namespace EventStore.ClientAPI
             ILogger log,
             bool verboseLogging,
             ConnectionSettings settings, 
-            EventStoreConnectionLogicHandler handler,
             int bufferSize = 10,
             bool autoAck = true)
         {
@@ -60,7 +57,6 @@ namespace EventStore.ClientAPI
             _log = log;
             _verbose = verboseLogging;
             _settings = settings;
-            _handler = handler;
             _bufferSize = bufferSize;
             _autoAck = autoAck;
         }
@@ -69,14 +65,14 @@ namespace EventStore.ClientAPI
         {
             _stopped.Reset();
 
-            var source = new TaskCompletionSource<PersistentEventStoreSubscription>();
-            _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, _subscriptionId, _streamId, _bufferSize,
-                                                                 _userCredentials, OnEventAppeared,
-                                                                 OnSubscriptionDropped, _settings.MaxRetries, _settings.OperationTimeout));
-            source.Task.Wait();
-            _subscription = source.Task.Result;
+            _subscription = StartSubscription(_subscriptionId, _streamId, _bufferSize, _userCredentials, OnEventAppeared, OnSubscriptionDropped, _settings);
         }
 
+        internal abstract PersistentEventStoreSubscription StartSubscription(
+            string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials,
+            Action<EventStoreSubscription, ResolvedEvent> onEventAppeared,
+            Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped,
+            ConnectionSettings settings);
 
         /// <summary>
         /// Acknowledge that a message have completed processing (this will tell the server it has been processed)

@@ -82,11 +82,13 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
             Guid connectionId = Guid.NewGuid();
 
-            _subscriptions = new EmbeddedSubscriber(_settings.Log, connectionId);
+            _subscriptions = new EmbeddedSubscriber(_subscriptionBus, _settings.Log, connectionId);
             
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
+            _subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionConfirmation>(_subscriptions);
+            _subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionStreamEventAppeared>(_subscriptions);
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
 
@@ -339,7 +341,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.Start(_subscriptionBus, corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+            _subscriptions.Start(corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
             
             return source.Task;
         }
@@ -375,7 +377,7 @@ namespace EventStore.ClientAPI.Embedded
         
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.Start(_subscriptionBus, corrId, source, string.Empty, resolveLinkTos,  eventAppeared, subscriptionDropped);
+            _subscriptions.Start(corrId, source, string.Empty, resolveLinkTos,  eventAppeared, subscriptionDropped);
 
             return source.Task;
         }

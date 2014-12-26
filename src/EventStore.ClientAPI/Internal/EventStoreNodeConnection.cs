@@ -319,7 +319,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
-            var subscription = new EventStorePersistentSubscription(
+            var subscription = new EventStorePersistentSubscriptionThing(
                 groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
                 _settings.VerboseLogging, _settings, _handler, bufferSize, autoAck);
 
