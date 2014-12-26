@@ -5,11 +5,11 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
-    class EventStorePersistentSubscriptionThing : EventStorePersistentSubscription
+    class EmbeddedEventStorePersistentSubscription : EventStorePersistentSubscription
     {
         private readonly EventStoreConnectionLogicHandler _handler;
 
-        public EventStorePersistentSubscriptionThing(
+        public EmbeddedEventStorePersistentSubscription(
             string subscriptionId, string streamId,
             Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
@@ -22,7 +22,7 @@ namespace EventStore.ClientAPI
             _handler = handler;
         }
 
-        internal override PersistentEventStoreSubscription StartSubscription(
+        internal override Task<PersistentEventStoreSubscription> StartSubscription(
             string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials, Action<EventStoreSubscription, ResolvedEvent> onEventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped, ConnectionSettings settings)
         {
@@ -30,8 +30,8 @@ namespace EventStore.ClientAPI
             _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, subscriptionId, streamId, bufferSize,
                 userCredentials, onEventAppeared,
                 onSubscriptionDropped, settings.MaxRetries, settings.OperationTimeout));
-            source.Task.Wait();
-            return source.Task.Result;
+
+            return source.Task;
         }
     }
 }
