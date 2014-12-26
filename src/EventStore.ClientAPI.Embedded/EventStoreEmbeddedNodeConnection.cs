@@ -341,7 +341,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.Start(corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+            _subscriptions.StartSubscription(corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
             
             return source.Task;
         }
@@ -377,20 +377,24 @@ namespace EventStore.ClientAPI.Embedded
         
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.Start(corrId, source, string.Empty, resolveLinkTos,  eventAppeared, subscriptionDropped);
+            _subscriptions.StartSubscription(corrId, source, string.Empty, resolveLinkTos,  eventAppeared, subscriptionDropped);
 
             return source.Task;
         }
 
-        public EventStorePersistentSubscription ConnectToPersistentSubscription(string stream, string groupName, Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
-            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
+        public EventStorePersistentSubscription ConnectToPersistentSubscription(
+            string stream, string groupName, Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
         {
             Ensure.NotNullOrEmpty(groupName, "groupName");
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
-
-            throw new NotImplementedException();
+            
+            return new EmbeddedEventStorePersistentSubscription(groupName, stream, eventAppeared, subscriptionDropped,
+                userCredentials, _settings.Log, _settings.VerboseLogging, _settings, _subscriptions, bufferSize,
+                autoAck);
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(

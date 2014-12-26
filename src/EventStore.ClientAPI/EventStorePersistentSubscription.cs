@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
@@ -65,10 +66,15 @@ namespace EventStore.ClientAPI
         {
             _stopped.Reset();
 
-            _subscription = StartSubscription(_subscriptionId, _streamId, _bufferSize, _userCredentials, OnEventAppeared, OnSubscriptionDropped, _settings);
+            var task = StartSubscription(_subscriptionId, _streamId, _bufferSize, _userCredentials, OnEventAppeared,
+                OnSubscriptionDropped, _settings);
+            
+            task.Wait();
+            
+            _subscription = task.Result;
         }
 
-        internal abstract PersistentEventStoreSubscription StartSubscription(
+        internal abstract Task<PersistentEventStoreSubscription> StartSubscription(
             string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials,
             Action<EventStoreSubscription, ResolvedEvent> onEventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped,

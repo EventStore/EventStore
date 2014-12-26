@@ -67,10 +67,28 @@ namespace EventStore.ClientAPI.Embedded
             subscription.ConfirmSubscription(lastCommitPosition, lastEventNumber);
         }
 
-        public void Start(Guid correlationId, TaskCompletionSource<EventStoreSubscription> source, string stream, bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
+        public void StartSubscription(
+            Guid correlationId, TaskCompletionSource<EventStoreSubscription> source, string stream, bool resolveLinkTos,
+            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
         {
             var subscription = new EmbeddedSubscription(_log, _publisher, _connectionId, source, stream, resolveLinkTos, eventAppeared,
                 subscriptionDropped);
+
+            _subscriptions.StartSubscription(correlationId, subscription);
+        }
+
+        public void StartPersistentSubscription(
+            Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId,
+            string streamId, int bufferSize,
+            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, 
+            int maxRetries,
+            TimeSpan operationTimeout)
+        {
+            var subscription = new EmbeddedPersistentSubscription(_log, _publisher, _connectionId, source,
+                subscriptionId, streamId, bufferSize, eventAppeared,
+                subscriptionDropped, maxRetries, operationTimeout);
 
             _subscriptions.StartSubscription(correlationId, subscription);
         }

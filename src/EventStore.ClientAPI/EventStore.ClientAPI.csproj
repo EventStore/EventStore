@@ -61,7 +61,8 @@
     <Compile Include="Common\Log\FileLogger.cs" />
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
     <Compile Include="Exceptions\UserCommandFailedException.cs" />
-    <Compile Include="EventStorePersistentSubscriptionThing.cs" />
+    <Compile Include="EmbeddedEventStorePersistentSubscription.cs" />
+    <Compile Include="IConnectToPersistentSubscriptions.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />
     <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
     <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />
