@@ -166,9 +166,10 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent)
         {
+            if (resolvedEvent.OriginalEvent.EventNumber < _settings.StartFrom) return; 
             if (_state == PersistentSubscriptionState.NotReady) return;
             _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
-            bool waslive = _streamBuffer.Live; //hacky
+            var waslive = _streamBuffer.Live; //hacky
             _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null, resolvedEvent, 0));
             if (!_streamBuffer.Live)
             {
