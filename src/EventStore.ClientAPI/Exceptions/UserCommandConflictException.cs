@@ -18,8 +18,8 @@ namespace EventStore.ClientAPI.Exceptions
         /// <summary>
         /// Constructs a new <see cref="UserCommandFailedException"/>.
         /// </summary>
-        public UserCommandConflictException(string message)
-            : base(message)
+        public UserCommandConflictException(int httpStatusCode, string message)
+            : base(httpStatusCode, message)
         {
         }
 

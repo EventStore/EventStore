@@ -188,7 +188,7 @@ namespace EventStore.ClientAPI.UserManagement
                     if (response.HttpStatusCode == expectedCode)
                         source.SetResult(null);
                     else if (response.HttpStatusCode == 409)
-                        source.SetException(new UserCommandConflictException(response.StatusDescription));
+                        source.SetException(new UserCommandConflictException(response.HttpStatusCode, response.StatusDescription));
                     else
                         source.SetException(new UserCommandFailedException(
                             response.HttpStatusCode,
