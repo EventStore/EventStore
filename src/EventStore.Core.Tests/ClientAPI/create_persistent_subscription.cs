@@ -133,7 +133,6 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class create_persistent_subscription_after_deleting_the_same : SpecificationWithMiniNode
     {
-        private PersistentSubscriptionCreateResult _result;
         private readonly string _stream = Guid.NewGuid().ToString();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
@@ -142,15 +141,15 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
+            _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait();
             _conn.DeletePersistentSubscriptionAsync(_stream, "existing", DefaultData.AdminCredentials).Wait();
-            _result = _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Result;
+            
         }
 
         [Test]
         public void the_completion_succeeds()
         {
-            Assert.AreEqual(PersistentSubscriptionCreateStatus.Success, _result.Status);
+            Assert.DoesNotThrow(() => _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait());
         }
     }
 
