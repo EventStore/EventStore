@@ -71,12 +71,15 @@ namespace EventStore.Common.Options
             }
 
             optionSources = optionSources
-                                .Select(x => new OptionSource("Config File", x.Name, x.IsTyped, x.Value));
+                                .Select(x => new OptionSource("Update", x.Name, x.IsTyped, x.Value));
 
             var optionsToSave = Yaml.FromFile(configFile)
                                 .Concat(optionSources)
                                 .ToLookup(x => x.Name.ToLower())
                                 .Select(ResolveUpdatingPrecedence);
+
+            optionSources = optionSources
+                                .Select(x => new OptionSource("Config File", x.Name, x.IsTyped, x.Value));
 
             var conflictedOptions = effectiveOptions.DeterminePotentialPrecedenceIssues(optionSources);
 
