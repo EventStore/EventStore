@@ -8,6 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
+    [Category("LongRunning")]
     public class TestWithNode : SpecificationWithDirectoryPerTestFixture
     {
         protected MiniNode _node;
