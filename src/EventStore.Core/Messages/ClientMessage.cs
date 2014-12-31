@@ -29,10 +29,11 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly bool ExitProcess;
-
-            public RequestShutdown(bool exitProcess)
+            public readonly bool ShutdownHttp;
+            public RequestShutdown(bool exitProcess, bool shutdownHttp)
             {
                 ExitProcess = exitProcess;
+                ShutdownHttp = shutdownHttp;
             }
         }
 
