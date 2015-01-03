@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI
                 connectionSettings.ValidateServer, connectionSettings.FailOnNoServerResponse, connectionSettings.HeartbeatInterval, connectionSettings.HeartbeatTimeout,
                 connectionSettings.ClientConnectionTimeout);
             }
-            if (scheme == "discover://")
+            if (scheme == "disc")
             {
                 var clusterSettings = new ClusterSettings(null, 1, TimeSpan.Zero);
                 Ensure.NotNull(connectionSettings, "connectionSettings");
@@ -72,7 +72,7 @@ namespace EventStore.ClientAPI
 
                 return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer, connectionName);
             }
-            if (scheme == "tcp://")
+            if (scheme == "tcp")
             {
                 var tcpEndPoint = GetSingleNodeIPEndPointFrom(uri);
                 return new EventStoreNodeConnection(connectionSettings, null, new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection), connectionName);
