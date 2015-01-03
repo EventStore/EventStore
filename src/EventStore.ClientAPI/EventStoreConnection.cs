@@ -2,6 +2,7 @@
 using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -35,17 +36,6 @@ namespace EventStore.ClientAPI
             return Create(settings, uri, connectionName);
         }
 
-        private static ConnectionSettings GetSettingsFromConnectionString(string connectionString)
-        {
-            throw new NotImplementedException();
-        }
-
-        private static Uri GetUriFromConnectionString(string connectionString)
-        {
-            throw new NotImplementedException();
-        }
-
-
         /// <summary>
         /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
         /// </summary>
@@ -55,8 +45,60 @@ namespace EventStore.ClientAPI
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
         public static IEventStoreConnection Create(ConnectionSettings settings, Uri uri, string connectionName = null)
         {
-            //create connection
-            return null;
+            var scheme = uri.Scheme.ToLower();
+
+            settings = settings ?? ConnectionSettings.Default;
+            var credential = GetCredentialFromUri(uri);
+            if (credential != null)
+            {
+                settings = new ConnectionSettings(settings.Log,settings.VerboseLogging,settings.MaxQueueSize,settings.MaxConcurrentItems,
+                settings.MaxRetries,settings.MaxReconnections,settings.RequireMaster,settings.ReconnectionDelay,settings.OperationTimeout,
+                settings.OperationTimeoutCheckPeriod,credential,settings.UseSslConnection,settings.TargetHost, 
+                settings.ValidateServer, settings.FailOnNoServerResponse, settings.HeartbeatInterval, settings.HeartbeatTimeout,
+                settings.ClientConnectionTimeout);
+            }
+            if (scheme == "discover://")
+            {
+                var cluster = new ClusterSettings(null, 1, TimeSpan.Zero);
+                return Create(settings, cluster, connectionName);
+            }
+            if (scheme == "tcp://")
+            {
+                var endPoint = GetSingleNodeIPEndPointFrom(uri);
+                return Create(settings, endPoint, connectionName);
+            }
+            throw new Exception(string.Format("Unknown scheme for connection '{0}'", scheme));
+        }
+
+        private static IPEndPoint GetSingleNodeIPEndPointFrom(Uri uri)
+        {
+            var ipaddress = IPAddress.Any;
+            if (!IPAddress.TryParse(uri.Host, out ipaddress))
+            {
+                var entries = Dns.GetHostAddresses(uri.Host);
+                if(entries.Length == 0) throw new Exception(string.Format("Unable to parse ip address or lookup dns host for '{0}'", uri.Host));
+                ipaddress = entries[0];
+            }
+            var port = uri.IsDefaultPort ? 2113 : uri.Port;
+            return new IPEndPoint(ipaddress, port);
+        }
+
+        private static UserCredentials GetCredentialFromUri(Uri uri)
+        {
+            if (string.IsNullOrEmpty(uri.UserInfo)) return null; 
+            var pieces = uri.UserInfo.Split(':');
+            if(pieces.Length != 2) throw new Exception(string.Format("Unable to parse user information '{0}'", uri.UserInfo));
+            return new UserCredentials(pieces[0], pieces[1]);
+        }
+
+        private static ConnectionSettings GetSettingsFromConnectionString(string connectionString)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static Uri GetUriFromConnectionString(string connectionString)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
