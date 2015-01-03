@@ -72,6 +72,7 @@ namespace EventStore.ClientAPI
 
         private static IPEndPoint GetSingleNodeIPEndPointFrom(Uri uri)
         {
+            //TODO GFY move this all the way back into the connection so it can be done on connect not on create
             var ipaddress = IPAddress.Any;
             if (!IPAddress.TryParse(uri.Host, out ipaddress))
             {
