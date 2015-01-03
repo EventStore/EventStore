@@ -12,7 +12,7 @@ namespace EventStore.TestClient.Commands
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            int subscriptionCount = 5000;
+            var subscriptionCount = 5000;
 
             if (args.Length > 0)
             {

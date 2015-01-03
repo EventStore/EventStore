@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="IPEndPointExtensions.cs" />
     <Compile Include="UserManagement\ResetPasswordDetails.cs" />
     <Compile Include="UserManagement\ChangePasswordDetails.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />

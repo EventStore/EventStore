@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             CreateNode();
             try
             {
-                _conn = EventStoreConnection.Create(_node.TcpEndPoint);
+                _conn = EventStoreConnection.Create(new Uri("tcp://" + _node.TcpEndPoint.Address + ":" + _node.TcpEndPoint.Port));
                 _conn.ConnectAsync().Wait();
 
                 _manager = new ProjectionsManager(
