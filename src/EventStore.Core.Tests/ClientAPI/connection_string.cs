@@ -1,0 +1,53 @@
+﻿using EventStore.ClientAPI;
+using NUnit.Framework;
+
+namespace EventStore.Core.Tests.ClientAPI
+{
+    [TestFixture]
+    public class connection_string
+    {
+        [Test]
+        public void can_set_string_value()
+        {
+            var settings = ConnectionString.GetConnectionSettings("targethost=testtest");
+            Assert.AreEqual("testtest", settings.TargetHost);
+        }
+
+        [Test]
+        public void can_set_bool_value_with_string()
+        {
+            var settings = ConnectionString.GetConnectionSettings("verboselogging=true");
+            Assert.AreEqual(true, settings.VerboseLogging);
+        }
+
+        [Test]
+        public void can_set_int()
+        {
+            var settings = ConnectionString.GetConnectionSettings("maxretries=55");
+            Assert.AreEqual(55, settings.MaxRetries);
+        }
+
+        [Test]
+        public void can_set_timespan()
+        {
+            var settings = ConnectionString.GetConnectionSettings("heartbeattimeout=5555");
+            Assert.AreEqual(5555, settings.HeartbeatTimeout.TotalMilliseconds);
+        }
+
+        [Test]
+        public void can_set_multiple_values()
+        {
+            var settings = ConnectionString.GetConnectionSettings("heartbeattimeout=5555;maxretries=55");
+            Assert.AreEqual(5555, settings.HeartbeatTimeout.TotalMilliseconds);
+            Assert.AreEqual(55, settings.MaxRetries);
+        }
+
+        [Test]
+        public void can_set_mixed_case()
+        {
+            var settings = ConnectionString.GetConnectionSettings("heArtbeAtTimeout=5555");
+            Assert.AreEqual(5555, settings.HeartbeatTimeout.TotalMilliseconds);
+        }
+
+    }
+}

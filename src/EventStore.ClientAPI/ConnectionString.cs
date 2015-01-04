@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI
     public class ConnectionString
     {
 
-        private static Dictionary<Type, Func<string, object>> translators;
+        private static readonly Dictionary<Type, Func<string, object>> translators;
 
         static ConnectionString()
         {
@@ -25,7 +25,8 @@ namespace EventStore.ClientAPI
                 {typeof(long), x=>long.Parse(x)},
                 {typeof(byte), x=>byte.Parse(x)},
                 {typeof(double), x=>double.Parse(x)},
-                {typeof(float), x=>float.Parse(x)}
+                {typeof(float), x=>float.Parse(x)},
+                {typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x))}
             };
         }
 
