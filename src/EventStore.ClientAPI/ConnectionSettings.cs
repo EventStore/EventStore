@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 
@@ -31,72 +32,87 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The <see cref="ILogger"/> that this connection will use
         /// </summary>
-        public readonly ILogger Log;
+        public ILogger Log { get; private set; }
+
         /// <summary>
         /// Whether or not do excessive logging of <see cref="EventStoreConnection"/> internal logic.
         /// </summary>
-        public readonly bool VerboseLogging;
+        public bool VerboseLogging { get; private set; }
+
         /// <summary>
         /// The maximum number of outstanding items allowed in the queue
         /// </summary>
-        public readonly int MaxQueueSize;
+        public int MaxQueueSize { get; private set; }
+
         /// <summary>
         /// The maximum number of allowed asynchronous operations to be in process
         /// </summary>
-        public readonly int MaxConcurrentItems;
+        public int MaxConcurrentItems { get; private set; }
+
         /// <summary>
         /// The maximum number of retry attempts
         /// </summary>
-        public readonly int MaxRetries;
+        public int MaxRetries { get; private set; }
+
         /// <summary>
         /// The maximum number of times to allow for reconnection
         /// </summary>
-        public readonly int MaxReconnections;
+        public int MaxReconnections { get; private set; }
+
         /// <summary>
         /// Whether or not to require EventStore to refuse serving read or write request if it is not master
         /// </summary>
-        public readonly bool RequireMaster;
+        public bool RequireMaster { get; private set; }
+        
         /// <summary>
         /// The amount of time to delay before attempting to reconnect
         /// </summary>
-        public readonly TimeSpan ReconnectionDelay;
+        public TimeSpan ReconnectionDelay { get; private set; }
+
         /// <summary>
         /// The amount of time before an operation is considered to have timed out
         /// </summary>
-        public readonly TimeSpan OperationTimeout;
+        public TimeSpan OperationTimeout { get; private set; }
+
         /// <summary>
         /// The amount of time that timeouts are checked in the system.
         /// </summary>
-        public readonly TimeSpan OperationTimeoutCheckPeriod;
+        public TimeSpan OperationTimeoutCheckPeriod { get; private set; }
+
         /// <summary>
         /// The <see cref="UserCredentials"/> to use for operations where other <see cref="UserCredentials"/> are not explicitly supplied.
         /// </summary>
-        public readonly UserCredentials DefaultUserCredentials;
+        public UserCredentials DefaultUserCredentials { get; private set; }
+
         /// <summary>
         /// Whether or not the connection is encrypted using SSL.
         /// </summary>
-        public readonly bool UseSslConnection;
+        public bool UseSslConnection { get; private set; }
+
         /// <summary>
         /// The host name of the server expected on the SSL certificate.
         /// </summary>
-        public readonly string TargetHost;
+        public string TargetHost { get; private set; }
+
         /// <summary>
         /// Whether or not to validate the server SSL certificate.
         /// </summary>
-        public readonly bool ValidateServer;
+        public bool ValidateServer { get; private set; }
 
         /// <summary>
         /// Whether or not to raise an error if no response is received from the server for an operation.
         /// </summary>
-        public readonly bool FailOnNoServerResponse;
+        public bool FailOnNoServerResponse { get; private set; }
+
         /// <summary>
         /// The interval at which to send heartbeat messages.
         /// </summary>
-        public readonly TimeSpan HeartbeatInterval;
+        public TimeSpan HeartbeatInterval { get; private set; }
+
         /// <summary>
         /// The interval after which an unacknowledged heartbeat will cause the connection to be considered faulted and disconnect.
         /// </summary>
-        public readonly TimeSpan HeartbeatTimeout;
+        public TimeSpan HeartbeatTimeout { get; private set; }
 
 
         /// <summary>
