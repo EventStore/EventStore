@@ -43,11 +43,8 @@ namespace EventStore.ClientAPI
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
         /// <param name="uri">The Uri to connect to. It can be tcp:// to point to a single node or discover:// to discover nodes</param>
-        /// <param name="gossipTimeout">The timeout to set for gossip if using discovery</param>
-        /// <param name="maxDiscoverRetries">The maximum number of times to try to discover if using discovery</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
-        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, Uri uri, string connectionName = null, 
-                                                   TimeSpan? gossipTimeout=null, int maxDiscoverRetries=int.MaxValue) //TODO CONN move to connection settings
+        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, Uri uri, string connectionName = null) 
         {
             var scheme = uri.Scheme.ToLower();
             
@@ -59,11 +56,12 @@ namespace EventStore.ClientAPI
                 connectionSettings.MaxRetries,connectionSettings.MaxReconnections,connectionSettings.RequireMaster,connectionSettings.ReconnectionDelay,connectionSettings.OperationTimeout,
                 connectionSettings.OperationTimeoutCheckPeriod,credential,connectionSettings.UseSslConnection,connectionSettings.TargetHost, 
                 connectionSettings.ValidateServer, connectionSettings.FailOnNoServerResponse, connectionSettings.HeartbeatInterval, connectionSettings.HeartbeatTimeout,
-                connectionSettings.ClientConnectionTimeout);
+                connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns, connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
+                connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout);
             }
             if (scheme == "disc")
             {
-                var clusterSettings = new ClusterSettings(uri.Host, maxDiscoverRetries, uri.Port, gossipTimeout ?? TimeSpan.FromSeconds(5));
+                var clusterSettings = new ClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts, uri.Port, connectionSettings.GossipTimeout);
                 Ensure.NotNull(connectionSettings, "connectionSettings");
                 Ensure.NotNull(clusterSettings, "clusterSettings");
 
