@@ -47,7 +47,7 @@ namespace EventStore.ClientAPI
         /// <param name="maxDiscoverRetries">The maximum number of times to try to discover if using discovery</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
         public static IEventStoreConnection Create(ConnectionSettings connectionSettings, Uri uri, string connectionName = null, 
-                                                   TimeSpan? gossipTimeout=null, int maxDiscoverRetries=int.MaxValue)
+                                                   TimeSpan? gossipTimeout=null, int maxDiscoverRetries=int.MaxValue) //TODO CONN move to connection settings
         {
             var scheme = uri.Scheme.ToLower();
             
