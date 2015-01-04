@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 
 namespace EventStore.ClientAPI
 {
@@ -49,7 +48,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="connectionString"></param>
         /// <returns>a <see cref="ConnectionSettings"/> from the connection string</returns>
-        public static ConnectionSettings GetForConnectionString(string connectionString)
+        public static ConnectionSettings GetConnectionSettings(string connectionString)
         {
             var settings = ConnectionSettings.Default;
             var items = GetConnectionStringInfo(connectionString).ToArray();
@@ -58,7 +57,7 @@ namespace EventStore.ClientAPI
 
         private static T Apply<T>(IEnumerable<KeyValuePair<string , string>> items, T obj)
         {
-            var fields = typeof (T).GetFields(BindingFlags.Instance & BindingFlags.Public).ToDictionary(x => x.Name.ToLower(), x=>x);
+            var fields = typeof (T).GetFields().Where(x=>x.IsPublic).ToDictionary(x => x.Name.ToLower(), x=>x);
             foreach (var item in items)
             {
                 FieldInfo fi = null;
