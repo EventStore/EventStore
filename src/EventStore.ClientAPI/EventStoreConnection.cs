@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Core;
@@ -31,7 +32,7 @@ namespace EventStore.ClientAPI
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
         public static IEventStoreConnection Create(string connectionString, string connectionName = null)
         {
-            var settings = GetSettingsFromConnectionString(connectionString);
+            var settings = ConnectionString.GetConnectionSettings(connectionString);
             var uri = GetUriFromConnectionString(connectionString);
             return Create(settings, uri, connectionName);
         }
@@ -42,11 +43,14 @@ namespace EventStore.ClientAPI
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
         /// <param name="uri">The Uri to connect to. It can be tcp:// to point to a single node or discover:// to discover nodes</param>
+        /// <param name="gossipTimeout">The timeout to set for gossip if using discovery</param>
+        /// <param name="maxDiscoverRetries">The maximum number of times to try to discover if using discovery</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
-        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, Uri uri, string connectionName = null)
+        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, Uri uri, string connectionName = null, 
+                                                   TimeSpan? gossipTimeout=null, int maxDiscoverRetries=int.MaxValue)
         {
             var scheme = uri.Scheme.ToLower();
-
+            
             connectionSettings = connectionSettings ?? ConnectionSettings.Default;
             var credential = GetCredentialFromUri(uri);
             if (credential != null)
@@ -59,7 +63,7 @@ namespace EventStore.ClientAPI
             }
             if (scheme == "disc")
             {
-                var clusterSettings = new ClusterSettings(null, 1, TimeSpan.Zero);
+                var clusterSettings = new ClusterSettings(uri.Host, maxDiscoverRetries, uri.Port, gossipTimeout ?? TimeSpan.FromSeconds(5));
                 Ensure.NotNull(connectionSettings, "connectionSettings");
                 Ensure.NotNull(clusterSettings, "clusterSettings");
 
@@ -102,14 +106,12 @@ namespace EventStore.ClientAPI
             return new UserCredentials(pieces[0], pieces[1]);
         }
 
-        private static ConnectionSettings GetSettingsFromConnectionString(string connectionString)
-        {
-            throw new NotImplementedException();
-        }
-
         private static Uri GetUriFromConnectionString(string connectionString)
         {
-            throw new NotImplementedException();
+            var connto = ConnectionString.GetConnectionStringInfo(connectionString)
+                .First(x => x.Key.ToLower() == "connectto").Value;
+            if(connto == null) throw new Exception(string.Format("Did not find ConnectTo in the connection string.\n'{0}'", connectionString));
+            return new Uri(connto);
         }
 
         /// <summary>

@@ -35,14 +35,13 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="connectionString">the connection string to parse</param>
         /// <returns></returns>
-        private static IEnumerable<KeyValuePair<string, string>> GetConnectionStringInfo(string connectionString)
+        internal static IEnumerable<KeyValuePair<string, string>> GetConnectionStringInfo(string connectionString)
         {
             var builder = new DbConnectionStringBuilder(false) { ConnectionString = connectionString };
             //can someome mutate this builder before the enumerable is closed sure but thats the fun!
             return from object key in builder.Keys
                 select new KeyValuePair<string, string>(key.ToString(), builder[key.ToString()].ToString());
         }
-
  
         /// <summary>
         /// Returns a <see cref="ConnectionSettings"></see> for a given connection string.
