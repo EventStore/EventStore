@@ -74,6 +74,24 @@ namespace EventStore.ClientAPI
 
                 return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer, connectionName);
             }
+            if (scheme == "gossipseeds")
+            {
+                var clusterSettings = new ClusterSettings(connectionSettings.GossipSeeds,
+                                                          connectionSettings.MaxDiscoverAttempts, 
+                                                          connectionSettings.GossipTimeout);
+                Ensure.NotNull(connectionSettings, "connectionSettings");
+                Ensure.NotNull(clusterSettings, "clusterSettings");
+
+                var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
+                                                                          clusterSettings.ClusterDns,
+                                                                          clusterSettings.MaxDiscoverAttempts,
+                                                                          clusterSettings.ExternalGossipPort,
+                                                                          clusterSettings.GossipSeeds,
+                                                                          clusterSettings.GossipTimeout);
+
+                return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer, connectionName);
+            }
+
             if (scheme == "tcp")
             {
                 var tcpEndPoint = GetSingleNodeIPEndPointFrom(uri);

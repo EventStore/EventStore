@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Runtime.Remoting.Messaging;
 
 namespace EventStore.ClientAPI
 {
@@ -26,7 +28,22 @@ namespace EventStore.ClientAPI
                 {typeof(byte), x=>byte.Parse(x)},
                 {typeof(double), x=>double.Parse(x)},
                 {typeof(float), x=>float.Parse(x)},
-                {typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x))}
+                {typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x))},
+                {typeof(GossipSeed[]), x => x.Split(',').Select(q =>
+                {
+                    try
+                    {
+                        var pieces = q.Trim().Split(':');
+                        if (pieces.Length != 2) throw new Exception("could not split ip address from port.");
+                            
+                        return new GossipSeed(new IPEndPoint(IPAddress.Parse(pieces[0]), int.Parse(pieces[1])));
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
+                    }
+                }).ToArray()
+                }
             };
         }
 

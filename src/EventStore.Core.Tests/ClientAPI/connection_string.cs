@@ -49,5 +49,11 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(5555, settings.HeartbeatTimeout.TotalMilliseconds);
         }
 
+        [Test]
+        public void can_set_gossip_seeds()
+        {
+            var settings = ConnectionString.GetConnectionSettings("gossipseeds=111.222.222.111:1111,111.222.222.111:1112,111.222.222.111:1113");
+            Assert.AreEqual(3, settings.GossipSeeds.Length);
+        }
     }
 }
