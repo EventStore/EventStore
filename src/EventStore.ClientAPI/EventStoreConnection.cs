@@ -42,11 +42,22 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
-        /// <param name="uri">The Uri to connect to. It can be tcp:// to point to a single node or discover:// to discover nodes</param>
+        /// <returns>a new <see cref="IEventStoreConnection"/></returns>
+        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, string connectionName = null)
+        {
+            return Create(connectionSettings, (Uri) null, connectionName);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
+        /// </summary>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
+        /// <param name="uri">The Uri to connect to. It can be tcp:// to point to a single node or discover:// to discover nodes via dns</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
         public static IEventStoreConnection Create(ConnectionSettings connectionSettings, Uri uri, string connectionName = null) 
         {
-            var scheme = uri.Scheme.ToLower();
+            var scheme = uri == null ? "" : uri.Scheme.ToLower();
             
             connectionSettings = connectionSettings ?? ConnectionSettings.Default;
             var credential = GetCredentialFromUri(uri);
@@ -59,7 +70,7 @@ namespace EventStore.ClientAPI
                 connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns, connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
                 connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout);
             }
-            if (scheme == "disc")
+            if (scheme == "discover")
             {
                 var clusterSettings = new ClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts, uri.Port, connectionSettings.GossipTimeout);
                 Ensure.NotNull(connectionSettings, "connectionSettings");
@@ -74,28 +85,29 @@ namespace EventStore.ClientAPI
 
                 return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer, connectionName);
             }
-            if (scheme == "gossipseeds")
-            {
-                var clusterSettings = new ClusterSettings(connectionSettings.GossipSeeds,
-                                                          connectionSettings.MaxDiscoverAttempts, 
-                                                          connectionSettings.GossipTimeout);
-                Ensure.NotNull(connectionSettings, "connectionSettings");
-                Ensure.NotNull(clusterSettings, "clusterSettings");
-
-                var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
-                                                                          clusterSettings.ClusterDns,
-                                                                          clusterSettings.MaxDiscoverAttempts,
-                                                                          clusterSettings.ExternalGossipPort,
-                                                                          clusterSettings.GossipSeeds,
-                                                                          clusterSettings.GossipTimeout);
-
-                return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer, connectionName);
-            }
-
+            
             if (scheme == "tcp")
             {
                 var tcpEndPoint = GetSingleNodeIPEndPointFrom(uri);
                 return new EventStoreNodeConnection(connectionSettings, null, new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection), connectionName);
+            }
+            if (connectionSettings.GossipSeeds.Length > 0)
+            {
+                var clusterSettings = new ClusterSettings(connectionSettings.GossipSeeds,
+                    connectionSettings.MaxDiscoverAttempts,
+                    connectionSettings.GossipTimeout);
+                Ensure.NotNull(connectionSettings, "connectionSettings");
+                Ensure.NotNull(clusterSettings, "clusterSettings");
+
+                var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
+                    clusterSettings.ClusterDns,
+                    clusterSettings.MaxDiscoverAttempts,
+                    clusterSettings.ExternalGossipPort,
+                    clusterSettings.GossipSeeds,
+                    clusterSettings.GossipTimeout);
+
+                return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
+                    connectionName);
             }
             throw new Exception(string.Format("Unknown scheme for connection '{0}'", scheme));
         }
