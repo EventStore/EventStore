@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -26,6 +27,7 @@ namespace EventStore.Core.Services.UserManagement
         public const string PasswordChanged = "$PasswordChanged";
         public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
         public const string UsersStream = "$Users";
+        public const string UsersStreamType = "$User";
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
@@ -50,7 +52,7 @@ namespace EventStore.Core.Services.UserManagement
             WriteStreamAcl(
                 message, message.LoginName,
                 () => WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream,
-                () => WriteUsersStreamEvent(message, userData.LoginName)));
+                () => WriteUsersStreamEvent(userData.LoginName, completed => WriteUsersStreamCompleted(completed, message))));
         }
 
         public void Handle(UserManagementMessage.Update message)
@@ -257,7 +259,7 @@ namespace EventStore.Core.Services.UserManagement
             string loginName, Action<ClientMessage.WriteEventsCompleted> completed)
         {
             var streamMetadata =
-                new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1), null, null));
+                new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1)));
             _ioDispatcher.ConfigureStreamAndWriteEvents(
                 UserPasswordNotificationsStreamId, ExpectedVersion.Any, streamMetadata,
                 new[] {CreatePasswordChangedEvent(loginName)}, SystemAccount.Principal, completed);
@@ -369,12 +371,12 @@ namespace EventStore.Core.Services.UserManagement
             ReplyByWriteResult(message, completed.Result);
         }
 
-        private void WriteUsersStreamEvent(UserManagementMessage.UserManagementRequestMessage message, string loginName)
+        private void WriteUsersStreamEvent(string loginName, Action<ClientMessage.WriteEventsCompleted> onCompleted)
         {
-            var userCreatedEvent = new Event(Guid.NewGuid(), UsersStream, false, loginName, null);
+            var userCreatedEvent = new Event(Guid.NewGuid(), UsersStreamType, false, loginName, null);
             _ioDispatcher.WriteEvents(
                 "$users", ExpectedVersion.Any, new[] {userCreatedEvent}, SystemAccount.Principal,
-                completed => WriteUsersStreamCompleted(completed, message));
+                onCompleted);
         }
 
         private static void WriteUsersStreamCompleted(ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message)
@@ -476,15 +478,27 @@ namespace EventStore.Core.Services.UserManagement
                                         switch (completed.Result)
                                         {
                                             case OperationResult.Success:
-                                                _log.Info("'admin' user account has been created");
-                                                NotifyInitialized();
+                                                _log.Info("'admin' user account has been created.");
+                                                WriteUsersStreamEvent("admin", x =>
+                                                    {
+                                                        if (x.Result == OperationResult.Success)
+                                                        {
+                                                            _log.Info("'admin' user added to $users.");
+                                                        }
+                                                        else
+                                                        {
+                                                            _log.Error(string.Format("unable to add 'admin' to $users. {0}", x.Result));
+                                                        }
+                                                        NotifyInitialized();
+                                                    });
                                                 break;
                                             case OperationResult.CommitTimeout:
                                             case OperationResult.PrepareTimeout:
+                                                _log.Error("'admin' user account creation timed out retrying.");
                                                 CreateAdminUser();
                                                 break;
                                             default:
-                                                _log.Error("'admin' user account could not be created");
+                                                _log.Error("'admin' user account could not be created.");
                                                 NotifyInitialized();
                                                 break;
                                         }
