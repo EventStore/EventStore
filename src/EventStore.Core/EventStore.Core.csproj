@@ -304,6 +304,10 @@
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
+    <Compile Include="TransactionLog\Unbuffered\NativeFile.cs" />
+    <Compile Include="TransactionLog\Unbuffered\UnbufferedStream.cs" />
+    <Compile Include="TransactionLog\Unbuffered\UnixNative.cs" />
+    <Compile Include="TransactionLog\Unbuffered\WinNative.cs" />
     <Compile Include="Util\FileUtil.cs" />
     <Compile Include="Util\MD5Hash.cs" />
     <Compile Include="Messages\TcpClientMessageDto.cs" />
