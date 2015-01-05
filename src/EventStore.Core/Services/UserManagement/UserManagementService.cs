@@ -408,6 +408,7 @@ namespace EventStore.Core.Services.UserManagement
             if (completed.Result == OperationResult.Success)
             {
                  ReplyUpdated(message);
+                 return;
             }
             ReplyByWriteResult(message, completed.Result);
         }
