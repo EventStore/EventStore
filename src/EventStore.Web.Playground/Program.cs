@@ -63,7 +63,7 @@ namespace EventStore.Web.Playground
 
         public override void Stop()
         {
-            _node.Stop(exitProcess: true);
+            _node.Stop(exitProcess: true, shutdownHttp:true);
         }
     }
 }

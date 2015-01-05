@@ -167,9 +167,9 @@ namespace EventStore.Web.Playground
             MainQueue.Publish(new SystemMessage.SystemInit());
         }
 
-        public void Stop(bool exitProcess)
+        public void Stop(bool exitProcess, bool shutdownHttp)
         {
-            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess));
+            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess, shutdownHttp));
         }
 
         public override string ToString()

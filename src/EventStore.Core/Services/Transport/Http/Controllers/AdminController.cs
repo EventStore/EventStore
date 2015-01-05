@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
             {
                 Log.Info("Request shut down of node because shutdown command has been received.");
-                Publish(new ClientMessage.RequestShutdown(exitProcess: true));
+                Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
                 entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
             }
             else

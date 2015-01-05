@@ -519,9 +519,9 @@ namespace EventStore.Core
                 subsystem.Start();
         }
 
-        public void StopNonblocking()
+        public void StopNonblocking(bool exitProcess, bool shutdownHttp)
         {
-            _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
+            _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess, shutdownHttp));
 
             if (_subsystems == null) return;
             foreach (var subsystem in _subsystems)
@@ -530,12 +530,12 @@ namespace EventStore.Core
 
         public bool Stop()
         {
-            return Stop(TimeSpan.FromSeconds(15));
+            return Stop(TimeSpan.FromSeconds(15), false, true);
         }
 
-        public bool Stop(TimeSpan timeout)
+        public bool Stop(TimeSpan timeout,bool exitProcess, bool shutdownHttp)
         {
-            StopNonblocking();
+            StopNonblocking(exitProcess, shutdownHttp);
             return _shutdownEvent.WaitOne(timeout);
         }
 
