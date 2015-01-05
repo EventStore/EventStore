@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -47,7 +47,11 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Create message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            }
             var userData = CreateUserData(message);
             WriteStreamAcl(
                 message, message.LoginName,
@@ -57,26 +61,42 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Update message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateWriteReply(
                 message, data => data.SetFullName(message.FullName).SetGroups(message.Groups), resetPasswordCache: false);
         }
 
         public void Handle(UserManagementMessage.Enable message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateWriteReply(message, data => data.SetEnabled(), resetPasswordCache: false);
         }
 
         public void Handle(UserManagementMessage.Disable message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateWriteReply(message, data => data.SetDisabled(), resetPasswordCache: true);
         }
 
         public void Handle(UserManagementMessage.ResetPassword message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             string hash;
             string salt;
             _passwordHashAlgorithm.Hash(message.NewPassword, out hash, out salt);
@@ -101,7 +121,11 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Delete message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateCheckAnd(
                 message,
                 (completed, data) =>
@@ -508,15 +532,9 @@ namespace EventStore.Core.Services.UserManagement
                 });
         }
 
-        private bool DemandAdmin(UserManagementMessage.UserManagementRequestMessage message)
+        private bool IsAdmin(IPrincipal principal)
         {
-            if (message.Principal == null || !message.Principal.IsInRole(SystemRoles.Admins))
-            {
-                ReplyUnauthorized(message);
-                return false;
-            }
-            return true;
+            return principal != null && principal.IsInRole(SystemRoles.Admins);
         }
-
     }
 }
