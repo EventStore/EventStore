@@ -8,12 +8,10 @@ namespace EventStore.ClientAPI.Common.Log
     /// </summary>
     class FileLogger : ILogger, IDisposable
     {
-        private readonly string _filename;
         private StreamWriter _streamWriter;
 
         public FileLogger(string filename)
         {
-            _filename = filename;
             OpenFile(filename);
         }
 
