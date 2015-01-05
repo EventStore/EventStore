@@ -147,13 +147,6 @@ namespace EventStore.ClusterNode
             var infoController = new InfoController(opts, opts.RunProjections);
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, infoController, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
-            RegisterUiProjections();
-        }
-
-        private void RegisterUiProjections()
-        {
-            var users = new UserManagementProjectionsRegistration();
-            _node.MainBus.Subscribe(users);
         }
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterVNodeSettings settings)

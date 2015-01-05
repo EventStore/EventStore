@@ -35,8 +35,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Users\IndexUsersProjectionHandler.cs" />
-    <Compile Include="Users\UserManagementProjectionsRegistration.cs" />
     <Compile Include="Users\UsersWebController.cs" />
   </ItemGroup>
   <ItemGroup>
