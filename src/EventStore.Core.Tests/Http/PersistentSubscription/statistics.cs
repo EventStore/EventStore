@@ -464,7 +464,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void Given()
         {
-            _conn = EventStoreConnection.Create(_node.TcpEndPoint);
+            _conn = EventStoreConnection.Create(_node.TcpEndPoint.ToESTcpUri());
             _conn.ConnectAsync().Wait();
             _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
                     DefaultData.AdminCredentials).Wait();

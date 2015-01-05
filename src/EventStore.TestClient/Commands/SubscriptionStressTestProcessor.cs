@@ -12,7 +12,7 @@ namespace EventStore.TestClient.Commands
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            int subscriptionCount = 5000;
+            var subscriptionCount = 5000;
 
             if (args.Length > 0)
             {
@@ -26,8 +26,8 @@ namespace EventStore.TestClient.Commands
             var conn = EventStoreConnection.Create(ConnectionSettings.Create()
                                                                      .UseCustomLogger(new ClientApiLoggerBridge(context.Log))
                                                                      .FailOnNoServerResponse()
-                                                                     /*.EnableVerboseLogging()*/, 
-                                                                     context.Client.TcpEndpoint);
+                                                                     /*.EnableVerboseLogging()*/,
+                                                                     new Uri(string.Format("tcp://{0}:{1}", context.Client.TcpEndpoint.Address, context.Client.TcpEndpoint.Port)));
             conn.ConnectAsync().Wait();
 
             long appearedCnt = 0;

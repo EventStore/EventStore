@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Net;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -33,6 +35,12 @@ namespace EventStore.ClientAPI
         private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
         private TimeSpan _heartbeatTimeout = TimeSpan.FromMilliseconds(1500);
         private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
+        private string _clusterDns;
+        private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
+        private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
+        private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
+        private GossipSeed[] _gossipSeeds;
+
 
         internal ConnectionSettingsBuilder()
         {
@@ -298,6 +306,103 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Sets the DNS name under which cluster nodes are listed.
+        /// </summary>
+        /// <param name="clusterDns">The DNS name under which cluster nodes are listed.</param>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
+        public ConnectionSettingsBuilder SetClusterDns(string clusterDns)
+        {
+            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+            _clusterDns = clusterDns;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum number of attempts for discovery.
+        /// </summary>
+        /// <param name="maxDiscoverAttempts">The maximum number of attempts for DNS discovery.</param>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="maxDiscoverAttempts" /> is less than or equal to 0.</exception>
+        public ConnectionSettingsBuilder SetMaxDiscoverAttempts(int maxDiscoverAttempts)
+        {
+            if (maxDiscoverAttempts <= 0)
+                throw new ArgumentOutOfRangeException("maxDiscoverAttempts", string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [-1, infinity].", maxDiscoverAttempts));
+            _maxDiscoverAttempts = maxDiscoverAttempts;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the period after which gossip times out if none is received.
+        /// </summary>
+        /// <param name="timeout">The period after which gossip times out if none is received.</param>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        public ConnectionSettingsBuilder SetGossipTimeout(TimeSpan timeout)
+        {
+            _gossipTimeout = timeout;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the well-known port on which the cluster gossip is taking place.
+        /// 
+        /// If you are using the commercial edition of Event Store HA, with Manager nodes in
+        /// place, this should be the port number of the External HTTP port on which the
+        /// managers are running.
+        /// 
+        /// If you are using the open source edition of Event Store HA, this should be the
+        /// External HTTP port that the nodes are running on. If you cannot use a well-known
+        /// port for this across all nodes, you can instead use gossip seed discovery and set
+        /// the <see cref="IPEndPoint" /> of some seed nodes instead.
+        /// </summary>
+        /// <param name="clusterGossipPort">The cluster gossip port.</param>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        public ConnectionSettingsBuilder SetClusterGossipPort(int clusterGossipPort)
+        {
+            Ensure.Positive(clusterGossipPort, "clusterGossipPort");
+            _gossipExternalHttpPort = clusterGossipPort;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets gossip seed endpoints for the client.
+        /// 
+        /// Note that this should be the external HTTP endpoint of the server, as it is required
+        /// for the client to exchange gossip with the server. The standard port which should be
+        /// used here is 2113.
+        /// 
+        /// If the server requires a specific Host header to be sent as part of the gossip
+        /// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
+        /// </summary>
+        /// <param name="gossipSeeds"><see cref="IPEndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
+        /// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
+        public ConnectionSettingsBuilder SetGossipSeedEndPoints(params IPEndPoint[] gossipSeeds)
+        {
+            if (gossipSeeds == null || gossipSeeds.Length == 0)
+                throw new ArgumentException("Empty FakeDnsEntries collection.");
+
+            _gossipSeeds = gossipSeeds.Select(x => new GossipSeed(x)).ToArray();
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets gossip seed endpoints for the client.
+        /// </summary>
+        /// <param name="gossipSeeds"><see cref="GossipSeed"/>s representing the endpoints of nodes from which to seed gossip.</param>
+        /// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
+        public ConnectionSettingsBuilder SetGossipSeedEndPoints(params GossipSeed[] gossipSeeds)
+        {
+            if (gossipSeeds == null || gossipSeeds.Length == 0)
+                throw new ArgumentException("Empty FakeDnsEntries collection.");
+            _gossipSeeds = gossipSeeds;
+            return this;
+        }
+
+
+        /// <summary>
         /// Convert the mutable <see cref="ConnectionSettingsBuilder"/> object to an immutable
         /// <see cref="ConnectionSettings"/> object.
         /// </summary>
@@ -313,24 +418,29 @@ namespace EventStore.ClientAPI
         /// <see cref="ConnectionSettings"/> object.
         /// </summary>
         public ConnectionSettings Build() {
-            return new ConnectionSettings(this._log,
-                                          this._verboseLogging,
-                                          this._maxQueueSize,
-                                          this._maxConcurrentItems,
-                                          this._maxRetries,
-                                          this._maxReconnections,
-                                          this._requireMaster,
-                                          this._reconnectionDelay,
-                                          this._operationTimeout,
-                                          this._operationTimeoutCheckPeriod,
-                                          this._defaultUserCredentials,
-                                          this._useSslConnection,
-                                          this._targetHost,
-                                          this._validateServer,
-                                          this._failOnNoServerResponse,
-                                          this._heartbeatInterval,
-                                          this._heartbeatTimeout,
-                                          this._clientConnectionTimeout);
+            return new ConnectionSettings(_log,
+                                          _verboseLogging,
+                                          _maxQueueSize,
+                                          _maxConcurrentItems,
+                                          _maxRetries,
+                                          _maxReconnections,
+                                          _requireMaster,
+                                          _reconnectionDelay,
+                                          _operationTimeout,
+                                          _operationTimeoutCheckPeriod,
+                                          _defaultUserCredentials,
+                                          _useSslConnection,
+                                          _targetHost,
+                                          _validateServer,
+                                          _failOnNoServerResponse,
+                                          _heartbeatInterval,
+                                          _heartbeatTimeout,
+                                          _clientConnectionTimeout,
+                                          _clusterDns,
+                                          _gossipSeeds,
+                                          _maxDiscoverAttempts,
+                                          _gossipExternalHttpPort,
+                                          _gossipTimeout);
         }
 
     }

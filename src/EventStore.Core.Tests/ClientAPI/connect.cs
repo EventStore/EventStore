@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.ClientAPI
             int port = PortsHelper.GetAvailablePort(ip);
             try
             {
-                using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
+                using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port).ToESTcpUri()))
                 {
                     connection.Closed += (s, e) => closed.Set();
 
@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.ClientAPI
             int port = PortsHelper.GetAvailablePort(ip);
             try
             {
-                using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
+                using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port).ToESTcpUri()))
                 {
                     connection.Closed += (s, e) => closed.Set();
                     connection.Connected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);
@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             var ip = new IPAddress(new byte[] {8, 8, 8, 8}); //NOTE: This relies on Google DNS server being configured to swallow nonsense traffic
             const int port = 4567;
-            using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port)))
+            using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port).ToESTcpUri()))
             {
                 connection.Closed += (s, e) => closed.Set();
                 connection.Connected += (s, e) => Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...", e.Connection.ConnectionName, e.RemoteEndPoint);

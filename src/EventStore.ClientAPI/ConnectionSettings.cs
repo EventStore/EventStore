@@ -98,6 +98,28 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly TimeSpan HeartbeatTimeout;
 
+        /// <summary>
+        /// The DNS name to use for discovering endpoints.
+        /// </summary>
+        public readonly string ClusterDns;
+        /// <summary>
+        /// The maximum number of attempts for discovering endpoints.
+        /// </summary>
+        public readonly int MaxDiscoverAttempts;
+        /// <summary>
+        /// The well-known endpoint on which cluster managers are running.
+        /// </summary>
+        public readonly int ExternalGossipPort;
+
+        /// <summary>
+        /// Endpoints for seeding gossip if not using DNS.
+        /// </summary>
+        public readonly GossipSeed[] GossipSeeds;
+
+        /// <summary>
+        /// Timeout for cluster gossip.
+        /// </summary>
+        public readonly TimeSpan GossipTimeout;
 
         /// <summary>
         /// The interval after which a client will time out during connection.
@@ -121,7 +143,12 @@ namespace EventStore.ClientAPI
                                     bool failOnNoServerResponse,
                                     TimeSpan heartbeatInterval,
                                     TimeSpan heartbeatTimeout,
-                                    TimeSpan clientConnectionTimeout)
+                                    TimeSpan clientConnectionTimeout,
+                                    string clusterDns,
+                                    GossipSeed[] gossipSeeds,
+                                    int maxDiscoverAttempts, 
+                                    int externalGossipPort, 
+                                    TimeSpan gossipTimeout)
         {
             Ensure.NotNull(log, "log");
             Ensure.Positive(maxQueueSize, "maxQueueSize");
@@ -132,7 +159,6 @@ namespace EventStore.ClientAPI
                 throw new ArgumentOutOfRangeException("maxReconnections", string.Format("maxReconnections value is out of range: {0}. Allowed range: [-1, infinity].", maxRetries));
             if (useSslConnection)
                 Ensure.NotNullOrEmpty(targetHost, "targetHost");
-
             Log = log;
             VerboseLogging = verboseLogging;
             MaxQueueSize = maxQueueSize;
@@ -152,6 +178,11 @@ namespace EventStore.ClientAPI
             FailOnNoServerResponse = failOnNoServerResponse;
             HeartbeatInterval = heartbeatInterval;
             HeartbeatTimeout = heartbeatTimeout;
+            ClusterDns = clusterDns;
+            GossipSeeds = gossipSeeds;
+            MaxDiscoverAttempts = maxDiscoverAttempts;
+            ExternalGossipPort = externalGossipPort;
+            GossipTimeout = gossipTimeout;
         }
     }
 }

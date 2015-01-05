@@ -136,7 +136,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                         .LimitRetriesForOperationTo(maxReconnections)
                                         .LimitReconnectionsTo(maxOperationRetries)
                                         .FailOnNoServerResponse(),
-                    new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.TcpPort),
+                    new Uri(string.Format("tcp://{0}:{1}", _nodeConnection.IpAddress, _nodeConnection.TcpPort)),
                     string.Format("ESConn-{0}", i));
                 _connections[i].Closed += (s, e) => Log.Debug("[SCENARIO] {0} closed.", e.Connection.ConnectionName);
                 _connections[i].Connected += (s, e) => Log.Debug("[SCENARIO] {0} connected to [{1}].", e.Connection.ConnectionName, e.RemoteEndPoint);
