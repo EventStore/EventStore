@@ -1008,16 +1008,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_getting_all_users : TestFixtureWithUserManagementService
         {
-            protected override void Given()
-            {
-                base.Given();
-                // simulate index-users projection
-                ExistingEvent("$users", "$User", null, "user1");
-                ExistingEvent("$users", "$User", null, "user2");
-                ExistingEvent("$users", "$User", null, "user3");
-                ExistingEvent("$users", "$User", null, "another_user");
-            }
-
             protected override IEnumerable<WhenStep> GivenCommands()
             {
                 var replyTo = Envelope;

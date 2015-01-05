@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -25,6 +26,8 @@ namespace EventStore.Core.Services.UserManagement
         public const string UserUpdated = "$UserUpdated";  
         public const string PasswordChanged = "$PasswordChanged";
         public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
+        public const string UsersStream = "$Users";
+        public const string UsersStreamType = "$User";
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
@@ -44,35 +47,56 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Create message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            }
             var userData = CreateUserData(message);
             WriteStreamAcl(
                 message, message.LoginName,
-                () => WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream));
+                () => WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream,
+                () => WriteUsersStreamEvent(userData.LoginName, completed => WriteUsersStreamCompleted(completed, message))));
         }
 
         public void Handle(UserManagementMessage.Update message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateWriteReply(
                 message, data => data.SetFullName(message.FullName).SetGroups(message.Groups), resetPasswordCache: false);
         }
 
         public void Handle(UserManagementMessage.Enable message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateWriteReply(message, data => data.SetEnabled(), resetPasswordCache: false);
         }
 
         public void Handle(UserManagementMessage.Disable message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateWriteReply(message, data => data.SetDisabled(), resetPasswordCache: true);
         }
 
         public void Handle(UserManagementMessage.ResetPassword message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             string hash;
             string salt;
             _passwordHashAlgorithm.Hash(message.NewPassword, out hash, out salt);
@@ -97,7 +121,11 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(UserManagementMessage.Delete message)
         {
-            if (!DemandAdmin(message)) return;
+            if (!IsAdmin(message.Principal))
+            {
+                ReplyUnauthorized(message);
+                return;
+            } 
             ReadUpdateCheckAnd(
                 message,
                 (completed, data) =>
@@ -233,7 +261,7 @@ namespace EventStore.Core.Services.UserManagement
                         {
                             WritePasswordChangedEventConditionalAnd(
                                 message, resetPasswordCache,
-                                () => WriteUserEvent(message, updated, UserUpdated, completed.FromEventNumber));
+                                () => WriteUserEvent(message, updated, UserUpdated, completed.FromEventNumber, null));
                         }
                     });
         }
@@ -255,7 +283,7 @@ namespace EventStore.Core.Services.UserManagement
             string loginName, Action<ClientMessage.WriteEventsCompleted> completed)
         {
             var streamMetadata =
-                new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1), null, null));
+                new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1)));
             _ioDispatcher.ConfigureStreamAndWriteEvents(
                 UserPasswordNotificationsStreamId, ExpectedVersion.Any, streamMetadata,
                 new[] {CreatePasswordChangedEvent(loginName)}, SystemAccount.Principal, completed);
@@ -334,10 +362,10 @@ namespace EventStore.Core.Services.UserManagement
 
         private void WriteUserEvent(
             UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
-            int expectedVersion)
+            int expectedVersion, Action after)
         {
             WriteUserEvent(
-                userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message));
+                userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message, after));
         }
 
         private void WriteUserEvent(
@@ -350,13 +378,37 @@ namespace EventStore.Core.Services.UserManagement
                 onCompleted);
         }
 
-        private static void WriteUserCreatedCompleted(
-            ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message)
+        private static void WriteUserCreatedCompleted(ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message, Action after)
         {
             if (completed.Result == OperationResult.Success)
             {
-                ReplyUpdated(message);
+                if (after != null)
+                {
+                    after();
+                }
+                else
+                {
+                    ReplyUpdated(message);
+                }
                 return;
+            }
+            ReplyByWriteResult(message, completed.Result);
+        }
+
+        private void WriteUsersStreamEvent(string loginName, Action<ClientMessage.WriteEventsCompleted> onCompleted)
+        {
+            var userCreatedEvent = new Event(Guid.NewGuid(), UsersStreamType, false, loginName, null);
+            _ioDispatcher.WriteEvents(
+                "$users", ExpectedVersion.Any, new[] {userCreatedEvent}, SystemAccount.Principal,
+                onCompleted);
+        }
+
+        private static void WriteUsersStreamCompleted(ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message)
+        {
+            if (completed.Result == OperationResult.Success)
+            {
+                 ReplyUpdated(message);
+                 return;
             }
             ReplyByWriteResult(message, completed.Result);
         }
@@ -451,15 +503,27 @@ namespace EventStore.Core.Services.UserManagement
                                         switch (completed.Result)
                                         {
                                             case OperationResult.Success:
-                                                _log.Info("'admin' user account has been created");
-                                                NotifyInitialized();
+                                                _log.Info("'admin' user account has been created.");
+                                                WriteUsersStreamEvent("admin", x =>
+                                                    {
+                                                        if (x.Result == OperationResult.Success)
+                                                        {
+                                                            _log.Info("'admin' user added to $users.");
+                                                        }
+                                                        else
+                                                        {
+                                                            _log.Error(string.Format("unable to add 'admin' to $users. {0}", x.Result));
+                                                        }
+                                                        NotifyInitialized();
+                                                    });
                                                 break;
                                             case OperationResult.CommitTimeout:
                                             case OperationResult.PrepareTimeout:
+                                                _log.Error("'admin' user account creation timed out retrying.");
                                                 CreateAdminUser();
                                                 break;
                                             default:
-                                                _log.Error("'admin' user account could not be created");
+                                                _log.Error("'admin' user account could not be created.");
                                                 NotifyInitialized();
                                                 break;
                                         }
@@ -469,15 +533,9 @@ namespace EventStore.Core.Services.UserManagement
                 });
         }
 
-        private bool DemandAdmin(UserManagementMessage.UserManagementRequestMessage message)
+        private bool IsAdmin(IPrincipal principal)
         {
-            if (message.Principal == null || !message.Principal.IsInRole(SystemRoles.Admins))
-            {
-                ReplyUnauthorized(message);
-                return false;
-            }
-            return true;
+            return principal != null && principal.IsInRole(SystemRoles.Admins);
         }
-
     }
 }
