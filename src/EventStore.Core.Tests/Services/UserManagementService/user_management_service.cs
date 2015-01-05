@@ -1008,7 +1008,6 @@ namespace EventStore.Core.Tests.Services.UserManagementService
         [TestFixture]
         public class when_getting_all_users : TestFixtureWithUserManagementService
         {
-            
             protected override IEnumerable<WhenStep> GivenCommands()
             {
                 var replyTo = Envelope;
