@@ -25,6 +25,7 @@ namespace EventStore.Core.Services.UserManagement
         public const string UserUpdated = "$UserUpdated";  
         public const string PasswordChanged = "$PasswordChanged";
         public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
+        public const string UsersStream = "$Users";
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
@@ -48,7 +49,8 @@ namespace EventStore.Core.Services.UserManagement
             var userData = CreateUserData(message);
             WriteStreamAcl(
                 message, message.LoginName,
-                () => WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream));
+                () => WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream,
+                () => WriteUsersStreamEvent(message, userData.LoginName)));
         }
 
         public void Handle(UserManagementMessage.Update message)
@@ -233,7 +235,7 @@ namespace EventStore.Core.Services.UserManagement
                         {
                             WritePasswordChangedEventConditionalAnd(
                                 message, resetPasswordCache,
-                                () => WriteUserEvent(message, updated, UserUpdated, completed.FromEventNumber));
+                                () => WriteUserEvent(message, updated, UserUpdated, completed.FromEventNumber, null));
                         }
                     });
         }
@@ -334,10 +336,10 @@ namespace EventStore.Core.Services.UserManagement
 
         private void WriteUserEvent(
             UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
-            int expectedVersion)
+            int expectedVersion, Action after)
         {
             WriteUserEvent(
-                userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message));
+                userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message, after));
         }
 
         private void WriteUserEvent(
@@ -350,13 +352,36 @@ namespace EventStore.Core.Services.UserManagement
                 onCompleted);
         }
 
-        private static void WriteUserCreatedCompleted(
-            ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message)
+        private static void WriteUserCreatedCompleted(ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message, Action after)
         {
             if (completed.Result == OperationResult.Success)
             {
-                ReplyUpdated(message);
+                if (after != null)
+                {
+                    after();
+                }
+                else
+                {
+                    ReplyUpdated(message);
+                }
                 return;
+            }
+            ReplyByWriteResult(message, completed.Result);
+        }
+
+        private void WriteUsersStreamEvent(UserManagementMessage.UserManagementRequestMessage message, string loginName)
+        {
+            var userCreatedEvent = new Event(Guid.NewGuid(), UsersStream, false, loginName, null);
+            _ioDispatcher.WriteEvents(
+                "$users", ExpectedVersion.Any, new[] {userCreatedEvent}, SystemAccount.Principal,
+                completed => WriteUsersStreamCompleted(completed, message));
+        }
+
+        private static void WriteUsersStreamCompleted(ClientMessage.WriteEventsCompleted completed, UserManagementMessage.UserManagementRequestMessage message)
+        {
+            if (completed.Result == OperationResult.Success)
+            {
+                 ReplyUpdated(message);
             }
             ReplyByWriteResult(message, completed.Result);
         }
