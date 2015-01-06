@@ -39,10 +39,10 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             blockSize = blockSize > minBlockSize ? blockSize : minBlockSize;
             if (internalBufferSize%blockSize != 0)
                 throw new Exception("buffer size must be aligned to block size of " + blockSize + " bytes");
-            var flags = WinNative.FILE_FLAG_NO_BUFFERING;
-            if (writeThrough) flags = flags | WinNative.FILE_FLAG_WRITE_THROUGH;
+            var flags = ExtendedFileOptions.NoBuffering;
+            if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
 
-            var handle = NativeFile.Create(path, acc, FileShare.ReadWrite, mode, flags);
+            var handle = NativeFile.Create(path, acc, FileShare.ReadWrite, mode, (int) flags);
             var regular = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
             return new UnbufferedIOFileStream(regular, handle, (int) blockSize, internalBufferSize);
         }

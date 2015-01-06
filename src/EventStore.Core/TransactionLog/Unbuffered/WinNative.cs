@@ -8,11 +8,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #if ! __MonoCS__ && !USE_UNIX_IO
     internal static class WinNative
     {
-        public const int FILE_FLAG_NO_BUFFERING = unchecked((int) 0x20000000);
-        public const int FILE_FLAG_OVERLAPPED = unchecked((int) 0x40000000);
-        public const int FILE_FLAG_SEQUENTIAL_SCAN = unchecked((int) 0x08000000);
-        public const int FILE_FLAG_WRITE_THROUGH = unchecked((int) 0x80000000);
-
         [DllImport("KERNEL32", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         public static extern bool GetDiskFreeSpace(string path,
             out uint sectorsPerCluster,

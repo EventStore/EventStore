@@ -3,9 +3,20 @@ using System.ComponentModel;
 using System.IO;
 using Microsoft.Win32.SafeHandles;
 
+#if __MonoCS__ || USE_UNIX_IO
+using Mono.Unix.Native;
+#endif
+
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
+    public enum ExtendedFileOptions
+    {
+        NoBuffering = unchecked((int) 0x20000000),
+        Overlapped = unchecked((int) 0x40000000),
+        SequentialScan = unchecked((int) 0x08000000),
+        WriteThrough = unchecked((int) 0x80000000)
 
+    }
     internal unsafe static class NativeFile
     {
         public static uint GetDriveSectorSize(string path)
@@ -37,6 +48,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         {
 #if !__MonoCS__ && !USE_UNIX_IO
             WinNative.FlushFileBuffers(handle);
+#else
+            Syscall.fsync(0);
 #endif
         }
         
