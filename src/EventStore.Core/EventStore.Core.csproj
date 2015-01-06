@@ -53,6 +53,13 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
+  <Choose>
+    <When Condition=" '$(OS)' == 'Unix' ">
+      <ItemGroup>
+        <Reference Include="Mono.Posix" />
+      </ItemGroup>
+    </When>
+  </Choose>
   <ItemGroup>
     <Compile Include="Authentication\AuthenticationRequest.cs" />
     <Compile Include="Authentication\IAuthenticationProvider.cs" />
@@ -306,7 +313,6 @@
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
     <Compile Include="TransactionLog\Unbuffered\NativeFile.cs" />
     <Compile Include="TransactionLog\Unbuffered\UnbufferedStream.cs" />
-    <Compile Include="TransactionLog\Unbuffered\UnixNative.cs" />
     <Compile Include="TransactionLog\Unbuffered\WinNative.cs" />
     <Compile Include="Util\FileUtil.cs" />
     <Compile Include="Util\MD5Hash.cs" />
