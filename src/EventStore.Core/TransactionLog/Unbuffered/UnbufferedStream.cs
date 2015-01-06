@@ -54,7 +54,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var positionAligned = GetLowestAlignment(_lastPosition);
             if (!_aligned)
             {
-                NativeFile.Seek(_handle, (int) positionAligned, WinNative.EMoveMethod.Begin);
+                NativeFile.Seek(_handle, (int) positionAligned, SeekOrigin.Begin);
             }
             if (_bufferedCount%_blockSize == 0)
             {
