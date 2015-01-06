@@ -11,7 +11,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private readonly int _blockSize;
         private int _bufferedCount;
         private bool _aligned;
-        private readonly byte[] _block;
+        //private readonly byte[] _block;
         private long _lastPosition;
         private bool _needsFlush;
         private readonly FileStream _regular;
@@ -22,7 +22,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             _regular = regular;
             _handle = handle;
             _buffer = new byte[internalBufferSize];
-            _block = new byte[blockSize];
+            //_block = new byte[blockSize];
             _blockSize = blockSize;
         }
 
