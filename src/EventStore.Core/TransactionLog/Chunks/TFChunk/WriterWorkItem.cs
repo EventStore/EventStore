@@ -11,7 +11,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         public long StreamLength { get { return _workingStream.Length; } }
         public long StreamPosition { get { return _workingStream.Position; } }
 
-        private readonly FileStream _fileStream;
+        private readonly Stream _fileStream;
         private UnmanagedMemoryStream _memStream;
         private Stream _workingStream;
 
@@ -19,11 +19,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         public readonly BinaryWriter BufferWriter;
         public readonly MD5 MD5;
 
-        public WriterWorkItem(FileStream fileStream, UnmanagedMemoryStream memStream, MD5 md5)
+        public WriterWorkItem(Stream fileStream, UnmanagedMemoryStream memStream, MD5 md5)
         {
             _fileStream = fileStream;
             _memStream = memStream;
-            _workingStream = (Stream)fileStream ?? memStream;
+            _workingStream = fileStream ?? memStream;
             Buffer = new MemoryStream(8192);
             BufferWriter = new BinaryWriter(Buffer);
             MD5 = md5;
@@ -49,8 +49,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public void FlushToDisk()
         {
-            if (_fileStream != null)
-                _fileStream.FlushToDisk();
+            if (_fileStream == null) return;
+            var fs = _fileStream as FileStream;
+            if (fs != null)
+                fs.FlushToDisk(); //because of broken flush in filestream in 3.5
+            else
+            {
+                _fileStream.Flush();
+            }
         }
 
         public void ResizeStream(int fileSize)

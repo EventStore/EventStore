@@ -1,4 +1,5 @@
 using System;
+using System.Configuration;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Log;
@@ -63,7 +64,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 long totalSize = 0;
                 lastChunkToCache = _chunksCount;
 
-                for (int chunkNum = _chunksCount - 1; chunkNum >= 0;)
+                for (var chunkNum = _chunksCount - 1; chunkNum >= 0;)
                 {
                     var chunk = _chunks[chunkNum];
                     var chunkSize = chunk.IsReadOnly
@@ -100,7 +101,12 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk.TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
         {
             var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
-            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, chunkHeader, fileSize, _config.InMemDb);
+            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, 
+                                                    chunkHeader, 
+                                                    fileSize, 
+                                                    _config.InMemDb, 
+                                                    _config.UnbufferedIO, 
+                                                    _config.WriteThrough);
         }
 
         public TFChunk.TFChunk AddNewChunk()
@@ -109,7 +115,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 var chunkNumber = _chunksCount;
                 var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-                var chunk = TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, chunkNumber, isScavenged: false, inMem: _config.InMemDb);
+                var chunk = TFChunk.TFChunk.CreateNew(chunkName, 
+                                                      _config.ChunkSize, 
+                                                      chunkNumber, 
+                                                      chunkNumber, 
+                                                      isScavenged: false, 
+                                                      inMem: _config.InMemDb,
+                                                      unbuffered: _config.UnbufferedIO,
+                                                      writethrough: _config.WriteThrough);
                 AddChunk(chunk);
                 return chunk;
             }
@@ -127,7 +140,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                       chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
 
                 var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
-                var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize, _config.InMemDb);
+                var chunk = TFChunk.TFChunk.CreateWithHeader(
+                                            chunkName, 
+                                            chunkHeader, 
+                                            fileSize, 
+                                            _config.InMemDb,
+                                            _config.UnbufferedIO,
+                                            _config.WriteThrough);
                 AddChunk(chunk);
                 return chunk;
             }
@@ -178,7 +197,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
                 Log.Info("File {0} will be moved to file {1}", Path.GetFileName(oldFileName), Path.GetFileName(newFileName));
                 File.Move(oldFileName, newFileName);
-                newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash);
+                newChunk = TFChunk.TFChunk.FromCompletedFile(
+                                    newFileName, 
+                                    verifyHash,
+                                    _config.UnbufferedIO);
             }
 
             lock (_chunksLocker)

@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.TransactionLog
             base.SetUp();
             var record = new PrepareLogRecord(15556, _corrId, _eventId, 15556, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                               PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _chunk = TFChunk.CreateNew(Filename, 20, 0, 0, false);
+            _chunk = TFChunk.CreateNew(Filename, 20, 0, 0, false, false, false, false);
             _written = _chunk.TryAppend(record).Success;
         }
 

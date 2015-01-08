@@ -197,7 +197,7 @@ namespace EventStore.Core
             return msg;
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize, bool inMemDb)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize, bool inMemDb, bool unbuffered, bool writethrough)
         {
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
@@ -246,7 +246,9 @@ namespace EventStore.Core
                                                  chaserChk,
                                                  epochChk,
                                                  truncateChk,
-                                                 inMemDb);
+                                                 inMemDb,
+                                                 false,
+                                                 false);
             return nodeConfig;
         }
 

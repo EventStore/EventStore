@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void the_file_will_not_be_deleted_until_reader_released()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 2000, 0, 0, false);
+            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 2000, 0, 0, false, false,false,false);
             using (var reader = chunk.AcquireReader())
             {
                 chunk.MarkForDeletion();
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_read_on_new_file_can_be_performed()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 2000, 0, 0, false);
+            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 2000, 0, 0, false,false, false, false);
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_read_on_scavenged_chunk_includes_map()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("afile"), 200, 0, 0, true);
+            var chunk = TFChunk.CreateNew(GetFilePathFor("afile"), 200, 0, 0, true,false, false, false);
             chunk.CompleteScavenge(new [] {new PosMap(0, 0), new PosMap(1,1) });
             using (var reader = chunk.AcquireReader())
             {
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_read_past_end_of_completed_chunk_does_include_header_or_footer()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("File1"), 300, 0, 0, false);
+            var chunk = TFChunk.CreateNew(GetFilePathFor("File1"), 300, 0, 0, false, false, false, false);
             chunk.Complete();
             using (var reader = chunk.AcquireReader())
             {
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 3000, 0, 0, false);
+            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 3000, 0, 0, false, false, false, false);
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_read_past_eof_returns_eof_and_no_footer()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0, false);
+            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0, false, false, false, false);
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];

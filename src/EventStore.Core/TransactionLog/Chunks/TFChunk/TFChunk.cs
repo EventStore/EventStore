@@ -1,5 +1,5 @@
+using EventStore.Core.TransactionLog.Unbuffered;
 #pragma warning disable 420
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,6 +52,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         }
 
         private readonly bool _inMem;
+        private readonly bool _unbuffered;
+        private readonly bool _writethrough;
         private readonly string _filename;
         private int _fileSize;
         private volatile bool _isReadOnly;
@@ -79,7 +81,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private IChunkReadSide _readSide;
 
-        private TFChunk(string filename, int initialReaderCount, int maxReaderCount, int midpointsDepth, bool inMem)
+        private TFChunk(string filename, int initialReaderCount, int maxReaderCount, int midpointsDepth, bool inMem, bool unbuffered, bool writethrough)
         {
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.Positive(initialReaderCount, "initialReaderCount");
@@ -93,6 +95,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _maxReaderCount = maxReaderCount;
             MidpointsDepth = midpointsDepth;
             _inMem = inMem;
+            _unbuffered = unbuffered;
+            _writethrough = writethrough;
         }
 
         ~TFChunk()
@@ -100,10 +104,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             FreeCachedData();
         }
 
-        public static TFChunk FromCompletedFile(string filename, bool verifyHash)
+        public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead)
         {
             var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount, ESConsts.TFChunkMaxReaderCount,
-                                    TFConsts.MidpointsDepth, false);
+                                    TFConsts.MidpointsDepth, false, unbufferedRead,false);
             try
             {
                 chunk.InitCompleted(verifyHash);
@@ -116,10 +120,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return chunk;
         }
 
-        public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize)
+        public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered, bool writethrough)
         {
             var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount, ESConsts.TFChunkMaxReaderCount,
-                                    TFConsts.MidpointsDepth, false);
+                                    TFConsts.MidpointsDepth, false, unbuffered, writethrough);
             try
             {
                 chunk.InitOngoing(writePosition, checkSize);
@@ -133,16 +137,16 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         }
 
         public static TFChunk CreateNew(string filename, int chunkSize, int chunkStartNumber, int chunkEndNumber,
-                                        bool isScavenged, bool inMem = false)
+                                        bool isScavenged, bool inMem, bool unbuffered, bool writethrough)
         {
             var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged, Guid.NewGuid());
-            return CreateWithHeader(filename, chunkHeader, chunkSize + ChunkHeader.Size + ChunkFooter.Size, inMem);
+            return CreateWithHeader(filename, chunkHeader, chunkSize + ChunkHeader.Size + ChunkFooter.Size, inMem, unbuffered, writethrough);
         }
 
-        public static TFChunk CreateWithHeader(string filename, ChunkHeader header, int fileSize, bool inMem)
+        public static TFChunk CreateWithHeader(string filename, ChunkHeader header, int fileSize, bool inMem, bool unbuffered, bool writethrough)
         {
             var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount,
-                                    ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth, inMem);
+                                    ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth, inMem, unbuffered, writethrough);
             try
             {
                 chunk.InitNew(header, fileSize);
@@ -311,20 +315,29 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             // if there is not enough disk space or something else prevents file to be resized as desired
             // we'll end up with empty temp file, which won't trigger false error on next DB verification
             var tempFilename = string.Format("{0}.{1}.tmp", _filename, Guid.NewGuid());
-            var tempFile = new FileStream(tempFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
-                                          WriteBufferSize, FileOptions.SequentialScan);
-            tempFile.SetLength(fileSize);
+            using (var tempFile = new FileStream(tempFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Read,
+                WriteBufferSize, FileOptions.SequentialScan))
+            {
+                tempFile.SetLength(fileSize);
 
-            // we need to write header into temp file before moving it into correct chunk place, so in case of crash
-            // we don't end up with seemingly valid chunk file with no header at all...
-            WriteHeader(md5, tempFile, chunkHeader);
+                // we need to write header into temp file before moving it into correct chunk place, so in case of crash
+                // we don't end up with seemingly valid chunk file with no header at all...
+                WriteHeader(md5, tempFile, chunkHeader);
 
-            tempFile.FlushToDisk();
-            tempFile.Close();
+                tempFile.FlushToDisk();
+                tempFile.Close();
+            }
             File.Move(tempFilename, _filename);
-
-            var stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
-                                        WriteBufferSize, FileOptions.SequentialScan);
+            Stream stream = null;
+            if (!_unbuffered)
+            {
+                stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
+                    WriteBufferSize, FileOptions.SequentialScan);
+            }
+            else
+            {
+                stream = UnbufferedIOFileStream.Create(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,false,4096*1024,_writethrough,4096);
+            }
             stream.Position = ChunkHeader.Size;
             _writerWorkItem = new WriterWorkItem(stream, null, md5);
             Flush(); // persist file move result
@@ -531,10 +544,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                         workItem.Stream.Seek(0, SeekOrigin.Begin);
                         var buffer = new byte[65536];
                         // in ongoing chunk there is no need to read everything, it's enough to read just actual data written
-                        int toRead = _isReadOnly ? _cachedLength : ChunkHeader.Size + _physicalDataSize; 
+                        var toRead = _isReadOnly ? _cachedLength : ChunkHeader.Size + _physicalDataSize; 
                         while (toRead > 0)
                         {
-                            int read = workItem.Stream.Read(buffer, 0, Math.Min(toRead, buffer.Length));
+                            var read = workItem.Stream.Read(buffer, 0, Math.Min(toRead, buffer.Length));
                             if (read == 0)
                                 break;
                             toRead -= read;
