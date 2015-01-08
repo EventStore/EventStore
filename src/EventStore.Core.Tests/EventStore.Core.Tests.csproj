@@ -484,6 +484,7 @@
     <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_last_3_metaevents.cs" />
     <Compile Include="TransactionLog\Scavenging\when_deleted_stream_with_metadata_is_scavenged.cs" />
     <Compile Include="TransactionLog\Scavenging\when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent.cs" />
+    <Compile Include="TransactionLog\Unbuffered\UnbufferedTests.cs" />
     <Compile Include="TransactionLog\Validation\TFChunkDbCreationTestBase.cs" />
     <Compile Include="TransactionLog\when_reading_cached_empty_scavenged_tfchunk.cs" />
     <Compile Include="TransactionLog\when_reading_uncached_empty_scavenged_tfchunk.cs" />
