@@ -536,6 +536,30 @@ namespace EventStore.ClientAPI.Embedded
             throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
         }
 
+        /// <summary>
+        /// Sets the transaction file chunk size. Default is <see cref="TFConsts.ChunkSize"/>
+        /// </summary>
+        /// <param name="chunkSize">The size of the chunk, in bytes</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithTfChunkSize(int chunkSize)
+        {
+            _chunkSize = chunkSize;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the transaction file chunk cache size. Default is <see cref="TFConsts.ChunksCacheSize"/>
+        /// </summary>
+        /// <param name="chunksCacheSize">The size of the cache</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithTfChunksCacheSize(long chunksCacheSize)
+        {
+            _chunksCacheSize = chunksCacheSize;
+
+            return this;
+        }
+
         private void EnsureHttpPrefixes()
         {
             if (_httpPrefixes == null || _httpPrefixes.IsEmpty())
