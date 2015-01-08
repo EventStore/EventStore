@@ -5,7 +5,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-    public unsafe class UnbufferedIOFileStream : Stream
+    public class UnbufferedIOFileStream : Stream
     {
         private readonly byte[] _buffer;
         private readonly int _blockSize;
@@ -14,8 +14,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private long _lastPosition;
         private bool _needsFlush;
         private readonly SafeFileHandle _handle;
-        private int _readOffset;
-
+        
         private UnbufferedIOFileStream(SafeFileHandle handle, int blockSize, int internalBufferSize)
         {
             _handle = handle;
@@ -85,7 +84,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var left = (int) (offset - aligned);
             Flush();
             SetBuffer(left);
-            _readOffset = left;
+            _lastPosition = offset;
             return offset;
         }
 
@@ -107,11 +106,14 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if(offset < 0 || buffer.Length < offset) throw new ArgumentException("offset");
             if (count < 0 || buffer.Length < count) throw new ArgumentException("offset");
             if(offset + count > buffer.Length) throw new ArgumentException("offset + count must be less than size of array");
-            var toadd = (_readOffset + count)%_blockSize == 0 ? 0 : _blockSize;
-            var toRead = (int) GetLowestAlignment(count) + toadd;
-            var readbuffer = new byte[toRead];
-            var read = NativeFile.Read(_handle, readbuffer, 0, toRead);
-            Buffer.BlockCopy(readbuffer, _readOffset, buffer,offset,count);
+            var position = (int)GetLowestAlignment(_lastPosition);
+            var roffset = (int) (_lastPosition - position);
+            var toread = (((roffset + count) / _blockSize) + 1) * _blockSize;
+                        
+            var readbuffer = new byte[toread];
+            Seek(position, SeekOrigin.Begin);
+            var read = NativeFile.Read(_handle, readbuffer, 0, toread);
+            Buffer.BlockCopy(readbuffer, roffset, buffer,offset,count);
             return read;
         }
 
@@ -149,7 +151,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override bool CanRead
         {
-            get { return false; }
+            get { return true; }
         }
 
         public override bool CanSeek

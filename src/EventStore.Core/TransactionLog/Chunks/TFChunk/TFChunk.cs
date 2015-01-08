@@ -275,8 +275,29 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private ReaderWorkItem CreateInternalReaderWorkItem()
         {
-            var stream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                        ReadBufferSize, FileOptions.RandomAccess);
+            Stream stream;
+            if (_unbuffered)
+            {
+                stream = UnbufferedIOFileStream.Create(
+                            _filename, 
+                            FileMode.Open, 
+                            FileAccess.Read, 
+                            FileShare.ReadWrite,
+                            false, 
+                            4096, 
+                            false, 
+                            4096);
+            }
+            else
+            {
+                stream = new FileStream(
+                            _filename, 
+                            FileMode.Open, 
+                            FileAccess.Read, 
+                            FileShare.ReadWrite,
+                            ReadBufferSize, 
+                            FileOptions.RandomAccess);
+            }
             var reader = new BinaryReader(stream);
             return new ReaderWorkItem(stream, reader, false);
         }
@@ -885,12 +906,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
             if (memStreamCount < 0)
                 throw new Exception("Somehow we managed to decrease count of memory streams below zero.");
-            if (memStreamCount == 0) // we are the last who should "turn the light off" for memory streams
-            {
-                FreeCachedData();
-                return true;
-            }
-            return false;
+            if (memStreamCount != 0) return false;
+            FreeCachedData();
+            return true;
         }
 
         private void FreeCachedData()

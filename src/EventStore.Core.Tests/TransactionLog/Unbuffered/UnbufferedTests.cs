@@ -147,6 +147,25 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         }
 
         [Test]
+        public void seek_and_read_on_unaligned_buffer()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            MakeFile(filename, 20000);
+            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, false, 4096))
+            {
+                stream.Seek(4096 + 15, SeekOrigin.Begin);
+                var read = new byte[999];
+                stream.Read(read, 0, read.Length);
+                for (var i = 0; i < read.Length; i++)
+                {
+                    Assert.AreEqual((i + 15) % 255, read[i]);
+                }
+            }
+        }
+
+
+        [Test]
         public void seek_current_unimplemented()
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());

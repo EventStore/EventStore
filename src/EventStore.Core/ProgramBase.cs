@@ -247,7 +247,7 @@ namespace EventStore.Core
                                                  epochChk,
                                                  truncateChk,
                                                  inMemDb,
-                                                 false,
+                                                 true,
                                                  false);
             return nodeConfig;
         }
