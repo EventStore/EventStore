@@ -117,7 +117,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
-            if (!WinNative.SetFilePointer(handle, position, null, WinNative.EMoveMethod.Begin))
+            var f = WinNative.SetFilePointer(handle, position, null, WinNative.EMoveMethod.Begin);
+            if (f == WinNative.INVALID_SET_FILE_POINTER)
             {
                 throw new Win32Exception();
             }

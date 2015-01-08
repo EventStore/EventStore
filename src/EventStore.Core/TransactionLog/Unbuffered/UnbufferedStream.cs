@@ -15,6 +15,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private long _lastPosition;
         private bool _needsFlush;
         private readonly SafeFileHandle _handle;
+        private int _readOffset;
 
         private UnbufferedIOFileStream(SafeFileHandle handle, int blockSize, int internalBufferSize)
         {
@@ -86,6 +87,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var left = (int) (offset - aligned);
             Flush();
             SetBuffer(left);
+            _readOffset = left;
             return offset;
         }
 
@@ -104,7 +106,14 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return NativeFile.Read(_handle, buffer, offset, count);
+            if(offset < 0 || buffer.Length < offset) throw new ArgumentException("offset");
+            if (count < 0 || buffer.Length < count) throw new ArgumentException("offset");
+            if(offset + count > buffer.Length) throw new ArgumentException("offset + count must be less than size of array");
+            var toRead = (int) GetLowestAlignment(count) + _blockSize;
+            var readbuffer = new byte[toRead];
+            var read = NativeFile.Read(_handle, readbuffer, 0, toRead);
+            Buffer.BlockCopy(readbuffer, _readOffset, buffer,offset,count);
+            return read;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -165,8 +174,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             {
                 if (_aligned)
                     return _lastPosition + _bufferedCount;
-                else
-                    return GetLowestAlignment(_lastPosition) + _bufferedCount;
+                return GetLowestAlignment(_lastPosition) + _bufferedCount;
             }
             set { Seek(value, SeekOrigin.Begin); }
         }
