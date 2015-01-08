@@ -589,7 +589,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void SaveConfiguration(Action continueWith)
         {
-            Log.Debug("Saving Confiugration.");
+            Log.Debug("Saving Configuration.");
             var data = _config.GetSerializedForm();
             var ev = new Event(Guid.NewGuid(), "PersistentConfig1", true, data, new byte[0]);
             _ioDispatcher.WriteEvent(SystemStreams.PersistentSubscriptionConfig, ExpectedVersion.Any, ev, SystemAccount.Principal, x => HandleSaveConfigurationCompleted(continueWith, x));
