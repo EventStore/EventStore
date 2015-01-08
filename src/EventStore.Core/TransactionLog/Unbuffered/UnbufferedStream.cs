@@ -11,7 +11,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private readonly int _blockSize;
         private int _bufferedCount;
         private bool _aligned;
-        //private readonly byte[] _block;
         private long _lastPosition;
         private bool _needsFlush;
         private readonly SafeFileHandle _handle;
@@ -21,7 +20,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         {
             _handle = handle;
             _buffer = new byte[internalBufferSize];
-            //_block = new byte[blockSize];
             _blockSize = blockSize;
         }
 
@@ -65,7 +63,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             {
                 var left = _bufferedCount - aligned;
 
-                InternalWrite(_buffer, (uint) (aligned + _blockSize)); //write ahead to next block (checkpoint handles)
+                InternalWrite(_buffer, (uint) (aligned + _blockSize));
                 _lastPosition = positionAligned + aligned + left;
                 SetBuffer(left);
                 _bufferedCount = left;
@@ -109,7 +107,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if(offset < 0 || buffer.Length < offset) throw new ArgumentException("offset");
             if (count < 0 || buffer.Length < count) throw new ArgumentException("offset");
             if(offset + count > buffer.Length) throw new ArgumentException("offset + count must be less than size of array");
-            var toRead = (int) GetLowestAlignment(count) + _blockSize;
+            var toadd = (_readOffset + count)%_blockSize == 0 ? 0 : _blockSize;
+            var toRead = (int) GetLowestAlignment(count) + toadd;
             var readbuffer = new byte[toRead];
             var read = NativeFile.Read(_handle, readbuffer, 0, toRead);
             Buffer.BlockCopy(readbuffer, _readOffset, buffer,offset,count);
