@@ -107,7 +107,16 @@ namespace EventStore.Core.Util
         public static readonly string[] HttpPrefixesDefault = new string[0];
 
         public const string UnsafeDisableFlushToDiskDescr = "Disable flushing to disk.  (UNSAFE: on power off)";
-        public static readonly bool UnsafeDisableFlushToDiskDefault = false; 
+        public static readonly bool UnsafeDisableFlushToDiskDefault = false;
+
+        public const string UnbufferedWritesDescr = "Use unbuffered/directio for writes";
+        public const bool UnbufferedWritesDefault = false;
+
+        public const string UnbufferedReadsDescr = "Use unbuffered/directio for reads, bypasses disk cachine.";
+        public const bool UnbufferedReadsDefault = false;
+
+        public const string WriteThroughDescr = "Set write through on writes";
+        public const bool WriteThroughDefault = false;
 
         public const string PrepareTimeoutMsDescr = "Prepare timeout (in milliseconds).";
         public static readonly int PrepareTimeoutMsDefault = 2000; // 2 seconds
