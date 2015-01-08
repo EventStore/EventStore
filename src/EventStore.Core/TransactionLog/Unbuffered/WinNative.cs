@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
 #if ! __MonoCS__ && !USE_UNIX_IO
-    internal static class WinNative
+    internal unsafe static class WinNative
     {
         [DllImport("KERNEL32", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         public static extern bool GetDiskFreeSpace(string path,
@@ -18,10 +18,23 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool WriteFile(
             SafeFileHandle hFile,
-            Byte[] aBuffer,
+            byte* aBuffer,
             UInt32 cbToWrite,
             ref int cbThatWereWritten,
             IntPtr pOverlapped);
+
+        [DllImport("kernel32", SetLastError = true)]
+        public static extern unsafe bool ReadFile
+        (
+            SafeFileHandle hFile,
+            byte* pBuffer,
+            int NumberOfBytesToRead,
+            ref int pNumberOfBytesRead,
+            int Overlapped
+        );
+
+        [DllImport("kernel32.dll")]
+        public static extern bool GetFileSizeEx(SafeFileHandle hFile, out long lpFileSize);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern UInt32 SetFilePointer(
@@ -58,7 +71,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public static extern bool CloseHandle(IntPtr hObject);
 
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern unsafe uint SetFilePointer(
+        public static extern bool SetFilePointer(
             [In] SafeFileHandle hFile,
             [In] int lDistanceToMove,
             [Out] int* lpDistanceToMoveHigh,

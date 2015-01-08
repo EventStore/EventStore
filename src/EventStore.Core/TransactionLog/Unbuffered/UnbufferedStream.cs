@@ -14,12 +14,10 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         //private readonly byte[] _block;
         private long _lastPosition;
         private bool _needsFlush;
-        private readonly FileStream _regular;
         private readonly SafeFileHandle _handle;
 
-        private UnbufferedIOFileStream(FileStream regular, SafeFileHandle handle, int blockSize, int internalBufferSize)
+        private UnbufferedIOFileStream(SafeFileHandle handle, int blockSize, int internalBufferSize)
         {
-            _regular = regular;
             _handle = handle;
             _buffer = new byte[internalBufferSize];
             //_block = new byte[blockSize];
@@ -43,8 +41,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
 
             var handle = NativeFile.Create(path, acc, share, mode, (int) flags);
-            var regular = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
-            return new UnbufferedIOFileStream(regular, handle, (int) blockSize, internalBufferSize);
+            return new UnbufferedIOFileStream(handle, (int) blockSize, internalBufferSize);
         }
 
         public override void Flush()
@@ -107,8 +104,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            _regular.Position = _lastPosition + _bufferedCount;
-            return _regular.Read(buffer, offset, count);
+            return NativeFile.Read(_handle, buffer, offset, count);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -160,7 +156,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override long Length
         {
-            get { return _regular.Length; }
+            get { return NativeFile.GetFileSize(_handle); }
         }
 
         public override long Position
@@ -185,7 +181,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         protected override void Dispose(bool disposing)
         {
             Flush();
-            _regular.Dispose();
             _handle.Close();
         }
     }

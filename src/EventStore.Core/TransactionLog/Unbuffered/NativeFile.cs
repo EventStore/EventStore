@@ -53,16 +53,46 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #endif
         }
         
-        //TODO UNBUFF byte* instead of byte[]?
         public static void Write(SafeFileHandle handle, byte[] buffer, uint count, ref int written)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
-            if (!WinNative.WriteFile(handle, buffer, count, ref written, IntPtr.Zero))
+            fixed (byte* b = buffer)
             {
-                throw new Win32Exception();
+                if (!WinNative.WriteFile(handle, b, count, ref written, IntPtr.Zero))
+                {
+                    throw new Win32Exception();
+                }
             }
 #endif
         }
+
+        public static int Read(SafeFileHandle handle, byte[] buffer, int offset, int count)
+        {
+#if !__MonoCS__ && !USE_UNIX_IO
+            var read = 0;
+            fixed (byte* b = buffer)
+            {
+                if (!WinNative.ReadFile(handle, b + offset, count, ref read, 0))
+                {
+                    throw new Win32Exception();
+                }
+            }
+            return read;
+#endif
+        }
+
+        public static long GetFileSize(SafeFileHandle handle)
+        {
+#if !__MonoCS__ && !USE_UNIX_IO
+            long size = 0;
+            if (!WinNative.GetFileSizeEx(handle, out size))
+            {
+                throw new Win32Exception();
+            }
+            return size;
+#endif
+        }
+
         //TODO UNBUFF use FileAccess etc or do custom?
         public static SafeFileHandle Create(string path, FileAccess acc, FileShare readWrite, FileMode mode, int flags)
         {
@@ -87,7 +117,10 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
-            WinNative.SetFilePointer(handle, position, null, WinNative.EMoveMethod.Begin);
+            if (!WinNative.SetFilePointer(handle, position, null, WinNative.EMoveMethod.Begin))
+            {
+                throw new Win32Exception();
+            }
 #endif
         }
     }
