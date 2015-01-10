@@ -91,6 +91,28 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
             }
         }
 
+        [Test]
+        public void when_writing_multiple_times()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            var bytes = GetBytes(256);
+            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, false, 4096))
+            {
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush();
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush();
+                Assert.AreEqual(4096, new FileInfo(filename).Length);
+                var read = ReadAllBytesShared(filename);
+
+                for (var i = 0; i < 512; i++)
+                {
+                    Assert.AreEqual(i % 256, read[i]);
+                }
+            }
+        }
+
 
         [Test]
         public void when_writing_more_than_buffer_and_closing()

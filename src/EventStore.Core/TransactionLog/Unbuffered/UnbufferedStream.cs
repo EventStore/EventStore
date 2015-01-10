@@ -12,7 +12,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private int _bufferedCount;
         private bool _aligned;
         private long _lastPosition;
-        private long _lastAligned;
         private bool _needsFlush;
         private readonly SafeFileHandle _handle;
         
@@ -46,28 +45,27 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public override void Flush()
         {
             if (!_needsFlush) return;
-            var aligned = (int) GetLowestAlignment(_bufferedCount);
+            var alignedbuffer = (int) GetLowestAlignment(_bufferedCount);
             var positionAligned = GetLowestAlignment(_lastPosition);
             if (!_aligned)
             {
+                Console.WriteLine("seeking to " + positionAligned);
                 SeekInternal(positionAligned);
             }
-            if (_bufferedCount%_blockSize == 0)
+            if (_bufferedCount == alignedbuffer)
             {
                 InternalWrite(_buffer, (uint) _bufferedCount);
                 _lastPosition = positionAligned + _bufferedCount;
-                _lastAligned = _lastPosition;
                 _bufferedCount = 0;
                 _aligned = true;
             }
             else
             {
-                var left = _bufferedCount - aligned;
+                var left = _bufferedCount - alignedbuffer;
 
-                InternalWrite(_buffer, (uint) (aligned + _blockSize));
-                _lastPosition = positionAligned + aligned + left;
-                _lastAligned = positionAligned;
-                SetBuffer(left);
+                InternalWrite(_buffer, (uint) (alignedbuffer + _blockSize));
+                _lastPosition = positionAligned + alignedbuffer + left;
+                SetBuffer(alignedbuffer, left);
                 _bufferedCount = left;
             }
             _needsFlush = false;
@@ -87,13 +85,14 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override long Seek(long offset, SeekOrigin origin)
         {
+            Console.WriteLine("seeking to " + offset);
             if(origin != SeekOrigin.Begin) throw new NotImplementedException("only supports seek origin begin");
             var aligned = GetLowestAlignment(offset);
             var left = (int) (offset - aligned);
             Flush();
-            SetBuffer(left);
+            _bufferedCount = left;
+            _aligned = aligned == left;
             _lastPosition = offset;
-            _lastAligned = aligned;
             return offset;
         }
 
@@ -189,11 +188,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             set { Seek(value, SeekOrigin.Begin); }
         }
 
-        private void SetBuffer(int left)
+        private void SetBuffer(int alignedbuffer, int left)
         {
-            Buffer.BlockCopy(_buffer, _buffer.Length - left, _buffer, 0, left);
-            _bufferedCount = left;
-            _aligned = false;
+            Buffer.BlockCopy(_buffer, alignedbuffer, _buffer, 0, left);
         }
 
         protected override void Dispose(bool disposing)
