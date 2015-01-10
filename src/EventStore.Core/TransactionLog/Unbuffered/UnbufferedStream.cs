@@ -12,6 +12,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private int _bufferedCount;
         private bool _aligned;
         private long _lastPosition;
+        private long _lastAligned;
         private bool _needsFlush;
         private readonly SafeFileHandle _handle;
         
@@ -49,12 +50,13 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var positionAligned = GetLowestAlignment(_lastPosition);
             if (!_aligned)
             {
-                NativeFile.Seek(_handle, (int) positionAligned, SeekOrigin.Begin);
+                SeekInternal(positionAligned);
             }
             if (_bufferedCount%_blockSize == 0)
             {
                 InternalWrite(_buffer, (uint) _bufferedCount);
                 _lastPosition = positionAligned + _bufferedCount;
+                _lastAligned = _lastPosition;
                 _bufferedCount = 0;
                 _aligned = true;
             }
@@ -64,10 +66,16 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
                 InternalWrite(_buffer, (uint) (aligned + _blockSize));
                 _lastPosition = positionAligned + aligned + left;
+                _lastAligned = positionAligned;
                 SetBuffer(left);
                 _bufferedCount = left;
             }
             _needsFlush = false;
+        }
+
+        private void SeekInternal(long positionAligned)
+        {
+            NativeFile.Seek(_handle, (int) positionAligned, SeekOrigin.Begin);
         }
 
         private void InternalWrite(byte[] buffer, uint count)
@@ -85,6 +93,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             Flush();
             SetBuffer(left);
             _lastPosition = offset;
+            _lastAligned = aligned;
             return offset;
         }
 
@@ -111,7 +120,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var toread = (((roffset + count) / _blockSize) + 1) * _blockSize;
                         
             var readbuffer = new byte[toread];
-            Seek(position, SeekOrigin.Begin);
+            SeekInternal(position);
             var read = NativeFile.Read(_handle, readbuffer, 0, toread);
             Buffer.BlockCopy(readbuffer, roffset, buffer,offset,count);
             return read;

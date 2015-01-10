@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 var read = ReadAllBytesShared(filename);
                 for (var i = 0; i < 4096*2; i++)
                 {
-                    Assert.AreEqual(i % 255, read[i]);
+                    Assert.AreEqual(i % 256, read[i]);
                 }
             }
         }
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
 
                 for (var i = 0; i < 255; i++)
                 {
-                    Assert.AreEqual(i%255, read[i]);
+                    Assert.AreEqual(i%256, read[i]);
                 }
             }
         }
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
 
                 for (var i = 0; i < 255; i++)
                 {
-                    Assert.AreEqual(i % 255, read[i]);
+                    Assert.AreEqual(i % 256, read[i]);
                 }
             }
         }
@@ -106,7 +106,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 var read = File.ReadAllBytes(filename);
                 for (var i = 0; i < 9000; i++)
                 {
-                    Assert.AreEqual(i%255, read[i]);
+                    Assert.AreEqual(i%256, read[i]);
                 }
             }
         }
@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 stream.Read(read, 0, 4096);
                 for (var i = 0; i < 4096; i++)
                 {
-                    Assert.AreEqual(i % 255, read[i]);
+                    Assert.AreEqual(i % 256, read[i]);
                 }
             }            
         }
@@ -141,7 +141,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 stream.Read(read, 0, 4096);
                 for (var i = 0; i < 4096; i++)
                 {
-                    Assert.AreEqual((i + 15) % 255, read[i]);
+                    Assert.AreEqual((i + 15) % 256, read[i]);
                 }
             }
         }
@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         [Test]
         public void seek_and_read_on_unaligned_buffer()
         {
-            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            var filename = "C:\\foo\\bar.bin";GetFilePathFor(Guid.NewGuid().ToString());
             MakeFile(filename, 20000);
             using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, false, 4096))
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 stream.Read(read, 0, read.Length);
                 for (var i = 0; i < read.Length; i++)
                 {
-                    Assert.AreEqual((i + 15) % 255, read[i]);
+                    Assert.AreEqual((i + 15) % 256, read[i]);
                 }
             }
         }
@@ -189,6 +189,26 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
             }
         }
 
+        [Test]
+        public void seek_write_seek_read_in_buffer()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, false, 4096))
+            {
+                var buffer = GetBytes(255);
+                stream.Seek(4096 + 15, SeekOrigin.Begin);
+                stream.Write(buffer, 0, buffer.Length);
+                stream.Seek(4096 + 15, SeekOrigin.Begin);
+                var read = new byte[255];
+                stream.Read(read, 0, read.Length);
+                for (var i = 0; i < read.Length; i++)
+                {
+                    Assert.AreEqual(i % 255, read[i]);
+                }
+            }
+        }
+
         private byte[] ReadAllBytesShared(string filename)
         {
             using (var fs = File.Open(filename,FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -210,7 +230,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
             var ret = new byte[size];
             for (var i = 0; i < size; i++)
             {
-                ret[i] = (byte) (i%255);
+                ret[i] = (byte) (i%256);
             }
             return ret;
         }
