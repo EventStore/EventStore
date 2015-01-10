@@ -122,6 +122,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             SeekInternal(position);
             var read = NativeFile.Read(_handle, readbuffer, 0, toread);
             Buffer.BlockCopy(readbuffer, roffset, buffer,offset,count);
+            _lastPosition += count;
             return read;
         }
 
