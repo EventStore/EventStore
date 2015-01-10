@@ -131,10 +131,6 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 {
                     Assert.AreEqual((i + 15) % 256, read[i]);
                 }
-                for (var i = 0; i < 512; i++)
-                {
-                    Assert.AreEqual((i +15 )% 256, read[i]);
-                }
             }
         }
 

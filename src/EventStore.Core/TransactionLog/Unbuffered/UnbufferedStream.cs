@@ -123,7 +123,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var read = NativeFile.Read(_handle, readbuffer, 0, toread);
             Buffer.BlockCopy(readbuffer, roffset, buffer,offset,count);
             _lastPosition += count;
-            return read;
+            return count;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
