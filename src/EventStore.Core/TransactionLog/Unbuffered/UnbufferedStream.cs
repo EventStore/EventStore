@@ -49,7 +49,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var positionAligned = GetLowestAlignment(_lastPosition);
             if (!_aligned)
             {
-                Console.WriteLine("seeking to " + positionAligned);
                 SeekInternal(positionAligned);
             }
             if (_bufferedCount == alignedbuffer)
@@ -67,6 +66,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 _lastPosition = positionAligned + alignedbuffer + left;
                 SetBuffer(alignedbuffer, left);
                 _bufferedCount = left;
+                _aligned = false;
             }
             _needsFlush = false;
         }
@@ -91,7 +91,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var left = (int) (offset - aligned);
             Flush();
             _bufferedCount = left;
-            _aligned = aligned == left;
+            _aligned = aligned == left; //ALIGNED IS WRONG
             _lastPosition = offset;
             return offset;
         }
@@ -114,15 +114,15 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if(offset < 0 || buffer.Length < offset) throw new ArgumentException("offset");
             if (count < 0 || buffer.Length < count) throw new ArgumentException("offset");
             if(offset + count > buffer.Length) throw new ArgumentException("offset + count must be less than size of array");
-            var position = (int)GetLowestAlignment(_lastPosition);
-            var roffset = (int) (_lastPosition - position);
+            var position = (int)GetLowestAlignment(Position);
+            var roffset = (int) (Position - position);
             var toread = (((roffset + count) / _blockSize) + 1) * _blockSize;
                         
             var readbuffer = new byte[toread];
             SeekInternal(position);
             var read = NativeFile.Read(_handle, readbuffer, 0, toread);
             Buffer.BlockCopy(readbuffer, roffset, buffer,offset,count);
-            _lastPosition += count;
+            _bufferedCount += count;
             return count;
         }
 
