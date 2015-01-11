@@ -109,11 +109,8 @@ namespace EventStore.Core.Util
         public const string UnsafeDisableFlushToDiskDescr = "Disable flushing to disk.  (UNSAFE: on power off)";
         public static readonly bool UnsafeDisableFlushToDiskDefault = false;
 
-        public const string UnbufferedWritesDescr = "Use unbuffered/directio for writes";
-        public const bool UnbufferedWritesDefault = false;
-
-        public const string UnbufferedReadsDescr = "Use unbuffered/directio for reads, bypasses disk cachine.";
-        public const bool UnbufferedReadsDefault = false;
+        public const string Unbuffered = "Use unbuffered/directio";
+        public const bool UnbufferedDefault = false;
 
         public const string WriteThroughDescr = "Set write through on writes";
         public const bool WriteThroughDefault = false;

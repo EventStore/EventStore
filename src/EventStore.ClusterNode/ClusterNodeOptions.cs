@@ -144,11 +144,8 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.WriteThroughDescr, Opts.DbGroup)]
         public bool WriteThrough { get; set; }
 
-        [ArgDescription(Opts.UnbufferedWritesDescr, Opts.DbGroup)]
+        [ArgDescription(Opts.Unbuffered, Opts.DbGroup)]
         public bool UnbufferedWrites { get; set; }
-
-        [ArgDescription(Opts.UnbufferedReadsDescr, Opts.DbGroup)]
-        public bool UnbufferedReads { get; set; }
 
         [ArgDescription(Opts.GossipIntervalMsDescr, Opts.ClusterGroup)]
         public int GossipIntervalMs { get; set; }
@@ -230,8 +227,7 @@ namespace EventStore.ClusterNode
             PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
             CommitTimeoutMs = Opts.CommitTimeoutMsDefault;
             DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
-            UnbufferedReads = Opts.UnbufferedReadsDefault;
-            UnbufferedWrites = Opts.UnbufferedWritesDefault;
+            UnbufferedWrites = Opts.UnbufferedDefault;
             WriteThrough = Opts.WriteThroughDefault;
             GossipOnExt = Opts.GossipOnExtDefault;
             StatsOnExt = Opts.StatsOnExtDefault;

@@ -1,4 +1,3 @@
-using EventStore.Core.TransactionLog.Unbuffered;
 #pragma warning disable 420
 using System;
 using System.Collections.Generic;
@@ -14,6 +13,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
+using EventStore.Core.TransactionLog.Unbuffered;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
