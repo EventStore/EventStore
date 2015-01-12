@@ -64,8 +64,11 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 }
             }
 #else
-            if(!syscall.write(handle, buffer,count) {
-                throw new Win32Exception();
+            fixed (byte* b = buffer)
+            {
+                if(Syscall.write(handle.DangerousGetHandle().ToInt32(), b ,count) != 0) {
+                    throw new Win32Exception();
+                }
             }
 #endif
         }
@@ -82,6 +85,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 }
             }
             return read;
+#else
+            return 0;            
 #endif
         }
 
@@ -94,6 +99,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 throw new Win32Exception();
             }
             return size;
+#else
+            return 0;
 #endif
         }
 
@@ -114,16 +121,46 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             return handle;
 #else
+            //TODO convert flags or separate methods?
             return new SafeFileHandle((IntPtr) 0, true);
 #endif
         }
 
+
+        public static SafeFileHandle CreateUnbufferedRW(string path, FileMode mode)
+        {
+#if !__MonoCS__ && !USE_UNIX_IO
+            var handle = WinNative.CreateFile(path,
+                (int) acc,
+                FileShare.ReadWrite,
+                IntPtr.Zero,
+                mode,
+                flags,
+                IntPtr.Zero);
+            if (handle.IsInvalid)
+            {
+                throw new Win32Exception();
+            }
+            return handle;
+#else
+            var flags = OpenFlags.O_RDWR | OpenFlags.O_DIRECT | OpenFlags.O_CREAT;
+            //var f = NativeConvert.FromOpenFlags(flags); not needed?
+            var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
+            if(han < 0)
+                throw new Win32Exception();
+            return new SafeFileHandle((IntPtr) han, true);
+#endif
+        }
         public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
             var f = WinNative.SetFilePointer(handle, position, null, WinNative.EMoveMethod.Begin);
             if (f == WinNative.INVALID_SET_FILE_POINTER)
             {
+                throw new Win32Exception();
+            }
+#else
+            if(Syscall.lseek(handle.DangerousGetHandle().ToInt32(), position, SeekFlags.SEEK_SET) < 0) {
                 throw new Win32Exception();
             }
 #endif
