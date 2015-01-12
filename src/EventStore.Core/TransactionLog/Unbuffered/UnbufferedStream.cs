@@ -44,7 +44,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var flags = ExtendedFileOptions.NoBuffering;
             if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
 
-            var handle = NativeFile.Create(path, acc, share, mode, (int) flags);
+            var handle = NativeFile.CreateUnbufferedRW(path,FileMode.Create);
             return new UnbufferedIOFileStream(handle, (int) blockSize, internalWriteBufferSize, internalReadBufferSize);
         }
 

@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 
 #if __MonoCS__ || USE_UNIX_IO
 using Mono.Unix.Native;
+using Mono.Unix;
 #endif
 
 namespace EventStore.Core.TransactionLog.Unbuffered
@@ -31,16 +32,25 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #endif
         }
 
-        public static void SetFileSize(SafeFileHandle handle, long aligned)
+        public static long GetPageSize(){
+            return Syscall.sysconf(SysconfName._SC_PAGESIZE);
+        }
+
+        public static void SetFileSize(SafeFileHandle handle, long count)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
-            WinNative.SetFilePointer(handle, (int)aligned, null, WinNative.EMoveMethod.Begin);
+            WinNative.SetFilePointer(handle, (int)count, null, WinNative.EMoveMethod.Begin);
             if (!WinNative.SetEndOfFile(handle))
             {
                 throw new Win32Exception();
             }
             FSync(handle);
 #else
+            int r;
+            do {
+                r = Syscall.ftruncate (handle.DangerousGetHandle().ToInt32(), count);
+            } while (UnixMarshal.ShouldRetrySyscall (r));
+            UnixMarshal.ThrowExceptionForLastErrorIf (r);
 #endif
         }
 
@@ -58,6 +68,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #if !__MonoCS__ && !USE_UNIX_IO
             fixed (byte* b = buffer)
             {
+                IntPtr foo = Syscall.malloc()
                 if (!WinNative.WriteFile(handle, b, count, ref written, IntPtr.Zero))
                 {
                     throw new Win32Exception();
@@ -66,9 +77,13 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #else
             fixed (byte* b = buffer)
             {
-                if(Syscall.write(handle.DangerousGetHandle().ToInt32(), b ,count) != 0) {
-                    throw new Win32Exception();
-                }
+                Console.WriteLine("writing " + count + " " + GetPageSize()); 
+                long ret = 0;
+                 do {
+                    ret = Syscall.write (handle.DangerousGetHandle().ToInt32(), b ,count);
+                } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall ((int) ret));
+                if(ret == -1)
+                    Mono.Unix.UnixMarshal.ThrowExceptionForLastErrorIf ((int) ret);
             }
 #endif
         }
@@ -86,7 +101,15 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             return read;
 #else
-            return 0;            
+            long r;
+            fixed (byte* buf = &buffer[offset]) {
+                do {
+                    r = Syscall.read (handle.DangerousGetHandle().ToInt32(), buf, (ulong) count);
+                } while (UnixMarshal.ShouldRetrySyscall ((int) r));
+            }
+            if (r == -1)
+                UnixMarshal.ThrowExceptionForLastError ();
+            return count;
 #endif
         }
 
@@ -148,7 +171,11 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
             if(han < 0)
                 throw new Win32Exception();
-            return new SafeFileHandle((IntPtr) han, true);
+
+            var handle = new SafeFileHandle((IntPtr) han, true);
+            if(han == 0) Console.WriteLine("ZERO HANDLE");
+            if(handle.IsInvalid) throw new Exception("Invalid handle");
+            return handle;
 #endif
         }
         public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
