@@ -29,7 +29,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             _writeBufferSize = internalWriteBufferSize;
             _writeBufferOriginal = Marshal.AllocHGlobal((int) (internalWriteBufferSize + blockSize));
             _readBufferOriginal = Marshal.AllocHGlobal((int) (internalReadBufferSize + blockSize));
-            _readBuffer = (byte*)_readBufferOriginal;//Align(_readBufferOriginal, blockSize);
+            _readBuffer = Align(_readBufferOriginal, blockSize);
             _writeBuffer = Align(_writeBufferOriginal, blockSize);
             _blockSize = blockSize;
         }

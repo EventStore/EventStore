@@ -75,13 +75,13 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 throw new Win32Exception();
             }
 #else
-            Console.WriteLine("writing " + count + " " + GetPageSize()); 
             long ret = 0;
                 do {
                 ret = Syscall.write (handle.DangerousGetHandle().ToInt32(), buffer ,count);
             } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall ((int) ret));
             if(ret == -1)
                 Mono.Unix.UnixMarshal.ThrowExceptionForLastErrorIf ((int) ret);
+            written = (int) count;
 #endif
         }
 
