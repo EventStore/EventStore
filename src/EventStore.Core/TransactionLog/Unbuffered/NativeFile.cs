@@ -44,7 +44,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             {
                 throw new Win32Exception();
             }
-            FSync(handle);
 #else
             int r;
             do {
@@ -52,6 +51,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             } while (UnixMarshal.ShouldRetrySyscall (r));
             UnixMarshal.ThrowExceptionForLastErrorIf (r);
 #endif
+            FSync(handle);
         }
 
         private static void FSync(SafeFileHandle handle)
@@ -59,7 +59,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #if !__MonoCS__ && !USE_UNIX_IO
             WinNative.FlushFileBuffers(handle);
 #else
-            Syscall.fsync(0);
+            Syscall.fsync(handle.DangerousGetHandle().ToInt32());
 #endif
         }
         

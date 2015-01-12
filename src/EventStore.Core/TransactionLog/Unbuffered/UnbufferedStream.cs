@@ -13,7 +13,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private bool _aligned;
         private long _lastPosition;
         private bool _needsFlush;
-        private readonly SafeFileHandle _handle;
+        private SafeFileHandle _handle;
         private readonly byte [] _readBuffer;
         private int _readLocation;
 
@@ -50,6 +50,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override void Flush()
         {
+            CheckDisposed();
             if (!_needsFlush) return;
             var alignedbuffer = (int) GetLowestAlignment(_bufferedCount);
             var positionAligned = GetLowestAlignment(_lastPosition);
@@ -86,11 +87,11 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         {
             var written = 0;
             NativeFile.Write(_handle, buffer, count, ref written);
-            //TODO check written
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
+            CheckDisposed();
             if(origin != SeekOrigin.Begin) throw new NotImplementedException("only supports seek origin begin");
             var aligned = GetLowestAlignment(offset);
             var left = (int) (offset - aligned);
@@ -108,6 +109,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override void SetLength(long value)
         {
+            CheckDisposed();
             var aligned = GetLowestAlignment(value);
             aligned = aligned == value ? aligned : aligned + _blockSize;
             NativeFile.SetFileSize(_handle, aligned);
@@ -116,6 +118,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override int Read(byte[] buffer, int offset, int count)
         {
+            CheckDisposed();
             if (offset < 0 || buffer.Length < offset) throw new ArgumentException("offset");
             if (count < 0 || buffer.Length < count) throw new ArgumentException("offset");
             if (offset + count > buffer.Length)
@@ -142,6 +145,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            CheckDisposed();
             var done = false;
             var left = count;
             var current = offset;
@@ -174,33 +178,54 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override bool CanRead
         {
-            get { return true; }
+            get 
+            { 
+                CheckDisposed();
+                return true; 
+            }
         }
 
         public override bool CanSeek
         {
-            get { return true; }
+            get 
+            {
+                CheckDisposed(); 
+                return true; 
+            }
         }
 
         public override bool CanWrite
         {
-            get { return true; }
+            get 
+            { 
+                CheckDisposed();
+                return true; 
+            }
         }
 
         public override long Length
         {
-            get { return NativeFile.GetFileSize(_handle); }
+            get 
+            {
+                CheckDisposed(); 
+                return NativeFile.GetFileSize(_handle); 
+            }
         }
 
         public override long Position
         {
             get
             {
+                CheckDisposed();
                 if (_aligned)
                     return _lastPosition + _bufferedCount;
                 return GetLowestAlignment(_lastPosition) + _bufferedCount;
             }
-            set { Seek(value, SeekOrigin.Begin); }
+            set 
+            {
+                CheckDisposed(); 
+                Seek(value, SeekOrigin.Begin); 
+            }
         }
 
         private void SetBuffer(int alignedbuffer, int left)
@@ -208,10 +233,19 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             Buffer.BlockCopy(_writeBuffer, alignedbuffer, _writeBuffer, 0, left);
         }
 
+        private void CheckDisposed() {
+            if(_handle == null) throw new ObjectDisposedException("object is disposed.");
+        }
+
         protected override void Dispose(bool disposing)
         {
+            if(_handle == null) return;
             Flush();
             _handle.Close();
+            _handle.Dispose();
+            _handle = null;
+            GC.SuppressFinalize (this);
+            
         }
     }
 }
