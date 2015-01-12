@@ -19,10 +19,10 @@ namespace EventStore.TestClient.Commands
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            int clientsCnt = 1;
+            var clientsCnt = 1;
             long requestsCnt = 5000;
-            int streamsCnt = 1000;
-            int size = 256;
+            var streamsCnt = 1000;
+            var size = 256;
             _monitor.Clear();
             if (args.Length > 0)
             {
@@ -68,7 +68,7 @@ namespace EventStore.TestClient.Commands
             var streams = Enumerable.Range(0, streamsCnt).Select(x => Guid.NewGuid().ToString()).ToArray();
             //var streams = Enumerable.Range(0, streamsCnt).Select(x => string.Format("stream-{0}", x)).ToArray();
             var sw2 = new Stopwatch();
-            for (int i = 0; i < clientsCnt; i++)
+            for (var i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
                 long sent = 0;
@@ -134,7 +134,7 @@ namespace EventStore.TestClient.Commands
 
                 threads.Add(new Thread(() =>
                 {
-                    for (int j = 0; j < count; ++j)
+                    for (var j = 0; j < count; ++j)
                     {
                         var corrid = Guid.NewGuid();
                         var write = new TcpClientMessageDto.WriteEvents(

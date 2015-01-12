@@ -12,15 +12,15 @@ namespace EventStore.TestClient.Commands
     {
         public string Usage { get { return "RDFL [<clients> <requests> [<event-stream>]"; } }
         public string Keyword { get { return "RDFL"; } }
-        private RequestMonitor _monitor = new RequestMonitor();
+        private readonly RequestMonitor _monitor = new RequestMonitor();
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            int clientsCnt = 1;
+            var clientsCnt = 1;
             long requestsCnt = 5000;
             var eventStreamId = "test-stream";
-            bool resolveLinkTos = false;
-            bool requireMaster = false;
+            const bool resolveLinkTos = false;
+            var requireMaster = false;
             _monitor.Clear();
             if (args.Length > 0)
             {
@@ -58,7 +58,7 @@ namespace EventStore.TestClient.Commands
             long succ = 0;
             long fail = 0;
             long all = 0;
-            for (int i = 0; i < clientsCnt; i++)
+            for (var i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
                 long received = 0;
@@ -103,7 +103,7 @@ namespace EventStore.TestClient.Commands
 
                 threads.Add(new Thread(() => 
                 {
-                    for (int j = 0; j < count; ++j)
+                    for (var j = 0; j < count; ++j)
                     {
                         var corrId = Guid.NewGuid();
                         var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireMaster);
