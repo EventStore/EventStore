@@ -18,8 +18,11 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         WriteThrough = unchecked((int) 0x80000000)
 
     }
+
     internal unsafe static class NativeFile
     {
+        const uint MAC_F_NOCACHE = 0x0400;
+    
         public static uint GetDriveSectorSize(string path)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
@@ -189,6 +192,20 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             return flags;
         }
 #endif
+
+
+        public static void TurnOffMacCaching(SafeFileHandle handle) 
+        {
+#if __MonoCS__ || USE_UNIX_IO
+            long r = 0;
+            do {
+                r = Syscall.fcntl (handle.DangerousGetHandle().ToInt32(), (FcntlCommand) MAC_F_NOCACHE, 1);
+            } while (UnixMarshal.ShouldRetrySyscall ((int) r));
+            if (r == -1)
+                UnixMarshal.ThrowExceptionForLastError ();
+#endif
+        }
+
         public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
