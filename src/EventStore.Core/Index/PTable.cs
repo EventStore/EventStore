@@ -181,7 +181,7 @@ namespace EventStore.Core.Index
             using (
                 var stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
                     true,
-                    4096, 1024*1024*2, false, 4096))
+                    4096, 4096, false, 4096))
             {
                 var hash = MD5Hash.GetHashFor(stream, 0, stream.Length - MD5Size);
 

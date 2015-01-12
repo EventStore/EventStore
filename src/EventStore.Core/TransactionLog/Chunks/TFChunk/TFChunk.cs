@@ -426,8 +426,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
             Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
-            using (var reader = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, true,
-                                                            4096, 1024 * 1024 * 2, false, 4096))
+            using (var reader = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, true,
+                                                            4096, 4096 * 4, false, 4096))
             {
                 var stream = reader;
                 var footer = _chunkFooter;
@@ -456,6 +456,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                         throw new HashValidationException();
                 }
             }
+            Log.Trace("Verifying hash for TFChunk '{0}'completed", _filename);
         }
 
         private ChunkHeader ReadHeader(Stream stream)

@@ -170,14 +170,15 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if (offset + count > buffer.Length)
                 throw new ArgumentException("offset + count must be less than size of array");
             var position = (int) GetLowestAlignment(Position);
-            var roffset = (int) (Position - position);
+            var roffset = (int) (Position - _readLocation);
 
             var bytesRead = _readBufferSize;
 
-            if(_readLocation + _readBufferSize < position || _readLocation > position || _readLocation == 0) {
+            if(_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == 0) {
                 SeekInternal(position);
                 bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBufferSize);
                 _readLocation = position;
+                roffset = 0;
             }
 
             var bytesAvailable = bytesRead - roffset;
