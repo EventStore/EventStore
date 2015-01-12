@@ -61,14 +61,13 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
-                stream.Close();
-                Assert.AreEqual(4096, new FileInfo(filename).Length);
-                var read = ReadAllBytesShared(filename);
+            }
+            Assert.AreEqual(4096, new FileInfo(filename).Length);
+            var read = ReadAllBytesShared(filename);
 
-                for (var i = 0; i < 255; i++)
-                {
-                    Assert.AreEqual(i%256, read[i]);
-                }
+            for (var i = 0; i < 255; i++)
+            {
+                Assert.AreEqual(i % 256, read[i]);
             }
         }
 
@@ -190,6 +189,26 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 for (var i = 0; i < read.Length; i++)
                 {
                     Assert.AreEqual((i + 15) % 256, read[i]);
+                }
+            }
+        }
+
+        [Test]
+        public void when_reading_multiple_times_no_seek()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            MakeFile(filename, 20000);
+            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, 4096, false, 4096))
+            {
+                var read = new byte[1000];
+                stream.Read(read, 0, 500);
+                Assert.AreEqual(500, stream.Position);
+                stream.Read(read, 500, 500);
+                Assert.AreEqual(1000, stream.Position);
+                for (var i = 0; i < read.Length; i++)
+                {
+                    Assert.AreEqual(i % 256, read[i]);
                 }
             }
         }

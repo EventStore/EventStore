@@ -32,8 +32,12 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #endif
         }
 
-        public static long GetPageSize(){
+        public static long GetPageSize(string path){
+#if !__MonoCS__ && !USE_UNIX_IO
+            return GetDriveSectorSize(path);
+#else
             return Syscall.sysconf(SysconfName._SC_PAGESIZE);
+#endif
         }
 
         public static void SetFileSize(SafeFileHandle handle, long count)
@@ -63,50 +67,39 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #endif
         }
         
-        public static void Write(SafeFileHandle handle, byte[] buffer, uint count, ref int written)
+        public static void Write(SafeFileHandle handle, byte* buffer, uint count, ref int written)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
-            fixed (byte* b = buffer)
+            if (!WinNative.WriteFile(handle, buffer, count, ref written, IntPtr.Zero))
             {
-                IntPtr foo = Syscall.malloc()
-                if (!WinNative.WriteFile(handle, b, count, ref written, IntPtr.Zero))
-                {
-                    throw new Win32Exception();
-                }
+                throw new Win32Exception();
             }
 #else
-            fixed (byte* b = buffer)
-            {
-                Console.WriteLine("writing " + count + " " + GetPageSize()); 
-                long ret = 0;
-                 do {
-                    ret = Syscall.write (handle.DangerousGetHandle().ToInt32(), b ,count);
-                } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall ((int) ret));
-                if(ret == -1)
-                    Mono.Unix.UnixMarshal.ThrowExceptionForLastErrorIf ((int) ret);
-            }
+            Console.WriteLine("writing " + count + " " + GetPageSize()); 
+            long ret = 0;
+                do {
+                ret = Syscall.write (handle.DangerousGetHandle().ToInt32(), buffer ,count);
+            } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall ((int) ret));
+            if(ret == -1)
+                Mono.Unix.UnixMarshal.ThrowExceptionForLastErrorIf ((int) ret);
 #endif
         }
 
-        public static int Read(SafeFileHandle handle, byte[] buffer, int offset, int count)
+        public static int Read(SafeFileHandle handle, byte* buffer, int offset, int count)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
             var read = 0;
-            fixed (byte* b = buffer)
+
+            if (!WinNative.ReadFile(handle, buffer, count, ref read, 0))
             {
-                if (!WinNative.ReadFile(handle, b + offset, count, ref read, 0))
-                {
-                    throw new Win32Exception();
-                }
+                throw new Win32Exception();
             }
             return read;
 #else
             long r;
-            fixed (byte* buf = &buffer[offset]) {
-                do {
-                    r = Syscall.read (handle.DangerousGetHandle().ToInt32(), buf, (ulong) count);
-                } while (UnixMarshal.ShouldRetrySyscall ((int) r));
-            }
+            do {
+                r = Syscall.read (handle.DangerousGetHandle().ToInt32(), buffer, (ulong) count);
+            } while (UnixMarshal.ShouldRetrySyscall ((int) r));
             if (r == -1)
                 UnixMarshal.ThrowExceptionForLastError ();
             return count;
@@ -154,11 +147,11 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         {
 #if !__MonoCS__ && !USE_UNIX_IO
             var handle = WinNative.CreateFile(path,
-                (int) acc,
+                (int) FileAccess.ReadWrite,
                 FileShare.ReadWrite,
                 IntPtr.Zero,
-                mode,
-                flags,
+                FileMode.OpenOrCreate,
+                (int) ExtendedFileOptions.NoBuffering,
                 IntPtr.Zero);
             if (handle.IsInvalid)
             {

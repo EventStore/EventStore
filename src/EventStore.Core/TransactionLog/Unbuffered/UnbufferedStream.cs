@@ -1,28 +1,46 @@
 ﻿
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-    public class UnbufferedIOFileStream : Stream
+    public unsafe class UnbufferedIOFileStream : Stream
     {
-        private readonly byte[] _writeBuffer;
-        private readonly int _blockSize;
+        private byte* _writeBuffer;
+        private byte* _readBuffer;
+        private readonly int _writeBufferSize;
+        private readonly int _readBufferSize;
+        private readonly IntPtr _writeBufferOriginal;
+        private readonly IntPtr _readBufferOriginal;
+        private readonly uint _blockSize;
         private int _bufferedCount;
         private bool _aligned;
         private long _lastPosition;
         private bool _needsFlush;
         private SafeFileHandle _handle;
-        private readonly byte [] _readBuffer;
         private int _readLocation;
 
-        private UnbufferedIOFileStream(SafeFileHandle handle, int blockSize, int internalWriteBufferSize, int internalReadBufferSize)
+        private UnbufferedIOFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
         {
             _handle = handle;
-            _writeBuffer = new byte[internalWriteBufferSize];
-            _readBuffer = new byte[internalReadBufferSize];
+            _readBufferSize = internalReadBufferSize;
+            _writeBufferSize = internalWriteBufferSize;
+            _writeBufferOriginal = Marshal.AllocHGlobal((int) (internalWriteBufferSize + blockSize));
+            _readBufferOriginal = Marshal.AllocHGlobal((int) (internalReadBufferSize + blockSize));
+            _readBuffer = (byte*)_readBufferOriginal;//Align(_readBufferOriginal, blockSize);
+            _writeBuffer = Align(_writeBufferOriginal, blockSize);
             _blockSize = blockSize;
+        }
+
+        private byte* Align(IntPtr buf, uint alignTo)
+        {
+            //This makes an aligned buffer linux needs this.
+            //The buffer must originally be at least one alignment bigger!
+            var diff = alignTo - (buf.ToInt64() % alignTo);
+            var aligned = (IntPtr)(buf.ToInt64() + diff);
+            return (byte*) aligned;
         }
 
         public static UnbufferedIOFileStream Create(string path,
@@ -45,7 +63,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
 
             var handle = NativeFile.CreateUnbufferedRW(path,FileMode.Create);
-            return new UnbufferedIOFileStream(handle, (int) blockSize, internalWriteBufferSize, internalReadBufferSize);
+            return new UnbufferedIOFileStream(handle, blockSize, internalWriteBufferSize, internalReadBufferSize);
         }
 
         public override void Flush()
@@ -78,12 +96,41 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             _needsFlush = false;
         }
 
+        private static void MemCopy(byte[] src, int srcOffset, byte* dest, int destOffset, int count)
+        {
+            fixed (byte* p = src)
+            {
+                MemCopy(p, srcOffset, dest, destOffset, count);
+            }
+        }
+
+        private static void MemCopy(byte* src, int srcOffset, byte[] dest, int destOffset, int count)
+        {
+            fixed (byte* p = dest)
+            {
+                MemCopy(src, srcOffset, p, destOffset, count);
+            }
+        }
+
+        private static void MemCopy(byte* src, int srcOffset, byte* dest, int destOffset, int count)
+        {
+            byte* psrc = src + srcOffset;
+            byte* pdest = dest + destOffset;
+
+            for (var i = 0; i < count; i++)
+            {
+                *pdest = *psrc;
+                pdest++;
+                psrc++;
+            }
+        }
+
         private void SeekInternal(long positionAligned)
         {
             NativeFile.Seek(_handle, (int) positionAligned, SeekOrigin.Begin);
         }
 
-        private void InternalWrite(byte[] buffer, uint count)
+        private void InternalWrite(byte* buffer, uint count)
         {
             var written = 0;
             NativeFile.Write(_handle, buffer, count, ref written);
@@ -126,19 +173,19 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var position = (int) GetLowestAlignment(Position);
             var roffset = (int) (Position - position);
 
-            var bytesRead = _readBuffer.Length;
+            var bytesRead = _readBufferSize;
 
-            if(_readLocation + _readBuffer.Length < position || _readLocation > position || _readLocation == 0) {
+            if(_readLocation + _readBufferSize < position || _readLocation > position || _readLocation == 0) {
                 SeekInternal(position);
-                bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBuffer.Length);
+                bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBufferSize);
                 _readLocation = position;
             }
 
             var bytesAvailable = bytesRead - roffset;
             if (bytesAvailable <= 0) return 0;
             var toCopy = count > bytesAvailable ? bytesAvailable : count;
-
-            Buffer.BlockCopy(_readBuffer, roffset, buffer,offset,toCopy);
+            
+            MemCopy(_readBuffer, roffset, buffer,offset,toCopy);
             _bufferedCount += toCopy;
             return toCopy;
         }
@@ -152,7 +199,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             while (!done)
             {
                 _needsFlush = true;
-                if (_bufferedCount + left < _writeBuffer.Length)
+                if (_bufferedCount + left < _writeBufferSize)
                 {
                     CopyBuffer(buffer, current, left);
                     done = true;
@@ -160,7 +207,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 }
                 else
                 {
-                    var toFill = _writeBuffer.Length - _bufferedCount;
+                    var toFill = _writeBufferSize - _bufferedCount;
                     CopyBuffer(buffer, current, toFill);
                     Flush();
                     left -= toFill;
@@ -172,7 +219,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void CopyBuffer(byte[] buffer, int offset, int count)
         {
-            Buffer.BlockCopy(buffer, offset, _writeBuffer, _bufferedCount, count);
+            MemCopy(buffer, offset, _writeBuffer, _bufferedCount, count);
             _bufferedCount += count;
         }
 
@@ -230,7 +277,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void SetBuffer(int alignedbuffer, int left)
         {
-            Buffer.BlockCopy(_writeBuffer, alignedbuffer, _writeBuffer, 0, left);
+            MemCopy(_writeBuffer, alignedbuffer, _writeBuffer, 0, left);
         }
 
         private void CheckDisposed() {
@@ -242,10 +289,12 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if(_handle == null) return;
             Flush();
             _handle.Close();
-            _handle.Dispose();
             _handle = null;
-            GC.SuppressFinalize (this);
-            
+            _readBuffer = (byte*)IntPtr.Zero;
+            _writeBuffer = (byte*)IntPtr.Zero;
+            Marshal.FreeHGlobal(_readBufferOriginal);
+            Marshal.FreeHGlobal(_writeBufferOriginal);
+            GC.SuppressFinalize (this);   
         }
     }
 }
