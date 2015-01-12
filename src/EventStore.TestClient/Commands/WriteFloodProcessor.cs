@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Collections.Concurrent;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -17,7 +15,7 @@ namespace EventStore.TestClient.Commands
         public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>]]]"; } }
         public string Keyword { get { return "WRFL"; } }
 
-        private RequestMonitor _monitor = new RequestMonitor();
+        private readonly RequestMonitor _monitor = new RequestMonitor();
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
@@ -25,6 +23,7 @@ namespace EventStore.TestClient.Commands
             long requestsCnt = 5000;
             int streamsCnt = 1000;
             int size = 256;
+            _monitor.Clear();
             if (args.Length > 0)
             {
                 if (args.Length < 2 || args.Length > 4)

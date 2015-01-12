@@ -1,30 +1,28 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Collections.Concurrent;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands
 {
     internal class RequestMonitor {
-        private ConcurrentQueue<int> _measurements = new ConcurrentQueue<int>();
-        private ConcurrentDictionary<Guid, Operation> _operations = new ConcurrentDictionary<Guid, Operation>();
-        Stopwatch _watch = new Stopwatch();
+        private readonly ConcurrentQueue<int> _measurements = new ConcurrentQueue<int>();
+        private readonly ConcurrentDictionary<Guid, Operation> _operations = new ConcurrentDictionary<Guid, Operation>();
+        readonly Stopwatch _watch = new Stopwatch();
 
         public RequestMonitor() {
             _watch.Start();
         }
 
+        public void Clear()
+        {
+            int dontcare;
+            while (_measurements.TryDequeue(out dontcare)) { }
+            _operations.Clear();
+        }
+
         public void StartOperation(Guid id) {
 
-            var record = new Operation();
-            record.Start = _watch.ElapsedTicks;
+            var record = new Operation {Start = _watch.ElapsedTicks};
             _operations.AddOrUpdate(id, record, (q, val) => record); 
         }
 

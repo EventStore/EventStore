@@ -21,6 +21,7 @@ namespace EventStore.TestClient.Commands
             var eventStreamId = "test-stream";
             bool resolveLinkTos = false;
             bool requireMaster = false;
+            _monitor.Clear();
             if (args.Length > 0)
             {
                 if (args.Length != 2 && args.Length != 3 && args.Length != 4)
