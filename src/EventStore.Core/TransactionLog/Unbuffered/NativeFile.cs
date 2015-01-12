@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
 
 #if __MonoCS__ || USE_UNIX_IO
@@ -164,13 +165,15 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             return handle;
 #else
+            var ismac = OS.OsFlavor == OsFlavor.MacOS;
+            var direct = ismac ? OpenFlags.O_READONLY : OpenFlags.O_DIRECT;
             var flags = GetFlags(acc, mode) | OpenFlags.O_DIRECT;
             var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
             if(han < 0)
                 throw new Win32Exception();
 
             var handle = new SafeFileHandle((IntPtr) han, true);
-            if(han == 0) Console.WriteLine("ZERO HANDLE");
+            if(ismac) TurnOffMacCaching(handle);
             if(handle.IsInvalid) throw new Exception("Invalid handle");
             return handle;
 #endif
@@ -194,8 +197,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #endif
 
 
-        public static void TurnOffMacCaching(SafeFileHandle handle) 
+        public static void TurnOffMacCaching(SafeFileHandle handle)
         {
+            if (OS.OsFlavor != OsFlavor.MacOS) return;
 #if __MonoCS__ || USE_UNIX_IO
             long r = 0;
             do {

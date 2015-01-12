@@ -3,8 +3,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
-using Mono.Unix.Native;
-using Mono.Unix;
+
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
     //NOTE THIS DOES NOT SUPPORT ALL STREAM OPERATIONS AS YOU MIGHT EXPECT IT SUPPORTS WHAT WE USE!
