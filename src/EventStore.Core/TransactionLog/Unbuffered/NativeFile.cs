@@ -174,9 +174,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         }
 
 #if __MonoCS__ || USE_UNIX_IO
-        public uint GetFlags(FileAccess acc, FileMode mode)
+        private static OpenFlags GetFlags(FileAccess acc, FileMode mode)
         {
-            uint flags = 0;
+            OpenFlags flags = OpenFlags.O_RDONLY; //RDONLY is 0 
             if (acc == FileAccess.Read) flags |= OpenFlags.O_RDONLY;
             if (acc == FileAccess.Write) flags |= OpenFlags.O_WRONLY;
             if (acc == FileAccess.ReadWrite) flags |= OpenFlags.O_RDWR;

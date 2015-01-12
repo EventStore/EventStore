@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 stream.Read(read, 0, 3000);
                 Assert.AreEqual(3000, stream.Position);
                 var total = stream.Read(read, 3000, 3000);
-                
+                Assert.AreEqual(3000, total);
                 Assert.AreEqual(6000, stream.Position);
                 for (var i = 0; i < read.Length; i++)
                 {
