@@ -125,7 +125,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         {
 #if !__MonoCS__ && !USE_UNIX_IO
             var handle = WinNative.CreateFile(path,
-                (int) acc,
+                acc,
                 FileShare.ReadWrite,
                 IntPtr.Zero,
                 mode,
@@ -143,15 +143,17 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         }
 
 
-        public static SafeFileHandle CreateUnbufferedRW(string path, FileMode mode)
+        public static SafeFileHandle CreateUnbufferedRW(string path,FileAccess acc, FileShare share, FileMode mode, bool writeThrough)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
+            var flags = ExtendedFileOptions.NoBuffering;
+            if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
             var handle = WinNative.CreateFile(path,
-                (int) FileAccess.ReadWrite,
-                FileShare.ReadWrite,
+                acc,
+                share,
                 IntPtr.Zero,
                 FileMode.OpenOrCreate,
-                (int) ExtendedFileOptions.NoBuffering,
+                (int) flags,
                 IntPtr.Zero);
             if (handle.IsInvalid)
             {
@@ -159,8 +161,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             return handle;
 #else
-            var flags = OpenFlags.O_RDWR | OpenFlags.O_DIRECT | OpenFlags.O_CREAT;
-            //var f = NativeConvert.FromOpenFlags(flags); not needed?
+            var flags = GetFlags(acc, mode) | OpenFlags.O_DIRECT;
             var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
             if(han < 0)
                 throw new Win32Exception();
@@ -171,6 +172,23 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             return handle;
 #endif
         }
+
+#if __MonoCS__ || USE_UNIX_IO
+        public uint GetFlags(FileAccess acc, FileMode mode)
+        {
+            uint flags = 0;
+            if (acc == FileAccess.Read) flags |= OpenFlags.O_RDONLY;
+            if (acc == FileAccess.Write) flags |= OpenFlags.O_WRONLY;
+            if (acc == FileAccess.ReadWrite) flags |= OpenFlags.O_RDWR;
+            if (mode == FileMode.Append) flags |= OpenFlags.O_APPEND;
+            if (mode == FileMode.Create) flags |= OpenFlags.O_CREAT;
+            if (mode == FileMode.CreateNew) flags |= OpenFlags.O_CREAT;
+            //if (mode == FileMode.Open);
+            if (mode == FileMode.Truncate) flags |= OpenFlags.O_TRUNC;
+            
+            return flags;
+        }
+#endif
         public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
         {
 #if !__MonoCS__ && !USE_UNIX_IO

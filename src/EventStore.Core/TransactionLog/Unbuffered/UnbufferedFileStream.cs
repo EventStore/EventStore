@@ -60,10 +60,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 throw new Exception("write buffer size must be aligned to block size of " + blockSize + " bytes");
             if (internalReadBufferSize % blockSize != 0)
                 throw new Exception("read buffer size must be aligned to block size of " + blockSize + " bytes");
-            var flags = ExtendedFileOptions.NoBuffering;
-            if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
 
-            var handle = NativeFile.CreateUnbufferedRW(path,FileMode.Create);
+            var handle = NativeFile.CreateUnbufferedRW(path, acc,share, mode, writeThrough);
             return new UnbufferedFileStream(handle, blockSize, internalWriteBufferSize, internalReadBufferSize);
         }
 

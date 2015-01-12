@@ -45,7 +45,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         [DllImport("KERNEL32", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         public static extern SafeFileHandle CreateFile(String fileName,
-            int desiredAccess,
+            FileAccess desiredAccess,
             FileShare shareMode,
             IntPtr securityAttrs,
             FileMode creationDisposition,
