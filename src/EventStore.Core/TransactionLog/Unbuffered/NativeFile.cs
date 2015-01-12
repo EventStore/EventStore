@@ -63,6 +63,10 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                     throw new Win32Exception();
                 }
             }
+#else
+            if(!syscall.write(handle, buffer,count) {
+                throw new Win32Exception();
+            }
 #endif
         }
 
