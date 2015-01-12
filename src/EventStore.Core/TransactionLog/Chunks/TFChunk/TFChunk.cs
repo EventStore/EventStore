@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Log;
-using EventStore.Common.Streams;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
@@ -278,7 +277,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             Stream stream;
             if (_unbuffered)
             {
-                stream = UnbufferedIOFileStream.Create(
+                stream = UnbufferedFileStream.Create(
                             _filename, 
                             FileMode.Open, 
                             FileAccess.Read, 
@@ -363,7 +362,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
             else
             {
-                stream = UnbufferedIOFileStream.Create(
+                stream = UnbufferedFileStream.Create(
                                     _filename, 
                                     FileMode.Open, 
                                     FileAccess.ReadWrite, 
@@ -427,16 +426,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
             Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
-#if  __MonoCS__
-            using (var reader = AcquireReader())
-            {
-                reader.Stream.Seek(0, SeekOrigin.Begin);
-                var stream = reader.Stream;
-#else
-            using (var reader = UnbufferedFileReadStream.Open(_filename))
+            using (var reader = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, true,
+                                                            4096, 1024 * 1024 * 2, false, 4096))
             {
                 var stream = reader;
-#endif
                 var footer = _chunkFooter;
 
                 byte[] hash;

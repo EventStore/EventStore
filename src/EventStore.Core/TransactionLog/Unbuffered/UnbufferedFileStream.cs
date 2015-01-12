@@ -6,7 +6,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-    public unsafe class UnbufferedIOFileStream : Stream
+    //NOTE THIS DOES NOT SUPPORT ALL STREAM OPERATIONS AS YOU MIGHT EXPECT IT SUPPORTS WHAT WE USE!
+    public unsafe class UnbufferedFileStream : Stream
     {
         private byte* _writeBuffer;
         private byte* _readBuffer;
@@ -22,7 +23,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private SafeFileHandle _handle;
         private int _readLocation;
 
-        private UnbufferedIOFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
+        private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
         {
             _handle = handle;
             _readBufferSize = internalReadBufferSize;
@@ -43,7 +44,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             return (byte*) aligned;
         }
 
-        public static UnbufferedIOFileStream Create(string path,
+        public static UnbufferedFileStream Create(string path,
             FileMode mode,
             FileAccess acc,
             FileShare share,
@@ -63,7 +64,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
 
             var handle = NativeFile.CreateUnbufferedRW(path,FileMode.Create);
-            return new UnbufferedIOFileStream(handle, blockSize, internalWriteBufferSize, internalReadBufferSize);
+            return new UnbufferedFileStream(handle, blockSize, internalWriteBufferSize, internalReadBufferSize);
         }
 
         public override void Flush()
@@ -187,7 +188,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             
             MemCopy(_readBuffer, roffset, buffer,offset,toCopy);
             _bufferedCount += toCopy;
-            return toCopy;
+            if (count - toCopy == 0) return toCopy;
+            return toCopy + Read(buffer, offset+toCopy, count - toCopy);
         }
 
         public override void Write(byte[] buffer, int offset, int count)

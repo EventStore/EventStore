@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             
-            var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096,4096, false, 4096);
             stream.SetLength(4096 *1024);
             stream.Close();
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(255);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(9000);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(255);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(255);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(4096);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(8192);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, 5012);
@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(256);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
@@ -177,7 +177,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             MakeFile(filename,20000);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Seek(4096 + 15, SeekOrigin.Begin);
@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             MakeFile(filename, 20000);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 var read = new byte[1000];
@@ -214,11 +214,33 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         }
 
         [Test]
+        public void when_reading_multiple_times_over_page_size()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            MakeFile(filename, 20000);
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, 4096, false, 4096))
+            {
+                var read = new byte[6000];
+                stream.Read(read, 0, 3000);
+                Assert.AreEqual(3000, stream.Position);
+                var total = stream.Read(read, 3000, 3000);
+                
+                Assert.AreEqual(6000, stream.Position);
+                for (var i = 0; i < read.Length; i++)
+                {
+                    Assert.AreEqual(i % 256, read[i]);
+                }
+            }
+        }
+
+
+        [Test]
         public void when_writing_more_than_buffer_and_closing()
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             var bytes = GetBytes(9000);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Write(bytes, 0, bytes.Length);
@@ -237,7 +259,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             MakeFile(filename,20000);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 var read = new byte[4096];
@@ -254,7 +276,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             MakeFile(filename, 20000);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Seek(15, SeekOrigin.Begin);
@@ -272,7 +294,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             MakeFile(filename, 20000);
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 stream.Seek(4096 + 15, SeekOrigin.Begin);
@@ -293,7 +315,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 Assert.Throws<NotImplementedException>(() => stream.Seek(0, SeekOrigin.Current));
@@ -305,7 +327,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
             
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 Assert.Throws<NotImplementedException>(() => stream.Seek(0, SeekOrigin.End));
@@ -316,7 +338,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
         public void seek_write_seek_read_in_buffer()
         {
             var filename = GetFilePathFor(Guid.NewGuid().ToString());
-            using (var stream = UnbufferedIOFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
                 FileShare.ReadWrite, false, 4096, 4096, false, 4096))
             {
                 var buffer = GetBytes(255);
