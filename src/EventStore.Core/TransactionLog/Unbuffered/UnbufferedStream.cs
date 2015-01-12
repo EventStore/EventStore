@@ -7,18 +7,21 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 {
     public class UnbufferedIOFileStream : Stream
     {
-        private readonly byte[] _buffer;
+        private readonly byte[] _writeBuffer;
         private readonly int _blockSize;
         private int _bufferedCount;
         private bool _aligned;
         private long _lastPosition;
         private bool _needsFlush;
         private readonly SafeFileHandle _handle;
-        
-        private UnbufferedIOFileStream(SafeFileHandle handle, int blockSize, int internalBufferSize)
+        private readonly byte [] _readBuffer;
+        private int _readLocation;
+
+        private UnbufferedIOFileStream(SafeFileHandle handle, int blockSize, int internalWriteBufferSize, int internalReadBufferSize)
         {
             _handle = handle;
-            _buffer = new byte[internalBufferSize];
+            _writeBuffer = new byte[internalWriteBufferSize];
+            _readBuffer = new byte[internalReadBufferSize];
             _blockSize = blockSize;
         }
 
@@ -27,19 +30,22 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             FileAccess acc,
             FileShare share,
             bool sequential,
-            int internalBufferSize,
+            int internalWriteBufferSize,
+            int internalReadBufferSize,
             bool writeThrough,
             uint minBlockSize)
         {
             var blockSize = NativeFile.GetDriveSectorSize(path);
             blockSize = blockSize > minBlockSize ? blockSize : minBlockSize;
-            if (internalBufferSize%blockSize != 0)
-                throw new Exception("buffer size must be aligned to block size of " + blockSize + " bytes");
+            if (internalWriteBufferSize%blockSize != 0)
+                throw new Exception("write buffer size must be aligned to block size of " + blockSize + " bytes");
+            if (internalReadBufferSize % blockSize != 0)
+                throw new Exception("read buffer size must be aligned to block size of " + blockSize + " bytes");
             var flags = ExtendedFileOptions.NoBuffering;
             if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
 
             var handle = NativeFile.Create(path, acc, share, mode, (int) flags);
-            return new UnbufferedIOFileStream(handle, (int) blockSize, internalBufferSize);
+            return new UnbufferedIOFileStream(handle, (int) blockSize, internalWriteBufferSize, internalReadBufferSize);
         }
 
         public override void Flush()
@@ -53,7 +59,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             if (_bufferedCount == alignedbuffer)
             {
-                InternalWrite(_buffer, (uint) _bufferedCount);
+                InternalWrite(_writeBuffer, (uint) _bufferedCount);
                 _lastPosition = positionAligned + _bufferedCount;
                 _bufferedCount = 0;
                 _aligned = true;
@@ -62,7 +68,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             {
                 var left = _bufferedCount - alignedbuffer;
 
-                InternalWrite(_buffer, (uint) (alignedbuffer + _blockSize));
+                InternalWrite(_writeBuffer, (uint) (alignedbuffer + _blockSize));
                 _lastPosition = positionAligned + alignedbuffer + left;
                 SetBuffer(alignedbuffer, left);
                 _bufferedCount = left;
@@ -85,14 +91,13 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            Console.WriteLine("seeking to " + offset);
             if(origin != SeekOrigin.Begin) throw new NotImplementedException("only supports seek origin begin");
             var aligned = GetLowestAlignment(offset);
             var left = (int) (offset - aligned);
             Flush();
             _bufferedCount = left;
-            _aligned = aligned == left; //ALIGNED IS WRONG
-            _lastPosition = offset;
+            _aligned = aligned == left;
+            _lastPosition = aligned;
             return offset;
         }
 
@@ -111,19 +116,28 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if(offset < 0 || buffer.Length < offset) throw new ArgumentException("offset");
+            if (offset < 0 || buffer.Length < offset) throw new ArgumentException("offset");
             if (count < 0 || buffer.Length < count) throw new ArgumentException("offset");
-            if(offset + count > buffer.Length) throw new ArgumentException("offset + count must be less than size of array");
-            var position = (int)GetLowestAlignment(Position);
+            if (offset + count > buffer.Length)
+                throw new ArgumentException("offset + count must be less than size of array");
+            var position = (int) GetLowestAlignment(Position);
             var roffset = (int) (Position - position);
-            var toread = (((roffset + count) / _blockSize) + 1) * _blockSize;
-                        
-            var readbuffer = new byte[toread];
-            SeekInternal(position);
-            var read = NativeFile.Read(_handle, readbuffer, 0, toread);
-            Buffer.BlockCopy(readbuffer, roffset, buffer,offset,count);
-            _bufferedCount += count;
-            return count;
+
+            var bytesRead = _readBuffer.Length;
+
+            if(_readLocation + _readBuffer.Length < position || _readLocation > position || _readLocation == 0) {
+                SeekInternal(position);
+                bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBuffer.Length);
+                _readLocation = position;
+            }
+
+            var bytesAvailable = bytesRead - roffset;
+            if (bytesAvailable <= 0) return 0;
+            var toCopy = count > bytesAvailable ? bytesAvailable : count;
+
+            Buffer.BlockCopy(_readBuffer, roffset, buffer,offset,toCopy);
+            _bufferedCount += toCopy;
+            return toCopy;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -134,7 +148,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             while (!done)
             {
                 _needsFlush = true;
-                if (_bufferedCount + left < _buffer.Length)
+                if (_bufferedCount + left < _writeBuffer.Length)
                 {
                     CopyBuffer(buffer, current, left);
                     done = true;
@@ -142,7 +156,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 }
                 else
                 {
-                    var toFill = _buffer.Length - _bufferedCount;
+                    var toFill = _writeBuffer.Length - _bufferedCount;
                     CopyBuffer(buffer, current, toFill);
                     Flush();
                     left -= toFill;
@@ -154,7 +168,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void CopyBuffer(byte[] buffer, int offset, int count)
         {
-            Buffer.BlockCopy(buffer, offset, _buffer, _bufferedCount, count);
+            Buffer.BlockCopy(buffer, offset, _writeBuffer, _bufferedCount, count);
             _bufferedCount += count;
         }
 
@@ -191,7 +205,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void SetBuffer(int alignedbuffer, int left)
         {
-            Buffer.BlockCopy(_buffer, alignedbuffer, _buffer, 0, left);
+            Buffer.BlockCopy(_writeBuffer, alignedbuffer, _writeBuffer, 0, left);
         }
 
         protected override void Dispose(bool disposing)

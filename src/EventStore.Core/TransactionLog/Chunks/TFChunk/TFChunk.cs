@@ -284,7 +284,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                             FileAccess.Read, 
                             FileShare.ReadWrite,
                             false, 
-                            4096, 
+                            1024 * 1024, 
+                            4096,
                             false, 
                             4096);
             }
@@ -352,12 +353,26 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             Stream stream = null;
             if (!_unbuffered)
             {
-                stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
-                    WriteBufferSize, FileOptions.SequentialScan);
+                stream = new FileStream(
+                                    _filename, 
+                                    FileMode.Open, 
+                                    FileAccess.ReadWrite, 
+                                    FileShare.Read,
+                                    WriteBufferSize, 
+                                    FileOptions.SequentialScan);
             }
             else
             {
-                stream = UnbufferedIOFileStream.Create(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,false,4096*1024,_writethrough,4096);
+                stream = UnbufferedIOFileStream.Create(
+                                    _filename, 
+                                    FileMode.Open, 
+                                    FileAccess.ReadWrite, 
+                                    FileShare.Read,
+                                    false,
+                                    4096*1024,
+                                    4096,
+                                    _writethrough,
+                                    4096);
             }
             stream.Position = ChunkHeader.Size;
             _writerWorkItem = new WriterWorkItem(stream, null, md5);
