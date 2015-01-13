@@ -466,6 +466,7 @@
     <Compile Include="Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_soft_delete_specified_after.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_start_from_specified.cs" />
     <Compile Include="TransactionLog\Scavenging\scavenged_chunk.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_truncatebefore_specified_after.cs" />
