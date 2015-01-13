@@ -37,6 +37,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public int ClientCount { get { return _pushClients.Count; } }
 
+        public bool HasReachedMaxClientCount { get { return _settings.MaxSubscriberCount == 0 ? false : _pushClients.Count >= _settings.MaxSubscriberCount; } }
+
         public PersistentSubscriptionState State
         {
             get { return _state; }

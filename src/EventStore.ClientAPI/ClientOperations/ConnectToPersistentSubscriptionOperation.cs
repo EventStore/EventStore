@@ -71,6 +71,12 @@ namespace EventStore.ClientAPI.ClientOperations
                     result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
                     return true;
                 }
+                if (dto.Reason == ClientMessage.SubscriptionDropped.SubscriptionDropReason.SubscriberMaxCountReached)
+                {
+                    DropSubscription(SubscriptionDropReason.NotFound, new Exception("Maximum subscribptions reached."));
+                    result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
+                    return true;
+                }
                 DropSubscription((SubscriptionDropReason) dto.Reason, null, _getConnection());
                 result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
                 return true;

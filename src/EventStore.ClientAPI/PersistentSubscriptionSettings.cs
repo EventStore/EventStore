@@ -25,7 +25,8 @@ namespace EventStore.ClientAPI
                                                              true,
                                                              TimeSpan.FromSeconds(2),
                                                              10,
-                                                             1000);
+                                                             1000,
+                                                             0);
         }
 
 
@@ -91,11 +92,17 @@ namespace EventStore.ClientAPI
         public readonly int MaxCheckPointCount;
 
         /// <summary>
+        /// The maximum number of subscribers allowed.
+        /// </summary>
+        public readonly int MaxSubscriberCount;
+
+        /// <summary>
         /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
         /// </summary>
         internal PersistentSubscriptionSettings(bool resolveLinkTos, int startFrom, bool extraStatistics, TimeSpan messageTimeout,
                                                 int maxRetryCount, int liveBufferSize, int readBatchSize, int historyBufferSize,
-                                                bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount)
+                                                bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount, 
+                                                int maxSubscriberCount)
         {
             MessageTimeout = messageTimeout;
             ResolveLinkTos = resolveLinkTos;
@@ -109,6 +116,7 @@ namespace EventStore.ClientAPI
             CheckPointAfter = checkPointAfter;
             MinCheckPointCount = minCheckPointCount;
             MaxCheckPointCount = maxCheckPointCount;
+            MaxSubscriberCount = maxSubscriberCount;
         }
 
     }
