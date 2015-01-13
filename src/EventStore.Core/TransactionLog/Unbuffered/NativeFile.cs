@@ -41,7 +41,12 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #if !__MonoCS__ && !USE_UNIX_IO
             return GetDriveSectorSize(path);
 #else
-            return Syscall.sysconf(SysconfName._SC_PAGESIZE);
+            int r =0;
+            do {
+                r = (int) Syscall.sysconf(SysconfName._SC_PAGESIZE);
+            } while (UnixMarshal.ShouldRetrySyscall (r));
+            UnixMarshal.ThrowExceptionForLastErrorIf (r);
+            return r;
 #endif
         }
 
@@ -80,9 +85,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 throw new Win32Exception();
             }
 #else
-            long ret = 0;
+            int ret = 0;
                 do {
-                ret = Syscall.write (handle.DangerousGetHandle().ToInt32(), buffer ,count);
+                ret = (int) Syscall.write (handle.DangerousGetHandle().ToInt32(), buffer ,count);
             } while (Mono.Unix.UnixMarshal.ShouldRetrySyscall ((int) ret));
             if(ret == -1)
                 Mono.Unix.UnixMarshal.ThrowExceptionForLastErrorIf ((int) ret);
@@ -101,9 +106,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             return read;
 #else
-            long r;
+            int r;
             do {
-                r = Syscall.read (handle.DangerousGetHandle().ToInt32(), buffer, (ulong) count);
+                r = (int) Syscall.read (handle.DangerousGetHandle().ToInt32(), buffer, (ulong) count);
             } while (UnixMarshal.ShouldRetrySyscall ((int) r));
             if (r == -1)
                 UnixMarshal.ThrowExceptionForLastError ();
@@ -226,9 +231,11 @@ static extern int fcntl(int fd, uint command, int arg);
                 throw new Win32Exception();
             }
 #else
-            if(Syscall.lseek(handle.DangerousGetHandle().ToInt32(), position, SeekFlags.SEEK_SET) < 0) {
-                throw new Win32Exception();
-            }
+            int r = 0;
+            do {
+                r = (int) Syscall.lseek(handle.DangerousGetHandle().ToInt32(), position, SeekFlags.SEEK_SET);
+            } while (UnixMarshal.ShouldRetrySyscall (r));
+            UnixMarshal.ThrowExceptionForLastErrorIf (r);
 #endif
         }
     }
