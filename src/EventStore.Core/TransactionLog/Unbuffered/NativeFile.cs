@@ -168,7 +168,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var ismac = OS.OsFlavor == OsFlavor.MacOS;
             //O_RDONLY is 0
             var direct = ismac ? OpenFlags.O_RDONLY : OpenFlags.O_DIRECT;
-            var flags = GetFlags(acc, mode) | direct;
+            var flags = GetFlags(acc, mode) | direct ;
             var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
             if(han < 0)
                 throw new Win32Exception();
