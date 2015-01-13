@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 
 #if __MonoCS__ || USE_UNIX_IO
 using Mono.Unix.Native;
@@ -22,7 +23,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
     internal unsafe static class NativeFile
     {
-        const uint MAC_F_NOCACHE = 0x0400;
+        const uint MAC_F_NOCACHE = 48; 
     
         public static uint GetDriveSectorSize(string path)
         {
@@ -174,8 +175,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 throw new Win32Exception();
 
             var handle = new SafeFileHandle((IntPtr) han, true);
-            if(ismac) TurnOffMacCaching(handle);
             if(handle.IsInvalid) throw new Exception("Invalid handle");
+            if(ismac) TurnOffMacCaching(handle);
             return handle;
 #endif
         }
@@ -196,19 +197,24 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             return flags;
         }
 #endif
-
+#if __MonoCS__ || USE_UNIX_IO
+[DllImport("libc")]
+static extern int fcntl(int fd, uint command, int arg);
+#endif
 
         public static void TurnOffMacCaching(SafeFileHandle handle)
         {
+
             if (OS.OsFlavor != OsFlavor.MacOS) return;
 #if __MonoCS__ || USE_UNIX_IO
             long r = 0;
             do {
-                r = Syscall.fcntl (handle.DangerousGetHandle().ToInt32(), (FcntlCommand) MAC_F_NOCACHE, 1);
+                r = fcntl (handle.DangerousGetHandle().ToInt32(), MAC_F_NOCACHE, 0);
             } while (UnixMarshal.ShouldRetrySyscall ((int) r));
             if (r == -1)
                 UnixMarshal.ThrowExceptionForLastError ();
 #endif
+
         }
 
         public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
