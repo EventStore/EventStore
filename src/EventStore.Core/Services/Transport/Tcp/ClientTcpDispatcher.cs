@@ -441,7 +441,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             return new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
                             dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom, dto.MessageTimeoutMilliseconds, 
                             dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
-                            dto.ReadBatchSize,dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount, dto.CheckpointMaxCount, 
+                            dto.ReadBatchSize,dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount, dto.CheckpointMaxCount, dto.SubscriberMaxCount,
                             user, username, password);
         }
 
@@ -456,7 +456,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                 dto.MessageTimeoutMilliseconds,
                 dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
                 dto.ReadBatchSize, dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount,
-                dto.CheckpointMaxCount,
+                dto.CheckpointMaxCount, dto.SubscriberMaxCount,
                 user, username, password);
         }
 

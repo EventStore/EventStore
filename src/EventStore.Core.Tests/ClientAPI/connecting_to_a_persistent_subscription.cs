@@ -104,6 +104,50 @@ namespace EventStore.Core.Tests.ClientAPI
     }
 
     [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_with_max_one_client : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent()
+                                                                .WithMaxSubscriberCountOf(1);
+
+        private const string _group = "startinbeginning1";
+
+        protected override void When()
+        {
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                DefaultData.AdminCredentials).Wait();
+            _conn.ConnectToPersistentSubscription(
+                _stream,
+                _group,
+                (s, e) => s.Acknowledge(e),
+                (sub, reason, ex) => { },
+                DefaultData.AdminCredentials);
+        }
+
+        [Test]
+        public void the_second_subscription_fails_to_connect()
+        {
+            try
+            {
+                _conn.ConnectToPersistentSubscription(
+                    _stream,
+                    _group,
+                    (s, e) => s.Acknowledge(e),
+                    (sub, reason, ex) => { },
+                    DefaultData.AdminCredentials);
+                throw new Exception("should have thrown.");
+            }
+            catch (Exception ex)
+            {
+                Assert.IsInstanceOf<AggregateException>(ex);
+                Assert.IsInstanceOf<Exception>(ex.InnerException);
+            }
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
     public class connect_to_existing_persistent_subscription_with_start_from_beginning_and_no_stream : SpecificationWithMiniNode
     {
         private readonly string _stream = "$" + Guid.NewGuid();

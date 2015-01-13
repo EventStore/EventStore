@@ -14,6 +14,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly TimeSpan _checkPointAfter;
         private readonly int _minCheckPointCount;
         private readonly int _maxCheckPointCount;
+        private readonly int _maxSubscriberCount;
+
         private readonly bool _preferRoundRobin;
         private readonly int _maxRetryCount;
         private readonly int _liveBufferSize;
@@ -27,7 +29,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
                                            int startFrom, bool extraStatistics, TimeSpan messageTimeout, bool preferRoundRobin, 
                                            int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
-                                           TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
+                                           TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount, int maxSubscriberCount,
                                            IPersistentSubscriptionStreamReader streamReader, 
                                            IPersistentSubscriptionCheckpointReader checkpointReader, 
                                            IPersistentSubscriptionCheckpointWriter checkpointWriter,
@@ -47,6 +49,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _checkPointAfter = checkPointAfter;
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
+            _maxSubscriberCount = maxSubscriberCount;
             _readBatchSize = readBatchSize;
             _streamReader = streamReader;
             _checkpointReader = checkpointReader;
@@ -147,6 +150,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         public int MaxCheckPointCount
         {
             get { return _maxCheckPointCount; }
+        }
+
+        public int MaxSubscriberCount
+        {
+            get { return _maxSubscriberCount; }
         }
 
         public string ParkedMessageStream

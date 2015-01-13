@@ -23,6 +23,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _checkPointAfter;
         private readonly int _minCheckPointCount;
         private readonly int _maxCheckPointCount;
+        private readonly int _maxSubscriberCount;
 
         public CreatePersistentSubscriptionOperation(ILogger log,
                                        TaskCompletionSource<PersistentSubscriptionCreateResult> source,
@@ -47,13 +48,14 @@ namespace EventStore.ClientAPI.ClientOperations
             _checkPointAfter = (int) settings.CheckPointAfter.TotalMilliseconds;
             _minCheckPointCount = settings.MinCheckPointCount;
             _maxCheckPointCount = settings.MaxCheckPointCount;
+            _maxSubscriberCount = settings.MaxSubscriberCount;
         }
 
         protected override object CreateRequestDto()
         {
             return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
                                     _recordStatistics, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin, _checkPointAfter,
-                                    _maxCheckPointCount, _minCheckPointCount);
+                                    _maxCheckPointCount, _minCheckPointCount, _maxSubscriberCount);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)

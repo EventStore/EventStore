@@ -27,6 +27,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private TimeSpan _checkPointAfter;
         private int _minCheckPointCount;
         private int _maxCheckPointCount;
+        private int _maxSubscriberCount;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionParamsBuilder"></see> object
@@ -50,13 +51,14 @@ namespace EventStore.Core.Services.PersistentSubscription
                 true,
                 TimeSpan.FromSeconds(1),
                 5,
-                1000);
+                1000,
+                0);
         }
 
 
         private PersistentSubscriptionParamsBuilder(string subscriptionId, string streamName, string groupName, bool resolveLinkTos, int startFrom, bool recordStatistics, TimeSpan timeout,
             int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin, TimeSpan checkPointAfter,
-            int minCheckPointCount, int maxCheckPointCount)
+            int minCheckPointCount, int maxCheckPointCount, int maxSubscriptionCount)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
@@ -73,6 +75,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _checkPointAfter = checkPointAfter;
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
+            _maxSubscriberCount = maxSubscriptionCount;
         }
 
         /// <summary>
@@ -315,6 +318,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._checkPointAfter,
                 builder._minCheckPointCount,
                 builder._maxCheckPointCount,
+                builder._maxSubscriberCount,
                 builder._streamReader,
                 builder._checkpointReader,
                 builder._checkpointWriter,

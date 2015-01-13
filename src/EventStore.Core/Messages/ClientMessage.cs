@@ -880,6 +880,7 @@ namespace EventStore.Core.Messages
             
             public readonly string GroupName;
             public readonly string EventStreamId;
+            public int MaxSubscriberCount;
             public int MaxCheckPointCount;
             public int MinCheckPointCount;
             public int CheckPointAfterMilliseconds;
@@ -888,7 +889,7 @@ namespace EventStore.Core.Messages
                 string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
                 int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
                 int liveBufferSize, int readbatchSize, bool preferRoundRobin,
-                int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
+                int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount, int maxSubscriberCount,
                 IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
@@ -906,6 +907,7 @@ namespace EventStore.Core.Messages
                 MaxCheckPointCount = maxCheckPointCount;
                 MinCheckPointCount = minCheckPointCount;
                 CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
+                MaxSubscriberCount = maxSubscriberCount;
             }
 
         }
@@ -953,6 +955,7 @@ namespace EventStore.Core.Messages
 
             public readonly string GroupName;
             public readonly string EventStreamId;
+            public int MaxSubscriberCount;
             public int MaxCheckPointCount;
             public int MinCheckPointCount;
             public int CheckPointAfterMilliseconds;
@@ -961,7 +964,7 @@ namespace EventStore.Core.Messages
                 string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
                 int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
                 int liveBufferSize, int readbatchSize, bool preferRoundRobin,
-                int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
+                int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount, int maxSubscriberCount,
                 IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
@@ -979,6 +982,7 @@ namespace EventStore.Core.Messages
                 MaxCheckPointCount = maxCheckPointCount;
                 MinCheckPointCount = minCheckPointCount;
                 CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
+                MaxSubscriberCount = maxSubscriberCount;
             }
 
         }

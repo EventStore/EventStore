@@ -164,6 +164,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     TimeSpan.FromMilliseconds(message.CheckPointAfterMilliseconds),
                                     message.MinCheckPointCount,
                                     message.MaxCheckPointCount,
+                                    message.MaxSubscriberCount,
                                     TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds)
                                     );
             Log.Debug("New persistent subscription {0}.", message.GroupName);
@@ -226,6 +227,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     TimeSpan.FromMilliseconds(message.CheckPointAfterMilliseconds),
                                     message.MinCheckPointCount,
                                     message.MaxCheckPointCount,
+                                    message.MaxSubscriberCount,
                                     TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds)
                                     );
             _config.Updated = DateTime.Now;
@@ -262,6 +264,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                              TimeSpan checkPointAfter,
                                              int minCheckPointCount,
                                              int maxCheckPointCount,
+                                             int maxSubscriberCount,
                                              TimeSpan messageTimeout)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
@@ -289,6 +292,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     checkPointAfter,
                     minCheckPointCount,
                     maxCheckPointCount,
+                    maxSubscriberCount,
                     _streamReader,
                     _checkpointReader,
                     new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
@@ -404,6 +408,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (!_subscriptionsById.TryGetValue(key, out subscription))
             {
                 message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.NotFound));
+                return;
+            }
+            if (subscription.HasReachedMaxClientCount)
+            {
+                message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.SubscriberMaxCountReached));
                 return;
             }
             Log.Debug("New connection to persistent subscription {0}.", message.SubscriptionId);
@@ -569,6 +578,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                                     TimeSpan.FromMilliseconds(entry.CheckPointAfter),
                                                     entry.MinCheckPointCount,
                                                     entry.MaxCheckPointCount,
+                                                    entry.MaxSubscriberCount,
                                                     TimeSpan.FromMilliseconds(entry.MessageTimeout)); 
                         }
                         continueWith();
@@ -632,6 +642,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         TimeSpan.FromMilliseconds(sub.CheckPointAfter),
                                         sub.MinCheckPointCount,
                                         sub.MaxCheckPointCount,
+                                        sub.MaxSubscriberCount,
                                         TimeSpan.FromMilliseconds(sub.MessageTimeout));
             }
         }

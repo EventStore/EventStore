@@ -692,10 +692,13 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(14, IsRequired = true, Name=@"checkpoint_min_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int CheckpointMinCount;
+
+    [ProtoMember(15, IsRequired = true, Name = @"subscriber_max_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int SubscriberMaxCount;
   
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
@@ -711,6 +714,7 @@ namespace EventStore.ClientAPI.Messages
         CheckpointAfterTime = checkpointAfterTime;
         CheckpointMaxCount = checkpointMaxCount;
         CheckpointMinCount = checkpointMinCount;
+        SubscriberMaxCount = subscriberMaxCount;
     }
   }
   
@@ -1103,7 +1107,10 @@ namespace EventStore.ClientAPI.Messages
       NotFound = 2,
             
       [ProtoEnum(Name=@"PersistentSubscriptionDeleted", Value=3)]
-      PersistentSubscriptionDeleted = 3
+      PersistentSubscriptionDeleted = 3,
+
+      [ProtoEnum(Name = @"SubscriberMaxCountReached", Value=4)]
+      SubscriberMaxCountReached = 4
     }
   
     private SubscriptionDropped() {}

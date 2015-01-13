@@ -20,11 +20,12 @@ namespace EventStore.ClientAPI
         private TimeSpan _checkPointAfter;
         private int _minCheckPointCount;
         private int _maxCheckPointCount;
+        private int _maxSubscriberCount;
 
         internal PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan timeout,
                                                       int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, 
                                                       bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount,
-                                                      int maxCheckPointCount)
+                                                      int maxCheckPointCount, int maxSubscriberCount)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
@@ -38,6 +39,7 @@ namespace EventStore.ClientAPI
             _checkPointAfter = checkPointAfter;
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
+            _maxSubscriberCount = maxSubscriberCount;
         }
 
 
@@ -254,6 +256,18 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Sets the size of the read batch used when paging in history for the subscription
+        /// sizes should not be too big ...
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder WithMaxSubscriberCountOf(int count)
+        {
+            Ensure.Nonnegative(count, "count");
+            _maxSubscriberCount = count;
+            return this;
+        }
+
+        /// <summary>
         /// Builds a <see cref="PersistentSubscriptionSettings"/> object from a <see cref="PersistentSubscriptionSettingsBuilder"/>.
         /// </summary>
         /// <param name="builder"><see cref="PersistentSubscriptionSettingsBuilder"/> from which to build a <see cref="PersistentSubscriptionSettingsBuilder"/></param>
@@ -280,7 +294,8 @@ namespace EventStore.ClientAPI
                 _preferRoundRobin,
                 _checkPointAfter,
                 _minCheckPointCount,
-                _maxCheckPointCount);
+                _maxCheckPointCount,
+                _maxSubscriberCount);
         }
     }
 }

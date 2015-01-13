@@ -210,6 +210,7 @@ message CreatePersistentSubscription {
 	required int32 checkpoint_after_time = 12;
 	required int32 checkpoint_max_count = 13;
 	required int32 checkpoint_min_count = 14;
+    required int32 subscriber_max_count = 15;
 }
 
 message DeletePersistentSubscription {
@@ -232,6 +233,7 @@ message UpdatePersistentSubscription {
 	required int32 checkpoint_after_time = 12;
 	required int32 checkpoint_max_count = 13;
 	required int32 checkpoint_min_count = 14;
+    required int32 subscriber_max_count = 15;
 }
 
 message UpdatePersistentSubscriptionCompleted {
@@ -328,6 +330,7 @@ message SubscriptionDropped {
 		AccessDenied = 1;
 		NotFound=2;
 		PersistentSubscriptionDeleted=3;
+        SubscriberMaxCountReached=4;
 	}
 	
 	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];
