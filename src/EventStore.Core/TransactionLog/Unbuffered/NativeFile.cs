@@ -209,7 +209,7 @@ static extern int fcntl(int fd, uint command, int arg);
 #if __MonoCS__ || USE_UNIX_IO
             long r = 0;
             do {
-                r = fcntl (handle.DangerousGetHandle().ToInt32(), MAC_F_NOCACHE, 0);
+                r = fcntl (handle.DangerousGetHandle().ToInt32(), MAC_F_NOCACHE, 1);
             } while (UnixMarshal.ShouldRetrySyscall ((int) r));
             if (r == -1)
                 UnixMarshal.ThrowExceptionForLastError ();
