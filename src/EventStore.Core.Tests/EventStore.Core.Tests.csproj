@@ -468,6 +468,7 @@
     <Compile Include="TestsInitFixture.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_start_from_specified.cs" />
     <Compile Include="TransactionLog\Scavenging\scavenged_chunk.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_truncatebefore_specified_after.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_completed_chunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_ongoing_chunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_to_the_very_beginning_of_db.cs" />
