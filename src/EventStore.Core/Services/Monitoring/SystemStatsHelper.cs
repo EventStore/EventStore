@@ -147,9 +147,9 @@ namespace EventStore.Core.Services.Monitoring
                 case OsFlavor.Windows:
                     return _perfCounter.GetFreeMemory();
                 case OsFlavor.Linux:
-                case OsFlavor.MacOS:
                     return GetFreeMemOnLinux();
                 case OsFlavor.BSD:
+                case OsFlavor.MacOS:
                     return GetFreeMemOnBSD();
                 default:
                     return -1;
