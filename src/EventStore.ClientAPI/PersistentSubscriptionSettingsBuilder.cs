@@ -256,8 +256,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets the size of the read batch used when paging in history for the subscription
-        /// sizes should not be too big ...
+        /// Sets the maximum number of subscribers allowed to connect.
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder WithMaxSubscriberCountOf(int count)
