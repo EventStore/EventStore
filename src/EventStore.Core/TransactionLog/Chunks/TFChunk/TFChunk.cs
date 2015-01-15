@@ -134,9 +134,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public static TFChunk FromStartOfOngoingFile(string filename, int chunkSize, int chunkNumber)
         {
-            var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkNumber, chunkNumber, false, Guid.NewGuid());
-            return CreateWithHeader(filename, chunkHeader, chunkSize + Chunks.ChunkHeader.Size + ChunkFooter.Size, false);
-
+            return FromOngoingFile(filename, 0, true);
         }
 
 

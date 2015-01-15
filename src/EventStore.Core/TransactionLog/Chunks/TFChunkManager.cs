@@ -113,9 +113,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (HaveCachedChunk())
                 {
                     var filename = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-                    File.Move(_cachedChunkFilename, filename); //doesnt need fsync
+
                     try
                     {
+                        File.Move(_cachedChunkFilename, filename); //doesnt need fsync
+
                         chunk = TFChunk.TFChunk.FromStartOfOngoingFile(filename, _config.ChunkSize, chunkNumber);
                         if (chunk.ChunkHeader.ChunkStartNumber != chunkNumber)
                         {
@@ -168,7 +170,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private bool HaveCachedChunk()
         {
-            return _cachedChunkFilename == null;
+            return _cachedChunkFilename != null;
         }
 
         private void BuildCachedChunk()
@@ -178,9 +180,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (_config.InMemDb) return;
                 Log.Info("Trying to build cached chunk for future use.");
                 var filename = _config.FileNamingStrategy.GetTempFilename();
-                var chunkNumber = _chunksCount + 1;
-                var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-                using (TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, chunkNumber,
+                var chunkNumber = _chunksCount;
+                using (var shit = TFChunk.TFChunk.CreateNew(filename, _config.ChunkSize, chunkNumber, chunkNumber,
                     isScavenged: false, inMem: _config.InMemDb))
                 {
                     _cachedChunkFilename = filename;
