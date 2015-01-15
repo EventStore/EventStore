@@ -35,7 +35,6 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                         .DoNotResolveLinkTos()
                                                                         .StartFromCurrent();
         private readonly string _stream = Guid.NewGuid().ToString();
-        private EventStorePersistentSubscription _sub;
         private readonly ManualResetEvent _called = new ManualResetEvent(false);
 
         protected override void Given()
@@ -43,7 +42,7 @@ namespace EventStore.Core.Tests.ClientAPI
             base.Given();
             _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", _settings,
     DefaultData.AdminCredentials).Wait();
-            _sub = _conn.ConnectToPersistentSubscription(_stream, "groupname123",
+            _conn.ConnectToPersistentSubscription(_stream, "groupname123",
                 (s, e) => { },
                 (s, r, e) => _called.Set());
         }
