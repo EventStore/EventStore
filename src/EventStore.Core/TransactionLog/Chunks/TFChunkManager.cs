@@ -23,6 +23,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly object _chunksLocker = new object();
         private int _backgroundPassesRemaining;
         private int _backgroundRunning;
+        private string _cachedChunkFilename;
 
         public TFChunkManager(TFChunkDbConfig config)
         {
@@ -107,29 +108,87 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             lock (_chunksLocker)
             {
+                TFChunk.TFChunk chunk = null;
                 var chunkNumber = _chunksCount;
-                var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-                var chunk = TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, chunkNumber, isScavenged: false, inMem: _config.InMemDb);
+                if (HaveCachedChunk())
+                {
+                    var filename = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
+                    File.Move(_cachedChunkFilename, filename); //doesnt need fsync
+                    try
+                    {
+                        chunk = TFChunk.TFChunk.FromStartOfOngoingFile(filename, _config.ChunkSize, chunkNumber);
+                        if (chunk.ChunkHeader.ChunkStartNumber != chunkNumber)
+                        {
+                            Log.Info("wrong cached chunk, not using.");
+                            chunk.Dispose();
+                            File.Delete(filename);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("error with cached chunk: {0}", ex);
+                    }
+                    _cachedChunkFilename = null;
+                }
+                if (chunk == null)
+                {
+                    var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
+                    chunk = TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, chunkNumber,
+                        isScavenged: false, inMem: _config.InMemDb);
+                }
                 AddChunk(chunk);
+                TryCreateNewCachedChunk();
                 return chunk;
             }
         }
 
-        public TFChunk.TFChunk AddNewChunk(ChunkHeader chunkHeader, int fileSize)
+        private void TryCreateNewCachedChunk()
+        {
+            ThreadPool.QueueUserWorkItem(dontcare => BuildCachedChunk());
+        }
+
+        public TFChunk.TFChunk AddNewReplicatedChunk(ChunkHeader chunkHeader, int fileSize)
         {
             Ensure.NotNull(chunkHeader, "chunkHeader");
             Ensure.Positive(fileSize, "fileSize");
-
             lock (_chunksLocker)
             {
                 if (chunkHeader.ChunkStartNumber != _chunksCount)
-                    throw new Exception(string.Format("Received request to create a new ongoing chunk #{0}-{1}, but current chunks count is {2}.",
-                                                      chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
+                    throw new Exception(
+                        string.Format(
+                            "Received request to create a new ongoing chunk #{0}-{1}, but current chunks count is {2}.",
+                            chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
 
                 var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
                 var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize, _config.InMemDb);
                 AddChunk(chunk);
                 return chunk;
+            }
+        }
+
+        private bool HaveCachedChunk()
+        {
+            return _cachedChunkFilename == null;
+        }
+
+        private void BuildCachedChunk()
+        {
+            try
+            {
+                if (_config.InMemDb) return;
+                Log.Info("Trying to build cached chunk for future use.");
+                var filename = _config.FileNamingStrategy.GetTempFilename();
+                var chunkNumber = _chunksCount + 1;
+                var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
+                using (TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, chunkNumber,
+                    isScavenged: false, inMem: _config.InMemDb))
+                {
+                    _cachedChunkFilename = filename;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Info("error creating cached chunk: {0}", ex);
             }
         }
 
@@ -139,7 +198,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             lock (_chunksLocker)
             {
-                for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i)
+                for (var i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i)
                 {
                     _chunks[i] = chunk;
                 }

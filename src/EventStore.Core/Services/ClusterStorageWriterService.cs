@@ -152,7 +152,7 @@ namespace EventStore.Core.Services
                     ReplicationFail("Received request to create a new ongoing chunk #{0}-{1}, but current chunks count is {2}.", 
                                     message.ChunkHeader.ChunkStartNumber, message.ChunkHeader.ChunkEndNumber, Db.Manager.ChunksCount);
                 }
-                Db.Manager.AddNewChunk(message.ChunkHeader, message.FileSize);
+                Db.Manager.AddNewReplicatedChunk(message.ChunkHeader, message.FileSize);
             }
 
             _subscriptionPos = message.ChunkHeader.ChunkStartPosition;
