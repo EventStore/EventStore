@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Net;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI

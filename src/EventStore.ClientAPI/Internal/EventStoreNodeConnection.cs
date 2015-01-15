@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Core;
 using EventStore.ClientAPI.SystemData;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Internal
 {
     /// <summary>
     /// Maintains a full duplex connection to the EventStore

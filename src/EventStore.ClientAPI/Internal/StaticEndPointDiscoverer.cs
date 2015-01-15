@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal class StaticEndPointDiscoverer: IEndPointDiscoverer
     {

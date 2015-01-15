@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal class SimpleQueuedHandler
     {

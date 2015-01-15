@@ -1,6 +1,6 @@
 ﻿using EventStore.ClientAPI.ClientOperations;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Internal
 {
     internal class VolatileEventStoreSubscription : EventStoreSubscription
     {
