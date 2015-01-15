@@ -88,9 +88,6 @@ namespace EventStore.Core.Bus
             _queueStats.Start();
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
 
-            const int spinmax = 5000;
-            const int sleepmax = 500;
-            var iterationsCount = 0;
             while (!_stop)
             {
                 Message msg = null;
@@ -99,22 +96,9 @@ namespace EventStore.Core.Bus
                     if (!_queue.TryDequeue(out msg))
                     {
                         _queueStats.EnterIdle();
-
-                        iterationsCount += 1;
-                        if (iterationsCount < spinmax)
-                        {
-                            //do nothing... spin
-                        } 
-                        else if (iterationsCount < sleepmax)
-                        {
-                            Thread.Sleep(1);
-                        } 
-                        else
-                        {
-                            _starving = true;
-                            _msgAddEvent.WaitOne(100);
-                            _starving = false;
-                        }
+                        _starving = true;
+                        _msgAddEvent.WaitOne(100);
+                        _starving = false;
                     }
                     else
                     {
@@ -122,9 +106,6 @@ namespace EventStore.Core.Bus
 #if DEBUG
                         _queueStats.Dequeued(msg);
 #endif
-
-                        iterationsCount = 0;
-
                         var cnt = _queue.Count;
                         _queueStats.ProcessingStarted(msg.GetType(), cnt);
 
