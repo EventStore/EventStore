@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 
@@ -92,7 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     _stream,
                     "agroupname55",
                     (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) => {Console.WriteLine("dropped.");});
+                    (sub, reason, ex) => Console.WriteLine("dropped."));
                 throw new Exception("should have thrown.");
             }
             catch (Exception ex)
@@ -112,10 +114,13 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent()
                                                                 .WithMaxSubscriberCountOf(1);
 
+        private Exception _exception;
+
         private const string _group = "startinbeginning1";
 
-        protected override void When()
+        protected override void Given()
         {
+            base.Given();
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(
@@ -126,9 +131,9 @@ namespace EventStore.Core.Tests.ClientAPI
                 DefaultData.AdminCredentials);
         }
 
-        [Test]
-        public void the_second_subscription_fails_to_connect()
+        protected override void When()
         {
+            //TODO GFY FIND TESTS USING THIS PATTERN AND REPLACE WITH HELPER THROWS METHOD
             try
             {
                 _conn.ConnectToPersistentSubscription(
@@ -141,9 +146,15 @@ namespace EventStore.Core.Tests.ClientAPI
             }
             catch (Exception ex)
             {
-                Assert.IsInstanceOf<AggregateException>(ex);
-                Assert.IsInstanceOf<Exception>(ex.InnerException);
+                _exception = ex;
             }
+        }
+
+        [Test]
+        public void the_second_subscription_fails_to_connect()
+        {
+            Assert.IsInstanceOf<AggregateException>(_exception);
+            Assert.IsInstanceOf<MaximumSubscribersReachedException>(_exception.InnerException);
         }
     }
 
