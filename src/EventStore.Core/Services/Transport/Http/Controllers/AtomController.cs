@@ -5,6 +5,7 @@ using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http;
@@ -694,8 +695,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         return;
                     }
                     foreach(var e in events) {
+                        if (e.Data.Length == 0 && e.Metadata.Length == 0)
+                        {
+                            SendBadRequest(manager, "No data or metadata given.");
+                            return;
+                        }
                         if(e.Data.Length + e.Metadata.Length > 4 * 1024 * 1024) {
                             SendTooBig(manager);
+                            return;
                         }
                     }
                     var envelope = new SendToHttpEnvelope(_networkSendQueue,
