@@ -6,7 +6,6 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
@@ -281,9 +280,9 @@ namespace EventStore.Core.Index
                 var hash = MD5Hash.GetHashFor(memStream);
 
                 memStream.Position = 0;
-                for (int i = 0; i < hash.Length; ++i)
+                foreach (var t in hash)
                 {
-                    memWriter.Write(hash[i].ToString("X2"));
+                    memWriter.Write(t.ToString("X2"));
                 }
                 memWriter.Flush();
 

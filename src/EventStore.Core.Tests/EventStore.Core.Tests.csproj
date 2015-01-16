@@ -229,7 +229,6 @@
     <Compile Include="Index\index_map_should_detect_corruption.cs" />
     <Compile Include="Index\table_index_should.cs" />
     <Compile Include="Index\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
-    <Compile Include="Index\when_marking_an_index_as_corrupt.cs" />
     <Compile Include="Index\saving_empty_index_to_a_file.cs" />
     <Compile Include="Index\saving_index_with_six_items_to_a_file.cs" />
     <Compile Include="Index\ptable_range_query_tests.cs" />
@@ -238,7 +237,6 @@
     <Compile Include="Index\when_a_ptable_header_is_corrupt_on_disk.cs" />
     <Compile Include="Index\when_a_ptable_is_corrupt_on_disk.cs" />
     <Compile Include="Index\when_creating_ptable_from_memtable.cs" />
-    <Compile Include="Index\when_marking_an_index_map_as_corrupt_then_ok.cs" />
     <Compile Include="Index\when_merging_four_ptables.cs" />
     <Compile Include="Index\ReverseComparerTests.cs" />
     <Compile Include="Index\saving_index_with_single_item_to_a_file.cs" />
