@@ -2,7 +2,6 @@ using System;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.Http.Streams

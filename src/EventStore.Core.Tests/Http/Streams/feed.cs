@@ -602,5 +602,50 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+        [TestFixture]
+        public class reading_content_with_empty_event_and_metadata : HttpBehaviorSpecification
+        {
+            private string _streamName;
+            private JObject _feed;
+            private Guid _id;
+
+            protected override void Given()
+            {
+                var creds = DefaultData.AdminCredentials;
+                using (var conn = TestConnection.Create(_node.TcpEndPoint))
+                {
+                    _id = Guid.NewGuid();
+                    _streamName = Guid.NewGuid().ToString();
+                    conn.ConnectAsync().Wait();
+                    conn.AppendToStreamAsync(_streamName, ExpectedVersion.Any, creds,
+                        new EventData(_id, "testing", true, null, null))
+                        .Wait();
+                }
+            }
+
+            protected override void When()
+            {
+                var uri = MakeUrl("/streams/" + _streamName, "embed=content");
+                _feed = GetJson<JObject>(uri.ToString(), ContentType.AtomJson);
+            }
+
+            [Test]
+            public void content_stream_is_set()
+            {
+                Assert.AreEqual(_feed["entries"][0]["content"]["eventStreamId"].Value<string>(), _streamName);
+            }
+
+            [Test]
+            public void event_number_is_set()
+            {
+                Assert.AreEqual(_feed["entries"][0]["content"]["eventNumber"].Value<string>(), "0");
+            }
+
+            [Test]
+            public void event_type_is_set()
+            {
+                Assert.AreEqual(_feed["entries"][0]["content"]["eventType"].Value<string>(), "testing");
+            }
+        }
     }
 }

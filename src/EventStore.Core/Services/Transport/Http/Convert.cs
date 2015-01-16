@@ -82,9 +82,9 @@ namespace EventStore.Core.Services.Transport.Http
             }
             feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
             feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
-            for (int i = 0; i < msg.Events.Length; ++i)
+            foreach (var t in msg.Events)
             {
-                feed.AddEntry(ToEntry(msg.Events[i], requestedUrl, embedContent));
+                feed.AddEntry(ToEntry(t, requestedUrl, embedContent));
             }
 
             return feed;
