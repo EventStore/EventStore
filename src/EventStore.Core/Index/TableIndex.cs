@@ -357,20 +357,18 @@ namespace EventStore.Core.Index
                 Log.Trace("Putting awaiting file as PTable instead of MemTable [{0}].", memtable.Id);
                     
                 var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable());
-                bool swapped = false;
+                var swapped = false;
                 lock (_awaitingTablesLock)
                 {
-                    for (int j = _awaitingMemTables.Count - 1; j >= 1; j--)
+                    for (var j = _awaitingMemTables.Count - 1; j >= 1; j--)
                     {
                         var tableItem = _awaitingMemTables[j];
-                        if (tableItem.Table is IMemTable && tableItem.Table.Id == ptable.Id)
-                        {
-                            swapped = true;
-                            _awaitingMemTables[j] = new TableItem(ptable,
-                                                                  tableItem.PrepareCheckpoint,
-                                                                  tableItem.CommitCheckpoint);
-                            break;
-                        }
+                        if (!(tableItem.Table is IMemTable) || tableItem.Table.Id != ptable.Id) continue;
+                        swapped = true;
+                        _awaitingMemTables[j] = new TableItem(ptable,
+                            tableItem.PrepareCheckpoint,
+                            tableItem.CommitCheckpoint);
+                        break;
                     }
                 }
                 if (!swapped)
@@ -403,9 +401,8 @@ namespace EventStore.Core.Index
                 throw new ArgumentOutOfRangeException("version");
 
             var awaiting = _awaitingMemTables;
-            for (int index = 0; index < awaiting.Count; index++)
+            foreach (var tableItem in awaiting)
             {
-                var tableItem = awaiting[index];
                 if (tableItem.Table.TryGetOneValue(stream, version, out position))
                     return true;
             }
@@ -423,7 +420,7 @@ namespace EventStore.Core.Index
 
         public bool TryGetLatestEntry(uint stream, out IndexEntry entry)
         {
-            int counter = 0;
+            var counter = 0;
             while (counter < 5)
             {
                 counter++;
@@ -442,9 +439,9 @@ namespace EventStore.Core.Index
         private bool TryGetLatestEntryInternal(uint stream, out IndexEntry entry)
         {
             var awaiting = _awaitingMemTables;
-            for (int index = 0; index < awaiting.Count; index++)
+            foreach (var t in awaiting)
             {
-                if (awaiting[index].Table.TryGetLatestEntry(stream, out entry))
+                if (t.Table.TryGetLatestEntry(stream, out entry))
                     return true;
             }
 
@@ -461,7 +458,7 @@ namespace EventStore.Core.Index
 
         public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
         {
-            int counter = 0;
+            var counter = 0;
             while (counter < 5)
             {
                 counter++;
@@ -487,7 +484,7 @@ namespace EventStore.Core.Index
             }
 
             var awaiting = _awaitingMemTables;
-            for (int index = awaiting.Count - 1; index >= 0; index--)
+            for (var index = awaiting.Count - 1; index >= 0; index--)
             {
                 if (awaiting[index].Table.TryGetOldestEntry(stream, out entry))
                     return true;
@@ -499,7 +496,7 @@ namespace EventStore.Core.Index
 
         public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
         {
-            int counter = 0;
+            var counter = 0;
             while (counter < 5)
             {
                 counter++;
@@ -541,7 +538,7 @@ namespace EventStore.Core.Index
             }
 
             var last = new IndexEntry(0, 0, 0);
-            bool first = true;
+            var first = true;
             while (candidates.Count > 0)
             {
                 var maxIdx = GetMaxOf(candidates);
@@ -583,19 +580,17 @@ namespace EventStore.Core.Index
                 throw new TimeoutException("Could not finish background thread in reasonable time.");
             if (_inMem)
                 return;
-            if (_indexMap != null)
+            if (_indexMap == null) return;
+            if (removeFiles)
             {
-                if (removeFiles)
-                {
-                    _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-                    _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
-                    File.Delete(Path.Combine(_directory, IndexMapFilename));
-                }
-                else
-                {
-                    _indexMap.InOrder().ToList().ForEach(x => x.Dispose());
-                    _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
-                }
+                _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
+                _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
+                File.Delete(Path.Combine(_directory, IndexMapFilename));
+            }
+            else
+            {
+                _indexMap.InOrder().ToList().ForEach(x => x.Dispose());
+                _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
             }
         }
 
