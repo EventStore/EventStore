@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Net;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
@@ -25,7 +25,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
+        /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/> provided via a connectionstring
         /// </summary>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <param name="connectionString">The connection string to for this connection.</param>
@@ -38,7 +38,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
+        /// Creates a new <see cref="IEventStoreConnection"/> to single node using <see cref="ConnectionSettings"/> passed
         /// </summary>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>

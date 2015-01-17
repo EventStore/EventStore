@@ -44,6 +44,15 @@
         EventHandlerException,
 
         /// <summary>
+        /// The maximum number of subscribers for the persistent subscription has been reached
+        /// </summary>
+        MaxSubscribersReached,
+
+        /// <summary>
+        /// The persistent subscription has been deleted
+        /// </summary>
+        PersistentSubscriptionDeleted,
+        /// <summary>
         /// Subscription was dropped for an unknown reason.
         /// </summary>
         Unknown = 100,

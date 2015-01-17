@@ -1,9 +1,9 @@
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Internal
 {
     /// <summary>
     /// Enumeration representing the status of a single subscription create message.
     /// </summary>
-    enum PersistentSubscriptionCreateStatus
+    public enum PersistentSubscriptionUpdateStatus
     {
         /// <summary>
         /// The subscription was created successfully
@@ -17,5 +17,9 @@ namespace EventStore.ClientAPI
         /// Some failure happened creating the subscription
         /// </summary>
         Failure = 2,
+        /// <summary>
+        /// You do not have permissions to update this subscription
+        /// </summary>
+        AccessDenied = 3,
     }
 }

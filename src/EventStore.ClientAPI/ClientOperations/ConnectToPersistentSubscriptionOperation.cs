@@ -67,7 +67,13 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
                 if (dto.Reason == ClientMessage.SubscriptionDropped.SubscriptionDropReason.PersistentSubscriptionDeleted)
                 {
-                    DropSubscription(SubscriptionDropReason.NotFound, new Exception("Subscription deleted."));
+                    DropSubscription(SubscriptionDropReason.PersistentSubscriptionDeleted, new PersistentSubscriptionDeletedException());
+                    result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
+                    return true;
+                }
+                if (dto.Reason == ClientMessage.SubscriptionDropped.SubscriptionDropReason.SubscriberMaxCountReached)
+                {
+                    DropSubscription(SubscriptionDropReason.MaxSubscribersReached, new MaximumSubscribersReachedException());
                     result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
                     return true;
                 }
@@ -117,6 +123,34 @@ namespace EventStore.ClientAPI.ClientOperations
                                   _userCredentials != null ? _userCredentials.Password : null,
                                   dto.Serialize());
             EnqueueSend(package);
+        }
+    }
+
+    /// <summary>
+    /// Thrown when max subscribers is set on subscription and it has been reached
+    /// </summary>
+    public class MaximumSubscribersReachedException : Exception
+    {
+        /// <summary>
+        /// Constructs a <see cref="MaximumSubscribersReachedException"></see>
+        /// </summary>
+        public MaximumSubscribersReachedException()
+            : base("Maximum subscribptions reached.")
+        {
+            
+        }
+    }
+    /// <summary>
+    /// Thrown when the persistent subscription has been deleted to subscribers connected to it
+    /// </summary>
+    public class PersistentSubscriptionDeletedException : Exception
+    {
+        /// <summary>
+        /// Constructs a <see cref="PersistentSubscriptionDeletedException"></see>
+        /// </summary>
+        public PersistentSubscriptionDeletedException() : base("The subscription has been deleted.")
+        {
+            
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Embedded;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
 

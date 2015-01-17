@@ -55,5 +55,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         public int CheckPointAfter { get; set; }
         public int MinCheckPointCount { get; set; }
         public int MaxCheckPointCount { get; set; }
+        public int MaxSubscriberCount { get; set; }
     }
 }

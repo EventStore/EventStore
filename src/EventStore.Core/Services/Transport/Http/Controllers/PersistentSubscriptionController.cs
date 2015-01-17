@@ -128,6 +128,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         data == null ? 1000 : data.CheckPointAfterMilliseconds,
                         data == null ? 10 : data.MinCheckPointCount,
                         data == null ? 500 : data.MaxCheckPointCount,
+                        data == null ? 0 : data.MaxSubscriberCount,
                         http.User,
                         "",
                         "");
@@ -191,6 +192,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         data == null ? 1000 : data.CheckPointAfterMilliseconds,
                         data == null ? 10 : data.MinCheckPointCount,
                         data == null ? 500 : data.MaxCheckPointCount,
+                        data == null ? 0 : data.MaxSubscriberCount,
                         http.User,
                         "",
                         "");
@@ -408,6 +410,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int CheckPointAfterMilliseconds { get; set; }
             public int MinCheckPointCount { get; set; }
             public int MaxCheckPointCount { get; set; }
+            public int MaxSubscriberCount { get; set; }
         }
 
         private class SubscriptionSummary

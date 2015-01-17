@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;

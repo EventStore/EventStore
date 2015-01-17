@@ -1,5 +1,6 @@
 using System;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Internal;
 
 namespace EventStore.ClientAPI.SystemData
 {

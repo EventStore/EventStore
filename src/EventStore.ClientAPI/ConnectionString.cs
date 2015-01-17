@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
@@ -72,9 +73,26 @@ namespace EventStore.ClientAPI
             return Apply(items, settings);
         }
 
+        private static string WithSpaces(string name)
+        {
+            var ret = "";
+            foreach (var c in name)
+            {
+                if(char.IsUpper(c))
+                {
+                    ret += " ";
+                }
+                ret += c;
+            }
+            return ret.Trim();
+        }
+
         private static T Apply<T>(IEnumerable<KeyValuePair<string , string>> items, T obj)
         {
-            var fields = typeof (T).GetFields().Where(x=>x.IsPublic).ToDictionary(x => x.Name.ToLower(), x=>x);
+            var fields = typeof (T).GetFields().Where(x=>x.IsPublic).Select(x => new Tuple<string, FieldInfo>(x.Name.ToLower(), x))
+                .Concat(typeof(T).GetFields().Where(x => x.IsPublic).Select(x => new Tuple<string, FieldInfo>(WithSpaces(x.Name).ToLower(), x)))
+                .GroupBy(x => x.Item1)
+                .ToDictionary(x => x.First().Item1.ToLower(), x=>x.First().Item2);
             foreach (var item in items)
             {
                 FieldInfo fi = null;

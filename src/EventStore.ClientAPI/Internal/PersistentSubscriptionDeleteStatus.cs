@@ -1,4 +1,4 @@
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Internal
 {
     /// <summary>
     /// Enumeration representing the status of a single subscription delete message.

@@ -21,6 +21,14 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        public void can_set_with_spaces()
+        {
+            var settings = ConnectionString.GetConnectionSettings("Verbose Logging=true");
+            Assert.AreEqual(true, settings.VerboseLogging);
+        }
+
+
+        [Test]
         public void can_set_int()
         {
             var settings = ConnectionString.GetConnectionSettings("maxretries=55");

@@ -1,4 +1,4 @@
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Internal
 {
     /// <summary>
     /// A Persistent Subscription Create Result is the result of a single operation updating a

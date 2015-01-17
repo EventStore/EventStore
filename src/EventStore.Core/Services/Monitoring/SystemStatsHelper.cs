@@ -147,8 +147,9 @@ namespace EventStore.Core.Services.Monitoring
                 case OsFlavor.Windows:
                     return _perfCounter.GetFreeMemory();
                 case OsFlavor.Linux:
-                case OsFlavor.MacOS:
                     return GetFreeMemOnLinux();
+                case OsFlavor.MacOS:
+                    return GetFreeMemOnOSX();
                 case OsFlavor.BSD:
                     return GetFreeMemOnBSD();
                 default:
@@ -191,6 +192,34 @@ namespace EventStore.Core.Services.Monitoring
             catch (Exception ex)
             {
                 _log.DebugException(ex, "Couldn't get free memory on BSD.");
+                return -1;
+            }
+        }
+
+
+        //TODO GFY THIS AND BSD SHOULD BE MOVED TO OS CALLS
+        private long GetFreeMemOnOSX()
+        {
+            int freePages = 0;
+            try
+            {
+                var vmstat = ShellExecutor.GetOutput("vm_stat");
+                var sysctlStats = vmstat.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                foreach(var line in sysctlStats) {
+                    var l = line.Substring(0, line.Length -1);
+                    var pieces = l.Split(':');
+                    if(pieces.Length == 2) {
+                        if(pieces[0].Trim().ToLower() == "pages free") {
+                            freePages = int.Parse(pieces[1]);
+                            break;
+                        }
+                    }
+                }
+                return 4096 * freePages;
+            }
+            catch (Exception ex)
+            {
+                _log.DebugException(ex, "Couldn't get free memory on OSX.");
                 return -1;
             }
         }

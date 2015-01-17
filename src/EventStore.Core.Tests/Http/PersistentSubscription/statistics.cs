@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.BasicAuthentication.basic_authentication;
 using EventStore.Transport.Http;

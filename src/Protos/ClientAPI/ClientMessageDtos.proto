@@ -198,10 +198,10 @@ message ReadAllEventsCompleted {
 message CreatePersistentSubscription {
 	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
-   	required bool resolve_link_tos = 3;
-   	required int32 start_from = 4;
-   	required int32 message_timeout_milliseconds = 5;
-  	required bool record_statistics = 6;
+	required bool resolve_link_tos = 3;
+	required int32 start_from = 4;
+	required int32 message_timeout_milliseconds = 5;
+	required bool record_statistics = 6;
 	required int32 live_buffer_size = 7;
 	required int32 read_batch_size = 8;
 	required int32 buffer_size = 9;
@@ -210,6 +210,7 @@ message CreatePersistentSubscription {
 	required int32 checkpoint_after_time = 12;
 	required int32 checkpoint_max_count = 13;
 	required int32 checkpoint_min_count = 14;
+	required int32 subscriber_max_count = 15;
 }
 
 message DeletePersistentSubscription {
@@ -220,10 +221,10 @@ message DeletePersistentSubscription {
 message UpdatePersistentSubscription {
 	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
-   	required bool resolve_link_tos = 3;
-   	required int32 start_from = 4;
-   	required int32 message_timeout_milliseconds = 5;
-  	required bool record_statistics = 6;
+	required bool resolve_link_tos = 3;
+	required int32 start_from = 4;
+	required int32 message_timeout_milliseconds = 5;
+	required bool record_statistics = 6;
 	required int32 live_buffer_size = 7;
 	required int32 read_batch_size = 8;
 	required int32 buffer_size = 9;
@@ -232,6 +233,7 @@ message UpdatePersistentSubscription {
 	required int32 checkpoint_after_time = 12;
 	required int32 checkpoint_max_count = 13;
 	required int32 checkpoint_min_count = 14;
+	required int32 subscriber_max_count = 15;
 }
 
 message UpdatePersistentSubscriptionCompleted {
@@ -328,6 +330,7 @@ message SubscriptionDropped {
 		AccessDenied = 1;
 		NotFound=2;
 		PersistentSubscriptionDeleted=3;
+		SubscriberMaxCountReached=4;
 	}
 	
 	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
