@@ -15,9 +15,8 @@ namespace EventStore.Core.Index
     public class TableIndex : ITableIndex
     {
         public const string IndexMapFilename = "indexmap";
-        public const string IndexMapBackupFilename = "indexmap.backup";
         private const int MaxMemoryTables = 1;
-
+        
         private static readonly ILogger Log = LogManager.GetLoggerFor<TableIndex>();
         internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
 
@@ -88,7 +87,6 @@ namespace EventStore.Core.Index
             }
 
             CreateIfDoesNotExist(_directory);
-            //TODO GFY GET LATEST VERSOION OF MAP
             var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
             // if TableIndex's CommitCheckpoint is >= amount of written TFChunk data, 
@@ -109,17 +107,14 @@ namespace EventStore.Core.Index
                 LogIndexMapContent(indexmapFile);
                 DumpAndCopyIndex();
                 File.Delete(indexmapFile);
-
-                bool createEmptyIndexMap = true;
-                if (createEmptyIndexMap)
-                    _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
+                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
             }
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;
 
             // clean up all other remaining files
             var indexFiles = _indexMap.InOrder().Select(x => Path.GetFileName(x.Filename))
-                                                .Union(new[] { IndexMapFilename, IndexMapBackupFilename });
+                                                .Union(new[] { IndexMapFilename });
             var toDeleteFiles = Directory.EnumerateFiles(_directory).Select(Path.GetFileName)
                                          .Except(indexFiles, StringComparer.OrdinalIgnoreCase);
             foreach (var filePath in toDeleteFiles)
@@ -205,18 +200,16 @@ namespace EventStore.Core.Index
                     Log.Trace("Switching MemTable, currently: {0} awaiting tables.", newTables.Count);
 
                     _awaitingMemTables = newTables;
-                    if (!_inMem)
+                    if (_inMem) return;
+                    if (!_backgroundRunning)
                     {
-                        if (!_backgroundRunning)
-                        {
-                            _backgroundRunningEvent.Reset();
-                            _backgroundRunning = true;
-                            ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
-                        }
-
-                        if (_additionalReclaim)
-                            ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
+                        _backgroundRunningEvent.Reset();
+                        _backgroundRunning = true;
+                        ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
                     }
+
+                    if (_additionalReclaim)
+                        ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
                 }
             }
         }
@@ -278,10 +271,6 @@ namespace EventStore.Core.Index
                         Log.Trace("There are now {0} awaiting tables.", memTables.Count);
                         _awaitingMemTables = memTables;
                     }
-
-                    // We'll keep indexmap.backup in case of crash. In case of crash we hope that all necessary 
-                    // PTables for previous version of IndexMap are still there, so we can rebuild
-                    // from last step, not to do full rebuild.
                     mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
                 }
             }
@@ -526,7 +515,6 @@ namespace EventStore.Core.Index
 
         public void Close(bool removeFiles = true)
         {
-            //this should also make sure that no background tasks are running anymore
             if (!_backgroundRunningEvent.Wait(7000))
                 throw new TimeoutException("Could not finish background thread in reasonable time.");
             if (_inMem)
