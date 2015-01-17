@@ -6,7 +6,6 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
