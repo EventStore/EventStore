@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Internal;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;

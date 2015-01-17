@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Internal
 {
     internal static class Empty
     {

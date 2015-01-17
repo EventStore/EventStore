@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Log;
 using EventStore.Core.Services;

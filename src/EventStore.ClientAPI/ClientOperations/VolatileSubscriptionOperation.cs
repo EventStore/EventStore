@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;

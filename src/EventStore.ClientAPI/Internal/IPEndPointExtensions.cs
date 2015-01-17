@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Internal
 {
     static class IPEndPointExtensions
     {

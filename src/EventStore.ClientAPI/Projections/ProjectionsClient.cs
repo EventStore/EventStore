@@ -6,7 +6,7 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Projections
 {
     internal class ProjectionsClient
     {

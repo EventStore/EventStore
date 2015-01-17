@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
