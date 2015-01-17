@@ -126,7 +126,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             return size;
 #else
-            return 0;
+            return new FileInfo(filename).Length;
 #endif
         }
 
