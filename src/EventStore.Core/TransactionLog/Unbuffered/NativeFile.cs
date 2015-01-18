@@ -126,7 +126,13 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             return size;
 #else
-            return new FileInfo(filename).Length;
+            Stat s;
+            int r;
+            do {
+              r = (int) Syscall.fstat(handle.DangerousGetHandle().ToInt32(), out s);
+            } while (UnixMarshal.ShouldRetrySyscall(r));
+            UnixMarshal.ThrowExceptionForLastErrorIf (r);
+            return s.st_size;
 #endif
         }
 
