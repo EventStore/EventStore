@@ -201,7 +201,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                         string.Format("Chunk file '{0}' is bad. It even doesn't have enough size for header and footer, file size is {1} bytes.",
                                       chunkFileName, fs.Length)));
                 }
-                fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
+                fs.Seek(fs.Length-ChunkFooter.Size, SeekOrigin.Begin);
                 chunkFooter = ChunkFooter.FromStream(fs);
             }
             return chunkFooter;

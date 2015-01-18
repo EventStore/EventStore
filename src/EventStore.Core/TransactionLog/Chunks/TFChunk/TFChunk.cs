@@ -484,7 +484,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                   stream.Length)));
             }
 
-            stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
+            stream.Seek(stream.Length-ChunkFooter.Size, SeekOrigin.Begin);
             var footer = ChunkFooter.FromStream(stream);
             return footer;
         }
