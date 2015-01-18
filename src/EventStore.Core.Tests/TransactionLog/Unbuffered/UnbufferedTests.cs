@@ -387,6 +387,31 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
             }
         }
 
+        [Test]
+        public void seek_end_of_file()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, 4096, false, 4096))
+            {
+                stream.Seek(0, SeekOrigin.End);
+                Assert.AreEqual(stream.Length, stream.Position);
+            }
+        }
+        [Test]
+        public void seek_origin_end_to_mid_of_file()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, 4096, false, 4096))
+            {
+                stream.Seek(-30, SeekOrigin.End);
+                Assert.AreEqual(stream.Length - 30, stream.Position);
+            }
+        }
+
 
         [Test]
         public void seek_current_unimplemented()
@@ -400,18 +425,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
             }
         }
 
-        [Test]
-        public void seek_end_unimplemented()
-        {
-            var filename = GetFilePathFor(Guid.NewGuid().ToString());
-            
-            using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-                FileShare.ReadWrite, false, 4096, 4096, false, 4096))
-            {
-                Assert.Throws<NotImplementedException>(() => stream.Seek(0, SeekOrigin.End));
-            }
-        }
-
+        
         [Test]
         public void seek_write_seek_read_in_buffer()
         {

@@ -138,7 +138,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public override long Seek(long offset, SeekOrigin origin)
         {
             CheckDisposed();
-            if(origin != SeekOrigin.Begin) throw new NotImplementedException("only supports seek origin begin");
+            if(origin == SeekOrigin.Current) throw new NotImplementedException("only supports seek origin begin/end");
+            if (origin == SeekOrigin.End) offset = Length + offset;
             var aligned = GetLowestAlignment(offset);
             var left = (int) (offset - aligned);
             Flush();
