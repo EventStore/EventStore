@@ -187,14 +187,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 _physicalDataSize = _chunkFooter.PhysicalDataSize;
 
                 var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
-                if (reader.Stream.Length != expectedFileSize)
-                {
-                    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                        string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
-                                      _filename,
-                                      expectedFileSize,
-                                      reader.Stream.Length)));
-                }
+                //TODO CALCULATE SIZE
+                //if (reader.Stream.Length != expectedFileSize)
+                //{
+                //    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+                //        string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
+                //                      _filename,
+                //                      expectedFileSize,
+                //                      reader.Stream.Length)));
+                //}
             }
             finally
             {
@@ -308,7 +309,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             // ALLOCATE MEM
             Interlocked.Exchange(ref _isCached, 1);
-            _cachedLength = fileSize;
+            _cachedLength = fileSize / 4096 * 4096 + 4096;
             _cachedData = Marshal.AllocHGlobal(_cachedLength);
 
             // WRITER STREAM
@@ -439,9 +440,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     // hash header and data
                     MD5Hash.ContinuousHashFor(md5, stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
                     // hash mapping and footer except MD5 hash sum which should always be last
+                    
                     MD5Hash.ContinuousHashFor(md5, 
                                               stream,
-                                              ChunkHeader.Size + footer.PhysicalDataSize,
+                                              (int) stream.Length - ChunkHeader.Size,
                                               footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
                     hash = md5.Hash;
@@ -484,7 +486,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                   stream.Length)));
             }
 
-            stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
+            stream.Seek(stream.Length-ChunkFooter.Size, SeekOrigin.Begin);
             var footer = ChunkFooter.FromStream(stream);
             return footer;
         }
@@ -791,20 +793,26 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
 
             var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
+            
             //MD5
+            //get position right
+            //final block
             workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0, ChunkFooter.Size - ChunkFooter.ChecksumSize);
-            //FILE
-            var footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
-            workItem.AppendData(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
 
+
+            
             Flush(); // trying to prevent bug with resized file, but no data in it
 
-            var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
+            var fileSize = (ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size) / 4096  * 4096 + 4096;
+
             if (workItem.StreamLength != fileSize)
             {
                 workItem.ResizeStream(fileSize);
                 _fileSize = fileSize;
             }
+            workItem.Seek(fileSize - ChunkFooter.Size);
+            var footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
+            workItem.AppendData(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
 
             return footerWithHash;
         }

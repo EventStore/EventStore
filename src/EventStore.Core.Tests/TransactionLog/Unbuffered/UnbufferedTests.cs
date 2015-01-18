@@ -144,6 +144,31 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
             }
         }
 
+
+        [Test]
+        public void when_seeking_non_exact_to_zero_block_and_writing()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            MakeFile(filename, 4096*64);
+            var bytes = GetBytes(512);
+            using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
+                FileShare.ReadWrite, false, 4096, 4096, false, 4096))
+            {
+                stream.Seek(128, SeekOrigin.Begin);
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush();
+            }
+            using (var stream = new FileStream(filename, FileMode.Open))
+            {
+                var read = new byte[128];
+                stream.Read(read, 0, 128);
+                for (var i = 0; i < read.Length; i++)
+                {
+                    Assert.AreEqual(i, read[i]);
+                }
+            }
+        }
+
         [Test]
         public void when_writing_multiple_times()
         {
@@ -399,6 +424,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
                 Assert.AreEqual(stream.Length, stream.Position);
             }
         }
+
         [Test]
         public void seek_origin_end_to_mid_of_file()
         {

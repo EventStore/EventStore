@@ -85,9 +85,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             else
             {
                 var left = _bufferedCount - alignedbuffer;
-
                 InternalWrite(_writeBuffer, (uint) (alignedbuffer + _blockSize));
-                _lastPosition = positionAligned + alignedbuffer + left;
+                _lastPosition = positionAligned + alignedbuffer;
                 SetBuffer(alignedbuffer, left);
                 _bufferedCount = left;
                 _aligned = false;
@@ -146,6 +145,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             _bufferedCount = left;
             _aligned = aligned == left;
             _lastPosition = aligned;
+            SeekInternal(aligned);
+            NativeFile.Read(_handle, _writeBuffer, 0, (int)_blockSize);
+            SeekInternal(aligned);
             return offset;
         }
 

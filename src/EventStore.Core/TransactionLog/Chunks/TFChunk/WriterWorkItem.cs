@@ -76,6 +76,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             DisposeMemStream();
         }
 
+        public void Seek(int position)
+        {
+            if (_fileStream != null) _fileStream.Seek(position, SeekOrigin.Begin);
+            if (_memStream != null) _memStream.Seek(position, SeekOrigin.Begin);
+        }
+
         public void DisposeMemStream()
         {
             var memStream = _memStream;
