@@ -186,16 +186,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 _logicalDataSize = _chunkFooter.LogicalDataSize;
                 _physicalDataSize = _chunkFooter.PhysicalDataSize;
 
-                var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
-                //TODO CALCULATE SIZE
-                //if (reader.Stream.Length != expectedFileSize)
-                //{
-                //    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                //        string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
-                //                      _filename,
-                //                      expectedFileSize,
-                //                      reader.Stream.Length)));
-                //}
+                var expectedFileSize =  (ChunkHeader.Size + _chunkFooter.MapSize + _chunkFooter.PhysicalDataSize + ChunkFooter.Size) / 4096  * 4096 + 4096;
+                if (reader.Stream.Length != expectedFileSize)
+                {
+                    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+                        string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
+                                      _filename,
+                                      expectedFileSize,
+                                      reader.Stream.Length)));
+                }
             }
             finally
             {
@@ -567,7 +566,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     throw new InvalidOperationException("When trying to build cache, reader worker is already in-memory reader.");
 
                 var dataSize = _isReadOnly ? _physicalDataSize + ChunkFooter.MapSize : _chunkHeader.ChunkSize;
-                _cachedLength = ChunkHeader.Size + dataSize + ChunkFooter.Size;
+                _cachedLength = ChunkHeader.Size + dataSize + ChunkFooter.Size + 4096;
                 var cachedData = Marshal.AllocHGlobal(_cachedLength);
                 try
                 {
