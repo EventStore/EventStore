@@ -177,7 +177,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 _chunkHeader = ReadHeader(reader.Stream);
                 if (_chunkHeader.Version != CurrentChunkVersion && _chunkHeader.Version != 2)
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
-
+                if (_chunkHeader.Version == 2 && reader.Stream.Length%4096 != 0)
+                {
+                    Alignv2File(_filename);
+                }
                 _chunkFooter = ReadFooter(reader.Stream);
                 if (!_chunkFooter.IsCompleted)
                 {
@@ -196,10 +199,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (reader.Stream.Length != expectedFileSize)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                        string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
+                        string.Format("Chunk file '{0}' v {3} should have file size {1} bytes, but instead has {2} bytes length.",
                                       _filename,
                                       expectedFileSize,
-                                      reader.Stream.Length)));
+                                      reader.Stream.Length,
+                                      _chunkHeader.Version)));
                 }
             }
             finally
@@ -212,6 +216,25 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             if (verifyHash)
                 VerifyFileHash();
+        }
+
+        private void Alignv2File(string filename)
+        {
+            //takes a v2 file and aligns it so it can be used with unbuffered
+            using (var stream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            {
+                if (stream.Length%4096 == 0) return;
+                var footerStart = stream.Length - ChunkFooter.Size;
+                var alignedSize = (stream.Length / 4096 + 1) * 4096;
+                var footer = new byte[ChunkFooter.Size];
+                stream.SetLength(alignedSize);
+                stream.Seek(footerStart, SeekOrigin.Begin);
+                stream.Read(footer, 0, ChunkFooter.Size);
+                stream.Seek(footerStart, SeekOrigin.Begin);
+                var bytes = new byte[alignedSize - footerStart - ChunkFooter.Size];
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Write(footer,0, footer.Length);
+            }
         }
 
         private void InitNew(ChunkHeader chunkHeader, int fileSize)
