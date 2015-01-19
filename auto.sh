@@ -1,4 +1,5 @@
 #!/bin/sh
+
 notify-send "Auto Started" "" -i $PWD/tools/autotest-images/circleWIN.png -t 1000
 while true
 do
