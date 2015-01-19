@@ -18,7 +18,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
     public unsafe partial class TFChunk : IDisposable
     {
-        public const byte CurrentChunkVersion = 2;
+        //v2 unaligned
+        //v3 is aligned
+        public const byte CurrentChunkVersion = 3;
         public const int WriteBufferSize = 8192;
         public const int ReadBufferSize = 8192;
 
@@ -173,7 +175,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             try
             {
                 _chunkHeader = ReadHeader(reader.Stream);
-                if (_chunkHeader.Version != CurrentChunkVersion)
+                if (_chunkHeader.Version != CurrentChunkVersion && _chunkHeader.Version != 2)
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
                 _chunkFooter = ReadFooter(reader.Stream);
@@ -186,7 +188,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 _logicalDataSize = _chunkFooter.LogicalDataSize;
                 _physicalDataSize = _chunkFooter.PhysicalDataSize;
 
-                var expectedFileSize =  (ChunkHeader.Size + _chunkFooter.MapSize + _chunkFooter.PhysicalDataSize + ChunkFooter.Size) / 4096  * 4096 + 4096;
+                var expectedFileSize = (ChunkHeader.Size + _chunkFooter.MapSize + _chunkFooter.PhysicalDataSize + ChunkFooter.Size);
+                if (_chunkHeader.Version == 3)
+                {
+                    expectedFileSize = (expectedFileSize/4096 + 1)*4096;
+                }
                 if (reader.Stream.Length != expectedFileSize)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
@@ -244,7 +250,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             SetAttributes();
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
-            if (_chunkHeader.Version != CurrentChunkVersion)
+            if (_chunkHeader.Version != CurrentChunkVersion && _chunkHeader.Version != 2)
                 throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
 
