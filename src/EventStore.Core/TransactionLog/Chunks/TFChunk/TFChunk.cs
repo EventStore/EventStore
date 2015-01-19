@@ -194,7 +194,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 var expectedFileSize = (ChunkHeader.Size + _chunkFooter.MapSize + _chunkFooter.PhysicalDataSize + ChunkFooter.Size);
                 if (_chunkHeader.Version == 3)
                 {
-                    expectedFileSize = (expectedFileSize/4096 + 1)*4096;
+                    expectedFileSize = (expectedFileSize % 4096) == 0 ? expectedFileSize : (expectedFileSize / 4096 + 1) * 4096;
                 }
                 if (_chunkHeader.Version == 2 && reader.Stream.Length % 4096 ==0)
                 {

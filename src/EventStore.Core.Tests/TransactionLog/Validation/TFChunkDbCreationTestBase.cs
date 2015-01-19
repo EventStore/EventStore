@@ -13,6 +13,8 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
             var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkNum, chunkNum, isScavenged, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var dataSize = actualDataSize ?? config.ChunkSize;
+            var extra = ChunkFooter.Size + ChunkHeader.Size;
+            dataSize = (dataSize+extra)%4096 == 0 ? dataSize : ((dataSize+extra)/4096 + 1)*4096 - extra;
             var buf = new byte[ChunkHeader.Size + dataSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
             var chunkFooter = new ChunkFooter(true, true, dataSize, dataSize, 0, new byte[ChunkFooter.ChecksumSize]);
