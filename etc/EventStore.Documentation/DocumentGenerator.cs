@@ -29,7 +29,7 @@ namespace EventStore.Documentation
                         var optionConstructor = optionType.GetConstructor(new Type[] { });
                         var options = optionConstructor.Invoke(null);
                         var optionDocumentation = String.Format("###{0}{1}", options.GetType().Name, Environment.NewLine);
-                        
+
                         var properties = options.GetType().GetProperties();
                         var currentGroup = String.Empty;
                         foreach (var property in properties.OrderBy(x => x.Attr<ArgDescriptionAttribute>().Group))
@@ -56,10 +56,18 @@ namespace EventStore.Documentation
                             parameterRow += String.Format("|{0}", parameterUsage);
                             parameterRow += String.Format("|{0}", NameTranslators.PrefixEnvironmentVariable(property.Name, "").ToUpper());
                             parameterRow += String.Format("|{0}", property.Name);
-                            
+
                             var defaultValue = GetValues(property.GetValue(options, null));
                             var defaultString = defaultValue == "" ? "" : String.Format(" (Default: {0})", defaultValue);
-                            parameterRow += String.Format("|{0}{1}|{2}", property.Attr<ArgDescriptionAttribute>().Description, defaultString, Environment.NewLine);
+                            string[] possibleValues = null;
+                            if (property.PropertyType.IsEnum)
+                            {
+                                possibleValues = property.PropertyType.GetEnumNames();
+                            }
+                            parameterRow += String.Format("|{0}{1} {2}|{3}",
+                                    property.Attr<ArgDescriptionAttribute>().Description,
+                                    defaultString, possibleValues != null ? "Possible Values:" + String.Join(",", possibleValues) : String.Empty,
+                                    Environment.NewLine);
 
                             optionDocumentation += parameterRow;
                         }
