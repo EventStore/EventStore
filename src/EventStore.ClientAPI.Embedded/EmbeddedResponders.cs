@@ -9,7 +9,8 @@ namespace EventStore.ClientAPI.Embedded
 {
     internal static class EmbeddedResponders
     {
-        internal class AppendToStream : EmbeddedResponderBase<WriteResult, ClientMessage.WriteEventsCompleted>
+        internal class AppendToStream :
+            EmbeddedResponderBase<WriteResult, ClientMessage.WriteEventsCompleted>
         {
             private readonly int _expectedVersion;
             private readonly string _stream;
@@ -109,7 +110,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class ReadAllEventsBackward : EmbeddedResponderBase<AllEventsSlice, ClientMessage.ReadAllEventsBackwardCompleted>
+        internal class ReadAllEventsBackward :
+            EmbeddedResponderBase<AllEventsSlice, ClientMessage.ReadAllEventsBackwardCompleted>
         {
             public ReadAllEventsBackward(TaskCompletionSource<AllEventsSlice> source)
                 : base(source)
@@ -183,7 +185,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class ReadEvent : EmbeddedResponderBase<EventReadResult, ClientMessage.ReadEventCompleted>
+        internal class ReadEvent : 
+            EmbeddedResponderBase<EventReadResult, ClientMessage.ReadEventCompleted>
         {
             private readonly int _eventNumber;
             private readonly string _stream;
@@ -240,7 +243,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class ReadStreamEventsBackward : EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsBackwardCompleted>
+        internal class ReadStreamEventsBackward : 
+            EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsBackwardCompleted>
         {
             private readonly int _fromEventNumber;
             private readonly string _stream;
@@ -301,7 +305,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class ReadStreamForwardEvents : EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsForwardCompleted>
+        internal class ReadStreamForwardEvents : 
+            EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsForwardCompleted>
         {
             private readonly int _fromEventNumber;
             private readonly string _stream;
@@ -361,7 +366,7 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        public class TransactionCommit :
+        internal class TransactionCommit :
             EmbeddedResponderBase<WriteResult, ClientMessage.TransactionCommitCompleted>
         {
             public TransactionCommit(TaskCompletionSource<WriteResult> source)
@@ -405,7 +410,7 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        public class TransactionStart :
+        internal class TransactionStart :
             EmbeddedResponderBase<EventStoreTransaction, ClientMessage.TransactionStartCompleted>
         {
             private readonly int _expectedVersion;
@@ -454,8 +459,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        public class TransactionWrite :
-        EmbeddedResponderBase<EventStoreTransaction, ClientMessage.TransactionWriteCompleted>
+        internal class TransactionWrite :
+            EmbeddedResponderBase<EventStoreTransaction, ClientMessage.TransactionWriteCompleted>
         {
             private readonly IEventStoreTransactionConnection _parentConnection;
 
@@ -490,7 +495,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class CreatePersistentSubscription : EmbeddedResponderBase<PersistentSubscriptionCreateResult, ClientMessage.CreatePersistentSubscriptionCompleted> 
+        internal class CreatePersistentSubscription : 
+            EmbeddedResponderBase<PersistentSubscriptionCreateResult, ClientMessage.CreatePersistentSubscriptionCompleted> 
         {
             private readonly string _stream;
             private readonly string _groupName;
@@ -529,7 +535,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class UpdatePersistentSubscription : EmbeddedResponderBase<PersistentSubscriptionUpdateResult, ClientMessage.UpdatePersistentSubscriptionCompleted> 
+        internal class UpdatePersistentSubscription :
+            EmbeddedResponderBase<PersistentSubscriptionUpdateResult, ClientMessage.UpdatePersistentSubscriptionCompleted> 
         {
             private readonly string _stream;
             private readonly string _groupName;
@@ -568,7 +575,8 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class DeletePersistentSubscription : EmbeddedResponderBase<PersistentSubscriptionDeleteResult, ClientMessage.DeletePersistentSubscriptionCompleted> 
+        internal class DeletePersistentSubscription :
+            EmbeddedResponderBase<PersistentSubscriptionDeleteResult, ClientMessage.DeletePersistentSubscriptionCompleted> 
         {
             private readonly string _stream;
             private readonly string _groupName;

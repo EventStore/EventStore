@@ -41,6 +41,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EmbeddedAuthenticationRequest.cs" />
     <Compile Include="EmbeddedEventStorePersistentSubscription.cs" />
     <Compile Include="EmbeddedPersistentSubscription.cs" />
     <Compile Include="EmbeddedSubscriptionBase.cs" />

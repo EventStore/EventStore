@@ -63,6 +63,7 @@
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
     <Compile Include="Exceptions\UserCommandFailedException.cs" />
     <Compile Include="EmbeddedEventStorePersistentSubscription.cs" />
+    <Compile Include="EventStorePersistentSubscriptionBase.cs" />
     <Compile Include="IConnectToPersistentSubscriptions.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />
     <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />

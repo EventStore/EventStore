@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI
     /// <summary>
     /// Represents a persistent subscription connection.
     /// </summary>
-    public abstract class EventStorePersistentSubscription
+    public abstract class EventStorePersistentSubscriptionBase
     {
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
         ///<summary>
@@ -22,8 +22,8 @@ namespace EventStore.ClientAPI
 
         private readonly string _subscriptionId;
         private readonly string _streamId;
-        private readonly Action<EventStorePersistentSubscription, ResolvedEvent> _eventAppeared;
-        private readonly Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
+        private readonly Action<EventStorePersistentSubscriptionBase, ResolvedEvent> _eventAppeared;
+        private readonly Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly UserCredentials _userCredentials;
         private readonly ILogger _log;
         private readonly bool _verbose;
@@ -39,10 +39,10 @@ namespace EventStore.ClientAPI
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly int _bufferSize;
 
-        internal EventStorePersistentSubscription(string subscriptionId, 
+        internal EventStorePersistentSubscriptionBase(string subscriptionId, 
             string streamId, 
-            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
-            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
+            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, 
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials,
             ILogger log,
             bool verboseLogging,
