@@ -4,14 +4,14 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.Embedded
 {
-    internal class EmbeddedEventStorePersistentSubscription : EventStorePersistentSubscription
+    internal class EmbeddedEventStorePersistentSubscription : EventStorePersistentSubscriptionBase
     {
         private readonly EmbeddedSubscriber _subscriptions;
 
         internal EmbeddedEventStorePersistentSubscription(
             string subscriptionId, string streamId,
-            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
-            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
+            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials, ILogger log, bool verboseLogging, ConnectionSettings settings,
             EmbeddedSubscriber subscriptions,
             int bufferSize = 10, bool autoAck = true)

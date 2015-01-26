@@ -306,11 +306,11 @@ namespace EventStore.ClientAPI.Internal
             return catchUpSubscription;
         }
 
-        public EventStorePersistentSubscription ConnectToPersistentSubscription(
-            string stream,
-            string groupName,
-            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
-            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+        public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
+            string stream, 
+            string groupName, 
+            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, 
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, 
             int bufferSize = 10,
             bool autoAck = true)
@@ -319,7 +319,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
-            var subscription = new EmbeddedEventStorePersistentSubscription(
+            var subscription = new EventStorePersistentSubscription(
                 groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
                 _settings.VerboseLogging, _settings, _handler, bufferSize, autoAck);
 
