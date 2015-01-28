@@ -15,6 +15,7 @@ namespace EventStore.Core.Services.Transport.Http
     public static class Configure
     {
         private const int MaxPossibleAge = 31536000;
+        public static bool DevelopmentMode = false;
 
         public static ResponseConfiguration Ok(string contentType)
         {
@@ -29,11 +30,20 @@ namespace EventStore.Core.Services.Transport.Http
                                                params KeyValuePair<string, string>[] headers)
         {
             var headrs = new List<KeyValuePair<string, string>>(headers);
-            headrs.Add(new KeyValuePair<string, string>(
-                "Cache-Control",
-                cacheSeconds.HasValue 
-                    ? string.Format("max-age={0}, {1}", cacheSeconds, isCachePublic ? "public" : "private")
-                    : "max-age=0, no-cache, must-revalidate"));
+            if (DevelopmentMode)
+            {
+                headrs.Add(new KeyValuePair<string, string>(
+                    "Cache-Control",
+                    "max-age=0, no-cache, must-revalidate"));
+            }
+            else
+            {
+                headrs.Add(new KeyValuePair<string, string>(
+                    "Cache-Control",
+                    cacheSeconds.HasValue
+                        ? string.Format("max-age={0}, {1}", cacheSeconds, isCachePublic ? "public" : "private")
+                        : "max-age=0, no-cache, must-revalidate"));
+            }
             headrs.Add(new KeyValuePair<string, string>("Vary", "Accept"));
             if (etag.IsNotEmptyString())
                 headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag)));

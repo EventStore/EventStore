@@ -19,8 +19,10 @@ namespace EventStore.ClusterNode
         public string[] Defines { get; set; }
         [ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
         public bool WhatIf { get; set; }
+        [ArgDescription(Opts.DevelopmentModeDescr, Opts.AppGroup)]
+        public bool DevelopmentMode { get; set; }
 
-	[ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
+        [ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
         public int MonoMinThreadpoolSize { get; set; }
 
         [ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]

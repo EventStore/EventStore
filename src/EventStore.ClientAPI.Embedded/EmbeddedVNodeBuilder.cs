@@ -30,6 +30,7 @@ namespace EventStore.ClientAPI.Embedded
         private string _dbPath;
         private long _chunksCacheSize;
         private bool _inMemoryDb;
+        private bool _developmentMode;
 
         private IPEndPoint _internalTcp;
         private IPEndPoint _internalSecureTcp;
@@ -178,6 +179,17 @@ namespace EventStore.ClientAPI.Embedded
             };
             return ret;
         }
+
+        /// <summary>
+        /// Enable development mode. This disables caching for events over HTTP.
+        /// </summary>
+        /// <returns></returns>
+        public EmbeddedVNodeBuilder EnableDevelopmentMode()
+        {
+            _developmentMode = true;
+            return this;
+        }
+
 
 	/// <summary>
 	/// Sets the mode and the number of threads on which to run projections.
@@ -658,7 +670,8 @@ namespace EventStore.ClientAPI.Embedded
                 _extTcpHeartbeatTimeout,
                 _extTcpHeartbeatInterval,
                 !_skipVerifyDbHashes,
-                _maxMemtableSize);
+                _maxMemtableSize,
+                _developmentMode);
             var infoController = new InfoController(null, _projectionType);
             return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }
