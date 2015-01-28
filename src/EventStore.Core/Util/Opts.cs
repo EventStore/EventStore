@@ -30,6 +30,9 @@ namespace EventStore.Core.Util
         public const string WhatIfDescr = "Print effective configuration to console and then exit.";
         public const bool WhatIfDefault = false;
 
+        public const string DevelopmentModeDescr = "Enable development mode. This disables caching on events over HTTP.";
+        public const bool DevelopmentModeDefault = false;
+
         public const string LogsDescr = "Path where to keep log files.";
         public static readonly string LogsDefault = string.Empty;
 

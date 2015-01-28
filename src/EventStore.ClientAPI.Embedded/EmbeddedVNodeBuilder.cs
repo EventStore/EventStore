@@ -30,6 +30,7 @@ namespace EventStore.ClientAPI.Embedded
         private string _dbPath;
         private long _chunksCacheSize;
         private bool _inMemoryDb;
+        private bool _developmentMode;
 
         private IPEndPoint _internalTcp;
         private IPEndPoint _internalSecureTcp;
@@ -156,8 +157,8 @@ namespace EventStore.ClientAPI.Embedded
             var ret = new EmbeddedVNodeBuilder
             {
                 _clusterNodeCount = 1,
-                _prepareAckCount = 1,
-                _commitAckCount = 1
+                                  _prepareAckCount = 1,
+                                  _commitAckCount = 1
             };
             return ret;
         }
@@ -172,29 +173,40 @@ namespace EventStore.ClientAPI.Embedded
             var ret = new EmbeddedVNodeBuilder
             {
                 _clusterNodeCount = clusterSize,
-                _prepareAckCount = quorumSize,
-                _commitAckCount = quorumSize
+                                  _prepareAckCount = quorumSize,
+                                  _commitAckCount = quorumSize
             };
             return ret;
         }
 
-	/// <summary>
-	/// Sets the mode and the number of threads on which to run projections.
-	/// </summary>
-	/// <param name="projectionsMode">The mode in which to run the projections system</param>
-	/// <param name="numberOfThreads">The number of threads to use for projections. Defaults to 3.</param>
+        /// <summary>
+        /// Enable development mode. This disables caching for events over HTTP.
+        /// </summary>
+        /// <returns></returns>
+        public EmbeddedVNodeBuilder EnableDevelopmentMode()
+        {
+            _developmentMode = true;
+            return this;
+        }
+
+
+        /// <summary>
+        /// Sets the mode and the number of threads on which to run projections.
+        /// </summary>
+        /// <param name="projectionsMode">The mode in which to run the projections system</param>
+        /// <param name="numberOfThreads">The number of threads to use for projections. Defaults to 3.</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder RunProjections(ProjectionsMode projectionsMode, int numberOfThreads = Opts.ProjectionThreadsDefault)
         {
             _projectionsMode = projectionsMode;
-	    _projectionsThreads = numberOfThreads;
+            _projectionsThreads = numberOfThreads;
             return this;
         }
 
-	/// <summary>
-	/// Adds a custom subsystem to the builder. NOTE: This is an advanced use case that most people will never need!
-	/// </summary>
-	/// <param name="subsystem">The subsystem to add</param>
+        /// <summary>
+        /// Adds a custom subsystem to the builder. NOTE: This is an advanced use case that most people will never need!
+        /// </summary>
+        /// <param name="subsystem">The subsystem to add</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder AddCustomSubsystem(ISubsystem subsystem)
         {
@@ -202,9 +214,9 @@ namespace EventStore.ClientAPI.Embedded
             return this;
         }
 
-	/// <summary>
-	/// Returns a builder set to run in memory only
-	/// </summary>
+        /// <summary>
+        /// Returns a builder set to run in memory only
+        /// </summary>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder RunInMemory()
         {
@@ -213,10 +225,10 @@ namespace EventStore.ClientAPI.Embedded
             return this;
         }
 
-	/// <summary>
-	/// Returns a builder set to write database files to the specified path
-	/// </summary>
-	/// <param name="path">The path on disk in which to write the database files</param>
+        /// <summary>
+        /// Returns a builder set to write database files to the specified path
+        /// </summary>
+        /// <param name="path">The path on disk in which to write the database files</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder RunOnDisk(string path)
         {
@@ -425,12 +437,12 @@ namespace EventStore.ClientAPI.Embedded
             _httpPrefixes.Add(prefix);
             return this;
         }
-       
- 	/// <summary>
- 	/// Sets the Server SSL Certificate to be loaded from a file
- 	/// </summary>
- 	/// <param name="path">The path to the certificate file</param>
- 	/// <param name="password">The password for the certificate</param>
+
+        /// <summary>
+        /// Sets the Server SSL Certificate to be loaded from a file
+        /// </summary>
+        /// <param name="path">The path to the certificate file</param>
+        /// <param name="password">The password for the certificate</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithServerCertificateFromFile(string path, string password)
         {
@@ -440,43 +452,43 @@ namespace EventStore.ClientAPI.Embedded
             return this;
         }
 
-	/// <summary>
-	/// Sets the heartbeat interval for the internal network interface.
-	/// </summary>
-	/// <param name="heartbeatInterval">The heartbeat interval</param>
+        /// <summary>
+        /// Sets the heartbeat interval for the internal network interface.
+        /// </summary>
+        /// <param name="heartbeatInterval">The heartbeat interval</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithInternalHeartbeatInterval(TimeSpan heartbeatInterval)
         {
             _intTcpHeartbeatInterval = heartbeatInterval;
             return this;
         }
-	
+
         /// <summary>
-	/// Sets the heartbeat interval for the external network interface.
-	/// </summary>
-	/// <param name="heartbeatInterval">The heartbeat interval</param>
+        /// Sets the heartbeat interval for the external network interface.
+        /// </summary>
+        /// <param name="heartbeatInterval">The heartbeat interval</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithExternalHeartbeatInterval(TimeSpan heartbeatInterval)
         {
             _extTcpHeartbeatInterval = heartbeatInterval;
             return this;
         }
-	
+
         /// <summary>
-	/// Sets the heartbeat timeout for the internal network interface.
-	/// </summary>
-	/// <param name="heartbeatTimeout">The heartbeat timeout</param>
+        /// Sets the heartbeat timeout for the internal network interface.
+        /// </summary>
+        /// <param name="heartbeatTimeout">The heartbeat timeout</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithInternalHeartbeatTimeout(TimeSpan heartbeatTimeout)
         {
             _intTcpHeartbeatTimeout = heartbeatTimeout;
             return this;
         }
-	
+
         /// <summary>
-	/// Sets the heartbeat timeout for the external network interface.
-	/// </summary>
-	/// <param name="heartbeatTimeout">The heartbeat timeout</param>
+        /// Sets the heartbeat timeout for the external network interface.
+        /// </summary>
+        /// <param name="heartbeatTimeout">The heartbeat timeout</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithExternalHeartbeatTimeout(TimeSpan heartbeatTimeout)
         {
@@ -485,12 +497,12 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         /// <summary>
-	/// Sets the Server SSL Certificate to be loaded from a certificate store
-	/// </summary>
-	/// <param name="storeLocation">The location of the certificate store</param>
-	/// <param name="storeName">The name of the certificate store</param>
-	/// <param name="certificateSubjectName">The subject name of the certificate</param>
-	/// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
+        /// Sets the Server SSL Certificate to be loaded from a certificate store
+        /// </summary>
+        /// <param name="storeLocation">The location of the certificate store</param>
+        /// <param name="storeName">The name of the certificate store</param>
+        /// <param name="certificateSubjectName">The subject name of the certificate</param>
+        /// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName, string certificateSubjectName, string certificateThumbprint)
         {
@@ -510,7 +522,7 @@ namespace EventStore.ClientAPI.Embedded
                 var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, certificateThumbprint, true);
                 if (certificates.Count == 0)
                     throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.", certificateThumbprint));
-                
+
                 //Can this even happen?
                 if (certificates.Count > 1)
                     throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
@@ -518,7 +530,7 @@ namespace EventStore.ClientAPI.Embedded
                 _certificate = certificates[0];
                 return this;
             }
-            
+
             if (!string.IsNullOrWhiteSpace(certificateSubjectName))
             {
                 var certificates = store.Certificates.Find(X509FindType.FindBySubjectName, certificateSubjectName, true);
@@ -532,7 +544,7 @@ namespace EventStore.ClientAPI.Embedded
                 _certificate = certificates[0];
                 return this;
             }
-            
+
             throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
         }
 
@@ -570,11 +582,11 @@ namespace EventStore.ClientAPI.Embedded
             _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, internalProjectionType));
         }
 
-    	/// <summary>
-    	/// Converts an <see cref="EmbeddedVNodeBuilder"/> to a <see cref="ClusterVNode"/>.
-    	/// </summary>
-    	/// <param name="builder"></param>
-    	/// <returns></returns>
+        /// <summary>
+        /// Converts an <see cref="EmbeddedVNodeBuilder"/> to a <see cref="ClusterVNode"/>.
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <returns></returns>
         public static implicit operator ClusterVNode(EmbeddedVNodeBuilder builder)
         {
             return builder.Build();
@@ -588,50 +600,51 @@ namespace EventStore.ClientAPI.Embedded
             SetUpProjectionsIfNeeded();
 
             var dbConfig = CreateDbConfig(_chunkSize, _dbPath, _chunksCacheSize,
-                _inMemoryDb);
+                    _inMemoryDb);
             var db = new TFChunkDb(dbConfig);
 
             var vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
-                0,
-                _internalTcp,
-                _internalSecureTcp,
-                _externalTcp,
-                _externalSecureTcp,
-                _internalHttp,
-                _externalHttp,
-                _httpPrefixes.ToArray(),
-                _enableTrustedAuth,
-                _certificate,
-                _workerThreads,
-                _discoverViaDns,
-                _clusterDns,
-                _gossipSeeds.ToArray(),
-                _minFlushDelay,
-                _clusterNodeCount,
-                _prepareAckCount,
-                _commitAckCount,
-                _prepareTimeout,
-                _commitTimeout,
-                _useSsl,
-                _sslTargetHost,
-                _sslValidateServer,
-                _statsPeriod,
-                _statsStorage,
-                _nodePriority,
-                _authenticationProviderFactory,
-                _disableScavengeMerging,
-                _adminOnPublic,
-                _statsOnPublic,
-                _gossipOnPublic,
-                _gossipInterval,
-                _gossipAllowedTimeDifference,
-                _gossipTimeout,
-                _intTcpHeartbeatTimeout,
-                _intTcpHeartbeatInterval,
-                _extTcpHeartbeatTimeout,
-                _extTcpHeartbeatInterval,
-                !_skipVerifyDbHashes,
-                _maxMemtableSize);
+                    0,
+                    _internalTcp,
+                    _internalSecureTcp,
+                    _externalTcp,
+                    _externalSecureTcp,
+                    _internalHttp,
+                    _externalHttp,
+                    _httpPrefixes.ToArray(),
+                    _enableTrustedAuth,
+                    _certificate,
+                    _workerThreads,
+                    _discoverViaDns,
+                    _clusterDns,
+                    _gossipSeeds.ToArray(),
+                    _minFlushDelay,
+                    _clusterNodeCount,
+                    _prepareAckCount,
+                    _commitAckCount,
+                    _prepareTimeout,
+                    _commitTimeout,
+                    _useSsl,
+                    _sslTargetHost,
+                    _sslValidateServer,
+                    _statsPeriod,
+                    _statsStorage,
+                    _nodePriority,
+                    _authenticationProviderFactory,
+                    _disableScavengeMerging,
+                    _adminOnPublic,
+                    _statsOnPublic,
+                    _gossipOnPublic,
+                    _gossipInterval,
+                    _gossipAllowedTimeDifference,
+                    _gossipTimeout,
+                    _intTcpHeartbeatTimeout,
+                    _intTcpHeartbeatInterval,
+                    _extTcpHeartbeatTimeout,
+                    _extTcpHeartbeatInterval,
+                    !_skipVerifyDbHashes,
+                    _maxMemtableSize,
+                    _developmentMode);
             var infoController = new InfoController(null);
             return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }
@@ -649,16 +662,16 @@ namespace EventStore.ClientAPI.Embedded
                 if ((_gossipSeeds == null || _gossipSeeds.Count == 0) && _clusterNodeCount > 1)
                 {
                     throw new Exception("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-                        + "Specify gossip seeds");
+                            + "Specify gossip seeds");
                 }
 
-		if (_gossipSeeds == null)
-		    throw new ApplicationException("Gossip seeds cannot be null");
+                if (_gossipSeeds == null)
+                    throw new ApplicationException("Gossip seeds cannot be null");
                 gossipSeedSource = new KnownEndpointGossipSeedSource(_gossipSeeds.ToArray());
             }
             return gossipSeedSource;
         }
-        
+
         private static TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, long chunksCacheSize, bool inMemDb)
         {
             ICheckpoint writerChk;
@@ -694,14 +707,14 @@ namespace EventStore.ClientAPI.Embedded
                 }
             }
             var nodeConfig = new TFChunkDbConfig(dbPath,
-                                                 new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                                                 chunkSize,
-                                                 chunksCacheSize,
-                                                 writerChk,
-                                                 chaserChk,
-                                                 epochChk,
-                                                 truncateChk,
-                                                 inMemDb);
+                    new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
+                    chunkSize,
+                    chunksCacheSize,
+                    writerChk,
+                    chaserChk,
+                    epochChk,
+                    truncateChk,
+                    inMemDb);
             return nodeConfig;
         }
     }
