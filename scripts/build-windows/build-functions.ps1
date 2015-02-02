@@ -7,6 +7,15 @@ $baseDirectory = Resolve-Path (Join-Path $PSScriptRoot "..\..\")
 $toolsDirectory = Join-Path $baseDirectory "tools"
 $svnClientPath = Join-Path $toolsDirectory (Join-Path "svn" "svn.exe")
 
+#TODO: Deal with the case where neither of these is true, currently
+# this will just error.
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    $gitPath = "git"
+} else {
+    $gitPath = env:/TEAMCITY_GIT_PATH
+}
+
+
 Function Write-Info {
     Param([string]$message)
     Process {
@@ -274,30 +283,30 @@ Function Get-PlatformToolsetForVisualStudioVersion {
 
 Function Get-GitCommitHashAndTimestamp
 {
-    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H@%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    $lastCommitLog = Exec { &$gitPath log --max-count=1 --pretty=format:%H@%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
     return $lastCommitLog
 }
 
 Function Get-GitCommitHash
 {
-    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    $lastCommitLog = Exec { &$gitPath log --max-count=1 --pretty=format:%H HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
     return $lastCommitLog
 }
 
 Function Get-GitTimestamp
 {
-    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
+    $lastCommitLog = Exec { &$gitPath log --max-count=1 --pretty=format:%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
     return $lastCommitLog
 }
 
 Function Get-GitBranchOrTag
 {
-    $revParse = Exec { git rev-parse --abbrev-ref HEAD } "Cannot execute git rev-parse. Ensure that the current directory is a git repository and that git is available on PATH."
+    $revParse = Exec { &$gitPath rev-parse --abbrev-ref HEAD } "Cannot execute git rev-parse. Ensure that the current directory is a git repository and that git is available on PATH."
     if ($revParse -ne "HEAD") {
         return $revParse
     }
 
-    $describeTags = Exec { git describe --tags } "Cannot execute git describe. Ensure that the current directory is a git repository and that git is available on PATH."
+    $describeTags = Exec { &$gitPath describe --tags } "Cannot execute git describe. Ensure that the current directory is a git repository and that git is available on PATH."
     return $describeTags
 }
 
