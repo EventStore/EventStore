@@ -34,7 +34,8 @@ Function Exec
 
     & $Command
     if ($LASTEXITCODE -ne 0) {
-        throw ("Exec: " + $ErrorMessage)
+        $pwd = Get-Location
+        throw ("Exec: (" + $pwd + ")\n" + $ErrorMessage)
     }
 }
 
