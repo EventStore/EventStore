@@ -12,7 +12,7 @@ $svnClientPath = Join-Path $toolsDirectory (Join-Path "svn" "svn.exe")
 if (Get-Command git -ErrorAction SilentlyContinue) {
     $gitPath = "git"
 } else {
-    $gitPath = Env:TEAMCITY_GIT_PATH
+    $gitPath = $Env:TEAMCITY_GIT_PATH
 }
 
 
