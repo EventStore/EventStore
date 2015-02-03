@@ -376,7 +376,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
 
             _prepared = false;
-            DuUpdateQuery1(message);
+            DoUpdateQuery1(message);
             UpdateProjectionVersion();
             SetLastReplyEnvelope(message.Envelope);
             StopUnlessPreparedOrLoaded();
@@ -450,6 +450,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Delete message)
         {
+            if (_state != ManagedProjectionState.Stopped)
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Cannot delete a projection that hasn't been stopped.")); 
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             DoDelete();
@@ -938,7 +940,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
 
-        private void DuUpdateQuery1(ProjectionManagementMessage.Command.UpdateQuery message)
+        private void DoUpdateQuery1(ProjectionManagementMessage.Command.UpdateQuery message)
         {
             _persistedState.HandlerType = message.HandlerType ?? HandlerType;
             _persistedState.Query = message.Query;
