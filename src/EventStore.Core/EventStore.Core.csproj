@@ -254,7 +254,7 @@
     <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
     <Compile Include="Data\UserData.cs" />
     <Compile Include="Services\Transport\Http\Authentication\TrustedHttpAuthenticationProvider.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\HistrogramController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\HistogramController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\RelLink.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ClusterWebUIController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ElectController.cs" />
