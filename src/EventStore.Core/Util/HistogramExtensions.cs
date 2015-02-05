@@ -5,7 +5,7 @@ namespace EventStore.Core.Util
 {
     public static class HistogramExtensions
     {
-        private static Stopwatch watch;
+        private static readonly Stopwatch watch;
 
         static HistogramExtensions()
         {
@@ -13,7 +13,7 @@ namespace EventStore.Core.Util
             watch.Start();
         }
 
-        public static Measurement StartMeasurement(this HdrHistogram.NET.Histogram histogram)
+        public static Measurement Measure(this HdrHistogram.NET.Histogram histogram)
         {
             return new Measurement() {Start = watch.ElapsedTicks, Histogram=histogram};
         }
@@ -25,7 +25,11 @@ namespace EventStore.Core.Util
 
             public void Dispose()
             {
-                Histogram.recordValue((long)((((double)watch.ElapsedTicks - Start) / Stopwatch.Frequency) * 1000000000));
+                lock (Histogram)
+                {
+                    Histogram.recordValue(
+                        (long) ((((double) watch.ElapsedTicks - Start)/Stopwatch.Frequency)*1000000000));
+                }
             }
         }
     }

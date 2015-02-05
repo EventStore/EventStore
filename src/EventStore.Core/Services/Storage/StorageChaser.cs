@@ -7,12 +7,15 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
+using HdrHistogram.NET;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -46,6 +49,8 @@ namespace EventStore.Core.Services.Storage
 
         private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
         private bool _commitsAfterEof;
+        private readonly Histogram _histogram;
+        private readonly Histogram _flushhistogram;
 
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
@@ -64,7 +69,8 @@ namespace EventStore.Core.Services.Storage
             _chaser = chaser;
             _indexCommitter = indexCommitter;
             _epochManager = epochManager;
-
+            _histogram = HistogramService.GetHistogram("chaser-wait");
+            _flushhistogram = HistogramService.GetHistogram("chaser-flush");
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
         }
@@ -143,6 +149,15 @@ namespace EventStore.Core.Services.Storage
             {
                 _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
                 _chaser.Flush();
+                var startflush = _watch.ElapsedTicks;
+                if (_flushhistogram != null)
+                {
+                    lock (_flushhistogram)
+                    {
+                        _flushhistogram.recordValue(
+                            (long)((((double)_watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
+                    }
+                }
                 _queueStats.ProcessingEnded(1);
 
                 var end = _watch.ElapsedTicks;
@@ -153,8 +168,17 @@ namespace EventStore.Core.Services.Storage
             if (!result.Success)
             {
                 _queueStats.EnterIdle();
-                //Thread.Sleep(1);
+                //Thread.Sleep(1); 
+                var startwait = _watch.ElapsedTicks;
                 _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
+                if (_histogram != null)
+                {
+                    lock (_histogram)
+                    {
+                        _histogram.recordValue(
+                            (long)((((double)_watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
+                    }
+                }
             }
         }
 
