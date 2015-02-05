@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
             var writer = new StringWriter(); 
-            histogram.outputPercentileDistribution(writer);
+            histogram.outputPercentileDistribution(writer, outputValueUnitScalingRatio: 1000.0 * 1000.0);
             var response = Encoding.ASCII.GetBytes(writer.ToString());
             entity.Reply(response,
                 HttpStatusCode.OK, 
