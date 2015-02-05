@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.Histograms
                 {
                     var start = watch.ElapsedTicks;
                     Thread.Sleep(1);
-                    hist.recordValue((long)((((double)watch.ElapsedMilliseconds - start) / Stopwatch.Frequency) * 1000000000));
+                    hist.recordValue((long)((((double)watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
                 }
             }, null, TaskCreationOptions.LongRunning);
         }
