@@ -37,6 +37,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\EventStore.Rags.dll</HintPath>
     </Reference>
+    <Reference Include="HdrHistogram.NET">
+      <HintPath>..\libs\hdrhistogram\HdrHistogram.NET.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
@@ -178,6 +181,7 @@
     <Compile Include="Services\Gossip\IGossipSeedSource.cs" />
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
+    <Compile Include="Services\Histograms\HistogramService.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointReader.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointWriter.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionMessageParker.cs" />
