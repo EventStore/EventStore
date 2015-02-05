@@ -12,18 +12,18 @@ namespace EventStore.Core.Services.Histograms
     {
         private const long NUMBEROFNS = 1000000000L;
 
-        private static readonly Dictionary<string, Histogram> Histograms = new Dictionary<string, Histogram>();
+        private static readonly Dictionary<string, AtomicHistogram> Histograms = new Dictionary<string, AtomicHistogram>();
  
-        public static Histogram GetHistogram(string name)
+        public static AtomicHistogram GetHistogram(string name)
         {
-            Histogram ret;
+            AtomicHistogram ret;
             Histograms.TryGetValue(name, out ret);
             return ret;
         }
 
         public static void CreateHistogram(string name)
         {
-            Histograms.Add(name, new Histogram(NUMBEROFNS, 3));
+            Histograms.Add(name, new AtomicHistogram(NUMBEROFNS, 3));
         }
 
         public static void StartJitterMonitor()

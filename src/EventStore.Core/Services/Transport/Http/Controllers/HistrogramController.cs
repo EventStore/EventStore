@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -11,8 +10,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class HistrogramController : IHttpController
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<PingController>();
-
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
 
         public void Subscribe(IHttpService service)
