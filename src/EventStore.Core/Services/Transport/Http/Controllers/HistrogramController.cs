@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var histogram = Histograms.HistogramService.GetHistogram(name);
             if (histogram == null)
             {
-                entity.ReplyStatus(HttpStatusCode.NotFound, "Not found", null);
+                entity.ReplyStatus(HttpStatusCode.NotFound, "Not found", _ => { });
                 return;
             }
             var writer = new StringWriter(); 
