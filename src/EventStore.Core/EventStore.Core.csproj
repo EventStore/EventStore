@@ -320,6 +320,7 @@
     <Compile Include="TransactionLog\Unbuffered\UnbufferedFileStream.cs" />
     <Compile Include="TransactionLog\Unbuffered\WinNative.cs" />
     <Compile Include="Util\FileUtil.cs" />
+    <Compile Include="Util\HistogramExtensions.cs" />
     <Compile Include="Util\MD5Hash.cs" />
     <Compile Include="Messages\TcpClientMessageDto.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />
