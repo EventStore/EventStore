@@ -31,7 +31,6 @@ namespace EventStore.Core.Services.Storage
         private readonly ICheckpoint _writerCheckpoint;
         private static readonly char[] LinkToSeparator = {'@'};
         private const int MaxPageSize = 4096;
-        private readonly Stopwatch _watch = Stopwatch.StartNew();
         private readonly Histogram _readHistogram;
         private readonly Histogram _streamRangeHistogram;
         private readonly Histogram _allRangeHistogram;
