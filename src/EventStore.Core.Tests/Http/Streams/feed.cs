@@ -122,11 +122,9 @@ namespace EventStore.Core.Tests.Http.Streams
         [TestFixture, Category("LongRunning")]
         public class when_retrieving_feed_head_with_bs_content_type : SpecificationWithLongFeed
         {
-            private JObject _feed;
-
             protected override void When()
             {
-                _feed = GetJson<JObject>(TestStream, "application\\json");
+                GetJson<JObject>(TestStream, "application\\json");
             }
 
             [Test]
