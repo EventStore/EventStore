@@ -32,11 +32,13 @@ namespace EventStore.Core.Services.Histograms
             CreateHistogram("writer-flush");
             CreateHistogram("chaser-wait");
             CreateHistogram("chaser-flush");
+            CreateHistogram("reader-readevent");
+            CreateHistogram("reader-streamrange");
+            CreateHistogram("reader-allrange");
         }
 
         public static void StartJitterMonitor()
         {
-            CreateHistograms();
             CreateHistogram("jitter");
             var hist = GetHistogram("jitter");
             Task.Factory.StartNew(x =>

@@ -25,10 +25,11 @@ namespace EventStore.Core.Util
 
             public void Dispose()
             {
+                if (Histogram == null) return;
                 lock (Histogram)
                 {
                     Histogram.recordValue(
-                        (long) ((((double) watch.ElapsedTicks - Start)/Stopwatch.Frequency)*1000000000));
+                            (long) ((((double) watch.ElapsedTicks - Start)/Stopwatch.Frequency)*1000000000));
                 }
             }
         }
