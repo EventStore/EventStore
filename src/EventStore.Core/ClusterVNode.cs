@@ -16,6 +16,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Gossip;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Replication;
@@ -87,6 +88,12 @@ namespace EventStore.Core
             _mainBus = new InMemoryBus("MainBus");
 
             var forwardingProxy = new MessageForwardingProxy();
+            //start watching jitter
+            HistogramService.StartJitterMonitor();
+            if (vNodeSettings.EnableHistograms)
+            {
+                HistogramService.CreateHistograms();
+            }
             // MISC WORKERS
             _workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>
                 new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
@@ -283,6 +290,7 @@ namespace EventStore.Core
 
             var adminController = new AdminController(_mainQueue);
             var pingController = new PingController();
+            var histogramController = new HistogramController();
             var statController = new StatController(monitoringQueue, _workersHandler);
             var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
             var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
@@ -306,7 +314,7 @@ namespace EventStore.Core
             _externalHttpService.SetupController(atomController);
             if(vNodeSettings.GossipOnPublic)
                 _externalHttpService.SetupController(gossipController);
-
+            _externalHttpService.SetupController(histogramController);
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
@@ -322,6 +330,7 @@ namespace EventStore.Core
                 _internalHttpService.SetupController(atomController);
                 _internalHttpService.SetupController(gossipController);
                 _internalHttpService.SetupController(electController);
+                _internalHttpService.SetupController(histogramController);
                 _internalHttpService.SetupController(persistentSubscriptionController);
             }
 

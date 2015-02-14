@@ -269,5 +269,8 @@ namespace EventStore.Core.Util
 
 	    public const string AuthenticationConfigFileDescr = "Path to the configuration file for authentication configuration (if applicable).";
 		public static readonly string AuthenticationConfigFileDefault = string.Empty;
+
+        public const string HistogramDesc = "Enables the tracking of various histograms in the backend, typically only used for debugging et";
+        public static readonly bool HistogramDefault = false;
     }
 }

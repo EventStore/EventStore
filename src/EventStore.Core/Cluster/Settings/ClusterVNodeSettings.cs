@@ -20,7 +20,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool DiscoverViaDns;
         public readonly string ClusterDns;
         public readonly IPEndPoint[] GossipSeeds;
-
+        public readonly bool EnableHistograms;
         public readonly TimeSpan MinFlushDelay;
 
         public readonly int ClusterNodeCount;
@@ -93,7 +93,8 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan extTcpHeartbeatTimeout,
                                     TimeSpan extTcpHeartbeatInterval,
 				    bool verifyDbHash,
-				    int maxMemtableEntryCount)
+				    int maxMemtableEntryCount,
+                    bool enableHistograms=false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -160,6 +161,7 @@ namespace EventStore.Core.Cluster.Settings
 
             VerifyDbHash = verifyDbHash;
             MaxMemtableEntryCount = maxMemtableEntryCount;
+            EnableHistograms = enableHistograms;
         }
 
         public override string ToString()
