@@ -28,10 +28,24 @@ namespace EventStore.Core.Util
                 if (Histogram == null) return;
                 lock (Histogram)
                 {
-                    Histogram.recordValue(
-                            (long) ((((double) watch.ElapsedTicks - Start)/Stopwatch.Frequency)*1000000000));
+                    var valueToRecord = (((double)watch.ElapsedTicks - Start) / Stopwatch.Frequency) * 1000000000;
+                    if (valueToRecord < HighestPowerOf2(Histogram.getHighestTrackableValue() * 2))
+                    {
+                        Histogram.recordValue((long)valueToRecord);
+                    }
                 }
             }
+        }
+
+        private static long HighestPowerOf2(long x)
+        {
+            x--;
+            x |= (x >> 1);
+            x |= (x >> 2);
+            x |= (x >> 4);
+            x |= (x >> 8);
+            x |= (x >> 16);
+            return (x + 1);
         }
     }
 }
