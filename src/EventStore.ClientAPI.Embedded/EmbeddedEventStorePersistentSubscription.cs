@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI.Embedded
         {
             var source = new TaskCompletionSource<PersistentEventStoreSubscription>();
 
-            _subscriptions.StartPersistentSubscription(Guid.NewGuid(), source, subscriptionId, streamId, bufferSize, onEventAppeared,
+            _subscriptions.StartPersistentSubscription(Guid.NewGuid(), source, subscriptionId, streamId, userCredentials, bufferSize, onEventAppeared,
                 onSubscriptionDropped, settings.MaxRetries, settings.OperationTimeout);
 
             return source.Task;

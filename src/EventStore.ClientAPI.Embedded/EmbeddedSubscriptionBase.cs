@@ -59,6 +59,10 @@ namespace EventStore.ClientAPI.Embedded
                 case EventStore.Core.Services.SubscriptionDropReason.Unsubscribed:
                     Unsubscribe();
                     break;
+                case EventStore.Core.Services.SubscriptionDropReason.NotFound:
+                    DropSubscription(SubscriptionDropReason.NotFound,
+                        new ArgumentException("Subscription not found"));
+                    break;
             }
         }
 

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.SystemData;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 
@@ -14,13 +16,15 @@ namespace EventStore.ClientAPI.Embedded
     {
         private readonly EmbeddedSubcriptionsManager _subscriptions;
         private readonly IPublisher _publisher;
+        private readonly IAuthenticationProvider _authenticationProvider;
         private readonly ILogger _log;
         private readonly Guid _connectionId;
 
 
-        public EmbeddedSubscriber(IPublisher publisher, ILogger log, Guid connectionId)
+        public EmbeddedSubscriber(IPublisher publisher, IAuthenticationProvider authenticationProvider, ILogger log, Guid connectionId)
         {
             _publisher = publisher;
+            _authenticationProvider = authenticationProvider;
             _log = log;
             _connectionId = connectionId;
             _subscriptions = new EmbeddedSubcriptionsManager();
@@ -67,27 +71,20 @@ namespace EventStore.ClientAPI.Embedded
             subscription.ConfirmSubscription(lastCommitPosition, lastEventNumber);
         }
 
-        public void StartSubscription(
-            Guid correlationId, TaskCompletionSource<EventStoreSubscription> source, string stream, bool resolveLinkTos,
-            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
+        public void StartSubscription(Guid correlationId, TaskCompletionSource<EventStoreSubscription> source, string stream, UserCredentials userCredentials, bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
         {
-            var subscription = new EmbeddedSubscription(_log, _publisher, _connectionId, source, stream, resolveLinkTos, eventAppeared,
+            var subscription = new EmbeddedSubscription(
+                _log, _publisher, _connectionId, source, stream, userCredentials, _authenticationProvider,
+                resolveLinkTos, eventAppeared,
                 subscriptionDropped);
 
             _subscriptions.StartSubscription(correlationId, subscription);
         }
 
-        public void StartPersistentSubscription(
-            Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId,
-            string streamId, int bufferSize,
-            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
-            Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, 
-            int maxRetries,
-            TimeSpan operationTimeout)
+        public void StartPersistentSubscription(Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, UserCredentials userCredentials, int bufferSize, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan operationTimeout)
         {
             var subscription = new EmbeddedPersistentSubscription(_log, _publisher, _connectionId, source,
-                subscriptionId, streamId, bufferSize, eventAppeared,
+                subscriptionId, streamId, userCredentials, _authenticationProvider, bufferSize, eventAppeared,
                 subscriptionDropped, maxRetries, operationTimeout);
 
             _subscriptions.StartSubscription(correlationId, subscription);
