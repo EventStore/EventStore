@@ -10,9 +10,6 @@ namespace EventStore.ClientAPI.Embedded
     internal interface IEmbeddedResponder
     {
         void InspectMessage(Message message);
-        void NotAuthenticated();
-        void ServerError();
-        void NotReady();
     }
 
     internal abstract class EmbeddedResponderBase<TResult, TResponse> : IEmbeddedResponder where TResponse : Message
@@ -43,21 +40,6 @@ namespace EventStore.ClientAPI.Embedded
             {
                 Fail(ex);
             }
-        }
-
-        public void NotAuthenticated()
-        {
-            Fail(new NotAuthenticatedException());
-        }
-
-        public void ServerError()
-        {
-            Fail(new ServerErrorException());
-        }
-
-        public void NotReady()
-        {
-            Fail(new ServerErrorException("The server is not ready."));
         }
 
         protected abstract void InspectResponse(TResponse response);

@@ -15,20 +15,5 @@ namespace EventStore.ClientAPI.Embedded
         {
             _responder.InspectMessage(message);
         }
-
-        public void NotAuthenticated()
-        {
-            _responder.NotAuthenticated();
-        }
-
-        public void ServerError()
-        {
-            _responder.ServerError();
-        }
-
-        public void NotReady()
-        {
-            _responder.NotReady();
-        }
     }
 }
