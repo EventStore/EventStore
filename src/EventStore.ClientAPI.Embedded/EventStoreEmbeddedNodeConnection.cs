@@ -447,6 +447,7 @@ namespace EventStore.ClientAPI.Embedded
                 (int)settings.CheckPointAfter.TotalMilliseconds,
                 settings.MinCheckPointCount,
                 settings.MaxCheckPointCount,
+                settings.MaxSubscriberCount,
                 user,
                 credentials == null ? null : credentials.Username,
                 credentials == null ? null : credentials.Password));
@@ -484,6 +485,7 @@ namespace EventStore.ClientAPI.Embedded
                 (int) settings.CheckPointAfter.TotalMilliseconds,
                 settings.MinCheckPointCount,
                 settings.MaxCheckPointCount,
+                settings.MaxSubscriberCount,
                 user,
                 credentials == null ? null : credentials.Username,
                 credentials == null ? null : credentials.Password));

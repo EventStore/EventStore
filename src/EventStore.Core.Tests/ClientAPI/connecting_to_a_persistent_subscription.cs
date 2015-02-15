@@ -192,7 +192,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();            
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (_set) return;
             _set = true;
@@ -249,7 +249,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (_set) return;
             _set = true;
@@ -527,7 +527,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void Dropped(EventStorePersistentSubscription sub, SubscriptionDropReason reason, Exception exception)
+        private void Dropped(EventStorePersistentSubscriptionBase sub, SubscriptionDropReason reason, Exception exception)
         {
             _exception = exception;
             _reason = reason;
@@ -541,7 +541,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private static void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private static void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             throw new Exception("test");
         }
