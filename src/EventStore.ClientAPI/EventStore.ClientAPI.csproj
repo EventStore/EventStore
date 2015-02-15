@@ -58,11 +58,10 @@
     <Compile Include="Internal\PersistentSubscriptionCreateResult.cs" />
     <Compile Include="UserManagement\ResetPasswordDetails.cs" />
     <Compile Include="UserManagement\ChangePasswordDetails.cs" />
-    <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
     <Compile Include="Exceptions\UserCommandFailedException.cs" />
-    <Compile Include="EmbeddedEventStorePersistentSubscription.cs" />
+    <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="EventStorePersistentSubscriptionBase.cs" />
     <Compile Include="IConnectToPersistentSubscriptions.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />

@@ -5,14 +5,14 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
-    class EmbeddedEventStorePersistentSubscription : EventStorePersistentSubscription
+    class EventStorePersistentSubscription : EventStorePersistentSubscriptionBase
     {
         private readonly EventStoreConnectionLogicHandler _handler;
 
-        public EmbeddedEventStorePersistentSubscription(
+        public EventStorePersistentSubscription(
             string subscriptionId, string streamId,
-            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
-            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
+            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials, ILogger log, bool verboseLogging, ConnectionSettings settings,
             EventStoreConnectionLogicHandler handler, int bufferSize = 10, bool autoAck = true)
             : base(
