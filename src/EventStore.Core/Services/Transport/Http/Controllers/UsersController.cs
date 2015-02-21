@@ -40,17 +40,28 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
-            var envelope = CreateReplyEnvelope<UserManagementMessage.AllUserDetailsResult>(http);
+            var envelope = new SendToHttpWithConversionEnvelope<UserManagementMessage.AllUserDetailsResult, AllUserDetailsResultHttpFormatted>(
+                            _networkSendQueue,
+                            http,
+                            (codec, msg) => codec.To(msg),
+                            (codec, msg) => Configure.Ok(codec.ContentType, codec.Encoding, null, null, false),
+                            msg => new AllUserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
+
             var message = new UserManagementMessage.GetAll(envelope, http.User);
             Publish(message);
         }
-
 
         private void GetUser(HttpEntityManager http, UriTemplateMatch match)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
-            var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
+            var envelope = new SendToHttpWithConversionEnvelope<UserManagementMessage.UserDetailsResult, UserDetailsResultHttpFormatted>(
+                            _networkSendQueue,
+                            http,
+                            (codec, msg) => codec.To(msg),
+                            (codec, msg) => Configure.Ok(codec.ContentType, codec.Encoding, null, null, false),
+                            msg => new UserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
+
             var login = match.BoundVariables["login"];
             var message = new UserManagementMessage.Get(envelope, http.User, login);
             Publish(message);
