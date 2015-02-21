@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -93,7 +94,35 @@ namespace EventStore.Core.Tests.Http.Users
                                 FullName = "User Full Name",
                                 Groups = new[] {"admin", "other"},
                                 Disabled = false,
-                                Password___ = false
+                                Password___ = false,
+                                Links = new[]
+                                {
+                                    new
+                                    {
+                                        Href = "http://" + _node.HttpEndPoint + "/users/test1/command/reset-password",
+                                        Rel = "reset-password"
+                                    },
+                                    new
+                                    {
+                                        Href = "http://" + _node.HttpEndPoint + "/users/test1/command/change-password",
+                                        Rel = "change-password"
+                                    },
+                                    new
+                                    {
+                                        Href = "http://" + _node.HttpEndPoint + "/users/test1",
+                                        Rel = "edit"
+                                    },
+                                    new
+                                    {
+                                        Href = "http://" + _node.HttpEndPoint + "/users/test1",
+                                        Rel = "delete"
+                                    },
+                                    new
+                                    {
+                                        Href = "http://" + _node.HttpEndPoint + "/users/test1/command/disable",
+                                        Rel = "disable"
+                                    },
+                                }
                             }
                         }, _response);
             }
