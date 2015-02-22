@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Tests.Helpers;
@@ -12,8 +12,7 @@ namespace EventStore.Core.Tests.Http.Users
 
         abstract class with_admin_user : HttpBehaviorSpecification
         {
-            protected readonly ICredentials _admin = new NetworkCredential(
-                SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
+            protected readonly ICredentials _admin = DefaultData.AdminNetworkCredentials;
 
             protected override bool GivenSkipInitializeStandardUsersCheck()
             {
@@ -122,7 +121,7 @@ namespace EventStore.Core.Tests.Http.Users
                                     {
                                         Href = "http://" + _node.ExtHttpEndPoint + "/users/test1/command/disable",
                                         Rel = "disable"
-                                    },
+                                    }
                                 }
                             }
                         }, _response);
@@ -130,7 +129,82 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_creating_an_already_existing_user_account_with_the_same_password : with_admin_user
+        class when_retrieving_a_disabled_user_details : with_admin_user
+        {
+            private JObject _response;
+
+            protected override void Given()
+            {
+                MakeJsonPost(
+                    "/users/",
+                    new
+                    {
+                        LoginName = "test2",
+                        FullName = "User Full Name",
+                        Groups = new[] { "admin", "other" },
+                        Password = "Pa55w0rd!"
+                    }, _admin);
+
+                MakePost("/users/test2/command/disable",_admin);
+            }
+
+            protected override void When()
+            {
+                _response = GetJson<JObject>("/users/test2");
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void returns_valid_json_data_with_enable_link()
+            {
+                HelperExtensions.AssertJson(
+                    new
+                    {
+                        Success = true,
+                        Error = "Success",
+                        Data =
+                                new
+                                {
+                                    Links = new[]
+                                            {
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/reset-password",
+                                                    Rel = "reset-password"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/change-password",
+                                                    Rel = "change-password"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2",
+                                                    Rel = "edit"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2",
+                                                    Rel = "delete"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/enable",
+                                                    Rel = "enable"
+                                                }
+                                            }
+                                }
+                    }, _response);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_creating_an_already_existing_user_account : with_admin_user
         {
             private HttpWebResponse _response;
 
