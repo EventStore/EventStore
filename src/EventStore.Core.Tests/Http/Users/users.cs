@@ -50,6 +50,8 @@ namespace EventStore.Core.Tests.Http.Users
             }
         }
 
+
+
         [TestFixture, Category("LongRunning")]
         class when_retrieving_a_user_details : with_admin_user
         {
@@ -121,10 +123,85 @@ namespace EventStore.Core.Tests.Http.Users
                                     {
                                         Href = "http://" + _node.HttpEndPoint + "/users/test1/command/disable",
                                         Rel = "disable"
-                                    },
+                                    }
                                 }
                             }
                         }, _response);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_retrieving_a_disabled_user_details : with_admin_user
+        {
+            private JObject _response;
+
+            protected override void Given()
+            {
+                MakeJsonPost(
+                    "/users/",
+                    new
+                    {
+                        LoginName = "test2",
+                        FullName = "User Full Name",
+                        Groups = new[] { "admin", "other" },
+                        Password = "Pa55w0rd!"
+                    }, _admin);
+
+                MakePost("/users/test2/command/disable",_admin);
+            }
+
+            protected override void When()
+            {
+                _response = GetJson<JObject>("/users/test2");
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void returns_valid_json_data_with_enable_link()
+            {
+                HelperExtensions.AssertJson(
+                    new
+                    {
+                        Success = true,
+                        Error = "Success",
+                        Data =
+                                new
+                                {
+                                    Links = new[]
+                                            {
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/reset-password",
+                                                    Rel = "reset-password"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/change-password",
+                                                    Rel = "change-password"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2",
+                                                    Rel = "edit"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2",
+                                                    Rel = "delete"
+                                                },
+                                                new
+                                                {
+                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/enable",
+                                                    Rel = "enable"
+                                                }
+                                            }
+                                }
+                    }, _response);
             }
         }
 
