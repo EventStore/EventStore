@@ -174,27 +174,27 @@ namespace EventStore.Core.Tests.Http.Users
                                             {
                                                 new
                                                 {
-                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/reset-password",
+                                                    Href = "http://" + _node.ExtHttpEndPoint + "/users/test2/command/reset-password",
                                                     Rel = "reset-password"
                                                 },
                                                 new
                                                 {
-                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/change-password",
+                                                    Href = "http://" + _node.ExtHttpEndPoint + "/users/test2/command/change-password",
                                                     Rel = "change-password"
                                                 },
                                                 new
                                                 {
-                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2",
+                                                    Href = "http://" + _node.ExtHttpEndPoint + "/users/test2",
                                                     Rel = "edit"
                                                 },
                                                 new
                                                 {
-                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2",
+                                                    Href = "http://" + _node.ExtHttpEndPoint + "/users/test2",
                                                     Rel = "delete"
                                                 },
                                                 new
                                                 {
-                                                    Href = "http://" + _node.HttpEndPoint + "/users/test2/command/enable",
+                                                    Href = "http://" + _node.ExtHttpEndPoint + "/users/test2/command/enable",
                                                     Rel = "enable"
                                                 }
                                             }
