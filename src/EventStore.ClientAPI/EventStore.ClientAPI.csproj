@@ -54,6 +54,7 @@
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ConnectionString.cs" />
     <Compile Include="Internal\IPEndPointExtensions.cs" />
+    <Compile Include="UserManagement\RelLink.cs" />
     <Compile Include="UserManagement\ResetPasswordDetails.cs" />
     <Compile Include="UserManagement\ChangePasswordDetails.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
