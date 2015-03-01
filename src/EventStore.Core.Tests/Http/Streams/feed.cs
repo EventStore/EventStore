@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_ok_status_code()
             {
-                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotAcceptable, _lastResponse.StatusCode);
             }
         }
 
