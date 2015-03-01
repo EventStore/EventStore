@@ -29,7 +29,7 @@ namespace EventStore.Core.Util
                 lock (Histogram)
                 {
                     var valueToRecord = (((double)watch.ElapsedTicks - Start) / Stopwatch.Frequency) * 1000000000;
-                    if (valueToRecord < HighestPowerOf2(Histogram.getHighestTrackableValue() * 2))
+                    if (valueToRecord < HighestPowerOf2(Histogram.getHighestTrackableValue()))
                     {
                         Histogram.recordValue((long)valueToRecord);
                     }
