@@ -1,6 +1,7 @@
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
@@ -62,17 +63,17 @@ namespace EventStore.Core.Tests.TransactionLog
         public void a_read_on_scavenged_chunk_includes_map()
         {
             TFChunk chunk = null;
-            //TODO NEEDS REWORK
             try
             {
                 chunk = TFChunk.CreateNew(GetFilePathFor("afile"), 200, 0, 0, true, false, false, false);
                 chunk.CompleteScavenge(new[] { new PosMap(0, 0), new PosMap(1, 1) });
                 using (var reader = chunk.AcquireReader())
                 {
-                    var buffer = new byte[1024];
-                    var result = reader.ReadNextRawBytes(1024, buffer);
+                    var buffer = new byte[4096];
+                    var result = reader.ReadNextRawBytes(4096, buffer);
                     Assert.IsTrue(result.IsEOF);
-                    Assert.AreEqual(ChunkHeader.Size + ChunkHeader.Size + 2 * PosMap.FullSize, result.BytesRead);
+                    Assert.AreEqual(chunk.ChunkFooter.MapSize, PosMap.FullSize * 2);
+                    Assert.AreEqual(4096, result.BytesRead);
                 }
             }
             finally
@@ -82,30 +83,6 @@ namespace EventStore.Core.Tests.TransactionLog
                     chunk.MarkForDeletion();
                     chunk.WaitForDestroy(5000);
                 }
-            }
-        }
-
-        [Test]
-        public void a_read_past_end_of_completed_chunk_does_include_header_or_footer()
-        {
-            TFChunk chunk = null;
-            //TODO GFY NEEDS REWORK
-            try
-            {
-                chunk = TFChunk.CreateNew(GetFilePathFor("File1"), 300, 0, 0, false, false, false, false);
-                chunk.Complete();
-                using (var reader = chunk.AcquireReader())
-                {
-                    var buffer = new byte[1024];
-                    var result = reader.ReadNextRawBytes(1024, buffer);
-                    Assert.IsTrue(result.IsEOF);
-                    Assert.AreEqual(ChunkHeader.Size + ChunkFooter.Size, result.BytesRead); //just header + footer = 256
-                }
-            }
-            finally
-            {
-                chunk.MarkForDeletion();
-                chunk.WaitForDestroy(5000);
             }
         }
 
