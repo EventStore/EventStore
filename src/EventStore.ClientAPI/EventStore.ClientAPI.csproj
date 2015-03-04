@@ -54,15 +54,13 @@
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ConnectionString.cs" />
     <Compile Include="Internal\IPEndPointExtensions.cs" />
-    <Compile Include="Internal\PersistentSubscriptionCreateResult.cs" />
     <Compile Include="UserManagement\ResetPasswordDetails.cs" />
     <Compile Include="UserManagement\ChangePasswordDetails.cs" />
+    <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
     <Compile Include="Exceptions\UserCommandFailedException.cs" />
-    <Compile Include="EventStorePersistentSubscription.cs" />
-    <Compile Include="EventStorePersistentSubscriptionBase.cs" />
-    <Compile Include="IConnectToPersistentSubscriptions.cs" />
+    <Compile Include="Internal\PersistentSubscriptionCreateResult.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />
     <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
     <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />

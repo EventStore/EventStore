@@ -86,10 +86,6 @@
     <Compile Include="ClientAPI\connection_string.cs" />
     <Compile Include="ClientAPI\create_persistent_subscription.cs" />
     <Compile Include="ClientAPI\deleting_persistent_subscription.cs" />
-    <Compile Include="ClientAPI\Embedded\connecting_to_a_persistent_subscription.cs" />
-    <Compile Include="ClientAPI\Embedded\create_persistent_subscription.cs" />
-    <Compile Include="ClientAPI\Embedded\deleting_persistent_subscription.cs" />
-    <Compile Include="ClientAPI\Embedded\update_persistent_subscription.cs" />
     <Compile Include="ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
     <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream_using_transaction.cs" />

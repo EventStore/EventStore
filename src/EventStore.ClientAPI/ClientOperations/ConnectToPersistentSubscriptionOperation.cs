@@ -9,7 +9,7 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class ConnectToPersistentSubscriptionOperation : SubscriptionOperation<PersistentEventStoreSubscription>, IConnectToPersistentSubscriptions
+    internal class ConnectToPersistentSubscriptionOperation : SubscriptionOperation<PersistentEventStoreSubscription>
     {
         private readonly string _groupName;
         private readonly int _bufferSize;

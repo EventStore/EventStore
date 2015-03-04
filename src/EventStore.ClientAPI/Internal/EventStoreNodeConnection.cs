@@ -306,11 +306,11 @@ namespace EventStore.ClientAPI.Internal
             return catchUpSubscription;
         }
 
-        public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
-            string stream, 
-            string groupName, 
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, 
-            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
+        public EventStorePersistentSubscription ConnectToPersistentSubscription(
+            string stream,
+            string groupName,
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared, 
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, 
             int bufferSize = 10,
             bool autoAck = true)
