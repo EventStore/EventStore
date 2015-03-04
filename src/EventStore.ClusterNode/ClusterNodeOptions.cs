@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Dynamic;
+using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
 using EventStore.Rags;
@@ -156,6 +157,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
         public int GossipTimeoutMs { get; set; }
 
+        [ArgDescription(Opts.HistogramDesc, Opts.AppGroup)]
+        public bool EnableHistograms { get; set; }
+
         public ClusterNodeOptions()
         {
             Config = "";
@@ -237,6 +241,8 @@ namespace EventStore.ClusterNode
             GossipIntervalMs = Opts.GossipIntervalMsDefault;
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
+
+            EnableHistograms = Opts.HistogramDefault;
         }
     }
 }

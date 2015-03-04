@@ -1,12 +1,12 @@
 # Event Store
 
 - [Documentation](http://docs.geteventstore.com)
-- [Download Binaries](http://geteventstore.com/downloads)
+- [Download Binaries](https://geteventstore.com/downloads)
 - [Quick Start](http://docs.geteventstore.com/server/latest)
 
 ## About
 
-This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at http://geteventstore.com.
+This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at https://geteventstore.com.
 
 **Development is on the “dev” branch (and feature branches). Please make any pull requests to the “dev” branch.**
 
@@ -14,7 +14,7 @@ This is the repository for the open source version of Event Store, which now inc
 
 Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine) it must be built for the platform on which you intend to run it.
 
-Binaries are available from http://geteventstore.com/downloads, however if you want to build it from source instructions for Windows and Linux are below.
+Binaries are available from https://geteventstore.com/downloads, however if you want to build it from source instructions for Windows and Linux are below.
 
 ### Debug Builds on Windows / .NET
 

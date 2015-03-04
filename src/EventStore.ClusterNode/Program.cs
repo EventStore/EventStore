@@ -237,7 +237,8 @@ namespace EventStore.ClusterNode
                                             TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout),
                                             TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval),
                                             !options.SkipDbVerify, options.MaxMemTableSize,
-                                            options.DevelopmentMode);
+                                            options.DevelopmentMode,
+                                            options.EnableHistograms);
         }
 
         private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)

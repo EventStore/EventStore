@@ -1,11 +1,14 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using HdrHistogram.NET;
 
 namespace EventStore.TestClient.Commands
 {
-    internal class RequestMonitor {
-        private readonly ConcurrentQueue<int> _measurements = new ConcurrentQueue<int>();
+    internal class RequestMonitor
+    {
+        private static long NUMBEROFNS = 10000000000L;
+        private Histogram _histogram  = new Histogram(NUMBEROFNS, 3);
         private readonly ConcurrentDictionary<Guid, Operation> _operations = new ConcurrentDictionary<Guid, Operation>();
         readonly Stopwatch _watch = new Stopwatch();
 
@@ -15,8 +18,7 @@ namespace EventStore.TestClient.Commands
 
         public void Clear()
         {
-            int dontcare;
-            while (_measurements.TryDequeue(out dontcare)) { }
+            _histogram =new Histogram(NUMBEROFNS, 3);
             _operations.Clear();
         }
 
@@ -28,51 +30,17 @@ namespace EventStore.TestClient.Commands
 
         public void EndOperation(Guid id) {
             Operation record;
-            if(_operations.TryRemove(id, out record)) {
-                var current = _watch.ElapsedTicks;
-                var time = current - record.Start;
-                var ms = time / TimeSpan.TicksPerMillisecond;
-                _measurements.Enqueue((int) ms);
-            } else {
-                Console.Write("x");
-            }
-        }
+            if (!_operations.TryRemove(id, out record)) return;
+            var current = _watch.ElapsedTicks;
 
-        public void PrintRawMeasurementDetails() {
-            foreach(var i in _measurements) {
-                Console.Write(i + ",");
-            }
+            var ns = (long)((((double)current - record.Start) / Stopwatch.Frequency) * 1000000000);
+            _histogram.recordValue(ns);
         }
 
         public void GetMeasurementDetails() {
-            var items = _measurements.ToArray();
-            Array.Sort(items);
-            Console.WriteLine("fastest: " + items[0]);
-            Console.WriteLine("quintiles");
-            for(int i=20;i<=100;i+=20) {
-                Console.WriteLine(i + "% : " + items[GetPercentile((decimal) i-20, items.Length)] + "-" + items[GetPercentile((decimal) i, items.Length)]);
-            }
-            Console.WriteLine("90% : " + items[GetPercentile(90m, items.Length)]);
-            Console.WriteLine("95% : " + items[GetPercentile(95m, items.Length)]);
-            Console.WriteLine("98% : " + items[GetPercentile(98m, items.Length)]);
-            Console.WriteLine("99% : " + items[GetPercentile(99m, items.Length)]);
-            Console.WriteLine("99.5% : " + items[GetPercentile(99.5m, items.Length)]);
-            Console.WriteLine("99.9% : " + items[GetPercentile(99.9m, items.Length)]);
-            Console.WriteLine("99.99% : " + items[GetPercentile(99.99m, items.Length)]);
-            Console.WriteLine("99.999% : " + items[GetPercentile(99.999m, items.Length)]);
-            Console.WriteLine("99.9999% : " + items[GetPercentile(99.9999m, items.Length)]);
-            Console.WriteLine("99.99999% : " + items[GetPercentile(99.99999m, items.Length)]);
-            Console.WriteLine("Highest : " + items[items.Length - 1]);
+            _histogram.outputPercentileDistribution(Console.Out, outputValueUnitScalingRatio: 1000.0 * 1000.0);
         }
-
-        private int GetPercentile(decimal percentile, int size) {
-            decimal percent = 0;
-            percent = percentile/100m;
-            var ret = (int) (percent * size);
-            if(ret == size) ret -= 1;
-            return ret;
-        }
-
+        
         struct Operation {
             public long Start;
         }

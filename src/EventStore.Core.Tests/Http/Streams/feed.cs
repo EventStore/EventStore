@@ -120,6 +120,22 @@ namespace EventStore.Core.Tests.Http.Streams
 
 
         [TestFixture, Category("LongRunning")]
+        public class when_retrieving_feed_head_with_bs_content_type : SpecificationWithLongFeed
+        {
+            protected override void When()
+            {
+                GetJson<JObject>(TestStream, "application\\json");
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.NotAcceptable, _lastResponse.StatusCode);
+            }
+        }
+
+
+        [TestFixture, Category("LongRunning")]
         public class when_retrieving_the_previous_link_of_the_feed_head: SpecificationWithLongFeed
         {
             private JObject _feed;
