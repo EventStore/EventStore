@@ -288,11 +288,11 @@ namespace EventStore.ClientAPI
         /// you attempt to connect to a group that does not exist you will be given an exception.
         /// </remarks>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
-        EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
-            string stream, 
-            string groupName, 
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
-            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
+        EventStorePersistentSubscription ConnectToPersistentSubscription(
+            string stream,
+            string groupName,
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
             int bufferSize = 10,
             bool autoAck = true);
