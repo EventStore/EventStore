@@ -60,33 +60,6 @@ namespace EventStore.Core.Tests.TransactionLog
         }
 
         [Test]
-        public void a_read_on_scavenged_chunk_includes_map()
-        {
-            TFChunk chunk = null;
-            try
-            {
-                chunk = TFChunk.CreateNew(GetFilePathFor("afile"), 200, 0, 0, true, false, false, false);
-                chunk.CompleteScavenge(new[] { new PosMap(0, 0), new PosMap(1, 1) });
-                using (var reader = chunk.AcquireReader())
-                {
-                    var buffer = new byte[4096];
-                    var result = reader.ReadNextRawBytes(4096, buffer);
-                    Assert.IsTrue(result.IsEOF);
-                    Assert.AreEqual(chunk.ChunkFooter.MapSize, PosMap.FullSize * 2);
-                    Assert.AreEqual(4096, result.BytesRead);
-                }
-            }
-            finally
-            {
-                if (chunk != null)
-                {
-                    chunk.MarkForDeletion();
-                    chunk.WaitForDestroy(5000);
-                }
-            }
-        }
-
-        [Test]
         public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size()
         {
             TFChunk chunk = null;
