@@ -24,7 +24,10 @@ namespace EventStore.Core.Services.Histograms
 
         public static void CreateHistogram(string name)
         {
-            Histograms.Add(name, new Histogram(NUMBEROFNS, 3));
+            if (!Histograms.ContainsKey(name))
+            {
+                Histograms.Add(name, new Histogram(NUMBEROFNS, 3));
+            }
         }
 
         public static void CreateHistograms()
