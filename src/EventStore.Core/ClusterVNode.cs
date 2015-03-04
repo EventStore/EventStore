@@ -292,7 +292,7 @@ namespace EventStore.Core
             var pingController = new PingController();
             var histogramController = new HistogramController();
             var statController = new StatController(monitoringQueue, _workersHandler);
-            var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
+            var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler, vNodeSettings.DevelopmentMode);
             var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
             var persistentSubscriptionController = new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
             var electController = new ElectController(_mainQueue);

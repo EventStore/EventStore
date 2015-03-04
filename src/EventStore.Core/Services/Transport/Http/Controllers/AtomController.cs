@@ -74,10 +74,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
 
-        public AtomController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue): base(publisher)
+        public AtomController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue, bool developmentMode = false): base(publisher)
         {
             _httpForwarder = httpForwarder;
             _networkSendQueue = networkSendQueue;
+
+            if (developmentMode)
+            {
+                // ReSharper disable once RedundantNameQualifier
+                Transport.Http.Configure.DevelopmentMode = true;
+            }
         }
 
         protected override void SubscribeCore(IHttpService http)

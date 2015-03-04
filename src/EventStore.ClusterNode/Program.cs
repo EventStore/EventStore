@@ -237,6 +237,7 @@ namespace EventStore.ClusterNode
                                             TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout),
                                             TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval),
                                             !options.SkipDbVerify, options.MaxMemTableSize,
+                                            options.DevelopmentMode,
                                             options.EnableHistograms);
         }
 
