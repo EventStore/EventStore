@@ -88,12 +88,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 var prepare = (PrepareLogRecord)result.LogRecord;
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted))
                                 {
-                                    if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
-                                        commitedPrepares.Add(prepare);
-                                    if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
-                                    {
-                                        Commit(commitedPrepares, result.Eof);
+                                    if (prepare.Flags.HasAnyOf(PrepareFlags.SingleWrite)) {
+                                        Commit(commitedPrepares, false);
                                         commitedPrepares.Clear();
+                                        Commit(new[] {prepare}, result.Eof);
+                                    } else {
+
+                                        if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
+                                            commitedPrepares.Add(prepare);
+                                        if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
+                                        {
+                                            Commit(commitedPrepares, result.Eof);
+                                            commitedPrepares.Clear();
+                                        }
                                     }
                                 }
                                 break;
