@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.ServiceModel;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription

@@ -128,8 +128,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public ObservedTimingMeausrement GetExtraStats()
         {
-            //TODO FIX ME
-            Console.WriteLine(_watch);
             return _extraStatistics == null ? null : _extraStatistics.GetMeasurementDetails();
         }
 
