@@ -845,15 +845,25 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
     class FakeCheckpointWriter : IPersistentSubscriptionCheckpointWriter
     {
         private readonly Action<int> _action;
+        private Action _deleteAction;
 
-        public FakeCheckpointWriter(Action<int> action)
+        public FakeCheckpointWriter(Action<int> action, Action deleteAction = null)
         {
             _action = action;
+            _deleteAction = deleteAction;
         }
 
         public void BeginWriteState(int state)
         {
             _action(state);
+        }
+
+        public void BeginDeleteCheckPoint(Action<IPersistentSubscriptionCheckpointWriter> completed)
+        {
+            if (_deleteAction != null)
+            {
+                _deleteAction();
+            }
         }
     }
 }
