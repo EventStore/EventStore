@@ -825,37 +825,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return @"
 <!DOCTYPE html>
 <html>
-<head>
-    <script src='/web/es/lib/jquery/jquery-1.8.0.min.js'></script>
-    <script src='/web/es/lib/jquery/jquery-ui-1.8.23.min.js'></script>
-    <script src='/web/es/lib/jsrender/jsrender.js'></script>
-    <script src='/web/es/js/atom/render.js'></script>
-    <script src='/web/es/js/es.tmpl.js'></script>
-    <script id='r-head'>
-        es.tmpl.renderHead();
-    </script>
-</head>
 <body>
 <script>
     var data = " + JsonConvert.SerializeObject(value, Formatting.Indented, JsonCodec.ToSettings) + @";
-    var templateJs = '/web/es/js/atom/" + value.GetType().Name + @".html';
-
-    function reRenderData(data) {
-        renderHtmlBy(data, templateJs);
-    }
-
-    $(function() {
-        reRenderData(data);
-    }); 
+    window.location = '/web/index.html#/streams/' + data.streamId;
 </script>
-
-<div id='content'>
-    <div id='data'></div>
-    <script id='r-body'>
-    es.tmpl.renderBody();
-    </script>
-</div>
-
 </body>
 </html>
 ";
