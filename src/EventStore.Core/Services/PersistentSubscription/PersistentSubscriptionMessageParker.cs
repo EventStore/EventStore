@@ -52,6 +52,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             return string.Format("{0}@{1}", @event.OriginalEvent.EventNumber, @event.OriginalStreamId);
         }
 
+        public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed)
+        {
+
+        }
+
         public void BeginReadEndSequence(Action<int?> completed)
         {
             _ioDispatcher.ReadBackward(_parkedStreamId,
@@ -97,7 +102,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                             break;
                     }
                 });
-
         }
 
         class ParkedMessageMetadata

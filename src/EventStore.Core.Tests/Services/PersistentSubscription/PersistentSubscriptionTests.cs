@@ -811,6 +811,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         private Action<int?> _readEndSequenceCompleted;
         private Action<ResolvedEvent, OperationResult> _parkMessageCompleted;
         public List<ResolvedEvent> ParkedEvents = new List<ResolvedEvent>();
+        private readonly Action _deleteAction;
+
+        public FakeMessageParker() { }
+
+        public FakeMessageParker(Action deleteAction)
+        {
+            _deleteAction = deleteAction;
+        }
 
         public int MarkedAsProcessed { get; private set; }
 
@@ -839,13 +847,20 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             MarkedAsProcessed = sequence;
         }
+        public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed)
+        {
+            if (_deleteAction != null)
+            {
+                _deleteAction();
+            }
+        }
     }
 
 
     class FakeCheckpointWriter : IPersistentSubscriptionCheckpointWriter
     {
         private readonly Action<int> _action;
-        private Action _deleteAction;
+        private readonly Action _deleteAction;
 
         public FakeCheckpointWriter(Action<int> action, Action deleteAction = null)
         {
