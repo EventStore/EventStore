@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }            
         }
 
-        public void BeginDeleteCheckPoint(Action<IPersistentSubscriptionCheckpointWriter> completed)
+        public void BeginDelete(Action<IPersistentSubscriptionCheckpointWriter> completed)
         {
             _ioDispatcher.DeleteStream(_subscriptionStateStream, ExpectedVersion.Any, false, SystemAccount.Principal, x=>completed(this));
         }

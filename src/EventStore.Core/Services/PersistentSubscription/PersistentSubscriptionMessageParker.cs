@@ -54,7 +54,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed)
         {
-
+            _ioDispatcher.DeleteStream(_parkedStreamId, ExpectedVersion.Any, false, SystemAccount.Principal,
+                x => completed(this));
         }
 
         public void BeginReadEndSequence(Action<int?> completed)

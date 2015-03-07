@@ -503,7 +503,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Delete()
         {
-            _settings.CheckpointWriter.BeginDeleteCheckPoint(x => { });
+            _settings.CheckpointWriter.BeginDelete(x => { });
+            _settings.MessageParker.BeginDelete(x => {});
         }
     }
 

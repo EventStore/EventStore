@@ -310,6 +310,44 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
     }
 
     [TestFixture]
+    public class DeleteTests
+    {
+        [Test]
+        public void subscription_deletes_checkpoint_when_deleted()
+        {
+            var reader = new FakeCheckpointReader();
+            var deleted = false;
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }, () => { deleted = true; }))
+                    .WithMessageParker(new FakeMessageParker())
+                    .StartFromCurrent());
+            reader.Load(null);
+            sub.Delete();
+            Assert.IsTrue(deleted);
+        }
+
+        [Test]
+        public void subscription_deletes_parked_messages_when_deleted()
+        {
+            var reader = new FakeCheckpointReader();
+            var deleted = false;
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker(() => { deleted = true; }))
+                    .StartFromCurrent());
+            reader.Load(null);
+            sub.Delete();
+            Assert.IsTrue(deleted);
+        }
+    }
+
+    [TestFixture]
     public class Checkpointing
     {
         [Test]
@@ -873,7 +911,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             _action(state);
         }
 
-        public void BeginDeleteCheckPoint(Action<IPersistentSubscriptionCheckpointWriter> completed)
+        public void BeginDelete(Action<IPersistentSubscriptionCheckpointWriter> completed)
         {
             if (_deleteAction != null)
             {
