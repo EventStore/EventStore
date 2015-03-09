@@ -157,7 +157,7 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
         public int GossipTimeoutMs { get; set; }
 
-        [ArgDescription(Opts.HistogramDesc, Opts.AppGroup)]
+        [ArgDescription(Opts.HistogramDescr, Opts.AppGroup)]
         public bool EnableHistograms { get; set; }
 
         public ClusterNodeOptions()
