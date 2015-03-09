@@ -1,5 +1,4 @@
-﻿using System.Dynamic;
-using System.Net;
+﻿using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.Util;
 using EventStore.Rags;
