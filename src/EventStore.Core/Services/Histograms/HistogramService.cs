@@ -1,9 +1,8 @@
-﻿
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Util;
 using HdrHistogram.NET;
 
 namespace EventStore.Core.Services.Histograms
@@ -12,14 +11,36 @@ namespace EventStore.Core.Services.Histograms
     public static class HistogramService
     {
         private const long NUMBEROFNS = 1000000000L;
-
+        private static readonly Stopwatch _stopwatch = new Stopwatch();
         private static readonly Dictionary<string, Histogram> Histograms = new Dictionary<string, Histogram>();
- 
+
+        static HistogramService()
+        {
+            _stopwatch.Start();
+        }
+
         public static Histogram GetHistogram(string name)
         {
             Histogram ret;
             Histograms.TryGetValue(name, out ret);
             return ret;
+        }
+
+        public static Measurement Measure(string name)
+        {
+            var histogram = GetHistogram(name);
+            return new Measurement {watch = _stopwatch, Start = _stopwatch.ElapsedTicks, Histogram=histogram};
+        }
+
+        public static void SetValue(string name, long value)
+        {
+            Histogram hist;
+            Histograms.TryGetValue(name, out hist);
+            if (value >= NUMBEROFNS) return;
+            lock (hist)
+            {
+                hist.recordValue(value);
+            }
         }
 
         public static void CreateHistogram(string name)
@@ -50,7 +71,7 @@ namespace EventStore.Core.Services.Histograms
                 watch.Start();
                 while (true)
                 {
-                    using (hist.Measure())
+                    using (Measure("jitter"))
                     {
                         Thread.Sleep(1);
                     }
@@ -58,4 +79,36 @@ namespace EventStore.Core.Services.Histograms
             }, null, TaskCreationOptions.LongRunning);
         }
     }
+
+     
+        public struct Measurement : IDisposable
+        {
+            public Stopwatch watch;
+            public Histogram Histogram;
+            public long Start;
+
+            public void Dispose()
+            {
+                if (Histogram == null) return;
+                lock (Histogram)
+                {
+                    var valueToRecord = (((double)watch.ElapsedTicks - Start) / Stopwatch.Frequency) * 1000000000;
+                    if (valueToRecord < HighestPowerOf2(Histogram.getHighestTrackableValue()))
+                    {
+                        Histogram.recordValue((long)valueToRecord);
+                    }
+                }
+            }
+            private static long HighestPowerOf2(long x)
+            {
+                x--;
+                x |= (x >> 1);
+                x |= (x >> 2);
+                x |= (x >> 4);
+                x |= (x >> 8);
+                x |= (x >> 16);
+                return (x + 1);
+            }
+
+        }
 }
