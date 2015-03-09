@@ -18,7 +18,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _allowedMessages;
         public readonly string Username;
         public readonly string From;
-        private readonly Stopwatch _watch;
         private long _totalItems;
         private readonly RequestStatistics _extraStatistics;
         private readonly Dictionary<Guid, ResolvedEvent> _unconfirmedEvents = new Dictionary<Guid, ResolvedEvent>();
@@ -43,7 +42,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             _allowedMessages = inFlightMessages;
             Username = username;
             From = @from;
-            _watch = watch;
             MaximumInFlightMessages = inFlightMessages;
             if (extraStatistics)
             {
