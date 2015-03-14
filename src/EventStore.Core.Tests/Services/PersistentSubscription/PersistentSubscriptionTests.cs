@@ -310,6 +310,44 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
     }
 
     [TestFixture]
+    public class DeleteTests
+    {
+        [Test]
+        public void subscription_deletes_checkpoint_when_deleted()
+        {
+            var reader = new FakeCheckpointReader();
+            var deleted = false;
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }, () => { deleted = true; }))
+                    .WithMessageParker(new FakeMessageParker())
+                    .StartFromCurrent());
+            reader.Load(null);
+            sub.Delete();
+            Assert.IsTrue(deleted);
+        }
+
+        [Test]
+        public void subscription_deletes_parked_messages_when_deleted()
+        {
+            var reader = new FakeCheckpointReader();
+            var deleted = false;
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker(() => { deleted = true; }))
+                    .StartFromCurrent());
+            reader.Load(null);
+            sub.Delete();
+            Assert.IsTrue(deleted);
+        }
+    }
+
+    [TestFixture]
     public class Checkpointing
     {
         [Test]
@@ -811,6 +849,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         private Action<int?> _readEndSequenceCompleted;
         private Action<ResolvedEvent, OperationResult> _parkMessageCompleted;
         public List<ResolvedEvent> ParkedEvents = new List<ResolvedEvent>();
+        private readonly Action _deleteAction;
+
+        public FakeMessageParker() { }
+
+        public FakeMessageParker(Action deleteAction)
+        {
+            _deleteAction = deleteAction;
+        }
 
         public int MarkedAsProcessed { get; private set; }
 
@@ -839,21 +885,38 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             MarkedAsProcessed = sequence;
         }
+        public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed)
+        {
+            if (_deleteAction != null)
+            {
+                _deleteAction();
+            }
+        }
     }
 
 
     class FakeCheckpointWriter : IPersistentSubscriptionCheckpointWriter
     {
         private readonly Action<int> _action;
+        private readonly Action _deleteAction;
 
-        public FakeCheckpointWriter(Action<int> action)
+        public FakeCheckpointWriter(Action<int> action, Action deleteAction = null)
         {
             _action = action;
+            _deleteAction = deleteAction;
         }
 
         public void BeginWriteState(int state)
         {
             _action(state);
+        }
+
+        public void BeginDelete(Action<IPersistentSubscriptionCheckpointWriter> completed)
+        {
+            if (_deleteAction != null)
+            {
+                _deleteAction();
+            }
         }
     }
 }

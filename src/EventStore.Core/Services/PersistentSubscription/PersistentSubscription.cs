@@ -500,6 +500,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, 0));
         }
+
+        public void Delete()
+        {
+            _settings.CheckpointWriter.BeginDelete(x => { });
+            _settings.MessageParker.BeginDelete(x => {});
+        }
     }
 
     public class WTFException : Exception
