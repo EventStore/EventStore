@@ -64,7 +64,6 @@ namespace EventStore.Core.Services.Histograms
         public static void StartJitterMonitor()
         {
             CreateHistogram("jitter");
-            var hist = GetHistogram("jitter");
             Task.Factory.StartNew(x =>
             {
                 var watch = new Stopwatch();
