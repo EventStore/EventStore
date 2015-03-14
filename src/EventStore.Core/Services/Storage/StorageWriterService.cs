@@ -69,7 +69,7 @@ namespace EventStore.Core.Services.Storage
         private long _lastFlushSize;
         private long _maxFlushSize;
         private long _maxFlushDelay;
-        private Histogram _histogram;
+        private const string _writerFlushHistogram = "writer-flush";
 
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
@@ -91,7 +91,6 @@ namespace EventStore.Core.Services.Storage
             Db = db;
             _indexWriter = indexWriter;
             EpochManager = epochManager;
-            _histogram = HistogramService.GetHistogram("writer-flush");
             _minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
             _lastFlushDelay = 0;
             _lastFlushTimestamp = _watch.ElapsedTicks;
@@ -658,15 +657,8 @@ namespace EventStore.Core.Services.Storage
                 var flushSize = Writer.Checkpoint.ReadNonFlushed() - Writer.Checkpoint.Read();
 
                 Writer.Flush();
-                if (_histogram != null)
-                {
-                    lock (_histogram)
-                    {
-                        _histogram.recordValue(
-                            (long) ((((double) _watch.ElapsedTicks - start)/Stopwatch.Frequency)*1000000000));
-                    }
-                }
-
+                HistogramService.SetValue(_writerFlushHistogram,
+                    (long) ((((double) _watch.ElapsedTicks - start)/Stopwatch.Frequency)*1000000000));
                 var end = _watch.ElapsedTicks;
                 var flushDelay = end - start;
                 Interlocked.Exchange(ref _lastFlushDelay, flushDelay);
