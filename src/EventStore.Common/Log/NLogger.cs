@@ -63,6 +63,7 @@ namespace EventStore.Common.Log
 
         public void FatalException(Exception exc, string format, params object[] args)
         {
+            _logger.Debug(exc.ToString());
             _logger.FatalException(string.Format(format, args), exc);
         }
 

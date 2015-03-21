@@ -34,9 +34,12 @@ namespace EventStore.Core.Services.Histograms
 
         public static void SetValue(string name, long value)
         {
-            Histogram hist;
-            Histograms.TryGetValue(name, out hist);
             if (value >= NUMBEROFNS) return;
+            if(name == null) return;
+            Histogram hist;
+            if(!Histograms.TryGetValue(name, out hist)) {
+                return;
+            }
             lock (hist)
             {
                 hist.recordValue(value);
