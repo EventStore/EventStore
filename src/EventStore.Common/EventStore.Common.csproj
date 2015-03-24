@@ -53,7 +53,6 @@
   <ItemGroup>
     <Compile Include="Concurrent\ConcurrentQueue.cs" />
     <Compile Include="Concurrent\ConcurrentStack.cs" />
-    <Compile Include="Locks\SpinLock2.cs" />
     <Compile Include="Exceptions\ApplicationInitializationException.cs" />
     <Compile Include="Log\ConsoleLogger.cs" />
     <Compile Include="Log\LazyLogger.cs" />
@@ -90,7 +89,9 @@
   <ItemGroup>
     <None Include="Log\NLog.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Locks\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <PreBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PreBuildEvent>

@@ -8,7 +8,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
-using EventStore.Common.Locks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -81,7 +80,7 @@ namespace EventStore.Transport.Tcp
         private readonly Common.Concurrent.ConcurrentQueue<ReceivedData> _receiveQueue = new Common.Concurrent.ConcurrentQueue<ReceivedData>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
-        private readonly SpinLock2 _streamLock = new SpinLock2();
+        private readonly object _streamLock = new object();
         private bool _isSending;
         private int _receiveHandling;
         private int _isClosed;
@@ -109,7 +108,7 @@ namespace EventStore.Transport.Tcp
             InitConnectionBase(socket);
             if (verbose) Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
 
-            using (_streamLock.Acquire())
+            lock(_streamLock)
             {
                 try
                 {
@@ -147,7 +146,7 @@ namespace EventStore.Transport.Tcp
         {
             try
             {
-                using (_streamLock.Acquire())
+                lock(_streamLock)
                 {
                     var sslStream = (SslStream) ar.AsyncState;
                     sslStream.EndAuthenticateAsServer(ar);
@@ -183,7 +182,7 @@ namespace EventStore.Transport.Tcp
 
             _validateServer = validateServer;
 
-            using (_streamLock.Acquire())
+            lock(_streamLock)
             {
                 try
                 {
@@ -221,7 +220,7 @@ namespace EventStore.Transport.Tcp
         {
             try
             {
-                using (_streamLock.Acquire())
+                lock(_streamLock)
                 {
                     var sslStream = (SslStream) ar.AsyncState;
                     sslStream.EndAuthenticateAsClient(ar);
@@ -296,7 +295,7 @@ namespace EventStore.Transport.Tcp
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
         {
-            using (_streamLock.Acquire())
+            lock(_streamLock)
             {
                 int bytes = 0;
                 foreach (var segment in data)
@@ -311,7 +310,7 @@ namespace EventStore.Transport.Tcp
 
         private void TrySend()
         {
-            using (_streamLock.Acquire())
+            lock(_streamLock)
             {
                 if (_isSending || _sendQueue.Count == 0 || _sslStream == null || !_isAuthenticated) return;
                 if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
@@ -357,7 +356,7 @@ namespace EventStore.Transport.Tcp
                 _sslStream.EndWrite(ar);
                 NotifySendCompleted(_sendingBytes);
 
-                using (_streamLock.Acquire())
+                lock(_streamLock)
                 {
                     _isSending = false;
                 }
