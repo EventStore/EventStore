@@ -194,8 +194,4 @@ namespace EventStore.ClientAPI.UserManagement
             return source.Task;
         }
     }
-
-    internal class UserNotFoundException : Exception
-    {
-    }
 }

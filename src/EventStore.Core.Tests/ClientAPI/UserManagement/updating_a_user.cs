@@ -40,8 +40,6 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
         {
             
             var ex = Assert.Throws<AggregateException>(() => _manager.UpdateUserAsync(Guid.NewGuid().ToString(), "bar", new []{"foo"}, new UserCredentials("admin", "changeit")).Wait());
-            var realex = ex.InnerException;
-            Assert.IsInstanceOf<UserNotFoundException>(realex);
         }
 
         [Test]
