@@ -1,7 +1,5 @@
 ﻿using System;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Http;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement

@@ -25,22 +25,12 @@ namespace EventStore.ClientAPI.UserManagement
 
         public Task Enable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return GetUser(endPoint, login, userCredentials)
-                 .ContinueWith(x =>
-                 {
-                     if (x.IsFaulted) throw x.Exception;
-                     return SendPost(x.Result.GetRelLink("enable"), string.Empty, userCredentials, HttpStatusCode.OK);
-                 });
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/enable", login), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
         public Task Disable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return GetUser(endPoint,login,userCredentials)
-                .ContinueWith(x =>
-                {
-                    if (x.IsFaulted) throw x.Exception;
-                    return SendPost(x.Result.GetRelLink("disable"), string.Empty, userCredentials, HttpStatusCode.OK);
-                });
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/disable", login), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
         public Task Delete(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
@@ -91,41 +81,19 @@ namespace EventStore.ClientAPI.UserManagement
         public Task UpdateUser(IPEndPoint endPoint, string login, UserUpdateInformation updatedUser,
             UserCredentials userCredentials)
         {
-            return GetUser(endPoint, login, userCredentials)
-                     .ContinueWith(x =>
-                     {
-                         if (x.IsFaulted) throw x.Exception;
-                         var userJson = updatedUser.ToJson();
-                         return SendPut(x.Result.GetRelLink("edit"), userJson, userCredentials,
-                             HttpStatusCode.OK);
-                     });
-
+            return SendPut(endPoint.ToHttpUrl("/users/{0}", login), updatedUser.ToJson(), userCredentials, HttpStatusCode.OK);
         }
 
         public Task ChangePassword(IPEndPoint endPoint, string login, ChangePasswordDetails changePasswordDetails,
             UserCredentials userCredentials)
         {
-            return GetUser(endPoint, login, userCredentials)
-                 .ContinueWith(x =>
-                 {
-                     if (x.IsFaulted) throw x.Exception;
-
-                     var changePasswordJson = changePasswordDetails.ToJson();
-                     return SendPost(x.Result.GetRelLink("change-password"), changePasswordJson, userCredentials, HttpStatusCode.OK);
-                 });
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/change-password", login), changePasswordDetails.ToJson(), userCredentials, HttpStatusCode.OK);
         }
 
         public Task ResetPassword(IPEndPoint endPoint, string login, ResetPasswordDetails resetPasswordDetails,
             UserCredentials userCredentials = null)
         {
-            return GetUser(endPoint, login, userCredentials)
-                .ContinueWith(x =>
-                {
-                    if (x.IsFaulted) throw x.Exception;
-
-                    var resetPasswordJson = resetPasswordDetails.ToJson();
-                    return SendPost(x.Result.GetRelLink("reset-password"), resetPasswordJson, userCredentials, HttpStatusCode.OK);
-                });
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/reset-password", login), resetPasswordDetails.ToJson(), userCredentials, HttpStatusCode.OK);
         }
 
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
