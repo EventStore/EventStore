@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
         [Test]
         public void updating_non_existing_user_throws()
         {
-            Assert.Throws<AggregateException>(() => _manager.UpdateUserAsync(Guid.NewGuid().ToString(), "bar", new []{"foo"}, new UserCredentials("admin", "changeit")).Wait());
+            var ex = Assert.Throws<AggregateException>(() => _manager.UpdateUserAsync(Guid.NewGuid().ToString(), "bar", new []{"foo"}, new UserCredentials("admin", "changeit")).Wait());
         }
 
         [Test]
