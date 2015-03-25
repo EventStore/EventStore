@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Principal;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http.Controllers;
 
 namespace EventStore.Core.Messages
 {
@@ -222,6 +225,65 @@ namespace EventStore.Core.Messages
                 LoginName = loginName;
             }
         }
+
+
+        public class UserDataHttpFormated
+        {
+            public readonly string LoginName;
+            public readonly string FullName;
+            public readonly string[] Groups;
+            public readonly DateTimeOffset? DateLastUpdated;
+            public readonly bool Disabled;
+            public readonly List<RelLink> Links;
+
+            public UserDataHttpFormated(UserData userData, Func<string, string> makeAbsoluteUrl)
+            {
+                LoginName = userData.LoginName;
+                FullName = userData.FullName;
+                Groups = userData.Groups;
+                Disabled = userData.Disabled;
+
+                Links = new List<RelLink>();
+                var userLocalUrl = "/users/" + userData.LoginName;
+                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/reset-password"), "reset-password"));
+                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/change-password"), "change-password"));
+                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl), "edit"));
+                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl), "delete"));
+
+                Links.Add(userData.Disabled
+                    ? new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/enable"), "enable")
+                    : new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/disable"), "disable"));
+            }
+        }
+
+
+        public class UserDetailsResultHttpFormatted : ResponseMessage
+        {
+            public readonly UserDataHttpFormated Data;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+            public UserDetailsResultHttpFormatted(UserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
+                base(msg.Success, msg.Error)
+            {
+                if (msg.Data != null)
+                    Data = new UserDataHttpFormated(msg.Data, makeAbsoluteUrl);
+            }
+
+        }
+
+        public class AllUserDetailsResultHttpFormatted : ResponseMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public readonly UserDataHttpFormated[] Data;
+
+            public AllUserDetailsResultHttpFormatted(AllUserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
+                base(msg.Success, msg.Error)
+            {
+                Data = msg.Data.Select(user => new UserDataHttpFormated(user, makeAbsoluteUrl)).ToArray();
+
+            }
+        }
+
 
         public sealed class UserDetailsResult : ResponseMessage
         {
