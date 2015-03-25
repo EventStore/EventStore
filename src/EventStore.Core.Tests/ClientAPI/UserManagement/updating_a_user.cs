@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Net;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Http;
 using EventStore.ClientAPI.UserManagement;
 using NUnit.Framework;
+using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
@@ -37,9 +38,10 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
         [Test]
         public void updating_non_existing_user_throws()
         {
+            
             var ex = Assert.Throws<AggregateException>(() => _manager.UpdateUserAsync(Guid.NewGuid().ToString(), "bar", new []{"foo"}, new UserCredentials("admin", "changeit")).Wait());
-            var realex = (UserCommandFailedException)ex.InnerException;
-            Assert.AreEqual(HttpStatusCode.NotFound, realex.HttpStatusCode);
+            var realex = ex.InnerException;
+            Assert.IsInstanceOf<UserNotFoundException>(realex);
         }
 
         [Test]
