@@ -262,12 +262,9 @@
     <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\InfoController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\PersistentSubscriptionController.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\UserDataHttpFormated.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\UserDetailsResultHttpFormatted.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\AllUserDetailsResultHttpFormatted.cs" />
     <Compile Include="Services\Transport\Http\IncomingHttpRequestAuthenticationManager.cs" />
     <Compile Include="Services\Transport\Http\AuthenticatedHttpRequestProcessor.cs" />
     <Compile Include="Services\Transport\Http\IHttpService.cs" />
