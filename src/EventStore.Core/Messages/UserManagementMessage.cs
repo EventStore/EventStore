@@ -261,6 +261,7 @@ namespace EventStore.Core.Messages
         {
             public readonly UserDataHttpFormated Data;
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
             public UserDetailsResultHttpFormatted(UserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
                 base(msg.Success, msg.Error)
@@ -273,8 +274,9 @@ namespace EventStore.Core.Messages
 
         public class AllUserDetailsResultHttpFormatted : ResponseMessage
         {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public readonly UserDataHttpFormated[] Data;
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
             public AllUserDetailsResultHttpFormatted(AllUserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
                 base(msg.Success, msg.Error)
