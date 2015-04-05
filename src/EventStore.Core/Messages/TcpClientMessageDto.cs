@@ -822,8 +822,8 @@ namespace EventStore.Core.Messages
       [ProtoEnum(Name=@"Success", Value=0)]
       Success = 0,
             
-      [ProtoEnum(Name=@"DoesNotExists", Value=1)]
-      DoesNotExists = 1,
+      [ProtoEnum(Name=@"DoesNotExist", Value=1)]
+      DoesNotExist = 1,
             
       [ProtoEnum(Name=@"Fail", Value=2)]
       Fail = 2,

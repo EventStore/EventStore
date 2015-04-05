@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.AccessDenied:
                     Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
-                case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.DoesNotExists:
+                case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.DoesNotExist:
                     Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} does not exist", _groupName, _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "DoesNotExist");
                 default:
