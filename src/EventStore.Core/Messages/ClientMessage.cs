@@ -81,6 +81,8 @@ namespace EventStore.Core.Messages
 
             public readonly IPrincipal User;
 
+            public DateTime Expires = DateTime.Now.AddSeconds(10);
+
             protected ReadRequestMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope, IPrincipal user)
             {
                 Ensure.NotEmptyGuid(internalCorrId, "internalCorrId");
