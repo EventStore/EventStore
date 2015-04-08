@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Index
                 f.Seek(130, SeekOrigin.Begin);
                 f.WriteByte(0x22);
             }
-            _table = PTable.FromFile(_copiedfilename);
+            _table = PTable.FromFile(_copiedfilename, 16);
         }
 
         [TearDown]

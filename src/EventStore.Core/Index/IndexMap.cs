@@ -108,7 +108,7 @@ namespace EventStore.Core.Index
             return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel);
         }
 
-        public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4, bool loadPTables = true)
+        public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4, bool loadPTables = true, int cacheDepth = 16)
         {
             if (!File.Exists(filename))
                 return CreateEmpty(maxTablesPerLevel);
@@ -130,7 +130,7 @@ namespace EventStore.Core.Index
                     var prepareCheckpoint = checkpoints.PreparePosition;
                     var commitCheckpoint = checkpoints.CommitPosition;
 
-                    var tables = loadPTables ? LoadPTables(reader, filename, checkpoints) : new List<List<PTable>>();
+                    var tables = loadPTables ? LoadPTables(reader, filename, checkpoints, cacheDepth) : new List<List<PTable>>();
 
                     if (!loadPTables && reader.ReadLine() != null)
                         throw new CorruptIndexException(
@@ -208,7 +208,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        private static List<List<PTable>> LoadPTables(StreamReader reader, string indexmapFilename, TFPos checkpoints)
+        private static List<List<PTable>> LoadPTables(StreamReader reader, string indexmapFilename, TFPos checkpoints, int cacheDepth)
         {
             var tables = new List<List<PTable>>();
 
@@ -230,7 +230,7 @@ namespace EventStore.Core.Index
                     var path = Path.GetDirectoryName(indexmapFilename);
                     var ptablePath = Path.Combine(path, file);
 
-                    ptable = PTable.FromFile(ptablePath);
+                    ptable = PTable.FromFile(ptablePath, cacheDepth);
                     ptable.VerifyFileHash();
 
                     CreateIfNeeded(level, tables);

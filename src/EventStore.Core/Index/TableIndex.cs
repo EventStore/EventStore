@@ -101,7 +101,7 @@ namespace EventStore.Core.Index
             {
                 if (IsCorrupt(_directory))
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
-                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
+                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth:_indexCacheDepth);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -121,7 +121,7 @@ namespace EventStore.Core.Index
                     File.Copy(backupFile, indexmapFile);
                     try
                     {
-                        _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
+                        _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
                         if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                         {
                             _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -140,7 +140,7 @@ namespace EventStore.Core.Index
                 }
 
                 if (createEmptyIndexMap)
-                    _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
+                    _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
                 if (IsCorrupt(_directory))
                     LeaveUnsafeState(_directory);
             }
