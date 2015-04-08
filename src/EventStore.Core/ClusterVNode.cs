@@ -160,7 +160,8 @@ namespace EventStore.Core
                                             () => new TFReaderLease(readerPool),
                                             maxSizeForMemory: vNodeSettings.MaxMemtableEntryCount,
                                             maxTablesPerLevel: 2,
-                                            inMem: db.Config.InMemDb);
+                                            inMem: db.Config.InMemDb,
+                                            indexCacheDepth: vNodeSettings.IndexCacheDepth);
 	        var hash = new XXHashUnsafe();
 			var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
