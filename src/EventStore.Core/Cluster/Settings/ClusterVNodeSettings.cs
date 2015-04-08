@@ -54,6 +54,7 @@ namespace EventStore.Core.Cluster.Settings
 
         public readonly bool VerifyDbHash;
         public readonly int MaxMemtableEntryCount;
+        public readonly int IndexCacheDepth;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
@@ -96,7 +97,8 @@ namespace EventStore.Core.Cluster.Settings
 				                    bool verifyDbHash,
 				                    int maxMemtableEntryCount,
                                     bool developmentMode,
-                                    bool enableHistograms = false)
+                                    bool enableHistograms = false,
+                                    int indexCacheDepth = 12)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -165,6 +167,7 @@ namespace EventStore.Core.Cluster.Settings
             VerifyDbHash = verifyDbHash;
             MaxMemtableEntryCount = maxMemtableEntryCount;
             EnableHistograms = enableHistograms;
+            IndexCacheDepth = indexCacheDepth;
         }
 
         public override string ToString()

@@ -149,6 +149,11 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.Unbuffered, Opts.DbGroup)]
         public bool Unbuffered { get; set; }
 
+
+        [ArgDescription(Opts.IndexCacheDepthDescr, Opts.DbGroup)]
+        public int IndexCacheDepth { get; set; }
+
+
         [ArgDescription(Opts.GossipIntervalMsDescr, Opts.ClusterGroup)]
         public int GossipIntervalMs { get; set; }
         [ArgDescription(Opts.GossipAllowedDifferenceMsDescr, Opts.ClusterGroup)]
@@ -240,7 +245,7 @@ namespace EventStore.ClusterNode
             GossipIntervalMs = Opts.GossipIntervalMsDefault;
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
-
+            IndexCacheDepth = Opts.IndexCacheDepthDefault;
             EnableHistograms = Opts.HistogramDefault;
         }
     }

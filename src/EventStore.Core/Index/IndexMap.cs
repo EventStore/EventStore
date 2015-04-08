@@ -6,7 +6,6 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
@@ -317,7 +316,8 @@ namespace EventStore.Core.Index
                                      long prepareCheckpoint, 
                                      long commitCheckpoint, 
                                      Func<IndexEntry, bool> recordExistsAt,
-                                     IIndexFilenameProvider filenameProvider)
+                                     IIndexFilenameProvider filenameProvider,
+                                     int indexCacheDepth = 16)
         {
             Ensure.Nonnegative(prepareCheckpoint, "prepareCheckpoint");
             Ensure.Nonnegative(commitCheckpoint, "commitCheckpoint");
@@ -332,7 +332,7 @@ namespace EventStore.Core.Index
                 if (tables[level].Count >= _maxTablesPerLevel)
                 {
                     var filename = filenameProvider.GetFilenameNewTable();
-                    PTable table = PTable.MergeTo(tables[level], filename, recordExistsAt);
+                    PTable table = PTable.MergeTo(tables[level], filename, recordExistsAt, indexCacheDepth);
                     CreateIfNeeded(level + 1, tables);
                     tables[level + 1].Add(table);
                     toDelete.AddRange(tables[level]);

@@ -28,6 +28,7 @@ namespace EventStore.Core.Index
         private readonly int _maxTablesPerLevel;
         private readonly bool _additionalReclaim;
         private readonly bool _inMem;
+        private readonly int _indexCacheDepth;
         private readonly string _directory;
         private readonly Func<IMemTable> _memTableFactory;
         private readonly Func<TFReaderLease> _tfReaderFactory;
@@ -51,14 +52,15 @@ namespace EventStore.Core.Index
                           int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false,
-                          bool inMem = false)
+                          bool inMem = false,
+                          int indexCacheDepth = 16)
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
             Ensure.NotNull(tfReaderFactory, "tfReaderFactory");
             if (maxTablesPerLevel <= 1)
                 throw new ArgumentOutOfRangeException("maxTablesPerLevel");
-
+            if(indexCacheDepth > 28 || indexCacheDepth < 8) throw new ArgumentOutOfRangeException("indexCacheDepth");
             _directory = directory;
             _memTableFactory = memTableFactory;
             _tfReaderFactory = tfReaderFactory;
@@ -67,6 +69,7 @@ namespace EventStore.Core.Index
             _maxTablesPerLevel = maxTablesPerLevel;
             _additionalReclaim = additionalReclaim;
             _inMem = inMem;
+            _indexCacheDepth = indexCacheDepth;
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
         }
 
@@ -273,7 +276,7 @@ namespace EventStore.Core.Index
                     if (memtable != null)
                     {
                         memtable.MarkForConversion();
-                        ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable());
+                        ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _indexCacheDepth);
                     }
                     else
                         ptable = (PTable) tableItem.Table;
@@ -304,7 +307,7 @@ namespace EventStore.Core.Index
                     using (var reader = _tfReaderFactory())
                     {
                         mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint,
-                                                          entry => reader.ExistsAt(entry.Position), _fileNameProvider);
+                                                          entry => reader.ExistsAt(entry.Position), _fileNameProvider, _indexCacheDepth);
                     }
                     _indexMap = mergeResult.MergedMap;
                     _indexMap.SaveToFile(indexmapFile);
@@ -356,7 +359,7 @@ namespace EventStore.Core.Index
 
                 Log.Trace("Putting awaiting file as PTable instead of MemTable [{0}].", memtable.Id);
                     
-                var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable());
+                var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _indexCacheDepth);
                 var swapped = false;
                 lock (_awaitingTablesLock)
                 {
