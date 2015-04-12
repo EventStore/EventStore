@@ -51,8 +51,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Concurrent\ConcurrentQueue.cs" />
-    <Compile Include="Concurrent\ConcurrentStack.cs" />
     <Compile Include="Exceptions\ApplicationInitializationException.cs" />
     <Compile Include="Log\ConsoleLogger.cs" />
     <Compile Include="Log\LazyLogger.cs" />

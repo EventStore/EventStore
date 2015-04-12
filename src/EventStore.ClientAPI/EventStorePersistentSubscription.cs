@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 

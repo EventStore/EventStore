@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -50,8 +51,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly Guid _connectionId;
         private readonly ILogger _log;
 
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new ConcurrentQueue<ArraySegment<byte>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _streamLock = new object();
