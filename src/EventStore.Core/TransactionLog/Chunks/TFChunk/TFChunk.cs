@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 #pragma warning disable 420
 using System;
 using System.Collections.Generic;
@@ -62,8 +63,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private ChunkFooter _chunkFooter;
         
         private readonly int _maxReaderCount;
-        private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _fileStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
-        private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _memStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
+        private readonly ConcurrentQueue<ReaderWorkItem> _fileStreams = new ConcurrentQueue<ReaderWorkItem>();
+        private readonly ConcurrentQueue<ReaderWorkItem> _memStreams = new ConcurrentQueue<ReaderWorkItem>();
         private int _internalStreamsCount;
         private int _fileStreamCount;
         private int _memStreamCount;
