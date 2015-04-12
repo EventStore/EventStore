@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using EventStore.ClientAPI.Common.Utils;
@@ -7,7 +8,7 @@ namespace EventStore.ClientAPI.Internal
 {
     internal class SimpleQueuedHandler
     {
-        private readonly Common.Concurrent.ConcurrentQueue<Message> _messageQueue = new Common.Concurrent.ConcurrentQueue<Message>();
+        private readonly ConcurrentQueue<Message> _messageQueue = new ConcurrentQueue<Message>();
         private readonly Dictionary<Type, Action<Message>> _handlers = new Dictionary<Type, Action<Message>>();
         private int _isProcessing;
 

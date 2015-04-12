@@ -1,6 +1,6 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
-using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;

@@ -94,8 +94,6 @@
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="ClientReconnectingEventArgs.cs" />
-    <Compile Include="Common\Concurrent\ConcurrentQueue.cs" />
-    <Compile Include="Common\Concurrent\ConcurrentStack.cs" />
     <Compile Include="Common\Log\ConsoleLogger.cs" />
     <Compile Include="Common\Log\NoopLogger.cs" />
     <Compile Include="Common\Log\DebugLogger.cs" />
