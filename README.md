@@ -61,7 +61,7 @@ Unfortunately Visual Studio runs these scripts in 32-bit PowerShell. Since it’
 #### Prerequisites
 
 - Git on `PATH`
-- Mono version 3.2.3 or greater on `PATH`
+- Mono version 3.2.3 development packages on `PATH`, and registered with `pkg-config`, such that `which xbuild` and `pkg-config --cflags monosgen-2` return a zero return codes.
 - SVN on `PATH`
 - GCC installed
 
