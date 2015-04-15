@@ -62,6 +62,7 @@ Unfortunately Visual Studio runs these scripts in 32-bit PowerShell. Since it’
 
 - Git on `PATH`
 - Mono version 3.2.3 or greater on `PATH`
+  - Including ` mono-xbuild` and `mono-devel`
 - SVN on `PATH`
 - GCC installed
 
