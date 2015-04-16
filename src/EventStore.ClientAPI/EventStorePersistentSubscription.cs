@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
@@ -38,6 +39,7 @@ namespace EventStore.ClientAPI
 
         private int _isDropped;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
+        private readonly ManualResetEventSlim _subscriptionInitialized = new ManualResetEventSlim(false);
         private readonly int _bufferSize;
 
         internal EventStorePersistentSubscription(string subscriptionId, 
@@ -75,6 +77,7 @@ namespace EventStore.ClientAPI
                                                                  OnSubscriptionDropped, _settings.MaxRetries, _settings.OperationTimeout));
             source.Task.Wait();
             _subscription = source.Task.Result;
+            _subscriptionInitialized.Set();
         }
 
 
@@ -165,10 +168,19 @@ namespace EventStore.ClientAPI
         private void Enqueue(ResolvedEvent resolvedEvent)
         {
             _queue.Enqueue(resolvedEvent);
-            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0)
-                ThreadPool.QueueUserWorkItem(_ => ProcessQueue());
-        }
 
+            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0)
+            {
+                if (_subscription != null)
+                {
+                    ThreadPool.QueueUserWorkItem(_ => ProcessQueue());
+                }
+                else
+                {
+                    _subscriptionInitialized.AsTask().ContinueWith(_ => ProcessQueue());
+                }
+            }
+        }
 
         private void ProcessQueue()
         {

@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="Common\Utils\Threading\ManualResetEventSlimExtensions.cs" />
     <Compile Include="ConnectionString.cs" />
     <Compile Include="Internal\IPEndPointExtensions.cs" />
     <Compile Include="UserManagement\RelLink.cs" />
