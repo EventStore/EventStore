@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
@@ -15,17 +16,17 @@ namespace EventStore.ClientAPI
         private int _readBatchSize;
         private int _maxRetryCount;
         private int _liveBufferSize;
-        private bool _preferRoundRobin;
         private int _bufferSize;
         private TimeSpan _checkPointAfter;
         private int _minCheckPointCount;
         private int _maxCheckPointCount;
         private int _maxSubscriberCount;
+        private string _namedConsumerStrategies;
 
         internal PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan timeout,
-                                                      int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, 
-                                                      bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount,
-                                                      int maxCheckPointCount, int maxSubscriberCount)
+                                                      int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize,
+                                                      TimeSpan checkPointAfter, int minCheckPointCount,
+                                                      int maxCheckPointCount, int maxSubscriberCount, string namedConsumerStrategies)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
@@ -35,11 +36,11 @@ namespace EventStore.ClientAPI
             _liveBufferSize = liveBufferSize;
             _maxRetryCount = maxRetryCount;
             _readBatchSize = readBatchSize;
-            _preferRoundRobin = preferRoundRobin;
             _checkPointAfter = checkPointAfter;
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
             _maxSubscriberCount = maxSubscriberCount;
+            _namedConsumerStrategies = namedConsumerStrategies;
         }
 
 
@@ -81,7 +82,7 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder PreferRoundRobin()
         {
-            _preferRoundRobin = true;
+            _namedConsumerStrategies = SystemConsumerStrategies.RoundRobin;
             return this;
         }
 
@@ -93,7 +94,7 @@ namespace EventStore.ClientAPI
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
         public PersistentSubscriptionSettingsBuilder PreferDispatchToSingle()
         {
-            _preferRoundRobin = false;
+            _namedConsumerStrategies = SystemConsumerStrategies.DispatchToSingle;
             return this;
         }
 
@@ -267,6 +268,18 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Sets the consumer strategy for distributing event to clients. See <see cref="SystemConsumerStrategies"/> for system supported strategies.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder WithNamedConsumerStrategy(string namedConsumerStrategy)
+        {
+            Ensure.NotNullOrEmpty(namedConsumerStrategy, "namedConsumerStrategy");
+            _namedConsumerStrategies = namedConsumerStrategy;
+            return this;
+        }
+
+
+        /// <summary>
         /// Builds a <see cref="PersistentSubscriptionSettings"/> object from a <see cref="PersistentSubscriptionSettingsBuilder"/>.
         /// </summary>
         /// <param name="builder"><see cref="PersistentSubscriptionSettingsBuilder"/> from which to build a <see cref="PersistentSubscriptionSettingsBuilder"/></param>
@@ -290,11 +303,11 @@ namespace EventStore.ClientAPI
                 _liveBufferSize,
                 _readBatchSize,
                 _bufferSize,
-                _preferRoundRobin,
                 _checkPointAfter,
                 _minCheckPointCount,
                 _maxCheckPointCount,
-                _maxSubscriberCount);
+                _maxSubscriberCount,
+                _namedConsumerStrategies);
         }
     }
 }

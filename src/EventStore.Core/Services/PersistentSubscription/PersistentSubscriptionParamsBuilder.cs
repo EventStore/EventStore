@@ -15,7 +15,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _readBatchSize;
         private int _maxRetryCount;
         private int _liveBufferSize;
-        private bool _preferRoundRobin;
         private int _historyBufferSize;
         private string _subscriptionId;
         private string _eventStreamId;
@@ -28,6 +27,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _minCheckPointCount;
         private int _maxCheckPointCount;
         private int _maxSubscriberCount;
+        private string _namedConsumerStrategy;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionParamsBuilder"></see> object
@@ -48,17 +48,17 @@ namespace EventStore.Core.Services.PersistentSubscription
                 500,
                 10,
                 20,
-                true,
                 TimeSpan.FromSeconds(1),
                 5,
                 1000,
-                0);
+                0, 
+                SystemConsumerStrategies.RoundRobin);
         }
 
 
         private PersistentSubscriptionParamsBuilder(string subscriptionId, string streamName, string groupName, bool resolveLinkTos, int startFrom, bool recordStatistics, TimeSpan timeout,
-            int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, bool preferRoundRobin, TimeSpan checkPointAfter,
-            int minCheckPointCount, int maxCheckPointCount, int maxSubscriptionCount)
+            int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, TimeSpan checkPointAfter,
+            int minCheckPointCount, int maxCheckPointCount, int maxSubscriptionCount, string namedConsumerStrategy)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
@@ -68,7 +68,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             _liveBufferSize = liveBufferSize;
             _maxRetryCount = maxRetryCount;
             _readBatchSize = readBatchSize;
-            _preferRoundRobin = preferRoundRobin;
             _eventStreamId = streamName;
             _subscriptionId = subscriptionId;
             _groupName = groupName;
@@ -76,6 +75,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
             _maxSubscriberCount = maxSubscriptionCount;
+            _namedConsumerStrategy = namedConsumerStrategy;
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
         public PersistentSubscriptionParamsBuilder PreferRoundRobin()
         {
-            _preferRoundRobin = true;
+            _namedConsumerStrategy = SystemConsumerStrategies.RoundRobin;
             return this;
         }
 
@@ -172,7 +172,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
         public PersistentSubscriptionParamsBuilder PreferDispatchToSingle()
         {
-            _preferRoundRobin = false;
+            _namedConsumerStrategy = SystemConsumerStrategies.Single;
             return this;
         }
 
@@ -287,6 +287,18 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         /// <summary>
+        /// Sets the size of the read batch used when paging in history for the subscription
+        /// sizes should not be too big ...
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
+        public PersistentSubscriptionParamsBuilder WithNamedConsumerStrategy(string namedConsumerStrategy)
+        {
+            Ensure.NotNullOrEmpty(namedConsumerStrategy, "namedConsumerStrategy");
+            _namedConsumerStrategy = namedConsumerStrategy;
+            return this;
+        }
+
+        /// <summary>
         /// Sets that the subscription should start from where the stream is when the subscription is first connected.
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
@@ -310,7 +322,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._startFrom,
                 builder._recordStatistics,
                 builder._timeout,
-                builder._preferRoundRobin,
                 builder._maxRetryCount,
                 builder._liveBufferSize,
                 builder._historyBufferSize,
@@ -319,6 +330,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._minCheckPointCount,
                 builder._maxCheckPointCount,
                 builder._maxSubscriberCount,
+                builder._namedConsumerStrategy,
                 builder._streamReader,
                 builder._checkpointReader,
                 builder._checkpointWriter,

@@ -73,7 +73,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _lastCheckPoint = -1;
             _statistics.SetLastKnownEventNumber(-1);
             _settings.CheckpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
-            _pushClients = new PersistentSubscriptionClientCollection(_settings.PreferRoundRobin);
+
+            _pushClients = new PersistentSubscriptionClientCollection(_settings.NamedConsumerStrategy);
         }
 
         private void OnCheckpointLoaded(int? checkpoint)

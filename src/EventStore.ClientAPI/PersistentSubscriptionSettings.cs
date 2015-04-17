@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.ClientAPI.Common;
 
 namespace EventStore.ClientAPI
 {
@@ -22,11 +23,11 @@ namespace EventStore.ClientAPI
                                                              500,
                                                              10,
                                                              20,
-                                                             true,
                                                              TimeSpan.FromSeconds(2),
                                                              10,
                                                              1000,
-                                                             0);
+                                                             0,
+                                                             SystemConsumerStrategies.RoundRobin);
         }
 
 
@@ -71,12 +72,6 @@ namespace EventStore.ClientAPI
         public int HistoryBufferSize;
 
         /// <summary>
-        /// Whether the subscription should prefer round robin between clients of
-        /// sending to a single client if possible.
-        /// </summary>
-        public bool PreferRoundRobin;
-
-        /// <summary>
         /// The amount of time to try to checkpoint after 
         /// </summary>
         public readonly TimeSpan CheckPointAfter;
@@ -97,12 +92,17 @@ namespace EventStore.ClientAPI
         public readonly int MaxSubscriberCount;
 
         /// <summary>
+        /// The strategy to use for distributing events to client consumers. See <see cref="SystemConsumerStrategies"/> for system supported strategies.
+        /// </summary>
+        public string NamedConsumerStrategy;
+
+        /// <summary>
         /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
         /// </summary>
         internal PersistentSubscriptionSettings(bool resolveLinkTos, int startFrom, bool extraStatistics, TimeSpan messageTimeout,
                                                 int maxRetryCount, int liveBufferSize, int readBatchSize, int historyBufferSize,
-                                                bool preferRoundRobin, TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount, 
-                                                int maxSubscriberCount)
+                                                TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount, 
+                                                int maxSubscriberCount, string namedConsumerStrategy)
         {
             MessageTimeout = messageTimeout;
             ResolveLinkTos = resolveLinkTos;
@@ -112,11 +112,11 @@ namespace EventStore.ClientAPI
             LiveBufferSize = liveBufferSize;
             ReadBatchSize = readBatchSize;
             HistoryBufferSize = historyBufferSize;
-            PreferRoundRobin = preferRoundRobin;
             CheckPointAfter = checkPointAfter;
             MinCheckPointCount = minCheckPointCount;
             MaxCheckPointCount = maxCheckPointCount;
             MaxSubscriberCount = maxSubscriberCount;
+            NamedConsumerStrategy = namedConsumerStrategy;
         }
 
     }

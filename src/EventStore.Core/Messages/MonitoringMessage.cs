@@ -104,7 +104,6 @@ namespace EventStore.Core.Messages
             public int LiveBufferSize { get; set; }
             public int BufferSize { get; set; }
             public int ReadBatchSize { get; set; }
-            public bool PreferRoundRobin { get; set; }
             public int CheckPointAfterMilliseconds { get; set; }
             public int MinCheckPointCount { get; set; }
             public int MaxCheckPointCount { get; set; }
@@ -112,6 +111,7 @@ namespace EventStore.Core.Messages
             public int LiveBufferCount { get; set; }
             public int RetryBufferCount { get; set; }
             public int TotalInFlightMessages { get; set; }
+            public string NamedConsumerStrategy { get; set; }
         }
 
         public class ConnectionInfo

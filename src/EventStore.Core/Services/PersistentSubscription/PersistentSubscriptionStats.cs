@@ -93,7 +93,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                 MaxRetryCount = _settings.MaxRetryCount,
                 MessageTimeoutMilliseconds = (int) _settings.MessageTimeout.TotalMilliseconds,
                 MinCheckPointCount = _settings.MinCheckPointCount,
-                PreferRoundRobin = _settings.PreferRoundRobin,
                 ReadBatchSize = _settings.ReadBatchSize,
                 ResolveLinktos = _settings.ResolveLinkTos,
                 StartFrom = _settings.StartFrom,
@@ -102,6 +101,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 LiveBufferCount = _parent._streamBuffer.LiveBufferCount,
                 ExtraStatistics = _settings.ExtraStatistics,
                 TotalInFlightMessages = _parent.OutstandingMessageCount,
+                NamedConsumerStrategy = _settings.NamedConsumerStrategy
             };
         }
     }
