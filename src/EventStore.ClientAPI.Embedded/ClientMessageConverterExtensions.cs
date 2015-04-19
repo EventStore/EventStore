@@ -38,17 +38,11 @@ namespace EventStore.ClientAPI.Embedded
             return resolvedEvents;
         }
 
-        public static ClientMessage.ResolvedEvent ConvertToClientResolvedEvent(
-            this EventStore.Core.Data.ResolvedEvent @event)
+        public static ClientMessage.ResolvedEvent ConvertToClientResolvedEvent(this EventStore.Core.Data.ResolvedEvent @event)
         {
             return new ClientMessage.ResolvedEvent(@event.Event.ToClientMessageEventRecord(),
-                @event.Link.ToClientMessageEventRecord(),
-                @event.OriginalPosition.HasValue
-                    ? @event.OriginalPosition.Value.CommitPosition
-                    : @event.OriginalEvent.TransactionPosition,
-                @event.OriginalPosition.HasValue
-                    ? @event.OriginalPosition.Value.PreparePosition
-                    : @event.OriginalEvent.LogPosition);
+                @event.Link.ToClientMessageEventRecord(), @event.OriginalPosition.Value.CommitPosition,
+                @event.OriginalPosition.Value.PreparePosition);
         }
 
         public static Event[] ConvertToEvents(this IEnumerable<EventData> events)
