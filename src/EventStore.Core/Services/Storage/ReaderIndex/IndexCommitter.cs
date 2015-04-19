@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -87,12 +88,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 var prepare = (PrepareLogRecord)result.LogRecord;
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted))
                                 {
-                                    if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
-                                        commitedPrepares.Add(prepare);
-                                    if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
-                                    {
-                                        Commit(commitedPrepares, result.Eof);
+                                    if (prepare.Flags.HasAnyOf(PrepareFlags.SingleWrite)) {
+                                        Commit(commitedPrepares, false);
                                         commitedPrepares.Clear();
+                                        Commit(new[] {prepare}, result.Eof);
+                                    } else {
+
+                                        if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
+                                            commitedPrepares.Add(prepare);
+                                        if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
+                                        {
+                                            Commit(commitedPrepares, result.Eof);
+                                            commitedPrepares.Clear();
+                                        }
                                     }
                                 }
                                 break;
@@ -161,7 +169,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 else
                 {
                     if (prepare.EventStreamId != streamId)
-                        throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
+                        throw new Exception(string.Format("Expected stream: {0}, actual: {1}. LogPosition: {2}", streamId, prepare.EventStreamId, commit.LogPosition));
                 }
                 eventNumber = prepare.Flags.HasAllOf(PrepareFlags.StreamDelete)
                                       ? EventNumber.DeletedStream
@@ -232,8 +240,31 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
                     continue;
 
-                if (prepare.EventStreamId != streamId)
-                    throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
+                if (prepare.EventStreamId != streamId) {
+                    var sb = new StringBuilder();
+                    sb.Append(string.Format("ERROR: Expected stream: {0}, actual: {1}.", streamId, prepare.EventStreamId));
+                    sb.Append(Environment.NewLine);
+                    sb.Append(Environment.NewLine);
+                    sb.Append("Prepares: (" + commitedPrepares.Count + ")");
+                    sb.Append(Environment.NewLine);
+                    for (int i = 0; i < commitedPrepares.Count; i++)
+                    {
+                        var p = commitedPrepares[i];
+                        sb.Append("Stream ID: " + p.EventStreamId);
+                        sb.Append(Environment.NewLine);
+                        sb.Append("LogPosition: " + p.LogPosition);
+                        sb.Append(Environment.NewLine);
+                        sb.Append("Flags: " + p.Flags);
+                        sb.Append(Environment.NewLine);
+                        sb.Append("Type: " + p.EventType);
+                        sb.Append(Environment.NewLine);
+                        sb.Append("MetaData: " + Encoding.UTF8.GetString(p.Metadata));
+                        sb.Append(Environment.NewLine);
+                        sb.Append("Data: " + Encoding.UTF8.GetString(p.Data));
+                        sb.Append(Environment.NewLine);
+                    }
+                    throw new Exception(sb.ToString());;
+                }
 
                 if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
                     continue;  // already committed

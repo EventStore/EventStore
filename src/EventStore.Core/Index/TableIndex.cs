@@ -15,9 +15,8 @@ namespace EventStore.Core.Index
     public class TableIndex : ITableIndex
     {
         public const string IndexMapFilename = "indexmap";
-        public const string IndexMapBackupFilename = "indexmap.backup";
         private const int MaxMemoryTables = 1;
-
+        
         private static readonly ILogger Log = LogManager.GetLoggerFor<TableIndex>();
         internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
 
@@ -92,7 +91,6 @@ namespace EventStore.Core.Index
 
             CreateIfDoesNotExist(_directory);
             var indexmapFile = Path.Combine(_directory, IndexMapFilename);
-            var backupFile = Path.Combine(_directory, IndexMapBackupFilename);
 
             // if TableIndex's CommitCheckpoint is >= amount of written TFChunk data, 
             // we'll have to remove some of PTables as they point to non-existent data
@@ -102,6 +100,7 @@ namespace EventStore.Core.Index
                 if (IsCorrupt(_directory))
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
                 _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth:_indexCacheDepth);
+
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -149,7 +148,7 @@ namespace EventStore.Core.Index
 
             // clean up all other remaining files
             var indexFiles = _indexMap.InOrder().Select(x => Path.GetFileName(x.Filename))
-                                                .Union(new[] { IndexMapFilename, IndexMapBackupFilename });
+                                                .Union(new[] { IndexMapFilename });
             var toDeleteFiles = Directory.EnumerateFiles(_directory).Select(Path.GetFileName)
                                          .Except(indexFiles, StringComparer.OrdinalIgnoreCase);
             foreach (var filePath in toDeleteFiles)
@@ -235,18 +234,16 @@ namespace EventStore.Core.Index
                     Log.Trace("Switching MemTable, currently: {0} awaiting tables.", newTables.Count);
 
                     _awaitingMemTables = newTables;
-                    if (!_inMem)
+                    if (_inMem) return;
+                    if (!_backgroundRunning)
                     {
-                        if (!_backgroundRunning)
-                        {
-                            _backgroundRunningEvent.Reset();
-                            _backgroundRunning = true;
-                            ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
-                        }
-
-                        if (_additionalReclaim)
-                            ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
+                        _backgroundRunningEvent.Reset();
+                        _backgroundRunning = true;
+                        ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
                     }
+
+                    if (_additionalReclaim)
+                        ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
                 }
             }
         }
@@ -281,27 +278,7 @@ namespace EventStore.Core.Index
                     else
                         ptable = (PTable) tableItem.Table;
 
-                    // backup current version of IndexMap in case following switch will be left in unsafe state
-                    // this will allow to rebuild just part of index
-                    var backupFile = Path.Combine(_directory, IndexMapBackupFilename);
                     var indexmapFile = Path.Combine(_directory, IndexMapFilename);
-                    Helper.EatException(() =>
-                    {
-                        if (File.Exists(backupFile))
-                            File.Delete(backupFile);
-                        if (File.Exists(indexmapFile))
-                        {
-                            // same as File.Copy(indexmapFile, backupFile); but with forced flush
-                            var indexmapContent = File.ReadAllBytes(indexmapFile);
-                            using (var f = File.Create(backupFile))
-                            {
-                                f.Write(indexmapContent, 0, indexmapContent.Length);
-                                f.FlushToDisk();
-                            }
-                        }
-                    });
-
-                    EnterUnsafeState(_directory);
 
                     MergeResult mergeResult;
                     using (var reader = _tfReaderFactory())
@@ -311,8 +288,6 @@ namespace EventStore.Core.Index
                     }
                     _indexMap = mergeResult.MergedMap;
                     _indexMap.SaveToFile(indexmapFile);
-
-                    LeaveUnsafeState(_directory);
 
                     lock (_awaitingTablesLock)
                     {
@@ -330,10 +305,6 @@ namespace EventStore.Core.Index
                         Log.Trace("There are now {0} awaiting tables.", memTables.Count);
                         _awaitingMemTables = memTables;
                     }
-
-                    // We'll keep indexmap.backup in case of crash. In case of crash we hope that all necessary 
-                    // PTables for previous version of IndexMap are still there, so we can rebuild
-                    // from last step, not to do full rebuild.
                     mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
                 }
             }
@@ -360,6 +331,7 @@ namespace EventStore.Core.Index
                 Log.Trace("Putting awaiting file as PTable instead of MemTable [{0}].", memtable.Id);
                     
                 var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _indexCacheDepth);
+
                 var swapped = false;
                 lock (_awaitingTablesLock)
                 {
@@ -578,7 +550,6 @@ namespace EventStore.Core.Index
 
         public void Close(bool removeFiles = true)
         {
-            //this should also make sure that no background tasks are running anymore
             if (!_backgroundRunningEvent.Wait(7000))
                 throw new TimeoutException("Could not finish background thread in reasonable time.");
             if (_inMem)
@@ -595,27 +566,6 @@ namespace EventStore.Core.Index
                 _indexMap.InOrder().ToList().ForEach(x => x.Dispose());
                 _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
             }
-        }
-
-        public static bool IsCorrupt(string directory)
-        {
-            return File.Exists(Path.Combine(directory, "merging.m"));
-        }
-
-        public static void EnterUnsafeState(string directory)
-        {
-            if (!IsCorrupt(directory))
-            {
-                using (var f = File.Create(Path.Combine(directory, "merging.m")))
-                {
-                    f.FlushToDisk();
-                }
-            }
-        }
-
-        public static void LeaveUnsafeState(string directory)
-        {
-            File.Delete(Path.Combine(directory, "merging.m"));
         }
 
         private class TableItem
