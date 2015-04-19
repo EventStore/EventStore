@@ -97,10 +97,7 @@ namespace EventStore.Core.Index
             // this can happen (very unlikely, though) on master crash
             try
             {
-                if (IsCorrupt(_directory))
-                    throw new CorruptIndexException("IndexMap is in unsafe state.");
-                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth:_indexCacheDepth);
-
+                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -113,35 +110,7 @@ namespace EventStore.Core.Index
                 LogIndexMapContent(indexmapFile);
                 DumpAndCopyIndex();
                 File.Delete(indexmapFile);
-
-                bool createEmptyIndexMap = true;
-                if (File.Exists(backupFile))
-                {
-                    File.Copy(backupFile, indexmapFile);
-                    try
-                    {
-                        _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
-                        if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
-                        {
-                            _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
-                            throw new CorruptIndexException("Back-up IndexMap's CommitCheckpoint is still greater than WriterCheckpoint.");
-                        }
-                        createEmptyIndexMap = false;
-                        Log.Info("Using back-up index map...");
-                    }
-                    catch (CorruptIndexException ex)
-                    {
-                        Log.ErrorException(ex, "Backup IndexMap is also corrupted...");
-                        LogIndexMapContent(backupFile);
-                        File.Delete(indexmapFile);
-                        File.Delete(backupFile);
-                    }
-                }
-
-                if (createEmptyIndexMap)
-                    _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
-                if (IsCorrupt(_directory))
-                    LeaveUnsafeState(_directory);
+                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel);
             }
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;
