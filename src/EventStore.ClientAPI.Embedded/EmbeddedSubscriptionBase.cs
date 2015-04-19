@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Bus;
@@ -47,26 +47,26 @@ namespace EventStore.ClientAPI.Embedded
             _actionQueue = new ConcurrentQueue<Action>();
         }
 
-        public void DropSubscription(EventStore.Core.Services.SubscriptionDropReason reason)
+        public void DropSubscription(Core.Services.SubscriptionDropReason reason)
         {
             switch (reason)
             {
-                case EventStore.Core.Services.SubscriptionDropReason.AccessDenied:
+                case Core.Services.SubscriptionDropReason.AccessDenied:
                     DropSubscription(SubscriptionDropReason.AccessDenied,
                         new AccessDeniedException(string.Format("Subscription to '{0}' failed due to access denied.",
                             StreamId == string.Empty ? "<all>" : StreamId)));
                     break;
-                case EventStore.Core.Services.SubscriptionDropReason.Unsubscribed:
+                case Core.Services.SubscriptionDropReason.Unsubscribed:
                     Unsubscribe();
                     break;
-                case EventStore.Core.Services.SubscriptionDropReason.NotFound:
+                case Core.Services.SubscriptionDropReason.NotFound:
                     DropSubscription(SubscriptionDropReason.NotFound,
                         new ArgumentException("Subscription not found"));
                     break;
             }
         }
 
-        public void EventAppeared(EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        public void EventAppeared(Core.Data.ResolvedEvent resolvedEvent)
         {
             _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()));
         }
