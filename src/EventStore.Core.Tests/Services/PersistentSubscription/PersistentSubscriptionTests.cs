@@ -667,6 +667,48 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                           id2 == parker.ParkedEvents[1].OriginalEvent.EventId);
         }
 
+        [Test]
+        public void timeout_park_correctly_tracks_the_available_client_slots()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var parker = new FakeMessageParker();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(parker)
+                    .WithMaxRetriesOf(0)
+                    .WithMessageTimeoutOf(TimeSpan.Zero)
+                    .StartFromBeginning());
+            reader.Load(null);
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 2, "foo", "bar");
+
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
+            }, 1, false);
+
+            Assert.AreEqual(2, envelope1.Replies.Count);
+
+            // Should expire first 2 and send to park.
+            sub.NotifyClockTick(DateTime.Now.AddSeconds(1));
+            parker.ParkMessageCompleted(0, OperationResult.Success);
+            parker.ParkMessageCompleted(1, OperationResult.Success);
+            Assert.AreEqual(2, parker.ParkedEvents.Count);
+
+            // The next 2 should still be sent to client.
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
+            }, 1, false);
+
+            Assert.AreEqual(4, envelope1.Replies.Count);
+        }
+
     }
 
     [TestFixture]
@@ -780,6 +822,72 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             Assert.AreEqual(1, envelope1.Replies.Count);
             Assert.AreEqual(id1, ((ClientMessage.PersistentSubscriptionStreamEventAppeared)envelope1.Replies[0]).Event.Event.EventId);
             Assert.AreEqual(0, parker.ParkedEvents.Count);
+        }
+
+        [Test]
+        public void explicit_nak_with_retry_correctly_tracks_the_available_client_slots()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var parker = new FakeMessageParker();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(parker)
+                    .StartFromBeginning());
+            reader.Load(null);
+            var corrid = Guid.NewGuid();
+            sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+            }, 1, false);
+
+            for (int i = 0; i < 11; i++)
+            {
+                sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id1 }, NakAction.Retry, "a reason from client.");
+                Assert.AreEqual(i + 2, envelope1.Replies.Count);
+            }
+        }
+
+        [Test]
+        public void explicit_nak_with_park_correctly_tracks_the_available_client_slots()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var parker = new FakeMessageParker();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(parker)
+                    .WithMaxRetriesOf(0)
+                    .WithMessageTimeoutOf(TimeSpan.Zero)
+                    .StartFromBeginning());
+            reader.Load(null);
+            var corrid = Guid.NewGuid();
+            sub.AddClient(corrid, Guid.NewGuid(), envelope1, 1, "foo", "bar");
+
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 2)
+            }, 1, false);
+
+            Assert.AreEqual(1, envelope1.Replies.Count);
+
+            sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id1 }, NakAction.Park, "a reason from client.");
+            Assert.AreEqual(2, envelope1.Replies.Count);
+
+            sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id2 }, NakAction.Park, "a reason from client.");
+            Assert.AreEqual(3, envelope1.Replies.Count);
         }
     }
 
