@@ -400,7 +400,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                result = chunk.TryReadClosestForward((int)result.NextPosition);
+                result = chunk.TryReadClosestForward(result.NextPosition);
             }
         }
 

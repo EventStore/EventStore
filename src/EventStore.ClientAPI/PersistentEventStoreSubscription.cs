@@ -1,13 +1,12 @@
 ﻿using System;
-using EventStore.ClientAPI.ClientOperations;
 
 namespace EventStore.ClientAPI
 {
     internal class PersistentEventStoreSubscription : EventStoreSubscription
     {
-        private readonly ConnectToPersistentSubscriptionOperation _subscriptionOperation;
+        private readonly IConnectToPersistentSubscriptions _subscriptionOperation;
 
-        internal PersistentEventStoreSubscription(ConnectToPersistentSubscriptionOperation subscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
+        internal PersistentEventStoreSubscription(IConnectToPersistentSubscriptions subscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
             : base(streamId, lastCommitPosition, lastEventNumber)
         {
             _subscriptionOperation = subscriptionOperation;

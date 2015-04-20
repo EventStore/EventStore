@@ -373,7 +373,12 @@ namespace EventStore.Core.Services.PersistentSubscription
                     Log.Error("Unable to park message {0}/{1} operation failed {2} after retries. possible message loss.", e.OriginalStreamId,
                         e.OriginalEventNumber, result);
                 }
-                _outstandingMessages.Remove(e.OriginalEvent.EventId);
+                lock (_lock)
+                {
+                    _outstandingMessages.Remove(e.OriginalEvent.EventId);
+                    _pushClients.RemoveProcessingMessage(e); 
+                    TryPushingMessagesToClients();
+                }
             });
         }
 

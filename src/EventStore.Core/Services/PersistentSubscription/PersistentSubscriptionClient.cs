@@ -71,8 +71,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _correlationId; }
         }
 
-        public void RemoveFromProcessing(Guid[] processedEventIds)
+        public bool RemoveFromProcessing(Guid[] processedEventIds)
         {
+            bool removedAny = false;
             foreach (var processedEventId in processedEventIds)
             {
                 if (_extraStatistics != null)
@@ -80,25 +81,11 @@ namespace EventStore.Core.Services.PersistentSubscription
                 ResolvedEvent ev;
                 if (!_unconfirmedEvents.TryGetValue(processedEventId, out ev)) continue;
                 _unconfirmedEvents.Remove(processedEventId);
+                removedAny = true;
                 _allowedMessages++;
             }
+            return removedAny;
         }
-
-        public void DenyProcessing(Guid[] processedEventIds)
-        {
-            foreach (var processedEventId in processedEventIds)
-            {
-                ResolvedEvent ev;
-                if (_extraStatistics != null)
-                    _extraStatistics.EndOperation(processedEventId);
-                if (_unconfirmedEvents.TryGetValue(processedEventId, out ev))
-                {
-                    //it could have been timed out as well
-                    _unconfirmedEvents.Remove(processedEventId);
-                }
-            }
-        }
-
         public bool Push(ResolvedEvent evnt)
         {
             if (!CanSend()) { return false; }
@@ -132,11 +119,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         private bool CanSend()
         {
             return AvailableSlots > 0;
-        }
-
-        public bool Remove(Guid eventId)
-        {
-            return _unconfirmedEvents.Remove(eventId);
         }
     }
 }

@@ -96,7 +96,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             foreach (var client in _hash.Values)
             {
-                if (client.Remove(@event.Event.EventId)) return;
+                if (client.RemoveFromProcessing(new [] { @event.Event.EventId })) return;
             }
         }
     }
