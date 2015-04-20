@@ -17,8 +17,6 @@ namespace EventStore.ClientAPI.Embedded
         private readonly UserCredentials _userCredentials;
         private readonly IAuthenticationProvider _authenticationProvider;
         private readonly int _bufferSize;
-        private readonly int _maxRetries;
-        private readonly TimeSpan _operationTimeout;
 
         public EmbeddedPersistentSubscription(
             ILogger log, IPublisher publisher, Guid connectionId,
@@ -33,8 +31,6 @@ namespace EventStore.ClientAPI.Embedded
             _userCredentials = userCredentials;
             _authenticationProvider = authenticationProvider;
             _bufferSize = bufferSize;
-            _maxRetries = maxRetries;
-            _operationTimeout = operationTimeout;
         }
 
         protected override PersistentEventStoreSubscription CreateVolatileSubscription(long lastCommitPosition, int? lastEventNumber)
