@@ -282,7 +282,7 @@ namespace EventStore.ClientAPI
         /// <param name="autoAck">Whether the subscription should automatically acknowledge messages processed.
         /// If not set the receiver is required to explicitly acknowledge messages through the subscription.</param>
         /// <remarks>This will connect you to a persistent subscription group for a stream. The subscription group
-        /// must first be created with CreatePersistentSubscriptionGroup many connections
+        /// must first be created with CreatePersistentSubscriptionAsync many connections
         /// can connect to the same group and they will be treated as competing consumers within the group.
         /// If one connection dies work will be balanced across the rest of the consumers in the group. If
         /// you attempt to connect to a group that does not exist you will be given an exception.
@@ -309,7 +309,7 @@ namespace EventStore.ClientAPI
         /// <param name="autoAck">Whether the subscription should automatically acknowledge messages processed.
         /// If not set the receiver is required to explicitly acknowledge messages through the subscription.</param>
         /// <remarks>This will connect you to a persistent subscription group for all events. The subscription group
-        /// must first be created with CreatePersistentSubscriptionGroup many connections
+        /// must first be created with CreatePersistentSubscriptionAsync many connections
         /// can connect to the same group and they will be treated as competing consumers within the group.
         /// If one connection dies work will be balanced across the rest of the consumers in the group. If
         /// you attempt to connect to a group that does not exist you will be given an exception.

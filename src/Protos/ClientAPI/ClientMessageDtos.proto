@@ -239,7 +239,7 @@ message UpdatePersistentSubscription {
 message UpdatePersistentSubscriptionCompleted {
 	enum UpdatePersistentSubscriptionResult {
 		Success = 0;
-		DoesNotExists = 1;
+		DoesNotExist = 1;
 		Fail = 2;
 		AccessDenied=3;
 	}

@@ -11,9 +11,9 @@ namespace EventStore.Core.Index
 {
     public unsafe partial class PTable
     {
-        public static PTable FromFile(string filename)
+        public static PTable FromFile(string filename, int cacheDepth)
         {
-            return new PTable(filename, Guid.NewGuid());
+            return new PTable(filename, Guid.NewGuid(), depth: cacheDepth);
         }
 
         public static PTable FromMemtable(IMemTable table, string filename, int cacheDepth = 16)

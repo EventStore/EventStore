@@ -73,7 +73,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
                 case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists:
-                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} alreay exists", _groupName, _stream)));
+                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} already exists", _groupName, _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AlreadyExists");
                 default:
                     throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));

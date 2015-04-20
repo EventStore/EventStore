@@ -315,7 +315,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
             }
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-            if (!_subscriptionsById.ContainsKey(key))
+            PersistentSubscription subscription;
+            if (!_subscriptionsById.TryGetValue(key, out subscription))
             {
                 message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
                     ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist,
@@ -331,8 +332,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             }
             RemoveSubscription(message.EventStreamId, message.GroupName);
-
             RemoveSubscriptionConfig(message.User.Identity.Name, message.EventStreamId, message.GroupName);
+            subscription.Delete();
             SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
     ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Success, "")));
 

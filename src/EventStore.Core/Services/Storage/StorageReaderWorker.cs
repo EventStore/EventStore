@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -10,8 +9,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.Util;
-using HdrHistogram.NET;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Storage
@@ -31,10 +28,9 @@ namespace EventStore.Core.Services.Storage
         private readonly ICheckpoint _writerCheckpoint;
         private static readonly char[] LinkToSeparator = {'@'};
         private const int MaxPageSize = 4096;
-        private readonly Histogram _readHistogram;
-        private readonly Histogram _streamRangeHistogram;
-        private readonly Histogram _allRangeHistogram;
-
+        private const string _readerReadHistogram = "reader-readevent";
+        private const string _readerStreamRangeHistogram = "reader-streamrange";
+        private const string _readerAllRangeHistogram = "reader-allrange";
         public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, ICheckpoint writerCheckpoint)
         {
             Ensure.NotNull(publisher, "publisher");
@@ -44,19 +40,18 @@ namespace EventStore.Core.Services.Storage
             _publisher = publisher;
             _readIndex = readIndex;
             _writerCheckpoint = writerCheckpoint;
-            _readHistogram = HistogramService.GetHistogram("reader-readevent");
-            _streamRangeHistogram = HistogramService.GetHistogram("reader-streamrange");
-            _allRangeHistogram = HistogramService.GetHistogram("reader-allrange");
         }
 
         void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent msg)
         {
+            if (msg.Expires < DateTime.Now) return;
             msg.Envelope.ReplyWith(ReadEvent(msg));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward msg)
         {
-            using (_streamRangeHistogram.Measure())
+            if (msg.Expires < DateTime.Now) return;
+            using (HistogramService.Measure(_readerStreamRangeHistogram))
             {
                 var res = ReadStreamEventsForward(msg);
                 switch (res.Result)
@@ -88,12 +83,14 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward msg)
         {
+            if (msg.Expires < DateTime.Now) return;
             msg.Envelope.ReplyWith(ReadStreamEventsBackward(msg));
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward msg)
         {
-            using (_allRangeHistogram.Measure())
+            if (msg.Expires < DateTime.Now) return;
+            using (HistogramService.Measure(_readerAllRangeHistogram))
             {
                 var res = ReadAllEventsForward(msg);
                 switch (res.Result)
@@ -131,17 +128,19 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward msg)
         {
+            if (msg.Expires < DateTime.Now) return;
             msg.Envelope.ReplyWith(ReadAllEventsBackward(msg));
         }
 
         void IHandle<StorageMessage.CheckStreamAccess>.Handle(StorageMessage.CheckStreamAccess msg)
         {
+            if (msg.Expires < DateTime.Now) return;
             msg.Envelope.ReplyWith(CheckStreamAccess(msg));
         }
 
         private ClientMessage.ReadEventCompleted ReadEvent(ClientMessage.ReadEvent msg)
         {
-            using (_readHistogram.Measure())
+            using (HistogramService.Measure(_readerReadHistogram))
             {
                 try
                 {
@@ -169,7 +168,7 @@ namespace EventStore.Core.Services.Storage
 
         private ClientMessage.ReadStreamEventsForwardCompleted ReadStreamEventsForward(ClientMessage.ReadStreamEventsForward msg)
         {
-            using (_streamRangeHistogram.Measure())
+            using (HistogramService.Measure(_readerStreamRangeHistogram))
             {
                 var lastCommitPosition = _readIndex.LastCommitPosition;
                 try
@@ -209,7 +208,7 @@ namespace EventStore.Core.Services.Storage
 
         private ClientMessage.ReadStreamEventsBackwardCompleted ReadStreamEventsBackward(ClientMessage.ReadStreamEventsBackward msg)
         {
-            using (_streamRangeHistogram.Measure())
+            using (HistogramService.Measure(_readerStreamRangeHistogram))
             {
                 var lastCommitPosition = _readIndex.LastCommitPosition;
                 try
@@ -250,7 +249,7 @@ namespace EventStore.Core.Services.Storage
 
         private ClientMessage.ReadAllEventsForwardCompleted ReadAllEventsForward(ClientMessage.ReadAllEventsForward msg)
         {
-            using (_allRangeHistogram.Measure())
+            using (HistogramService.Measure(_readerAllRangeHistogram))
             {
                 var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
                 var lastCommitPosition = _readIndex.LastCommitPosition;
@@ -295,7 +294,7 @@ namespace EventStore.Core.Services.Storage
 
         private ClientMessage.ReadAllEventsBackwardCompleted ReadAllEventsBackward(ClientMessage.ReadAllEventsBackward msg)
         {
-            using (_allRangeHistogram.Measure())
+            using (HistogramService.Measure(_readerAllRangeHistogram))
             {
                 var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
                 var lastCommitPosition = _readIndex.LastCommitPosition;

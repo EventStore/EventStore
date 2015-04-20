@@ -49,8 +49,8 @@ namespace EventStore.Core.Services.Storage
 
         private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
         private bool _commitsAfterEof;
-        private readonly Histogram _histogram;
-        private readonly Histogram _flushhistogram;
+        private const string _chaserWaitHistogram = "chaser-wait";
+        private const string _chaserFlushHistogram = "chaser-flush";
 
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
@@ -69,8 +69,6 @@ namespace EventStore.Core.Services.Storage
             _chaser = chaser;
             _indexCommitter = indexCommitter;
             _epochManager = epochManager;
-            _histogram = HistogramService.GetHistogram("chaser-wait");
-            _flushhistogram = HistogramService.GetHistogram("chaser-flush");
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
         }
@@ -150,14 +148,8 @@ namespace EventStore.Core.Services.Storage
                 _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
                 _chaser.Flush();
                 var startflush = _watch.ElapsedTicks;
-                if (_flushhistogram != null)
-                {
-                    lock (_flushhistogram)
-                    {
-                        _flushhistogram.recordValue(
+                HistogramService.SetValue(_chaserFlushHistogram,
                             (long)((((double)_watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
-                    }
-                }
                 _queueStats.ProcessingEnded(1);
 
                 var end = _watch.ElapsedTicks;
@@ -171,14 +163,8 @@ namespace EventStore.Core.Services.Storage
                 //Thread.Sleep(1); 
                 var startwait = _watch.ElapsedTicks;
                 _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
-                if (_histogram != null)
-                {
-                    lock (_histogram)
-                    {
-                        _histogram.recordValue(
-                            (long)((((double)_watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
-                    }
-                }
+                HistogramService.SetValue(_chaserWaitHistogram,
+                    (long) ((((double) _watch.ElapsedTicks - startwait)/Stopwatch.Frequency)*1000000000));
             }
         }
 

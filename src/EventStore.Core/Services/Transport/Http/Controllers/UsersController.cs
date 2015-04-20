@@ -2,6 +2,7 @@
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Common.Log;
+using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -40,17 +41,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
-            var envelope = CreateReplyEnvelope<UserManagementMessage.AllUserDetailsResult>(http);
+
+            var envelope = CreateSendToHttpWithConversionEnvelope(http, 
+                (UserManagementMessage.AllUserDetailsResult msg) => new UserManagementMessage.AllUserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
+
             var message = new UserManagementMessage.GetAll(envelope, http.User);
             Publish(message);
         }
-
 
         private void GetUser(HttpEntityManager http, UriTemplateMatch match)
         {
             if (_httpForwarder.ForwardRequest(http))
                 return;
-            var envelope = CreateReplyEnvelope<UserManagementMessage.UserDetailsResult>(http);
+
+            var envelope = CreateSendToHttpWithConversionEnvelope(http,
+                (UserManagementMessage.UserDetailsResult msg) => new UserManagementMessage.UserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
+
             var login = match.BoundVariables["login"];
             var message = new UserManagementMessage.Get(envelope, http.User, login);
             Publish(message);
@@ -179,6 +185,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             return new SendToHttpEnvelope<T>(
                 _networkSendQueue, http, formatter ?? AutoFormatter, configurator ?? AutoConfigurator, null);
+        }
+
+        private SendToHttpWithConversionEnvelope<T, R> CreateSendToHttpWithConversionEnvelope<T, R>(
+            HttpEntityManager http, Func<T, R> formatter)
+            where T : UserManagementMessage.ResponseMessage
+            where R: UserManagementMessage.ResponseMessage
+        {
+            return new SendToHttpWithConversionEnvelope<T, R>(_networkSendQueue,
+                http,
+                (codec, msg) => codec.To(msg),
+                (codec, transformed) => transformed.Success
+                    ? new ResponseConfiguration(HttpStatusCode.OK, codec.ContentType, codec.Encoding)
+                    : new ResponseConfiguration(
+                        ErrorToHttpStatusCode(transformed.Error), codec.ContentType, codec.Encoding),
+                formatter);
         }
 
         private ResponseConfiguration AutoConfigurator<T>(ICodec codec, T result)
