@@ -55,15 +55,28 @@ namespace EventStore.Core.Messaging
         public bool Handle(TResponse message)
         {
             var correlationId = _getResponseCorrelationId(message);
+            bool handlerExists;
             Action<TResponse> action;
+            
             lock (_map)
-                if (_map.TryGetValue(correlationId, out action))
+            {
+                handlerExists = _map.TryGetValue(correlationId, out action);
+                if (handlerExists)
                 {
                     _map.Remove(correlationId);
-                    action(message);
-                    return true;
                 }
+            }
+
+            // We mustn't call the handler inside the lock as we have no
+            // knowledge of it's behaviour, which might result in dead locks.
+            if (handlerExists)
+            {
+                action(message);
+                return true;
+            }
+
             return false;
+
         }
 
         public IEnvelope Envelope

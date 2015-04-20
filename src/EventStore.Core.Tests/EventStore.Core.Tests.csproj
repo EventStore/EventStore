@@ -282,6 +282,7 @@
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
     <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
+    <Compile Include="Messaging\RequestResponseDispatcherTests.cs" />
     <Compile Include="Services\ElectionsService\ClusterSettings.cs" />
     <Compile Include="Services\ElectionsService\ClusterSettingsFactory.cs" />
     <Compile Include="Services\ElectionsService\ElectionServiceUnit.cs" />
