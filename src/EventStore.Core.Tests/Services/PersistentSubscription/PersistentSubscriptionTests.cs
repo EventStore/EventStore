@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Tests.ClientAPI.UserManagement;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription
 {
@@ -800,6 +807,51 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), new FakeEnvelope(), 1, "foo", "bar");
             Assert.IsTrue(sub.HasClients);
             Assert.AreEqual(1, sub.ClientCount);
+        }
+    }
+
+
+    [TestFixture]
+    public class DeadlockTest : TestWithNode
+    {
+        [Test]
+        public void read_whilst_ack_doesnt_deadlock_with_request_response_dispatcher()
+        {
+            var eventStoreConnection = BuildConnection(_node);
+            eventStoreConnection.ConnectAsync().Wait();
+
+            var persistentSubscriptionSettings = PersistentSubscriptionSettings.Create().Build();
+            var userCredentials = new UserCredentials("admin", "changeit");
+            eventStoreConnection.CreatePersistentSubscriptionAsync("TestStream", "TestGroup", persistentSubscriptionSettings, userCredentials).Wait();
+
+            const int count = 50000;
+            eventStoreConnection.AppendToStreamAsync("TestStream", ExpectedVersion.Any, CreateEvent().Take(count)).Wait();
+
+
+            int received = 0;
+            var manualResetEventSlim = new ManualResetEventSlim();
+            var sub1 = eventStoreConnection.ConnectToPersistentSubscription("TestStream", "TestGroup", (sub, ev) =>
+            {
+                received++;
+                if (received == count)
+                {
+                    manualResetEventSlim.Set();
+                }
+            },
+                (sub, reason, ex) => { });
+
+            Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(120)), "Failed to recieve all events in 2 minutes. Assume event store is deadlocked.");
+            sub1.Stop(TimeSpan.FromSeconds(10));
+            eventStoreConnection.Close();
+
+        }
+
+        private static IEnumerable<EventData> CreateEvent()
+        {
+            while (true)
+            {
+                yield return new EventData(Guid.NewGuid(), "testtype", false, new byte[0], new byte[0]);
+            }
         }
     }
 
