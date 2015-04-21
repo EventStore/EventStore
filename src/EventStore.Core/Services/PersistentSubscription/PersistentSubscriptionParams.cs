@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly int _minCheckPointCount;
         private readonly int _maxCheckPointCount;
         private readonly int _maxSubscriberCount;
-        private readonly string _namedConsumerStrategy;
+        private readonly IPersistentSubscriptionConsumerStrategy _consumerStrategy;
 
         private readonly int _maxRetryCount;
         private readonly int _liveBufferSize;
@@ -30,7 +30,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                                            int startFrom, bool extraStatistics, TimeSpan messageTimeout, 
                                            int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
                                            TimeSpan checkPointAfter, int minCheckPointCount,
-                                           int maxCheckPointCount, int maxSubscriberCount, string namedConsumerStrategy,
+                                           int maxCheckPointCount, int maxSubscriberCount, 
+                                           IPersistentSubscriptionConsumerStrategy consumerStrategy,
                                            IPersistentSubscriptionStreamReader streamReader, 
                                            IPersistentSubscriptionCheckpointReader checkpointReader, 
                                            IPersistentSubscriptionCheckpointWriter checkpointWriter,
@@ -50,7 +51,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
             _maxSubscriberCount = maxSubscriberCount;
-            _namedConsumerStrategy = namedConsumerStrategy;
+            _consumerStrategy = consumerStrategy;
             _readBatchSize = readBatchSize;
             _streamReader = streamReader;
             _checkpointReader = checkpointReader;
@@ -153,9 +154,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _maxSubscriberCount; }
         }
 
-        public string NamedConsumerStrategy
+        public IPersistentSubscriptionConsumerStrategy ConsumerStrategy
         {
-            get { return _namedConsumerStrategy; }
+            get { return _consumerStrategy; }
         }
 
         public string ParkedMessageStream

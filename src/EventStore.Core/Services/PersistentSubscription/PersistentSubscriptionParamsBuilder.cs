@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private int _minCheckPointCount;
         private int _maxCheckPointCount;
         private int _maxSubscriberCount;
-        private string _namedConsumerStrategy;
+        private IPersistentSubscriptionConsumerStrategy _consumerStrategy;
 
         /// <summary>
         /// Creates a new <see cref="PersistentSubscriptionParamsBuilder"></see> object
@@ -52,13 +52,13 @@ namespace EventStore.Core.Services.PersistentSubscription
                 5,
                 1000,
                 0, 
-                SystemConsumerStrategies.RoundRobin);
+                new RoundRobinPersistentSubscriptionConsumerStrategy());
         }
 
 
         private PersistentSubscriptionParamsBuilder(string subscriptionId, string streamName, string groupName, bool resolveLinkTos, int startFrom, bool recordStatistics, TimeSpan timeout,
             int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, TimeSpan checkPointAfter,
-            int minCheckPointCount, int maxCheckPointCount, int maxSubscriptionCount, string namedConsumerStrategy)
+            int minCheckPointCount, int maxCheckPointCount, int maxSubscriptionCount, IPersistentSubscriptionConsumerStrategy consumerStrategy)
         {
             _resolveLinkTos = resolveLinkTos;
             _startFrom = startFrom;
@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
             _maxSubscriberCount = maxSubscriptionCount;
-            _namedConsumerStrategy = namedConsumerStrategy;
+            _consumerStrategy = consumerStrategy;
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
         public PersistentSubscriptionParamsBuilder PreferRoundRobin()
         {
-            _namedConsumerStrategy = SystemConsumerStrategies.RoundRobin;
+            _consumerStrategy = new RoundRobinPersistentSubscriptionConsumerStrategy();
             return this;
         }
 
@@ -172,7 +172,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
         public PersistentSubscriptionParamsBuilder PreferDispatchToSingle()
         {
-            _namedConsumerStrategy = SystemConsumerStrategies.Single;
+            _consumerStrategy = new DispatchToSinglePersistentSubscriptionConsumerStrategy();
             return this;
         }
 
@@ -291,10 +291,10 @@ namespace EventStore.Core.Services.PersistentSubscription
         /// sizes should not be too big ...
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
-        public PersistentSubscriptionParamsBuilder WithNamedConsumerStrategy(string namedConsumerStrategy)
+        public PersistentSubscriptionParamsBuilder WithNamedConsumerStrategy(IPersistentSubscriptionConsumerStrategy consumerStrategy)
         {
-            Ensure.NotNullOrEmpty(namedConsumerStrategy, "namedConsumerStrategy");
-            _namedConsumerStrategy = namedConsumerStrategy;
+            Ensure.NotNull(consumerStrategy, "consumerStrategy");
+            _consumerStrategy = consumerStrategy;
             return this;
         }
 
@@ -330,7 +330,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 builder._minCheckPointCount,
                 builder._maxCheckPointCount,
                 builder._maxSubscriberCount,
-                builder._namedConsumerStrategy,
+                builder._consumerStrategy,
                 builder._streamReader,
                 builder._checkpointReader,
                 builder._checkpointWriter,

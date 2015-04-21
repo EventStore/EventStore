@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IReadIndex _readIndex;
         private readonly IODispatcher _ioDispatcher;
         private readonly IPublisher _bus;
+        private readonly PersistentSubscriptionConsumerStrategyRegistry _consumerStrategyRegistry;
         private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
         private readonly IPersistentSubscriptionStreamReader _streamReader;
         private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
@@ -62,6 +63,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _readIndex = readIndex;
             _ioDispatcher = ioDispatcher;
             _bus = bus;
+            _consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry();
             _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
             _streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
             //TODO CC configurable
@@ -151,6 +153,15 @@ namespace EventStore.Core.Services.PersistentSubscription
                     "Group '" + message.GroupName + "' already exists."));
                 return;
             }
+
+            if (!_consumerStrategyRegistry.ValidateStrategy(message.NamedConsumerStrategy))
+            {
+                message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
+                    ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Fail,
+                    string.Format("Consumer strategy {0} does not exist.", message.NamedConsumerStrategy)));
+                return;
+            }
+
             CreateSubscriptionGroup(message.EventStreamId, 
                                     message.GroupName, 
                                     message.ResolveLinkTos, 
@@ -212,6 +223,15 @@ namespace EventStore.Core.Services.PersistentSubscription
                     "Group '" + message.GroupName + "' does not exist."));
                 return;
             }
+
+            if (!_consumerStrategyRegistry.ValidateStrategy(message.NamedConsumerStrategy))
+            {
+                message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(message.CorrelationId,
+                    ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.Fail,
+                    string.Format("Consumer strategy {0} does not exist.", message.NamedConsumerStrategy)));
+                return;
+            }
+
             RemoveSubscription(message.EventStreamId, message.GroupName);
             RemoveSubscriptionConfig(message.User.Identity.Name, message.EventStreamId, message.GroupName);
             CreateSubscriptionGroup(message.EventStreamId,
@@ -292,7 +312,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     minCheckPointCount,
                     maxCheckPointCount,
                     maxSubscriberCount,
-                    namedConsumerStrategy,
+                    _consumerStrategyRegistry.GetInstance(namedConsumerStrategy),
                     _streamReader,
                     _checkpointReader,
                     new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
@@ -566,6 +586,12 @@ namespace EventStore.Core.Services.PersistentSubscription
                                 readStreamEventsBackwardCompleted.Events[0].Event.Data);
                         foreach (var entry in _config.Entries)
                         {
+                            if (!_consumerStrategyRegistry.ValidateStrategy(entry.NamedConsumerStrategy))
+                            {
+                                Log.Error("A persistent subscription exists with an invalid consumer strategy '{0}'. Ignoring it.", entry.NamedConsumerStrategy);
+                                continue;
+                            }
+
                             CreateSubscriptionGroup(entry.Stream,
                                                     entry.Group, 
                                                     entry.ResolveLinkTos, 

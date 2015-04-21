@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 LiveBufferCount = _parent._streamBuffer.LiveBufferCount,
                 ExtraStatistics = _settings.ExtraStatistics,
                 TotalInFlightMessages = _parent.OutstandingMessageCount,
-                NamedConsumerStrategy = _settings.NamedConsumerStrategy
+                NamedConsumerStrategy = _settings.ConsumerStrategy.Name
             };
         }
     }

@@ -5,46 +5,29 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
+
     internal class PersistentSubscriptionClientCollection
     {
-        //TODO this is likely faster with a list etc as the counts are very small
+        private readonly IPersistentSubscriptionConsumerStrategy _consumerStrategy;
+        
         private readonly Dictionary<Guid, PersistentSubscriptionClient> _hash = new Dictionary<Guid, PersistentSubscriptionClient>();
-        private readonly Queue<PersistentSubscriptionClient> _queue = new Queue<PersistentSubscriptionClient>();
-        private bool _preferRoundRobin;
-
 
         public int Count { get { return _hash.Count; } }
 
-        public PersistentSubscriptionClientCollection(bool preferRoundRobin)
+        public PersistentSubscriptionClientCollection(IPersistentSubscriptionConsumerStrategy consumerStrategy)
         {
-            _preferRoundRobin = preferRoundRobin;
+            _consumerStrategy = consumerStrategy;
         }
 
         public void AddClient(PersistentSubscriptionClient client)
         {
             _hash.Add(client.CorrelationId, client);
-            _queue.Enqueue(client);
+            _consumerStrategy.ClientAdded(client);
         }
 
-        public bool PushMessageToClient(ResolvedEvent ev)
+        public ConsumerPushResult PushMessageToClient(ResolvedEvent ev)
         {
-            for (var i = 0; i < _queue.Count; i++)
-            {
-                var current = _queue.Peek();
-                try
-                {
-                    if (current.Push(ev))
-                    {
-                        return true;
-                    }
-                }
-                finally
-                {
-                    if (_preferRoundRobin) 
-                        _queue.Enqueue(_queue.Dequeue());
-                }
-            }
-            return false;
+            return _consumerStrategy.PushMessageToClient(ev);
         }
 
         public IEnumerable<ResolvedEvent> RemoveClientByConnectionId(Guid connectionId)
@@ -55,9 +38,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void ShutdownAll()
         {
-            while (_queue.Count > 0)
+            foreach (var client in _hash.Values.ToArray())
             {
-                var client = _queue.Dequeue();
                 RemoveClientByCorrelationId(client.CorrelationId, true);
             }
         }
@@ -67,12 +49,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             PersistentSubscriptionClient client;
             if (!_hash.TryGetValue(correlationId, out client)) return new ResolvedEvent[0];
             _hash.Remove(client.CorrelationId);
-            for(var i=0;i<_queue.Count;i++)
-            {
-                var current = _queue.Dequeue();
-                if (current == client) break;
-                _queue.Enqueue(current);
-            }
+            _consumerStrategy.ClientRemoved(client);
             if (sendDropNotification)
             {
                 client.SendDropNotification();
@@ -92,12 +69,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             client.RemoveFromProcessing(processedEventIds);
         }
 
-        public void RemoveProcessingMessage(ResolvedEvent @event)
+        public void RemoveProcessingMessage(Guid eventId)
         {
             foreach (var client in _hash.Values)
             {
-                if (client.RemoveFromProcessing(new [] { @event.Event.EventId })) return;
+                if (client.RemoveFromProcessing(new [] { eventId })) return;
             }
         }
     }
+
 }
