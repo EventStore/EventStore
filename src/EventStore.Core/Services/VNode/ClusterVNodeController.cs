@@ -278,7 +278,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.BecomeUnknown message)
         {
-            Log.Info("========== [{0}] IS UNKNOWN!!! WHOA!!!", _nodeInfo.InternalHttp);
+            Log.Info("========== [{0}] IS UNKNOWN...", _nodeInfo.InternalHttp);
            
             _state = VNodeState.Unknown;
             _master = null;           
@@ -305,7 +305,7 @@ namespace EventStore.Core.Services.VNode
             if (_stateCorrelationId != message.CorrelationId)
                 return;
 
-            Log.Info("========== [{0}] IS CATCHING UP!!! BANZAI!!! MASTER IS [{1},{2:B}]",
+            Log.Info("========== [{0}] IS CATCHING UP... MASTER IS [{1},{2:B}]",
                      _nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
             _state = VNodeState.CatchingUp;
             _outputBus.Publish(message);
@@ -317,7 +317,7 @@ namespace EventStore.Core.Services.VNode
             if (_stateCorrelationId != message.CorrelationId)
                 return;
 
-            Log.Info("========== [{0}] IS CLONE!!! SPARTA!!! MASTER IS [{1},{2:B}]",
+            Log.Info("========== [{0}] IS CLONE... MASTER IS [{1},{2:B}]",
                      _nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
             _state = VNodeState.Clone;
             _outputBus.Publish(message);
@@ -329,7 +329,7 @@ namespace EventStore.Core.Services.VNode
             if (_stateCorrelationId != message.CorrelationId)
                 return;
 
-            Log.Info("========== [{0}] IS SLAVE!!! SPARTA!!! MASTER IS [{1},{2:B}]",
+            Log.Info("========== [{0}] IS SLAVE... MASTER IS [{1},{2:B}]",
                      _nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
             _state = VNodeState.Slave;
             _outputBus.Publish(message);
@@ -354,7 +354,7 @@ namespace EventStore.Core.Services.VNode
             if (_stateCorrelationId != message.CorrelationId)
                 return;
 
-            Log.Info("========== [{0}] IS MASTER!!! SPARTA!!!", _nodeInfo.InternalHttp);
+            Log.Info("========== [{0}] IS MASTER...", _nodeInfo.InternalHttp);
             _state = VNodeState.Master;
             _outputBus.Publish(message);
         }
@@ -364,7 +364,7 @@ namespace EventStore.Core.Services.VNode
             if (_state == VNodeState.ShuttingDown || _state == VNodeState.Shutdown)
                 return;
 
-            Log.Info("========== [{0}] IS SHUTTING DOWN!!! FAREWELL, WORLD...", _nodeInfo.InternalHttp);
+            Log.Info("========== [{0}] IS SHUTTING DOWN...", _nodeInfo.InternalHttp);
             _master = null;
             _stateCorrelationId = message.CorrelationId;
             _exitProcessOnShutdown = message.ExitProcess;
@@ -375,7 +375,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.BecomeShutdown message)
         {
-            Log.Info("========== [{0}] IS SHUT DOWN!!! SWEET DREAMS!!!", _nodeInfo.InternalHttp);
+            Log.Info("========== [{0}] IS SHUT DOWN.", _nodeInfo.InternalHttp);
             _state = VNodeState.Shutdown;
             try
             {
