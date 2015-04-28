@@ -263,8 +263,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)
                     {
-                        _log.Error("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                        throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+                        _log.Error("Threading issue in TryDequeueReceivedData. Callback is null.");
+                        throw new Exception("Threading issue in TryDequeueReceivedData. Callback is null.");
                     }
 
                     var res = new List<ArraySegment<byte>>(_receiveQueue.Count);

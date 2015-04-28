@@ -67,7 +67,7 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         public Task WriteAsync(IEnumerable<EventData> events)
         {
-            if (_isRolledBack) throw new InvalidOperationException("can't write to a rolledback transaction");
+            if (_isRolledBack) throw new InvalidOperationException("Can't write to a rolled-back transaction");
             if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
             return _connection.TransactionalWriteAsync(this, events);
         }

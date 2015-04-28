@@ -135,7 +135,7 @@ namespace EventStore.ClientAPI.ClientOperations
         /// Constructs a <see cref="MaximumSubscribersReachedException"></see>
         /// </summary>
         public MaximumSubscribersReachedException()
-            : base("Maximum subscribptions reached.")
+            : base("Maximum subscriptions reached.")
         {
             
         }
