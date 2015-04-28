@@ -503,7 +503,7 @@ namespace EventStore.ClientAPI.Embedded
 	/// <param name="storeLocation">The location of the certificate store</param>
 	/// <param name="storeName">The name of the certificate store</param>
 	/// <param name="certificateSubjectName">The subject name of the certificate</param>
-	/// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
+	/// <param name="certificateThumbprint">The thumbprint of the certificate</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName, string certificateSubjectName, string certificateThumbprint)
         {
