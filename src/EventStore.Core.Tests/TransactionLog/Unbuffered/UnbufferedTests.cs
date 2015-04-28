@@ -71,6 +71,26 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered
             }
         }
 
+        [Test, Ignore("Requires a 4gb file")]
+        public void when_seeking_greater_than_2gb()
+        {
+            var filename = GetFilePathFor(Guid.NewGuid().ToString());
+            var GIGABYTE = 1024L*1024L*1024L;
+            try
+            {
+                using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+                    FileShare.ReadWrite, false, 4096, 4096, false, 4096))
+                {
+                    stream.SetLength(4L*GIGABYTE);
+                    stream.Seek(3L*GIGABYTE, SeekOrigin.Begin);
+                }
+            }
+            finally
+            {
+                File.Delete(filename);
+            }
+        }
+
         [Test]
         public void when_writing_less_than_buffer_and_seeking()
         {
