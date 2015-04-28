@@ -53,7 +53,7 @@ namespace EventStore.TestClient
         {
             if (value < 0)
             {
-                Log.Error("Value is {0}, however TeamCity requires Value as a positive (non negative) integer.", value);
+                Log.Error("Value is {0}, however TeamCity requires Value as a non-negative integer.", value);
                 return;
             }
             Log.Debug("\n##teamcity[buildStatisticValue key='{0}' value='{1}']", key, value);
