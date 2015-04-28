@@ -182,7 +182,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (fs.Length < ChunkFooter.Size + ChunkHeader.Size)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                        string.Format("Chunk file '{0}' is bad. It even doesn't have enough size for header and footer, file size is {1} bytes.",
+                        string.Format("Chunk file '{0}' is bad. It does not have enough size for header and footer. File size is {1} bytes.",
                                       chunkFileName, fs.Length)));
                 }
                 chunkHeader = ChunkHeader.FromStream(fs);
@@ -198,7 +198,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (fs.Length < ChunkFooter.Size + ChunkHeader.Size)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                        string.Format("Chunk file '{0}' is bad. It even doesn't have enough size for header and footer, file size is {1} bytes.",
+                        string.Format("Chunk file '{0}' is bad. It does not have enough size for header and footer. File size is {1} bytes.",
                                       chunkFileName, fs.Length)));
                 }
                 fs.Seek(-ChunkFooter.Size, SeekOrigin.End);

@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="Task"/> that returns expected version for following write requests</returns>
         public Task<WriteResult> CommitAsync()
         {
-            if (_isRolledBack) throw new InvalidOperationException("Can't commit a rolledback transaction");
+            if (_isRolledBack) throw new InvalidOperationException("Cannot commit a rolledback transaction");
             if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
             _isCommitted = true;
             return _connection.CommitTransactionAsync(this, _userCredentials);
@@ -67,7 +67,7 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         public Task WriteAsync(IEnumerable<EventData> events)
         {
-            if (_isRolledBack) throw new InvalidOperationException("Can't write to a rolled-back transaction");
+            if (_isRolledBack) throw new InvalidOperationException("Cannot write to a rolled-back transaction");
             if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
             return _connection.TransactionalWriteAsync(this, events);
         }

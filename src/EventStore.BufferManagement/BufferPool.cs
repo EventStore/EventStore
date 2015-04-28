@@ -286,7 +286,7 @@ namespace EventStore.BufferManagement
                 foreach (ArraySegment<byte> buffer in _bufferManager.CheckOut(position.Index + 1 - _buffers.Count))
                 {
                     if (buffer.Count != _chunkSize)
-                        throw new Exception("Received a buffer of the wrong size: this shouldn't happen, ever.");
+                        throw new Exception("Received a buffer of the wrong size: this should never happen.");
                     _buffers.Add(buffer);
                 }
             }

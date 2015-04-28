@@ -138,7 +138,7 @@ namespace EventStore.ClientAPI
 
             EnqueueSubscriptionDropNotification(SubscriptionDropReason.UserInitiated, null);
             if (!_stopped.Wait(timeout))
-                throw new TimeoutException(string.Format("Couldn't stop {0} in time.", GetType().Name));
+                throw new TimeoutException(string.Format("Could not stop {0} in time.", GetType().Name));
         }
 
         private void EnqueueSubscriptionDropNotification(SubscriptionDropReason reason, Exception error)

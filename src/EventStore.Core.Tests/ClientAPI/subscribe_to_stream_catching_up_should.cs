@@ -126,7 +126,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 {
                     Assert.IsFalse(dropped1.Wait(0), "Subscription1 was dropped prematurely.");
                     Assert.IsFalse(dropped2.Wait(0), "Subscription2 was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
+                    Assert.Fail("Could not wait for all events.");
                 }
 
                 Assert.IsFalse(dropped1.Wait(0));
@@ -195,7 +195,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
+                    Assert.Fail("Could not wait for all events.");
                 }
 
                 Assert.AreEqual(20, events.Count);
@@ -245,7 +245,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
+                    Assert.Fail("Could not wait for all events.");
                 }
 
                 Assert.AreEqual(20, events.Count);
@@ -294,7 +294,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
+                    Assert.Fail("Could not wait for all events.");
                 }
 
                 Assert.AreEqual(10, events.Count);

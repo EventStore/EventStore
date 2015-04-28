@@ -176,7 +176,7 @@ namespace EventStore.Core.Services.Replication
                 {
                     // slave has some data, but doesn't have any epoch
                     // for now we'll just report error and close connection
-                    var msg = string.Format("Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but doesn't have epochs.",
+                    var msg = string.Format("Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but does not have epochs.",
                                             replicaEndPoint, subscriptionId,
                                             string.Join(", ", epochs.Select(x => x.AsString())), logPosition);
                     Log.Info(msg);

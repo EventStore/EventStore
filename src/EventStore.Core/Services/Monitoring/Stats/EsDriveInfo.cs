@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception ex)
             {
-                log.DebugException(ex, "Couldn't get drive name for directory '{0}' on Unix.", directory);
+                log.DebugException(ex, "Could not get drive name for directory '{0}' on Unix.", directory);
                 return null;
             }
         }

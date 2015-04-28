@@ -163,7 +163,7 @@ namespace EventStore.Core.Services
         public void Handle(ReplicationMessage.RawChunkBulk message)
         {
             if (_subscriptionId != message.SubscriptionId) return;
-            if (_activeChunk == null) ReplicationFail("Physical chunk bulk received, but we don't have active chunk.");
+            if (_activeChunk == null) ReplicationFail("Physical chunk bulk received, but we do not have active chunk.");
 
             if (_activeChunk.ChunkHeader.ChunkStartNumber != message.ChunkStartNumber || _activeChunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber)
             {
@@ -180,7 +180,7 @@ namespace EventStore.Core.Services
 
             if (!_activeChunk.TryAppendRawData(message.RawBytes))
             {
-                ReplicationFail("Couldn't append raw bytes to chunk {0}-{1}, raw pos: {2} (0x{2:X}), bytes length: {3} (0x{3:X}). Chunk file size: {4} (0x{4:X}).",
+                ReplicationFail("Could not append raw bytes to chunk {0}-{1}, raw pos: {2} (0x{2:X}), bytes length: {3} (0x{3:X}). Chunk file size: {4} (0x{4:X}).",
                                 message.ChunkStartNumber, message.ChunkEndNumber, message.RawPosition, message.RawBytes.Length, _activeChunk.FileSize);
             }
 

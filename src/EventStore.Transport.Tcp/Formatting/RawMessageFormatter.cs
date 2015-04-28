@@ -4,7 +4,7 @@ using EventStore.BufferManagement;
 namespace EventStore.Transport.Tcp.Formatting
 {
     /// <summary>
-    /// Formatter which doesn't format anything, actually. Just outputs raw byte[].
+    /// Formatter which does not format anything, actually. Just outputs raw byte[].
     /// </summary>
     public class RawMessageFormatter : IMessageFormatter<byte[]>
     {

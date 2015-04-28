@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 3000, 0, 0, false, false, false, false);
 
             var rec = LogRecord.Prepare(0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "ES", -1, PrepareFlags.None, "ET", new byte[2000], null);
-            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record wasn't appended");
+            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
 
             using (var reader = chunk.AcquireReader())
             {
@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0, false, false, false, false);
             var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
-            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record wasn't appended");
+            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
@@ -113,14 +113,14 @@ namespace EventStore.Core.Tests.TransactionLog
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0, false, false, false, false);
 
             var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
-            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record wasn't appended");
+            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
             chunk.Complete();
 
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
                 var result = reader.ReadNextDataBytes(1024, buffer);
-                Assert.IsTrue(result.IsEOF, "EOF wasn't returned.");
+                Assert.IsTrue(result.IsEOF, "EOF was not returned.");
                 //does not include header and footer space
                 Assert.AreEqual(rec.GetSizeWithLengthPrefixAndSuffix(), result.BytesRead, "Read wrong number of bytes.");
             }

@@ -352,7 +352,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     Debugger.Break();
                 else
                     throw new Exception(
-                            string.Format("Commit invariant violation: new event number {0} doesn't correspond to current stream version {1}.\n"
+                            string.Format("Commit invariant violation: new event number {0} does not correspond to current stream version {1}.\n"
                                           + "Stream ID: {2}.\nCommit: {3}.", newEventNumber, lastEventNumber, streamId, commit));
             }
         }

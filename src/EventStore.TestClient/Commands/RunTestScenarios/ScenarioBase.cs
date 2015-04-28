@@ -273,7 +273,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             if (streams.Length == 0)
             {
                 Debugger.Break();
-                throw new Exception("Streams shouldn't be empty.");
+                throw new Exception("Streams should not be empty.");
             }
             Log.Info("Reading [{0}]\nfrom {1,-10} count {2,-10}", string.Join(",", streams), @from, count);
 

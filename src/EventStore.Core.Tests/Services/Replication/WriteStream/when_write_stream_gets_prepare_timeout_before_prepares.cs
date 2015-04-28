@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream
 {
-    [TestFixture, Ignore("WriteStream operation is not 2-phase now, it doesn't expect PrepareAck anymore.")]
+    [TestFixture, Ignore("WriteStream operation is not 2-phase now, it does not expect PrepareAck anymore.")]
     public class when_write_stream_gets_prepare_timeout_before_prepares : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)

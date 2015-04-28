@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
 
         /// <summary>
-        /// Doesn't filter $maxAge, $maxCount, $tb(truncate before), doesn't check stream deletion, etc.
+        /// Does not filter $maxAge, $maxCount, $tb(truncate before), does not check stream deletion, etc.
         /// </summary>
         PrepareLogRecord ReadPrepare(string streamId, int eventNumber);
 
@@ -391,7 +391,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 return ExpectedVersion.NoStream;
 
             var rec = ReadPrepareInternal(reader, latestEntry.Position);
-            if (rec == null) throw new Exception("Couldn't read latest stream's prepare! That shouldn't happen EVER!");
+            if (rec == null) throw new Exception("Could not read latest stream's prepare. That should never happen.");
             if (rec.EventStreamId == streamId) // LUCKY!!!
                 return latestEntry.Version;
 
@@ -439,7 +439,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             PrepareLogRecord prepare = ReadPrepareInternal(reader, metastreamId, metaEventNumber);
             if (prepare == null)
-                throw new Exception(string.Format("ReadPrepareInternal couldn't find metaevent #{0} on metastream '{1}'. "
+                throw new Exception(string.Format("ReadPrepareInternal could not find metaevent #{0} on metastream '{1}'. "
                                                   + "That should never happen.", metaEventNumber, metastreamId));
 
             if (prepare.Data.Length == 0 || prepare.Flags.HasNoneOf(PrepareFlags.IsJson))

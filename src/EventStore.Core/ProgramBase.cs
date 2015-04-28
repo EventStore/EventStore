@@ -265,11 +265,11 @@ namespace EventStore.Core
             {
                 StoreLocation location;
                 if (!Enum.TryParse(certificateStoreLocation, out location))
-                    throw new Exception(string.Format("Couldn't find certificate store location '{0}'", certificateStoreLocation));
+                    throw new Exception(string.Format("Could not find certificate store location '{0}'", certificateStoreLocation));
 
                 StoreName name;
                 if (!Enum.TryParse(certificateStoreName, out name))
-                    throw new Exception(string.Format("Couldn't find certificate store name '{0}'", certificateStoreName));
+                    throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
 
                 store = new X509Store(name, location);
                 
@@ -279,14 +279,14 @@ namespace EventStore.Core
                 }
                 catch (Exception exc)
                 {
-                    throw new Exception(string.Format("Couldn't open certificate store '{0}' in location {1}'.", name, location), exc);
+                    throw new Exception(string.Format("Could not open certificate store '{0}' in location {1}'.", name, location), exc);
                 }
             }
             else
             {
                 StoreName name;
                 if (!Enum.TryParse(certificateStoreName, out name))
-                    throw new Exception(string.Format("Couldn't find certificate store name '{0}'", certificateStoreName));
+                    throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
 
                 store = new X509Store(name);
 
@@ -296,7 +296,7 @@ namespace EventStore.Core
                 }
                 catch (Exception exc)
                 {
-                    throw new Exception(string.Format("Couldn't open certificate store '{0}'.", name), exc);
+                    throw new Exception(string.Format("Could not open certificate store '{0}'.", name), exc);
                 }
             }
 
@@ -308,7 +308,7 @@ namespace EventStore.Core
                 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 return certificates[0];
             }
@@ -321,7 +321,7 @@ namespace EventStore.Core
 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 return certificates[0];
             }

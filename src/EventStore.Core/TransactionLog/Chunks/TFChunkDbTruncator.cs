@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (chunks.Length == 0)
                 {
                     if (chunkNum != newLastChunkNum)
-                        throw new Exception(string.Format("Couldn't find any chunk #{0}.", chunkNum));
+                        throw new Exception(string.Format("Could not find any chunk #{0}.", chunkNum));
                     break;
                 }
                 using (var fs = File.OpenRead(chunks[0]))

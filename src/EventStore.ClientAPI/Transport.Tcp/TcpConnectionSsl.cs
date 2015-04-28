@@ -293,8 +293,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
             {
-                _log.Error("ReceiveAsync called again while previous call wasn't fulfilled");
-                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                _log.Error("ReceiveAsync called again while previous call was not fulfilled");
+                throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
             }
             TryDequeueReceivedData();
         }
