@@ -228,7 +228,7 @@ static extern int fcntl(int fd, uint command, int arg);
 
         }
 
-        public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
+        public static void Seek(SafeFileHandle handle, long position, SeekOrigin origin)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
             var f = WinNative.SetFilePointer(handle, position, null, WinNative.EMoveMethod.Begin);

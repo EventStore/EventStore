@@ -125,7 +125,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void SeekInternal(long positionAligned)
         {
-            NativeFile.Seek(_handle, (int) positionAligned, SeekOrigin.Begin);
+            NativeFile.Seek(_handle, positionAligned, SeekOrigin.Begin);
         }
 
         private void InternalWrite(byte* buffer, uint count)
