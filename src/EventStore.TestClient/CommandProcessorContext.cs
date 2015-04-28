@@ -66,7 +66,7 @@ namespace EventStore.TestClient
             else
             {
                 if (!_doneEvent.Wait(Client.Options.Timeout*1000))
-                    throw new TimeoutException("Command didn't finished within timeout.");
+                    throw new TimeoutException("Command did not finish within timeout.");
             }
         }
 
