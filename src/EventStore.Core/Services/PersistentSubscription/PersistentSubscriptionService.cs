@@ -320,14 +320,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
                     ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.DoesNotExist,
-                    "Group '" + message.GroupName + "' doesn't exist."));
+                    "Group '" + message.GroupName + "' does not exist."));
                 return;
             }
             if (!_subscriptionTopics.ContainsKey(message.EventStreamId))
             {
                 message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
                     ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.Fail,
-                    "Group '" + message.GroupName + "' doesn't exist."));
+                    "Group '" + message.GroupName + "' does not exist."));
                 return;
 
             }

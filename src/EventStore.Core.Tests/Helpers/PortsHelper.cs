@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Helpers
             {
                 int port;
                 if (!AvailablePorts.TryDequeue(out port))
-                    throw new Exception("Couldn't get free TCP port for MiniNode.");
+                    throw new Exception("Could not get free TCP port for MiniNode.");
 
 /*
                 try
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Helpers
                     AvailablePorts.Enqueue(port);
                     continue;
 //                    throw new Exception(
-//                        string.Format("HttpListener couldn't listen on port {0}, but TcpListener was OK.\nError: {1}", port, exc), exc);
+//                        string.Format("HttpListener could not listen on port {0}, but TcpListener was OK.\nError: {1}", port, exc), exc);
                 }
                 return port;
             }

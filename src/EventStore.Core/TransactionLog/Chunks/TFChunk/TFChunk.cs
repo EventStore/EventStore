@@ -465,7 +465,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         public void VerifyFileHash()
         {
             if (!IsReadOnly)
-                throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
+                throw new InvalidOperationException("Cannot verify hash of not-completed TFChunk.");
 
             Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
             using (var reader = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, true,
@@ -818,7 +818,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 {
                     throw new InvalidOperationException("Trying to write mapping while chunk is cached! "
                                                       + "You probably are writing scavenged chunk as cached. "
-                                                      + "Don't do this!");
+                                                      + "Do not do this!");
                 }
                 mapSize = mapping.Count * PosMap.FullSize;
                 workItem.Buffer.SetLength(mapSize);

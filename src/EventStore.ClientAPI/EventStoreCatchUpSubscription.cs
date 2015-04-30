@@ -150,7 +150,7 @@ namespace EventStore.ClientAPI
             Stop();
             if (Verbose) Log.Debug("Waiting on subscription to stop");
             if (!_stopped.Wait(timeout))
-                throw new TimeoutException(string.Format("Couldn't stop {0} in time.", GetType().Name));
+                throw new TimeoutException(string.Format("Could not stop {0} in time.", GetType().Name));
         }
 
         /// <summary>

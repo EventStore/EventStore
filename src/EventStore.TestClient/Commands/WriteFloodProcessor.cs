@@ -118,7 +118,7 @@ namespace EventStore.TestClient.Commands
                         {
                             var elapsed = sw2.Elapsed;
                             sw2.Restart();
-                            context.Log.Trace("\nDONE TOTAL {0} WRITES IN {1} ({2:0.0}/s) [S:{3}, F:{4} (WEV:{5}, P:{6}, C:{7}, F:{8}, D:{9})].",
+                            context.Log.Trace("\nDID {0} TOTAL WRITES IN {1} ({2:0.0}/s) [S:{3}, F:{4} (WEV:{5}, P:{6}, C:{7}, F:{8}, D:{9})].",
                                               localAll, elapsed, 1000.0*100000/elapsed.TotalMilliseconds,
                                               succ, fail,
                                               wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);

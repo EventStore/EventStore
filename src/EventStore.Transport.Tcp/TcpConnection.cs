@@ -204,8 +204,8 @@ namespace EventStore.Transport.Tcp
             {
                 if (_receiveCallback != null)
                 {
-                    Log.Fatal("ReceiveAsync called again while previous call wasn't fulfilled");
-                    throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                    Log.Fatal("ReceiveAsync called again while previous call was not fulfilled");
+                    throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
                 }
                 _receiveCallback = callback;
             }

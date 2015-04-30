@@ -137,8 +137,8 @@ namespace EventStore.Core.Messaging
             var msgTypeField = msgType.GetFields(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(x => x.Name == "TypeId");
             if (msgTypeField == null)
             {
-                Console.WriteLine("Message {0} doesn't have TypeId field!", msgType.Name);
-                throw new Exception(string.Format("Message {0} doesn't have TypeId field!", msgType.Name));
+                Console.WriteLine("Message {0} does not have TypeId field!", msgType.Name);
+                throw new Exception(string.Format("Message {0} does not have TypeId field!", msgType.Name));
             }
             var msgTypeId = (int)msgTypeField.GetValue(null);
             return msgTypeId;

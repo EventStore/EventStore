@@ -173,7 +173,7 @@ namespace EventStore.Core.Tests.Helpers
             var propNames = typeProperties.Keys.Where(name => name[0] != '<').OrderBy(name => name);
             throw new ArgumentException(
                 string.Format(
-                "The property {0} doesn't exist on type {1}. Supported properties are: {2}",
+                "The property {0} does not exist on type {1}. Supported properties are: {2}",
                 propertyName, RealObject.GetType(), string.Join(", ", propNames)));
         }
 

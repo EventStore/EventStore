@@ -31,19 +31,19 @@ namespace EventStore.ClientAPI.Common.Utils
         public static void Nonnegative(long number, string argumentName)
         {
             if (number < 0)
-                throw new ArgumentOutOfRangeException(argumentName, argumentName + " should be non negative.");
+                throw new ArgumentOutOfRangeException(argumentName, argumentName + " should be non-negative.");
         }
 
         public static void Nonnegative(int number, string argumentName)
         {
             if (number < 0)
-                throw new ArgumentOutOfRangeException(argumentName, argumentName + " should be non negative.");
+                throw new ArgumentOutOfRangeException(argumentName, argumentName + " should be non-negative.");
         }
 
         public static void NotEmptyGuid(Guid guid, string argumentName)
         {
             if (Guid.Empty == guid)
-                throw new ArgumentException(argumentName, argumentName + " shoud be non-empty GUID.");
+                throw new ArgumentException(argumentName, argumentName + " should be non-empty GUID.");
         }
 
         public static void Equal(int expected, int actual)

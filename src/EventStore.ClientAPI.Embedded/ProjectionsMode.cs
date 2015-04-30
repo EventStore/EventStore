@@ -14,7 +14,7 @@ namespace EventStore.ClientAPI.Embedded
 	/// </summary>
         System,
 	/// <summary>
-	/// Run user and system proejctions
+	/// Run user and system projections
 	/// </summary>
         All
     }

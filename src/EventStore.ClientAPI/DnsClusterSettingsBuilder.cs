@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI
         public DnsClusterSettingsBuilder SetMaxDiscoverAttempts(int maxDiscoverAttempts)
         {
             if (maxDiscoverAttempts <= 0)
-                throw new ArgumentOutOfRangeException("maxDiscoverAttempts", string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [-1, infinity].", maxDiscoverAttempts));
+                throw new ArgumentOutOfRangeException("maxDiscoverAttempts", string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [1, infinity].", maxDiscoverAttempts));
             _maxDiscoverAttempts = maxDiscoverAttempts;
             return this;
         }

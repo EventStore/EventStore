@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 var dto = package.Data.Deserialize<ClientMessage.SubscriptionDropped>();
                 if (dto.Reason == ClientMessage.SubscriptionDropped.SubscriptionDropReason.AccessDenied)
                 {
-                    DropSubscription(SubscriptionDropReason.AccessDenied, new AccessDeniedException("You don't have access to the stream."));
+                    DropSubscription(SubscriptionDropReason.AccessDenied, new AccessDeniedException("You do not have access to the stream."));
                     result = new InspectionResult(InspectionDecision.EndOperation, "SubscriptionDropped");
                     return true;
                 }
@@ -135,7 +135,7 @@ namespace EventStore.ClientAPI.ClientOperations
         /// Constructs a <see cref="MaximumSubscribersReachedException"></see>
         /// </summary>
         public MaximumSubscribersReachedException()
-            : base("Maximum subscribptions reached.")
+            : base("Maximum subscriptions reached.")
         {
             
         }

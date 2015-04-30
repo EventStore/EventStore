@@ -197,7 +197,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             lock (_receivingLock)
             {
                 if (_receiveCallback != null)
-                    throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                    throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
                 _receiveCallback = callback;
             }
 

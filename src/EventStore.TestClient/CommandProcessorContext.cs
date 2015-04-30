@@ -7,7 +7,7 @@ namespace EventStore.TestClient
 {
     /// <summary>
     /// This context is passed to the instances of <see cref="ICmdProcessor"/>
-    /// when they are executed. It can also be used for async syncrhonization
+    /// when they are executed. It can also be used for async synchronization
     /// </summary>
     public class CommandProcessorContext
     {
@@ -66,7 +66,7 @@ namespace EventStore.TestClient
             else
             {
                 if (!_doneEvent.Wait(Client.Options.Timeout*1000))
-                    throw new TimeoutException("Command didn't finished within timeout.");
+                    throw new TimeoutException("Command did not finish within timeout.");
             }
         }
 

@@ -184,7 +184,7 @@ namespace EventStore.Web.Playground
 
         private void Handle(SystemMessage.BecomeMaster message)
         {
-            Log.Info("========== [{0}] IS WORKING!!! SPARTA!!!", _httpEndPoint);
+            Log.Info("========== [{0}] IS MASTER...", _httpEndPoint);
             _state = VNodeState.Master;
             _outputBus.Publish(message);
         }
@@ -194,7 +194,7 @@ namespace EventStore.Web.Playground
             if (_state == VNodeState.ShuttingDown || _state == VNodeState.Shutdown)
                 return;
 
-            Log.Info("========== [{0}] IS SHUTTING DOWN!!! FAREWELL, WORLD...", _httpEndPoint);
+            Log.Info("========== [{0}] IS SHUTTING DOWN...", _httpEndPoint);
             _exitProcessOnShutdown = message.ExitProcess;
             _state = VNodeState.ShuttingDown;
             _mainQueue.Publish(
@@ -205,7 +205,7 @@ namespace EventStore.Web.Playground
 
         private void Handle(SystemMessage.BecomeShutdown message)
         {
-            Log.Info("========== [{0}] IS SHUT DOWN!!! SWEET DREAMS!!!", _httpEndPoint);
+            Log.Info("========== [{0}] IS SHUT DOWN.", _httpEndPoint);
             _state = VNodeState.Shutdown;
             _outputBus.Publish(message);
             if (_exitProcessOnShutdown)

@@ -89,11 +89,11 @@ namespace EventStore.ClusterNode
             {
                 _dbLock = new ExclusiveDbLock(dbPath);
                 if (!_dbLock.Acquire())
-                    throw new Exception(string.Format("Couldn't acquire exclusive lock on DB at '{0}'.", dbPath));
+                    throw new Exception(string.Format("Could not acquire exclusive lock on DB at '{0}'.", dbPath));
             }
             _clusterNodeMutex = new ClusterNodeMutex();
             if (!_clusterNodeMutex.Acquire())
-                throw new Exception(string.Format("Couldn't acquire exclusive Cluster Node mutex '{0}'.", _clusterNodeMutex.MutexName));
+                throw new Exception(string.Format("Could not acquire exclusive Cluster Node mutex '{0}'.", _clusterNodeMutex.MutexName));
 
             var dbConfig = CreateDbConfig(dbPath, opts.CachedChunks, opts.ChunksCacheSize, opts.MemDb, opts.Unbuffered, opts.WriteThrough);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk: opts.UnsafeDisableFlushToDisk);
@@ -258,7 +258,7 @@ namespace EventStore.ClusterNode
             }
             else
             {
-                Log.Info("Can't find plugins path: {0}", pluginsPath);
+                Log.Info("Cannot find plugins path: {0}", pluginsPath);
             }
 
             var compositionContainer = new CompositionContainer(catalog);

@@ -148,7 +148,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     case TcpCommand.NotHandled:
                     {
                         if (_subscription != null)
-                            throw new Exception("NotHandled command appeared while we already subscribed.");
+                            throw new Exception("NotHandled command appeared while we were already subscribed.");
 
                         var message = package.Data.Deserialize<ClientMessage.NotHandled>();
                         switch (message.Reason)

@@ -108,7 +108,7 @@ namespace EventStore.TestClient
                         }
                         catch (Exception exc)
                         {
-                            Log.ErrorException(exc, "Error during executing command.");
+                            Log.ErrorException(exc, "Error during command execution.");
                         }
                     }
                     finally

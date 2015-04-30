@@ -503,7 +503,7 @@ namespace EventStore.ClientAPI.Embedded
 	/// <param name="storeLocation">The location of the certificate store</param>
 	/// <param name="storeName">The name of the certificate store</param>
 	/// <param name="certificateSubjectName">The subject name of the certificate</param>
-	/// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
+	/// <param name="certificateThumbprint">The thumbprint of the certificate</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName, string certificateSubjectName, string certificateThumbprint)
         {
@@ -515,7 +515,7 @@ namespace EventStore.ClientAPI.Embedded
             }
             catch (Exception exc)
             {
-                throw new Exception(string.Format("Couldn't open certificate store '{0}' in location {1}'.", storeName, storeLocation), exc);
+                throw new Exception(string.Format("Could not open certificate store '{0}' in location {1}'.", storeName, storeLocation), exc);
             }
 
             if (!string.IsNullOrWhiteSpace(certificateThumbprint))
@@ -526,7 +526,7 @@ namespace EventStore.ClientAPI.Embedded
                 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 _certificate = certificates[0];
                 return this;
@@ -540,7 +540,7 @@ namespace EventStore.ClientAPI.Embedded
 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 _certificate = certificates[0];
                 return this;

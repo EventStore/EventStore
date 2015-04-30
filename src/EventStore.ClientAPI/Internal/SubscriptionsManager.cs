@@ -200,7 +200,7 @@ namespace EventStore.ClientAPI.Internal
 
             if (!subscription.Operation.Subscribe(subscription.CorrelationId, connection))
             {
-                LogDebug("StartSubscription REMOVING AS COULDN'T SUBSCRIBE {0}.", subscription);
+                LogDebug("StartSubscription REMOVING AS COULD NOT SUBSCRIBE {0}.", subscription);
                 RemoveSubscription(subscription);
             }
             else

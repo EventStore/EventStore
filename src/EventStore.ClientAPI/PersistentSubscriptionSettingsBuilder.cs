@@ -129,7 +129,7 @@ namespace EventStore.ClientAPI
 
         /// <summary>
         /// Sets that the backend should try to checkpoint the subscription after some
-        /// period of time. Note that if the increment of the ceheckpoint would be below
+        /// period of time. Note that if the increment of the checkpoint would be below
         /// the minimum the stream will not be checkpointed at this time.
         /// </summary>
         /// <remarks>

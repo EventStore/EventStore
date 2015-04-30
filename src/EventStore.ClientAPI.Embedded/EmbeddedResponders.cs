@@ -522,7 +522,7 @@ namespace EventStore.ClientAPI.Embedded
                         Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
                         break;
                     case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists:
-                        Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} alreay exists", _groupName, _stream)));
+                        Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} already exists", _groupName, _stream)));
                         break;
                     default:
                         throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));

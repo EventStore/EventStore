@@ -24,7 +24,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 var data = Common.Utils.Helper.UTF8NoBom.GetString(evnt.Data);
                 var atoms = data.Split('-');
                 if (atoms.Length != 3)
-                    throw new ApplicationException(string.Format("Invalid TestEvent object: currupted data format: {0}",
+                    throw new ApplicationException(string.Format("Invalid TestEvent object: corrupted data format: {0}",
                                                                  RecordDetailsString(evnt)));
 
                 var expectedLength = int.Parse(atoms[1]);
@@ -33,7 +33,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                                                  RecordDetailsString(evnt)));
 
                 if (new string('#', expectedLength) != atoms[2])
-                    throw new ApplicationException(string.Format("Invalid TestEvent object: currupted data: {0}",
+                    throw new ApplicationException(string.Format("Invalid TestEvent object: corrupted data: {0}",
                                                                  RecordDetailsString(evnt)));
             }
         }

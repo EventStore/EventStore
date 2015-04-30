@@ -107,7 +107,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="event">The event to mark as failed</param>
         /// <param name="action">The <see cref="PersistentSubscriptionNakEventAction"></see> action to take</param>
-        /// <param name="reason">A string with a message as to why the failure is occuring</param>
+        /// <param name="reason">A string with a message as to why the failure is occurring</param>
         public void Fail(ResolvedEvent @event, PersistentSubscriptionNakEventAction action, string reason)
         {
             _subscription.NotifyEventsFailed(new [] {@event.Event.EventId}, action, reason);
@@ -118,7 +118,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="events">The events to mark as failed</param>
         /// <param name="action">The <see cref="PersistentSubscriptionNakEventAction"></see> action to take</param>
-        /// <param name="reason">A string with a message as to why the failure is occuring</param>
+        /// <param name="reason">A string with a message as to why the failure is occurring</param>
         public void Fail(IEnumerable<ResolvedEvent> events, PersistentSubscriptionNakEventAction action, string reason)
         {
             var ids = events.Select(x => x.Event.EventId).ToArray();
@@ -138,7 +138,7 @@ namespace EventStore.ClientAPI
 
             EnqueueSubscriptionDropNotification(SubscriptionDropReason.UserInitiated, null);
             if (!_stopped.Wait(timeout))
-                throw new TimeoutException(string.Format("Couldn't stop {0} in time.", GetType().Name));
+                throw new TimeoutException(string.Format("Could not stop {0} in time.", GetType().Name));
         }
 
         private void EnqueueSubscriptionDropNotification(SubscriptionDropReason reason, Exception error)

@@ -67,7 +67,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ProtocolViolationException e)
             {
-                Log.ErrorException(e, "Attempt to set invalid http status code occurred.");
+                Log.ErrorException(e, "Attempt to set invalid HTTP status code occurred.");
             }
         }
 

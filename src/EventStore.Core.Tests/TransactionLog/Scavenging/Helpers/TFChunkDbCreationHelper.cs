@@ -220,7 +220,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
                     var writerRes = chunk.TryAppend(record);
                     if (!writerRes.Success)
-                        throw new Exception(string.Format("Couldn't write log record: {0}", record));
+                        throw new Exception(string.Format("Could not write log record: {0}", record));
                     _db.Config.WriterCheckpoint.Write(i * (long)_db.Config.ChunkSize + writerRes.NewPosition);
 
                     records[i][j] = record;
