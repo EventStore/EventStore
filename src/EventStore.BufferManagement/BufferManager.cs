@@ -269,7 +269,7 @@ namespace EventStore.BufferManagement
         private void CheckBuffer(ArraySegment<byte> buffer)
         {
             if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
-                throw new Exception("Attempt to check invalid buffer");
+                throw new Exception("Attempt to check in invalid buffer");
             if (buffer.Count != _chunkSize) 
                 throw new ArgumentException("Buffer was not of the same chunk size as the buffer manager", "buffer");
         }
