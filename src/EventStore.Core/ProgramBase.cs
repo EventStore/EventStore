@@ -105,7 +105,7 @@ namespace EventStore.Core
 					"in later versions of Mono. Use the --gc=sgen flag on Mono to use the generational sgen collector instead. If you want to " + 
 					"run with the Boehm GC you can use --force flag on Event Store to override this error.");
                 }
-                if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
+                if(OS.IsUnix && !(OS.GetRuntimeVersion().StartsWith("3") || OS.GetRuntimeVersion().StartsWith("4")) )
                 {
                     Application.Exit(4, "It appears that we are running in Linux or MacOS with a version 2 build of Mono. This is generally not a good idea " +
 		                        "and we recommend running with Mono 3.6 or higher. If you really want to run with this version of Mono use the --force " +
