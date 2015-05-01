@@ -918,6 +918,89 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
     }
 
+    [TestFixture]
+    public class RemoveClientTests
+    {
+        [Test]
+        public void unsubscribing_a_client_retries_inflight_messages_immediately()
+        {
+            var client1Envelope = new FakeEnvelope();
+            var client2Envelope = new FakeEnvelope();
+
+            var fakeCheckpointReader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(fakeCheckpointReader)
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferRoundRobin()
+                    .StartFromCurrent()
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
+            fakeCheckpointReader.Load(null);
+
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
+            var client2Id = Guid.NewGuid();
+            sub.AddClient(client2Id, Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+
+
+            Assert.IsTrue(sub.HasClients);
+            Assert.AreEqual(2, sub.ClientCount);
+
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1));
+
+            Assert.AreEqual(1, client1Envelope.Replies.Count);
+            Assert.AreEqual(1, client2Envelope.Replies.Count);
+
+            sub.RemoveClientByCorrelationId(client2Id, false);
+            Assert.AreEqual(1, sub.ClientCount);
+
+            // Message 2 should be retried on client 1 as it wasn't acked.
+            Assert.AreEqual(2, client1Envelope.Replies.Count);
+            Assert.AreEqual(1, client2Envelope.Replies.Count);
+        }
+
+        [Test]
+        public void disconnecting_a_client_retries_inflight_messages_immediately()
+        {
+            var client1Envelope = new FakeEnvelope();
+            var client2Envelope = new FakeEnvelope();
+
+            var fakeCheckpointReader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(fakeCheckpointReader)
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferRoundRobin()
+                    .StartFromCurrent()
+            .WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
+            fakeCheckpointReader.Load(null);
+
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
+            var connectionId = Guid.NewGuid();
+            sub.AddClient(Guid.NewGuid(), connectionId, client2Envelope, 10, "foo", "bar");
+
+            Assert.IsTrue(sub.HasClients);
+            Assert.AreEqual(2, sub.ClientCount);
+
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1));
+
+            Assert.AreEqual(1, client1Envelope.Replies.Count);
+            Assert.AreEqual(1, client2Envelope.Replies.Count);
+
+            sub.RemoveClientByConnectionId(connectionId);
+
+            Assert.AreEqual(1, sub.ClientCount);
+
+            // Message 2 should be retried on client 1 as it wasn't acked.
+            Assert.AreEqual(2, client1Envelope.Replies.Count);
+            Assert.AreEqual(1, client2Envelope.Replies.Count);
+        }
+    }
 
     [TestFixture]
     public class DeadlockTest : TestWithNode

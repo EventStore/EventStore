@@ -254,6 +254,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     RetryMessage(m, 0);
                 }
+
+                TryPushingMessagesToClients();
             }
         }
 
@@ -261,7 +263,14 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             lock (_lock)
             {
-                _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification);
+                var lostMessages = _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification)
+                    .OrderBy(v => v.OriginalEventNumber);
+                foreach (var m in lostMessages)
+                {
+                    RetryMessage(m, 0);
+                }
+
+                TryPushingMessagesToClients();
             }
         }
 
