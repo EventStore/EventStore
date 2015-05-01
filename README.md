@@ -61,9 +61,11 @@ Unfortunately Visual Studio runs these scripts in 32-bit PowerShell. Since it’
 #### Prerequisites
 
 - Git on `PATH`
-- Mono version 3.2.3 (minimum version, preferably later) development packages on `PATH`, and registered with `pkg-config`, such that `which xbuild` and `pkg-config --cflags monosgen-2` return a zero return codes.
+- 64 bit Mono version 3.2.3 (minimum version, preferably later) development packages on `PATH`, and registered with `pkg-config` by way of setting `$PKG_CONFIG_PATH` to `/path/to/mono/lib/pkgconfig`, such that the exit codes of both `which xbuild` and `pkg-config --cflags monosgen-2` are 0.
 - SVN on `PATH`
 - GCC installed
+
+Note that if you are using the Xamarin packages on OS X you will have a 32 bit build of Mono. This is OK for development, but not for any serious workload, and is completely untested and unsupported. If Mono is installed in this manner, `$PKG_CONFIG_PATH` will likely need to include `/Library/Frameworks/Mono.framework/Libraries/pkgconfig/`.
 
 #### Building Event Store
 

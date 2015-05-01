@@ -33,8 +33,8 @@ type gcc >/dev/null 2>&1 || { echo >&2 "Building requires GCC (gcc) on the path.
 type xbuild >/dev/null 2>&1 || { echo >&2 "Building requires XBuild (xbuild) from Mono on the path. Aborting."; exit 1; }
 type svn >/dev/null 2>&1 || { echo >&2 "Building requires Subversion (svn) on the path. Aborting."; exit 1; }
 type git >/dev/null 2>&1 || { echo >&2 "Building requires Git (git) on the path. Aborting."; exit 1; }
-#pkgoutput=`pkg-config --cflags monosgen-2`
-#[[ "$?" -eq 0 ]] || { echo >&2 "Packaging requires monosgen-2 to be discoverable via pkg-config. Aborting."; exit 1; }
+pkgoutput=`pkg-config --cflags monosgen-2`
+[[ "$?" -eq 0 ]] || { echo >&2 "Packaging requires monosgen-2 to be discoverable via pkg-config. Consider setting \$PKG_CONFIG_PATH to the /lib/pkgconfig subdirectory of your Mono installation. Aborting."; exit 1; }
 # ------------ End of configuration -------------
 
 function usage() {
