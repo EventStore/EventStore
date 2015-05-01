@@ -87,7 +87,7 @@ namespace EventStore.ClientAPI
         /// <param name="event">The <see cref="ResolvedEvent"></see> to acknowledge</param>
         public void Acknowledge(ResolvedEvent @event)
         {
-            _subscription.NotifyEventsProcessed(new[] { @event.Event.EventId });
+            _subscription.NotifyEventsProcessed(new[] { @event.OriginalEvent.EventId });
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace EventStore.ClientAPI
         /// <param name="events">The <see cref="ResolvedEvent"></see>s to acknowledge there should be less than 2000 to ack at a time.</param>
         public void Acknowledge(IEnumerable<ResolvedEvent> events)
         {
-            var ids = events.Select(x => x.Event.EventId).ToArray();
+            var ids = events.Select(x => x.OriginalEvent.EventId).ToArray();
             if(ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
             _subscription.NotifyEventsProcessed(ids);
         }
@@ -110,7 +110,7 @@ namespace EventStore.ClientAPI
         /// <param name="reason">A string with a message as to why the failure is occurring</param>
         public void Fail(ResolvedEvent @event, PersistentSubscriptionNakEventAction action, string reason)
         {
-            _subscription.NotifyEventsFailed(new [] {@event.Event.EventId}, action, reason);
+            _subscription.NotifyEventsFailed(new [] {@event.OriginalEvent.EventId}, action, reason);
         }
 
         /// <summary>
