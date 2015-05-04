@@ -43,7 +43,7 @@ namespace EventStore.Common.Utils
         public static void NotEmptyGuid(Guid guid, string argumentName)
         {
             if (Guid.Empty == guid)
-                throw new ArgumentException(argumentName, argumentName + " shoud be non-empty GUID.");
+                throw new ArgumentException(argumentName, argumentName + " should be non-empty GUID.");
         }
 
         public static void Equal(int expected, int actual, string argumentName)
