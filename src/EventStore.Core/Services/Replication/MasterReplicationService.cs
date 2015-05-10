@@ -129,7 +129,7 @@ namespace EventStore.Core.Services.Replication
                 {
                     ReplicaSubscription existingSubscr;
                     _subscriptions.TryGetValue(subscription.SubscriptionId, out existingSubscr);
-                    var msg = string.Format("There is already subscription with SubscriptionID {0:B}: {1}.\nSubscription we tried to add: {2}",
+                    var msg = string.Format("There is already a subscription with SubscriptionID {0:B}: {1}.\nSubscription we tried to add: {2}",
                                             subscription.SubscriptionId, existingSubscr, subscription);
                     Log.Error(msg);
                     subscription.SendBadRequestAndClose(message.CorrelationId, msg);
@@ -162,8 +162,8 @@ namespace EventStore.Core.Services.Replication
             }
             catch (Exception exc)
             {
-                Log.ErrorException(exc, "Exception during subscribing replica. Connection will be dropped.");
-                replica.SendBadRequestAndClose(correlationId, string.Format("Exception during subscribing replica. Connection will be dropped. Error: {0}", exc.Message));
+                Log.ErrorException(exc, "Exception while subscribing replica. Connection will be dropped.");
+                replica.SendBadRequestAndClose(correlationId, string.Format("Exception while subscribing replica. Connection will be dropped. Error: {0}", exc.Message));
                 return false;
             }
         }

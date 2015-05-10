@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
              "OK",
              entity.ResponseCodec.ContentType,
              null,
-             e => Log.ErrorException(e, "Error while writing http response (info)"));
+             e => Log.ErrorException(e, "Error while writing HTTP response (info)"));
         }
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                         "OK",
                                         entity.ResponseCodec.ContentType,
                                         null,
-                                        e => Log.ErrorException(e, "error while writing http response (options)"));
+                                        e => Log.ErrorException(e, "error while writing HTTP response (options)"));
             }
             else
             {
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                             "OK",
                                             entity.ResponseCodec.ContentType,
                                             null,
-                                            e => Log.ErrorException(e, "error while writing http response (options)"));
+                                            e => Log.ErrorException(e, "error while writing HTTP response (options)"));
                                     }
                                     catch (Exception ex)
                                     {
@@ -108,7 +108,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                     reason,
                                     httpEntityManager.ResponseCodec.ContentType,
                                     null,
-                                    e => Log.Debug("Error while closing http connection (bad request): {0}.", e.Message));
+                                    e => Log.Debug("Error while closing HTTP connection (bad request): {0}.", e.Message));
             return new RequestParams(done: true);
         }
 
