@@ -234,7 +234,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case OperationResult.WrongExpectedVersion:
-                    RequestRestart(string.Format("The '{0}' stream has be written to from the outside", _streamId));
+                    RequestRestart(string.Format("The '{0}' stream has been written to from the outside", _streamId));
                     break;
                 case OperationResult.PrepareTimeout:
                 case OperationResult.ForwardTimeout:
@@ -444,7 +444,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case OperationResult.WrongExpectedVersion:
-                    RequestRestart(string.Format("The '{0}' stream has be written to from the outside", _streamId));
+                    RequestRestart(string.Format("The '{0}' stream has been written to from the outside", _streamId));
                     break;
                 case OperationResult.PrepareTimeout:
                 case OperationResult.ForwardTimeout:
@@ -628,7 +628,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (failed)
                 throw new InvalidEmittedEventSequenceExceptioin(
                     string.Format(
-                        "An event emitted in recovery differ from the originally emitted event.  Existing('{0}', '{1}'). New('{2}', '{3}')",
+                        "An event emitted in recovery differs from the originally emitted event.  Existing('{0}', '{1}'). New('{2}', '{3}')",
                         topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType, eventsToWrite.CausedByTag));
             return topAlreadyCommitted;
         }

@@ -370,7 +370,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                         ParkMessage(e, reason, count + 1);
                         return;
                     }
-                    Log.Error("Unable to park message {0}/{1} operation failed {2} after retries. possible message loss.", e.OriginalStreamId,
+                    Log.Error("Unable to park message {0}/{1} operation failed {2} after retries. Possible message loss.", e.OriginalStreamId,
                         e.OriginalEventNumber, result);
                 }
                 lock (_lock)

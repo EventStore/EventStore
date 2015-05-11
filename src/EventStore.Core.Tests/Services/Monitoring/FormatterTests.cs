@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.Monitoring
         [TestCase(79725330432UL, Result = "74.25GiB")]
         [TestCase(1099511627776UL, Result = "1TiB")]
         [TestCase(1125899906842624UL, Result = "1024TiB")]
-        [TestCase(ulong.MaxValue, Result = "more then long.MaxValue")] //16777215TiB
+        [TestCase(ulong.MaxValue, Result = "more than long.MaxValue")] //16777215TiB
         public string test_size_multiple_cases_ulong(ulong bytes )
         {
             return bytes.ToFriendlySizeString();
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.Services.Monitoring
         [TestCase(79725330432UL, Result = "74.25G")]
         [TestCase(1099511627776UL, Result = "1T")]
         [TestCase(1125899906842624UL, Result = "1024T")]
-        [TestCase(ulong.MaxValue, Result = "more then long.MaxValue")] //16777215TiB
+        [TestCase(ulong.MaxValue, Result = "more than long.MaxValue")] //16777215TiB
         public string test_number_multiple_cases_ulong(ulong number )
         {
             return number.ToFriendlyNumberString();

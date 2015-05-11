@@ -41,7 +41,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.BadRequest,
                                           reason,
-                                          e => Log.Debug("Error while closing http connection (bad request): {0}.", e.Message));
+                                          e => Log.Debug("Error while closing HTTP connection (bad request): {0}.", e.Message));
             return new RequestParams(done: true);
         }
 
@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.RequestEntityTooLarge,
                                           "Too large events received. Limit is 4mb",
-                                          e => Log.Debug("Too large events received over http"));
+                                          e => Log.Debug("Too large events received over HTTP"));
             return new RequestParams(done: true);
         }
 
@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.OK,
                                           "OK",
-                                          e => Log.Debug("Error while closing http connection (ok): {0}.", e.Message));
+                                          e => Log.Debug("Error while closing HTTP connection (ok): {0}.", e.Message));
             return new RequestParams(done: true);
         }
 

@@ -67,7 +67,7 @@ namespace EventStore.Common.Options
             var configFile = effectiveOptions.FirstOrDefault(x => x.Name.Equals(ConfigKey, StringComparison.OrdinalIgnoreCase)).Value as string;
             if (!File.Exists(configFile))
             {
-                throw new Exception("A configuration file must be available for use with updating of the options.");
+                throw new Exception("A configuration file must be available in order to update options.");
             }
 
             optionSources = optionSources

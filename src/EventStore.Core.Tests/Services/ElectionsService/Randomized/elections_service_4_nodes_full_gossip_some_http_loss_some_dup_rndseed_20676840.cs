@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
             var success = _randomCase.Run();
             if (!success)
                 _randomCase.Logger.LogMessages();
-            Console.WriteLine("There were total {0} messages in this run.", _randomCase.Logger.ProcessedItems.Count());
+            Console.WriteLine("There were a total of {0} messages in this run.", _randomCase.Logger.ProcessedItems.Count());
             Assert.True(success);
         }
     }

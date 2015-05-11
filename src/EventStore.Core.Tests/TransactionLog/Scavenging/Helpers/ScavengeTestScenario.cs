@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             base.TestFixtureTearDown();
 
             if (!_checked)
-                throw new Exception("Records weren't checked. Probably you forgot to call CheckRecords() method.");
+                throw new Exception("Records were not checked. Probably you forgot to call CheckRecords() method.");
         }
 
         protected abstract DbResult CreateDb(TFChunkDbCreationHelper dbCreator);

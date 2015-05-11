@@ -77,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Http
             else
             {
                 Application.Exit(ExitCode.Error,
-                                 string.Format("Http async server failed to start listening at [{0}].", 
+                                 string.Format("HTTP async server failed to start listening at [{0}].", 
                                                string.Join(", ", _server._listenPrefixes)));
             }
         }

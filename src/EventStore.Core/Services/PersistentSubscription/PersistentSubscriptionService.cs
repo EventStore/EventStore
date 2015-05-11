@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher, IPublisher bus)
         {
-            Ensure.NotNull(queuedHandler, "queudHandler");
+            Ensure.NotNull(queuedHandler, "queuedHandler");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.NotNull(ioDispatcher, "ioDispatcher");
 
@@ -586,7 +586,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("There was an error loading configuration from storage something is wrong.", ex);
+                        Log.Error("There was an error loading configuration from storage.", ex);
                     }
                     break;
                 case ReadStreamResult.NoStream:
@@ -594,7 +594,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     continueWith();
                     break;
                 default:
-                    throw new Exception(readStreamEventsBackwardCompleted.Result + " is an unexpected result writing subscription configuration. Something is wrong.");
+                    throw new Exception(readStreamEventsBackwardCompleted.Result + " is an unexpected result writing subscription configuration.");
             }
         }
 
@@ -619,7 +619,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     SaveConfiguration(continueWith);
                     break;
                 default:
-                    throw new Exception(obj.Result + " is an unexpected result writing subscription configuration. Something is wrong.");
+                    throw new Exception(obj.Result + " is an unexpected result writing subscription configuration.");
             }
         }
 

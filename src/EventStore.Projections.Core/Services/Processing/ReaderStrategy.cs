@@ -57,8 +57,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams()
                 && string.IsNullOrEmpty(sources.CatalogStream))
+                // TODO This exception message needs a translation.
                 throw new InvalidOperationException("None of streams and categories are included");
             if (!sources.AllEvents && !sources.HasEvents())
+                // TODO This exception message needs a translation.  I *think* it means to say, "No events are included".
                 throw new InvalidOperationException("None of events are included");
             if (sources.HasStreams() && sources.HasCategories())
                 throw new InvalidOperationException(
