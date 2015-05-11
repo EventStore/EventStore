@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_logger != null)
                     _logger.Trace(
-                        "Checkpoint has be written for projection {0} at sequence number {1} (current)", _name,
+                        "Checkpoint has been written for projection {0} at sequence number {1} (current)", _name,
                         firstWrittenEventNumber);
                 _lastWrittenCheckpointEventNumber = firstWrittenEventNumber;
 

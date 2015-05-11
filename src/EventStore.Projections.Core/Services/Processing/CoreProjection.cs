@@ -341,7 +341,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 SetFaulted(
                     string.Format(
-                        "A concurrency violation detected, but the projection is not running. Current state is: {0}.  The reason for the restart is: '{1}' ",
+                        "A concurrency violation was detected, but the projection is not running. Current state is: {0}.  The reason for the restart is: '{1}' ",
                         _state, message.Reason));
                 return;
             }

@@ -221,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_disposed)
                 return;
             if (!_eventsRequested)
-                throw new InvalidOperationException("Read events has not been requested");
+                throw new InvalidOperationException("Read events have not been requested");
             if (Paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
@@ -328,7 +328,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
             //NOTE: we do not throw exception if read operation is already in progress as we have
-            // a mix of read operations and allow multiple in progress. However, only one seauential read
+            // a mix of read operations and allow multiple in progress. However, only one sequential read
             // from the catalog is permitted at any time
             if (_eventsRequested)
                 return;
