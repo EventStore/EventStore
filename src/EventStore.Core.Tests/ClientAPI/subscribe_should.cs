@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
                 {
                     store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
-                    Assert.IsTrue(appeared.Wait(Timeout), "Event appeared countdown event timed out.");
+                    Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
                 }
             }
         }

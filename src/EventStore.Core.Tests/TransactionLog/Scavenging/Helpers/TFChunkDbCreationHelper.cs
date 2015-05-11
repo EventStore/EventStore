@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                     else
                     {
                         if (rec.Type == Rec.RecType.TransStart)
-                            throw new Exception(string.Format("Not expected record type: {0}.", rec.Type));
+                            throw new Exception(string.Format("Unexpected record type: {0}.", rec.Type));
                     }
 
                     if (transInfo.StreamId != rec.StreamId)

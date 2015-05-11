@@ -26,14 +26,14 @@ namespace EventStore.Core.Tests.Services
         }
 
         [Test]
-        public void bunk_json_causes_bad_config_data_exception()
+        public void bad_json_causes_bad_config_data_exception()
         {
-            var bunkdata = Encoding.UTF8.GetBytes("{'some weird shit' : 'something'}");
+            var bunkdata = Encoding.UTF8.GetBytes("{'some weird stuff' : 'something'}");
             Assert.Throws<BadConfigDataException>(() => PersistentSubscriptionConfig.FromSerializedForm(bunkdata));
         }
 
         [Test]
-        public void random_crap_data_causes_bad_config_data_exception()
+        public void random_bad_data_causes_bad_config_data_exception()
         {
             var bunkdata = Encoding.UTF8.GetBytes("This ain't even valid json");
             Assert.Throws<BadConfigDataException>(() => PersistentSubscriptionConfig.FromSerializedForm(bunkdata));

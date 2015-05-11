@@ -948,7 +948,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             },
                 (sub, reason, ex) => { });
 
-            Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(120)), "Failed to recieve all events in 2 minutes. Assume event store is deadlocked.");
+            Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(120)), "Failed to receive all events in 2 minutes. Assume event store is deadlocked.");
             sub1.Stop(TimeSpan.FromSeconds(10));
             eventStoreConnection.Close();
 

@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
             if (!success)
                 _randomCase.Logger.LogMessages();
 
-            Console.WriteLine("There were total {0} messages in this run.", _randomCase.Logger.ProcessedItems.Count());
+            Console.WriteLine("There were a total of {0} messages in this run.", _randomCase.Logger.ProcessedItems.Count());
             Console.WriteLine("There were {0} GossipUpdated messages in this run.",
                               _randomCase.Logger.ProcessedItems.Count(x => x.Message is GossipMessage.GossipUpdated));
 
@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
             if (!success)
                 _randomCase.Logger.LogMessages();
 
-            Console.WriteLine("There were total {0} messages in this run.", _randomCase.Logger.ProcessedItems.Count());
+            Console.WriteLine("There were a total of {0} messages in this run.", _randomCase.Logger.ProcessedItems.Count());
             Console.WriteLine("There were {0} GossipUpdated messages in this run.",
                               _randomCase.Logger.ProcessedItems.Count(x => x.Message is GossipMessage.GossipUpdated));
 

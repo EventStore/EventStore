@@ -127,7 +127,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                 fs.Position = ChunkHeader.Size + _config.WriterCheckpoint.Read()%_config.ChunkSize;
                 fs.Read(shouldBeZeros, 0, shouldBeZeros.Length);
 
-                Assert.IsTrue(shouldBeZeros.All(x => x == 0), "Chunk is not zeroed!");
+                Assert.IsTrue(shouldBeZeros.All(x => x == 0), "Chunk is not zeroed.");
             }
         }
     }
