@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.VNode
                 (x, y) =>
                 { 
                     throw new Exception(
-                        string.Format("Forwarding for InternalCorrId {0:B} (ClientCorrId {1:B}) already exists!",
+                        string.Format("Forwarding for InternalCorrId {0:B} (ClientCorrId {1:B}) already exists.",
                                       internalCorrId, clientCorrId));
                 });
         }

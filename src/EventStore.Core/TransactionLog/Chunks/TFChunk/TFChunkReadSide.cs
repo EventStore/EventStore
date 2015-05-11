@@ -144,7 +144,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             private Midpoint[] PopulateMidpoints(int depth)
             {
                 if (depth > 31)
-                    throw new ArgumentOutOfRangeException("depth", "Too large depth for midpoints.");
+                    throw new ArgumentOutOfRangeException("depth", "Depth too for midpoints.");
 
                 if (Chunk.ChunkFooter.MapCount == 0) // empty chunk
                     return null;
@@ -456,6 +456,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 length = workItem.Reader.ReadInt32();
                 if (length <= 0)
                 {
+                    // TODO - Is it intentional not to include the Chunk in the exception, like the ones below do?
                     throw new InvalidReadException(
                         string.Format("Log record at actual pos {0} has non-positive length: {1}. "
                                       + " in chunk.", actualPosition, length, Chunk));

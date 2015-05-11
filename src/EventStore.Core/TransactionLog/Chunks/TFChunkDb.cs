@@ -103,7 +103,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (!readOnly)
                     {
                         Log.Info("Moving WriterCheckpoint from {0} to {1}, as it points to the scavenged chunk. "
-                                 + "If that was not caused by replication of scavenged chunks, that could be bug!",
+                                 + "If that was not caused by replication of scavenged chunks, that could be a bug.",
                                  checkpoint, lastChunk.ChunkHeader.ChunkEndPosition);
                         Config.WriterCheckpoint.Write(lastChunk.ChunkHeader.ChunkEndPosition);
                         Config.WriterCheckpoint.Flush();

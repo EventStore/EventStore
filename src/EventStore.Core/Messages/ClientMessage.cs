@@ -1209,7 +1209,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        //End of persistens subscritions
+        //End of persistence subscriptions
 
 
         public class SubscribeToStream : ReadRequestMessage

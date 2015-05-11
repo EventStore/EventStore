@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeToAllAsync(false, (s, x) => { }, (s, r, e) => { }).Wait();
                 Thread.Sleep(100);
 
-                Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
+                Assert.IsFalse(appeared.Wait(0), "Some event appeared.");
                 Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
                 subscription.Stop(Timeout);
                 Assert.IsTrue(dropped.Wait(Timeout));

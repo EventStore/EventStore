@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 Thread.Sleep(100); // give time for first pull phase
                 store.SubscribeToStreamAsync(stream, false, (s, x) => { }, (s, r, e) => { }).Wait();
                 Thread.Sleep(100);
-                Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
+                Assert.IsFalse(appeared.Wait(0), "Some event appeared.");
                 Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
                 subscription.Stop(Timeout);
                 Assert.IsTrue(dropped.Wait(Timeout));
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Event appeared countdown event timed out.");
+                    Assert.Fail("Appeared countdown event timed out.");
                 }
 
                 Assert.IsFalse(dropped.Wait(0));

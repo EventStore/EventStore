@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
         protected override void OnBeforeTruncating()
         {
-            // svacenged chunk names
+            // scavenged chunk names
             // TODO MM: avoid this complexity - try scavenging exactly at where its invoked and not wait for readIndex to rebuild
             chunk0 = GetChunkName(0);
             chunk1 = GetChunkName(1);
