@@ -211,6 +211,7 @@ message CreatePersistentSubscription {
 	required int32 checkpoint_max_count = 13;
 	required int32 checkpoint_min_count = 14;
 	required int32 subscriber_max_count = 15;
+	optional string named_consumer_strategy = 16;
 }
 
 message DeletePersistentSubscription {
@@ -234,6 +235,7 @@ message UpdatePersistentSubscription {
 	required int32 checkpoint_max_count = 13;
 	required int32 checkpoint_min_count = 14;
 	required int32 subscriber_max_count = 15;
+	optional string named_consumer_strategy = 16;
 }
 
 message UpdatePersistentSubscriptionCompleted {

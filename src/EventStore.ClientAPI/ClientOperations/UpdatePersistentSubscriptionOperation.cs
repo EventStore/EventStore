@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Internal;
@@ -20,10 +21,11 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _liveBufferSize;
         private readonly int _readBatchSize;
         private readonly int _bufferSize;
-        private readonly bool _preferRoundRobin;
         private readonly int _checkPointAfter;
         private readonly int _minCheckPointCount;
         private readonly int _maxCheckPointCount;
+        private readonly string _namedConsumerStrategy;
+        private readonly int _maxSubscriberCount;
 
         public UpdatePersistentSubscriptionOperation(ILogger log,
             TaskCompletionSource<PersistentSubscriptionUpdateResult> source,
@@ -43,18 +45,19 @@ namespace EventStore.ClientAPI.ClientOperations
             _readBatchSize = settings.ReadBatchSize;
             _bufferSize = settings.HistoryBufferSize;
             _recordStatistics = settings.ExtraStatistics;
-            _preferRoundRobin = settings.PreferRoundRobin;
             _messageTimeoutMilliseconds = (int)settings.MessageTimeout.TotalMilliseconds;
             _checkPointAfter = (int)settings.CheckPointAfter.TotalMilliseconds;
             _minCheckPointCount = settings.MinCheckPointCount;
             _maxCheckPointCount = settings.MaxCheckPointCount;
+            _maxSubscriberCount = settings.MaxSubscriberCount;
+            _namedConsumerStrategy = settings.NamedConsumerStrategy;
         }
 
         protected override object CreateRequestDto()
         {
             return new ClientMessage.UpdatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
-                _recordStatistics, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin, _checkPointAfter,
-                _maxCheckPointCount, _minCheckPointCount);
+                _recordStatistics, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _namedConsumerStrategy == SystemConsumerStrategies.RoundRobin, _checkPointAfter,
+                _maxCheckPointCount, _minCheckPointCount, _maxSubscriberCount, _namedConsumerStrategy);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.UpdatePersistentSubscriptionCompleted response)

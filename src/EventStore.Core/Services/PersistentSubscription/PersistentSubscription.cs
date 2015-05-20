@@ -73,7 +73,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _lastCheckPoint = -1;
             _statistics.SetLastKnownEventNumber(-1);
             _settings.CheckpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
-            _pushClients = new PersistentSubscriptionClientCollection(_settings.PreferRoundRobin);
+
+            _pushClients = new PersistentSubscriptionClientCollection(_settings.ConsumerStrategy);
         }
 
         private void OnCheckpointLoaded(int? checkpoint)
@@ -167,11 +168,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             lock (_lock)
             {
                 if (_state == PersistentSubscriptionState.NotReady) return;
+
                 while (true)
                 {
                     OutstandingMessage message;
                     if (!_streamBuffer.TryPeek(out message)) return;
-                    if (!_pushClients.PushMessageToClient(message.ResolvedEvent)) return;
+                    if (_pushClients.PushMessageToClient(message.ResolvedEvent) == ConsumerPushResult.NoMoreCapacity) return;
                     if (!_streamBuffer.TryDequeue(out message))
                     {
                         throw new WTFException(
@@ -181,6 +183,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                         _lastKnownMessage = message.ResolvedEvent.OriginalEventNumber;
                     MarkBeginProcessing(message);
                 }
+                
             }
         }
 
@@ -376,7 +379,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 lock (_lock)
                 {
                     _outstandingMessages.Remove(e.OriginalEvent.EventId);
-                    _pushClients.RemoveProcessingMessage(e); 
+                    _pushClients.RemoveProcessingMessage(e.OriginalEvent.EventId); 
                     TryPushingMessagesToClients();
                 }
             });
@@ -492,7 +495,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             Log.Debug("Retrying message {0} {1}/{2}", SubscriptionId, @event.OriginalStreamId, @event.OriginalPosition);
             _outstandingMessages.Remove(@event.Event.EventId);
-            _pushClients.RemoveProcessingMessage(@event);
+            _pushClients.RemoveProcessingMessage(@event.Event.EventId);
             _streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, count + 1));
         }
 
@@ -515,7 +518,8 @@ namespace EventStore.Core.Services.PersistentSubscription
 
     public class WTFException : Exception
     {
-        public WTFException(string message) : base(message)
+        public WTFException(string message)
+            : base(message)
         {
         }
     }

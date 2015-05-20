@@ -429,6 +429,7 @@ namespace EventStore.ClientAPI.Embedded
 
             var corrId = Guid.NewGuid();
 
+
             _publisher.PublishWithAuthentication(_authenticationProvider, credentials, source.SetException, user => new ClientMessage.CreatePersistentSubscription(
                 corrId, 
                 corrId,
@@ -443,11 +444,11 @@ namespace EventStore.ClientAPI.Embedded
                 settings.HistoryBufferSize,
                 settings.LiveBufferSize,
                 settings.ReadBatchSize,
-                settings.PreferRoundRobin,
                 (int)settings.CheckPointAfter.TotalMilliseconds,
                 settings.MinCheckPointCount,
                 settings.MaxCheckPointCount,
                 settings.MaxSubscriberCount,
+                settings.NamedConsumerStrategy,
                 user,
                 credentials == null ? null : credentials.Username,
                 credentials == null ? null : credentials.Password));
@@ -481,11 +482,11 @@ namespace EventStore.ClientAPI.Embedded
                 settings.HistoryBufferSize,
                 settings.LiveBufferSize,
                 settings.ReadBatchSize,
-                settings.PreferRoundRobin,
                 (int) settings.CheckPointAfter.TotalMilliseconds,
                 settings.MinCheckPointCount,
                 settings.MaxCheckPointCount,
                 settings.MaxSubscriberCount,
+                settings.NamedConsumerStrategy,
                 user,
                 credentials == null ? null : credentials.Username,
                 credentials == null ? null : credentials.Password));
