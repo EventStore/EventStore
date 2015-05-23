@@ -1002,7 +1002,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
     }
 
-    [TestFixture]
+    [TestFixture, Ignore("very long test")]
     public class DeadlockTest : TestWithNode
     {
         [Test]
@@ -1015,11 +1015,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var userCredentials = new UserCredentials("admin", "changeit");
             eventStoreConnection.CreatePersistentSubscriptionAsync("TestStream", "TestGroup", persistentSubscriptionSettings, userCredentials).Wait();
 
-            const int count = 50000;
+            const int count = 5000;
             eventStoreConnection.AppendToStreamAsync("TestStream", ExpectedVersion.Any, CreateEvent().Take(count)).Wait();
 
 
-            int received = 0;
+            var received = 0;
             var manualResetEventSlim = new ManualResetEventSlim();
             var sub1 = eventStoreConnection.ConnectToPersistentSubscription("TestStream", "TestGroup", (sub, ev) =>
             {
@@ -1030,8 +1030,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 }
             },
                 (sub, reason, ex) => { });
-
-            Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(120)), "Failed to receive all events in 2 minutes. Assume event store is deadlocked.");
+            Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(30)), "Failed to receive all events in 2 minutes. Assume event store is deadlocked.");
             sub1.Stop(TimeSpan.FromSeconds(10));
             eventStoreConnection.Close();
 
