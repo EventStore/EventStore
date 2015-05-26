@@ -210,11 +210,18 @@ namespace EventStore.Core.TransactionLog.Chunks
             for (int i = chunkStartNumber; i <= chunkEndNumber;)
             {
                 var chunk = _chunks[i];
-                if(chunk != null) {
+                if (chunk != null)
+                {
                     var chunkHeader = chunk.ChunkHeader;
                     if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
                         return false;
                     i = chunkHeader.ChunkEndNumber + 1;
+                }
+                else
+                {
+                    //Cover the case of initial replication of merged chunks where they were never set
+                    // in the map in the first place.
+                    i = i + 1;
                 }
             }
 
