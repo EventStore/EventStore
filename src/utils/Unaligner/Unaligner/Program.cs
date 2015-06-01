@@ -34,6 +34,9 @@ namespace Unaligner
         private static void PrintUsage()
         {
             Console.WriteLine("Usage: unalign pathtodb");
+            Console.WriteLine(new string('*', 80));
+            Console.WriteLine("WARNING THIS PROGRAM ALTERS CHUNK FILES USE ONLY IN OFFLINE MODE AND BACK UP FIRST");
+            Console.WriteLine(new string('*', 80));
         }
 
         private static void Die(string message)
@@ -50,7 +53,7 @@ namespace Unaligner
                 SetAttributes(filename, false);
                 using (var stream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
                 {
-                    Console.WriteLine("File name '{0}' size is {0}", filename, stream.Length);
+                    Console.WriteLine("\n\nFile name '{0}' size is {1}", filename, stream.Length);
                     var header = ChunkHeader.FromStream(new MemoryStream(ReadHeader(stream)));
                     Console.WriteLine("Read header chunk {0} ({1}-{2} start: {3} end: {4} size : {5}", 
                         header.ChunkId, 
@@ -67,6 +70,18 @@ namespace Unaligner
                         footer.MapSize,
                         footer.IsMap12Bytes,
                         footer.MD5Hash);
+                    if (!footer.IsCompleted)
+                    {
+                        Console.WriteLine("Not truncating chunk as its not completed.");
+                        return;
+                    }
+                    var length = ChunkHeader.Size + footer.PhysicalDataSize + footer.MapSize + ChunkFooter.Size;
+                    Console.WriteLine("setting length to {0}", length);
+                    //do truncate
+                    stream.SetLength(length);
+                    stream.Seek(length - ChunkFooter.Size, SeekOrigin.Begin);
+                    var footbytes = footer.AsByteArray();
+                    stream.Write(footbytes,0, footbytes.Length);
                 }
             }
             finally
