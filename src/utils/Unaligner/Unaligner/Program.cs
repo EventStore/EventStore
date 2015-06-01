@@ -75,7 +75,11 @@ namespace Unaligner
                         Console.WriteLine("Not truncating chunk as its not completed.");
                         return;
                     }
-                    var length = ChunkHeader.Size + footer.PhysicalDataSize + footer.MapSize + ChunkFooter.Size;
+                    var length = 0;
+                    if (footer.MapCount > 0)
+                        length = ChunkHeader.Size + footer.PhysicalDataSize + footer.MapSize + ChunkFooter.Size;
+                    else
+                        length = header.ChunkSize;
                     Console.WriteLine("setting length to {0}", length);
                     //do truncate
                     stream.SetLength(length);
