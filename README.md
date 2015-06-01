@@ -21,8 +21,10 @@ Binaries are available from https://geteventstore.com/downloads, however if you 
 #### Prerequisites
 
 - .NET Framework 4.0+
-- Windows platform SDK with compilers (v7.1) or Visual C++ installed
+- Windows Platform SDK with compilers (v7.1) or Visual C++ installed
 - Git on `PATH`
+- Powershell Community Extensions installed (for packaging)
+- ExecutionPolicy for Powershell set to RemoteSigned or Unrestricted
 
 #### Building Event Store
 
