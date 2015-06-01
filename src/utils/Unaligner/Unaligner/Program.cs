@@ -76,7 +76,7 @@ namespace Unaligner
                         return;
                     }
                     var length = 0;
-                    if (footer.MapCount > 0)
+                    if (header.IsScavenged)
                         length = ChunkHeader.Size + footer.PhysicalDataSize + footer.MapSize + ChunkFooter.Size;
                     else
                         length = header.ChunkSize;
@@ -86,6 +86,11 @@ namespace Unaligner
                     stream.Seek(length - ChunkFooter.Size, SeekOrigin.Begin);
                     var footbytes = footer.AsByteArray();
                     stream.Write(footbytes,0, footbytes.Length);
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var header2 = new ChunkHeader(2, header.ChunkSize, header.ChunkStartNumber, header.ChunkEndNumber,
+                        header.IsScavenged, header.ChunkId);
+                    var headerbytes = header2.AsByteArray();
+                    stream.Write(headerbytes, 0, headerbytes.Length);
                 }
             }
             finally
