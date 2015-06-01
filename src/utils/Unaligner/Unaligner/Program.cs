@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace Unaligner
 {
@@ -8,10 +10,39 @@ namespace Unaligner
     {
         static void Main(string[] args)
         {
-
+            if (args.Length != 1)
+            {
+                PrintUsage();
+                Die("");
+            }
+            var path = args[0];
+            var writerfile = Path.Combine(path,"writer.chk");
+            if (!File.Exists(writerfile))
+            {
+                Die("unable to find writer checkpoint " + writerfile);
+            }
+            var checkpoint = new FileCheckpoint("writer.chk");
+            var writtenTo = checkpoint.Read();
+            Console.WriteLine("Writer checkpoint is {0}", writtenTo);
+            var namesStrategy = new VersionedPatternFileNamingStrategy(path, "chunk-");
+            foreach (var item in namesStrategy.GetAllPresentFiles())
+            {
+                Unalignv2FileToOld(item);  
+            }
         }
 
-        private void Unalignv2FileToOld(string filename)
+        private static void PrintUsage()
+        {
+            Console.WriteLine("Usage: unalign pathtodb");
+        }
+
+        private static void Die(string message)
+        {
+            Console.WriteLine(message);
+            Environment.Exit(1);
+        }
+
+        static void Unalignv2FileToOld(string filename)
         {
             //takes a v2 file and unaligns it so it can be used with previous versions
             try
@@ -19,22 +50,23 @@ namespace Unaligner
                 SetAttributes(filename, false);
                 using (var stream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
                 {
-                    Console.WriteLine("File size is {0}", stream.Length);
+                    Console.WriteLine("File name '{0}' size is {0}", filename, stream.Length);
                     var header = ChunkHeader.FromStream(new MemoryStream(ReadHeader(stream)));
-                    Console.WriteLine("Read header chunk {0} ({1}-{2} start: {3} end: {4}", 
+                    Console.WriteLine("Read header chunk {0} ({1}-{2} start: {3} end: {4} size : {5}", 
                         header.ChunkId, 
                         header.ChunkStartNumber, 
                         header.ChunkEndNumber,
                         header.ChunkStartPosition,
-                        header.ChunkEndPosition);
-                    var footer = ChunkHeader.FromStream(new MemoryStream(ReadFooter(stream)));
-                    Console.WriteLine("Read footer chunk {0} ({1}-{2} start: {3} end: {4} size: {5}",
-                        footer.ChunkId,
-                        footer.ChunkStartNumber,
-                        footer.ChunkEndNumber,
-                        footer.ChunkStartPosition,
-                        footer.ChunkEndPosition,
-                        footer.ChunkSize);
+                        header.ChunkEndPosition,
+                        header.ChunkSize);
+                    var footer = ChunkFooter.FromStream(new MemoryStream(ReadFooter(stream)));
+                    Console.WriteLine("Read footer chunk completed: {0} log size: {1} phys size: {2} map size {3} is12? {4} hash {5}",
+                        footer.IsCompleted,
+                        footer.LogicalDataSize,
+                        footer.PhysicalDataSize,
+                        footer.MapSize,
+                        footer.IsMap12Bytes,
+                        footer.MD5Hash);
                 }
             }
             finally
@@ -43,7 +75,7 @@ namespace Unaligner
             }
         }
 
-        private byte[] ReadHeader(FileStream stream)
+        static byte[] ReadHeader(FileStream stream)
         {
             var header = new byte[ChunkHeader.Size];
             var footerStart = stream.Length - ChunkHeader.Size;
@@ -52,7 +84,7 @@ namespace Unaligner
             return header;            
         }
 
-        private byte[] ReadFooter(FileStream stream)
+        static byte[] ReadFooter(FileStream stream)
         {
             var footer = new byte[ChunkFooter.Size];
             var footerStart = stream.Length - ChunkFooter.Size;
@@ -61,7 +93,7 @@ namespace Unaligner
             return footer;
         }
 
-        private void SetAttributes(string filename, bool isReadOnly)
+        static void SetAttributes(string filename, bool isReadOnly)
         {
             if (isReadOnly)
                 File.SetAttributes(filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
