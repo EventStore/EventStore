@@ -193,13 +193,15 @@ namespace EventStore.Core.Services.PersistentSubscription
                 MaxCheckPointCount = message.MaxCheckPointCount,
                 MinCheckPointCount = message.MinCheckPointCount,
                 MaxRetryCount = message.MaxRetryCount,
+                ReadBatchSize = message.ReadBatchSize,
+                MaxSubscriberCount = message.MaxSubscriberCount,                
                 MessageTimeout = message.MessageTimeoutMilliseconds,
-                NamedConsumerStrategy =  message.NamedConsumerStrategy
+                NamedConsumerStrategy =  message.NamedConsumerStrategy,
+                StartFrom = message.StartFrom                
             });            
             SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
                 ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success, "")));
         }
-
 
         public void Handle(ClientMessage.UpdatePersistentSubscription message)
         {
@@ -264,8 +266,11 @@ namespace EventStore.Core.Services.PersistentSubscription
                 MaxCheckPointCount = message.MaxCheckPointCount,
                 MinCheckPointCount = message.MinCheckPointCount,
                 MaxRetryCount = message.MaxRetryCount,
+                ReadBatchSize = message.ReadBatchSize,
+                MaxSubscriberCount = message.MaxSubscriberCount,
                 MessageTimeout = message.MessageTimeoutMilliseconds,
-                NamedConsumerStrategy = message.NamedConsumerStrategy
+                NamedConsumerStrategy = message.NamedConsumerStrategy,
+                StartFrom = message.StartFrom  
             });
             SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(message.CorrelationId,
     ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.Success, "")));
