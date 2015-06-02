@@ -14,14 +14,16 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_posting_a_persistent_projection : TestFixtureWithProjectionCoreAndManagementServices
+    public class when_deleting_a_persistent_projection_and_keep_checkpoint_stream : TestFixtureWithProjectionCoreAndManagementServices
     {
         private string _projectionName;
+        private const string _projectionStateStream = "$projections-test-projection-result";
+        private const string _projectionCheckpointStream = "$projections-test-projection-checkpoint";
 
         protected override void Given()
         {
             _projectionName = "test-projection";
-            AllWritesQueueUp();
+            AllWritesSucceed();
             NoOtherStreams();
         }
 
@@ -33,37 +35,31 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
                     ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().whenAny(function(s,e){return s;});",
                     enabled: true, checkpointsEnabled: true, emitEnabled: true);
-            OneWriteCompletes();
+            yield return
+                new ProjectionManagementMessage.Command.Disable(
+                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
+            yield return
+                new ProjectionManagementMessage.Command.Delete(
+                    new PublishEnvelope(_bus), _projectionName,
+                    ProjectionManagementMessage.RunAs.System, false, false);
         }
 
         [Test, Category("v8")]
-        public void the_projection_status_is_writing()
-        {
-            _manager.Handle(
-                new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, true));
-            Assert.AreEqual(
-                ManagedProjectionState.Prepared,
-                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0].
-                    MasterStatus);
-        }
-
-        [Test, Category("v8")]
-        public void a_projection_created_event_is_written()
+        public void a_projection_deleted_event_is_written()
         {
             Assert.AreEqual(
-                "$ProjectionCreated",
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].EventType);
+                "$ProjectionDeleted",
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Last().Events[0].EventType);
             Assert.AreEqual(
                 _projectionName,
-                Helper.UTF8NoBom.GetString(_consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].Data));
+                Helper.UTF8NoBom.GetString(_consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Last().Events[0].Data));
         }
 
         [Test, Category("v8")]
-        public void a_projection_updated_message_is_not_published()
+        public void should_not_have_attempted_to_delete_the_checkpoint_stream()
         {
-            // not published until all writes complete
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());
+            Assert.IsFalse(
+                _consumer.HandledMessages.OfType<ClientMessage.DeleteStream>().Any(x=>x.EventStreamId == _projectionCheckpointStream));
         }
-
     }
 }

@@ -17,6 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             {
                 base.Given();
                 _projectionSource = "fail";
+                NoOtherStreams();
             }
 
             protected override IEnumerable<WhenStep> When()

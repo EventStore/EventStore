@@ -8,7 +8,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                                  IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                  IHandle<ClientMessage.ReadStreamEventsForward>,
                                                  IHandle<ClientMessage.ReadAllEventsForward>,
-                                                 IHandle<ClientMessage.WriteEvents>
+                                                 IHandle<ClientMessage.WriteEvents>,
+                                                 IHandle<ClientMessage.DeleteStream>
     {
         private readonly IPublisher _externalRequestQueue;
         private readonly IPublisher _inputQueue;
@@ -33,6 +34,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ClientMessage.WriteEvents(
                     msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), false, 
                     msg.EventStreamId, msg.ExpectedVersion, msg.Events, msg.User));
+        }
+
+        public void Handle(ClientMessage.DeleteStream msg)
+        {
+            _externalRequestQueue.Publish(
+                new ClientMessage.DeleteStream(
+                    msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), false, 
+                    msg.EventStreamId, msg.ExpectedVersion, msg.HardDelete, msg.User));
         }
 
         public void Handle(ClientMessage.ReadStreamEventsBackward msg)

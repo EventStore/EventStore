@@ -14,14 +14,14 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_posting_a_persistent_projection : TestFixtureWithProjectionCoreAndManagementServices
+    public class when_recreating_a_deleted_projection : TestFixtureWithProjectionCoreAndManagementServices
     {
         private string _projectionName;
 
         protected override void Given()
         {
             _projectionName = "test-projection";
-            AllWritesQueueUp();
+            AllWritesSucceed();
             NoOtherStreams();
         }
 
@@ -33,22 +33,22 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
                     ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().whenAny(function(s,e){return s;});",
                     enabled: true, checkpointsEnabled: true, emitEnabled: true);
-            OneWriteCompletes();
+            yield return
+                new ProjectionManagementMessage.Command.Disable(
+                    new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
+            yield return
+                new ProjectionManagementMessage.Command.Delete(
+                    new PublishEnvelope(_bus), _projectionName,
+                    ProjectionManagementMessage.RunAs.System, true, true);
+            yield return
+                new ProjectionManagementMessage.Command.Post(
+                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+                    ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().whenAny(function(s,e){return s;});",
+                    enabled: true, checkpointsEnabled: true, emitEnabled: true);
         }
 
         [Test, Category("v8")]
-        public void the_projection_status_is_writing()
-        {
-            _manager.Handle(
-                new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, true));
-            Assert.AreEqual(
-                ManagedProjectionState.Prepared,
-                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0].
-                    MasterStatus);
-        }
-
-        [Test, Category("v8")]
-        public void a_projection_created_event_is_written()
+        public void a_projection_created_event_should_be_written()
         {
             Assert.AreEqual(
                 "$ProjectionCreated",
@@ -59,11 +59,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         }
 
         [Test, Category("v8")]
-        public void a_projection_updated_message_is_not_published()
+        public void it_can_be_listed()
         {
-            // not published until all writes complete
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());
-        }
+            _manager.Handle(
+                new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, null, false));
 
+            Assert.AreEqual(
+                1,
+                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count(
+                    v => v.Projections.Any(p => p.Name == _projectionName)));
+        }
     }
 }
