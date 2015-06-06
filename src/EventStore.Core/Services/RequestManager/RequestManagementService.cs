@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -31,7 +32,7 @@ namespace EventStore.Core.Services.RequestManager
     {
         private readonly IPublisher _bus;
         private readonly TimerMessage.Schedule _tickRequestMessage;
-        private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
+        private readonly ConcurrentDictionary<Guid, IRequestManager> _currentRequests = new ConcurrentDictionary<Guid, IRequestManager>();
 
         private readonly int _prepareCount;
         private readonly int _commitCount;
@@ -63,41 +64,42 @@ namespace EventStore.Core.Services.RequestManager
         public void Handle(ClientMessage.WriteEvents message)
         {
             var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
-            _currentRequests.Add(message.InternalCorrId, manager);
+            StoreRequestManager(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ClientMessage.DeleteStream message)
         {
             var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
-            _currentRequests.Add(message.InternalCorrId, manager);
+            StoreRequestManager(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ClientMessage.TransactionStart message)
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
-            _currentRequests.Add(message.InternalCorrId, manager);
+            StoreRequestManager(message.InternalCorrId, manager);
             manager.Handle(message);
         }
         
         public void Handle(ClientMessage.TransactionWrite message)
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
-            _currentRequests.Add(message.InternalCorrId, manager);
+            StoreRequestManager(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ClientMessage.TransactionCommit message)
         {
             var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
-            _currentRequests.Add(message.InternalCorrId, manager);
+            StoreRequestManager(message.InternalCorrId, manager);
             manager.Handle(message);
         }
 
         public void Handle(StorageMessage.RequestCompleted message)
         {
-            if (!_currentRequests.Remove(message.CorrelationId))
+            IRequestManager manager;
+            if (!_currentRequests.TryRemove(message.CorrelationId, out manager))
                 throw new InvalidOperationException("Should never complete request twice.");
         }
 
@@ -143,6 +145,14 @@ namespace EventStore.Core.Services.RequestManager
                 currentRequest.Value.Handle(message);
             }
             _bus.Publish(_tickRequestMessage);
+        }
+
+        private void StoreRequestManager(Guid internalCorrId, IRequestManager manager)
+        {
+            if (!_currentRequests.TryAdd(internalCorrId, manager))
+            {
+                throw new InvalidOperationException(string.Format("Cannot raise the same request more than once. Internal Correlation Id: {0} Type: {1}", internalCorrId, manager.GetType().Name));
+            }
         }
 
         private void DispatchInternal<T>(Guid correlationId, T message) where T : Message
