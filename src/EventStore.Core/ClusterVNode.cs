@@ -53,7 +53,7 @@ namespace EventStore.Core
 
         private readonly VNodeInfo _nodeInfo;
         private readonly QueuedHandler _mainQueue;
-        private readonly InMemoryBus _mainBus;
+        private readonly ISubscriber _mainBus;
 
         private readonly ClusterVNodeController _controller;
         private readonly TimerService _timerService;
@@ -110,7 +110,7 @@ namespace EventStore.Core
                                                             watchSlowMsg: true,
                                                             slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
-            _controller = new ClusterVNodeController(_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
+            _controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             
             _controller.SetMainQueue(_mainQueue);
