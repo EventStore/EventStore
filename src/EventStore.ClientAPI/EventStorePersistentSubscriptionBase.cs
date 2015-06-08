@@ -121,7 +121,7 @@ namespace EventStore.ClientAPI
         /// <param name="reason">A string with a message as to why the failure is occurring</param>
         public void Fail(IEnumerable<ResolvedEvent> events, PersistentSubscriptionNakEventAction action, string reason)
         {
-            var ids = events.Select(x => x.Event.EventId).ToArray();
+            var ids = events.Select(x => x.OriginalEvent.EventId).ToArray();
             if (ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
             _subscription.NotifyEventsFailed(ids, action, reason);
         }
