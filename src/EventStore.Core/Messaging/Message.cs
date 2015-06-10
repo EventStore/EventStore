@@ -40,7 +40,7 @@ namespace EventStore.Core.Messaging
             int msgTypeCount = 0;
             foreach (var msgType in 
                 (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                 from type in assembly.GetTypes()
+                 from type in LoadAvailableTypes(assembly)
                  where rootMsgType.IsAssignableFrom(type)
                  select type))
             {
@@ -126,6 +126,25 @@ namespace EventStore.Core.Messaging
             }
 
             Log.Trace("MessageHierarchy initialization took {0}.", sw.Elapsed);
+        }
+
+        static Type[] LoadAvailableTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                if(ex.LoaderExceptions.Length >0)
+                    Log.Info("The exception(s) occured when scanning for message types: ",
+                        string.Join(",", ex.LoaderExceptions.Select(x => x.Message)));
+                else
+                {
+                    Log.InfoException(ex, "Exception while scanning for message types");
+                }
+                return ex.Types;
+            }
         }
 
         private static int GetMsgTypeId(Type msgType)
