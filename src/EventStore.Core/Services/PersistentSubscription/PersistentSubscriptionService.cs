@@ -91,9 +91,9 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(SystemMessage.BecomeMaster message)
         {
-            _handleTick = true;
             Log.Debug("Subscriptions Became Master so now handling subscriptions");
             InitToEmpty();
+            _handleTick = true;
             _bus.Publish(_tickRequestMessage); 
             LoadConfiguration(Start);
         }
