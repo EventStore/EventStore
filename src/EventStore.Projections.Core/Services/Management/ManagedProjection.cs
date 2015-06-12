@@ -416,16 +416,11 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            if (Enabled
-                && !(_state == ManagedProjectionState.Completed || _state == ManagedProjectionState.Faulted
-                     || _state == ManagedProjectionState.Aborted || _state == ManagedProjectionState.Loaded
-                     || _state == ManagedProjectionState.Prepared || _state == ManagedProjectionState.Stopped))
-            {
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Invalid state"));
+            if(Enabled){
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
                 return;
             }
-            if (!Enabled)
-                Enable();
+            Enable();
             _pendingPersistedState = true;
             UpdateProjectionVersion();
             SetLastReplyEnvelope(message.Envelope);
@@ -756,8 +751,6 @@ namespace EventStore.Projections.Core.Services.Management
         /// </summary>
         private void Enable()
         {
-            if (Enabled)
-                throw new InvalidOperationException("Projection is not disabled");
             Enabled = true;
         }
 
@@ -956,7 +949,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (!Enabled)
             {
-                envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Not enabled"));
+                envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
                 return false;
             }
             Enabled = false;
