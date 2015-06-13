@@ -17,6 +17,9 @@ namespace EventStore.Core.Tests.Helpers
     {
         protected InMemoryBus _bus;
 
+        protected RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>
+            _streamDispatcher;
+
         protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 

@@ -16,6 +16,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private string _projectionName;
         private string _newProjectionSource;
 
+        protected override void Given()
+        {
+            NoOtherStreams();
+        }
+
         [Test, Category("v8")]
         public void the_projection_source_can_be_retrieved()
         {

@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 RequestLoadState();
                 return;
             }
-            _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
+            _lastWrittenCheckpointEventNumber = message.LastEventNumber;
             CheckpointLoaded(null, null);
         }
 

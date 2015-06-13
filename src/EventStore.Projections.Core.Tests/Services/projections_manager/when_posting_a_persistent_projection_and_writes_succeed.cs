@@ -19,6 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             AllWritesToSucceed("$projections-test-projection-order");
             NoStream("$projections-test-projection-checkpoint");
             AllWritesSucceed();
+            NoOtherStreams();
         }
 
         private string _projectionName;

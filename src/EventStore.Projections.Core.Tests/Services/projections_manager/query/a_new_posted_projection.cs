@@ -32,6 +32,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
                 _projectionMode = ProjectionMode.Transient;
                 _checkpointsEnabled = false;
                 _emitEnabled = false;
+                NoOtherStreams();
             }
 
             protected override IEnumerable<WhenStep> When()

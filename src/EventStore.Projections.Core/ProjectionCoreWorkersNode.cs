@@ -54,6 +54,7 @@ namespace EventStore.Projections.Core
                 coreOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
                 coreOutput.Subscribe<ClientMessage.ReadAllEventsForward>(forwarder);
                 coreOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
+                coreOutput.Subscribe<ClientMessage.DeleteStream>(forwarder);
 
 
                 if (projectionsStandardComponents.RunProjections >= ProjectionType.System)

@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 "name",
                 true,
                 null,
+                _streamDispatcher,
                 _writeDispatcher,
                 _readDispatcher,
                 _bus,

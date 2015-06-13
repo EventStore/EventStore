@@ -103,11 +103,10 @@ namespace EventStore.Projections.Core
                 mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(projectionManager);
                 mainBus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(projectionManager);
                 mainBus.Subscribe<ProjectionManagementMessage.ReaderReady>(projectionManager);
-//                mainBus.Subscribe<PartitionProcessingResultBase>(_projectionManagerMessageDispatcher);
-//                mainBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_projectionManagerMessageDispatcher);
                 mainBus.Subscribe<ProjectionManagementMessage.Starting>(projectionManagerResponseReader);
             }
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(projectionManager);
+            mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(projectionManager);
 
             mainBus.Subscribe(ioDispatcher.Awaker);
@@ -140,6 +139,7 @@ namespace EventStore.Projections.Core
             managerOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
             managerOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
             managerOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
+            managerOutput.Subscribe<ClientMessage.DeleteStream>(forwarder);
             managerOutput.Subscribe(
                 Forwarder.Create<ProjectionManagementMessage.RequestSystemProjections>(standardComponents.MainQueue));
             managerOutput.Subscribe(Forwarder.Create<Message>(projectionsStandardComponents.MasterInputQueue));
