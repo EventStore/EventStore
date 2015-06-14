@@ -44,7 +44,7 @@ namespace EventStore.TestClient
             Command = new string[] {};
             Help = Opts.ShowHelpDefault;
             Version = Opts.ShowVersionDefault;
-            Log = Opts.LogsDefault;
+            Log = DefaultDirectory.DefaultTestClientLogDirectory;
             Defines = Opts.DefinesDefault;
             WhatIf = Opts.WhatIfDefault;
             Ip = IPAddress.Loopback;

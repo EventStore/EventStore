@@ -26,7 +26,6 @@ namespace EventStore.ClusterNode
     {
         private ClusterVNode _node;
         private Projections.Core.ProjectionsSubsystem _projections;
-        private readonly DateTime _startupTimeStamp = DateTime.UtcNow;
         private ExclusiveDbLock _dbLock;
         private ClusterNodeMutex _clusterNodeMutex;
 
@@ -38,7 +37,7 @@ namespace EventStore.ClusterNode
 
         protected override string GetLogsDirectory(ClusterNodeOptions options)
         {
-            return ResolveDbPath(options.Db, options.ExtHttpPort) + "-logs";
+            return options.Log;
         }
 
         protected override string GetComponentName(ClusterNodeOptions options)
@@ -46,21 +45,9 @@ namespace EventStore.ClusterNode
             return string.Format("{0}-{1}-cluster-node", options.ExtIp, options.ExtHttpPort);
         }
 
-        private string ResolveDbPath(string optionsPath, int nodePort)
-        {
-            if (optionsPath.IsNotEmptyString())
-                return optionsPath;
-
-            return Path.Combine(Path.GetTempPath(),
-                                "EventStore",
-                                string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-Node{1}", _startupTimeStamp, nodePort));
-        }
-
-
-
         protected override void Create(ClusterNodeOptions opts)
         {
-            var dbPath = Path.GetFullPath(ResolveDbPath(opts.Db, opts.ExtHttpPort));
+            var dbPath = opts.Db;
 
             if (!opts.MemDb)
             {

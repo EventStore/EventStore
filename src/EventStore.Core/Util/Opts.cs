@@ -34,7 +34,6 @@ namespace EventStore.Core.Util
         public const bool DevelopmentModeDefault = false;
 
         public const string LogsDescr = "Path where to keep log files.";
-        public static readonly string LogsDefault = string.Empty;
 
         public const string ConfigsDescr = "Configuration files.";
         public static readonly string[] ConfigsDefault = new string[0];
@@ -80,7 +79,6 @@ namespace EventStore.Core.Util
         public static readonly bool DisableScavengeMergeDefault = false;
 
         public const string DbPathDescr = "The path the db should be loaded/saved to.";
-        public static readonly string DbPathDefault = string.Empty;
 
         public const string InMemDbDescr = "Keep everything in memory, no directories or files are created.";
         public const bool   InMemDbDefault = false;
