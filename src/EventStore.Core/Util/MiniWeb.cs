@@ -15,11 +15,11 @@ namespace EventStore.Core.Util
     {
         private readonly string _localWebRootPath;
         private readonly string _fileSystemRoot;
-        private readonly ILogger _logger = LogManager.GetLoggerFor<MiniWeb>();
+        private static readonly ILogger Logger = LogManager.GetLoggerFor<MiniWeb>();
 
         public MiniWeb(string localWebRootPath, string fileSystemRoot)
         {
-            _logger.Info("Starting MiniWeb for {0} ==> {1}", localWebRootPath, fileSystemRoot);
+            Logger.Info("Starting MiniWeb for {0} ==> {1}", localWebRootPath, fileSystemRoot);
             _localWebRootPath = localWebRootPath;
             _fileSystemRoot = fileSystemRoot;
         }
@@ -27,12 +27,8 @@ namespace EventStore.Core.Util
         public void RegisterControllerActions(IHttpService service)
         {
             var pattern = _localWebRootPath + "/{*remaining_path}";
-            _logger.Trace("Binding MiniWeb to {0}", pattern);
-            service.RegisterAction(new ControllerAction(pattern,
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  new ICodec[] { Codec.ManualEncoding }),
-                                             OnStaticContent);
+            Logger.Trace("Binding MiniWeb to {0}", pattern);
+            service.RegisterAction(new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.ManualEncoding }), OnStaticContent);
         }
 
         private void OnStaticContent(HttpEntityManager http, UriTemplateMatch match)
@@ -75,10 +71,10 @@ namespace EventStore.Core.Util
                     || !extensionToContentType.TryGetValue(extension.ToLower(), out contentType)
                     || !File.Exists(fullPath))
                 {
-                    _logger.Info("Replying 404 for {0} ==> {1}", contentLocalPath, fullPath);
+                    Logger.Info("Replying 404 for {0} ==> {1}", contentLocalPath, fullPath);
                     http.ReplyTextContent(
                         "Not Found", 404, "Not Found", "text/plain", null,
-                        ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
+                        ex => Logger.InfoException(ex, "Error while replying from MiniWeb"));
                 }
                 else
                 {
@@ -91,7 +87,7 @@ namespace EventStore.Core.Util
                                        config.ContentType,
                                        config.Encoding,
                                        config.Headers,
-                                       ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
+                                       ex => Logger.InfoException(ex, "Error while replying from MiniWeb"));
                 }
             }
             catch (Exception ex)
@@ -132,13 +128,14 @@ namespace EventStore.Core.Util
                 }
                 else
                 {
-                    fileSystemWebRoot = AppDomain.CurrentDomain.BaseDirectory;
+                    fileSystemWebRoot = DefaultDirectory.DefaultContentDirectory;
                 }
             }
             catch (Exception)
             {
                 fileSystemWebRoot = AppDomain.CurrentDomain.BaseDirectory;
             }
+            Logger.Error("HERE IS PATH: {0}", fileSystemWebRoot);
             return fileSystemWebRoot;
         }
     }

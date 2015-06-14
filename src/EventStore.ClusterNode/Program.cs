@@ -149,13 +149,10 @@ namespace EventStore.ClusterNode
         {
             if(_node.InternalHttpService != null) {
                 _node.InternalHttpService.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
-                _node.InternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
             }
             if (settings.AdminOnPublic)
             {
-                _node.ExternalHttpService.SetupController(
-                    new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
-                _node.ExternalHttpService.SetupController(new UsersWebController(_node.MainQueue));
+                _node.ExternalHttpService.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
             }
         }
 

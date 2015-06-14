@@ -25,11 +25,10 @@ namespace EventStore.Projections.Core.Services.Http
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ProjectionsController>();
 
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json};
+        private static readonly ICodec[] SupportedCodecs = {Codec.Json};
 
         private readonly MiniWeb _clusterNodeJs;
         private readonly MiniWeb _miniWebPrelude;
-        private readonly MiniWeb _miniWebResources;
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
 
@@ -38,13 +37,11 @@ namespace EventStore.Projections.Core.Services.Http
         {
             _httpForwarder = httpForwarder;
 
-            var clusterNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory();
-            _clusterNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(clusterNodeFSRoot, Path.Combine("projections")));
+            var clusterNodeFsRoot = MiniWeb.GetWebRootFileSystemDirectory();
+            _clusterNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(clusterNodeFsRoot, Path.Combine("projections")));
 
-            var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory();
             _networkSendQueue = networkSendQueue;
-            _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
-            _miniWebResources = new MiniWeb("/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
+            _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(clusterNodeFsRoot, @"Prelude"));
         }
 
         protected override void SubscribeCore(IHttpService service)
@@ -52,7 +49,6 @@ namespace EventStore.Projections.Core.Services.Http
             _clusterNodeJs.RegisterControllerActions(service);
 
             _miniWebPrelude.RegisterControllerActions(service);
-            _miniWebResources.RegisterControllerActions(service);
 
             HttpHelpers.RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
 
