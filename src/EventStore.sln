@@ -21,8 +21,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Projections.Core
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.TestClient", "EventStore.TestClient\EventStore.TestClient.csproj", "{F5D3314D-E4B9-4D82-90C5-F1CEFA527365}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Web", "EventStore.Web\EventStore.Web.csproj", "{68065B8C-0FDC-473F-9C32-54078E32FD5C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI", "EventStore.ClientAPI\EventStore.ClientAPI.csproj", "{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Projections.Core.Tests", "EventStore.Projections.Core.Tests\EventStore.Projections.Core.Tests.csproj", "{B3792B44-423E-4937-B065-F2D61785017F}"
@@ -79,10 +77,6 @@ Global
 		{F5D3314D-E4B9-4D82-90C5-F1CEFA527365}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5D3314D-E4B9-4D82-90C5-F1CEFA527365}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F5D3314D-E4B9-4D82-90C5-F1CEFA527365}.Release|Any CPU.Build.0 = Release|Any CPU
-		{68065B8C-0FDC-473F-9C32-54078E32FD5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{68065B8C-0FDC-473F-9C32-54078E32FD5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{68065B8C-0FDC-473F-9C32-54078E32FD5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{68065B8C-0FDC-473F-9C32-54078E32FD5C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Release|Any CPU.ActiveCfg = Release|Any CPU

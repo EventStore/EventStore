@@ -19,7 +19,6 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
-using EventStore.Web.Users;
 
 namespace EventStore.ClusterNode
 {

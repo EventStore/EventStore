@@ -41,10 +41,6 @@
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\EventStore.Web\EventStore.Web.csproj">
-      <Project>{68065B8C-0FDC-473F-9C32-54078E32FD5C}</Project>
-      <Name>EventStore.Web</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
