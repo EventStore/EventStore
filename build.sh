@@ -231,7 +231,6 @@ function buildV8() {
         $make $makecall $WERRORSTRING library=shared || err
     fi
 
-    echo "Coping some crap" $fileext
     pushd ../src/libs > /dev/null
     cp $v8OutputDir/libv8.$fileext . || err
     cp $v8OutputDir/libicui18n.$fileext . ||  err
