@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using EventStore.Common.Log;
@@ -14,7 +15,7 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.VNode
 {
-    public class ClusterVNodeController : IHandle<Message>
+    public class ClusterVNodeController : IHandle<Message>, IHandle<MonitoringMessage.InternalStatsRequest>
     {
         public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
         public static readonly TimeSpan MasterReconnectionDelay = TimeSpan.FromMilliseconds(500);
@@ -772,6 +773,16 @@ namespace EventStore.Core.Services.VNode
             Log.Error("========== [{0}] Shutdown Timeout.", _nodeInfo.InternalHttp);
             Shutdown();
             _outputBus.Publish(message);
+        }
+
+        void IHandle<MonitoringMessage.InternalStatsRequest>.Handle(MonitoringMessage.InternalStatsRequest message)
+        {
+            var stats = new Dictionary<string, object>
+            {
+                {"es-state", _state.ToString()},
+            };
+
+            message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
         }
 
         private void Shutdown()
