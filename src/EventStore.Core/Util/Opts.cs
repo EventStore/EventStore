@@ -95,8 +95,8 @@ namespace EventStore.Core.Util
         public const string SkipDbVerifyDescr = "Bypasses the checking of file hashes of database during startup (allows for faster startup).";
         public const bool SkipDbVerifyDefault = false;
 
-        public const string RunProjectionsDescr = "Enables the running of JavaScript projections.";
-        public const ProjectionType RunProjectionsDefault = ProjectionType.System;
+        public const string RunProjectionsDescr = "Enables the running of projections. System runs built-in projections, All runs user projections.";
+        public const ProjectionType RunProjectionsDefault = ProjectionType.None;
 
         public const string ProjectionThreadsDescr = "The number of threads to use for projections.";
         public const int    ProjectionThreadsDefault = 3;
