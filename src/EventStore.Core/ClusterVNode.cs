@@ -143,6 +143,8 @@ namespace EventStore.Core
             monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
+            monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(_controller);
+
             var truncPos = db.Config.TruncateCheckpoint.Read();
             if (truncPos != -1)
             {
