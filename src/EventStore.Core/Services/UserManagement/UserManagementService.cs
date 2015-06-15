@@ -53,10 +53,13 @@ namespace EventStore.Core.Services.UserManagement
                 return;
             }
             var userData = CreateUserData(message);
-            WriteStreamAcl(
-                message, message.LoginName,
-                () => WriteUserEvent(message, userData, "$UserCreated", ExpectedVersion.NoStream,
-                () => WriteUsersStreamEvent(userData.LoginName, completed => WriteUsersStreamCompleted(completed, message))));
+            BeginReadUserDetails(message.LoginName, read =>
+            {
+                WriteStreamAcl(
+                    message, message.LoginName,
+                    () => WriteUserEvent(message, userData, "$UserCreated", read.LastEventNumber,
+                    () => WriteUsersStreamEvent(userData.LoginName, completed => WriteUsersStreamCompleted(completed, message))));
+            });
         }
 
         public void Handle(UserManagementMessage.Update message)
@@ -130,7 +133,7 @@ namespace EventStore.Core.Services.UserManagement
                 message,
                 (completed, data) =>
                 _ioDispatcher.DeleteStream(
-                    "$user-" + message.LoginName, completed.FromEventNumber, true, SystemAccount.Principal,
+                    "$user-" + message.LoginName, completed.FromEventNumber, false, SystemAccount.Principal,
                     streamCompleted =>
                     WritePasswordChangedEventConditionalAnd(
                         message, true, () => ReplyByWriteResult(message, streamCompleted.Result))));

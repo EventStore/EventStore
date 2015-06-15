@@ -93,6 +93,7 @@ namespace EventStore.Core.Services.UserManagement
             switch (result.Result)
             {
                 case ReadStreamResult.Success:
+                    if (_results.Any(x => x.LoginName == loginName)) break;
                     if (result.Events.Length != 1)
                     {
                         AddLoadedUserDetails(loginName, "", new string[] {}, true, null);
@@ -114,7 +115,6 @@ namespace EventStore.Core.Services.UserManagement
                     }
                     break;
                 case ReadStreamResult.NoStream:
-                    AddLoadedUserDetails(loginName, "", new string[] {}, true, null);
                     break;
                 case ReadStreamResult.StreamDeleted:
                     // ignore - deleted
