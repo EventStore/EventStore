@@ -125,7 +125,7 @@ namespace EventStore.Core.Services.Monitoring
                 stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
                 stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
 
-                stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+                stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage() / Environment.ProcessorCount;
                 stats["sys-freeMem"] = GetFreeMem();
             }
             catch (InvalidOperationException)
