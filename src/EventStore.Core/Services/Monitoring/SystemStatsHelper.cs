@@ -120,12 +120,12 @@ namespace EventStore.Core.Services.Monitoring
                 stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
                 stats["proc-id"] = process.Id;
                 stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
-                stats["proc-cpu"] = new StatMetadata(_perfCounter.GetProcCpuUsage(), "Process", "Process Cpu Usage");
+                stats["proc-cpu"] = new StatMetadata(_perfCounter.GetProcCpuUsage() / Environment.ProcessorCount, "Process", "Process Cpu Usage");
                 stats["proc-threadsCount"] = _perfCounter.GetProcThreadsCount();
                 stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
                 stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
 
-                stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage() / Environment.ProcessorCount;
+                stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
                 stats["sys-freeMem"] = GetFreeMem();
             }
             catch (InvalidOperationException)
