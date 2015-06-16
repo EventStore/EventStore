@@ -17,7 +17,7 @@ namespace EventStore.Core.Messages
         public partial class ResolvedEvent
         {
             public ResolvedEvent(Data.ResolvedEvent pair)
-                : this(new EventRecord(pair.Event),
+                : this(pair.Event != null ? new EventRecord(pair.Event) : null,
                        pair.Link != null ? new EventRecord(pair.Link) : null,
                        pair.OriginalPosition.Value.CommitPosition,
                        pair.OriginalPosition.Value.PreparePosition)
