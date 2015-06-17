@@ -135,7 +135,6 @@ namespace EventStore.Core.Util
             {
                 fileSystemWebRoot = AppDomain.CurrentDomain.BaseDirectory;
             }
-            Logger.Error("HERE IS PATH: {0}", fileSystemWebRoot);
             return fileSystemWebRoot;
         }
     }

@@ -1,4 +1,7 @@
 using System;
+using System.Linq;
+using System.Reflection;
+using System.IO;
 using EventStore.Common.Utils;
 
 namespace EventStore.Common.Log
@@ -15,6 +18,7 @@ namespace EventStore.Common.Log
             }
         }
 
+        private const string EVENTSTORE_LOG_FILENAME = "log.config";
         private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
         private static bool _initialized;
         private static Func<string, ILogger> _logFactory = x => new NLogger(x);
@@ -43,11 +47,27 @@ namespace EventStore.Common.Log
             return new LazyLogger(() => _logFactory(logName));
         }
 
-        public static void Init(string componentName, string logsDirectory)
+        public static void Init(string componentName, string logsDirectory, string configurationDirectory)
         {
             Ensure.NotNull(componentName, "componentName");
             if (_initialized)
                 throw new InvalidOperationException("Cannot initialize twice");
+
+            var potentialNLogConfigurationFilePaths = new []{
+                Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME),
+                Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), EVENTSTORE_LOG_FILENAME)
+            }.Distinct();
+            var configFilePath = potentialNLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
+            if(!String.IsNullOrEmpty(configFilePath))
+            {
+                NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
+            }
+            else
+            {
+                Console.Error.WriteLine("Event Store's Logging ({0}) configuration file was not found in:\n{1}.\nFalling back to NLog (NLog.config) defaults.", 
+                        EVENTSTORE_LOG_FILENAME, 
+                        String.Join(",\n", potentialNLogConfigurationFilePaths));
+            }
 
             _initialized = true;
 

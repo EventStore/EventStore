@@ -43,11 +43,11 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="NLog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c">
+    <Reference Include="NLog">
       <HintPath>..\libs\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -91,7 +91,8 @@
     <Compile Include="Utils\IPEndpointConverter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Log\NLog.config" />
+    <None Include="Log\log.config">
+    </None>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

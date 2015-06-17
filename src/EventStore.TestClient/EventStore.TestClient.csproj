@@ -146,8 +146,8 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\EventStore.Common\Log\NLog.config">
-      <Link>NLog.config</Link>
+    <None Include="..\EventStore.Common\Log\log.config">
+      <Link>log.config</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
