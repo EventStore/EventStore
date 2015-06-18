@@ -160,7 +160,8 @@ namespace EventStore.Core.Services
                     case "Content-Length":    fwReq.ContentLength = srcReq.ContentLength64; break;
                     case "Date":              fwReq.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "Expect":            break;
-                    case "Host":              fwReq.Host = srcReq.Headers[headerKey]; break;
+                    case "Host":              fwReq.Headers["X-Forwarded-Host"] = srcReq.Headers[headerKey];
+                                              fwReq.Host = forwardUri.Host; break; 
                     case "If-Modified-Since": fwReq.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "Proxy-Connection":  break;
                     case "Range":             break;
