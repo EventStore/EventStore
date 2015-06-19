@@ -63,27 +63,27 @@ namespace EventStore.Common.Log
 
         public void FatalException(Exception exc, string format, params object[] args)
         {
-            _logger.Fatal(exc, string.Format(format, args));
+            _logger.FatalException(string.Format(format, args), exc);
         }
 
         public void ErrorException(Exception exc, string format, params object[] args)
         {
-            _logger.Error(exc, string.Format(format, args));
+            _logger.ErrorException(string.Format(format, args), exc);
         }
 
         public void InfoException(Exception exc, string format, params object[] args)
         {
-            _logger.Info(exc, string.Format(format, args));
+            _logger.InfoException(string.Format(format, args), exc);
         }
 
         public void DebugException(Exception exc, string format, params object[] args)
         {
-            _logger.Debug(exc, string.Format(format, args));
+            _logger.DebugException(string.Format(format, args), exc);
         }
 
         public void TraceException(Exception exc, string format, params object[] args)
         {
-            _logger.Trace(exc, string.Format(format, args));
+            _logger.TraceException(string.Format(format, args), exc);
         }
 
         public static void FlushLog(TimeSpan? maxTimeToWait = null)
