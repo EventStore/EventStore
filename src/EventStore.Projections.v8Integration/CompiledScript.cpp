@@ -123,7 +123,7 @@ namespace js1
 			new v8::Persistent<v8::Value>(v8::Isolate::GetCurrent(), exception));
 	}
 
-	void CompiledScript::set_last_error(char *message)
+	void CompiledScript::set_last_error(const char *message)
 	{
 		set_last_error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), message));
 	}
