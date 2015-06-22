@@ -128,7 +128,7 @@ cp libv8.$soext $PACKAGEDIRECTORY/
 cp libicui18n.$soext $PACKAGEDIRECTORY/
 cp libicuuc.$soext $PACKAGEDIRECTORY/
 cp clusternode $PACKAGEDIRECTORY/
-cp NLog.config $PACKAGEDIRECTORY/
+cp log.config $PACKAGEDIRECTORY/
 cp $SCRIPTDIR/run-node.sh $PACKAGEDIRECTORY/run-node.sh
 
 popd
