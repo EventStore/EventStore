@@ -125,7 +125,6 @@ namespace EventStore.Core.Index
             if (count == 0 || depth == 0)
                 return null;
 
-            //TODO GFY can make slightly faster with a sequential worker.
             var workItem = GetWorkItem();
             try
             {

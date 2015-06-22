@@ -53,7 +53,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public static void SetFileSize(SafeFileHandle handle, long count)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
-            WinNative.SetFilePointer(handle, (int)count, null, WinNative.EMoveMethod.Begin);
+            var low = (int)(count & 0xffffffff);
+            var high = (int)(count >> 32);
+            WinNative.SetFilePointer(handle, low, out high, WinNative.EMoveMethod.Begin);
             if (!WinNative.SetEndOfFile(handle))
             {
                 throw new Win32Exception();
@@ -228,10 +230,12 @@ static extern int fcntl(int fd, uint command, int arg);
 
         }
 
-        public static void Seek(SafeFileHandle handle, int position, SeekOrigin origin)
+        public static void Seek(SafeFileHandle handle, long position, SeekOrigin origin)
         {
 #if !__MonoCS__ && !USE_UNIX_IO
-            var f = WinNative.SetFilePointer(handle, position, null, WinNative.EMoveMethod.Begin);
+            var low = (int)(position & 0xffffffff);
+            var high = (int)(position >> 32);
+            var f = WinNative.SetFilePointer(handle, low, out high, WinNative.EMoveMethod.Begin);
             if (f == WinNative.INVALID_SET_FILE_POINTER)
             {
                 throw new Win32Exception();

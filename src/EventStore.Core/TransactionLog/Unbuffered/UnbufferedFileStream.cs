@@ -21,7 +21,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private long _lastPosition;
         private bool _needsFlush;
         private SafeFileHandle _handle;
-        private int _readLocation;
+        private long _readLocation;
 
         private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
         {
@@ -125,7 +125,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void SeekInternal(long positionAligned)
         {
-            NativeFile.Seek(_handle, (int) positionAligned, SeekOrigin.Begin);
+            NativeFile.Seek(_handle, positionAligned, SeekOrigin.Begin);
         }
 
         private void InternalWrite(byte* buffer, uint count)
@@ -172,7 +172,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if (count < 0 || buffer.Length < count) throw new ArgumentException("offset");
             if (offset + count > buffer.Length)
                 throw new ArgumentException("offset + count must be less than size of array");
-            var position = (int) GetLowestAlignment(Position);
+            var position = GetLowestAlignment(Position);
             var roffset = (int) (Position - position);
 
             var bytesRead = _readBufferSize;
@@ -185,7 +185,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             else if(_readLocation != position)
             {
-                roffset += position - _readLocation;
+                roffset += (int) (position - _readLocation);
             }
 
             var bytesAvailable = bytesRead - roffset;

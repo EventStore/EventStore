@@ -71,11 +71,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public static extern bool CloseHandle(IntPtr hObject);
 
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int SetFilePointer(
-            [In] SafeFileHandle hFile,
-            [In] int lDistanceToMove,
-            [Out] int* lpDistanceToMoveHigh,
-            [In] EMoveMethod dwMoveMethod);
+        public static extern int SetFilePointer(SafeFileHandle handle, int lDistanceToMove, out int lpDistanceToMoveHigh, EMoveMethod dwMoveMethod);
 
         public const int INVALID_SET_FILE_POINTER = -1;
     }
