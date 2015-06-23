@@ -14,6 +14,10 @@ namespace js1
 	{
 	}
 
+    CompiledScript::~CompiledScript()
+    {
+    }
+
 	void CompiledScript::isolate_terminate_execution() 
 	{
 		v8::Isolate* isolate = get_isolate();

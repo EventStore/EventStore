@@ -30,8 +30,7 @@ namespace js1
 
 	Status QueryScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
 	{
-		this->register_command_handler_callback = register_command_handler_callback;
-
+		//this->register_command_handler_callback = register_command_handler_callback;
 		return CompiledScript::compile_script(script_source, file_name);
 
 	}

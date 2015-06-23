@@ -222,29 +222,22 @@ function buildV8() {
     fi
 
     if [[ "$unixtype" == "mac" ]] ; then
+	export CXX=`which clang++`
+	export CC=`which clang`
+	export CPP="`which clang` -E -std=c++11 -stdlib=libc++"
+	export LINK="`which clang++` -std=c++11 -stdlib=libc++"
+	export CXX_host=`which clang++`
+	export CC_host=`which clang`
+	export CPP_host="`which clang` -E"
+	export LINK_host=`which clang++`
+	export GYP_DEFINES="clang=1 mac_deployment_target=10.9"
+
         v8OutputDir=`pwd`/out/$makecall
-        fileext="dylib"
-        DYLD_LIBRARY_PATH=$v8OutputDir $make $makecall $WERRORSTRING library=shared || err
+        $make $makecall $WERRORSTRING || err
     else
         v8OutputDir=`pwd`/out/$makecall/lib.target
-        fileext="so"
-        $make $makecall $WERRORSTRING library=shared || err
+	CFLAGS="-fPIC" CXXFLAGS="-fPIC" $make $makecall $WERRORSTRING || err
     fi
-
-    pushd ../src/libs > /dev/null
-    cp $v8OutputDir/libv8.$fileext . || err
-    cp $v8OutputDir/libicui18n.$fileext . ||  err
-    cp $v8OutputDir/libicuuc.$fileext . || err
-
-    if [[ "$unixtype" == "mac" ]] ; then
-        install_name_tool -id libv8.dylib libv8.dylib
-        install_name_tool -id libicui18n.dylib libicui18n.dylib
-        install_name_tool -id libicuuc.dylib libicuuc.dylib
-        install_name_tool -change /usr/local/lib/libicuuc.dylib libicuuc.dylib libicui18n.dylib
-        install_name_tool -change /usr/local/lib/libicuuc.dylib libicuuc.dylib libv8.dylib
-        install_name_tool -change /usr/local/lib/libicui18n.dylib libicui18n.dylib libv8.dylib
-    fi
-    popd > /dev/null
 
     [[ -d ../src/libs/include ]] || mkdir ../src/libs/include
 
@@ -256,9 +249,43 @@ function buildV8() {
 }
 
 function buildJS1() {
+    # TODO: pgermishuys - refactor (getV8Path() perhaps)
+    pushd v8 > /dev/null || err
+    if [[ "$PLATFORM" == "x64" ]] ; then
+        makecall="x64.$CONFIGURATION"
+    elif [[ "$PLATFORM" == "x86" ]] ; then
+        makecall="ia32.$CONFIGURATION"
+    else
+        echo "Unsupported platform $PLATFORM."
+        exit 1
+    fi
+
+    if [[ "$unixtype" == "mac" ]] ; then
+        v8OutputDir=`pwd`/out/$makecall
+    else
+        v8OutputDir=`pwd`/out/$makecall/obj.target
+    fi
+    popd > /dev/null || err
+
     currentDir=$(pwd -P)
     includeString="-I $currentDir/src/libs/include"
-    libsString="-L $currentDir/src/libs"
+    
+    if [[ "$unixtype" == "mac" ]] ; then
+	libsString="$v8OutputDir/libicudata.a \
+		    $v8OutputDir/libicui18n.a \
+		    $v8OutputDir/libicuuc.a \
+		    $v8OutputDir/libv8_base.x64.a \
+		    $v8OutputDir/libv8_nosnapshot.x64.a \
+		    $v8OutputDir/libv8_snapshot.a"
+    else
+	#currently not being used, need to pass in the start-group argument
+	libsString="$v8OutputDir/tools/gyp/libv8_base.x64.a \
+	  	    $v8OutputDir/tools/gyp/libv8_nosnapshot.x64.a \
+		    $v8OutputDir/tools/gyp/libv8_snapshot.a \
+	  	    $v8OutputDir/third_party/icu/libicui18n.a \
+	  	    $v8OutputDir/third_party/icu/libicuuc.a \ 
+		    $v8OutputDir/third_party/icu/libicudata.a"
+    fi
     outputDir="$currentDir/src/libs"
 
     pushd $currentDir/src/EventStore.Projections.v8Integration/ > /dev/null || err
@@ -275,7 +302,13 @@ function buildJS1() {
         outputObj=$outputDir/libjs1.so
     fi
 
-    g++ $includeString $libsString *.cpp -o $outputObj $gccArch -lv8 -O2 -fPIC --shared --save-temps -std=c++0x || err
+    if [[ "$unixtype" == "mac" ]] ; then
+	g++ $includeString $libsString *.cpp -o $outputObj $gccArch -O2 -fPIC --shared --save-temps -std=c++0x || err
+    else
+	g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++11 -lstdc++ \
+        -Wl,--start-group $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a -Wl,--end-group \
+	-lrt -lpthread || err
+    fi
 
     if [[ "$unixtype" == "mac" ]] ; then
         pushd $outputDir > /dev/null || err
@@ -373,7 +406,6 @@ function buildEventStore {
 
 function cleanAll {
     rm -rf bin/
-    rm -f src/libs/libv8.so
     rm -f src/libs/libjs1.so
     pushd src/EventStore.Projections.v8Integration > /dev/null
     git clean --quiet -dfx -- .
@@ -405,10 +437,7 @@ else
         buildJS1
         buildEventStore
     else
-        [[ -f src/libs/libv8.so ]] || [[ -f src/libs/libv8.dylib ]] || exitWithError "Cannot find libv8.[so|dylib] - in src/libs/ so cannot do a quick build!"
-        [[ -f src/libs/libicui18n.so ]] || [[ -f src/libs/libicui18n.dylib ]] || exitWithError "Cannot find libicui18n.[so|dylib] - in src/libs/ so cannot do a quick build!"
-        [[ -f src/libs/libjs1.so ]] || [[ -f src/libs/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/ so cannot do a quick build!"
-
+        [[ -f src/libs/libjs1.so ]] || [[ -f src/libs/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/ - cannot do a quick build!"
         buildEventStore
     fi
 fi

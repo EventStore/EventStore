@@ -21,8 +21,8 @@ namespace js1
 		std::shared_ptr<v8::Persistent<v8::String>> name;
 		std::shared_ptr<v8::Persistent<v8::Function>> handler;
 
-		EventHandler(const EventHandler &source){} // do not allow making copies
-		EventHandler & operator=(const EventHandler &right){} // do not allow assignments
+		EventHandler(const EventHandler &source); // do not allow making copies
+		EventHandler & operator=(const EventHandler &right); // do not allow assignments
 
 		static std::shared_ptr<v8::Persistent<v8::Function>> Create(v8::Handle<v8::Function> source) 
 		{

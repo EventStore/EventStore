@@ -11,6 +11,7 @@ namespace js1 {
 	public:
 		friend class PreludeScope;
 		CompiledScript();
+		virtual ~CompiledScript();
 		virtual void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
 		void isolate_terminate_execution();
 	protected:
