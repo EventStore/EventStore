@@ -21,14 +21,7 @@ namespace js1 {
 		}
 		~PreludeScope()
 		{
-			bool do_delete = false;
-			size_t counter = CompiledScript::isolate_release(isolate);
-			do_delete = counter == 0;
-			if (do_delete) 
-			{
-				isolate->Exit();
-				isolate->Dispose();
-			}
+			CompiledScript::isolate_release(isolate);
 		}
 	private:
 		v8::Isolate *isolate;
