@@ -268,20 +268,6 @@ function buildJS1() {
 
     currentDir=$(pwd -P)
     includeString="-I $currentDir/src/libs/include"
-
-    if [[ "$unixtype" == "mac" ]] ; then
-        libsString="$v8OutputDir/libicudata.a \
-            $v8OutputDir/libicui18n.a \
-            $v8OutputDir/libicuuc.a \
-            $v8OutputDir/libv8_base.x64.a \
-            $v8OutputDir/libv8_nosnapshot.x64.a \
-            $v8OutputDir/libv8_snapshot.a"
-    else
-        libsString="-Wl,--start-group \
-            $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a \
-            $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a \
-            -Wl,--end-group"
-    fi
     outputDir="$currentDir/src/libs"
 
     pushd $currentDir/src/EventStore.Projections.v8Integration/ > /dev/null || err
@@ -299,9 +285,15 @@ function buildJS1() {
     fi
 
     if [[ "$unixtype" == "mac" ]] ; then
+        libsString="$v8OutputDir/libicudata.a \
+            $v8OutputDir/libicui18n.a \
+            $v8OutputDir/libicuuc.a \
+            $v8OutputDir/libv8_base.x64.a \
+            $v8OutputDir/libv8_nosnapshot.x64.a \
+            $v8OutputDir/libv8_snapshot.a"
         g++ $includeString $libsString *.cpp -o $outputObj $gccArch -O2 -fPIC --shared --save-temps -std=c++0x || err
     else
-        g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++11 -lstdc++ $libsString -lrt -lpthread || err
+        g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++11 -lstdc++ -Wl,--start-group $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a -Wl,--end-group -lrt -lpthread || err
     fi
 
     if [[ "$unixtype" == "mac" ]] ; then
