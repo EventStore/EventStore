@@ -118,10 +118,10 @@ function checkParams() {
         echo "Version set to: $VERSIONSTRING"
     fi
 
-	if [[ "$nowerror" == "no-werror" ]] ; then
-		WERRORSTRING="werror=no"
-		echo "Setting werror=no for V8 build"
-	fi
+    if [[ "$nowerror" == "no-werror" ]] ; then
+        WERRORSTRING="werror=no"
+        echo "Setting werror=no for V8 build"
+    fi
 }
 
 function revertVersionFiles() {
@@ -156,21 +156,21 @@ function getV8() {
 
     if [[ -d v8/.svn ]] ; then
         pushd v8 > /dev/null || err
-		svnrevision=`svn info | sed -ne 's/^Revision: //p'`
+        svnrevision=`svn info | sed -ne 's/^Revision: //p'`
 
         if [[ "$svnrevision" != "$revision" ]] ; then
             echo "Updating V8 repository to revision $revision..."
             svn update --quiet -r$revision
-		else
+        else
             echo "V8 repository already at revision $revision"
         fi
         popd > /dev/null || err
     else
-		if [[ -d v8 ]] ; then
-			echo
-		fi
-		echo "Checking out V8 repository..."
-		svn checkout --quiet -r$revision http://v8.googlecode.com/svn/trunk v8
+        if [[ -d v8 ]] ; then
+            echo
+        fi
+        echo "Checking out V8 repository..."
+        svn checkout --quiet -r$revision http://v8.googlecode.com/svn/trunk v8
     fi
 }
 
@@ -222,21 +222,21 @@ function buildV8() {
     fi
 
     if [[ "$unixtype" == "mac" ]] ; then
-	export CXX=`which clang++`
-	export CC=`which clang`
-	export CPP="`which clang` -E -std=c++11 -stdlib=libc++"
-	export LINK="`which clang++` -std=c++11 -stdlib=libc++"
-	export CXX_host=`which clang++`
-	export CC_host=`which clang`
-	export CPP_host="`which clang` -E"
-	export LINK_host=`which clang++`
-	export GYP_DEFINES="clang=1 mac_deployment_target=10.9"
+        export CXX=`which clang++`
+        export CC=`which clang`
+        export CPP="`which clang` -E -std=c++11 -stdlib=libc++"
+        export LINK="`which clang++` -std=c++11 -stdlib=libc++"
+        export CXX_host=`which clang++`
+        export CC_host=`which clang`
+        export CPP_host="`which clang` -E"
+        export LINK_host=`which clang++`
+        export GYP_DEFINES="clang=1 mac_deployment_target=10.9"
 
         v8OutputDir=`pwd`/out/$makecall
         $make $makecall $WERRORSTRING || err
     else
         v8OutputDir=`pwd`/out/$makecall/lib.target
-	CFLAGS="-fPIC" CXXFLAGS="-fPIC" $make $makecall $WERRORSTRING || err
+        CFLAGS="-fPIC" CXXFLAGS="-fPIC" $make $makecall $WERRORSTRING || err
     fi
 
     [[ -d ../src/libs/include ]] || mkdir ../src/libs/include
@@ -249,7 +249,6 @@ function buildV8() {
 }
 
 function buildJS1() {
-    # TODO: pgermishuys - refactor (getV8Path() perhaps)
     pushd v8 > /dev/null || err
     if [[ "$PLATFORM" == "x64" ]] ; then
         makecall="x64.$CONFIGURATION"
@@ -269,22 +268,19 @@ function buildJS1() {
 
     currentDir=$(pwd -P)
     includeString="-I $currentDir/src/libs/include"
-    
+
     if [[ "$unixtype" == "mac" ]] ; then
-	libsString="$v8OutputDir/libicudata.a \
-		    $v8OutputDir/libicui18n.a \
-		    $v8OutputDir/libicuuc.a \
-		    $v8OutputDir/libv8_base.x64.a \
-		    $v8OutputDir/libv8_nosnapshot.x64.a \
-		    $v8OutputDir/libv8_snapshot.a"
+        libsString="$v8OutputDir/libicudata.a \
+            $v8OutputDir/libicui18n.a \
+            $v8OutputDir/libicuuc.a \
+            $v8OutputDir/libv8_base.x64.a \
+            $v8OutputDir/libv8_nosnapshot.x64.a \
+            $v8OutputDir/libv8_snapshot.a"
     else
-	#currently not being used, need to pass in the start-group argument
-	libsString="$v8OutputDir/tools/gyp/libv8_base.x64.a \
-	  	    $v8OutputDir/tools/gyp/libv8_nosnapshot.x64.a \
-		    $v8OutputDir/tools/gyp/libv8_snapshot.a \
-	  	    $v8OutputDir/third_party/icu/libicui18n.a \
-	  	    $v8OutputDir/third_party/icu/libicuuc.a \ 
-		    $v8OutputDir/third_party/icu/libicudata.a"
+        libsString="-Wl,--start-group \
+            $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a \
+            $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a \
+            -Wl,--end-group"
     fi
     outputDir="$currentDir/src/libs"
 
@@ -303,11 +299,9 @@ function buildJS1() {
     fi
 
     if [[ "$unixtype" == "mac" ]] ; then
-	g++ $includeString $libsString *.cpp -o $outputObj $gccArch -O2 -fPIC --shared --save-temps -std=c++0x || err
+        g++ $includeString $libsString *.cpp -o $outputObj $gccArch -O2 -fPIC --shared --save-temps -std=c++0x || err
     else
-	g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++11 -lstdc++ \
-        -Wl,--start-group $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a -Wl,--end-group \
-	-lrt -lpthread || err
+        g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++11 -lstdc++ $libsString -lrt -lpthread || err
     fi
 
     if [[ "$unixtype" == "mac" ]] ; then
@@ -384,14 +378,14 @@ function patchVersionInfo {
     for file in $files
     do
         tempfile="$file.tmp"
-	sed -e "s/$versionPattern/$newVersion/" \
-        -e "s/$branchPattern/$newBranch/" \
-        -e "s/$commitHashPattern/$newCommitHash/" \
-        -e "s/$timestampPattern/$newTimestamp/" \
-        $file > $tempfile
+        sed -e "s/$versionPattern/$newVersion/" \
+            -e "s/$branchPattern/$newBranch/" \
+            -e "s/$commitHashPattern/$newCommitHash/" \
+            -e "s/$timestampPattern/$newTimestamp/" \
+            $file > $tempfile
 
         mv $tempfile $file
-	echo "Patched $file with version information"
+        echo "Patched $file with version information"
     done
 }
 
