@@ -203,7 +203,7 @@ namespace EventStore.Core.Services.Transport.Http
                         }
                     }
                     // metadata
-                    if (embedContent >= EmbedLevel.PrettyBody)
+                    if (embedContent >= EmbedLevel.Body)
                     {
                         try
                         {
