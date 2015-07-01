@@ -203,14 +203,17 @@ namespace EventStore.Core.Services.Transport.Http
                         }
                     }
                     // metadata
-                    if (embedContent >= EmbedLevel.PrettyBody)
+                    if (embedContent >= EmbedLevel.Body)
                     {
                         try
                         {
                             richEntry.MetaData = Helper.UTF8NoBom.GetString(evnt.Metadata);
                             richEntry.IsMetaData = richEntry.MetaData.IsNotEmptyString();
                             // next step may fail, so we have already assigned body
-                            richEntry.MetaData = FormatJson(richEntry.MetaData);
+                            if(embedContent >= EmbedLevel.PrettyBody)
+                            {
+                                richEntry.MetaData = FormatJson(richEntry.MetaData);
+                            }
                         }
                         catch
                         {
@@ -224,7 +227,10 @@ namespace EventStore.Core.Services.Transport.Http
                                 richEntry.LinkMetaData = Helper.UTF8NoBom.GetString(lnk.Metadata);
                                 richEntry.IsLinkMetaData = richEntry.LinkMetaData.IsNotEmptyString();
                                 // next step may fail, so we have already assigned body
-                                richEntry.LinkMetaData = FormatJson(richEntry.LinkMetaData);
+                                if(embedContent >= EmbedLevel.PrettyBody)
+                                {
+                                    richEntry.LinkMetaData = FormatJson(richEntry.LinkMetaData);
+                                }
                             }
                             catch
                             {
