@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
@@ -19,6 +19,7 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using System.Net.NetworkInformation;
 
 namespace EventStore.ClusterNode
 {
@@ -132,7 +133,7 @@ namespace EventStore.ClusterNode
                 ? new[] {NodeSubsystems.Projections}
                 : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
-            var infoController = new InfoController(opts); 
+            var infoController = new InfoController(opts);
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, infoController, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
         }
@@ -175,18 +176,28 @@ namespace EventStore.ClusterNode
             var extSecTcp = options.ExtSecureTcpPort > 0 ? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort) : null;
             var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
             var quorumSize = GetQuorumSize(options.ClusterSize);
-            
-            if (Runtime.IsMono)
+
+            var additionalPrefixes = new List<string>(prefixes);
+            if((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
+                options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
             {
-                if (!prefixes.Contains(x => x.Contains("localhost")) && Equals(extHttp.Address, IPAddress.Loopback))
+                foreach(var adapter in NetworkInterface.GetAllNetworkInterfaces())
                 {
-                    var withAdditional = new List<string>(prefixes)
-                    {
-                        string.Format("http://localhost:{0}/", extHttp.Port)
-                    };
-                    prefixes = withAdditional.ToArray();
+                   foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
+                   {
+                       if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                       {
+                            additionalPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, extHttp.Port));
+                       }
+                   }
                 }
             }
+            else if(options.AddInterfacePrefixes)
+            {
+                additionalPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.ExtHttpPort));
+                additionalPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
+            }
+            prefixes = additionalPrefixes.ToArray();
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
@@ -266,7 +277,7 @@ namespace EventStore.ClusterNode
 		    Func<IAuthenticationProviderFactory> factory;
 			if (!authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out factory))
 			{
-				throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " + 
+				throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " +
 					"to be provided by an authentication plugin, confirm the plugin DLL is located in {1}.\n" +
 					"Valid options for authentication are: {2}.", authenticationType, pluginsPath, string.Join(", ", authenticationTypeToPlugin.Keys)));
 			}

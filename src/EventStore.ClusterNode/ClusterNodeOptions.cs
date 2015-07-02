@@ -110,6 +110,8 @@ namespace EventStore.ClusterNode
         public string[] HttpPrefixes { get; set; }
         [ArgDescription(Opts.EnableTrustedAuthDescr, Opts.InterfacesGroup)]
         public bool EnableTrustedAuth { get; set; }
+        [ArgDescription(Opts.AddInterfacePrefixesDescr, Opts.InterfacesGroup)]
+        public bool AddInterfacePrefixes { get; set; }
 
         [ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesGroup)]
         public string CertificateStoreLocation { get; set; }
@@ -197,6 +199,7 @@ namespace EventStore.ClusterNode
 
             HttpPrefixes = Opts.HttpPrefixesDefault;
             EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
+            AddInterfacePrefixes = Opts.AddInterfacePrefixesDefault;
 
             ExtTcpHeartbeatTimeout = Opts.ExtTcpHeartbeatTimeoutDefault;
             IntTcpHeartbeatTimeout = Opts.IntTcpHeartbeatTimeoutDefault;

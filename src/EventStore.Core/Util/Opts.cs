@@ -89,6 +89,9 @@ namespace EventStore.Core.Util
         public const string EnableTrustedAuthDescr = "Enables trusted authentication by an intermediary in the Http";
         public const bool EnableTrustedAuthDefault = false;
 
+        public const string AddInterfacePrefixesDescr = "Add interface prefixes";
+        public const bool AddInterfacePrefixesDefault = true;
+
         public const string MaxMemTableSizeDescr = "Adjusts the maximum size of a mem table.";
         public const int MaxMemtableSizeDefault = 1000000;
 
@@ -173,10 +176,10 @@ namespace EventStore.Core.Util
         public const bool StatsOnExtDefault = true;
 
         public const string InternalIpDescr = "Internal IP Address.";
-        public static readonly IPAddress InternalIpDefault = IPAddress.Loopback;
+        public static readonly IPAddress InternalIpDefault = IPAddress.Parse("0.0.0.0");
 
         public const string ExternalIpDescr = "External IP Address.";
-        public static readonly IPAddress ExternalIpDefault = IPAddress.Loopback;
+        public static readonly IPAddress ExternalIpDefault = IPAddress.Parse("0.0.0.0");
 
         public const string InternalHttpPortDescr = "Internal HTTP Port.";
         public const int    InternalHttpPortDefault = 2112;
