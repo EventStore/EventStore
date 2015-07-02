@@ -30,11 +30,12 @@ namespace EventStore.Common.Options
             var commanddict = commandline.ToDictionary(x => x.Name.ToLower());
             yield return commandline;
             yield return EnvironmentVariables.Parse<TOptions>(x => NameTranslators.PrefixEnvironmentVariable(x, environmentPrefix));
-            var configFile = commanddict.ContainsKey("config") ? 
+            var configFile = commanddict.ContainsKey("config") ?
                              commanddict["config"].Value as string : null;
-            if(configFile == null && File.Exists(defaultConfigLocation))
+            if (configFile == null && File.Exists(defaultConfigLocation))
             {
                 configFile = defaultConfigLocation;
+                yield return new OptionSource[] { OptionSource.String("Config File", "config", defaultConfigLocation) };
             }
             if (configFile != null)
             {
