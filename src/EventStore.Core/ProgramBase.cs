@@ -38,7 +38,7 @@ namespace EventStore.Core
             {
                 Application.RegisterExitAction(Exit);
 
-                var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix);
+                var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix, Path.Combine(DefaultDirectory.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
                 if (options.Help)
                 {
                     Console.WriteLine("Options:");

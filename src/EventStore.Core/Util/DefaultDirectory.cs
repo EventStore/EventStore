@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 
 namespace EventStore.Core.Util
@@ -14,7 +13,7 @@ namespace EventStore.Core.Util
 
         static DefaultDirectory()
         {
-            switch (GetPlatform())
+            switch (Platforms.GetPlatform())
             {
                 case Platform.Linux:
                     DefaultContentDirectory = "/usr/share/eventstore";
@@ -36,31 +35,6 @@ namespace EventStore.Core.Util
         private static string GetExecutingDirectory()
         {
             return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        }
-
-        private enum Platform
-        {
-            Windows,
-            Linux,
-            Mac
-        }
-
-        private static Platform GetPlatform()
-        {
-            //http://stackoverflow.com/questions/10138040/how-to-detect-properly-windows-linux-mac-operating-systems
-            switch (Environment.OSVersion.Platform)
-            {
-                case PlatformID.Unix:
-                    if (Directory.Exists("/Applications") & Directory.Exists("/System") & Directory.Exists("/Users") & Directory.Exists("/Volumes"))
-                        return Platform.Mac;
-                    return Platform.Linux;
-
-                case PlatformID.MacOSX:
-                    return Platform.Mac;
-
-                default:
-                    return Platform.Windows;
-            }
         }
     }
 }

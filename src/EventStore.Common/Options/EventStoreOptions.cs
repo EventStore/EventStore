@@ -12,9 +12,9 @@ namespace EventStore.Common.Options
     {
         private static IEnumerable<OptionSource> _effectiveOptions;
 
-        public static TOptions Parse<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
+        public static TOptions Parse<TOptions>(string[] args, string environmentPrefix, string defaultConfigLocation = null) where TOptions : class, IOptions, new()
         {
-            _effectiveOptions = GetConfig<TOptions>(args, environmentPrefix)
+            _effectiveOptions = GetConfig<TOptions>(args, environmentPrefix, defaultConfigLocation)
                 .Flatten()
                 .Cleanup()
                 .ToLookup(x => x.Name.ToLower())
@@ -24,13 +24,18 @@ namespace EventStore.Common.Options
             return _effectiveOptions.ApplyTo<TOptions>();
         }
 
-        private static IEnumerable<IEnumerable<OptionSource>> GetConfig<TOptions>(string[] args, string environmentPrefix) where TOptions : class, IOptions, new()
+        private static IEnumerable<IEnumerable<OptionSource>> GetConfig<TOptions>(string[] args, string environmentPrefix, string defaultConfigLocation = null) where TOptions : class, IOptions, new()
         {
             var commandline = CommandLine.Parse<TOptions>(args).Normalize();
             var commanddict = commandline.ToDictionary(x => x.Name.ToLower());
             yield return commandline;
             yield return EnvironmentVariables.Parse<TOptions>(x => NameTranslators.PrefixEnvironmentVariable(x, environmentPrefix));
-            var configFile = commanddict.ContainsKey("config") ? commanddict["config"].Value as string : null;
+            var configFile = commanddict.ContainsKey("config") ? 
+                             commanddict["config"].Value as string : null;
+            if(configFile == null && File.Exists(defaultConfigLocation))
+            {
+                configFile = defaultConfigLocation;
+            }
             if (configFile != null)
             {
                 if (!File.Exists(configFile))
