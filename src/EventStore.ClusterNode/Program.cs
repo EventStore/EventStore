@@ -50,18 +50,18 @@ namespace EventStore.ClusterNode
         {
             base.PreInit(options);
 
-	    //Never seen this problem occur on the .NET framework
+            //Never seen this problem occur on the .NET framework
             if (!Runtime.IsMono)
                 return;
 
-	    //0 indicates we should leave the machine defaults alone
+            //0 indicates we should leave the machine defaults alone
             if (options.MonoMinThreadpoolSize == 0)
                 return;
 
-	    //Change the number of worker threads to be higher if our own setting
-	    // is higher than the current value
+            //Change the number of worker threads to be higher if our own setting
+            // is higher than the current value
             int minWorkerThreads, minIocpThreads;
-	    ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
+            ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
 
             if (minWorkerThreads >= options.MonoMinThreadpoolSize)
                 return;
@@ -89,49 +89,49 @@ namespace EventStore.ClusterNode
             var db = new TFChunkDb(dbConfig);
             var vNodeSettings = GetClusterVNodeSettings(opts);
 
-	        IGossipSeedSource gossipSeedSource;
-			if (opts.DiscoverViaDns)
-			{
-				gossipSeedSource = new DnsGossipSeedSource(opts.ClusterDns, opts.ClusterGossipPort);
-			}
-			else
-			{
-				if (opts.GossipSeed.Length == 0)
-				{
-					if (opts.ClusterSize > 1)
-					{
-					    Log.Error("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-					        + "Specify gossip seeds using the --gossip-seed command line option.");
-					}
-					else
-					{
-					    Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since"
-					        + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified"
-					        + "seeds using the --gossip-seed command line option.");
-					}
-				}
+            IGossipSeedSource gossipSeedSource;
+            if (opts.DiscoverViaDns)
+            {
+                gossipSeedSource = new DnsGossipSeedSource(opts.ClusterDns, opts.ClusterGossipPort);
+            }
+            else
+            {
+                if (opts.GossipSeed.Length == 0)
+                {
+                    if (opts.ClusterSize > 1)
+                    {
+                        Log.Error("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+                                + "Specify gossip seeds using the --gossip-seed command line option.");
+                    }
+                    else
+                    {
+                        Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since"
+                                + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified"
+                                + "seeds using the --gossip-seed command line option.");
+                    }
+                }
 
-				gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
-			}
+                gossipSeedSource = new KnownEndpointGossipSeedSource(opts.GossipSeed);
+            }
 
             var runProjections = opts.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n"
-                     + "{2,-25} {3}\n"
-                     + "{4,-25} {5} (0x{5:X})\n"
-                     + "{6,-25} {7} (0x{7:X})\n"
-                     + "{8,-25} {9} (0x{9:X})\n"
-                     + "{10,-25} {11} (0x{11:X})\n",
-                     "INSTANCE ID:", vNodeSettings.NodeInfo.InstanceId,
-                     "DATABASE:", db.Config.Path,
-                     "WRITER CHECKPOINT:", db.Config.WriterCheckpoint.Read(),
-                     "CHASER CHECKPOINT:", db.Config.ChaserCheckpoint.Read(),
-                     "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
-                     "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
+                    + "{2,-25} {3}\n"
+                    + "{4,-25} {5} (0x{5:X})\n"
+                    + "{6,-25} {7} (0x{7:X})\n"
+                    + "{8,-25} {9} (0x{9:X})\n"
+                    + "{10,-25} {11} (0x{11:X})\n",
+                    "INSTANCE ID:", vNodeSettings.NodeInfo.InstanceId,
+                    "DATABASE:", db.Config.Path,
+                    "WRITER CHECKPOINT:", db.Config.WriterCheckpoint.Read(),
+                    "CHASER CHECKPOINT:", db.Config.ChaserCheckpoint.Read(),
+                    "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
+                    "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
             var enabledNodeSubsystems = runProjections >= ProjectionType.System
                 ? new[] {NodeSubsystems.Projections}
-                : new NodeSubsystems[0];
+            : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
             var infoController = new InfoController(opts);
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, infoController, _projections);
@@ -179,17 +179,17 @@ namespace EventStore.ClusterNode
 
             var additionalPrefixes = new List<string>(prefixes);
             if((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
-                options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
+                        options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
             {
                 foreach(var adapter in NetworkInterface.GetAllNetworkInterfaces())
                 {
-                   foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
-                   {
-                       if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                       {
+                    foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
+                    {
+                        if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
                             additionalPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, extHttp.Port));
-                       }
-                   }
+                        }
+                    }
                 }
             }
             else if(options.AddInterfacePrefixes)
@@ -208,84 +208,84 @@ namespace EventStore.ClusterNode
                 if (intSecTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
             }
 
-			var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
+            var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
 
-			return new ClusterVNodeSettings(Guid.NewGuid(), 0,
-                                            intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
-                                            prefixes, options.EnableTrustedAuth,
-                                            certificate,
-                                            options.WorkerThreads, options.DiscoverViaDns,
-                                            options.ClusterDns, options.GossipSeed,
-                                            TimeSpan.FromMilliseconds(options.MinFlushDelayMs), options.ClusterSize,
-                                            prepareCount, commitCount,
-                                            TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
-                                            TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
-                                            options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
-                                            TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
-                                            options.NodePriority, authenticationProviderFactory, options.DisableScavengeMerging,
-                                            options.AdminOnExt, options.StatsOnExt, options.GossipOnExt,
-                                            TimeSpan.FromMilliseconds(options.GossipIntervalMs),
-                                            TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs),
-                                            TimeSpan.FromMilliseconds(options.GossipTimeoutMs),
-                                            TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatTimeout),
-                                            TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatInterval),
-                                            TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout),
-                                            TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval),
-                                            !options.SkipDbVerify, options.MaxMemTableSize,
-                                            options.DevelopmentMode);
+            return new ClusterVNodeSettings(Guid.NewGuid(), 0,
+                    intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
+                    prefixes, options.EnableTrustedAuth,
+                    certificate,
+                    options.WorkerThreads, options.DiscoverViaDns,
+                    options.ClusterDns, options.GossipSeed,
+                    TimeSpan.FromMilliseconds(options.MinFlushDelayMs), options.ClusterSize,
+                    prepareCount, commitCount,
+                    TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
+                    TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
+                    options.UseInternalSsl, options.SslTargetHost, options.SslValidateServer,
+                    TimeSpan.FromSeconds(options.StatsPeriodSec), StatsStorage.StreamAndCsv,
+                    options.NodePriority, authenticationProviderFactory, options.DisableScavengeMerging,
+                    options.AdminOnExt, options.StatsOnExt, options.GossipOnExt,
+                    TimeSpan.FromMilliseconds(options.GossipIntervalMs),
+                    TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs),
+                    TimeSpan.FromMilliseconds(options.GossipTimeoutMs),
+                    TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatTimeout),
+                    TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatInterval),
+                    TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout),
+                    TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval),
+                    !options.SkipDbVerify, options.MaxMemTableSize,
+                    options.DevelopmentMode);
         }
 
-	    private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
-	    {
-			var catalog = new AggregateCatalog();
+        private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
+        {
+            var catalog = new AggregateCatalog();
 
-			var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			var pluginsPath = Path.Combine(currentPath ?? String.Empty, "plugins");
+            var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var pluginsPath = Path.Combine(currentPath ?? String.Empty, "plugins");
 
-		    if (Directory.Exists(pluginsPath))
-		    {
-				Log.Info("Plugins path: {0}", pluginsPath);
-			    catalog.Catalogs.Add(new DirectoryCatalog(pluginsPath));
-		    }
-		    else
-		    {
-			    Log.Info("Can't find plugins path: {0}", pluginsPath);
-		    }
+            if (Directory.Exists(pluginsPath))
+            {
+                Log.Info("Plugins path: {0}", pluginsPath);
+                catalog.Catalogs.Add(new DirectoryCatalog(pluginsPath));
+            }
+            else
+            {
+                Log.Info("Can't find plugins path: {0}", pluginsPath);
+            }
 
-		    var compositionContainer = new CompositionContainer(catalog);
-			var potentialPlugins = compositionContainer.GetExports<IAuthenticationPlugin>();
+            var compositionContainer = new CompositionContainer(catalog);
+            var potentialPlugins = compositionContainer.GetExports<IAuthenticationPlugin>();
 
-			var authenticationTypeToPlugin = new Dictionary<string, Func<IAuthenticationProviderFactory>> {
-				{ "internal", () => new InternalAuthenticationProviderFactory() }
-			};
+            var authenticationTypeToPlugin = new Dictionary<string, Func<IAuthenticationProviderFactory>> {
+                { "internal", () => new InternalAuthenticationProviderFactory() }
+            };
 
-		    foreach (var potentialPlugin in potentialPlugins)
-			{
-				try
-				{
-					var plugin = potentialPlugin.Value;
-					var commandLine = plugin.CommandLineName.ToLowerInvariant();
-					Log.Info("Loaded authentication plugin: {0} version {1} (Command Line: {2})", plugin.Name, plugin.Version, commandLine);
-					authenticationTypeToPlugin.Add(commandLine, () => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
-				}
-				catch (CompositionException ex)
-				{
-					Log.ErrorException(ex, "Error loading authentication plugin.");
-				}
-			}
+            foreach (var potentialPlugin in potentialPlugins)
+            {
+                try
+                {
+                    var plugin = potentialPlugin.Value;
+                    var commandLine = plugin.CommandLineName.ToLowerInvariant();
+                    Log.Info("Loaded authentication plugin: {0} version {1} (Command Line: {2})", plugin.Name, plugin.Version, commandLine);
+                    authenticationTypeToPlugin.Add(commandLine, () => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
+                }
+                catch (CompositionException ex)
+                {
+                    Log.ErrorException(ex, "Error loading authentication plugin.");
+                }
+            }
 
-		    Func<IAuthenticationProviderFactory> factory;
-			if (!authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out factory))
-			{
-				throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " +
-					"to be provided by an authentication plugin, confirm the plugin DLL is located in {1}.\n" +
-					"Valid options for authentication are: {2}.", authenticationType, pluginsPath, string.Join(", ", authenticationTypeToPlugin.Keys)));
-			}
+            Func<IAuthenticationProviderFactory> factory;
+            if (!authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out factory))
+            {
+                throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " +
+                            "to be provided by an authentication plugin, confirm the plugin DLL is located in {1}.\n" +
+                            "Valid options for authentication are: {2}.", authenticationType, pluginsPath, string.Join(", ", authenticationTypeToPlugin.Keys)));
+            }
 
-		    return factory();
-	    }
+            return factory();
+        }
 
-	    protected override void Start()
+        protected override void Start()
         {
             _node.Start();
         }
