@@ -174,7 +174,7 @@ namespace EventStore.ClusterNode
             var intSecTcp = options.IntSecureTcpPort > 0 ? new IPEndPoint(options.IntIp, options.IntSecureTcpPort) : null;
             var extTcp = new IPEndPoint(options.ExtIp, options.ExtTcpPort);
             var extSecTcp = options.ExtSecureTcpPort > 0 ? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort) : null;
-            var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] { extHttp.ToHttpUrl() };
+            var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new string[0];
             var quorumSize = GetQuorumSize(options.ClusterSize);
 
             var additionalPrefixes = new List<string>(prefixes);
@@ -187,6 +187,7 @@ namespace EventStore.ClusterNode
                     {
                         if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                         {
+                            additionalPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, intHttp.Port));
                             additionalPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, extHttp.Port));
                         }
                     }
