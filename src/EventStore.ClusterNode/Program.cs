@@ -132,7 +132,7 @@ namespace EventStore.ClusterNode
             var enabledNodeSubsystems = runProjections >= ProjectionType.System
                 ? new[] {NodeSubsystems.Projections}
             : new NodeSubsystems[0];
-            _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections);
+            _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections, opts.DevelopmentMode);
             var infoController = new InfoController(opts);
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, infoController, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);

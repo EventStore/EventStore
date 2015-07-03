@@ -579,7 +579,7 @@ namespace EventStore.ClientAPI.Embedded
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, internalProjectionType));
+            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, internalProjectionType, _developmentMode));
         }
 
         /// <summary>
