@@ -1,3 +1,3 @@
-##!/usr/bin/env bash
+##!/bin/sh
 
-LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./clusternode $@
+LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./eventstored $@
