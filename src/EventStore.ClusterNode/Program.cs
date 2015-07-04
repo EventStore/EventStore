@@ -199,6 +199,19 @@ namespace EventStore.ClusterNode
                 additionalPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
             }
             prefixes = additionalPrefixes.ToArray();
+            if (!prefixes.Contains(x => x.Contains("localhost")))
+            {
+                var withAdditional = new List<string>(prefixes);
+                if(Equals(extHttp.Address, IPAddress.Loopback))
+                {
+                    withAdditional.Add(string.Format("http://localhost:{0}/", extHttp.Port));
+                }
+                if(Equals(intHttp.Address, IPAddress.Loopback))
+                {
+                    withAdditional.Add(string.Format("http://localhost:{0}/", intHttp.Port));
+                }
+                prefixes = withAdditional.ToArray();
+            }
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
