@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 version=$1
 customMonoPrefix=$2
 
@@ -124,7 +126,7 @@ cp -r clusternode-web $PACKAGEDIRECTORY/
 cp -r Prelude $PACKAGEDIRECTORY/
 cp -r projections $PACKAGEDIRECTORY/
 cp libjs1.$soext $PACKAGEDIRECTORY/
-cp clusternode $PACKAGEDIRECTORY/
+cp eventstored $PACKAGEDIRECTORY/
 cp log.config $PACKAGEDIRECTORY/
 cp $SCRIPTDIR/run-node.sh $PACKAGEDIRECTORY/run-node.sh
 
