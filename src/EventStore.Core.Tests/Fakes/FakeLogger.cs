@@ -45,6 +45,10 @@ namespace EventStore.Core.Tests.Fakes
         {
         }
 
+        public void Warn(string format, params object[] args)
+        {
+        }
+
         public void Trace(string format, params object[] args)
         {
         }

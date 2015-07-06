@@ -27,6 +27,16 @@ namespace EventStore.Padmin
             Console.WriteLine(Log("DEBUG", ex, format, args));
         }
 
+        public void Warn(string format, params object[] args)
+        {
+            Console.WriteLine(Log("WARN", format, args));
+        }
+
+        public void Warn(Exception ex, string format, params object[] args)
+        {
+            Console.WriteLine(Log("WARN", ex, format, args));
+        }
+
         public void Info(string format, params object[] args)
         {
             Console.WriteLine(Log("INFO", format, args));

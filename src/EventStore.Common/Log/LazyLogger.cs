@@ -33,6 +33,11 @@ namespace EventStore.Common.Log
             _logger.Value.Info(format, args);
         }
 
+        public void Warn(string format, params object[] args)
+        {
+            _logger.Value.Warn(format, args);
+        }
+
         public void Debug(string format, params object[] args)
         {
             _logger.Value.Debug(format, args);

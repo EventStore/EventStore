@@ -19,6 +19,9 @@ namespace EventStore.Common.Log
         void Debug(string format, params object[] args);
 
         [StringFormatMethod("format")]
+        void Warn(string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void Trace(string format, params object[] args);
 
         [StringFormatMethod("format")]

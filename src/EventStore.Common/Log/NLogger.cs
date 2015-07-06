@@ -56,6 +56,11 @@ namespace EventStore.Common.Log
             _logger.Debug(format, args);
         }
 
+        public void Warn(string format, params object[] args)
+        {
+            _logger.Warn(format, args);
+        }
+
         public void Trace(string format, params object[] args)
         {
             _logger.Trace(format, args);

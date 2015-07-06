@@ -31,6 +31,11 @@ namespace EventStore.Common.Log
             Console.WriteLine(Log("DEBUG", format, args));
         }
 
+        public void Warn(string format, params object[] args)
+        {
+            Console.WriteLine(Log("WARN", format, args));
+        }
+
         public void Trace(string format, params object[] args)
         {
             Console.WriteLine(Log("TRACE", format, args));
