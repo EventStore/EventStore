@@ -293,7 +293,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var timedifference = now - _lastCheckPointTime;
                 if (timedifference < _settings.CheckPointAfter && difference < _settings.MaxCheckPointCount) return;
                 if ((difference >= _settings.MinCheckPointCount && isTimeCheck) ||
-                    difference >= _settings.MaxCheckPointCount)
+                    difference >= _settings.MaxCheckPointCount && _lastCheckPoint < lowest)
                 {
                     _lastCheckPointTime = now;
                     _lastCheckPoint = lowest;
