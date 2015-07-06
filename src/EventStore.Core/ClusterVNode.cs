@@ -276,6 +276,8 @@ namespace EventStore.Core
                 bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
             });
 
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
+
             var adminController = new AdminController(_mainQueue);
             var pingController = new PingController();
             var statController = new StatController(monitoringQueue, _workersHandler);

@@ -1,21 +1,24 @@
 using System;
+using System.Collections.Generic;
 using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using EventStore.Core.Messages;
+using EventStore.Rags;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
-using EventStore.Common.Options;
-using System.Collections.Generic;
-using EventStore.Rags;
+using EventStore.Core.Bus;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    public class InfoController : IHttpController
+    public class InfoController : IHttpController, IHandle<SystemMessage.StateChangeMessage>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<InfoController>();
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
         private readonly IOptions options;
+        private VNodeState currentState;
         public InfoController(IOptions options)
         {
             this.options = options;
@@ -28,11 +31,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterAction(new ControllerAction("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetOptions);
         }
 
+
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            currentState = message.State;
+        }
+
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
         {
             entity.ReplyTextContent(Codec.Json.To(new
                                     {
-                                        ESVersion = VersionInfo.Version
+                                        ESVersion = VersionInfo.Version,
+                                        State = currentState
                                     }),
                                     HttpStatusCode.OK,
                                     "OK",
