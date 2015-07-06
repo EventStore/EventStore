@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _outstandingRequests[message.EventId] = message;
             if (!found)
             {
-                _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
+                _bySequences.Add(message.ResolvedEvent.Event.EventNumber, message.ResolvedEvent.OriginalEventNumber);
                 _byTime.Add(new RetryableMessage(message.EventId, expires));
             }
         }
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     yield return _outstandingRequests[item.MessageId];
                     _outstandingRequests.Remove(item.MessageId);
-                    _bySequences.Remove(m.ResolvedEvent.OriginalEventNumber);
+                    _bySequences.Remove(m.ResolvedEvent.Event.EventNumber);
                 }
             }
         }
