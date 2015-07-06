@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             entity.ReplyTextContent(Codec.Json.To(new
                                     {
                                         ESVersion = VersionInfo.Version,
-                                        State = currentState
+                                        State = currentState.ToString().ToLower()
                                     }),
                                     HttpStatusCode.OK,
                                     "OK",
