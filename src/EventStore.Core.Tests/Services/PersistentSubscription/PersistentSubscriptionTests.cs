@@ -590,22 +590,23 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                     .StartFromBeginning()
                     .WithMessageTimeoutOf(TimeSpan.FromSeconds(1)));
             reader.Load(null);
-            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 1, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 1, "foo", "bar");
             var id1 = Guid.NewGuid();
             var id2 = Guid.NewGuid();
             sub.HandleReadCompleted(new[]
             {
                 Helper.BuildFakeEvent(id1, "type", "streamName", 0),
-                Helper.BuildFakeEvent(id2, "type", "streamName", 1)
+                Helper.BuildLinkEvent(id2, "streamName", 1, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamSource", 0))
+                
             }, 1, false);
             envelope1.Replies.Clear();
             sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
             Assert.AreEqual(2, envelope1.Replies.Count);
             var msg1 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared) envelope1.Replies[0];
             var msg2 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared)envelope1.Replies[1];
-            Assert.IsTrue(id1 == msg1.Event.Event.EventId || id1 == msg2.Event.Event.EventId);
-            Assert.IsTrue(id2 == msg1.Event.Event.EventId || id2 == msg2.Event.Event.EventId);
+            Assert.IsTrue(id1 == msg1.Event.OriginalEvent.EventId || id1 == msg2.Event.OriginalEvent.EventId);
+            Assert.IsTrue(id2 == msg1.Event.OriginalEvent.EventId || id2 == msg2.Event.OriginalEvent.EventId);
             Assert.AreEqual(0, parker.ParkedEvents.Count);
         }
 
