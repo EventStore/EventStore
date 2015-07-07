@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -1053,6 +1055,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             return
                 new ResolvedEvent(new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version,
                     DateTime.Now, PrepareFlags.SingleWrite, type, new byte[0], new byte[0]));
+        }
+
+        public static ResolvedEvent BuildLinkEvent(Guid id, string stream, int version, ResolvedEvent ev, bool resolved = true)
+        {
+            var link = new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version, DateTime.Now, PrepareFlags.SingleWrite, SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes(string.Format("{0}@{1}", ev.OriginalEventNumber, ev.OriginalStreamId)), new byte[0]);
+            if (resolved)
+                return new ResolvedEvent(ev.Event, link);
+            else
+                return new ResolvedEvent(link, link);
         }
     }
 
