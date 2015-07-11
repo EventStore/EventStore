@@ -12,7 +12,8 @@ namespace EventStore.Core.Cluster.Settings
     public class ClusterVNodeSettings
     {
         public readonly VNodeInfo NodeInfo;
-        public readonly string[] HttpPrefixes;
+        public readonly string[] IntHttpPrefixes;
+        public readonly string[] ExtHttpPrefixes;
         public readonly bool EnableTrustedAuth;
         public readonly X509Certificate2 Certificate;
         public readonly int WorkerThreads;
@@ -62,7 +63,8 @@ namespace EventStore.Core.Cluster.Settings
                                     IPEndPoint externalSecureTcpEndPoint,
                                     IPEndPoint internalHttpEndPoint,
                                     IPEndPoint externalHttpEndPoint,
-                                    string[] httpPrefixes,
+                                    string[] intHttpPrefixes,
+                                    string[] extHttpPrefixes,
                                     bool enableTrustedAuth,
                                     X509Certificate2 certificate,
                                     int workerThreads,
@@ -102,7 +104,8 @@ namespace EventStore.Core.Cluster.Settings
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
             Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
-            Ensure.NotNull(httpPrefixes, "httpPrefixes");
+            Ensure.NotNull(intHttpPrefixes, "intHttpPrefixes");
+            Ensure.NotNull(extHttpPrefixes, "extHttpPrefixes");
             if (internalSecureTcpEndPoint != null || externalSecureTcpEndPoint != null)
                 Ensure.NotNull(certificate, "certificate");
             Ensure.Positive(workerThreads, "workerThreads");
@@ -122,7 +125,8 @@ namespace EventStore.Core.Cluster.Settings
                                      internalTcpEndPoint, internalSecureTcpEndPoint,
                                      externalTcpEndPoint, externalSecureTcpEndPoint,
                                      internalHttpEndPoint, externalHttpEndPoint);
-            HttpPrefixes = httpPrefixes;
+            IntHttpPrefixes = intHttpPrefixes;
+            ExtHttpPrefixes = extHttpPrefixes;
             EnableTrustedAuth = enableTrustedAuth;
             Certificate = certificate;
             WorkerThreads = workerThreads;
@@ -174,34 +178,36 @@ namespace EventStore.Core.Cluster.Settings
                                  + "ExternalSecureTcp: {4}\n"
                                  + "InternalHttp: {5}\n"
                                  + "ExternalHttp: {6}\n"
-                                 + "HttpPrefixes: {7}\n"
-                                 + "EnableTrustedAuth: {8}\n"
-                                 + "Certificate: {9}\n"
-                                 + "WorkerThreads: {10}\n"
-                                 + "DiscoverViaDns: {11}\n"
-                                 + "ClusterDns: {12}\n"
-                                 + "GossipSeeds: {13}\n"
-                                 + "ClusterNodeCount: {14}\n"
-                                 + "MinFlushDelay: {15}\n"
-                                 + "PrepareAckCount: {16}\n"
-                                 + "CommitAckCount: {17}\n"
-                                 + "PrepareTimeout: {18}\n"
-                                 + "CommitTimeout: {19}\n"
-                                 + "UseSsl: {20}\n"
-                                 + "SslTargetHost: {21}\n"
-                                 + "SslValidateServer: {22}\n"
-                                 + "StatsPeriod: {23}\n"
-                                 + "StatsStorage: {24}\n"
-                                 + "AuthenticationProviderFactory Type: {25}\n"
-                                 + "NodePriority: {26}"
-                                 + "GossipInterval: {27}\n"
-                                 + "GossipAllowedTimeDifference: {28}\n"
-                                 + "GossipTimeout: {29}\n",
+                                 + "IntHttpPrefixes: {7}\n"
+                                 + "ExtHttpPrefixes: {8}\n"
+                                 + "EnableTrustedAuth: {9}\n"
+                                 + "Certificate: {10}\n"
+                                 + "WorkerThreads: {12}\n"
+                                 + "DiscoverViaDns: {13}\n"
+                                 + "ClusterDns: {14}\n"
+                                 + "GossipSeeds: {15}\n"
+                                 + "ClusterNodeCount: {16}\n"
+                                 + "MinFlushDelay: {17}\n"
+                                 + "PrepareAckCount: {18}\n"
+                                 + "CommitAckCount: {19}\n"
+                                 + "PrepareTimeout: {20}\n"
+                                 + "CommitTimeout: {21}\n"
+                                 + "UseSsl: {22}\n"
+                                 + "SslTargetHost: {23}\n"
+                                 + "SslValidateServer: {24}\n"
+                                 + "StatsPeriod: {25}\n"
+                                 + "StatsStorage: {26}\n"
+                                 + "AuthenticationProviderFactory Type: {27}\n"
+                                 + "NodePriority: {28}"
+                                 + "GossipInterval: {29}\n"
+                                 + "GossipAllowedTimeDifference: {30}\n"
+                                 + "GossipTimeout: {31}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
                                  NodeInfo.InternalHttp, NodeInfo.ExternalHttp,
-                                 string.Join(", ", HttpPrefixes),
+                                 string.Join(", ", IntHttpPrefixes),
+                                 string.Join(", ", ExtHttpPrefixes),
                                  EnableTrustedAuth,
                                  Certificate == null ? "n/a" : Certificate.ToString(true),
                                  WorkerThreads, DiscoverViaDns, ClusterDns,

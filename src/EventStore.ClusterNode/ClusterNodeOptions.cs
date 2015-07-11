@@ -106,8 +106,10 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.WorkerThreadsDescr, Opts.AppGroup)]
         public int WorkerThreads { get; set; }
 
-        [ArgDescription(Opts.HttpPrefixesDescr, Opts.InterfacesGroup)]
-        public string[] HttpPrefixes { get; set; }
+        [ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
+        public string[] IntHttpPrefixes { get; set; }
+        [ArgDescription(Opts.ExtHttpPrefixesDescr, Opts.InterfacesGroup)]
+        public string[] ExtHttpPrefixes { get; set; }
         [ArgDescription(Opts.EnableTrustedAuthDescr, Opts.InterfacesGroup)]
         public bool EnableTrustedAuth { get; set; }
         [ArgDescription(Opts.AddInterfacePrefixesDescr, Opts.InterfacesGroup)]
@@ -197,7 +199,8 @@ namespace EventStore.ClusterNode
             ProjectionThreads = Opts.ProjectionThreadsDefault;
             WorkerThreads = Opts.WorkerThreadsDefault;
 
-            HttpPrefixes = Opts.HttpPrefixesDefault;
+            IntHttpPrefixes = Opts.IntHttpPrefixesDefault;
+            ExtHttpPrefixes = Opts.ExtHttpPrefixesDefault;
             EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
             AddInterfacePrefixes = Opts.AddInterfacePrefixesDefault;
 

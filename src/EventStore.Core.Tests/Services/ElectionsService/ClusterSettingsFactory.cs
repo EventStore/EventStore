@@ -26,6 +26,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService
                 GetLoopbackForPort(tcpIntPort), null,
                 GetLoopbackForPort(tcpExtPort), null,
                 GetLoopbackForPort(httpIntPort), GetLoopbackForPort(httpExtPort),
+                new[] { GetLoopbackForPort(httpIntPort).ToHttpUrl() },
                 new[] { GetLoopbackForPort(httpExtPort).ToHttpUrl() },
                 false, null, 1, false, "dns", new[] { GetLoopbackForPort(ManagerPort) },
                 TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
