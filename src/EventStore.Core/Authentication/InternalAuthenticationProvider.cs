@@ -43,7 +43,7 @@ namespace EventStore.Core.Authentication
         {
             try
             {
-                if (completed.Result == ReadStreamResult.StreamDeleted)
+                if (completed.Result == ReadStreamResult.NoStream)
                 {
                     authenticationRequest.Unauthorized();
                     return;

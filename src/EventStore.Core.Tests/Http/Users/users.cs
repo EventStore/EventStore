@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.Http.Users
             [Test]
             public void returns_created_status_code_and_location()
             {
-                Assert.AreEqual(HttpStatusCode.Conflict, _response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
             }
         }
 
