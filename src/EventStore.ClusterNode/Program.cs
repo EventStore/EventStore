@@ -174,10 +174,12 @@ namespace EventStore.ClusterNode
             var intSecTcp = options.IntSecureTcpPort > 0 ? new IPEndPoint(options.IntIp, options.IntSecureTcpPort) : null;
             var extTcp = new IPEndPoint(options.ExtIp, options.ExtTcpPort);
             var extSecTcp = options.ExtSecureTcpPort > 0 ? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort) : null;
-            var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new string[0];
+            var intHttpPrefixes = options.IntHttpPrefixes.IsNotEmpty() ? options.IntHttpPrefixes : new string[0];
+            var extHttpPrefixes = options.ExtHttpPrefixes.IsNotEmpty() ? options.ExtHttpPrefixes : new string[0];
             var quorumSize = GetQuorumSize(options.ClusterSize);
 
-            var additionalPrefixes = new List<string>(prefixes);
+            var additionalIntHttpPrefixes = new List<string>(intHttpPrefixes);
+            var additionalExtHttpPrefixes = new List<string>(extHttpPrefixes);
             if((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                 options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
             {
@@ -187,31 +189,35 @@ namespace EventStore.ClusterNode
                     {
                         if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                         {
-                            additionalPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, intHttp.Port));
-                            additionalPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, extHttp.Port));
+                            additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, intHttp.Port));
+                            additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, extHttp.Port));
                         }
                     }
                 }
             }
             else if(options.AddInterfacePrefixes)
             {
-                additionalPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.ExtHttpPort));
-                additionalPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
+                additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.ExtHttpPort));
+                additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
             }
-            if (!prefixes.Contains(x => x.Contains("localhost")))
+            if (!intHttpPrefixes.Contains(x => x.Contains("localhost")))
+            {
+                if(options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) || 
+                   Equals(intHttp.Address, IPAddress.Loopback))
+                {
+                    additionalIntHttpPrefixes.Add(string.Format("http://localhost:{0}/", intHttp.Port));
+                }
+            }
+            if (!extHttpPrefixes.Contains(x => x.Contains("localhost")))
             {
                 if(options.ExtIp.Equals(IPAddress.Parse("0.0.0.0")) || 
                    Equals(extHttp.Address, IPAddress.Loopback))
                 {
-                    additionalPrefixes.Add(string.Format("http://localhost:{0}/", extHttp.Port));
-                }
-                if(options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) || 
-                   Equals(intHttp.Address, IPAddress.Loopback))
-                {
-                    additionalPrefixes.Add(string.Format("http://localhost:{0}/", intHttp.Port));
+                    additionalExtHttpPrefixes.Add(string.Format("http://localhost:{0}/", extHttp.Port));
                 }
             }
-            prefixes = additionalPrefixes.ToArray();
+            intHttpPrefixes = additionalIntHttpPrefixes.ToArray();
+            extHttpPrefixes = additionalExtHttpPrefixes.ToArray();
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
@@ -226,7 +232,7 @@ namespace EventStore.ClusterNode
 
             return new ClusterVNodeSettings(Guid.NewGuid(), 0,
                     intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
-                    prefixes, options.EnableTrustedAuth,
+                    intHttpPrefixes, extHttpPrefixes, options.EnableTrustedAuth,
                     certificate,
                     options.WorkerThreads, options.DiscoverViaDns,
                     options.ClusterDns, options.GossipSeed,

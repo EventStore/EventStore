@@ -107,8 +107,11 @@ namespace EventStore.Core.Util
         public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
         public const int    WorkerThreadsDefault = 5;
 
-        public const string HttpPrefixesDescr = "The prefixes that the http server should respond to.";
-        public static readonly string[] HttpPrefixesDefault = new string[0];
+        public const string IntHttpPrefixesDescr = "The prefixes that the internal http server should respond to.";
+        public static readonly string[] IntHttpPrefixesDefault = new string[0];
+
+        public const string ExtHttpPrefixesDescr = "The prefixes that the external http server should respond to.";
+        public static readonly string[] ExtHttpPrefixesDefault = new string[0];
 
         public const string UnsafeDisableFlushToDiskDescr = "Disable flushing to disk.  (UNSAFE: on power off)";
         public static readonly bool UnsafeDisableFlushToDiskDefault = false; 

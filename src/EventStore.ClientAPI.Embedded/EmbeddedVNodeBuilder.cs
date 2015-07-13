@@ -39,7 +39,8 @@ namespace EventStore.ClientAPI.Embedded
         private IPEndPoint _internalHttp;
         private IPEndPoint _externalHttp;
 
-        private List<string> _httpPrefixes;
+        private List<string> _intHttpPrefixes;
+        private List<string> _extHttpPrefixes;
         private bool _enableTrustedAuth;
         private X509Certificate2 _certificate;
         private int _workerThreads;
@@ -102,7 +103,8 @@ namespace EventStore.ClientAPI.Embedded
             _externalHttp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalHttpPortDefault);
             _externalHttp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalHttpPortDefault);
 
-            _httpPrefixes = new List<string>();
+            _intHttpPrefixes = new List<string>();
+            _extHttpPrefixes = new List<string>();
             _enableTrustedAuth = Opts.EnableTrustedAuthDefault;
             _certificate = null;
             _workerThreads = Opts.WorkerThreadsDefault;
@@ -428,13 +430,24 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         /// <summary>
+        /// Adds a http prefix for the internal http endpoint
+        /// </summary>
+        /// <param name="prefix">The prefix to add</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder AddInternalHttpPrefix(string prefix)
+        {
+            _intHttpPrefixes.Add(prefix);
+            return this;
+        }
+
+        /// <summary>
         /// Adds a http prefix for the external http endpoint
         /// </summary>
         /// <param name="prefix">The prefix to add</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
-        public EmbeddedVNodeBuilder AddHttpPrefix(string prefix)
+        public EmbeddedVNodeBuilder AddExternalHttpPrefix(string prefix)
         {
-            _httpPrefixes.Add(prefix);
+            _extHttpPrefixes.Add(prefix);
             return this;
         }
 
@@ -550,15 +563,21 @@ namespace EventStore.ClientAPI.Embedded
 
         private void EnsureHttpPrefixes()
         {
-            if (_httpPrefixes == null || _httpPrefixes.IsEmpty())
-                _httpPrefixes = new List<string>(new[] {_externalHttp.ToHttpUrl()});
+            if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
+                _intHttpPrefixes = new List<string>(new[] {_externalHttp.ToHttpUrl()});
+            if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
+                _intHttpPrefixes = new List<string>(new[] {_externalHttp.ToHttpUrl()});
 
             if (!Runtime.IsMono) 
                 return;
 
-            if (!_httpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_externalHttp.Address, IPAddress.Loopback))
+            if (!_intHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_internalHttp.Address, IPAddress.Loopback))
             {
-                _httpPrefixes.Add(string.Format("http://localhost:{0}/", _externalHttp.Port));
+                _intHttpPrefixes.Add(string.Format("http://localhost:{0}/", _internalHttp.Port));
+            }
+            if (!_extHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_externalHttp.Address, IPAddress.Loopback))
+            {
+                _extHttpPrefixes.Add(string.Format("http://localhost:{0}/", _externalHttp.Port));
             }
         }
 
@@ -611,7 +630,8 @@ namespace EventStore.ClientAPI.Embedded
                     _externalSecureTcp,
                     _internalHttp,
                     _externalHttp,
-                    _httpPrefixes.ToArray(),
+                    _intHttpPrefixes.ToArray(),
+                    _extHttpPrefixes.ToArray(),
                     _enableTrustedAuth,
                     _certificate,
                     _workerThreads,

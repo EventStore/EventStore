@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TestFixtureSetUp();
             _node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
             _node.Start();
-            _HttpEndPoint = _node.HttpEndPoint;
+            _HttpEndPoint = _node.ExtHttpEndPoint;
             _conn = BuildConnection(_node);
             _conn.ConnectAsync().Wait();
             Given();

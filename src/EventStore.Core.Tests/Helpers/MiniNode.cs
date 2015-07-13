@@ -40,10 +40,10 @@ namespace EventStore.Core.Tests.Helpers
 
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint TcpSecEndPoint { get; private set; }
-        public IPEndPoint HttpEndPoint { get; private set; }
+        public IPEndPoint IntHttpEndPoint { get; private set; }
         public IPEndPoint IntTcpEndPoint { get; private set;}
         public IPEndPoint IntSecTcpEndPoint { get; private set; }
-        public IPEndPoint IntHttpEndPoint { get; private set; }
+        public IPEndPoint ExtHttpEndPoint { get; private set; }
         public readonly ClusterVNode Node;
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
@@ -76,10 +76,10 @@ namespace EventStore.Core.Tests.Helpers
             
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
-            HttpEndPoint = new IPEndPoint(ip, extHttpPort);
             IntTcpEndPoint = new IPEndPoint(ip,intTcpPort);
             IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
             IntHttpEndPoint = new IPEndPoint(ip, intHttpPort);
+            ExtHttpEndPoint = new IPEndPoint(ip, extHttpPort);
             var vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
                                                          0,
                                                          IntTcpEndPoint,
@@ -87,8 +87,9 @@ namespace EventStore.Core.Tests.Helpers
                                                          TcpEndPoint,
                                                          TcpSecEndPoint,
                                                          IntHttpEndPoint,
-                                                         HttpEndPoint,
-                                                         new [] {HttpEndPoint.ToHttpUrl()},
+                                                         ExtHttpEndPoint,
+                                                         new [] {IntHttpEndPoint.ToHttpUrl()},
+                                                         new [] {ExtHttpEndPoint.ToHttpUrl()},
                                                          enableTrustedAuth,
                                                          ssl_connections.GetCertificate(),
                                                          1,
@@ -137,8 +138,8 @@ namespace EventStore.Core.Tests.Helpers
                      "DBPATH:", _dbPath,
                      "TCP ENDPOINT:", TcpEndPoint,
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
-                     "HTTP ENDPOINT:", HttpEndPoint);
-            Node = new ClusterVNode(Db, vNodeSettings, new KnownEndpointGossipSeedSource(new [] {HttpEndPoint}), new InfoController(null), subsystems);
+                     "HTTP ENDPOINT:", ExtHttpEndPoint);
+            Node = new ClusterVNode(Db, vNodeSettings, new KnownEndpointGossipSeedSource(new [] {ExtHttpEndPoint}), new InfoController(null), subsystems);
 
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
@@ -175,7 +176,7 @@ namespace EventStore.Core.Tests.Helpers
             {
                 PortsHelper.ReturnPort(TcpEndPoint.Port);
                 PortsHelper.ReturnPort(TcpSecEndPoint.Port);
-                PortsHelper.ReturnPort(HttpEndPoint.Port);
+                PortsHelper.ReturnPort(IntHttpEndPoint.Port);
                 PortsHelper.ReturnPort(IntHttpEndPoint.Port);
                 PortsHelper.ReturnPort(IntTcpEndPoint.Port);
                 PortsHelper.ReturnPort(IntSecTcpEndPoint.Port);
