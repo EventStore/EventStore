@@ -292,8 +292,8 @@ namespace EventStore.Core
             // EXTERNAL HTTP
             _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
                                                     _workersHandler, 
-                                                    isSingleNode ? vNodeSettings.ExtHttpPrefixes.Concat(vNodeSettings.IntHttpPrefixes).ToArray()) :
-                                                                   vNodeSettings.ExtHttpPrefixes;
+                                                    isSingleNode ? vNodeSettings.ExtHttpPrefixes.Concat(vNodeSettings.IntHttpPrefixes).ToArray() :
+                                                                   vNodeSettings.ExtHttpPrefixes);
 
             if(vNodeSettings.AdminOnPublic)
                 _externalHttpService.SetupController(adminController);
