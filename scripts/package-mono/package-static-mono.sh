@@ -98,10 +98,10 @@ OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
 
 if [[ $OS == "Darwin" ]] ; then
     soext="dylib"
-    PACKAGENAME="EventStore-OSS-Mac-v$VERSIONSTRING"
+    PACKAGENAME="EventStore-OSS-Mac-static-v$VERSIONSTRING"
 else
     soext="so"
-    PACKAGENAME="EventStore-OSS-Linux-v$VERSIONSTRING"
+    PACKAGENAME="EventStore-OSS-Linux-static-v$VERSIONSTRING"
 fi
 
 PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
@@ -128,7 +128,7 @@ cp -r projections $PACKAGEDIRECTORY/
 cp libjs1.$soext $PACKAGEDIRECTORY/
 cp eventstored $PACKAGEDIRECTORY/
 cp log.config $PACKAGEDIRECTORY/
-cp $SCRIPTDIR/run-node.sh $PACKAGEDIRECTORY/run-node.sh
+cp $SCRIPTDIR/run-static-node.sh $PACKAGEDIRECTORY/run-node.sh
 
 popd
 
