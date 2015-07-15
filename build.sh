@@ -224,8 +224,8 @@ function buildV8() {
     if [[ "$unixtype" == "mac" ]] ; then
         export CXX=`which clang++`
         export CC=`which clang`
-        export CPP="`which clang` -E -std=c++11 -stdlib=libc++"
-        export LINK="`which clang++` -std=c++11 -stdlib=libc++"
+        export CPP="`which clang` -E -std=c++0x -stdlib=libc++"
+        export LINK="`which clang++` -std=c++0x -stdlib=libc++"
         export CXX_host=`which clang++`
         export CC_host=`which clang`
         export CPP_host="`which clang` -E"
@@ -293,7 +293,7 @@ function buildJS1() {
             $v8OutputDir/libv8_snapshot.a"
         g++ $includeString $libsString *.cpp -o $outputObj $gccArch -O2 -fPIC --shared --save-temps -std=c++0x || err
     else
-        g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++11 -lstdc++ -Wl,--start-group $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a -Wl,--end-group -lrt -lpthread || err
+        g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++0x -lstdc++ -Wl,--start-group $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a -Wl,--end-group -lrt -lpthread || err
     fi
 
     if [[ "$unixtype" == "mac" ]] ; then
