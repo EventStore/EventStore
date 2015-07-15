@@ -54,8 +54,8 @@ namespace EventStore.Common.Log
                 throw new InvalidOperationException("Cannot initialize twice");
 
             var potentialNLogConfigurationFilePaths = new []{
-                Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME),
-                Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), EVENTSTORE_LOG_FILENAME)
+                Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), EVENTSTORE_LOG_FILENAME),
+                Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME)
             }.Distinct();
             var configFilePath = potentialNLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
