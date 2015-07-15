@@ -98,10 +98,10 @@ OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
 
 if [[ $OS == "Darwin" ]] ; then
     soext="dylib"
-    PACKAGENAME="EventStore-OSS-Mac-v$VERSIONSTRING"
+    PACKAGENAME="EventStore-OSS-Mac-static-v$VERSIONSTRING"
 else
     soext="so"
-    PACKAGENAME="EventStore-OSS-Linux-v$VERSIONSTRING"
+    PACKAGENAME="EventStore-OSS-Linux-static-v$VERSIONSTRING"
 fi
 
 PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
