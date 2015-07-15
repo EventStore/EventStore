@@ -39,7 +39,11 @@ namespace EventStore.Core.Services.Transport.Http
                 feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
                 feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
             }
-            if (!msg.IsEndOfStream || msg.Events.Length > 0)
+            if (!msg.IsEndOfStream && msg.Events.Length == msg.MaxCount)
+            {
+                feed.SetHeadOfStream(true);
+            }
+            if (!msg.IsEndOfStream || msg.Events.Length > 0) { }
                 feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
             if(!escapedStreamId.StartsWith("$$"))
                 feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
