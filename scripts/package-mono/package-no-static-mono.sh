@@ -58,6 +58,7 @@ cp libjs1.$soext $PACKAGEDIRECTORY/
 cp *.dll $PACKAGEDIRECTORY/
 cp *.exe $PACKAGEDIRECTORY/
 cp log.config $PACKAGEDIRECTORY/
+cp $SCRIPTDIR/run-no-static-node.sh $PACKAGEDIRECTORY/run-node.sh
 
 popd
 
