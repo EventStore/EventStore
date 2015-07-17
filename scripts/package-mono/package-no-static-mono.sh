@@ -64,7 +64,7 @@ popd
 
 pushd $SCRIPTDIR/../../bin/testclient
 
-cp testclient $PACKAGEDIRECTORY/
+cp EventStore.TestClient.exe $PACKAGEDIRECTORY/
 
 popd
 
