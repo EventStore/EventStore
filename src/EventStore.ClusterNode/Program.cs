@@ -197,7 +197,7 @@ namespace EventStore.ClusterNode
             }
             else if(options.AddInterfacePrefixes)
             {
-                additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.ExtHttpPort));
+                additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.IntHttpPort));
                 additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
             }
             if (!intHttpPrefixes.Contains(x => x.Contains("localhost")))
