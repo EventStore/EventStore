@@ -79,6 +79,9 @@ namespace EventStore.Core.Tests.Helpers
             var singleVNodeSettings = new ClusterVNodeSettings(
                 Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
                 ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
+                new Data.GossipAdvertiseInfo(InternalTcpEndPoint, InternalTcpSecEndPoint,
+                                             ExternalTcpEndPoint, ExternalTcpSecEndPoint,
+                                             InternalHttpEndPoint, ExternalHttpEndPoint),
                 new[] {InternalHttpEndPoint.ToHttpUrl()}, new[]{ExternalHttpEndPoint.ToHttpUrl()}, enableTrustedAuth, ssl_connections.GetCertificate(), 1, false,
                 "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
                 false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,

@@ -393,9 +393,17 @@ namespace EventStore.Core
             _timerService = new TimerService(new ThreadBasedScheduler(_timeProvider));
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
             _mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
+
+            var gossipInfo = new VNodeInfo(_nodeInfo.InstanceId, _nodeInfo.DebugIndex,
+                                           vNodeSettings.GossipAdvertiseInfo.InternalTcp,
+                                           vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
+                                           vNodeSettings.GossipAdvertiseInfo.ExternalTcp,
+                                           vNodeSettings.GossipAdvertiseInfo.ExternalSecureTcp,
+                                           vNodeSettings.GossipAdvertiseInfo.InternalHttp,
+                                           vNodeSettings.GossipAdvertiseInfo.ExternalHttp);
             if(!isSingleNode) {
             // MASTER REPLICATION
-                var masterReplicationService = new MasterReplicationService(_mainQueue, _nodeInfo.InstanceId, db, _workersHandler,
+                var masterReplicationService = new MasterReplicationService(_mainQueue, gossipInfo.InstanceId, db, _workersHandler,
                                                                         epochManager, vNodeSettings.ClusterNodeCount);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(masterReplicationService);
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
@@ -404,7 +412,7 @@ namespace EventStore.Core
 
                 // REPLICA REPLICATION
                 var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, authenticationProvider,
-                                                    _nodeInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer,
+                                                    gossipInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer,
                                                     vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
                 _mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
@@ -416,13 +424,15 @@ namespace EventStore.Core
             }
 
             // ELECTIONS
-            var electionsService = new ElectionsService(_mainQueue, _nodeInfo, vNodeSettings.ClusterNodeCount,
+
+            var electionsService = new ElectionsService(_mainQueue, gossipInfo, vNodeSettings.ClusterNodeCount,
                                                         db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
                                                         epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
             electionsService.SubscribeMessages(_mainBus);
             if(!isSingleNode) {
             // GOSSIP
-                var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, _nodeInfo, db.Config.WriterCheckpoint,
+
+                var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,
 			    								   db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastCommitPosition,
                                                    vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(gossip);

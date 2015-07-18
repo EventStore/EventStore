@@ -20,6 +20,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using System.Net.NetworkInformation;
+using EventStore.Core.Data;
 
 namespace EventStore.ClusterNode
 {
@@ -130,7 +131,7 @@ namespace EventStore.ClusterNode
                     "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
             var enabledNodeSubsystems = runProjections >= ProjectionType.System
-                ? new[] {NodeSubsystems.Projections}
+                ? new[] { NodeSubsystems.Projections }
             : new NodeSubsystems[0];
             _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections, opts.DevelopmentMode);
             var infoController = new InfoController(opts);
@@ -140,7 +141,8 @@ namespace EventStore.ClusterNode
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterVNodeSettings settings)
         {
-            if(_node.InternalHttpService != null) {
+            if (_node.InternalHttpService != null)
+            {
                 _node.InternalHttpService.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
             }
             if (settings.AdminOnPublic)
@@ -151,8 +153,8 @@ namespace EventStore.ClusterNode
 
         private static int GetQuorumSize(int clusterSize)
         {
-            if(clusterSize == 1) return 1;
-            return clusterSize/2 + 1;
+            if (clusterSize == 1) return 1;
+            return clusterSize / 2 + 1;
         }
 
         private static ClusterVNodeSettings GetClusterVNodeSettings(ClusterNodeOptions options)
@@ -178,31 +180,49 @@ namespace EventStore.ClusterNode
             var extHttpPrefixes = options.ExtHttpPrefixes.IsNotEmpty() ? options.ExtHttpPrefixes : new string[0];
             var quorumSize = GetQuorumSize(options.ClusterSize);
 
+
+            GossipAdvertiseInfo gossipAdvertiseInfo = null;
+
             var additionalIntHttpPrefixes = new List<string>(intHttpPrefixes);
             var additionalExtHttpPrefixes = new List<string>(extHttpPrefixes);
-            if((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
+            if ((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                 options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
             {
-                foreach(var adapter in NetworkInterface.GetAllNetworkInterfaces())
+                IPAddress nonLoopbackAddress = null; 
+                foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
                 {
                     foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
                     {
                         if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                         {
+                            if (nonLoopbackAddress == null && !IPAddress.IsLoopback(address.Address))
+                            {
+                                nonLoopbackAddress = address.Address;
+                            }
                             additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, intHttp.Port));
                             additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, extHttp.Port));
                         }
                     }
                 }
+                if (gossipAdvertiseInfo == null)
+                {
+                    IPAddress addressToGossip = options.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
+                    gossipAdvertiseInfo = new GossipAdvertiseInfo(new IPEndPoint(addressToGossip, options.IntTcpPort),
+                                                                  options.IntSecureTcpPort > 0 ? new IPEndPoint(addressToGossip, options.IntSecureTcpPort) : null,
+                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToGossip, options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
+                                                                  options.ExtSecureTcpPort > 0 ? new IPEndPoint(addressToGossip, options.ExtSecureTcpPort) : null,
+                                                                  new IPEndPoint(addressToGossip, options.IntHttpPort),
+                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToGossip, options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
+                }
             }
-            else if(options.AddInterfacePrefixes)
+            else if (options.AddInterfacePrefixes)
             {
                 additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.IntHttpPort));
                 additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
             }
             if (!intHttpPrefixes.Contains(x => x.Contains("localhost")))
             {
-                if(options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) || 
+                if (options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                    Equals(intHttp.Address, IPAddress.Loopback))
                 {
                     additionalIntHttpPrefixes.Add(string.Format("http://localhost:{0}/", intHttp.Port));
@@ -210,7 +230,7 @@ namespace EventStore.ClusterNode
             }
             if (!extHttpPrefixes.Contains(x => x.Contains("localhost")))
             {
-                if(options.ExtIp.Equals(IPAddress.Parse("0.0.0.0")) || 
+                if (options.ExtIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                    Equals(extHttp.Address, IPAddress.Loopback))
                 {
                     additionalExtHttpPrefixes.Add(string.Format("http://localhost:{0}/", extHttp.Port));
@@ -218,6 +238,16 @@ namespace EventStore.ClusterNode
             }
             intHttpPrefixes = additionalIntHttpPrefixes.ToArray();
             extHttpPrefixes = additionalExtHttpPrefixes.ToArray();
+
+            if (gossipAdvertiseInfo == null)
+            {
+                gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcp,
+                                                              intSecTcp,
+                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp, options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
+                                                              extSecTcp,
+                                                              intHttp,
+                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp, options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
+            }
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
@@ -231,7 +261,7 @@ namespace EventStore.ClusterNode
             var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, options.Config);
 
             return new ClusterVNodeSettings(Guid.NewGuid(), 0,
-                    intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp,
+                    intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp, gossipAdvertiseInfo,
                     intHttpPrefixes, extHttpPrefixes, options.EnableTrustedAuth,
                     certificate,
                     options.WorkerThreads, options.DiscoverViaDns,

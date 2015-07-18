@@ -630,6 +630,7 @@ namespace EventStore.ClientAPI.Embedded
                     _externalSecureTcp,
                     _internalHttp,
                     _externalHttp,
+                    null,
                     _intHttpPrefixes.ToArray(),
                     _extHttpPrefixes.ToArray(),
                     _enableTrustedAuth,

@@ -12,6 +12,7 @@ namespace EventStore.Core.Cluster.Settings
     public class ClusterVNodeSettings
     {
         public readonly VNodeInfo NodeInfo;
+        public readonly GossipAdvertiseInfo GossipAdvertiseInfo;
         public readonly string[] IntHttpPrefixes;
         public readonly string[] ExtHttpPrefixes;
         public readonly bool EnableTrustedAuth;
@@ -63,6 +64,7 @@ namespace EventStore.Core.Cluster.Settings
                                     IPEndPoint externalSecureTcpEndPoint,
                                     IPEndPoint internalHttpEndPoint,
                                     IPEndPoint externalHttpEndPoint,
+                                    GossipAdvertiseInfo gossipAdvertiseInfo,
                                     string[] intHttpPrefixes,
                                     string[] extHttpPrefixes,
                                     bool enableTrustedAuth,
@@ -114,6 +116,7 @@ namespace EventStore.Core.Cluster.Settings
             Ensure.Positive(clusterNodeCount, "clusterNodeCount");
             Ensure.Positive(prepareAckCount, "prepareAckCount");
             Ensure.Positive(commitAckCount, "commitAckCount");
+            Ensure.NotNull(gossipAdvertiseInfo, "gossipAdvertiseInfo");
 
             if (discoverViaDns && string.IsNullOrWhiteSpace(clusterDns))
                 throw new ArgumentException("Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
@@ -125,6 +128,7 @@ namespace EventStore.Core.Cluster.Settings
                                      internalTcpEndPoint, internalSecureTcpEndPoint,
                                      externalTcpEndPoint, externalSecureTcpEndPoint,
                                      internalHttpEndPoint, externalHttpEndPoint);
+            GossipAdvertiseInfo = gossipAdvertiseInfo;
             IntHttpPrefixes = intHttpPrefixes;
             ExtHttpPrefixes = extHttpPrefixes;
             EnableTrustedAuth = enableTrustedAuth;

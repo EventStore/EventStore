@@ -202,6 +202,15 @@ namespace EventStore.Core.Util
         public const string ExternalSecureTcpPortDescr = "External Secure TCP Port.";
         public const int    ExternalSecureTcpPortDefault = 0;
 
+        public const string ExternalIpAdvertiseAsDescr = "Advertise External Tcp Address As.";
+        public static readonly IPAddress ExternalIpAdvertiseAsDefault = null;
+
+        public const string ExternalTcpPortAdvertiseAsDescr = "Advertise External Tcp Port As.";
+        public static readonly int ExternalTcpPortAdvertiseAsDefault = 0;
+
+        public const string ExternalHttpPortAdvertiseAsDescr = "Advertise External Http Port As.";
+        public static readonly int ExternalHttpPortAdvertiseAsDefault = 0;
+
 		public const string ClusterSizeDescr = "The number of nodes in the cluster.";
         public const int    ClusterSizeDefault = 1;
 
