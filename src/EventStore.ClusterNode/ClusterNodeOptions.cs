@@ -22,7 +22,7 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.DevelopmentModeDescr, Opts.AppGroup)]
         public bool DevelopmentMode { get; set; }
 
-	[ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
+        [ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
         public int MonoMinThreadpoolSize { get; set; }
 
         [ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
@@ -42,8 +42,15 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.ExternalSecureTcpPortDescr, Opts.InterfacesGroup)]
         public int ExtSecureTcpPort { get; set; }
 
+        [ArgDescription(Opts.ExternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
+        public IPAddress ExtIpAdvertiseAs { get; set; }
+        [ArgDescription(Opts.ExternalTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
+        public int ExtTcpPortAdvertiseAs { get; set; }
+        [ArgDescription(Opts.ExternalHttpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
+        public int ExtHttpPortAdvertiseAs { get; set; }
+
         [ArgDescription(Opts.IntTcpHeartbeatTimeoutDescr, Opts.InterfacesGroup)]
-        public int IntTcpHeartbeatTimeout {get; set;}
+        public int IntTcpHeartbeatTimeout { get; set; }
         [ArgDescription(Opts.ExtTcpHeartbeatTimeoutDescr, Opts.InterfacesGroup)]
         public int ExtTcpHeartbeatTimeout { get; set; }
         [ArgDescription(Opts.IntTcpHeartbeatIntervalDescr, Opts.InterfacesGroup)]
@@ -210,6 +217,9 @@ namespace EventStore.ClusterNode
             ExtTcpHeartbeatInterval = Opts.ExtTcpHeartbeatIntervalDefault;
             IntTcpHeartbeatInterval = Opts.IntTcpHeartbeatInvervalDefault;
 
+            ExtIpAdvertiseAs = Opts.ExternalIpAdvertiseAsDefault;
+            ExtTcpPortAdvertiseAs = Opts.ExternalTcpPortAdvertiseAsDefault;
+            ExtHttpPortAdvertiseAs = Opts.ExternalHttpPortAdvertiseAsDefault;
 
             CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
             CertificateStoreName = Opts.CertificateStoreNameDefault;

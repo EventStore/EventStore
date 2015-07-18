@@ -5,6 +5,7 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.Checkpoint;
+using System.Net;
 
 namespace EventStore.Core.Services.Gossip
 {

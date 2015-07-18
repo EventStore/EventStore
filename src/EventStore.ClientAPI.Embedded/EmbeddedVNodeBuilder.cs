@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Projections.Core;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Data;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -630,6 +631,7 @@ namespace EventStore.ClientAPI.Embedded
                     _externalSecureTcp,
                     _internalHttp,
                     _externalHttp,
+                    new GossipAdvertiseInfo(_internalTcp, _internalSecureTcp, _externalTcp, _externalSecureTcp, _internalHttp, _externalHttp),
                     _intHttpPrefixes.ToArray(),
                     _extHttpPrefixes.ToArray(),
                     _enableTrustedAuth,
