@@ -8,6 +8,8 @@ namespace EventStore.Common.Utils
     {
         public static readonly string ApplicationDirectory;
         public static readonly string WebContentDirectory;
+        public static readonly string ProjectionsDirectory;
+        public static readonly string PreludeDirectory;
         public static readonly string DefaultContentDirectory;
         public static readonly string DefaultConfigurationDirectory;
         public static readonly string DefaultDataDirectory;
@@ -40,6 +42,14 @@ namespace EventStore.Common.Utils
             WebContentDirectory = GetPrecededLocation(
                         Path.Combine(ApplicationDirectory, "clusternode-web"),
                         Path.Combine(DefaultContentDirectory, "clusternode-web")
+                        );
+            ProjectionsDirectory = GetPrecededLocation(
+                        Path.Combine(ApplicationDirectory, "projections"),
+                        Path.Combine(DefaultContentDirectory, "projections")
+                        );
+            PreludeDirectory = GetPrecededLocation(
+                        Path.Combine(ApplicationDirectory, "Prelude"),
+                        Path.Combine(DefaultContentDirectory, "Prelude")
                         );
         }
 
