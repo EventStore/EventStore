@@ -277,7 +277,6 @@
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
-    <Compile Include="Util\DefaultDirectory.cs" />
     <Compile Include="Util\FileUtil.cs" />
     <Compile Include="Util\MD5Hash.cs" />
     <Compile Include="Messages\TcpClientMessageDto.cs" />
@@ -359,7 +358,6 @@
     <Compile Include="Util\Opts.cs" />
     <Compile Include="VNodeStatusChangeArgs.cs" />
     <Compile Include="Util\DefaultFiles.cs" />
-    <Compile Include="Util\Platforms.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

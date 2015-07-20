@@ -17,6 +17,10 @@ namespace EventStore.Core.Util
         private readonly string _fileSystemRoot;
         private static readonly ILogger Logger = LogManager.GetLoggerFor<MiniWeb>();
 
+        public MiniWeb(string localWebRootPath) : this(localWebRootPath, GetWebRootFileSystemDirectory())
+        {
+        }
+
         public MiniWeb(string localWebRootPath, string fileSystemRoot)
         {
             Logger.Info("Starting MiniWeb for {0} ==> {1}", localWebRootPath, fileSystemRoot);
@@ -124,16 +128,16 @@ namespace EventStore.Core.Util
                                                      : Path.GetFullPath(Path.Combine(fileName, @"..\..\..", debugPath));
                     fileSystemWebRoot = Directory.Exists(sourceWebRootDirectory)
                                             ? sourceWebRootDirectory
-                                            : AppDomain.CurrentDomain.BaseDirectory;
+                                            : Locations.WebContentDirectory;
                 }
                 else
                 {
-                    fileSystemWebRoot = DefaultDirectory.DefaultContentDirectory;
+                    fileSystemWebRoot = Locations.WebContentDirectory;
                 }
             }
             catch (Exception)
             {
-                fileSystemWebRoot = AppDomain.CurrentDomain.BaseDirectory;
+                fileSystemWebRoot = Locations.WebContentDirectory;
             }
             return fileSystemWebRoot;
         }

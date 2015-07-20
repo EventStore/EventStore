@@ -1,3 +1,5 @@
+using EventStore.Common.Utils;
+
 namespace EventStore.Core.Util
 {
     public class DefaultFiles

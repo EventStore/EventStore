@@ -37,10 +37,10 @@ namespace EventStore.Projections.Core.Services.Http
         {
             _httpForwarder = httpForwarder;
 
-            _clusterNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(DefaultDirectory.DefaultContentDirectory, Path.Combine("projections")));
+            _clusterNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(Locations.DefaultContentDirectory, Path.Combine("projections")));
 
             _networkSendQueue = networkSendQueue;
-            _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(DefaultDirectory.DefaultContentDirectory, "Prelude"));
+            _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(Locations.DefaultContentDirectory, "Prelude"));
         }
 
         protected override void SubscribeCore(IHttpService service)

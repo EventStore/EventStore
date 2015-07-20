@@ -23,9 +23,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             : base(publisher)
         {
             _enabledNodeSubsystems = enabledNodeSubsystems;
-        
-            var clusterNodeFsRoot = MiniWeb.GetWebRootFileSystemDirectory();
-            _clusterNodeWeb = new MiniWeb("/web", Path.Combine(clusterNodeFsRoot, @"clusternode-web"));
+            _clusterNodeWeb = new MiniWeb("/web");
         }
 
         protected override void SubscribeCore(IHttpService service)

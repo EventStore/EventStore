@@ -38,7 +38,7 @@ namespace EventStore.Core
             {
                 Application.RegisterExitAction(Exit);
 
-                var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix, Path.Combine(DefaultDirectory.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
+                var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix, Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
                 if (options.Help)
                 {
                     Console.WriteLine("Options:");
@@ -131,7 +131,7 @@ namespace EventStore.Core
             Console.Title = string.Format("{0}, {1}", projName, componentName);
 
             string logsDirectory = Path.GetFullPath(options.Log.IsNotEmptyString() ? options.Log : GetLogsDirectory(options));
-            LogManager.Init(componentName, logsDirectory, DefaultDirectory.DefaultConfigurationDirectory);
+            LogManager.Init(componentName, logsDirectory, Locations.DefaultConfigurationDirectory);
 
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"

@@ -9,7 +9,7 @@ namespace EventStore.Projections.Core.Services.v8
 {
     public class DefaultV8ProjectionStateHandler : V8ProjectionStateHandler
     {
-        private static readonly string _jsPath = Path.Combine(DefaultDirectory.DefaultContentDirectory, "Prelude");
+        private static readonly string _jsPath = Path.Combine(Locations.DefaultContentDirectory, "Prelude");
 
         public DefaultV8ProjectionStateHandler(
             string query, Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory)

@@ -77,6 +77,8 @@
     <Compile Include="Utils\IPEndPointArrayConverter.cs" />
     <Compile Include="Utils\IPEndPointComparer.cs" />
     <Compile Include="Utils\Json.cs" />
+    <Compile Include="Utils\Locations.cs" />
+    <Compile Include="Utils\Platforms.cs" />
     <Compile Include="Utils\ShellExecutor.cs" />
     <Compile Include="Utils\StringExtensions.cs" />
     <Compile Include="Utils\Helper.cs" />
