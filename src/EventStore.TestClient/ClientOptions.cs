@@ -1,5 +1,6 @@
 using System.Net;
 using EventStore.Common.Options;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Rags;
 
@@ -44,7 +45,7 @@ namespace EventStore.TestClient
             Command = new string[] {};
             Help = Opts.ShowHelpDefault;
             Version = Opts.ShowVersionDefault;
-            Log = DefaultDirectory.DefaultTestClientLogDirectory;
+            Log = Locations.DefaultTestClientLogDirectory;
             Defines = Opts.DefinesDefault;
             WhatIf = Opts.WhatIfDefault;
             Ip = IPAddress.Loopback;

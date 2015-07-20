@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using EventStore.Common.Options;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Rags;
 
@@ -159,7 +160,7 @@ namespace EventStore.ClusterNode
             Config = "";
             Help = Opts.ShowHelpDefault;
             Version = Opts.ShowVersionDefault;
-            Log = DefaultDirectory.DefaultLogDirectory;
+            Log = Locations.DefaultLogDirectory;
             Defines = Opts.DefinesDefault;
             WhatIf = Opts.WhatIfDefault;
 
@@ -192,7 +193,7 @@ namespace EventStore.ClusterNode
             CachedChunks = Opts.CachedChunksDefault;
             ChunksCacheSize = Opts.ChunksCacheSizeDefault;
 
-            Db = DefaultDirectory.DefaultDataDirectory;
+            Db = Locations.DefaultDataDirectory;
             MemDb = Opts.InMemDbDefault;
             SkipDbVerify = Opts.SkipDbVerifyDefault;
             RunProjections = Opts.RunProjectionsDefault;

@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace EventStore.Core.Util
+namespace EventStore.Common.Utils
 {
     public class Platforms
     {
