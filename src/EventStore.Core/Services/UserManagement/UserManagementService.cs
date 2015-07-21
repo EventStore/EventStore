@@ -55,6 +55,11 @@ namespace EventStore.Core.Services.UserManagement
             var userData = CreateUserData(message);
             BeginReadUserDetails(message.LoginName, read =>
             {
+                if (read.Events.Count() > 0)
+                {
+                    ReplyConflict(message);
+                    return;
+                }
                 WriteStreamAcl(
                     message, message.LoginName,
                     () => WriteUserEvent(message, userData, "$UserCreated", read.LastEventNumber,
