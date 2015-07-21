@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
@@ -16,12 +17,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public class InfoController : IHttpController, IHandle<SystemMessage.StateChangeMessage>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<InfoController>();
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
-        private readonly IOptions options;
-        private VNodeState currentState;
-        public InfoController(IOptions options)
+        private static readonly ICodec[] SupportedCodecs = { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
+
+        private readonly IOptions _options;
+        private readonly ProjectionType _projectionType;
+        private VNodeState _currentState;
+        public InfoController(IOptions options, ProjectionType projectionType)
         {
-            this.options = options;
+            _options = options;
+            _projectionType = projectionType;
         }
 
         public void Subscribe(IHttpService service)
@@ -34,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void Handle(SystemMessage.StateChangeMessage message)
         {
-            currentState = message.State;
+            _currentState = message.State;
         }
 
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
@@ -42,7 +46,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             entity.ReplyTextContent(Codec.Json.To(new
                                     {
                                         ESVersion = VersionInfo.Version,
-                                        State = currentState.ToString().ToLower()
+                                        State = _currentState.ToString().ToLower(),
+                                        ProjectionsMode = _projectionType
                                     }),
                                     HttpStatusCode.OK,
                                     "OK",
@@ -53,12 +58,24 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
         {
-            entity.ReplyTextContent(Codec.Json.To(GetOptionsInfo(options)),
-                                    HttpStatusCode.OK,
-                                    "OK",
-                                    entity.ResponseCodec.ContentType,
-                                    null,
-                                    e => Log.ErrorException(e, "error while writing http response (options)"));
+            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            {
+                entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(_options), new[] { "CertificatePassword" })),
+                                        HttpStatusCode.OK,
+                                        "OK",
+                                        entity.ResponseCodec.ContentType,
+                                        null,
+                                        e => Log.ErrorException(e, "error while writing http response (options)"));
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
+        }
+
+        private void LogReplyError(Exception exc)
+        {
+            Log.Debug("Error while replying (info controller): {0}.", exc.Message);
         }
 
         public class OptionStructure
@@ -75,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var optionsToSendToClient = new List<OptionStructure>();
             foreach (var property in options.GetType().GetProperties())
             {
-                var argumentDescriptionAttribute = property.HasAttr<ArgDescriptionAttribute>() == true ? property.Attr<ArgDescriptionAttribute>() : null;
+                var argumentDescriptionAttribute = property.HasAttr<ArgDescriptionAttribute>() ? property.Attr<ArgDescriptionAttribute>() : null;
                 var configFileOptionValue = property.GetValue(options, null);
                 string[] possibleValues = null;
                 if (property.PropertyType.IsEnum)
@@ -85,8 +102,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 else if (property.PropertyType.IsArray)
                 {
                     var array = configFileOptionValue as Array;
+                    if (array == null)
+                        continue;
                     var configFileOptionValueAsString = String.Empty;
-                    for (int i = 0; i < array.Length; i++)
+                    for (var i = 0; i < array.Length; i++)
                     {
                         configFileOptionValueAsString += array.GetValue(i).ToString();
                     }
@@ -95,13 +114,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 optionsToSendToClient.Add(new OptionStructure
                 {
                     Name = property.Name,
-                    Description = argumentDescriptionAttribute.Description,
-                    Group = argumentDescriptionAttribute.Group,
+                    Description = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Description,
+                    Group = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Group,
                     Value = configFileOptionValue.ToString(),
                     PossibleValues = possibleValues
                 });
             }
             return optionsToSendToClient.ToArray();
+        }
+        public OptionStructure[] Filter(OptionStructure[] optionsToBeFiltered, params string[] namesOfValuesToExclude)
+        {
+            return optionsToBeFiltered.Select(x =>
+                    new OptionStructure
+                    {
+                        Name = x.Name,
+                        Description = x.Description,
+                        Group = x.Group,
+                        PossibleValues = x.PossibleValues,
+                        Value = namesOfValuesToExclude.Contains(y => y.Equals(x.Name, StringComparison.OrdinalIgnoreCase)) ? String.Empty : x.Value
+                    }).ToArray();
         }
     }
 }
