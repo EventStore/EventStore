@@ -76,6 +76,7 @@ namespace EventStore.Core.Messages
             public string eventStreamId { get; set; }
             public int eventNumber { get; set; }
             public string eventType { get; set; }
+            public string eventId {get; set;}
             public object data { get; set; }
             public object metadata { get; set; }
 
@@ -90,7 +91,7 @@ namespace EventStore.Core.Messages
                     eventStreamId = evnt.Event.EventStreamId;
                     eventNumber = evnt.Event.EventNumber;
                     eventType = evnt.Event.EventType;
-
+                    eventId = evnt.Event.EventId.ToString();
                     data = Helper.UTF8NoBom.GetString(evnt.Event.Data ?? Empty.ByteArray);
                     metadata = Helper.UTF8NoBom.GetString(evnt.Event.Metadata ?? Empty.ByteArray);
                 }
@@ -106,12 +107,13 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format("eventStreamId: {0}, eventNumber: {1}, eventType: {2}, data: {3}, metadata: {4}",
+                return string.Format("id: {5} eventStreamId: {0}, eventNumber: {1}, eventType: {2}, data: {3}, metadata: {4}",
                                      eventStreamId,
                                      eventNumber,
                                      eventType,
                                      data,
-                                     metadata);
+                                     metadata,
+                                     eventId);
             }
         }
     }
