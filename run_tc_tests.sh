@@ -32,4 +32,4 @@ if [[ $RUNPROJECTIONS == "TRUE" ]]; then
     LD_LIBRARY_PATH=bin/tests/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/tests/EventStore.Projections.Core.Tests.dll $EXCLUDE
 fi
 
-echo "##teamcity[importData type='nunit' Path='TestResult.xml']"
+echo "##teamcity[importData type='nunit' path='TestResult.xml']"
