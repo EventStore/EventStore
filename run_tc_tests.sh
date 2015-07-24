@@ -26,13 +26,10 @@ if [[ $MONOPATH == "" ]]; then
     MONOPATH="/opt/mono"
 fi
 
-LD_LIBRARY_PATH=bin/tests:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/tests/EventStore.Core.Tests.dll
-if [[ $rc != 0 ]] ; then
-    exit $rc
-fi
+LD_LIBRARY_PATH=bin/tests:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/tests/EventStore.Core.Tests.dll $EXCLUDE
 
 if [[ $RUNPROJECTIONS == "TRUE" ]]; then
     LD_LIBRARY_PATH=bin/tests/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-2.6.3/bin/nunit-console.exe bin/tests/EventStore.Projections.Core.Tests.dll $EXCLUDE
 fi
 
-echo ##teamcity[importData type='nunit' Path='tools/nunit-2.6.3/results.xml']" 
+echo "##teamcity[importData type='nunit' Path='TestResult.xml']"
