@@ -69,8 +69,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)\..\libs\x64;$(LibraryPath)</LibraryPath>
-    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
+    <LibraryPath>$(ProjectDir)\..\libs\x64\win\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\win\</OutDir>
     <TargetName>js1</TargetName>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -79,8 +79,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)\..\libs\win32;$(LibraryPath)</LibraryPath>
-    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
+    <LibraryPath>$(ProjectDir)\..\libs\win32\win\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\win\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <TargetName>js1</TargetName>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -89,9 +89,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\win\</OutDir>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)\..\libs\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)\..\libs\x64\win;$(LibraryPath)</LibraryPath>
     <TargetName>js1</TargetName>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
@@ -100,9 +100,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
-    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\win\</OutDir>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)\..\libs\win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)\..\libs\win32\win;$(LibraryPath)</LibraryPath>
     <TargetName>js1</TargetName>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
