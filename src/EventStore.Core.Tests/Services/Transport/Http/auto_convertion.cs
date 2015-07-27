@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             get
             {
-                return "{{\"eventStreamId\":{0},\"eventNumber\":{1},\"eventType\":{2},\"data\":{3},\"metadata\":{4}}}";
+                return "{{\"eventStreamId\":{0},\"eventNumber\":{1},\"eventType\":{2},\"eventId\":{3},\"data\":{4},\"metadata\":{5}}}";
             }
         }
 
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             get
             {
-                return "<event><eventStreamId>{0}</eventStreamId><eventNumber>{1}</eventNumber><eventType>{2}</eventType><data>{3}</data><metadata>{4}</metadata></event>";
+                return "<event><eventStreamId>{0}</eventStreamId><eventNumber>{1}</eventNumber><eventType>{2}</eventType><eventId>{3}</eventId><data>{4}</data><metadata>{5}</metadata></event>";
             }
         }
 
@@ -79,6 +79,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                  WrapIntoQuotes(evnt.Event.EventStreamId),
                                  evnt.Event.EventNumber,
                                  WrapIntoQuotes(evnt.Event.EventType),
+                                 WrapIntoQuotes(evnt.Event.EventId.ToString()),
                                  dataJson ? JsonData : WrapIntoQuotes(AsString(evnt.Event.Data)),
                                  metadataJson ? JsonMetadata : WrapIntoQuotes(AsString(evnt.Event.Metadata)));
         }
@@ -106,6 +107,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                  evnt.Event.EventStreamId,
                                  evnt.Event.EventNumber,
                                  evnt.Event.EventType,
+                                 evnt.Event.EventId,
                                  dataJson ? XmlData : AsString(evnt.Event.Data),
                                  metadataJson ? XmlMetadata : AsString(evnt.Event.Metadata));
         }
