@@ -80,10 +80,10 @@
        Other similar extension points exist, see Microsoft.Common.targets.
   -->
   <Target Name="BeforeBuild">
-    <Copy SourceFiles="..\libs\x64\ubuntu\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu\libv8.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu\libicui18n.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu\libicuuc.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libv8.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libicui18n.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libicuuc.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
     <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
     <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libv8.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
     <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libicui18n.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />

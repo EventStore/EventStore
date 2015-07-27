@@ -16,11 +16,11 @@ COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 # Linux.
 platform='unix'
 make='make'
-distribution='ubuntu'
+distribution='ubuntu-trusty'
 if [[ `uname` == 'Linux' ]]; then
     make='make'
     unixtype='unix'
-    distribution='ubuntu'
+    distribution='ubuntu-trusty'
 elif [[ `uname` == 'FreeBSD' ]]; then
     # TODO: Does FreeBSD behave like OS X or Linux?
     make='gmake'
@@ -397,7 +397,7 @@ function buildEventStore {
 
 function cleanAll {
     rm -rf bin/
-    rm -f src/libs/x64/ubuntu/libjs1.so
+    rm -f src/libs/x64/ubuntu-trusty/libjs1.so
     pushd src/EventStore.Projections.v8Integration > /dev/null
     git clean --quiet -dfx -- .
     popd > /dev/null
@@ -427,7 +427,7 @@ else
         buildJS1
         buildEventStore
     else
-        [[ -f src/libs/x64/ubuntu/libjs1.so ]] || [[ -f src/libs/x64/mac/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/x64/$distribution - cannot do a quick build!"
+        [[ -f src/libs/x64/ubuntu-trusty/libjs1.so ]] || [[ -f src/libs/x64/mac/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/x64/$distribution - cannot do a quick build!"
         buildEventStore
     fi
 fi
