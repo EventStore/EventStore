@@ -16,7 +16,7 @@ namespace EventStore.Core.Index
     {
         public const string IndexMapFilename = "indexmap";
         private const int MaxMemoryTables = 1;
-        
+
         private static readonly ILogger Log = LogManager.GetLoggerFor<TableIndex>();
         internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
 
@@ -44,7 +44,7 @@ namespace EventStore.Core.Index
 
         private bool _initialized;
 
-        public TableIndex(string directory, 
+        public TableIndex(string directory,
                           Func<IMemTable> memTableFactory,
                           Func<TFReaderLease> tfReaderFactory,
                           int maxSizeForMemory = 1000000,
@@ -75,9 +75,9 @@ namespace EventStore.Core.Index
 
             //NOT THREAD SAFE (assumes one thread)
             if (_initialized)
-                throw new IOException("TableIndex is already initialized.");           
+                throw new IOException("TableIndex is already initialized.");
             _initialized = true;
-            
+
             if (_inMem)
             {
                 _indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel);
@@ -161,7 +161,7 @@ namespace EventStore.Core.Index
         {
             if (!Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
-        }        
+        }
 
         public void Add(long commitPos, uint stream, int version, long position)
         {
@@ -242,7 +242,7 @@ namespace EventStore.Core.Index
                         ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable());
                     }
                     else
-                        ptable = (PTable) tableItem.Table;
+                        ptable = (PTable)tableItem.Table;
 
                     var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
@@ -291,11 +291,11 @@ namespace EventStore.Core.Index
             for (var i = awaitingMemTables.Count - 1; i >= 1 && toPutOnDisk > 0; i--)
             {
                 var memtable = awaitingMemTables[i].Table as IMemTable;
-                if (memtable == null || !memtable.MarkForConversion()) 
+                if (memtable == null || !memtable.MarkForConversion())
                     continue;
 
                 Log.Trace("Putting awaiting file as PTable instead of MemTable [{0}].", memtable.Id);
-                    
+
                 var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable());
                 var swapped = false;
                 lock (_awaitingTablesLock)
@@ -483,7 +483,7 @@ namespace EventStore.Core.Index
             {
                 var maxIdx = GetMaxOf(candidates);
                 var winner = candidates[maxIdx];
-                
+
                 var best = winner.Current;
                 if (first || last.Key != best.Key || last.Position != best.Position)
                 {
@@ -523,9 +523,13 @@ namespace EventStore.Core.Index
             if (removeFiles)
             {
                 _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-                _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
                 File.Delete(Path.Combine(_directory, IndexMapFilename));
             }
+            else
+            {
+                _indexMap.InOrder().ToList().ForEach(x => x.Dispose());
+            }
+            _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
         }
 
         private class TableItem
