@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.Helpers
                 PortsHelper.ReturnPort(TcpEndPoint.Port);
                 PortsHelper.ReturnPort(TcpSecEndPoint.Port);
                 PortsHelper.ReturnPort(IntHttpEndPoint.Port);
-                PortsHelper.ReturnPort(IntHttpEndPoint.Port);
+                PortsHelper.ReturnPort(ExtHttpEndPoint.Port);
                 PortsHelper.ReturnPort(IntTcpEndPoint.Port);
                 PortsHelper.ReturnPort(IntSecTcpEndPoint.Port);
             }
