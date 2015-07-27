@@ -16,9 +16,11 @@ COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 # Linux.
 platform='unix'
 make='make'
+distribution='ubuntu'
 if [[ `uname` == 'Linux' ]]; then
     make='make'
     unixtype='unix'
+    distribution='ubuntu'
 elif [[ `uname` == 'FreeBSD' ]]; then
     # TODO: Does FreeBSD behave like OS X or Linux?
     make='gmake'
@@ -26,6 +28,7 @@ elif [[ `uname` == 'FreeBSD' ]]; then
 elif [[ `uname` == 'Darwin' ]]; then
     make='make'
     unixtype='mac'
+    distribution='mac'
 fi
 
 # ------------ End of configuration -------------
@@ -268,7 +271,9 @@ function buildJS1() {
 
     currentDir=$(pwd -P)
     includeString="-I $currentDir/src/libs/include"
-    outputDir="$currentDir/src/libs"
+    outputDir="$currentDir/src/libs/x64/$distribution"
+    [[ -d "$outputDir" ]] || mkdir -p "$outputDir"
+
 
     pushd $currentDir/src/EventStore.Projections.v8Integration/ > /dev/null || err
 
@@ -392,7 +397,7 @@ function buildEventStore {
 
 function cleanAll {
     rm -rf bin/
-    rm -f src/libs/libjs1.so
+    rm -f src/libs/x64/ubuntu/libjs1.so
     pushd src/EventStore.Projections.v8Integration > /dev/null
     git clean --quiet -dfx -- .
     popd > /dev/null
@@ -406,7 +411,6 @@ function exitWithError {
 checkParams $1 $2 $3 $4 $5
 
 echo "Running from base directory: $BASE_DIR"
-
 if [[ "$ACTION" == "full" ]] ; then
     cleanAll
 fi
@@ -423,7 +427,7 @@ else
         buildJS1
         buildEventStore
     else
-        [[ -f src/libs/libjs1.so ]] || [[ -f src/libs/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/ - cannot do a quick build!"
+        [[ -f src/libs/x64/ubuntu/libjs1.so ]] || [[ -f src/libs/x64/mac/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/x64/$distribution - cannot do a quick build!"
         buildEventStore
     fi
 fi

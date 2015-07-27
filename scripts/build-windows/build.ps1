@@ -90,6 +90,7 @@ Function Clean-OutputOnly() {
 
 Function Test-CanRunQuickBuild() {
     $js1Dir = Join-Path $libsDirectory $platform
+    $js1Dir = Join-Path $js1Dir "win"
     $js1Path = Join-Path $js1Dir "js1.dll"
 
     write-host $js1path
@@ -130,6 +131,7 @@ if ($platform -eq "x64") {
 
     # The destination for the built V8 libraries to be copied to
     $v8LibsDestination = Join-Path $libsDirectory "x64"
+    $v8LibsDestination = Join-Path $v8LibsDestination "win"
 
     # The platform for JS1 (as defined in the project file)
     $js1VisualStudioPlatform = "x64"
@@ -145,6 +147,7 @@ if ($platform -eq "x64") {
 
     # The destination for the built V8 libraries to be copied to
     $v8LibsDestination = Join-Path $libsDirectory "Win32"
+    $v8LibsDestination = Join-Path $v8LibsDestination "win"
 
     # The platform for JS1 (as defined in the project file)
     $js1VisualStudioPlatform = "Win32"
@@ -297,6 +300,7 @@ try {
 
 
             $v8LibsDestination = Join-Path $libsDirectory $platform
+            $v8LibsDestination = Join-Path $v8LibsDestination "win" 
 
             Remove-Item -Recurse -Force $v8LibsDestination -ErrorAction SilentlyContinue
             New-Item -ItemType Container -Path $v8LibsDestination
