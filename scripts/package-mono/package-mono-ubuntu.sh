@@ -33,7 +33,7 @@ OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
 [[ -d $OUTPUTDIR ]] || mkdir -p $OUTPUTDIR
 
 soext="so"
-PACKAGENAME="EventStore-OSS-v$VERSIONSTRING-Mono-Ubuntu"
+PACKAGENAME="EventStore-OSS-Mono-Ubuntu-v$VERSIONSTRING"
 
 PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
 

@@ -94,7 +94,7 @@ OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
 
 
 soext="dylib"
-PACKAGENAME="EventStore-OSS-v$VERSIONSTRING-MacOSX"
+PACKAGENAME="EventStore-OSS-MacOSX-v$VERSIONSTRING"
 
 PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
 
@@ -105,8 +105,38 @@ mkdir $PACKAGEDIRECTORY
 
 pushd $SCRIPTDIR/../../bin/clusternode/
 
-mkbundle -c -o clusternode.c -oo clusternode.a EventStore.ClusterNode.exe EventStore.Rags.dll EventStore.Core.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Projections.Core.dll EventStore.ClusterNode.Web.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll Mono.Security.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
-    gcc -mmacosx-version-min=10.6 -o eventstored $ES_COMPILE_FLAGS clusternode.c clusternode.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
+mkbundle -c \
+    -o clusternode.c \
+    -oo clusternode.a \
+    EventStore.ClusterNode.exe \
+    EventStore.Rags.dll \
+    EventStore.Core.dll \
+    EventStore.BufferManagement.dll \
+    EventStore.Common.dll \
+    EventStore.Projections.Core.dll \
+    EventStore.ClusterNode.Web.dll \
+    EventStore.Transport.Http.dll \
+    EventStore.Transport.Tcp.dll \
+    Newtonsoft.Json.dll \
+    NLog.dll \
+    protobuf-net.dll \
+    Mono.Security.dll \
+    --static --deps \
+    --config $MONOCONFIG \
+    --machine-config $MACHINECONFIG
+
+# Forcibly set MONO_GC_DEBUG to clear-at-gc unless it's already set
+sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
+        mono_mkbundle_init();/' -i"" clusternode.c
+
+gcc \
+    -mmacosx-version-min=10.6 \
+    -o eventstored \
+    $ES_COMPILE_FLAGS \
+    clusternode.c \
+    clusternode.a \
+    $MONOPREFIX/lib/libmonosgen-2.0.a \
+    $MONOPREFIX/lib/libMonoPosixHelper.a
 
 cp -r clusternode-web $PACKAGEDIRECTORY/
 cp -r Prelude $PACKAGEDIRECTORY/
@@ -120,8 +150,35 @@ popd
 
 pushd $SCRIPTDIR/../../bin/testclient
 
-mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.Rags.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
-gcc -o testclient $ES_COMPILE_FLAGS testclient.c testclient.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
+mkbundle -c \
+    -o testclient.c \
+    -oo testclient.a \
+    EventStore.TestClient.exe \
+    EventStore.Core.dll \
+    EventStore.Rags.dll \
+    EventStore.ClientAPI.dll \
+    EventStore.BufferManagement.dll \
+    EventStore.Common.dll \
+    EventStore.Transport.Http.dll \
+    EventStore.Transport.Tcp.dll \
+    Newtonsoft.Json.dll \
+    NLog.dll \
+    protobuf-net.dll \
+    --static --deps \
+    --config $MONOCONFIG \
+    --machine-config $MACHINECONFIG
+
+# Forcibly set MONO_GC_DEBUG to clear-at-gc unless it's already set
+sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
+        mono_mkbundle_init();/' -i"" testclient.c
+
+gcc \
+    -o testclient \
+    $ES_COMPILE_FLAGS \
+    testclient.c \
+    testclient.a \
+    $MONOPREFIX/lib/libmonosgen-2.0.a \
+    $MONOPREFIX/lib/libMonoPosixHelper.a
 
 cp testclient $PACKAGEDIRECTORY/
 
