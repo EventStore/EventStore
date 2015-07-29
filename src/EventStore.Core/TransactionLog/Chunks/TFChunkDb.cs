@@ -222,7 +222,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (allFiles.Length != cnt)
             {
                 throw new CorruptDatabaseException(new ExtraneousFileFoundException(
-                    string.Format("Unexpected files: {0}.", string.Join(", ", allFiles.Except(allowedFiles)))));
+                    string.Format("Unexpected files: {0}. If this is currently being restored from a backup and has an extra chunk (eg the file is the last chunk by number) this is most likely ok and the chunk file just needs to be deleted then restart the db.", string.Join(", ", allFiles.Except(allowedFiles)))));
             }
         }
 
