@@ -66,14 +66,8 @@ fi
 OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
 [[ -d $OUTPUTDIR ]] || mkdir -p $OUTPUTDIR
 
-
-if [[ $OS == "Darwin" ]] ; then
-    soext="dylib"
-    PACKAGENAME="EventStore-OSS-Mac-v$VERSIONSTRING"
-else
-    soext="so"
-    PACKAGENAME="EventStore-OSS-Linux-v$VERSIONSTRING"
-fi
+soext="so"
+PACKAGENAME="EventStore-OSS-Ubuntu-v$VERSIONSTRING"
 
 PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
 
@@ -100,8 +94,12 @@ mkbundle -c -o clusternode.c -oo clusternode.a \
 	Mono.Security.dll \
 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
 
-#mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.
+# mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.
 sed -e '/_config_/ s/unsigned //' -i"" clusternode.c
+
+# Forcibly set MONO_GC_DEBUG=clear-at-gc unless it's set to something else
+sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
+        mono_mkbundle_init();/' -i"" clusternode.c
 
 cc -o eventstored \
 	-Wall `pkg-config --cflags monosgen-2` \
@@ -139,8 +137,12 @@ mkbundle -c \
 	protobuf-net.dll \
 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
 
-#mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.
+# mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.
 sed -e '/_config_/ s/unsigned //' -i"" testclient.c
+
+# Forcibly set MONO_GC_DEBUG=clear-at-gc unless it's set to something else
+sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
+        mono_mkbundle_init();/' -i"" testclient.c
 
 cc -o testclient \
 	-Wall `pkg-config --cflags monosgen-2` \
@@ -153,7 +155,6 @@ cc -o testclient \
 cp testclient $PACKAGEDIRECTORY/
 
 popd
-
 
 pushd $OUTPUTDIR
 
