@@ -121,7 +121,7 @@ popd
 pushd $SCRIPTDIR/../../bin/testclient
 
 mkbundle -c -o testclient.c -oo testclient.a EventStore.TestClient.exe EventStore.Core.dll EventStore.Rags.dll EventStore.ClientAPI.dll EventStore.BufferManagement.dll EventStore.Common.dll EventStore.Transport.Http.dll EventStore.Transport.Tcp.dll Newtonsoft.Json.dll NLog.dll protobuf-net.dll --static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
-    gcc -o testclient $ES_COMPILE_FLAGS testclient.c testclient.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
+gcc -o testclient $ES_COMPILE_FLAGS testclient.c testclient.a $MONOPREFIX/lib/libmonosgen-2.0.a $MONOPREFIX/lib/libMonoPosixHelper.a
 
 cp testclient $PACKAGEDIRECTORY/
 
