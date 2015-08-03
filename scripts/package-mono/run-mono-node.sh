@@ -1,4 +1,4 @@
 ##!/usr/bin/env bash
 EVENTSTORE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 MONO_DIR=`which mono`
-exec $MONO_DIR ${EVENTSTORE_DIR}/EventStore.ClusterNode.exe $@
+LD_LIBRARY_PATH=${EVENTSTORE_DIR}:$LD_LIBRARY_PATH MONO_GC_DEBUG=clear-at-gc ${EVENTSTORE_DIR}/eventstored $@
