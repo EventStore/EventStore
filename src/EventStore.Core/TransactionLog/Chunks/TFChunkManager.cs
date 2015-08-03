@@ -283,7 +283,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk.TFChunk GetChunk(int chunkNum)
         {
             if (chunkNum < 0 || chunkNum >= _chunksCount)
-                throw new ArgumentOutOfRangeException("chunkNum", string.Format("Chunk #{0} isn't present in DB.", chunkNum));
+                throw new ArgumentOutOfRangeException("chunkNum", string.Format("Chunk #{0} is not present in DB.", chunkNum));
 
             var chunk = _chunks[chunkNum];
             if (chunk == null)

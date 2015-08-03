@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
 
         public void LogMessages()
         {
-            Console.WriteLine("There were total {0} messages in this run.", ProcessedItems.Count());
+            Console.WriteLine("There were a total of {0} messages in this run.", ProcessedItems.Count());
 
             foreach (var it in ProcessedItems)
             {

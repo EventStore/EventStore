@@ -92,7 +92,7 @@ namespace EventStore.Common.Log
             }
             catch (Exception exc)
             {
-                GlobalLogger.ErrorException(exc, "Exception during flushing logs, ignoring...");
+                GlobalLogger.ErrorException(exc, "Exception while flushing logs, ignoring...");
             }
         }
 

@@ -148,7 +148,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 return;
 
             if (_transactionId == -1)
-                throw new Exception("Something is wrong, transactionId was not set, transactionId = -1.");
+                throw new Exception("TransactionId was not set, transactionId = -1.");
 
             if (message.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
             {

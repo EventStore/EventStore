@@ -187,7 +187,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (reader.Stream.Length != expectedFileSize)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                        string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
+                        string.Format("Chunk file '{0}' should have a file size of {1} bytes, but it has a size of {2} bytes.",
                                       _filename,
                                       expectedFileSize,
                                       reader.Stream.Length)));
@@ -680,14 +680,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         public void Complete()
         {
             if (ChunkHeader.IsScavenged)
-                throw new InvalidOperationException("CompleteScavenged should be used for scavenged chunks!");
+                throw new InvalidOperationException("CompleteScavenged should be used for scavenged chunks.");
             CompleteNonRaw(null);
         }
 
         public void CompleteScavenge(ICollection<PosMap> mapping)
         {
             if (!ChunkHeader.IsScavenged)
-                throw new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks!");
+                throw new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks.");
 
             CompleteNonRaw(mapping);
         }
@@ -730,9 +730,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             {
                 if (!_inMem && _isCached != 0)
                 {
-                    throw new InvalidOperationException("Trying to write mapping while chunk is cached! "
+                    throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
                                                       + "You probably are writing scavenged chunk as cached. "
-                                                      + "Don't do this!");
+                                                      + "Don't do this.");
                 }
                 mapSize = mapping.Count * PosMap.FullSize;
                 workItem.Buffer.SetLength(mapSize);
@@ -781,7 +781,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 workItem.WorkingStream.CopyTo(memStream);
 
                 if (!TryDestructMemStreams())
-                    throw new Exception("MemStream readers are in use when writing scavenged chunk!");
+                    throw new Exception("MemStream readers are in use when writing scavenged chunk.");
 
                 _cachedLength = newFileSize;
                 _cachedData = newCachedData;
@@ -834,7 +834,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
 
             if (fileStreamCount < 0)
-                throw new Exception("Somehow we managed to decrease count of file streams below zero.");
+                throw new Exception("Count of file streams reduced below zero.");
             if (fileStreamCount == 0) // we are the last who should "turn the light off" for file streams
                 CleanUpFileStreamDestruction();
         }
@@ -871,7 +871,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 memStreamCount = Interlocked.Decrement(ref _memStreamCount);
             }
             if (memStreamCount < 0)
-                throw new Exception("Somehow we managed to decrease count of memory streams below zero.");
+                throw new Exception("Count of memory streams reduced below zero.");
             if (memStreamCount == 0) // we are the last who should "turn the light off" for memory streams
             {
                 FreeCachedData();
@@ -974,7 +974,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         {
             var fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
             if (fileStreamCount < 0)
-                throw new Exception("Somehow we managed to decrease count of file streams below zero.");
+                throw new Exception("Count of file streams reduced below zero.");
             if (_selfdestructin54321 && fileStreamCount == 0)
                 CleanUpFileStreamDestruction();
         }

@@ -127,7 +127,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 || truncateChk >= chunkHeader.ChunkEndPosition)
             {
                 throw new Exception(
-                    string.Format("Chunk #{0}-{1} ({2}) is not correct unscavenged chunk! TruncatePosition: {3}, ChunkHeader: {4}.",
+                    string.Format("Chunk #{0}-{1} ({2}) is not correct unscavenged chunk. TruncatePosition: {3}, ChunkHeader: {4}.",
                                   chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, chunkFilename, truncateChk, chunkHeader));
             }
 

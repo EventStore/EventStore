@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
 
             if (!isGood)
             {
-                Console.WriteLine("Unsuccessfull run. Parameters:\n"
+                Console.WriteLine("Unsuccessful run. Parameters:\n"
                                   + "rndSeed: {0}\n"
                                   + "maxIterCnt = {1}\n"
                                   + "instancesCnt = {2}\n"
