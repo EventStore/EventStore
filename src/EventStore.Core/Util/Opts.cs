@@ -179,10 +179,10 @@ namespace EventStore.Core.Util
         public const bool StatsOnExtDefault = true;
 
         public const string InternalIpDescr = "Internal IP Address.";
-        public static readonly IPAddress InternalIpDefault = IPAddress.Parse("0.0.0.0");
+        public static readonly IPAddress InternalIpDefault = IPAddress.Loopback;
 
         public const string ExternalIpDescr = "External IP Address.";
-        public static readonly IPAddress ExternalIpDefault = IPAddress.Parse("0.0.0.0");
+        public static readonly IPAddress ExternalIpDefault = IPAddress.Loopback;
 
         public const string InternalHttpPortDescr = "Internal HTTP Port.";
         public const int    InternalHttpPortDefault = 2112;
