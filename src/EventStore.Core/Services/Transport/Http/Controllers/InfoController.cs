@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                     "OK",
                                     entity.ResponseCodec.ContentType,
                                     null,
-                                    e => Log.ErrorException(e, "Error while writing http response (info)"));
+                                    e => Log.ErrorException(e, "Error while writing HTTP response (info)"));
         }
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                         "OK",
                                         entity.ResponseCodec.ContentType,
                                         null,
-                                        e => Log.ErrorException(e, "error while writing http response (options)"));
+                                        e => Log.ErrorException(e, "error while writing HTTP response (options)"));
             }
             else
             {

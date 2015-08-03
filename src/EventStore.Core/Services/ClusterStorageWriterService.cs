@@ -89,13 +89,13 @@ namespace EventStore.Core.Services
             var writerCheck = Db.Config.WriterCheckpoint.ReadNonFlushed();
             if (message.SubscriptionPosition > writerCheck)
             {
-                ReplicationFail("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is greater than our writer checkpoint {3} (0x{3:X}). REPLICATION BUG!",
+                ReplicationFail("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is greater than our writer checkpoint {3} (0x{3:X}). REPLICATION BUG.",
                                 message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, writerCheck);
             }
             
             if (message.SubscriptionPosition < writerCheck)
             {
-                Log.Info("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is less than our writer checkpoint {3} (0x{3:X}). TRUNCATION IS NEEDED!",
+                Log.Info("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is less than our writer checkpoint {3} (0x{3:X}). TRUNCATION IS NEEDED.",
                          message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, writerCheck);
 
                 var lastCommitPosition = _getLastCommitPosition();
@@ -107,7 +107,7 @@ namespace EventStore.Core.Services
                 EpochRecord lastEpoch = EpochManager.GetLastEpoch();
                 if (AreAnyCommittedRecordsTruncatedWithLastEpoch(message.SubscriptionPosition, lastEpoch, lastCommitPosition))
                 {
-                    Log.Error("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is less than our last epoch and LastCommitPosition {3} (0x{3:X}) >= lastEpoch.EpochPosition {3} (0x{3:X})!!! "
+                    Log.Error("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is less than our last epoch and LastCommitPosition {3} (0x{3:X}) >= lastEpoch.EpochPosition {3} (0x{3:X})."
                                 + "That might be bad, especially if the LastCommitPosition is way beyond EpochPosition.\n" 
                                 + "ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF JUST-ELECTED MASTER FAILS IMMEDIATELY AFTER ITS ELECTION.",
                                 message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, lastCommitPosition, lastEpoch.EpochPosition);
@@ -235,7 +235,7 @@ namespace EventStore.Core.Services
                     Writer.CompleteChunk();
 
                     if (_framer.HasData) 
-                        ReplicationFail("There is some data left in framer when completing chunk!");
+                        ReplicationFail("There is some data left in framer when completing chunk.");
 
                     _subscriptionPos = chunk.ChunkHeader.ChunkEndPosition;
                     _framer.Reset();

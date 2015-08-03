@@ -332,7 +332,7 @@ namespace EventStore.Core.Index
                     Log.Trace("File being deleted.");
                 }
             }
-            throw new InvalidOperationException("Something is wrong. Files are locked.");
+            throw new InvalidOperationException("Files are locked.");
         }
 
         private bool TryGetOneValueInternal(uint stream, int version, out long position)
@@ -373,7 +373,7 @@ namespace EventStore.Core.Index
                     Log.Trace("File being deleted.");
                 }
             }
-            throw new InvalidOperationException("Something is wrong. Files are locked.");
+            throw new InvalidOperationException("Files are locked.");
         }
 
         private bool TryGetLatestEntryInternal(uint stream, out IndexEntry entry)
@@ -411,7 +411,7 @@ namespace EventStore.Core.Index
                     Log.Trace("File being deleted.");
                 }
             }
-            throw new InvalidOperationException("Something is wrong. Files are locked.");
+            throw new InvalidOperationException("Files are locked.");
         }
 
         private bool TryGetOldestEntryInternal(uint stream, out IndexEntry entry)
@@ -449,7 +449,7 @@ namespace EventStore.Core.Index
                     Log.Trace("File being deleted.");
                 }
             }
-            throw new InvalidOperationException("Something is wrong. Files are locked.");
+            throw new InvalidOperationException("Files are locked.");
         }
 
         private IEnumerable<IndexEntry> GetRangeInternal(uint stream, int startVersion, int endVersion)

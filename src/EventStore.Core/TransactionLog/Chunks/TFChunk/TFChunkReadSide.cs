@@ -144,7 +144,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             private Midpoint[] PopulateMidpoints(int depth)
             {
                 if (depth > 31)
-                    throw new ArgumentOutOfRangeException("depth", "Too large depth for midpoints.");
+                    throw new ArgumentOutOfRangeException("depth", "Depth too for midpoints.");
 
                 if (Chunk.ChunkFooter.MapCount == 0) // empty chunk
                     return null;

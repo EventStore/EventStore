@@ -86,7 +86,7 @@ namespace EventStore.Core.Util
         public const string InMemDbDescr = "Keep everything in memory, no directories or files are created.";
         public const bool   InMemDbDefault = false;
 
-        public const string EnableTrustedAuthDescr = "Enables trusted authentication by an intermediary in the Http";
+        public const string EnableTrustedAuthDescr = "Enables trusted authentication by an intermediary in the HTTP";
         public const bool EnableTrustedAuthDefault = false;
 
         public const string AddInterfacePrefixesDescr = "Add interface prefixes";
@@ -107,10 +107,10 @@ namespace EventStore.Core.Util
         public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
         public const int    WorkerThreadsDefault = 5;
 
-        public const string IntHttpPrefixesDescr = "The prefixes that the internal http server should respond to.";
+        public const string IntHttpPrefixesDescr = "The prefixes that the internal HTTP server should respond to.";
         public static readonly string[] IntHttpPrefixesDefault = new string[0];
 
-        public const string ExtHttpPrefixesDescr = "The prefixes that the external http server should respond to.";
+        public const string ExtHttpPrefixesDescr = "The prefixes that the external HTTP server should respond to.";
         public static readonly string[] ExtHttpPrefixesDefault = new string[0];
 
         public const string UnsafeDisableFlushToDiskDescr = "Disable flushing to disk.  (UNSAFE: on power off)";
@@ -160,22 +160,22 @@ namespace EventStore.Core.Util
         /*
          *  CLUSTER OPTIONS
          */
-        public const string GossipAllowedDifferenceMsDescr = "The amount of drift between clocks on nodes allowed before gossip is rejected in ms.";
+        public const string GossipAllowedDifferenceMsDescr = "The amount of drift, in ms, between clocks on nodes allowed before gossip is rejected.";
         public const int GossipAllowedDifferenceMsDefault = 60000;
 
-        public const string GossipIntervalMsDescr = "The interval nodes should try to gossip with each other in ms.";
+        public const string GossipIntervalMsDescr = "The interval, in ms, nodes should try to gossip with each other.";
         public const int GossipIntervalMsDefault = 1000;
 
-        public const string GossipTimeoutMsDescr = "The timeout on gossip to another node in ms.";
+        public const string GossipTimeoutMsDescr = "The timeout, in ms, on gossip to another node.";
         public const int GossipTimeoutMsDefault = 500;
 
-        public const string AdminOnExtDescr = "Whether or not to run the admin ui on the external http endpoint";
+        public const string AdminOnExtDescr = "Whether or not to run the admin ui on the external HTTP endpoint";
         public const bool AdminOnExtDefault = true;
 
-        public const string GossipOnExtDescr = "Whether or not to accept gossip requests on the external http endpoint";
+        public const string GossipOnExtDescr = "Whether or not to accept gossip requests on the external HTTP endpoint";
         public const bool GossipOnExtDefault = true;
 
-        public const string StatsOnExtDescr = "Whether or not to accept statistics requests on the external http endpoint, needed if you use admin ui";
+        public const string StatsOnExtDescr = "Whether or not to accept statistics requests on the external HTTP endpoint, needed if you use admin ui";
         public const bool StatsOnExtDefault = true;
 
         public const string InternalIpDescr = "Internal IP Address.";

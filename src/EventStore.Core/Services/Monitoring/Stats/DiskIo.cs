@@ -84,7 +84,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception ex)
             {
-                log.InfoException(ex, "Error while reading disk io on Windows.");
+                log.InfoException(ex, "Error while reading disk IO on Windows.");
                 return null;
             }
             finally

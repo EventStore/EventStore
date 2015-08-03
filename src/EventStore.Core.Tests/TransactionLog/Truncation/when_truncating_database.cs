@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
             // --- first part of events
             WriteEvents(cnt, miniNode, countdown);
-            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing first part of events.");
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Took too long writing first part of events.");
             countdown.Reset();
 
             // -- set up truncation
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
             // --- second part of events
             WriteEvents(cnt, miniNode, countdown);
-            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing second part of events.");
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Took too long writing second part of events.");
             countdown.Reset();
 
             miniNode.Shutdown(keepDb: true, keepPorts: true);
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
             // -- third part of events
             WriteEvents(cnt, miniNode, countdown);
-            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing third part of events.");
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Took too long writing third part of events.");
             countdown.Reset();
 
             miniNode.Shutdown(keepDb: true, keepPorts: true);
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
             // --- first part of events
             WriteEvents(cnt, miniNode, countdown, MiniNode.ChunkSize / 5 * 3);
-            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing first part of events.");
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Took too long writing first part of events.");
             countdown.Reset();
 
             // -- set up truncation
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
             // --- second part of events
             WriteEvents(cnt, miniNode, countdown, MiniNode.ChunkSize / 2);
-            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing second part of events.");
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Took too long writing second part of events.");
             countdown.Reset();
 
             miniNode.Shutdown(keepDb: true, keepPorts: true);
@@ -104,7 +104,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
             // -- third part of events
             WriteEvents(cnt, miniNode, countdown, MiniNode.ChunkSize / 5);
-            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Too long writing third part of events.");
+            Assert.IsTrue(countdown.Wait(TimeSpan.FromSeconds(10)), "Took too long writing third part of events.");
             countdown.Reset();
 
             // -- if we get here -- then everything is ok

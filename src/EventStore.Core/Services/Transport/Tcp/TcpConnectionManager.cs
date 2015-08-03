@@ -225,7 +225,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             }
             catch (Exception e)
             {
-                SendBadRequestAndClose(package.CorrelationId, string.Format("Error during processing package. Error: {0}", e));
+                SendBadRequestAndClose(package.CorrelationId, string.Format("Error while processing package. Error: {0}", e));
             }
         }
 

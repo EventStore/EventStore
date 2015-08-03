@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.Helpers
             Node.Start();
 
             if (!startedEvent.Wait(60000))
-                throw new TimeoutException("MiniNode haven't started in 60 seconds.");
+                throw new TimeoutException("MiniNode has not started in 60 seconds.");
 
             StartingTime.Stop();
         }
