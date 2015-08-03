@@ -43,13 +43,25 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void BeginParkMessage(ResolvedEvent @event,string reason, Action<ResolvedEvent, OperationResult> completed)
         {
             var metadata = new ParkedMessageMetadata() {Added = DateTime.Now, Reason = reason};
-            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, GetLinkToFor(@event), metadata.ToJson());
+            string data = "";
+            if(@event.Link == null) {
+                data = GetLinkToFor(@event);
+            }
+            else {
+                data = GetOriginalLinkFor(@event);
+            }
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, data, metadata.ToJson());
             _ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, evnt, SystemAccount.Principal, x => WriteStateCompleted(completed, @event, x));
         }
 
         private string GetLinkToFor(ResolvedEvent @event)
         {
             return string.Format("{0}@{1}", @event.OriginalEvent.EventNumber, @event.OriginalStreamId);
+        }
+        
+        private string GetOriginalLinkToFor(ResolvedEvent @event)
+        {
+            return Encoding.UTF8.GetString(@event.Link.Event.Data);
         }
 
         public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed)
