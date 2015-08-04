@@ -478,6 +478,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             lock (_lock)
             {
+                if (_state == PersistentSubscriptionState.NotReady) return;
+
                 foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(time))
                 {
                     if (!ActionTakenForRetriedMessage(message))
@@ -503,8 +505,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void RetryMessage(ResolvedEvent @event, int count)
         {
             Log.Debug("Retrying message {0} {1}/{2}", SubscriptionId, @event.OriginalStreamId, @event.OriginalPosition);
-            _outstandingMessages.Remove(@event.Event.EventId);
-            _pushClients.RemoveProcessingMessage(@event.Event.EventId);
+            _outstandingMessages.Remove(@event.OriginalEvent.EventId);
+            _pushClients.RemoveProcessingMessage(@event.OriginalEvent.EventId);
             _streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, count + 1));
         }
 
