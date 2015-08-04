@@ -348,7 +348,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                 case NakAction.Unknown:
                     if (_outstandingMessages.GetMessageById(id, out e))
                     {
-                        RetryMessage(e.ResolvedEvent, e.RetryCount + 1);
+                        if (!ActionTakenForRetriedMessage(e))
+                        {
+                            RetryMessage(e.ResolvedEvent, e.RetryCount);
+                        }
                     }
                     break;
                 case NakAction.Park:
@@ -407,15 +410,17 @@ namespace EventStore.Core.Services.PersistentSubscription
                         _state |= PersistentSubscriptionState.ReplayingParkedMessages;
                         return; //nothing to do.
                     }
-                    TryReadingParkedMessagesFrom(0, end.Value);
+                    TryReadingParkedMessagesFrom(0, end.Value + 1);
                 });
             }
         }
 
         private void TryReadingParkedMessagesFrom(int position, int stopAt)
         {
-            if (stopAt - position == 0) return;
             if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0) return; //not replaying
+
+            Ensure.Positive(stopAt - position, "count");
+            
             var count = Math.Min(stopAt - position, _settings.ReadBatchSize);
             _settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,_settings.ReadBatchSize, true, (events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
         }
@@ -425,27 +430,30 @@ namespace EventStore.Core.Services.PersistentSubscription
             lock (_lock)
             {
                 if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0) return;
-                if (isEndofStrem)
-                {
-                    if (newposition != -1)
-                        _settings.MessageParker.BeginMarkParkedMessagesReprocessed(newposition);
-                    _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
-                    return;
-                }
+
                 foreach (var ev in events)
                 {
-                    if (ev.Link.EventNumber == stopAt)
+                    if (ev.OriginalEventNumber == stopAt)
                     {
-                        _settings.MessageParker.BeginMarkParkedMessagesReprocessed(stopAt);
-                        _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
-                        return;
+                        break;
                     }
-                    Log.Debug("Retrying event {0} on subscription {1}", ev.OriginalEvent.EventId,
-                        _settings.SubscriptionId);
+
+                    Log.Debug("Retrying event {0} on subscription {1}", ev.OriginalEvent.EventId, _settings.SubscriptionId);
                     _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
                 }
+
                 TryPushingMessagesToClients();
-                TryReadingParkedMessagesFrom(newposition, stopAt);
+
+                if (isEndofStrem || stopAt <= newposition)
+                {
+                    var replayedEnd = newposition == -1 ? stopAt : Math.Min(stopAt, newposition);
+                    _settings.MessageParker.BeginMarkParkedMessagesReprocessed(replayedEnd);
+                    _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
+                }
+                else
+                {
+                    TryReadingParkedMessagesFrom(newposition, stopAt);                    
+                }
             }
         }
 
@@ -468,12 +476,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        private void RevertToCheckPoint()
-        {
-            Log.Debug("Reverting future reads to checkpoint.");
-            InitAsNew();
-        }
-
         public void NotifyClockTick(DateTime time)
         {
             lock (_lock)
@@ -482,7 +484,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     if (!ActionTakenForRetriedMessage(message))
                     {
-                        RetryMessage(message.ResolvedEvent, message.RetryCount + 1);
+                        RetryMessage(message.ResolvedEvent, message.RetryCount);
                     }
                 }
                 TryPushingMessagesToClients();

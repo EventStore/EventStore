@@ -842,22 +842,31 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                     .WithEventLoader(new FakeStreamReader(x => { }))
                     .WithCheckpointReader(reader)
                     .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMaxRetriesOf(10)
                     .WithMessageParker(parker)
                     .StartFromBeginning());
             reader.Load(null);
             var corrid = Guid.NewGuid();
             sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
             var id1 = Guid.NewGuid();
+            var ev = Helper.BuildFakeEvent(id1, "type", "streamName", 0);
             sub.HandleReadCompleted(new[]
             {
-                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                ev,
             }, 1, false);
 
-            for (int i = 0; i < 11; i++)
+            for (int i = 1; i < 11; i++)
             {
                 sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id1 }, NakAction.Retry, "a reason from client.");
-                Assert.AreEqual(i + 2, envelope1.Replies.Count);
+                Assert.AreEqual(i + 1, envelope1.Replies.Count);
             }
+
+            Assert.That(parker.ParkedEvents, Has.No.Member(ev));
+
+            //This time should be parked
+            sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id1 }, NakAction.Retry, "a reason from client.");
+            Assert.AreEqual(11, envelope1.Replies.Count);
+            Assert.That(parker.ParkedEvents, Has.Member(ev));
         }
 
         [Test]
@@ -892,12 +901,13 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
             sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id1 }, NakAction.Park, "a reason from client.");
             Assert.AreEqual(2, envelope1.Replies.Count);
+            Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == id1));
 
             sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id2 }, NakAction.Park, "a reason from client.");
+            Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == id2));
             Assert.AreEqual(3, envelope1.Replies.Count);
         }
     }
-
 
     [TestFixture]
     public class AddingClientTests
@@ -1112,9 +1122,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             if (_parkMessageCompleted != null) _parkMessageCompleted(ParkedEvents[idx], result);
         }
 
-        public void BeginParkMessage(ResolvedEvent @event, string reason, Action<ResolvedEvent, OperationResult> completed)
+        public void BeginParkMessage(ResolvedEvent ev, string reason, Action<ResolvedEvent, OperationResult> completed)
         {
-            ParkedEvents.Add(@event);
+            ParkedEvents.Add(ev);
             _parkMessageCompleted = completed;
         }
 
