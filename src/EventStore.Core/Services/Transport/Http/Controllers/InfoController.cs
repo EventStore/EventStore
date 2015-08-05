@@ -44,16 +44,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match)
         {
             entity.ReplyTextContent(Codec.Json.To(new
-                                    {
-                                        ESVersion = VersionInfo.Version,
-                                        State = _currentState.ToString().ToLower(),
-                                        ProjectionsMode = _projectionType
-                                    }),
-                                    HttpStatusCode.OK,
-                                    "OK",
-                                    entity.ResponseCodec.ContentType,
-                                    null,
-                                    e => Log.ErrorException(e, "Error while writing HTTP response (info)"));
+            {
+                ESVersion = VersionInfo.Version,
+                State = _currentState.ToString().ToLower(),
+                ProjectionsMode = _projectionType
+            }),
+            HttpStatusCode.OK,
+            "OK",
+            entity.ResponseCodec.ContentType,
+            null,
+            e => Log.ErrorException(e, "Error while writing HTTP response (info)"));
         }
 
         private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match)
@@ -116,7 +116,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     Name = property.Name,
                     Description = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Description,
                     Group = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Group,
-                    Value = configFileOptionValue.ToString(),
+                    Value = configFileOptionValue == null ? "" : configFileOptionValue.ToString(),
                     PossibleValues = possibleValues
                 });
             }
