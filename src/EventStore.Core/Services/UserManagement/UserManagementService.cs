@@ -45,6 +45,14 @@ namespace EventStore.Core.Services.UserManagement
             _skipInitializeStandardUsersCheck = skipInitializeStandardUsersCheck;
         }
 
+        private bool VerifyPassword(string password, UserData userDetailsToVerify)
+        {
+            string hash;
+            string salt;
+            _passwordHashAlgorithm.Hash(password, out hash, out salt);
+            return _passwordHashAlgorithm.Verify(password, userDetailsToVerify.Hash, userDetailsToVerify.Salt);
+        }
+
         public void Handle(UserManagementMessage.Create message)
         {
             if (!IsAdmin(message.Principal))
@@ -57,6 +65,12 @@ namespace EventStore.Core.Services.UserManagement
             {
                 if (read.Events.Count() > 0)
                 {
+                    var data = read.Events[read.Events.Length - 1].Event.Data.ParseJson<UserData>();
+                    if (VerifyPassword(message.Password, data))
+                    {
+                        ReplyUpdated(message);
+                        return;
+                    }
                     ReplyConflict(message);
                     return;
                 }

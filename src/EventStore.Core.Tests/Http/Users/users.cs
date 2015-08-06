@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Http.Users
         }
 
         [TestFixture, Category("LongRunning")]
-        class when_creating_an_already_existing_user_account : with_admin_user
+        class when_creating_an_already_existing_user_account_with_the_same_password : with_admin_user
         {
             private HttpWebResponse _response;
 
@@ -116,6 +116,31 @@ namespace EventStore.Core.Tests.Http.Users
             {
                 _response = MakeJsonPost(
                     "/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
+            }
+
+            [Test]
+            public void returns_create_status_code_and_location()
+            {
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        class when_creating_an_already_existing_user_account_with_a_different_password : with_admin_user
+        {
+            private HttpWebResponse _response;
+
+            protected override void Given()
+            {
+                var response = MakeJsonPost(
+                    "/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
+
+            protected override void When()
+            {
+                _response = MakeJsonPost(
+                    "/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "AnotherPa55w0rd!" }, _admin);
             }
 
             [Test]
