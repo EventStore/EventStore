@@ -129,6 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_pausedSubscriptions.Contains(message.SubscriptionId))
                 Handle(new ReaderSubscriptionManagement.Pause(message.SubscriptionId));
+            if(!_subscriptionEventReaders.ContainsKey(message.SubscriptionId)) return;
             var eventReaderId = _subscriptionEventReaders[message.SubscriptionId];
             if (eventReaderId != Guid.Empty)
             {
