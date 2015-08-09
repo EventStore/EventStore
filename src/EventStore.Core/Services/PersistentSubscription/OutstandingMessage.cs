@@ -9,13 +9,19 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly PersistentSubscriptionClient HandlingClient;
         public readonly int RetryCount;
         public readonly Guid EventId;
+        public readonly bool IsParkedRetry;
 
-        public OutstandingMessage(Guid eventId, PersistentSubscriptionClient handlingClient, ResolvedEvent resolvedEvent, int retryCount) : this()
+        public OutstandingMessage(Guid eventId, 
+                                  PersistentSubscriptionClient handlingClient, 
+                                  ResolvedEvent resolvedEvent, 
+                                  int retryCount, 
+                                  bool isParkedRetry) : this()
         {
             EventId = eventId;
             HandlingClient = handlingClient;
             ResolvedEvent = resolvedEvent;
             RetryCount = retryCount;
+            IsParkedRetry = isParkedRetry;
         }
     }
 }

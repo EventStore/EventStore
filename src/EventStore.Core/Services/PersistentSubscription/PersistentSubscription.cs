@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (_streamBuffer.Live) return;
                 foreach (var ev in events)
                 {
-                    _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
+                    _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0, false));
                 }
                 if (_streamBuffer.Live)
                 {
@@ -195,8 +195,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (_state == PersistentSubscriptionState.NotReady) return;
                 _statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
                 var waslive = _streamBuffer.Live; //hacky
-                _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null,
-                    resolvedEvent, 0));
+                _streamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null, resolvedEvent, 0, false));
                 if (!_streamBuffer.Live)
                 {
                     SetBehind();
@@ -307,7 +306,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             lock (_lock)
             {
-                _outstandingMessages.StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0),
+                _outstandingMessages.StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0, false),
                     DateTime.Now + _settings.MessageTimeout);
             }
         }
@@ -442,9 +441,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                     }
                     Log.Debug("Retrying event {0} on subscription {1}", ev.OriginalEvent.EventId,
                         _settings.SubscriptionId);
-                    _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
+                    _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0, true));
                 }
                 TryPushingMessagesToClients();
+                //make conditional and stop reading if too many.
                 TryReadingParkedMessagesFrom(newposition, stopAt);
             }
         }
@@ -507,7 +507,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Log.Debug("Retrying message {0} {1}/{2}", SubscriptionId, @event.OriginalStreamId, @event.OriginalPosition);
             _outstandingMessages.Remove(@event.OriginalEvent.EventId);
             _pushClients.RemoveProcessingMessage(@event.OriginalEvent.EventId);
-            _streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, count + 1));
+            _streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, count + 1, false));
         }
 
         public MonitoringMessage.SubscriptionInfo GetStatistics()
@@ -517,7 +517,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void RetrySingleMessage(ResolvedEvent @event)
         {
-            _streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, 0));
+            _streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, 0, false));
         }
 
         public void Delete()

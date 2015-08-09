@@ -137,7 +137,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
         private OutstandingMessage BuildMessageAt(Guid id,int version)
         {
-            return new OutstandingMessage(id, null, BuildEventAt(id,version), 0);
+            return new OutstandingMessage(id, null, BuildEventAt(id,version), 0, false);
         }
         private ResolvedEvent BuildEventAt(Guid id, int version)
         {

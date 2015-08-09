@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0, false), DateTime.Now);
             Assert.AreEqual(1, cache.Count);
             Assert.AreEqual(0, cache.GetLowestPosition());
         }
@@ -37,8 +37,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0, false), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0, false), DateTime.Now);
             Assert.AreEqual(1, cache.Count);
             Assert.AreEqual(0, cache.GetLowestPosition());
         }
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0, false), DateTime.Now);
             cache.Remove(id);
             Assert.AreEqual(0, cache.Count);
         }
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 10), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 10), 0, false), DateTime.Now);
             Assert.AreEqual(10, cache.GetLowestPosition());
         }
 
@@ -69,9 +69,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var id2 = Guid.NewGuid();
             var id3 = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 10), 0), DateTime.Now);
-            cache.StartMessage(new OutstandingMessage(id2, null, Helper.BuildFakeEvent(id2, "type", "name", 11), 0), DateTime.Now);
-            cache.StartMessage(new OutstandingMessage(id3, null, Helper.BuildFakeEvent(id3, "type", "name", 12), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 10), 0, false), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id2, null, Helper.BuildFakeEvent(id2, "type", "name", 11), 0, false), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id3, null, Helper.BuildFakeEvent(id3, "type", "name", 12), 0, false), DateTime.Now);
             cache.Remove(id);
             Assert.AreEqual(11, cache.GetLowestPosition());
         }
@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now.AddSeconds(-1));
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0, false), DateTime.Now.AddSeconds(-1));
             var expired = cache.GetMessagesExpiringBefore(DateTime.Now).ToList();
             Assert.AreEqual(1, expired.Count());
             Assert.AreEqual(id, expired.FirstOrDefault().EventId);
@@ -106,8 +106,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now.AddSeconds(-1));
-            cache.StartMessage(new OutstandingMessage(Guid.NewGuid(), null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0), DateTime.Now.AddSeconds(1));
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0, false), DateTime.Now.AddSeconds(-1));
+            cache.StartMessage(new OutstandingMessage(Guid.NewGuid(), null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0, false), DateTime.Now.AddSeconds(1));
             var expired = cache.GetMessagesExpiringBefore(DateTime.Now).ToList();
             Assert.AreEqual(1, expired.Count());
             Assert.AreEqual(id, expired.FirstOrDefault().EventId);
@@ -118,9 +118,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now.AddSeconds(1));
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0, false), DateTime.Now.AddSeconds(1));
             var expired = cache.GetMessagesExpiringBefore(DateTime.Now).ToList();
             Assert.AreEqual(0, expired.Count());
+        }
+
+        [Test]
+        public void parked_message_does_not_show_up_when_getting_lowest() 
+        {
         }
     }
 }
