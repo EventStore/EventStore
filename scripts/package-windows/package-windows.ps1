@@ -4,7 +4,7 @@ Param(
     [string]$Version
 )
 
-$packageName = "EventStore-OSS-v$Version-Windows.zip"
+$packageName = "EventStore-OSS-Win-v$Version.zip"
 
 $baseDirectory = Resolve-Path (Join-Path $PSScriptRoot "..\..\")
 $binDirectory = Join-Path $baseDirectory "bin"
