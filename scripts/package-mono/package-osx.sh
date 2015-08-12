@@ -126,8 +126,8 @@ mkbundle -c \
     --machine-config $MACHINECONFIG
 
 # Forcibly set MONO_GC_DEBUG to clear-at-gc unless it's already set
-sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
-        mono_mkbundle_init();/' -i"" clusternode.c
+sed -i"" -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
+        mono_mkbundle_init();/' clusternode.c
 
 gcc \
     -mmacosx-version-min=10.6 \
@@ -169,8 +169,8 @@ mkbundle -c \
     --machine-config $MACHINECONFIG
 
 # Forcibly set MONO_GC_DEBUG to clear-at-gc unless it's already set
-sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
-        mono_mkbundle_init();/' -i"" testclient.c
+sed -i"" -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
+        mono_mkbundle_init();/' testclient.c
 
 gcc \
     -o testclient \
