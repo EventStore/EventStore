@@ -3,7 +3,7 @@
 
 **The documentation has now moved to the <a href="https://github.com/EventStore/EventStore/wiki">wiki in this repository</a>.** For a quick start, look <a href="https://github.com/EventStore/EventStore/wiki/Running-the-Event-Store">here</a>.
 
-<em>**Development is on the "dev" branch (and feature branches). Please make any pull requests to the "dev" branch**.</em>
+<em>**Development is on the branch aimed at the next release (usually prefixed with release-v0.0.0). Please make any pull requests to this branch**.</em>
 
 This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at http://geteventstore.com.
 
