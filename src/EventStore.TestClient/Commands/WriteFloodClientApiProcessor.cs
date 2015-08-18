@@ -71,7 +71,7 @@ namespace EventStore.TestClient.Commands
                     .LimitConcurrentOperationsTo(context.Client.Options.WriteWindow/clientsCnt)
                     .FailOnNoServerResponse();
 
-                var client = EventStoreConnection.Create(settings, context.Client.TcpEndpoint);
+                var client = EventStoreConnection.Create(settings, new Uri(string.Format("tcp://{0}:{1}", context.Client.TcpEndpoint.Address, context.Client.TcpEndpoint.Port)));
                 clients.Add(client);
 
                 threads.Add(new Thread(_ =>

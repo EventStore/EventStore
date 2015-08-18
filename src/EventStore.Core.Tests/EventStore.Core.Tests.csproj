@@ -82,6 +82,7 @@
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <Compile Include="ClientAPI\connection_string.cs" />
     <Compile Include="ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
     <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\Embedded\appending_to_implicitly_created_stream_using_transaction.cs" />

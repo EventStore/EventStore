@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
@@ -35,7 +36,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected virtual IEventStoreConnection BuildConnection(MiniNode node)
         {
-            return EventStoreConnection.Create(node.TcpEndPoint);
+            return EventStoreConnection.Create(node.TcpEndPoint.ToESTcpUri());
         }
 
         [Test, Category("LongRunning"), Category("Network")]
