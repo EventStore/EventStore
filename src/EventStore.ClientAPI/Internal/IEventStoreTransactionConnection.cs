@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using EventStore.ClientAPI.SystemData;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal interface IEventStoreTransactionConnection
     {

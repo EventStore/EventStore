@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Projections
 {
     /// <summary>
     /// API for managing projections in the Event Store through C# code. Communicates

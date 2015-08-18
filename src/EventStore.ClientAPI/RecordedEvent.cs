@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using EventStore.ClientAPI.Messages;
+using EventStore.ClientAPI.Internal;
 
 namespace EventStore.ClientAPI
 {

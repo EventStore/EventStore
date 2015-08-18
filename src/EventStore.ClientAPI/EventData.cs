@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EventStore.ClientAPI.Internal;
+using System;
 
 namespace EventStore.ClientAPI
 {

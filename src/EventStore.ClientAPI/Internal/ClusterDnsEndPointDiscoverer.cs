@@ -10,7 +10,7 @@ using EventStore.ClientAPI.Transport.Http;
 using System.Linq;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal class ClusterDnsEndPointDiscoverer: IEndPointDiscoverer
     {
