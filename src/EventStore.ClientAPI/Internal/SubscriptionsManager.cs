@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI.Internal
 {
     internal class SubscriptionItem
     {
-        public readonly SubscriptionOperation Operation;
+        public readonly ISubscriptionOperation Operation;
         public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
         public readonly DateTime CreatedTime;
@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.Internal
         public int RetryCount;
         public DateTime LastUpdated;
 
-        public SubscriptionItem(SubscriptionOperation operation, int maxRetries, TimeSpan timeout)
+        public SubscriptionItem(ISubscriptionOperation operation, int maxRetries, TimeSpan timeout)
         {
             Ensure.NotNull(operation, "operation");
 
@@ -200,7 +200,7 @@ namespace EventStore.ClientAPI.Internal
 
             if (!subscription.Operation.Subscribe(subscription.CorrelationId, connection))
             {
-                LogDebug("StartSubscription REMOVING AS COULDN'T SUBSCRIBE {0}.", subscription);
+                LogDebug("StartSubscription REMOVING AS COULD NOT SUBSCRIBE {0}.", subscription);
                 RemoveSubscription(subscription);
             }
             else

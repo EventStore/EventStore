@@ -41,7 +41,9 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AuthenticationExtensions.cs" />
     <Compile Include="ClientMessageConverterExtensions.cs" />
+    <Compile Include="EmbeddedAuthenticationRequest.cs" />
     <Compile Include="EmbeddedEventStoreConnection.cs" />
     <Compile Include="EmbeddedResponderBase.cs" />
     <Compile Include="EmbeddedResponders.cs" />
@@ -49,8 +51,11 @@
     <Compile Include="EmbeddedSubcriptionsManager.cs" />
     <Compile Include="EmbeddedSubscriber.cs" />
     <Compile Include="EmbeddedSubscription.cs" />
+    <Compile Include="EmbeddedSubscriptionBase.cs" />
     <Compile Include="EmbeddedVNodeBuilder.cs" />
+    <Compile Include="EmbeddedVolatileEventStoreSubscription.cs" />
     <Compile Include="EventStoreEmbeddedNodeConnection.cs" />
+    <Compile Include="IEmbeddedSubscription.cs" />
     <Compile Include="ProjectionsMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

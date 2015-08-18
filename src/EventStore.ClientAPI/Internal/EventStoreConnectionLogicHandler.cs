@@ -396,7 +396,7 @@ namespace EventStore.ClientAPI.Internal
                     break;
                 case ConnectionState.Connecting:
                 case ConnectionState.Connected:
-                    var operation = new SubscriptionOperation(_settings.Log, msg.Source, msg.StreamId, msg.ResolveLinkTos, 
+                    var operation = new VolatileSubscriptionOperation(_settings.Log, msg.Source, msg.StreamId, msg.ResolveLinkTos, 
                                                               msg.UserCredentials, msg.EventAppeared, msg.SubscriptionDropped, 
                                                               _settings.VerboseLogging, () => _connection);
                     LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");
