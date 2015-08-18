@@ -11,6 +11,7 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Core.Authentication;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -60,9 +61,9 @@ namespace EventStore.ClientAPI.Embedded
         private readonly ConnectionSettings _settings;
         private readonly string _connectionName;
         private readonly IPublisher _publisher;
+        private readonly IAuthenticationProvider _authenticationProvider;
         private readonly IBus _subscriptionBus;
         private readonly EmbeddedSubscriber _subscriptions;
-        private readonly Guid _connectionId;
 
         static EventStoreEmbeddedNodeConnection()
         {
@@ -71,18 +72,19 @@ namespace EventStore.ClientAPI.Embedded
             AppDomain.CurrentDomain.AssemblyResolve += resolver.TryLoadAssemblyFromEmbeddedResource;
         }
 
-        public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName, IPublisher publisher, ISubscriber bus)
+        public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName, IPublisher publisher, ISubscriber bus, IAuthenticationProvider authenticationProvider)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(settings, "settings");
 
+            Guid connectionId = Guid.NewGuid();
+
             _settings = settings;
             _connectionName = connectionName;
             _publisher = publisher;
+            _authenticationProvider = authenticationProvider;
             _subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
-            _connectionId = Guid.NewGuid();
-
-            _subscriptions = new EmbeddedSubscriber(_settings.Log, _connectionId);
+            _subscriptions = new EmbeddedSubscriber(_subscriptionBus, _authenticationProvider, _settings.Log, connectionId);
             
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
@@ -343,7 +345,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.Start(_subscriptionBus, corrId, source, stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+            _subscriptions.StartSubscription(corrId, source, stream, userCredentials, resolveLinkTos, eventAppeared, subscriptionDropped);
             
             return source.Task;
         }
@@ -379,7 +381,7 @@ namespace EventStore.ClientAPI.Embedded
         
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.Start(_subscriptionBus, corrId, source, string.Empty, resolveLinkTos,  eventAppeared, subscriptionDropped);
+            _subscriptions.StartSubscription(corrId, source, string.Empty, userCredentials, resolveLinkTos, eventAppeared, subscriptionDropped);
 
             return source.Task;
         }

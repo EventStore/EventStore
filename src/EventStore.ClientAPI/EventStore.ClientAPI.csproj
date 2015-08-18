@@ -52,6 +52,8 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="ClientOperations\ISubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\VolatileSubscriptionOperation.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
     <Compile Include="ConnectionString.cs" />
     <Compile Include="Internal\Consts.cs" />
@@ -62,6 +64,7 @@
     <Compile Include="Internal\NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
     <Compile Include="Internal\IPEndPointExtensions.cs" />
+    <Compile Include="Internal\VolatileEventStoreSubscription.cs" />
     <Compile Include="StreamCheckpoint.cs" />
     <Compile Include="ClientAuthenticationFailedEventArgs.cs" />
     <Compile Include="ClientErrorEventArgs.cs" />
