@@ -10,7 +10,7 @@
 //using EventStore.ClientAPI.Transport.Http;
 //using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
-//namespace EventStore.ClientAPI.Core
+//EventStore.ClientAPI.Internal
 //{
 //    internal class GossipSeedEndPointDiscoverer : IEndPointDiscoverer
 //    {

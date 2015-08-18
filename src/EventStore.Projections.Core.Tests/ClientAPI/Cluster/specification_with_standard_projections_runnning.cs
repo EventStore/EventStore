@@ -15,6 +15,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
+using EventStore.ClientAPI.Projections;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 {

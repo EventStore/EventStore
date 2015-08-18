@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal struct NodeEndPoints
     {

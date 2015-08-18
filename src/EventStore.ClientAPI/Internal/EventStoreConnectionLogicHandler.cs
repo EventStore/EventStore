@@ -9,7 +9,7 @@ using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal class EventStoreConnectionLogicHandler : IEventStoreConnectionLogicHandler
     {

@@ -6,7 +6,7 @@ using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Transport.Tcp;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal class SubscriptionItem
     {

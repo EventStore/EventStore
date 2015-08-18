@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;

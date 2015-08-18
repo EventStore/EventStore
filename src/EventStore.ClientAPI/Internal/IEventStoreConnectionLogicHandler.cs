@@ -1,6 +1,6 @@
 using System;
 
-namespace EventStore.ClientAPI.Core
+namespace EventStore.ClientAPI.Internal
 {
     internal interface IEventStoreConnectionLogicHandler
     {

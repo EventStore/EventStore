@@ -15,6 +15,7 @@ using ConsoleLogger = EventStore.ClientAPI.Common.Log.ConsoleLogger;
 using ILogger = EventStore.Common.Log.ILogger;
 using TcpCommand = EventStore.Core.Services.Transport.Tcp.TcpCommand;
 using TcpPackage = EventStore.Core.Services.Transport.Tcp.TcpPackage;
+using EventStore.ClientAPI.Projections;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {

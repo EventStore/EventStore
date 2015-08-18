@@ -6,6 +6,7 @@ using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using EventStore.ClientAPI.Internal;
 
 namespace EventStore.ClientAPI
 {
