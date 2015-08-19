@@ -4,6 +4,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Services.Monitoring.Stats;
+using System.Collections.Concurrent;
 
 namespace EventStore.Core.Services.TimerService
 {
@@ -11,7 +12,7 @@ namespace EventStore.Core.Services.TimerService
     {
         public string Name { get { return _queueStats.Name; } }
 
-        private readonly Common.Concurrent.ConcurrentQueue<ScheduledTask> _pending = new Common.Concurrent.ConcurrentQueue<ScheduledTask>();
+        private readonly ConcurrentQueue<ScheduledTask> _pending = new ConcurrentQueue<ScheduledTask>();
         private readonly PairingHeap<ScheduledTask> _tasks = new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
 
         private readonly ITimeProvider _timeProvider;

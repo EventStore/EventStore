@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
+using System.Collections.Concurrent;
 
 namespace EventStore.TestClient
 {
@@ -15,8 +16,8 @@ namespace EventStore.TestClient
         public const int PortStart = 45000;
         public const int PortCount = 200;
 
-        private static readonly Common.Concurrent.ConcurrentQueue<int> AvailablePorts = 
-            new Common.Concurrent.ConcurrentQueue<int>(Enumerable.Range(PortStart, PortCount));
+        private static readonly ConcurrentQueue<int> AvailablePorts = 
+            new ConcurrentQueue<int>(Enumerable.Range(PortStart, PortCount));
 
         public static void InitPorts(IPAddress ip)
         {

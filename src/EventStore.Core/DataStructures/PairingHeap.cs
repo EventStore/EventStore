@@ -1,6 +1,7 @@
 ﻿#define USE_POOL
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace EventStore.Core.DataStructures
@@ -165,7 +166,7 @@ namespace EventStore.Core.DataStructures
 #if USE_POOL
         private class ObjectPool<TItem> where TItem : class
         {
-            private readonly Common.Concurrent.ConcurrentQueue<TItem> _items = new Common.Concurrent.ConcurrentQueue<TItem>();
+            private readonly ConcurrentQueue<TItem> _items = new ConcurrentQueue<TItem>();
 
             private readonly int _count;
             private readonly Func<TItem> _creator;

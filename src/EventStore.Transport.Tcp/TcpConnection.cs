@@ -8,6 +8,7 @@ using EventStore.BufferManagement;
 using EventStore.Common.Locks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using System.Collections.Concurrent;
 
 namespace EventStore.Transport.Tcp
 {
@@ -65,7 +66,7 @@ namespace EventStore.Transport.Tcp
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
         private readonly Queue<ReceivedData> _receiveQueue = new Queue<ReceivedData>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
