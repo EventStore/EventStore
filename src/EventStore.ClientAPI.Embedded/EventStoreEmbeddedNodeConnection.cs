@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.Authentication;
+using Message = EventStore.Core.Messaging.Message;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -47,7 +49,8 @@ namespace EventStore.ClientAPI.Embedded
                     .Assembly
                     .GetManifestResourceStream(_resourceNamespace + "." + name))
                 {
-                    Ensure.NotNull(stream, "name");
+                    if (stream == null)
+                        throw new ArgumentNullException("name");
 
                     var resource = new byte[stream.Length];
 
@@ -89,15 +92,14 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
+            _subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionConfirmation>(_subscriptions);
+            _subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionStreamEventAppeared>(_subscriptions);
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
+            _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.ConnectToPersistentSubscription>(_publisher.Publish));
 
             bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(_ => Disconnected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)))));
         }
-
-        public ConnectionSettings Settings { get { return _settings; } }
-
-        public ClusterSettings ClusterSettings { get { return null; } }
 
         public string ConnectionName { get { return _connectionName; } }
 
@@ -136,8 +138,8 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, false,
-                stream, expectedVersion, hardDelete, SystemAccount.Principal));
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.DeleteStream(corrId, corrId, envelope, false,
+                stream, expectedVersion, hardDelete, user));
 
             return source.Task;
         }
@@ -170,8 +172,8 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.Publish(new ClientMessage.WriteEvents(corrId, corrId, envelope, false,
-                stream, expectedVersion, events.ConvertToEvents(), SystemAccount.Principal));
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.WriteEvents(corrId, corrId, envelope, false,
+                stream, expectedVersion, events.ConvertToEvents(), user));
 
             return source.Task;
             // ReSharper restore PossibleMultipleEnumeration
@@ -187,8 +189,8 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.Publish(new ClientMessage.TransactionStart(corrId, corrId, envelope,
-                false, stream, expectedVersion, SystemAccount.Principal));
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.TransactionStart(corrId, corrId, envelope,
+                false, stream, expectedVersion, user));
 
             return source.Task;
         }
@@ -211,8 +213,8 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.Publish(new ClientMessage.TransactionWrite(corrId, corrId, envelope,
-                false, transaction.TransactionId, events.ConvertToEvents(), SystemAccount.Principal));
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.TransactionWrite(corrId, corrId, envelope,
+                false, transaction.TransactionId, events.ConvertToEvents(), user));
 
             return source.Task;
 
@@ -229,8 +231,8 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.Publish(new ClientMessage.TransactionCommit(corrId, corrId, envelope,
-                false, transaction.TransactionId, SystemAccount.Principal));
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.TransactionCommit(corrId, corrId, envelope,
+                false, transaction.TransactionId, user));
 
             return source.Task;
         }
@@ -246,10 +248,8 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            var message = new ClientMessage.ReadEvent(corrId, corrId, envelope,
-                stream, eventNumber, resolveLinkTos, false, SystemAccount.Principal);
-
-            _publisher.Publish(message);
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadEvent(corrId, corrId, envelope,
+                stream, eventNumber, resolveLinkTos, false, user));
 
             return source.Task;
         }
@@ -259,17 +259,15 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
-
+            if (count > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<StreamEventsSlice>();
 
             var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadStreamForwardEvents(source, stream, start));
 
             Guid corrId = Guid.NewGuid();
 
-            var message = new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope,
-                stream, start, count, resolveLinkTos, false, null, SystemAccount.Principal);
-
-            _publisher.Publish(message);
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope,
+                stream, start, count, resolveLinkTos, false, null, user));
 
             return source.Task;
         }
@@ -278,17 +276,15 @@ namespace EventStore.ClientAPI.Embedded
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
-
+            if (count > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<StreamEventsSlice>();
 
             var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadStreamEventsBackward(source, stream, start));
 
             Guid corrId = Guid.NewGuid();
 
-            var message = new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope,
-                stream, start, count, resolveLinkTos, false, null, SystemAccount.Principal);
-
-            _publisher.Publish(message);
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope,
+                stream, start, count, resolveLinkTos, false, null, user));
 
             return source.Task;
         }
@@ -296,18 +292,16 @@ namespace EventStore.ClientAPI.Embedded
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
-
+            if (maxCount > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>();
 
             var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsForward(source));
 
             Guid corrId = Guid.NewGuid();
 
-            var message = new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
                 position.CommitPosition,
-                position.PreparePosition, maxCount, resolveLinkTos, false, null, SystemAccount.Principal);
-
-            _publisher.Publish(message);
+                position.PreparePosition, maxCount, resolveLinkTos, false, null, user));
 
             return source.Task;
         }
@@ -316,18 +310,16 @@ namespace EventStore.ClientAPI.Embedded
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
-
+            if (maxCount > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>();
 
             var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsBackward(source));
 
             Guid corrId = Guid.NewGuid();
 
-            var message = new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
                 position.CommitPosition,
-                position.PreparePosition, maxCount, resolveLinkTos, false, null, SystemAccount.Principal);
-
-            _publisher.Publish(message);
+                position.PreparePosition, maxCount, resolveLinkTos, false, null, user));
 
             return source.Task;
         }
@@ -381,9 +373,29 @@ namespace EventStore.ClientAPI.Embedded
         
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.StartSubscription(corrId, source, string.Empty, userCredentials, resolveLinkTos, eventAppeared, subscriptionDropped);
+            _subscriptions.StartSubscription(corrId, source, string.Empty, userCredentials, resolveLinkTos,  eventAppeared, subscriptionDropped);
 
             return source.Task;
+        }
+
+
+        public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
+            string stream, string groupName, Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null, int bufferSize = 10,
+            bool autoAck = true)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            var subscription = new EmbeddedEventStorePersistentSubscription(groupName, stream, eventAppeared, subscriptionDropped,
+                userCredentials, _settings.Log, _settings.VerboseLogging, _settings, _subscriptions, bufferSize,
+                autoAck);
+
+            subscription.Start();
+
+            return subscription;
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
@@ -404,6 +416,109 @@ namespace EventStore.ClientAPI.Embedded
             return catchUpSubscription;
         }
 
+        public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+            UserCredentials credentials)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.CreatePersistentSubscription(source, stream, groupName));
+
+            var corrId = Guid.NewGuid();
+
+
+            _publisher.PublishWithAuthentication(_authenticationProvider, credentials, source.SetException, user => new ClientMessage.CreatePersistentSubscription(
+                corrId, 
+                corrId,
+                envelope,
+                stream,
+                groupName,
+                settings.ResolveLinkTos,
+                settings.StartFrom,
+                (int)settings.MessageTimeout.TotalMilliseconds,
+                settings.ExtraStatistics,
+                settings.MaxRetryCount,
+                settings.HistoryBufferSize,
+                settings.LiveBufferSize,
+                settings.ReadBatchSize,
+                (int)settings.CheckPointAfter.TotalMilliseconds,
+                settings.MinCheckPointCount,
+                settings.MaxCheckPointCount,
+                settings.MaxSubscriberCount,
+                settings.NamedConsumerStrategy,
+                user,
+                credentials == null ? null : credentials.Username,
+                credentials == null ? null : credentials.Password));
+
+            return source.Task;
+        }
+
+        public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
+            UserCredentials credentials)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+
+            var source = new TaskCompletionSource<PersistentSubscriptionUpdateResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.UpdatePersistentSubscription(source, stream, groupName));
+
+            var corrId = Guid.NewGuid();
+
+            _publisher.PublishWithAuthentication(_authenticationProvider, credentials, source.SetException, user => new ClientMessage.UpdatePersistentSubscription(
+                corrId,
+                corrId,
+                envelope,
+                stream,
+                groupName,
+                settings.ResolveLinkTos,
+                settings.StartFrom,
+                (int) settings.MessageTimeout.TotalMilliseconds,
+                settings.ExtraStatistics,
+                settings.MaxRetryCount,
+                settings.HistoryBufferSize,
+                settings.LiveBufferSize,
+                settings.ReadBatchSize,
+                (int) settings.CheckPointAfter.TotalMilliseconds,
+                settings.MinCheckPointCount,
+                settings.MaxCheckPointCount,
+                settings.MaxSubscriberCount,
+                settings.NamedConsumerStrategy,
+                user,
+                credentials == null ? null : credentials.Username,
+                credentials == null ? null : credentials.Password));
+
+            return source.Task;
+        }
+
+
+        public Task DeletePersistentSubscriptionAsync(
+            string stream, string groupName, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(
+                new EmbeddedResponders.DeletePersistentSubscription(source, stream, groupName));
+
+            var corrId = Guid.NewGuid();
+
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.DeletePersistentSubscription(
+                corrId,
+                corrId,
+                envelope,
+                stream,
+                groupName,
+                user));
+
+            return source.Task;
+        }
+
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);
@@ -420,11 +535,13 @@ namespace EventStore.ClientAPI.Embedded
 
             var source = new TaskCompletionSource<WriteResult>();
 
-            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.AppendToStream(source, metastream, expectedMetastreamVersion));
+            var envelope = new EmbeddedResponseEnvelope(
+                new EmbeddedResponders.AppendToStream(source, metastream, expectedMetastreamVersion));
 
             var corrId = Guid.NewGuid();
 
-            _publisher.Publish(new ClientMessage.WriteEvents(corrId, corrId, envelope, false, metastream, expectedMetastreamVersion, metaevent.ConvertToEvent(), SystemAccount.Principal));
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.WriteEvents(corrId, corrId, envelope, false, metastream,
+                expectedMetastreamVersion, metaevent.ConvertToEvent(), user));
 
             return source.Task;
         }
@@ -503,34 +620,32 @@ namespace EventStore.ClientAPI.Embedded
         {
             var source = new TaskCompletionSource<EventStoreTransaction>();
 
-            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionWrite(source, this));
+            var envelope = new EmbeddedResponseEnvelope(
+                new EmbeddedResponders.TransactionWrite(source, this));
 
             Guid corrId = Guid.NewGuid();
 
-            var message = new ClientMessage.TransactionWrite(corrId, corrId, envelope,false, 
-                transaction.TransactionId, events.ConvertToEvents(), SystemAccount.Principal);
-
-            _publisher.Publish(message);
-
-            return source.Task;
+            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user =>  new ClientMessage.TransactionWrite(corrId, corrId, envelope,false, 
+                transaction.TransactionId, events.ConvertToEvents(), user));
             
+            return source.Task;
         }
 
         public Task<WriteResult> CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials = null)
         {
             var source = new TaskCompletionSource<WriteResult>();
 
-            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionCommit(source));
+            var envelope = new EmbeddedResponseEnvelope(
+                new EmbeddedResponders.TransactionCommit(source));
 
             Guid corrId = Guid.NewGuid();
 
-            var message = new ClientMessage.TransactionCommit(corrId, corrId, envelope, false,
-                transaction.TransactionId, SystemAccount.Principal);
-
-            _publisher.Publish(message);
+            _publisher.PublishWithAuthentication(
+                _authenticationProvider, userCredentials, source.SetException,
+                user => new ClientMessage.TransactionCommit(corrId, corrId, envelope, false,
+                    transaction.TransactionId, user));
 
             return source.Task;
-            
         }
     }
 }
