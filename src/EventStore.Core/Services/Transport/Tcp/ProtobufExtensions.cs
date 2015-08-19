@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
-using EventStore.Common.Concurrent;
+using System.Collections.Concurrent;
 using EventStore.Common.Log;
 using ProtoBuf;
 

@@ -14,6 +14,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
+using System.Collections.Concurrent;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
@@ -59,8 +60,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private ChunkFooter _chunkFooter;
         
         private readonly int _maxReaderCount;
-        private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _fileStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
-        private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _memStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
+        private readonly ConcurrentQueue<ReaderWorkItem> _fileStreams = new ConcurrentQueue<ReaderWorkItem>();
+        private readonly ConcurrentQueue<ReaderWorkItem> _memStreams = new ConcurrentQueue<ReaderWorkItem>();
         private int _internalStreamsCount;
         private int _fileStreamCount;
         private int _memStreamCount;

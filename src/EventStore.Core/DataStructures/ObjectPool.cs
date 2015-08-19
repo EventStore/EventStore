@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using EventStore.Common.Utils;
+using System.Collections.Concurrent;
 
 namespace EventStore.Core.DataStructures
 {
@@ -37,7 +38,7 @@ namespace EventStore.Core.DataStructures
     {
         public readonly string ObjectPoolName;
 
-        private readonly Common.Concurrent.ConcurrentQueue<T> _queue = new Common.Concurrent.ConcurrentQueue<T>();
+        private readonly ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();
         private readonly int _maxCount;
         private readonly Func<T> _factory;
         private readonly Action<T> _dispose;

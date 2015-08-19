@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
+using System.Collections.Concurrent;
 
 namespace EventStore.Core.Bus
 {
@@ -25,7 +26,7 @@ namespace EventStore.Core.Bus
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
+        private readonly ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
 
         private Thread _thread;
         private volatile bool _stop;

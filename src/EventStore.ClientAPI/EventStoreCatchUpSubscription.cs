@@ -1,9 +1,9 @@
 using System;
 using System.Threading;
-using EventStore.ClientAPI.Common.Concurrent;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
+using System.Collections.Concurrent;
 
 namespace EventStore.ClientAPI
 {

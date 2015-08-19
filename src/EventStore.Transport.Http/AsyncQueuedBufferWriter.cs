@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using EventStore.Common.Concurrent;
+using System.Collections.Concurrent;
 
 namespace EventStore.Transport.Http
 {
