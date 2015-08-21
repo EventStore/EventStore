@@ -32,10 +32,11 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Authentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.PersistentSubscription;
+using System.Threading;
 
 namespace EventStore.Core
 {
-    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>
+    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>, IHandle<SystemMessage.BecomeShutdown>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
@@ -59,6 +60,7 @@ namespace EventStore.Core
         private readonly HttpService _externalHttpService;
         private readonly ITimeProvider _timeProvider;
         private readonly ISubsystem[] _subsystems;
+        private readonly ManualResetEvent _shutdownEvent = new ManualResetEvent(false);
         private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
 
@@ -109,7 +111,7 @@ namespace EventStore.Core
             _subsystems = subsystems;
             //SELF
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
-
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -531,18 +533,34 @@ namespace EventStore.Core
                     subsystem.Start();
         }
 
-        public void Stop()
+        public void StopNonblocking(bool exitProcess, bool shutdownHttp)
         {
-            _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
+            _mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess, shutdownHttp));
 
-            if (_subsystems != null)
-                foreach (var subsystem in _subsystems)
-                    subsystem.Stop();
+            if (_subsystems == null) return;
+            foreach (var subsystem in _subsystems)
+                subsystem.Stop();
+        }
+
+        public bool Stop()
+        {
+            return Stop(TimeSpan.FromSeconds(15), false, true);
+        }
+
+        public bool Stop(TimeSpan timeout, bool exitProcess, bool shutdownHttp)
+        {
+            StopNonblocking(exitProcess, shutdownHttp);
+            return _shutdownEvent.WaitOne(timeout);
         }
 
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
+        }
+
+        public void Handle(SystemMessage.BecomeShutdown message)
+        {
+            _shutdownEvent.Set();
         }
 
         public override string ToString()

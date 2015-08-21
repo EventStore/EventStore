@@ -53,12 +53,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         [Test]
         [Category("Network")]
-        public void ignore_shutdown_message_that_does_not_cause_process_exit()
+        public void ignore_shutdown_message_that_does_not_say_shut_down()
         {
             _portableServer.Publish(new SystemMessage.SystemInit());
             Assert.IsTrue(_portableServer.IsListening);
 
-            _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: false));
+            _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: false, shutdownHttp: false));
             Assert.IsTrue(_portableServer.IsListening);
         }
 
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _portableServer.Publish(new SystemMessage.SystemInit());
             Assert.IsTrue(_portableServer.IsListening);
 
-            _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: true));
+            _portableServer.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: true, shutdownHttp:true));
             Assert.IsFalse(_portableServer.IsListening);
         }
 
