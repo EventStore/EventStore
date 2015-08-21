@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.Internal
@@ -55,7 +54,7 @@ namespace EventStore.ClientAPI.Internal
         /// Constructs a new instance of a <see cref="EventStoreConnection"/>
         /// </summary>
         /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
-        /// <param name="clusterSettings"></param>
+        /// <param name="clusterSettings">The <see cref="ClusterSettings" /> containing the settings for this connection.</param>
         /// <param name="endPointDiscoverer">Discoverer of destination node end point.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         internal EventStoreNodeConnection(ConnectionSettings settings, ClusterSettings clusterSettings, IEndPointDiscoverer endPointDiscoverer, string connectionName)
@@ -187,7 +186,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
-
+            if(count > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsForwardOperation(_settings.Log, source, stream, start, count,
                                                                  resolveLinkTos, _settings.RequireMaster, userCredentials);
@@ -199,7 +198,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
-
+            if (count > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsBackwardOperation(_settings.Log, source, stream, start, count,
                                                                   resolveLinkTos, _settings.RequireMaster, userCredentials);
@@ -210,7 +209,7 @@ namespace EventStore.ClientAPI.Internal
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
-
+            if (maxCount > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsForwardOperation(_settings.Log, source, position, maxCount,
                                                               resolveLinkTos, _settings.RequireMaster, userCredentials);
@@ -221,7 +220,7 @@ namespace EventStore.ClientAPI.Internal
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
-
+            if (maxCount > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsBackwardOperation(_settings.Log, source, position, maxCount,
                                                                resolveLinkTos, _settings.RequireMaster, userCredentials);
@@ -306,6 +305,97 @@ namespace EventStore.ClientAPI.Internal
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
+
+        public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
+            string stream, 
+            string groupName, 
+            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, 
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null, 
+            int bufferSize = 10,
+            bool autoAck = true)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            var subscription = new EventStorePersistentSubscription(
+                groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
+                _settings.VerboseLogging, _settings, _handler, bufferSize, autoAck);
+
+            subscription.Start();
+
+            return subscription;
+        }
+/*
+
+        public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
+            string groupName,
+            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int? bufferSize = null,
+            bool autoAck = true)
+        {
+            return ConnectToPersistentSubscription(groupName,
+                SystemStreams.AllStream,
+                eventAppeared,
+                subscriptionDropped,
+                userCredentials,
+                bufferSize,
+                autoAck);
+        }
+*/
+
+
+        public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null) {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
+            return source.Task;
+        }
+
+        public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+            var source = new TaskCompletionSource<PersistentSubscriptionUpdateResult>();
+            EnqueueOperation(new UpdatePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, settings, userCredentials));
+            return source.Task;
+        }
+/*
+
+        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNull(settings, "settings");
+            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>();
+            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, settings, userCredentials));
+            return source.Task;
+        }
+
+*/
+        public Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, stream, groupName, userCredentials));
+            return source.Task;
+        }
+/*
+
+        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>();
+            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, userCredentials));
+            return source.Task;
+        }
+
+*/
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
@@ -435,6 +525,7 @@ namespace EventStore.ClientAPI.Internal
                 _handler.ErrorOccurred -= value;
             }
         }
+
         public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed
         {
             add

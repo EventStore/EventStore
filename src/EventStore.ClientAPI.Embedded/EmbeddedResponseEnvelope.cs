@@ -2,22 +2,18 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.ClientAPI.Embedded
 {
-    internal interface IEmbeddedResponse
-    {
-        void InspectMessage(Message message);
-    }
     internal class EmbeddedResponseEnvelope : IEnvelope
     {
-        private readonly IEmbeddedResponse _response;
+        private readonly IEmbeddedResponder _responder;
 
-        public EmbeddedResponseEnvelope(IEmbeddedResponse response)
+        public EmbeddedResponseEnvelope(IEmbeddedResponder responder)
         {
-            _response = response;
+            _responder = responder;
         }
 
         public void ReplyWith<T>(T message) where T : Message
         {
-            _response.InspectMessage(message);
+            _responder.InspectMessage(message);
         }
     }
 }

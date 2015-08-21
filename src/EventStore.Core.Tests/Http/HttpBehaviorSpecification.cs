@@ -183,6 +183,14 @@ namespace EventStore.Core.Tests.Http
             return x.Uri;
         }
 
+        protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null)
+        {
+            var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
+            var httpWebResponse = GetRequestResponse(request);
+            return httpWebResponse;
+        }
+
+
         protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null)
         {
             var request = CreateRawJsonPostRequest(path, "POST", body, credentials);

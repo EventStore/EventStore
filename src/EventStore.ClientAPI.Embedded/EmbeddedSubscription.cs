@@ -1,14 +1,14 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.SystemData;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.UserManagement;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Authentication;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -40,8 +40,8 @@ namespace EventStore.ClientAPI.Embedded
         {
             CorrelationId = correlationId;
 
-            Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials,
-                _ => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied),
+            Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials, 
+                _ => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied), 
                 user => new ClientMessage.SubscribeToStream(
                     correlationId,
                     correlationId,

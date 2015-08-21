@@ -1,19 +1,25 @@
 ﻿using System;
 using System.Threading.Tasks;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Authentication;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 
 namespace EventStore.ClientAPI.Embedded
 {
-    internal class EmbeddedSubscriber : IHandle<ClientMessage.SubscriptionConfirmation>, IHandle<ClientMessage.StreamEventAppeared>, IHandle<ClientMessage.SubscriptionDropped>
+    internal class EmbeddedSubscriber : 
+        IHandle<ClientMessage.SubscriptionConfirmation>, 
+        IHandle<ClientMessage.StreamEventAppeared>, 
+        IHandle<ClientMessage.SubscriptionDropped>,
+        IHandle<ClientMessage.PersistentSubscriptionConfirmation>,
+        IHandle<ClientMessage.PersistentSubscriptionStreamEventAppeared>
     {
         private readonly EmbeddedSubcriptionsManager _subscriptions;
         private readonly IPublisher _publisher;
         private readonly IAuthenticationProvider _authenticationProvider;
         private readonly ILogger _log;
         private readonly Guid _connectionId;
+
 
         public EmbeddedSubscriber(IPublisher publisher, IAuthenticationProvider authenticationProvider, ILogger log, Guid connectionId)
         {
@@ -26,33 +32,43 @@ namespace EventStore.ClientAPI.Embedded
 
         public void Handle(ClientMessage.StreamEventAppeared message)
         {
-            StreamEventAppeared(message);
+            StreamEventAppeared(message.CorrelationId, message.Event);
         }
 
         public void Handle(ClientMessage.SubscriptionConfirmation message)
         {
-            ConfirmSubscription(message);
+            ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, message.LastEventNumber);
         }
 
         public void Handle(ClientMessage.SubscriptionDropped message)
         {
-            EmbeddedSubscription subscription;
+            IEmbeddedSubscription subscription;
             _subscriptions.TryGetActiveSubscription(message.CorrelationId, out subscription);
             subscription.DropSubscription(message.Reason);
         }
 
-        private void StreamEventAppeared(ClientMessage.StreamEventAppeared message)
+        public void Handle(ClientMessage.PersistentSubscriptionConfirmation message)
         {
-            EmbeddedSubscription subscription;
-            _subscriptions.TryGetActiveSubscription(message.CorrelationId, out subscription);
-            subscription.EventAppeared(message.Event);
+            ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, message.LastEventNumber);
         }
 
-        private void ConfirmSubscription(ClientMessage.SubscriptionConfirmation message)
+        public void Handle(ClientMessage.PersistentSubscriptionStreamEventAppeared message)
         {
-            EmbeddedSubscription subscription;
-            _subscriptions.TryGetActiveSubscription(message.CorrelationId, out subscription);
-            subscription.ConfirmSubscription(message.LastCommitPosition, message.LastEventNumber);
+            StreamEventAppeared(message.CorrelationId, message.Event);
+        }
+
+        private void StreamEventAppeared(Guid correlationId, EventStore.Core.Data.ResolvedEvent resolvedEvent)
+        {
+            IEmbeddedSubscription subscription;
+            _subscriptions.TryGetActiveSubscription(correlationId, out subscription);
+            subscription.EventAppeared(resolvedEvent);
+        }
+
+        private void ConfirmSubscription(Guid correlationId, long lastCommitPosition, int? lastEventNumber)
+        {
+            IEmbeddedSubscription subscription;
+            _subscriptions.TryGetActiveSubscription(correlationId, out subscription);
+            subscription.ConfirmSubscription(lastCommitPosition, lastEventNumber);
         }
 
         public void StartSubscription(Guid correlationId, TaskCompletionSource<EventStoreSubscription> source, string stream, UserCredentials userCredentials, bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
@@ -61,6 +77,15 @@ namespace EventStore.ClientAPI.Embedded
                 _log, _publisher, _connectionId, source, stream, userCredentials, _authenticationProvider,
                 resolveLinkTos, eventAppeared,
                 subscriptionDropped);
+
+            _subscriptions.StartSubscription(correlationId, subscription);
+        }
+
+        public void StartPersistentSubscription(Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, UserCredentials userCredentials, int bufferSize, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan operationTimeout)
+        {
+            var subscription = new EmbeddedPersistentSubscription(_log, _publisher, _connectionId, source,
+                subscriptionId, streamId, userCredentials, _authenticationProvider, bufferSize, eventAppeared,
+                subscriptionDropped, maxRetries, operationTimeout);
 
             _subscriptions.StartSubscription(correlationId, subscription);
         }

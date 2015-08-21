@@ -16,7 +16,7 @@ namespace EventStore.ClientAPI
         public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
         public static readonly TimeSpan TimerPeriod = TimeSpan.FromMilliseconds(200);
-
+        public static readonly int MaxReadSize = 4096;
         public const int DefaultMaxClusterDiscoverAttempts = 10;
         public const int DefaultClusterManagerExternalHttpPort = 30778;
     }

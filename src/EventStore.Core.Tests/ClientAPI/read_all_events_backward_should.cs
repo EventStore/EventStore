@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -19,7 +17,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.SetStreamMetadataAsync("$all", -1,
                                     StreamMetadata.Build().SetReadRole(SystemRoles.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword))
+                                    DefaultData.AdminCredentials)
             .Wait();
 
             _testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
@@ -81,6 +79,15 @@ namespace EventStore.Core.Tests.ClientAPI
             }
 
             Assert.That(EventDataComparer.Equal(_testEvents.Reverse().ToArray(), all.Take(_testEvents.Length).ToArray()));
+        }
+
+        [Test]
+        [Category("Network")]
+        public void throw_when_got_int_max_value_as_maxcount()
+        {
+
+            Assert.Throws<ArgumentException>(
+                () => _conn.ReadAllEventsBackwardAsync(Position.Start, int.MaxValue, resolveLinkTos: false));
         }
     }
 }

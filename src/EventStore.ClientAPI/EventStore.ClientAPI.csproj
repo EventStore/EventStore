@@ -52,10 +52,18 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="ClientOperations\ConnectToPersistentSubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\DeletePersistentSubscriptionOperation.cs" />
     <Compile Include="ClientOperations\ISubscriptionOperation.cs" />
+    <Compile Include="ClientOperations\UpdatePersistentSubscriptionOperation.cs" />
     <Compile Include="ClientOperations\VolatileSubscriptionOperation.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
+    <Compile Include="Common\Utils\Threading\ManualResetEventSlimExtensions.cs" />
     <Compile Include="ConnectionString.cs" />
+    <Compile Include="EventStorePersistentSubscription.cs" />
+    <Compile Include="EventStorePersistentSubscriptionBase.cs" />
+    <Compile Include="IConnectToPersistentSubscriptions.cs" />
     <Compile Include="Internal\Consts.cs" />
     <Compile Include="Internal\Empty.cs" />
     <Compile Include="Internal\EventStoreNodeConnection.cs" />
@@ -64,7 +72,17 @@
     <Compile Include="Internal\NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
     <Compile Include="Internal\IPEndPointExtensions.cs" />
+    <Compile Include="Internal\PersistentSubscriptionCreateResult.cs" />
+    <Compile Include="Internal\PersistentSubscriptionCreateStatus.cs" />
+    <Compile Include="Internal\PersistentSubscriptionDeleteResult.cs" />
+    <Compile Include="Internal\PersistentSubscriptionDeleteStatus.cs" />
+    <Compile Include="Internal\PersistentSubscriptionUpdateResult.cs" />
+    <Compile Include="Internal\PersistentSubscriptionUpdateStatus.cs" />
     <Compile Include="Internal\VolatileEventStoreSubscription.cs" />
+    <Compile Include="PersistentEventStoreSubscription.cs" />
+    <Compile Include="PersistentSubscriptionNakEventAction.cs" />
+    <Compile Include="PersistentSubscriptionSettings.cs" />
+    <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
     <Compile Include="StreamCheckpoint.cs" />
     <Compile Include="ClientAuthenticationFailedEventArgs.cs" />
     <Compile Include="ClientErrorEventArgs.cs" />

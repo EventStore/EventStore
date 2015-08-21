@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication
 {
     namespace basic_authentication
     {
-        abstract class with_admin_user : HttpBehaviorSpecification
+        public abstract class with_admin_user : HttpBehaviorSpecification
         {
             protected readonly ICredentials _admin = new NetworkCredential(
                 SystemUsers.Admin, SystemUsers.DefaultAdminPassword);

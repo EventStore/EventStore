@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.ClientAPI
 {
     public abstract class SpecificationWithMiniNode : SpecificationWithDirectoryPerTestFixture
     {
-        private MiniNode _node;
+        protected MiniNode _node;
         protected IEventStoreConnection _conn;
         protected IPEndPoint _HttpEndPoint;
 

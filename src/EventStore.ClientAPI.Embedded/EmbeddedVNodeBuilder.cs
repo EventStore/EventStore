@@ -161,8 +161,8 @@ namespace EventStore.ClientAPI.Embedded
             var ret = new EmbeddedVNodeBuilder
             {
                 _clusterNodeCount = 1,
-                                  _prepareAckCount = 1,
-                                  _commitAckCount = 1
+                _prepareAckCount = 1,
+                _commitAckCount = 1
             };
             return ret;
         }
@@ -173,12 +173,12 @@ namespace EventStore.ClientAPI.Embedded
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public static EmbeddedVNodeBuilder AsClusterMember(int clusterSize)
         {
-            int quorumSize = clusterSize/2;
+            int quorumSize = clusterSize / 2;
             var ret = new EmbeddedVNodeBuilder
             {
                 _clusterNodeCount = clusterSize,
-                                  _prepareAckCount = quorumSize,
-                                  _commitAckCount = quorumSize
+                _prepareAckCount = quorumSize,
+                _commitAckCount = quorumSize
             };
             return ret;
         }
@@ -563,14 +563,39 @@ namespace EventStore.ClientAPI.Embedded
             throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
         }
 
+
+        /// <summary>
+        /// Sets the transaction file chunk size. Default is <see cref="TFConsts.ChunkSize"/>
+        /// </summary>
+        /// <param name="chunkSize">The size of the chunk, in bytes</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithTfChunkSize(int chunkSize)
+        {
+            _chunkSize = chunkSize;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the transaction file chunk cache size. Default is <see cref="TFConsts.ChunksCacheSize"/>
+        /// </summary>
+        /// <param name="chunksCacheSize">The size of the cache</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithTfChunksCacheSize(long chunksCacheSize)
+        {
+            _chunksCacheSize = chunksCacheSize;
+
+            return this;
+        }
+
         private void EnsureHttpPrefixes()
         {
             if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
-                _intHttpPrefixes = new List<string>(new[] {_externalHttp.ToHttpUrl()});
+                _intHttpPrefixes = new List<string>(new[] { _externalHttp.ToHttpUrl() });
             if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
-                _intHttpPrefixes = new List<string>(new[] {_externalHttp.ToHttpUrl()});
+                _intHttpPrefixes = new List<string>(new[] { _externalHttp.ToHttpUrl() });
 
-            if (!Runtime.IsMono) 
+            if (!Runtime.IsMono)
                 return;
 
             if (!_intHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_internalHttp.Address, IPAddress.Loopback))
@@ -585,7 +610,8 @@ namespace EventStore.ClientAPI.Embedded
 
         private void SetUpProjectionsIfNeeded()
         {
-            if (_projectionsMode == ProjectionsMode.None) {
+            if (_projectionsMode == ProjectionsMode.None)
+            {
                 _projectionType = ProjectionType.None;
                 return;
             }
@@ -617,7 +643,8 @@ namespace EventStore.ClientAPI.Embedded
         /// <summary>
         /// Converts an <see cref="EmbeddedVNodeBuilder"/> to a <see cref="ClusterVNode"/>.
         /// </summary>
-        public ClusterVNode Build() {
+        public ClusterVNode Build()
+        {
             EnsureHttpPrefixes();
             SetUpProjectionsIfNeeded();
 

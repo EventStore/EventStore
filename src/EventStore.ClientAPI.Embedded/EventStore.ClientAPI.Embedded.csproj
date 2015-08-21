@@ -45,6 +45,8 @@
     <Compile Include="ClientMessageConverterExtensions.cs" />
     <Compile Include="EmbeddedAuthenticationRequest.cs" />
     <Compile Include="EmbeddedEventStoreConnection.cs" />
+    <Compile Include="EmbeddedEventStorePersistentSubscription.cs" />
+    <Compile Include="EmbeddedPersistentSubscription.cs" />
     <Compile Include="EmbeddedResponderBase.cs" />
     <Compile Include="EmbeddedResponders.cs" />
     <Compile Include="EmbeddedResponseEnvelope.cs" />
