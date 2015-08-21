@@ -17,6 +17,15 @@ task :restore => :paket_bootstrap do
   system 'tools/paket.exe', 'restore', clr_command: true
 end
 
+desc 'merge clientlib assemblies'
+task :merge do
+  sh 'tools/ilmerge/ilmerge.exe', %W|/xmldocs /internalize /target:library
+                                     /targetPlatform:"v4" /out:build/pkg
+                                     EventStore.ClientAPI.dll
+                                     #{FileList['src/EventStore.ClientAPI/bin/Release/*.dll'].
+                                        exclude(/ClientAPI/)} |
+end
+
 directory 'build/pkg'
 
 desc 'package nugets - finds all projects and package them'
