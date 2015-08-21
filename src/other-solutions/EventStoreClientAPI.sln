@@ -1,6 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{CDB92C98-DB2B-4B50-A48E-C0BF9C4EB41A}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\paket.dependencies = ..\..\paket.dependencies
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI", "..\EventStore.ClientAPI\EventStore.ClientAPI.csproj", "{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}"
 EndProject
 Global
