@@ -1,0 +1,6 @@
+framework = NET40
+source https://www.nuget.org/api/v2/
+
+nuget Newtonsoft.Json ~> 6
+nuget NuGet.CommandLine
+nuget protobuf-net ~> 2.0.0.668
