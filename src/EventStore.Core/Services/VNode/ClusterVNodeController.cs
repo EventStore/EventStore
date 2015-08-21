@@ -749,7 +749,7 @@ namespace EventStore.Core.Services.VNode
         private void Handle(ClientMessage.RequestShutdown message)
         {
             _outputBus.Publish(message);
-            _fsm.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess));
+            _fsm.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess, message.ShutdownHttp));
         }
 
         private void Handle(SystemMessage.ServiceShutdown message)

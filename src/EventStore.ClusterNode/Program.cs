@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
@@ -342,7 +342,7 @@ namespace EventStore.ClusterNode
 
         public override void Stop()
         {
-            _node.Stop();
+            _node.StopNonblocking(true, true);
         }
 
         protected override void OnProgramExit()

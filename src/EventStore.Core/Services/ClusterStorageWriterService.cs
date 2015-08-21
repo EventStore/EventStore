@@ -117,7 +117,7 @@ namespace EventStore.Core.Services
                 Db.Config.TruncateCheckpoint.Flush();
 
                 BlockWriter = true;
-                Bus.Publish(new ClientMessage.RequestShutdown(exitProcess: true));
+                Bus.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp:true));
                 return;
             }
 

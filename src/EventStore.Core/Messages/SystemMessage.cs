@@ -79,13 +79,15 @@ namespace EventStore.Core.Messages
 
         public class BecomeShuttingDown : StateChangeMessage
         {
+            public readonly bool ShutdownHttp;
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly bool ExitProcess;
 
-            public BecomeShuttingDown(Guid correlationId, bool exitProcess): base(correlationId, VNodeState.ShuttingDown)
+            public BecomeShuttingDown(Guid correlationId, bool exitProcess, bool shutdownHttp): base(correlationId, VNodeState.ShuttingDown)
             {
+                ShutdownHttp = shutdownHttp;
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 ExitProcess = exitProcess;
             }
