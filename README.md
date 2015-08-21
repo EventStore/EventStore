@@ -66,3 +66,11 @@ current commit hash on each build and then revert it.
 - `version` is the semantic version to apply
 - `platform` - either x86 or x64 (defaults to x64)
 - `configuration` - either debug or release (defaults to release)
+
+On OS X you should use 
+
+```bash
+./build.sh <target> <version> <platform> <configuration> no-werror
+```
+
+To work around warnings that have turned errors.
