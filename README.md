@@ -81,3 +81,7 @@ Arguments       | Values
 `version`       | Semantic version number to give to the release.
 `platform`      | `x64` (default) or `x86`
 `configuration` | `debug` or `release` (default)
+
+#### Building nugets
+
+First build normally, then run `bundle exec rake` on OS X or `scripts/nuget-clientapi/package-clientapi.ps1` on Windows.
