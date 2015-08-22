@@ -92,20 +92,9 @@
     <IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
   </PropertyGroup>
   <Target Name="BeforeBuild">
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\ubuntu-trusty\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy SourceFiles="..\libs\win32\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
+    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\current\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\current\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
     <Copy SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
-    <Copy SourceFiles="..\libs\win32\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
     <Copy SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
   </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

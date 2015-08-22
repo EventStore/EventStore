@@ -1,104 +1,52 @@
 #!/usr/bin/env bash
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-V8_REVISION="18454" #Tag 3.24.10
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
 COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 
-# NOTE: We detect whether we're running on a Mac-like system
-# because in that case we need to deal with .dylib's instead
-# of .so's, and set the DYLD_LIBRARY_PATH before attempting
-# to build V8's snapshot. The output paths also appear to be
-# different.
-
-# TODO: Figure out whether FreeBSD behaves like MacOS or like
-# Linux.
-platform='unix'
-make='make'
-distribution='ubuntu-trusty'
-if [[ `uname` == 'Linux' ]]; then
-    make='make'
-    unixtype='unix'
-    distribution='ubuntu-trusty'
-elif [[ `uname` == 'FreeBSD' ]]; then
-    # TODO: Does FreeBSD behave like OS X or Linux?
-    make='gmake'
-    unixtype='unix'
-elif [[ `uname` == 'Darwin' ]]; then
-    make='make'
-    unixtype='mac'
-    distribution='mac'
-fi
 
 # ------------ End of configuration -------------
 
 function usage() {
-    echo ""
-    echo "Usage: $0 action <version=0.0.0.0> <platform=x64> <configuration=release> [no-werror]"
-    echo ""
-    echo "Valid actions are:"
-    echo "  quick - assumes libjs1.so and libv8.so are available and"
-    echo "          fails if this is not the case."
-    echo ""
-    echo "  incremental - always rebuilds libjs1.so, but will only"
-    echo "                build V8 if libv8.so is not available."
-    echo ""
-    echo "  full - will clean the repository prior to building. This"
-    echo "         always builds libv8.so and libjs1.so."
-    echo "  js1 -  rebuild libjs1.lib only"
-    echo ""
-    echo "Valid platforms are:"
-    echo "  x86"
-    echo "  x64"
-    echo ""
-    echo "Valid configurations are:"
-    echo "  debug"
-    echo "  release"
-    echo ""
-    echo "Pass no-werror to pass werror=no to V8 make (for newer GCC builds)"
+    echo <<EOF 
+Usage:
+  $0 [<version=0.0.0.0>] [<configuration=release>] [<distro-platform-override>]
+
+Versions must be complete four part idenfitiers valid for use on a .NET assembly.
+
+Valid configurations are:
+  debug
+  release
+
+The OS distribution and version will be detected automatically unless it is
+overriden as the last argument. This script expects to find libjs1.[so|dylib]
+in the src/libs/x64/distroname-distroversion/ directory, built using the scripts
+in the scripts/build-js1/ directory. Note that overriding this may result in
+crashes using Event Store.
+
+*The only supported Linux for production use at the moment is Ubuntu 14.04 LTS.*
+However, since several people have asked for builds compatible with Amazon Linux
+in particular, we have included a pre-built version of libjs1.so which will
+link to the correct version of libc on Amazon Linux 2015.03.
+
+Currently the supported versions without needing to build libjs1 from source are:
+  ubuntu-14.04              (Ubuntu Trusty)
+  amazon-2015.03            (Amazon Linux 2015.03)
+
+EOF
     exit 1
 }
 
-ACTION="quick"
-PLATFORM="x64"
 CONFIGURATION="Release"
 WERRORSTRING=""
 
 function checkParams() {
-    action=$1
-    version=$2
-    platform=$3
-    configuration=$4
-    nowerror=$5
+    version=$1
+    configuration=$2
+    platform_override=$3
 
-    [[ $# -gt 5 ]] && usage
-
-    if [[ "$action" = "" ]]; then
-        ACTION="quick"
-        echo "Action defaulted to: $ACTION"
-    else
-        if [[ "$action" == "quick" || "$action" == "incremental" || "$action" == "full" || "$action" == "js1" ]]; then
-            ACTION=$action
-            echo "Action set to: $ACTION"
-        else
-            echo "Invalid action: $action"
-            usage
-        fi
-    fi
-
-    if [[ "$platform" == "" ]]; then
-        PLATFORM="x64"
-        echo "Platform defaulted to: $PLATFORM"
-    else
-        if [[ "$platform" == "x64" || "$platform" == "x86" ]]; then
-            PLATFORM=$platform
-            echo "Platform set to: $PLATFORM"
-        else
-            echo "Invalid platform: $platform"
-            usage
-        fi
-    fi
+    [[ $# -gt 3 ]] && usage
 
     if [[ "$configuration" == "" ]]; then
         CONFIGURATION="release"
@@ -121,9 +69,17 @@ function checkParams() {
         echo "Version set to: $VERSIONSTRING"
     fi
 
-    if [[ "$nowerror" == "no-werror" ]] ; then
-        WERRORSTRING="werror=no"
-        echo "Setting werror=no for V8 build"
+    if [[ "$platform_override" == "" ]] ; then
+        source $BASE_DIR/scripts/build-js1/detect-system.sh
+        getSystemInformation
+        CURRENT_DISTRO="$ES_DISTRO-$ES_DISTRO_VERSION"
+    else
+        if [[ ! -d "$BASEDIR/src/libs/x64/$platform_override" ]]; then
+            echo "No directory src/libs/x64/$platform_override is found. Did you build libjs1 for this distribution/version?"
+            exit 1
+        fi
+        #TODO: Check library exists
+        CURRENT_DISTRO=$platform_override
     fi
 }
 
@@ -152,164 +108,6 @@ function err() {
     revertVersionInfo
     echo "FAILED. See earlier messages"
     exit 1
-}
-
-function getV8() {
-    revision=$1
-
-    if [[ -d v8/.svn ]] ; then
-        pushd v8 > /dev/null || err
-        svnrevision=`svn info | sed -ne 's/^Revision: //p'`
-
-        if [[ "$svnrevision" != "$revision" ]] ; then
-            echo "Updating V8 repository to revision $revision..."
-            svn update --quiet -r$revision
-        else
-            echo "V8 repository already at revision $revision"
-        fi
-        popd > /dev/null || err
-    else
-        if [[ -d v8 ]] ; then
-            echo
-        fi
-        echo "Checking out V8 repository..."
-        svn checkout --quiet -r$revision http://v8.googlecode.com/svn/trunk v8
-    fi
-}
-
-function getDependencies() {
-    needsDependencies=false
-
-    if [[ -d v8/build/gyp ]] ; then
-        pushd v8/build/gyp > /dev/null || err
-        currentGypRevision=`svn info | sed -ne 's/^Revision: //p'`
-        if [[ "$currentGypRevision" -ne "1806" ]] ; then
-            needsDependencies=true
-        fi
-        popd > /dev/null || err
-    else
-        needsDependencies=true
-    fi
-
-    if [[ -d v8/third_party/icu ]] ; then
-        pushd v8/third_party/icu > /dev/null || err
-        currentIcuRevision=`svn info | sed -ne 's/^Revision: //p'`
-        if [[ "$currentIcuRevision" -ne "239289" ]] ; then
-            needsDependencies=true
-        fi
-        popd > /dev/null || err
-    else
-        needsDependencies=true
-    fi
-
-    if $needsDependencies ; then
-        pushd v8 > /dev/null || err
-        echo "Running make dependencies"
-        $make dependencies || err
-        popd > /dev/null || err
-    else
-        echo "Dependencies already at correct revisions"
-    fi
-}
-
-function buildV8() {
-    pushd v8 > /dev/null || err
-
-    if [[ "$PLATFORM" == "x64" ]] ; then
-        makecall="x64.$CONFIGURATION"
-    elif [[ "$PLATFORM" == "x86" ]] ; then
-        makecall="ia32.$CONFIGURATION"
-    else
-        echo "Unsupported platform $PLATFORM."
-        exit 1
-    fi
-
-    if [[ "$unixtype" == "mac" ]] ; then
-        export CXX=`which clang++`
-        export CC=`which clang`
-        export CPP="`which clang` -E -std=c++0x -stdlib=libc++"
-        export LINK="`which clang++` -std=c++0x -stdlib=libc++"
-        export CXX_host=`which clang++`
-        export CC_host=`which clang`
-        export CPP_host="`which clang` -E"
-        export LINK_host=`which clang++`
-        export GYP_DEFINES="clang=1 mac_deployment_target=10.9"
-
-        v8OutputDir=`pwd`/out/$makecall
-        $make $makecall $WERRORSTRING || err
-    else
-        v8OutputDir=`pwd`/out/$makecall/lib.target
-        CFLAGS="-fPIC" CXXFLAGS="-fPIC" $make $makecall $WERRORSTRING || err
-    fi
-
-    [[ -d ../src/libs/include ]] || mkdir ../src/libs/include
-
-    pushd include > /dev/null || err
-    cp *.h ../../src/libs/include || err
-    popd > /dev/null || err
-
-    popd > /dev/null || err
-}
-
-function buildJS1() {
-    pushd v8 > /dev/null || err
-    if [[ "$PLATFORM" == "x64" ]] ; then
-        makecall="x64.$CONFIGURATION"
-    elif [[ "$PLATFORM" == "x86" ]] ; then
-        makecall="ia32.$CONFIGURATION"
-    else
-        echo "Unsupported platform $PLATFORM."
-        exit 1
-    fi
-
-    if [[ "$unixtype" == "mac" ]] ; then
-        v8OutputDir=`pwd`/out/$makecall
-    else
-        v8OutputDir=`pwd`/out/$makecall/obj.target
-    fi
-    popd > /dev/null || err
-
-    currentDir=$(pwd -P)
-    includeString="-I $currentDir/src/libs/include"
-    outputDir="$currentDir/src/libs/x64/$distribution"
-    [[ -d "$outputDir" ]] || mkdir -p "$outputDir"
-
-
-    pushd $currentDir/src/EventStore.Projections.v8Integration/ > /dev/null || err
-
-    if [[ "$ARCHITECTURE" == "x86" ]] ; then
-        gccArch="-arch i386"
-    elif [[ "$ARCHITECTURE" == "x64" ]] ; then
-        gccArch="-arch amd64"
-    fi
-
-    if [[ "$unixtype" == "mac" ]] ; then
-        outputObj=$outputDir/libjs1.dylib
-    else
-        outputObj=$outputDir/libjs1.so
-    fi
-
-    if [[ "$unixtype" == "mac" ]] ; then
-        libsString="$v8OutputDir/libicudata.a \
-            $v8OutputDir/libicui18n.a \
-            $v8OutputDir/libicuuc.a \
-            $v8OutputDir/libv8_base.x64.a \
-            $v8OutputDir/libv8_nosnapshot.x64.a \
-            $v8OutputDir/libv8_snapshot.a"
-        g++ $includeString $libsString *.cpp -o $outputObj $gccArch -O2 -fPIC --shared --save-temps -std=c++0x || err
-    else
-        g++ $includeString *.cpp -o $outputObj -fPIC -shared -std=c++0x -lstdc++ -Wl,--start-group $v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a $v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a -Wl,--end-group -lrt -lpthread || err
-    fi
-
-    if [[ "$unixtype" == "mac" ]] ; then
-        pushd $outputDir > /dev/null || err
-        install_name_tool -id libjs1.dylib libjs1.dylib
-        install_name_tool -change /usr/local/lib/libv8.dylib libv8.dylib libjs1.dylib
-        popd > /dev/null || err
-    fi
-
-
-    popd > /dev/null || err
 }
 
 function patchVersionFiles {
@@ -386,6 +184,13 @@ function patchVersionInfo {
     done
 }
 
+function linkCurrentJS1 {
+    mkdir -p $BASE_DIR/src/libs/x64/current
+    for f in $BASE_DIR/src/libs/x64/$CURRENT_DISTRO/*; do
+        ln -s $f "$BASE_DIR/src/libs/x64/current/`basename $f`"
+    done
+}
+
 function buildEventStore {
     patchVersionFiles
     patchVersionInfo
@@ -395,39 +200,16 @@ function buildEventStore {
     revertVersionInfo
 }
 
-function cleanAll {
-    rm -rf bin/
-    rm -f src/libs/x64/ubuntu-trusty/libjs1.so
-    pushd src/EventStore.Projections.v8Integration > /dev/null
-    git clean --quiet -dfx -- .
-    popd > /dev/null
-}
-
 function exitWithError {
     echo $1
     exit 1
 }
 
-checkParams $1 $2 $3 $4 $5
+checkParams $1 $2 $3
 
 echo "Running from base directory: $BASE_DIR"
-if [[ "$ACTION" == "full" ]] ; then
-    cleanAll
-fi
-
-if [[ "$ACTION" == "js1" ]] ; then
-    buildJS1
-else
-
-    if [[ "$ACTION" == "incremental" || "$ACTION" == "full" ]] ; then
-        getV8 $V8_REVISION
-        getDependencies
-
-        buildV8
-        buildJS1
-        buildEventStore
-    else
-        [[ -f src/libs/x64/ubuntu-trusty/libjs1.so ]] || [[ -f src/libs/x64/mac/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/x64/$distribution - cannot do a quick build!"
-        buildEventStore
-    fi
-fi
+echo "Running on distribution: $CURRENT_DISTRO"
+#[[ -f src/libs/x64/ubuntu-trusty/libjs1.so ]] || [[ -f src/libs/x64/mac/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/x64/$distribution - cannot do a quick build!"
+linkCurrentJS1
+buildEventStore
+rm -rf $BASE_NAME/src/libs/x64/$CURRENT_DISTRO
