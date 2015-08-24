@@ -166,7 +166,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            _result = _conn.CreatePersistentSubscriptionForAllAsync("group", _settings, new UserCredentials("admin", "changeit")).Result;
+            _result = _conn.CreatePersistentSubscriptionForAllAsync("group", _settings, DefaultData.AdminCredentials).Result;
         }
 
         [Test]
@@ -185,7 +185,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("group32", _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionForAllAsync("group32", _settings, DefaultData.AdminCredentials).Wait();
         }
 
         [Test]
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             try
             {
-                _conn.CreatePersistentSubscriptionForAllAsync("group32", _settings, new UserCredentials("admin", "changeit")).Wait();
+                _conn.CreatePersistentSubscriptionForAllAsync("group32", _settings, DefaultData.AdminCredentials).Wait();
                 throw new Exception("expected exception");
             }
             catch (Exception ex)

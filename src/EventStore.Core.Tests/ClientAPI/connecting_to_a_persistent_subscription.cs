@@ -703,7 +703,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     (sub, reason, ex) =>
                     {
                     }, 
-                    new UserCredentials("admin", "changeit"));
+                    DefaultData.AdminCredentials);
                 throw new Exception("should have thrown");
             }
             catch (Exception ex)
@@ -734,10 +734,10 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", _settings, new UserCredentials("admin", "changeit")).Wait();
+            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", _settings, DefaultData.AdminCredentials).Wait();
             _sub = _conn.ConnectToPersistentSubscriptionForAll("agroupname17",
                 (sub, e) => Console.Write("appeared"),
-                (sub, reason, ex) => { }, new UserCredentials("admin", "changeit"));
+                (sub, reason, ex) => { }, DefaultData.AdminCredentials);
         }
 
         [Test]
@@ -757,7 +757,7 @@ namespace EventStore.Core.Tests.ClientAPI
         protected override void When()
         {
             _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", _settings,
-                new UserCredentials("admin", "changeit")).Wait();
+                DefaultData.AdminCredentials).Wait();
         }
 
         [Test]
