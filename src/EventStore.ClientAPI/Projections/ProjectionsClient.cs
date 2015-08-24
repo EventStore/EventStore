@@ -111,6 +111,7 @@ namespace EventStore.ClientAPI.Projections
                                 source.SetResult(response.Body);
                             else
                                 source.SetException(new ProjectionCommandFailedException(
+                                                            response.HttpStatusCode,
                                                             string.Format("Server returned {0} ({1}) for GET on {2}",
                                                                           response.HttpStatusCode,
                                                                           response.StatusDescription,
@@ -133,6 +134,7 @@ namespace EventStore.ClientAPI.Projections
                                    source.SetResult(response.Body);
                                else
                                    source.SetException(new ProjectionCommandFailedException(
+                                                               response.HttpStatusCode,
                                                                string.Format("Server returned {0} ({1}) for DELETE on {2}",
                                                                              response.HttpStatusCode,
                                                                              response.StatusDescription,
@@ -157,6 +159,7 @@ namespace EventStore.ClientAPI.Projections
                                 source.SetResult(null);
                             else
                                 source.SetException(new ProjectionCommandFailedException(
+                                                            response.HttpStatusCode,
                                                             string.Format("Server returned {0} ({1}) for PUT on {2}",
                                                                           response.HttpStatusCode,
                                                                           response.StatusDescription,
@@ -180,9 +183,10 @@ namespace EventStore.ClientAPI.Projections
                              if (response.HttpStatusCode == expectedCode)
                                  source.SetResult(null);
                              else if (response.HttpStatusCode == 409)
-                                 source.SetException(new ProjectionCommandConflictException(response.StatusDescription));
+                                 source.SetException(new ProjectionCommandConflictException(response.HttpStatusCode, response.StatusDescription));
                              else
                                  source.SetException(new ProjectionCommandFailedException(
+                                                             response.HttpStatusCode,
                                                              string.Format("Server returned {0} ({1}) for POST on {2}",
                                                                            response.HttpStatusCode,
                                                                            response.StatusDescription,
