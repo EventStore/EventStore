@@ -99,7 +99,6 @@
     <Compile Include="Common\Log\ConsoleLogger.cs" />
     <Compile Include="Common\Log\NoopLogger.cs" />
     <Compile Include="Common\Log\DebugLogger.cs" />
-    <Compile Include="Common\SpinLock2.cs" />
     <Compile Include="Common\SystemNames.cs" />
     <Compile Include="Common\Utils\Helper.cs" />
     <Compile Include="Common\Utils\Json.cs" />
