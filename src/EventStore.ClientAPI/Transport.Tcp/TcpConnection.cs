@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _receivingLock = new object();
-        private readonly SpinLock2 _sendingLock = new SpinLock2();
+        private readonly object _sendLock = new object();
         private bool _isSending;
         private volatile int _closed;
 
@@ -82,7 +82,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             InitConnectionBase(socket);
             //_log.Info("TcpConnection::InitSocket[{0}, L{1}]", RemoteEndPoint, LocalEndPoint);
-            using (_sendingLock.Acquire())
+            lock (_sendLock)
             {
                 _socket = socket;
                 try
@@ -112,7 +112,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
         {
-            using (_sendingLock.Acquire())
+            lock (_sendLock)
             {
                 int bytes = 0;
                 foreach (var segment in data)
@@ -127,7 +127,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void TrySend()
         {
-            using (_sendingLock.Acquire())
+            lock (_sendLock)
             {
                 if (_isSending || _sendQueue.Count == 0 || _socket == null) return;
                 if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
@@ -180,7 +180,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     ReturnSendingSocketArgs();
                 else
                 {
-                    using (_sendingLock.Acquire())
+                    lock (_sendLock)
                     {
                         _isSending = false;
                     }
@@ -316,7 +316,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _socket = null;
             }
 
-            using (_sendingLock.Acquire())
+            lock (_sendLock)
             {
                 if (!_isSending)
                     ReturnSendingSocketArgs();
