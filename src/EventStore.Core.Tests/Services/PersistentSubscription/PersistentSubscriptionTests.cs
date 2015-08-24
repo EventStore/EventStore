@@ -1022,7 +1022,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         public void read_whilst_ack_doesnt_deadlock_with_request_response_dispatcher()
         {
             var persistentSubscriptionSettings = PersistentSubscriptionSettings.Create().Build();
-            var userCredentials = new UserCredentials("admin", "changeit");
+            var userCredentials = DefaultData.AdminCredentials;
             _conn.CreatePersistentSubscriptionAsync("TestStream", "TestGroup", persistentSubscriptionSettings, userCredentials).Wait();
 
             const int count = 5000;
