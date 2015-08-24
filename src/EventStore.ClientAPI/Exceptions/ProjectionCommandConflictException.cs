@@ -18,8 +18,8 @@ namespace EventStore.ClientAPI.Exceptions
         /// <summary>
         /// Constructs a new <see cref="ProjectionCommandFailedException"/>.
         /// </summary>
-        public ProjectionCommandConflictException(string message)
-            : base(message)
+        public ProjectionCommandConflictException(int httpStatusCode, string message)
+            : base(httpStatusCode, message)
         {
         }
 
