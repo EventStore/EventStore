@@ -29,14 +29,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     public class AtomController : CommunicationController
     {
         public const char ETagSeparator = ';';
-        public static readonly char[] ETagSeparatorArray = new[] { ';' };
+        public static readonly char[] ETagSeparatorArray = { ';' };
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
 
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
         private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom, false, false);
 
-        private static readonly ICodec[] AtomCodecsWithoutBatches = new[]
+        private static readonly ICodec[] AtomCodecsWithoutBatches = 
                                                       {
                                                           Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                           EventStoreJsonCodec,
@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.Json
                                                       };
 
-        private static readonly ICodec[] AtomCodecs = new[]
+        private static readonly ICodec[] AtomCodecs = 
                                                       {
                                                           Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),                                                        
                                                           EventStoreJsonCodec,
@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.EventsXml,
                                                           Codec.EventsJson
                                                       };
-        private static readonly ICodec[] AtomWithHtmlCodecs = new[]
+        private static readonly ICodec[] AtomWithHtmlCodecs =
                                                               {
                                                                   Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
                                                                   EventStoreJsonCodec,
