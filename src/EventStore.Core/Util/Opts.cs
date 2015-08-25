@@ -271,6 +271,10 @@ namespace EventStore.Core.Util
         public const string WatchdogFailureCountDescr = "The maximum allowed supervised node failures within specified time window.";
         public static readonly int WatchdogFailureCountDefault = -1;
 
+        public const string HistogramDescr =
+            "Enables the tracking of various histograms in the backend, typically only used for debugging etc";
+        public static readonly bool HistogramEnabledDefault = false;
+
 		/*
 		 * Authentication Options
 		 */

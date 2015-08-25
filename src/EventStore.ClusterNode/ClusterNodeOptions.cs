@@ -162,6 +162,8 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
         public int GossipTimeoutMs { get; set; }
 
+        [ArgDescription(Opts.HistogramDescr, Opts.AppGroup)]
+        public bool EnableHistograms { get; set; }
         public ClusterNodeOptions()
         {
             Config = "";
@@ -246,6 +248,7 @@ namespace EventStore.ClusterNode
             GossipIntervalMs = Opts.GossipIntervalMsDefault;
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
+            EnableHistograms = Opts.HistogramEnabledDefault;
         }
     }
 }
