@@ -63,6 +63,8 @@
     <Compile Include="ConnectionString.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="EventStorePersistentSubscriptionBase.cs" />
+    <Compile Include="Exceptions\UserCommandConflictException.cs" />
+    <Compile Include="Exceptions\UserCommandFailedException.cs" />
     <Compile Include="IConnectToPersistentSubscriptions.cs" />
     <Compile Include="Internal\Consts.cs" />
     <Compile Include="Internal\Empty.cs" />
@@ -115,6 +117,14 @@
     <Compile Include="RawStreamMetadataResult.cs" />
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
+    <Compile Include="UserManagement\ChangePasswordDetails.cs" />
+    <Compile Include="UserManagement\RelLink.cs" />
+    <Compile Include="UserManagement\ResetPasswordDetails.cs" />
+    <Compile Include="UserManagement\UserCreationInformation.cs" />
+    <Compile Include="UserManagement\UserDetails.cs" />
+    <Compile Include="UserManagement\UsersClient.cs" />
+    <Compile Include="UserManagement\UsersManager.cs" />
+    <Compile Include="UserManagement\UserUpdateInformation.cs" />
     <Compile Include="WriteResult.cs" />
     <Compile Include="DeleteResult.cs" />
     <Compile Include="SystemSettings.cs" />
