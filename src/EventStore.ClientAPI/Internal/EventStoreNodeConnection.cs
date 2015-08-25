@@ -186,6 +186,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
+            if(count > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsForwardOperation(_settings.Log, source, stream, start, count,
                                                                  resolveLinkTos, _settings.RequireMaster, userCredentials);
@@ -197,6 +198,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
+            if (count > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsBackwardOperation(_settings.Log, source, stream, start, count,
                                                                   resolveLinkTos, _settings.RequireMaster, userCredentials);
@@ -207,6 +209,7 @@ namespace EventStore.ClientAPI.Internal
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
+            if (maxCount > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsForwardOperation(_settings.Log, source, position, maxCount,
                                                               resolveLinkTos, _settings.RequireMaster, userCredentials);
@@ -217,6 +220,7 @@ namespace EventStore.ClientAPI.Internal
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
+            if (maxCount > Consts.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsBackwardOperation(_settings.Log, source, position, maxCount,
                                                                resolveLinkTos, _settings.RequireMaster, userCredentials);
