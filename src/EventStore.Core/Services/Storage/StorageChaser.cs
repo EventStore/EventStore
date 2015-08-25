@@ -13,6 +13,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Services.Histograms;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -46,6 +47,8 @@ namespace EventStore.Core.Services.Storage
 
         private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
         private bool _commitsAfterEof;
+        private const string _chaserWaitHistogram = "chaser-wait";
+        private const string _chaserFlushHistogram = "chaser-flush";
 
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
@@ -143,6 +146,9 @@ namespace EventStore.Core.Services.Storage
             {
                 _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
                 _chaser.Flush();
+                var startflush = _watch.ElapsedTicks;
+                HistogramService.SetValue(_chaserFlushHistogram,
+                            (long)((((double)_watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
                 _queueStats.ProcessingEnded(1);
 
                 var end = _watch.ElapsedTicks;
@@ -154,7 +160,10 @@ namespace EventStore.Core.Services.Storage
             {
                 _queueStats.EnterIdle();
                 //Thread.Sleep(1);
+                var startwait = _watch.ElapsedTicks;
                 _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
+                HistogramService.SetValue(_chaserWaitHistogram,
+                    (long)((((double)_watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
             }
         }
 
