@@ -829,16 +829,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public string To<T>(T value)
         {
             return @"
-<!DOCTYPE html>
-<html>
-<body>
-<script>
-    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented, JsonCodec.ToSettings) + @";
-    window.location = '/web/index.html#/streams/' + data.streamId;
-</script>
-</body>
-</html>
-";
+            <!DOCTYPE html>
+            <html>
+            <head>
+            </head>
+            <body>
+            <script>
+                var data = " + JsonConvert.SerializeObject(value, Formatting.Indented, JsonCodec.ToSettings) + @";
+                var newLocation = '/web/index.html#/streams/' + data.streamId" + @"
+                if('positionEventNumber' in data){
+                    newLocation = newLocation + '/' + data.positionEventNumber;
+                }
+                window.location.replace(newLocation);
+            </script>
+            </body>
+            </html>
+            ";
         }
     }
 
