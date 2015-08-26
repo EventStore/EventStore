@@ -117,6 +117,7 @@ mkbundle -c \
     EventStore.ClusterNode.Web.dll \
     EventStore.Transport.Http.dll \
     EventStore.Transport.Tcp.dll \
+    HdrHistogram.NET.dll \
     Newtonsoft.Json.dll \
     NLog.dll \
     protobuf-net.dll \
@@ -161,6 +162,7 @@ mkbundle -c \
     EventStore.Common.dll \
     EventStore.Transport.Http.dll \
     EventStore.Transport.Tcp.dll \
+    HdrHistogram.NET.dll \
     Newtonsoft.Json.dll \
     NLog.dll \
     protobuf-net.dll \
