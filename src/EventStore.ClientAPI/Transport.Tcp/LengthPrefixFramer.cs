@@ -62,13 +62,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 {
                     _packageLength |= (data[i] << (_headerBytes * 8)); // little-endian order
                     ++_headerBytes;
-                    if (_headerBytes == HeaderLength)
-                    {
-                        if (_packageLength <= 0 || _packageLength > _maxPackageSize)
-                            throw new PackageFramingException(string.Format("Package size is out of bounds: {0} (max: {1}).", _packageLength, _maxPackageSize));
+                    if (_headerBytes != HeaderLength) continue;
+                    if (_packageLength <= 0 || _packageLength > _maxPackageSize)
+                        throw new PackageFramingException(string.Format("Package size is out of bounds: {0} (max: {1}). This is likely an exceptionally large message (reading too many things) or there is a problem with the framing if working on a new client.", _packageLength, _maxPackageSize));
 
-                        _messageBuffer = new byte[_packageLength];
-                    }
+                    _messageBuffer = new byte[_packageLength];
                 }
                 else
                 {
