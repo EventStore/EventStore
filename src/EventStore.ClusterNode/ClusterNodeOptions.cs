@@ -155,6 +155,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
         public bool UnsafeDisableFlushToDisk { get; set; }
 
+        [ArgDescription(Opts.IndexCacheDepthDescr, Opts.DbGroup)]
+        public int IndexCacheDepth { get; set; }
+
         [ArgDescription(Opts.GossipIntervalMsDescr, Opts.ClusterGroup)]
         public int GossipIntervalMs { get; set; }
         [ArgDescription(Opts.GossipAllowedDifferenceMsDescr, Opts.ClusterGroup)]
@@ -248,6 +251,7 @@ namespace EventStore.ClusterNode
             GossipIntervalMs = Opts.GossipIntervalMsDefault;
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
+            IndexCacheDepth = Opts.IndexCacheDepthDefault;
             EnableHistograms = Opts.HistogramEnabledDefault;
         }
     }
