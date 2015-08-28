@@ -58,10 +58,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                     _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
-                        new ResolvedEvent(new EventRecord(
+                        ResolvedEvent.ForUnresolvedEvent(new EventRecord(
                             10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type", new byte[0], new byte[0]))
+                            "event_type", new byte[0], new byte[0]), 0)
                     }, null, false, "", 11, 10, true, 100));
         }
     }

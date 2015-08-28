@@ -144,8 +144,8 @@ namespace EventStore.Core.Services.Storage
 
                     var result = _readIndex.ReadEvent(msg.EventStreamId, msg.EventNumber);
                     var record = result.Result == ReadEventResult.Success && msg.ResolveLinkTos
-                                         ? ResolveLinkToEvent(result.Record, msg.User)
-                                         : new ResolvedEvent(result.Record);
+                                         ? ResolveLinkToEvent(result.Record, msg.User, null)
+                                         : ResolvedEvent.ForUnresolvedEvent(result.Record);
                     if (record == null)
                         return NoData(msg, ReadEventResult.AccessDenied);
 
@@ -331,7 +331,7 @@ namespace EventStore.Core.Services.Storage
 
         private static ClientMessage.ReadEventCompleted NoData(ClientMessage.ReadEvent msg, ReadEventResult result, string error = null)
         {
-            return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, new ResolvedEvent(null), null, false, error);
+            return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, ResolvedEvent.EmptyEvent, null, false, error);
         }
 
         private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
@@ -404,7 +404,7 @@ namespace EventStore.Core.Services.Storage
             {
                 for (int i = 0; i < records.Length; i++)
                 {
-                    var rec = ResolveLinkToEvent(records[i], user);
+                    var rec = ResolveLinkToEvent(records[i], user, null);
                     if (rec == null)
                         return null;
                     resolved[i] = rec.Value;
@@ -414,13 +414,13 @@ namespace EventStore.Core.Services.Storage
             {
                 for (int i = 0; i < records.Length; ++i)
                 {
-                    resolved[i] = new ResolvedEvent(records[i]);
+                    resolved[i] = ResolvedEvent.ForUnresolvedEvent(records[i]);
                 }
             }
             return resolved;
         }
 
-        private ResolvedEvent? ResolveLinkToEvent(EventRecord eventRecord, IPrincipal user)
+        private ResolvedEvent? ResolveLinkToEvent(EventRecord eventRecord, IPrincipal user, long? commitPosition)
         {
             if (eventRecord.EventType == SystemEventTypes.LinkTo)
             {
@@ -435,17 +435,18 @@ namespace EventStore.Core.Services.Storage
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
                     if (res.Result == ReadEventResult.Success)
-                        return new ResolvedEvent(res.Record, eventRecord, ReadEventResult.Success);
-                    return new ResolvedEvent(null, eventRecord, res.Result);
+                        return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
+
+                    return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
                 // return unresolved link
-                return new ResolvedEvent(null, eventRecord, ReadEventResult.Error);
+                return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
             }
-            return new ResolvedEvent(eventRecord);
+            return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
         }
 
         private ResolvedEvent[] ResolveReadAllResult(IList<CommitEventRecord> records, bool resolveLinks, IPrincipal user)
@@ -456,20 +457,17 @@ namespace EventStore.Core.Services.Storage
                 for (int i = 0; i < result.Length; ++i)
                 {
                     var record = records[i];
-                    var resolvedPair = ResolveLinkToEvent(record.Event, user);
+                    var resolvedPair = ResolveLinkToEvent(record.Event, user, record.CommitPosition);
                     if (resolvedPair == null)
                         return null;
-                    result[i] = new ResolvedEvent(
-                        resolvedPair.Value.Event, resolvedPair.Value.Link, record.CommitPosition,
-                        resolvedPair.Value.ResolveResult);
+                    result[i] = resolvedPair.Value;
                 }
             }
             else
             {
                 for (int i = 0; i < result.Length; ++i)
                 {
-                    result[i] = new ResolvedEvent(
-                        records[i].Event, null, records[i].CommitPosition, default(ReadEventResult));
+                    result[i] = ResolvedEvent.ForUnresolvedEvent(records[i].Event, records[i].CommitPosition);
                 }
             }
             return result;

@@ -279,7 +279,7 @@ namespace EventStore.Core.Services
                 if (commitPosition <= subscr.LastCommitPosition || evnt.EventNumber <= subscr.LastEventNumber)
                     continue;
 
-                var pair = new ResolvedEvent(evnt, null, commitPosition, default(ReadEventResult));
+                var pair = ResolvedEvent.ForUnresolvedEvent(evnt, commitPosition);
                 if (subscr.ResolveLinkTos)
                     // resolve event if has not been previously resolved
                     resolvedEvent = pair = resolvedEvent ?? ResolveLinkToEvent(evnt, commitPosition);
@@ -300,18 +300,20 @@ namespace EventStore.Core.Services
                     string streamId = parts[1];
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
+
                     if (res.Result == ReadEventResult.Success)
-                        return new ResolvedEvent(res.Record, eventRecord, commitPosition, ReadEventResult.Success);
-                    return new ResolvedEvent(null, eventRecord, res.Result);
+                        return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
+
+                    return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
                 // return unresolved link
-                return new ResolvedEvent(null, eventRecord, commitPosition, ReadEventResult.Error);
+                return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
             }
-            return new ResolvedEvent(eventRecord, null, commitPosition, default(ReadEventResult));
+            return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
         }
 
         private void ReissueReadsFor(string streamId, long commitPosition, int eventNumber)

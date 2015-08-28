@@ -53,32 +53,32 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                     {
-                        new EventStore.Core.Data.ResolvedEvent(
+                        EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
                             new EventRecord(
                                 1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type1", new byte[] {1}, new byte[] {2}), null),
-                        new EventStore.Core.Data.ResolvedEvent(
+                                "event_type1", new byte[] {1}, new byte[] {2})),
+                        EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
                             new EventRecord(
                                 2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type2", new byte[] {3}, new byte[] {4}), null)
+                                "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
-                        new EventStore.Core.Data.ResolvedEvent(
+                        EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
                             new EventRecord(
                                 2, 100, Guid.NewGuid(), _thirdEventId, 100, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type1", new byte[] {1}, new byte[] {2}), null),
-                        new EventStore.Core.Data.ResolvedEvent(
+                                "event_type1", new byte[] {1}, new byte[] {2})),
+                        EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
                             new EventRecord(
                                 3, 200, Guid.NewGuid(), _fourthEventId, 200, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type2", new byte[] {3}, new byte[] {4}), null)
+                                "event_type2", new byte[] {3}, new byte[] {4}))
                     }, null, false, "", 4, 3, true, 200));
         }
 
@@ -109,11 +109,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                     {
-                        new EventStore.Core.Data.ResolvedEvent(
+                        EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
                             new EventRecord(
                                 3, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type", new byte[0], new byte[0]), null)
+                                "event_type", new byte[0], new byte[0]))
                     }, null, false, "", 4, 4, false, 300));
         }
 
