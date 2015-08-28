@@ -14,7 +14,7 @@ namespace EventStore.TestClient.Commands
 {
     internal class WriteFloodProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>]]]"; } }
+        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>] [<batchsize>]]]"; } }
         public string Keyword { get { return "WRFL"; } }
 
         private RequestMonitor _monitor = new RequestMonitor();
@@ -25,9 +25,10 @@ namespace EventStore.TestClient.Commands
             long requestsCnt = 5000;
             int streamsCnt = 1000;
             int size = 256;
+            int batchSize = 1;
             if (args.Length > 0)
             {
-                if (args.Length < 2 || args.Length > 4)
+                if (args.Length < 2 || args.Length > 5)
                     return false;
 
                 try
@@ -38,6 +39,8 @@ namespace EventStore.TestClient.Commands
                         streamsCnt = int.Parse(args[2]);
                     if (args.Length >= 4)
                         size = int.Parse(args[3]);
+                    if (args.Length >= 5) 
+                        batchSize = int.Parse(args[4]);
                 }
                 catch
                 {
@@ -45,11 +48,11 @@ namespace EventStore.TestClient.Commands
                 }
             }
 
-            WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size);
+            WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize);
             return true;
         }
 
-        private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt, int size)
+        private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt, int size, int batchSize)
         {
             context.IsAsync();
 
@@ -58,6 +61,7 @@ namespace EventStore.TestClient.Commands
             var threads = new List<Thread>();
 
             long succ = 0;
+            long last = 0;
             long fail = 0;
             long prepTimeout = 0;
             long commitTimeout = 0;
@@ -90,7 +94,11 @@ namespace EventStore.TestClient.Commands
                         switch(dto.Result)
                         {
                             case TcpClientMessageDto.OperationResult.Success:
-                                if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write('.');
+                                Interlocked.Add(ref succ, batchSize);
+                                if(succ - last > 1000) {
+                                    last = succ;
+                                    Console.Write(".");
+                                }
                                 break;
                             case TcpClientMessageDto.OperationResult.PrepareTimeout:
                                 Interlocked.Increment(ref prepTimeout);
@@ -114,7 +122,7 @@ namespace EventStore.TestClient.Commands
                             if (Interlocked.Increment(ref fail)%1000 == 0) 
                                 Console.Write('#');
                         Interlocked.Increment(ref received);
-                        var localAll = Interlocked.Increment(ref all);
+                        var localAll = Interlocked.Add(ref all, batchSize);
                         if (localAll % 100000 == 0)
                         {
                             var elapsed = sw2.Elapsed;
@@ -124,7 +132,7 @@ namespace EventStore.TestClient.Commands
                                               succ, fail,
                                               wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
                         }
-                        if (localAll == requestsCnt)
+                        if (localAll >= requestsCnt)
                         {
                             context.Success();
                             doneEvent.Set();
@@ -137,18 +145,20 @@ namespace EventStore.TestClient.Commands
                 {
                     for (int j = 0; j < count; ++j)
                     {
+
+                       var events = new TcpClientMessageDto.NewEvent[batchSize];
+                       for(int q=0;q<batchSize;q++) {
+                            events[q] = new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                            "TakeSomeSpaceEvent",
+                                            1,0,
+                                            Common.Utils.Helper.UTF8NoBom.GetBytes("{ \"DATA\" : \"" + new string('*', size) + "\"}"),
+                                            Common.Utils.Helper.UTF8NoBom.GetBytes("{ \"METADATA\" : \"" + new string('$', 100) + "\"}"));
+                        }
                         var corrid = Guid.NewGuid();
                         var write = new TcpClientMessageDto.WriteEvents(
                             streams[rnd.Next(streamsCnt)],
                             ExpectedVersion.Any,
-                            new[]
-                            {
-                                new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
-                                                                 "TakeSomeSpaceEvent",
-                                                                 1,0,
-                                                                 Common.Utils.Helper.UTF8NoBom.GetBytes("{ \"DATA\" : \"" + new string('*', size) + "\"}"),
-                                                                 Common.Utils.Helper.UTF8NoBom.GetBytes("{ \"METADATA\" : \"" + new string('$', 100) + "\"}"))
-                            },
+                            events,
                             false);
                         var package = new TcpPackage(TcpCommand.WriteEvents, corrid, write.Serialize());
                         _monitor.StartOperation(corrid);

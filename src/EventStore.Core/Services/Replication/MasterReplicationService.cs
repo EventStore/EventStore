@@ -31,8 +31,8 @@ namespace EventStore.Core.Services.Replication
         public const int CloneThreshold = 1024;
         public const int SlaveLagThreshold = 256 * 1024;
         public const int LagOccurencesThreshold = 2;
-        public const int BulkSize = 1024;
-        public const int ReplicaSendWindow = 8*1024*1024;
+        public const int BulkSize = 8192;
+        public const int ReplicaSendWindow = 16*1024*1024;
         public const int ReplicaAckWindow = 512*1024;
         public static readonly TimeSpan RoleAssignmentsInterval = TimeSpan.FromMilliseconds(1000);
         public static readonly TimeSpan NoQuorumTimeout = TimeSpan.FromMilliseconds(3000);
