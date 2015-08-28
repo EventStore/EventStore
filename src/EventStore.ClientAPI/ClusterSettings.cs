@@ -12,6 +12,7 @@ namespace EventStore.ClientAPI
         /// Creates a new set of <see cref="ClusterSettings"/>
         /// </summary>
         /// <returns>A <see cref="ClusterSettingsBuilder"/> that can be used to build up a <see cref="ClusterSettings"/></returns>
+        [Obsolete("Use ConnectionSettings and/or Connection Strings instead.")]
         public static ClusterSettingsBuilder Create()
         {
             return new ClusterSettingsBuilder();

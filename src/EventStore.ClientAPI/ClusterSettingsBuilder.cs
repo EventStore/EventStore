@@ -1,4 +1,5 @@
-﻿namespace EventStore.ClientAPI
+﻿using System;
+namespace EventStore.ClientAPI
 {
     /// <summary>
     /// Builder used for creating instances of ClusterSettings.
@@ -9,6 +10,7 @@
         /// Sets the client to discover nodes using a DNS name and a well-known port.
         /// </summary>
         /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        [Obsolete("Use ConnectionSettings and/or Connection Strings instead.")]
         public DnsClusterSettingsBuilder DiscoverClusterViaDns()
         {
             return new DnsClusterSettingsBuilder();
@@ -19,6 +21,7 @@
         /// one or more of the nodes.
         /// </summary>
         /// <returns></returns>
+        [Obsolete("Use ConnectionSettings and/or Connection Strings instead.")]
         public GossipSeedClusterSettingsBuilder DiscoverClusterViaGossipSeeds()
         {
             return new GossipSeedClusterSettingsBuilder();
