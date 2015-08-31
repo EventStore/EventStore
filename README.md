@@ -33,7 +33,7 @@ From a command prompt:
 
 Optional parameters (Specified using `-ParameterName value`)
 
-- `-Platform` - `x64` (default) or `x86`
+- `-Platform` - x64
 - `-Configuration` - `release` (default) or `debug`
 - `-Version` - the semantic version number to give to the release. Defaults to version `0.0.0.0` which should be used for all non-released builds.
 - `-SpecificVisualStudioVersion` - `2010`, `2012`, `2013`, `Windows7.1SDK`. Default is to use whichever version is installed - this only needs to be overriden if you have multiple versions installed.
@@ -64,5 +64,13 @@ current commit hash on each build and then revert it.
 
 - `target` is one of `quick`, `incremental` or `full` (see above)
 - `version` is the semantic version to apply
-- `platform` - either x86 or x64 (defaults to x64)
+- `platform` - always x64
 - `configuration` - either debug or release (defaults to release)
+
+On OS X you should use 
+
+```bash
+./build.sh <target> <version> x64 <configuration> no-werror
+```
+
+To work around warnings that have turned errors.
