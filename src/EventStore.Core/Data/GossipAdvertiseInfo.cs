@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
+﻿using System.Net;
 
 namespace EventStore.Core.Data
 {
@@ -21,8 +17,14 @@ namespace EventStore.Core.Data
             InternalTcp = internalTcp;
             InternalSecureTcp = internalSecureTcp;
             ExternalTcp = externalTcp;
+            ExternalSecureTcp = externalSecureTcp;
             InternalHttp = internalHttp;
             ExternalHttp = externalHttp;
+        }
+        public override string ToString()
+        {
+            return string.Format("IntTcp: {0}, IntSecureTcp: {1}\nExtTcp: {2}, ExtSecureTcp: {3}\nIntHttp: {4}, ExtHttp: {5}", 
+                    InternalTcp, InternalSecureTcp, ExternalTcp, ExternalSecureTcp, InternalHttp, ExternalHttp);
         }
     }
 }
