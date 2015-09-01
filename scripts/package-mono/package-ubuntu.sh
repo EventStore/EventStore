@@ -107,7 +107,7 @@ cc -o eventstored \
 	clusternode.c \
 	`pkg-config --libs-only-L monosgen-2` \
 	-Wl,-Bstatic -lmonosgen-2.0 \
-	-Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` \
+	-Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //"` \
 	clusternode.a
 
 cp -r clusternode-web $PACKAGEDIRECTORY/
@@ -151,7 +151,7 @@ cc -o testclient \
 	testclient.c \
 	`pkg-config --libs-only-L monosgen-2` \
 	-Wl,-Bstatic -lmonosgen-2.0 \
-	-Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmono-2.0 //"` \
+	-Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //"` \
 	testclient.a
 
 cp testclient $PACKAGEDIRECTORY/
