@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -258,12 +258,9 @@
     <Compile Include="Services\Transport\Http\Controllers\InfoController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\PersistentSubscriptionController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\RelLink.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\UserDataHttpFormated.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\UserDetailsResultHttpFormatted.cs" />
     <Compile Include="Services\Transport\Http\Controllers\UsersController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\AllUserDetailsResultHttpFormatted.cs" />
     <Compile Include="Services\Transport\Http\IncomingHttpRequestAuthenticationManager.cs" />
     <Compile Include="Services\Transport\Http\AuthenticatedHttpRequestProcessor.cs" />
     <Compile Include="Services\Transport\Http\IHttpService.cs" />

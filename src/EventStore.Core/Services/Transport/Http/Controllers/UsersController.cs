@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
 
             var envelope = CreateSendToHttpWithConversionEnvelope(http, 
-                (UserManagementMessage.AllUserDetailsResult msg) => new AllUserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
+                (UserManagementMessage.AllUserDetailsResult msg) => new UserManagementMessage.AllUserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
 
             var message = new UserManagementMessage.GetAll(envelope, http.User);
             Publish(message);
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
 
             var envelope = CreateSendToHttpWithConversionEnvelope(http,
-                (UserManagementMessage.UserDetailsResult msg) => new UserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
+                (UserManagementMessage.UserDetailsResult msg) => new UserManagementMessage.UserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
 
             var login = match.BoundVariables["login"];
             var message = new UserManagementMessage.Get(envelope, http.User, login);
@@ -187,14 +187,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 _networkSendQueue, http, formatter ?? AutoFormatter, configurator ?? AutoConfigurator, null);
         }
 
-        private SendToHttpWithConversionEnvelope<T,R> CreateSendToHttpWithConversionEnvelope<T,R>(HttpEntityManager http, Func<T,R> formatter) where T : Message
+        private SendToHttpWithConversionEnvelope<T, R> CreateSendToHttpWithConversionEnvelope<T, R>(
+            HttpEntityManager http, Func<T, R> formatter)
+            where T : UserManagementMessage.ResponseMessage
+            where R: UserManagementMessage.ResponseMessage
         {
-            return new SendToHttpWithConversionEnvelope<T, R>( _networkSendQueue,
-                                                               http,
-                                                               (codec, msg) => codec.To(msg),
-                                                               (codec, msg) => Configure.Ok(codec.ContentType, codec.Encoding, null, null, false),
-                                                               formatter);
-        } 
+            return new SendToHttpWithConversionEnvelope<T, R>(_networkSendQueue,
+                http,
+                (codec, msg) => codec.To(msg),
+                (codec, transformed) => transformed.Success
+                    ? new ResponseConfiguration(HttpStatusCode.OK, codec.ContentType, codec.Encoding)
+                    : new ResponseConfiguration(
+                        ErrorToHttpStatusCode(transformed.Error), codec.ContentType, codec.Encoding),
+                formatter);
+        }
 
         private ResponseConfiguration AutoConfigurator<T>(ICodec codec, T result)
             where T : UserManagementMessage.ResponseMessage
