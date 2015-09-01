@@ -74,12 +74,16 @@ function checkParams() {
         getSystemInformation
         CURRENT_DISTRO="$ES_DISTRO-$ES_DISTRO_VERSION"
     else
-        if [[ ! -d "$BASEDIR/src/libs/x64/$platform_override" ]]; then
-            echo "No directory src/libs/x64/$platform_override is found. Did you build libjs1 for this distribution/version?"
-            exit 1
-        fi
-        #TODO: Check library exists
         CURRENT_DISTRO=$platform_override
+    fi
+    LIBJS1EXT="so"
+    if [ "$ES_DISTRO" == "osx" ]; then
+        LIBJS1EXT="dylib"
+    fi
+    LIBJS1PATH="$BASE_DIR/src/libs/x64/$CURRENT_DISTRO/libjs1.$LIBJS1EXT"
+    if [ ! -f $LIBJS1PATH ]; then
+        echo "$LIBJS1PATH does not exist. Did you build libjs1 for this distribution/version?"
+        exit 1
     fi
 }
 
