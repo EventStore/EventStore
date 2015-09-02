@@ -146,7 +146,6 @@ namespace EventStore.ClientAPI
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
-        [Obsolete("Use Create with connectionstring or a uri instead")]
         public static IEventStoreConnection Create(IPEndPoint tcpEndPoint, string connectionName = null)
         {
             return Create(ConnectionSettings.Default, tcpEndPoint, connectionName);
@@ -159,7 +158,6 @@ namespace EventStore.ClientAPI
         /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
-        [Obsolete("Use Create with connectionstring or a uri instead")]
         public static IEventStoreConnection Create(ConnectionSettings connectionSettings, IPEndPoint tcpEndPoint, string connectionName = null)
         {
             Ensure.NotNull(connectionSettings, "settings");
@@ -175,7 +173,6 @@ namespace EventStore.ClientAPI
         /// <param name="clusterSettings">The <see cref="ClusterSettings"/> that determine cluster behavior.</param>
         /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
-        [Obsolete("Use Create with connectionstring or a uri instead")]
         public static IEventStoreConnection Create(ConnectionSettings connectionSettings, ClusterSettings clusterSettings, string connectionName = null)
         {
             Ensure.NotNull(connectionSettings, "connectionSettings");
