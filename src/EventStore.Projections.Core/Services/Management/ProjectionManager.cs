@@ -587,7 +587,7 @@ namespace EventStore.Projections.Core.Services.Management
         public static EventStore.Core.Data.ResolvedEvent ResolveState(IGrouping<string, EventStore.Core.Data.ResolvedEvent> events)
         {
             var eventToReturn = events.OrderByDescending(x => x.Event.TimeStamp).First();
-            return eventToReturn.Event.EventType == "$ProjectionCreated" ? eventToReturn : new EventStore.Core.Data.ResolvedEvent(null);
+            return eventToReturn.Event.EventType == "$ProjectionCreated" ? eventToReturn : EventStore.Core.Data.ResolvedEvent.EmptyEvent;
         }
 
         private void LoadProjectionListCompleted(

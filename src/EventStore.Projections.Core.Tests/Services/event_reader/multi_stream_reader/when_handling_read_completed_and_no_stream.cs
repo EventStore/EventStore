@@ -48,16 +48,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
-                            new ResolvedEvent(
+                            ResolvedEvent.ForUnresolvedEvent(
                         new EventRecord(
                             1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type1", new byte[] {1}, new byte[] {2}), null),
-                            new ResolvedEvent(
+                            "event_type1", new byte[] {1}, new byte[] {2})),
+                            ResolvedEvent.ForUnresolvedEvent(
                         new EventRecord(
                             2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type2", new byte[] {3}, new byte[] {4}), null)
+                            "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
@@ -139,11 +139,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
-                            new ResolvedEvent(
+                            ResolvedEvent.ForUnresolvedEvent(
                         new EventRecord(
                             3, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type", new byte[0], new byte[0]), null)
+                            "event_type", new byte[0], new byte[0]))
                         }, null, false, "", 4, 3, true, 300));
         }
     }

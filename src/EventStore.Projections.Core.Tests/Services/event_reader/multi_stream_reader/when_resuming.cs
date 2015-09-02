@@ -79,12 +79,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
-                            new ResolvedEvent(
+                            ResolvedEvent.ForUnresolvedEvent(
                         new EventRecord(
                             1, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "a", ExpectedVersion.Any,
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type", new byte[0], new byte[0]))
+                            "event_type", new byte[0], new byte[0]), 0)
                         }, null, false, "", 2, 4, false, 100));
         }
     }

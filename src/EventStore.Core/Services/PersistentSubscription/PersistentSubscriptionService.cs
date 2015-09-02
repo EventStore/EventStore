@@ -469,7 +469,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             for (int i = 0, n = subscriptions.Count; i < n; i++)
             {
                 var subscr = subscriptions[i];
-                var pair = new ResolvedEvent(evnt, null, commitPosition);
+                var pair = ResolvedEvent.ForUnresolvedEvent(evnt, commitPosition);
                 if (subscr.ResolveLinkTos)
                     pair = ResolveLinkToEvent(evnt, commitPosition); //TODO this can be cached
                 subscr.NotifyLiveSubscriptionMessage(pair);
@@ -488,14 +488,18 @@ namespace EventStore.Core.Services.PersistentSubscription
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
                     if (res.Result == ReadEventResult.Success)
-                        return new ResolvedEvent(res.Record, eventRecord, commitPosition);
+                        return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
+
+                    return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
+
+                return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
             }
-            return new ResolvedEvent(eventRecord, null, commitPosition);
+            return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
         }
 
         public void Handle(ClientMessage.PersistentSubscriptionAckEvents message)

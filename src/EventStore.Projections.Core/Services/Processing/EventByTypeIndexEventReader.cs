@@ -624,8 +624,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 { // ignore data just update positions
                                     _reader.UpdateNextStreamPosition(link.EventStreamId, link.EventNumber + 1);
                                     // recover unresolved link event
-                                    var unresolvedLinkEvent = new EventStore.Core.Data.ResolvedEvent(
-                                        link, originalTfPosition.CommitPosition);
+                                    var unresolvedLinkEvent = EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(link, originalTfPosition.CommitPosition);
                                     DeliverEventRetrievedFromTf(
                                         unresolvedLinkEvent, 100.0f*link.LogPosition/message.TfLastCommitPosition,
                                         originalTfPosition);

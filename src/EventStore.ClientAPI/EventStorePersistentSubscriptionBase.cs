@@ -178,7 +178,7 @@ namespace EventStore.ClientAPI
                 ResolvedEvent e;
                 while (_queue.TryDequeue(out e))
                 {
-                    if (e.Event == null) // drop subscription artificial ResolvedEvent
+                    if (e.Equals(DropSubscriptionEvent)) // drop subscription artificial ResolvedEvent
                     {
                         if (_dropData == null) throw new Exception("Drop reason not specified.");
                         DropSubscription(_dropData.Reason, _dropData.Error);

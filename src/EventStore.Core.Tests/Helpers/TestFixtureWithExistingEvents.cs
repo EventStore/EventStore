@@ -336,14 +336,14 @@ namespace EventStore.Core.Tests.Helpers
                 var parts = Helper.UTF8NoBom.GetString(x.Data).Split(_linkToSeparator, 2);
                 List<EventRecord> list;
                 if (_deletedStreams.Contains(parts[1]) || !_streams.TryGetValue(parts[1], out list))
-                    return new ResolvedEvent(x, null);
+                    return ResolvedEvent.ForFailedResolvedLink(x, ReadEventResult.StreamDeleted);
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
 
-                return new ResolvedEvent(target, x);
+                return ResolvedEvent.ForResolvedLink(target, x);
             }
             else
-                return new ResolvedEvent(x, null);
+                return ResolvedEvent.ForUnresolvedEvent(x);
         }
 
         private ResolvedEvent BuildEvent(EventRecord x, bool resolveLinks, long commitPosition)
@@ -355,10 +355,10 @@ namespace EventStore.Core.Tests.Helpers
                 var eventNumber = int.Parse(parts[0]);
                 var target = list[eventNumber];
 
-                return new ResolvedEvent(target, x, commitPosition);
+                return ResolvedEvent.ForResolvedLink(target, x, commitPosition);
             }
             else
-                return new ResolvedEvent(x, commitPosition);
+                return ResolvedEvent.ForUnresolvedEvent(x, commitPosition);
         }
 
         public void Handle(ClientMessage.WriteEvents message)

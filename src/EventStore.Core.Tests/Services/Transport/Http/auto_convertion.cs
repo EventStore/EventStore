@@ -503,7 +503,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         private ResolvedEvent GenerateResolvedEvent(byte[] data, byte[] metadata)
         {
-            return new ResolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, 
+            return ResolvedEvent.ForUnresolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0, 
                                      DateTime.MinValue, PrepareFlags.IsJson, "type", data, metadata));
         }
     }
@@ -625,7 +625,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
         private ResolvedEvent GenerateResolvedEvent(byte[] data, byte[] metadata)
         {
-            return new ResolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0,
+            return ResolvedEvent.ForUnresolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "stream", 0,
                                      DateTime.MinValue, PrepareFlags.IsJson, "type", data, metadata));
         }
     }
