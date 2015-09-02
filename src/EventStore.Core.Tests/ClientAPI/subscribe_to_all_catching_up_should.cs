@@ -150,6 +150,43 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
+
+        [Test, Category("LongRunning")]
+        public void read_all_existing_events_when_there_is_hard_deleted_link_to()
+        {
+            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            {
+                store.ConnectAsync().Wait();
+                var appeared = new AutoResetEvent(false);
+                var stream = Guid.NewGuid().ToString();
+                store.AppendToStreamAsync(stream, -1,
+                    new EventData(Guid.NewGuid(), "et-", false, new byte[3], null)).Wait();
+                store.AppendToStreamAsync("linktostream", -1,
+                    new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false, Encoding.UTF8.GetBytes("0@" + stream), null)).Wait();
+                store.DeleteStreamAsync(stream, ExpectedVersion.Any, true).Wait();
+                var subscription = store.SubscribeToAllFrom(Position.Start,
+                                                            true,
+                                                            (x, y) =>
+                                                            {
+                                                                Console.WriteLine(y.OriginalStreamId);
+                                                                if(y.Event == null && y.OriginalStreamId == "linktostream")
+                                                                    appeared.Set();
+                                                            },
+                                                            _ => Log.Info("Live processing started."),
+                                                            (x,y,z) => Log.Info("dropped"),
+                                                            DefaultData.AdminCredentials);
+                if (!appeared.WaitOne(TimeSpan.FromSeconds(10)))
+                {
+                    Assert.Fail("timed out waiting on subscription");
+                }
+                subscription.Stop();
+                Assert.Pass();
+            }
+        }
+
+
+
+
         [Test, Category("LongRunning")]
         public void filter_events_and_keep_listening_to_new_ones()
         {
