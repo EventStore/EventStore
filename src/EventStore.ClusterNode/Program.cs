@@ -180,74 +180,61 @@ namespace EventStore.ClusterNode
             var extHttpPrefixes = options.ExtHttpPrefixes.IsNotEmpty() ? options.ExtHttpPrefixes : new string[0];
             var quorumSize = GetQuorumSize(options.ClusterSize);
 
+            GossipAdvertiseInfo gossipAdvertiseInfo;
 
-            GossipAdvertiseInfo gossipAdvertiseInfo = null;
+            IPAddress intIpAddressToAdvertise = options.IntIpAdvertiseAs ?? options.IntIp;
+            IPAddress extIpAddressToAdvertise = options.ExtIpAdvertiseAs ?? options.ExtIp;
 
             var additionalIntHttpPrefixes = new List<string>(intHttpPrefixes);
             var additionalExtHttpPrefixes = new List<string>(extHttpPrefixes);
+
             if ((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                 options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
             {
-                IPAddress nonLoopbackAddress = null; 
-                foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
-                    {
-                        if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                        {
-                            if (nonLoopbackAddress == null && !IPAddress.IsLoopback(address.Address))
-                            {
-                                nonLoopbackAddress = address.Address;
-                            }
-                            additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, intHttp.Port));
-                            additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", address.Address, extHttp.Port));
-                        }
-                    }
+                IPAddress nonLoopbackAddress = GetNonLoopbackAddress(); 
+                IPAddress addressToAdvertise = options.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
+
+                if(options.IntIp.Equals(IPAddress.Parse("0.0.0.0"))){
+                    intIpAddressToAdvertise = options.IntIpAdvertiseAs ?? addressToAdvertise;
+                    additionalIntHttpPrefixes.Add(String.Format("http://*:{0}/", intHttp.Port));
                 }
-                if (gossipAdvertiseInfo == null)
-                {
-                    IPAddress addressToGossip = options.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
-                    gossipAdvertiseInfo = new GossipAdvertiseInfo(new IPEndPoint(addressToGossip, options.IntTcpPort),
-                                                                  options.IntSecureTcpPort > 0 ? new IPEndPoint(addressToGossip, options.IntSecureTcpPort) : null,
-                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToGossip, options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
-                                                                  options.ExtSecureTcpPort > 0 ? new IPEndPoint(addressToGossip, options.ExtSecureTcpPort) : null,
-                                                                  new IPEndPoint(addressToGossip, options.IntHttpPort),
-                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToGossip, options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
+                if(options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))){
+                    extIpAddressToAdvertise = options.ExtIpAdvertiseAs ?? addressToAdvertise;
+                    additionalExtHttpPrefixes.Add(String.Format("http://*:{0}/", extHttp.Port));
                 }
             }
             else if (options.AddInterfacePrefixes)
             {
                 additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.IntHttpPort));
+                if(options.IntIp.Equals(IPAddress.Loopback)){
+                    additionalIntHttpPrefixes.Add(String.Format("http://localhost:{0}/", options.IntHttpPort));
+                }
                 additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
-            }
-            if (!intHttpPrefixes.Contains(x => x.Contains("localhost")))
-            {
-                if (options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
-                   Equals(intHttp.Address, IPAddress.Loopback))
-                {
-                    additionalIntHttpPrefixes.Add(string.Format("http://localhost:{0}/", intHttp.Port));
+                if(options.ExtIp.Equals(IPAddress.Loopback)){
+                    additionalExtHttpPrefixes.Add(String.Format("http://localhost:{0}/", options.ExtHttpPort));
                 }
             }
-            if (!extHttpPrefixes.Contains(x => x.Contains("localhost")))
-            {
-                if (options.ExtIp.Equals(IPAddress.Parse("0.0.0.0")) ||
-                   Equals(extHttp.Address, IPAddress.Loopback))
-                {
-                    additionalExtHttpPrefixes.Add(string.Format("http://localhost:{0}/", extHttp.Port));
-                }
-            }
+
             intHttpPrefixes = additionalIntHttpPrefixes.ToArray();
             extHttpPrefixes = additionalExtHttpPrefixes.ToArray();
 
-            if (gossipAdvertiseInfo == null)
-            {
-                gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcp,
-                                                              intSecTcp,
-                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp, options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
-                                                              extSecTcp,
-                                                              intHttp,
-                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp, options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
-            }
+            var intTcpPort = options.IntTcpPortAdvertiseAs > 0 ? options.IntTcpPortAdvertiseAs : options.IntTcpPort;
+            var intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
+            var intSecureTcpEndPoint = options.IntSecureTcpPort > 0 ? new IPEndPoint(intIpAddressToAdvertise, intTcpPort) : null;
+
+            var extTcpPort = options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort;
+            var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
+            var extSecureTcpEndPoint = options.ExtSecureTcpPort > 0 ? new IPEndPoint(extIpAddressToAdvertise, extTcpPort) : null;
+            
+            var intHttpPort = options.IntHttpPortAdvertiseAs > 0 ? options.IntHttpPortAdvertiseAs : options.IntHttpPort;
+            var extHttpPort = options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort;
+
+            var intHttpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intHttpPort);
+            var extHttpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extHttpPort);
+            
+            gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
+                                                          extTcpEndPoint, extSecureTcpEndPoint,
+                                                          intHttpEndPoint, extHttpEndPoint);
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
@@ -285,6 +272,23 @@ namespace EventStore.ClusterNode
                     options.DevelopmentMode,
                     options.EnableHistograms,
                     options.IndexCacheDepth);
+        }
+
+        private static IPAddress GetNonLoopbackAddress(){
+            foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
+                {
+                    if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        if (!IPAddress.IsLoopback(address.Address))
+                        {
+                            return address.Address;
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
