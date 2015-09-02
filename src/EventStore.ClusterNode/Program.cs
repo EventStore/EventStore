@@ -294,6 +294,8 @@ namespace EventStore.ClusterNode
             var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var pluginsPath = Path.Combine(currentPath ?? String.Empty, "plugins");
 
+            catalog.Catalogs.Add(new AssemblyCatalog(typeof(Program).Assembly));
+
             if (Directory.Exists(pluginsPath))
             {
                 Log.Info("Plugins path: {0}", pluginsPath);
