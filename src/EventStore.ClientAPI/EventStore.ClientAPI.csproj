@@ -69,7 +69,6 @@
     <Compile Include="Internal\Consts.cs" />
     <Compile Include="Internal\Empty.cs" />
     <Compile Include="Internal\EventStoreNodeConnection.cs" />
-    <Compile Include="Internal\GossipSeedEndPointDiscoverer.cs" />
     <Compile Include="Internal\IEventStoreConnectionLogicHandler.cs" />
     <Compile Include="Internal\NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
