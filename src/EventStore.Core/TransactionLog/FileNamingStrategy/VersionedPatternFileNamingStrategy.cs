@@ -37,7 +37,7 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy
                 return GetFilenameFor(index, 0);
             int lastVersion;
             if (!int.TryParse(allVersions[0].Substring(allVersions[0].LastIndexOf('.') + 1), out lastVersion))
-                throw new Exception(string.Format("Couldn't determine version from filename '{0}'.", allVersions[0]));
+                throw new Exception(string.Format("Could not determine version from filename '{0}'.", allVersions[0]));
             return GetFilenameFor(index, lastVersion + 1);
         }
 

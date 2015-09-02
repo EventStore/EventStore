@@ -5,7 +5,7 @@ namespace EventStore.ClientAPI.Exceptions
 {
     /// <summary>
     /// Base type for exceptions thrown by an <see cref="IEventStoreConnection"/>,
-    /// thrown in circumstances which don't have a specific derived exception.
+    /// thrown in circumstances which do not have a specific derived exception.
     /// </summary>
     public class EventStoreConnectionException : Exception
     {

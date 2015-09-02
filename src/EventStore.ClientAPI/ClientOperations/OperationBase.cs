@@ -131,7 +131,7 @@ namespace EventStore.ClientAPI.ClientOperations
         public InspectionResult InspectUnexpectedCommand(TcpPackage package, TcpCommand expectedCommand)
         {
             if (package.Command == expectedCommand)
-                throw new ArgumentException(string.Format("Command shouldn't be {0}.", package.Command));
+                throw new ArgumentException(string.Format("Command should not be {0}.", package.Command));
 
             Log.Error("Unexpected TcpCommand received.\n"
                       + "Expected: {0}, Actual: {1}, Flags: {2}, CorrelationId: {3}\n"

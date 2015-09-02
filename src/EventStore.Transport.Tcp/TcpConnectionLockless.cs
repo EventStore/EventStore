@@ -222,7 +222,7 @@ namespace EventStore.Transport.Tcp
                 throw new ArgumentNullException("callback");
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
-                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
             TryDequeueReceivedData();
         }
 

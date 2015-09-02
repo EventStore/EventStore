@@ -17,6 +17,10 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Sets gossip seed endpoints for the client.
         /// 
+        /// Note that this should be the external HTTP endpoint of the server, as it is required
+        /// for the client to exchange gossip with the server. The standard port which should be
+        /// used here is 2113.
+        /// 
         /// If the server requires a specific Host header to be sent as part of the gossip
         /// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
         /// </summary>
@@ -56,7 +60,7 @@ namespace EventStore.ClientAPI
         public GossipSeedClusterSettingsBuilder SetMaxDiscoverAttempts(int maxDiscoverAttempts)
         {
             if (maxDiscoverAttempts <= 0)
-                throw new ArgumentOutOfRangeException("maxDiscoverAttempts", string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [-1, infinity].", maxDiscoverAttempts));
+                throw new ArgumentOutOfRangeException("maxDiscoverAttempts", string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [1, infinity].", maxDiscoverAttempts));
             _maxDiscoverAttempts = maxDiscoverAttempts;
             return this;
         }
