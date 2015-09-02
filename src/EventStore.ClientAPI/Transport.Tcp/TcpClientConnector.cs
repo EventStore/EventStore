@@ -92,6 +92,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
             {
                 HandleBadConnect(socketArgs);
             }
+            catch (InvalidOperationException)
+            {
+                HandleBadConnect(socketArgs);
+            }
         }
 
         private void ConnectCompleted(object sender, SocketAsyncEventArgs e)
