@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription
@@ -32,14 +33,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             for (int i = 0; i < Clients.Count; i++)
             {
-                if(CurrentClient.Push(ev))
+                if (Clients.Peek().Push(ev))
                 {
                     return ConsumerPushResult.Sent;
                 }
-                else
-                {
-                    MoveToNextClient();
-                }
+                var c = Clients.Dequeue();
+                Clients.Enqueue(c);
             }
 
             return ConsumerPushResult.NoMoreCapacity;
@@ -48,41 +47,31 @@ namespace EventStore.Core.Services.PersistentSubscription
 
     class RoundRobinPersistentSubscriptionConsumerStrategy : IPersistentSubscriptionConsumerStrategy
     {
-        protected readonly IList<PersistentSubscriptionClient> Clients = new List<PersistentSubscriptionClient>();
-        private int _currentClientIndex;
+        protected readonly Queue<PersistentSubscriptionClient> Clients = new Queue<PersistentSubscriptionClient>();
 
         public virtual string Name
         {
             get { return SystemConsumerStrategies.RoundRobin; }
         }
 
-        public PersistentSubscriptionClient CurrentClient
-        {
-            get { return Clients[_currentClientIndex]; }
-        }
-
         public void ClientAdded(PersistentSubscriptionClient client)
         {
-            Clients.Add(client);
+            Clients.Enqueue(client);
         }
 
         public void ClientRemoved(PersistentSubscriptionClient client)
         {
-            int indexOf = Clients.IndexOf(client);
-            if (indexOf == -1)
+            if (!Clients.Contains(client))
             {
                 throw new InvalidOperationException("Only added clients can be removed.");
             }
-
-            Clients.RemoveAt(indexOf);
-            if (_currentClientIndex > indexOf)
+            var temp = Clients.ToList();
+            var indexOf = temp.IndexOf(client);
+            temp.RemoveAt(indexOf);
+            Clients.Clear();
+            foreach (var persistentSubscriptionClient in temp)
             {
-                _currentClientIndex--;
-            }
-
-            if (_currentClientIndex >= Clients.Count)
-            {
-                _currentClientIndex = 0;
+                Clients.Enqueue(persistentSubscriptionClient);
             }
         }
 
@@ -90,22 +79,15 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             for (int i = 0; i < Clients.Count; i++)
             {
-                bool pushed = Clients[_currentClientIndex].Push(ev);
-
-                MoveToNextClient();
-
+                var c = Clients.Dequeue();
+                var pushed = c.Push(ev);
+                Clients.Enqueue(c);
                 if (pushed)
                 {
                     return ConsumerPushResult.Sent;
                 }
             }
-
             return ConsumerPushResult.NoMoreCapacity;
-        }
-
-        protected void MoveToNextClient()
-        {
-            _currentClientIndex = (_currentClientIndex + 1) % Clients.Count;
         }
     }
 
