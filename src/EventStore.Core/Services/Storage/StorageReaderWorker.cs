@@ -27,10 +27,11 @@ namespace EventStore.Core.Services.Storage
         private readonly IPublisher _publisher;
         private readonly IReadIndex _readIndex;
         private readonly ICheckpoint _writerCheckpoint;
+        private static readonly char[] LinkToSeparator = {'@'};
+        private const int MaxPageSize = 4096;
         private const string _readerReadHistogram = "reader-readevent";
         private const string _readerStreamRangeHistogram = "reader-streamrange";
         private const string _readerAllRangeHistogram = "reader-allrange";
-        private static readonly char[] _linkToSeparator = new char[]{'@'};
 
         public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, ICheckpoint writerCheckpoint)
         {
@@ -167,8 +168,15 @@ namespace EventStore.Core.Services.Storage
                 var lastCommitPosition = _readIndex.LastCommitPosition;
                 try
                 {
-                    if (msg.ValidationStreamVersion.HasValue && _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
-                        return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition, msg.ValidationStreamVersion.Value);
+                    if (msg.MaxCount > MaxPageSize)
+                    {
+                        throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
+                            MaxPageSize));
+                    }
+                    if (msg.ValidationStreamVersion.HasValue &&
+                        _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
+                        return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition,
+                            msg.ValidationStreamVersion.Value);
 
                     var access = _readIndex.CheckStreamAccess(msg.EventStreamId, StreamAccessType.Read, msg.User);
                     if (!access.Granted)
@@ -200,14 +208,22 @@ namespace EventStore.Core.Services.Storage
                 var lastCommitPosition = _readIndex.LastCommitPosition;
                 try
                 {
-                    if (msg.ValidationStreamVersion.HasValue && _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
-                        return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition, msg.ValidationStreamVersion.Value);
+                    if (msg.MaxCount > MaxPageSize)
+                    {
+                        throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
+                            MaxPageSize));
+                    }
+                    if (msg.ValidationStreamVersion.HasValue &&
+                        _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
+                        return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition,
+                            msg.ValidationStreamVersion.Value);
 
                     var access = _readIndex.CheckStreamAccess(msg.EventStreamId, StreamAccessType.Read, msg.User);
                     if (!access.Granted)
                         return NoData(msg, ReadStreamResult.AccessDenied, lastCommitPosition);
 
-                    var result = _readIndex.ReadStreamEventsBackward(msg.EventStreamId, msg.FromEventNumber, msg.MaxCount);
+                    var result = _readIndex.ReadStreamEventsBackward(msg.EventStreamId, msg.FromEventNumber,
+                        msg.MaxCount);
                     CheckEventsOrder(msg, result);
                     var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
                     if (resolvedPairs == null)
@@ -234,6 +250,11 @@ namespace EventStore.Core.Services.Storage
                 var lastCommitPosition = _readIndex.LastCommitPosition;
                 try
                 {
+                    if (msg.MaxCount > MaxPageSize)
+                    {
+                        throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
+                            MaxPageSize));
+                    }
                     if (pos == TFPos.HeadOfTf)
                     {
                         var checkpoint = _writerCheckpoint.Read();
@@ -274,6 +295,12 @@ namespace EventStore.Core.Services.Storage
                 var lastCommitPosition = _readIndex.LastCommitPosition;
                 try
                 {
+                    if (msg.MaxCount > MaxPageSize)
+                    {
+                        throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
+                            MaxPageSize));
+                    }
+
                     if (pos == TFPos.HeadOfTf)
                     {
                         var checkpoint = _writerCheckpoint.Read();
@@ -402,7 +429,7 @@ namespace EventStore.Core.Services.Storage
             var resolved = new ResolvedEvent[records.Length];
             if (resolveLinks)
             {
-                for (int i = 0; i < records.Length; i++)
+                for (var i = 0; i < records.Length; i++)
                 {
                     var rec = ResolveLinkToEvent(records[i], user);
                     if (rec == null)
@@ -426,9 +453,9 @@ namespace EventStore.Core.Services.Storage
             {
                 try
                 {
-                    string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(_linkToSeparator, 2);
-                    int eventNumber = int.Parse(parts[0]);
-                    string streamId = parts[1];
+                    var parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(LinkToSeparator, 2);
+                    var eventNumber = int.Parse(parts[0]);
+                    var streamId = parts[1];
 
                     if (!_readIndex.CheckStreamAccess(streamId, StreamAccessType.Read, user).Granted)
                         return null;
@@ -453,7 +480,7 @@ namespace EventStore.Core.Services.Storage
             var result = new ResolvedEvent[records.Count];
             if (resolveLinks)
             {
-                for (int i = 0; i < result.Length; ++i)
+                for (var i = 0; i < result.Length; ++i)
                 {
                     var record = records[i];
                     var resolvedPair = ResolveLinkToEvent(record.Event, user);
@@ -466,7 +493,7 @@ namespace EventStore.Core.Services.Storage
             }
             else
             {
-                for (int i = 0; i < result.Length; ++i)
+                for (var i = 0; i < result.Length; ++i)
                 {
                     result[i] = new ResolvedEvent(
                         records[i].Event, null, records[i].CommitPosition, default(ReadEventResult));
