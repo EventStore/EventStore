@@ -72,6 +72,7 @@ namespace EventStore.Transport.Http.Codecs
 
         public string To<T>(T value)
         {
+            if (value == null) return "";
             try
             {
                 return JsonConvert.SerializeObject(value, Formatting, ToSettings);
