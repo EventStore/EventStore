@@ -115,10 +115,15 @@ namespace esquery
                 var completed = json["status"].Value<string>().StartsWith("Completed");   
                 var faultReason = json["stateReason"].Value<string>();
                 var streamurl = json["resultStreamUrl"];
+                var resulturl = json["resultUrl"];
                 var cancelurl = json["disableCommandUrl"];
-                Uri resulturi = null;
+                Uri resultstreamuri = null;
                 if(streamurl != null)
-                    resulturi = new Uri(streamurl.Value<string>());
+                    resultstreamuri = new Uri(streamurl.Value<string>());
+                Uri resulturi = null;
+                if (resulturl != null)
+                    resulturi = new Uri(resulturl.Value<string>());
+
                 Uri canceluri = null;
                 if(cancelurl != null)
                     canceluri = new Uri(cancelurl.Value<string>());
@@ -127,7 +132,9 @@ namespace esquery
                 return new QueryInformation() {
                     Faulted = faulted, 
                     FaultReason = faultReason, 
-                    ResultUri = resulturi, 
+                    IsStreamResult = streamurl != null,
+                    ResultStreamUrl = resultstreamuri,
+                    ResultUrl = resulturi, 
                     Progress=progress, 
                     Completed=completed,
                     CancelUri = canceluri
@@ -156,6 +163,21 @@ namespace esquery
                 var json = JObject.Parse(new StreamReader(response.GetResponseStream()).ReadToEnd());
                 var last = GetNamedLink(json, "last");
                 return last ?? GetNamedLink(json, "self");
+            }
+        }
+
+        private static string GetResult(Uri head, NetworkCredential credential)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(head);
+            request.Credentials = credential;
+            request.Accept = "application/json";
+
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {
+
+                var json = JObject.Parse(new StreamReader(response.GetResponseStream()).ReadToEnd());
+                Console.WriteLine("Result: \n\n" + json.ToString());
+                return json.ToString();
             }
         }
 
@@ -253,10 +275,20 @@ namespace esquery
                     Thread.Sleep(500);
                 }
                 Console.WriteLine("\rQuery Completed in: " + watch.Elapsed);
-                var last = GetLast(queryInformation.ResultUri, credential);
-                last = new Uri(last.OriginalString + "?embed=body");
-                var next = ReadResults(last, credential);
-                return new QueryResult() {Query = query};
+
+                if (queryInformation.IsStreamResult)
+                {
+                    var last = GetLast(queryInformation.ResultStreamUrl, credential);
+                    last = new Uri(last.OriginalString + "?embed=body");
+                    var next = ReadResults(last, credential);
+                    return new QueryResult() {Query = query};
+                }
+                else
+                {
+                    GetResult(queryInformation.ResultUrl, credential);
+                    return new QueryResult() { Query = query };
+                    
+                }
             }
             catch(Exception ex)
             {
@@ -380,9 +412,11 @@ namespace esquery
         public bool Faulted;
         public string FaultReason;
         public decimal Progress;
-        public Uri ResultUri;
         public bool Completed;
         public Uri CancelUri;
+        public bool IsStreamResult;
+        public Uri ResultUrl;
+        public Uri ResultStreamUrl;
     }
 
     class ErrorResult 
