@@ -206,13 +206,23 @@ namespace EventStore.ClusterNode
                 }
                 if (gossipAdvertiseInfo == null)
                 {
-                    IPAddress addressToGossip = options.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
-                    gossipAdvertiseInfo = new GossipAdvertiseInfo(new IPEndPoint(addressToGossip, options.IntTcpPort),
-                                                                  options.IntSecureTcpPort > 0 ? new IPEndPoint(addressToGossip, options.IntSecureTcpPort) : null,
-                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToGossip, options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
-                                                                  options.ExtSecureTcpPort > 0 ? new IPEndPoint(addressToGossip, options.ExtSecureTcpPort) : null,
-                                                                  new IPEndPoint(addressToGossip, options.IntHttpPort),
-                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToGossip, options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
+                    IPAddress addressToAdvertise = options.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
+                    gossipAdvertiseInfo = new GossipAdvertiseInfo(new IPEndPoint(options.IntIpAdvertiseAs ?? addressToAdvertise,
+                                                                      options.IntTcpPortAdvertiseAs > 0 ? 
+                                                                      options.IntTcpPortAdvertiseAs : options.IntTcpPort),
+                                                                  options.IntSecureTcpPort > 0 ? new IPEndPoint(addressToAdvertise,
+                                                                      options.IntSecureTcpPort) : null,
+                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToAdvertise,
+                                                                      options.ExtTcpPortAdvertiseAs > 0 ? 
+                                                                      options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
+                                                                  options.ExtSecureTcpPort > 0 ? new IPEndPoint(addressToAdvertise,
+                                                                      options.ExtSecureTcpPort) : null,
+                                                                  new IPEndPoint(options.IntIpAdvertiseAs ?? addressToAdvertise,
+                                                                      options.IntHttpPortAdvertiseAs > 0 ?
+                                                                      options.IntHttpPortAdvertiseAs : options.IntHttpPort),
+                                                                  new IPEndPoint(options.ExtIpAdvertiseAs ?? addressToAdvertise,
+                                                                      options.ExtHttpPortAdvertiseAs > 0 ?
+                                                                      options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
                 }
             }
             else if (options.AddInterfacePrefixes)
@@ -220,7 +230,7 @@ namespace EventStore.ClusterNode
                 additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.IntHttpPort));
                 additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
             }
-            if (!intHttpPrefixes.Contains(x => x.Contains("localhost")))
+            if (!intHttpPrefixes.Contains(x => x.Contains("localhost")) && options.AddInterfacePrefixes)
             {
                 if (options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                    Equals(intHttp.Address, IPAddress.Loopback))
@@ -228,7 +238,7 @@ namespace EventStore.ClusterNode
                     additionalIntHttpPrefixes.Add(string.Format("http://localhost:{0}/", intHttp.Port));
                 }
             }
-            if (!extHttpPrefixes.Contains(x => x.Contains("localhost")))
+            if (!extHttpPrefixes.Contains(x => x.Contains("localhost")) && options.AddInterfacePrefixes)
             {
                 if (options.ExtIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                    Equals(extHttp.Address, IPAddress.Loopback))
@@ -241,12 +251,20 @@ namespace EventStore.ClusterNode
 
             if (gossipAdvertiseInfo == null)
             {
-                gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcp,
+                gossipAdvertiseInfo = new GossipAdvertiseInfo(new IPEndPoint(options.IntIpAdvertiseAs ?? options.IntIp, 
+                                                                options.IntTcpPortAdvertiseAs > 0 ?
+                                                                options.IntTcpPortAdvertiseAs : options.IntTcpPort),
                                                               intSecTcp,
-                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp, options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
+                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp,
+                                                                  options.ExtTcpPortAdvertiseAs > 0 ?
+                                                                  options.ExtTcpPortAdvertiseAs : options.ExtTcpPort),
                                                               extSecTcp,
-                                                              intHttp,
-                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp, options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
+                                                              new IPEndPoint(options.IntIpAdvertiseAs ?? options.IntIp,
+                                                                  options.IntHttpPortAdvertiseAs >0 ?
+                                                                  options.IntHttpPortAdvertiseAs : options.IntHttpPort),
+                                                              new IPEndPoint(options.ExtIpAdvertiseAs ?? options.ExtIp,
+                                                                  options.ExtHttpPortAdvertiseAs > 0 ?
+                                                                  options.ExtHttpPortAdvertiseAs : options.ExtHttpPort));
             }
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;

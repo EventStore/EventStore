@@ -211,6 +211,15 @@ namespace EventStore.Core.Util
         public const string ExternalHttpPortAdvertiseAsDescr = "Advertise External Http Port As.";
         public static readonly int ExternalHttpPortAdvertiseAsDefault = 0;
 
+        public const string InternalIpAdvertiseAsDescr = "Advertise Internal Tcp Address As.";
+        public static readonly IPAddress InternalIpAdvertiseAsDefault = null;
+
+        public const string InternalTcpPortAdvertiseAsDescr = "Advertise Internal Tcp Port As.";
+        public static readonly int InternalTcpPortAdvertiseAsDefault = 0;
+
+        public const string InternalHttpPortAdvertiseAsDescr = "Advertise Internal Http Port As.";
+        public static readonly int InternalHttpPortAdvertiseAsDefault = 0;
+
 		public const string ClusterSizeDescr = "The number of nodes in the cluster.";
         public const int    ClusterSizeDefault = 1;
 

@@ -50,6 +50,13 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.ExternalHttpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
         public int ExtHttpPortAdvertiseAs { get; set; }
 
+        [ArgDescription(Opts.InternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
+        public IPAddress IntIpAdvertiseAs { get; set; }
+        [ArgDescription(Opts.InternalTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
+        public int IntTcpPortAdvertiseAs { get; set; }
+        [ArgDescription(Opts.InternalHttpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
+        public int IntHttpPortAdvertiseAs { get; set; }
+
         [ArgDescription(Opts.IntTcpHeartbeatTimeoutDescr, Opts.InterfacesGroup)]
         public int IntTcpHeartbeatTimeout { get; set; }
         [ArgDescription(Opts.ExtTcpHeartbeatTimeoutDescr, Opts.InterfacesGroup)]
@@ -226,6 +233,10 @@ namespace EventStore.ClusterNode
             ExtIpAdvertiseAs = Opts.ExternalIpAdvertiseAsDefault;
             ExtTcpPortAdvertiseAs = Opts.ExternalTcpPortAdvertiseAsDefault;
             ExtHttpPortAdvertiseAs = Opts.ExternalHttpPortAdvertiseAsDefault;
+
+            IntIpAdvertiseAs = Opts.InternalIpAdvertiseAsDefault;
+            IntTcpPortAdvertiseAs = Opts.InternalTcpPortAdvertiseAsDefault;
+            IntHttpPortAdvertiseAs = Opts.InternalHttpPortAdvertiseAsDefault;
 
             CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
             CertificateStoreName = Opts.CertificateStoreNameDefault;
