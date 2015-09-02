@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                         done.Set();
                     }), stream, 0, 100, false, false, null, null));
-                Assert.IsTrue(done.Wait(10000), "Read wasn't completed in time.");
+                Assert.IsTrue(done.Wait(10000), "Read was not completed in time.");
             }
         }
     }

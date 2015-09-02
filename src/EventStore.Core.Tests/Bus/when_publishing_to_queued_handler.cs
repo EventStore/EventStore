@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Bus
             base.TearDown();
         }
 
-        [Test, Ignore("We don't check each message for null for performance reasons.")]
+        [Test, Ignore("We do not check each message for null for performance reasons.")]
         public void null_message_should_throw()
         {
             Assert.Throws<ArgumentNullException>(() => Queue.Publish(null));

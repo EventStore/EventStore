@@ -98,7 +98,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly TimeSpan HeartbeatTimeout;
 
-                /// <summary>
+        /// <summary>
         /// The DNS name to use for discovering endpoints.
         /// </summary>
         public readonly string ClusterDns;

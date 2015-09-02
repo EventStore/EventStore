@@ -280,7 +280,7 @@ namespace EventStore.Core.Index
             }
             catch (FileBeingDeletedException exc)
             {
-                Log.ErrorException(exc, "Couldn't acquire chunk in TableIndex.ReadOffQueue. It is ok if node is shutting down.");
+                Log.ErrorException(exc, "Could not acquire chunk in TableIndex.ReadOffQueue. It is OK if node is shutting down.");
             }
             catch (Exception exc)
             {

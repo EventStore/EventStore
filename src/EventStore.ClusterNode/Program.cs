@@ -301,7 +301,7 @@ namespace EventStore.ClusterNode
             }
             else
             {
-                Log.Info("Can't find plugins path: {0}", pluginsPath);
+                Log.Info("Cannot find plugins path: {0}", pluginsPath);
             }
 
             var compositionContainer = new CompositionContainer(catalog);

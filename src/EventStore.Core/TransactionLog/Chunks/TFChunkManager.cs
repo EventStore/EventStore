@@ -272,7 +272,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             var chunkNum = (int)(logPosition / _config.ChunkSize);
             if (chunkNum < 0 || chunkNum >= _chunksCount)
-                throw new ArgumentOutOfRangeException("logPosition", string.Format("LogPosition {0} doesn't have corresponding chunk in DB.", logPosition));
+                throw new ArgumentOutOfRangeException("logPosition", string.Format("LogPosition {0} does not have corresponding chunk in DB.", logPosition));
 
             var chunk = _chunks[chunkNum];
             if (chunk == null)

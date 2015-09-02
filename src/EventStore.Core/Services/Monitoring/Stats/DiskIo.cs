@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception ex)
             {
-                log.InfoException(ex, "Couldn't parse Linux stats.");
+                log.InfoException(ex, "Could not parse Linux stats.");
                 return null;
             }
 

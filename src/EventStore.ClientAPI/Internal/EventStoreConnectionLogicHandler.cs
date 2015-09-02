@@ -120,7 +120,7 @@ namespace EventStore.ClientAPI.Internal
                 {
                     EnqueueMessage(new CloseConnectionMessage("Failed to resolve TCP end point to which to connect.", t.Exception));
                     if (completionTask != null)
-                        completionTask.SetException(new CannotEstablishConnectionException("Couldn't resolve target end point.", t.Exception));
+                        completionTask.SetException(new CannotEstablishConnectionException("Cannot resolve target end point.", t.Exception));
                 }
                 else
                 {

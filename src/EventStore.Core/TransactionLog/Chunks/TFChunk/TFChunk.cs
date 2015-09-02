@@ -733,7 +733,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 {
                     throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
                                                       + "You probably are writing scavenged chunk as cached. "
-                                                      + "Don't do this.");
+                                                      + "Do not do this.");
                 }
                 mapSize = mapping.Count * PosMap.FullSize;
                 workItem.Buffer.SetLength(mapSize);

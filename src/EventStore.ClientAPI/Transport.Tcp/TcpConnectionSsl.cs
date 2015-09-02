@@ -293,8 +293,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
             {
-                _log.Error("ReceiveAsync called again while previous call wasn't fulfilled");
-                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                _log.Error("ReceiveAsync called again while previous call was not fulfilled");
+                throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
             }
             TryDequeueReceivedData();
         }
@@ -377,8 +377,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)
                     {
-                        _log.Error("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                        throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+                        _log.Error("Threading issue in TryDequeueReceivedData. Callback is null.");
+                        throw new Exception("Threading issue in TryDequeueReceivedData. Callback is null.");
                     }
 
                     var res = new List<ArraySegment<byte>>(_receiveQueue.Count);

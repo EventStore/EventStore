@@ -396,7 +396,7 @@ namespace EventStore.Core.Services.VNode
                 {
                     Log.ErrorException(exc, "Error when stopping workers/main queue.");
                 }
-                Application.Exit(ExitCode.Success, "Shutdown and exiting from process was requested.");
+                Application.Exit(ExitCode.Success, "Shutdown and exit from process was requested.");
             }
         }
 
