@@ -152,10 +152,7 @@ namespace EventStore.ClientAPI
 
         private void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)
         {
-            if (_subscriptionDropped != null)
-            {
-                _subscriptionDropped(this, reason, exception);
-            }
+            EnqueueSubscriptionDropNotification(reason, exception);
         }
 
         private void OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
@@ -219,10 +216,10 @@ namespace EventStore.ClientAPI
                     _log.Debug("Persistent Subscription to {0}: dropping subscription, reason: {1} {2}.",
                               _streamId, reason, error == null ? string.Empty : error.ToString());
 
-                if (_subscriptionDropped != null)
-                    _subscriptionDropped(this, reason, error);
                 if (_subscription != null)
                     _subscription.Unsubscribe();
+                if (_subscriptionDropped != null)
+                    _subscriptionDropped(this, reason, error);
                 _stopped.Set();
             }
         }
