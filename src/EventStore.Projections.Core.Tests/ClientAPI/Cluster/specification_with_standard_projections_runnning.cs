@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         public void PostTestAsserts()
         {
             var all = _manager.ListAllAsync(_admin).Result;
-            if (all.Contains("Faulted"))
+            if (all.Any(p => p.Name == "Faulted"))
                 Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
         }
 
