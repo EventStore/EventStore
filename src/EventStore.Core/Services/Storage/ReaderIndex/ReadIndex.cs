@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _indexReader = new IndexReader(_indexBackend, hasher, tableIndex, metastreamMetadata);
             _indexWriter = new IndexWriter(_indexBackend, _indexReader);
             _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, hasher, additionalCommitChecks);
-            _allReader = new AllReader(_indexBackend);
+            _allReader = new AllReader(_indexBackend, _indexCommitter);
         }
 
         void IReadIndex.Init(long buildToPosition)

@@ -25,11 +25,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     public class AllReader : IAllReader
     {
         private readonly IIndexBackend _backend;
+        private readonly IIndexCommitter _indexCommitter;
 
-        public AllReader(IIndexBackend backend)
+        public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter)
         {
             Ensure.NotNull(backend, "backend");
+            Ensure.NotNull(indexCommitter, "indexCommitter");
             _backend = backend;
+            _indexCommitter = indexCommitter;
         }
 
         public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount)
@@ -47,6 +50,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 long nextCommitPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
+                    if (nextCommitPos > _indexCommitter.LastCommitPosition)
+                    {
+                        break;
+                    }
                     reader.Reposition(nextCommitPos);
 
                     SeqReadResult result;
