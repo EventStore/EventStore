@@ -49,6 +49,7 @@ Function Stage-Build() {
     #Stage cluster node files
     $clusterNodeDirectory = Join-Path $binDirectory "clusternode"
     Copy-Item (Join-Path $clusterNodeDirectory "log.config") $stagingDirectory
+    Copy-Item (Join-Path $clusterNodeDirectory "js1.dll") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "Prelude") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "clusternode-web") $stagingDirectory
     Copy-Item -Recurse -Force (Join-Path $clusterNodeDirectory "projections") $stagingDirectory
