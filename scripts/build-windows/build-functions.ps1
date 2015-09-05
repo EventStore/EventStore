@@ -197,7 +197,7 @@ Function Import-VisualStudioVars
             
             '2015' {
                 Push-Environment
-                Invoke-BatchFile (Join-Path $env:VS140COMNTOOLS "..\..\VC\vcvarsall.bat") -Parameters $Architecture -RedirectStdErrToNull $false
+                Invoke-BatchFile (Join-Path $env:VS140COMNTOOLS "..\..\VC\VsMSBuildCmd.bat") -Parameters $Architecture -RedirectStdErrToNull $false
             }
 
             'Windows7.1SDK' {
