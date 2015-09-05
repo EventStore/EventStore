@@ -238,6 +238,11 @@ Function Get-GuessedVisualStudioVersion {
 
     #Visual Studio's, newest versions first
 
+    #Visual Studio 2015
+    if ((Test-Path env:\VS140COMNTOOLS) -and (Test-Path (Join-Path $env:VS140COMNTOOLS "..\..\VC\vcvarsall.bat"))) {
+        return '2015'
+    }
+
     #Visual Studio 2013
     if ((Test-Path env:\VS120COMNTOOLS) -and (Test-Path (Join-Path $env:VS120COMNTOOLS "..\..\VC\vcvarsall.bat"))) {
         return '2013'
