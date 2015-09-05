@@ -197,7 +197,7 @@ Function Import-VisualStudioVars
             
             '2015' {
                 Push-Environment
-                Invoke-BatchFile (Join-Path $env:VS140COMNTOOLS "..\..\VC\VsMSBuildCmd.bat") -Parameters $Architecture -RedirectStdErrToNull $false
+                Invoke-BatchFile (Join-Path $env:VS140COMNTOOLS "VsMSBuildCmd.bat") -Parameters $Architecture -RedirectStdErrToNull $false
             }
 
             'Windows7.1SDK' {
@@ -239,7 +239,7 @@ Function Get-GuessedVisualStudioVersion {
     #Visual Studio's, newest versions first
 
     #Visual Studio 2015
-    if ((Test-Path env:\VS140COMNTOOLS) -and (Test-Path (Join-Path $env:VS140COMNTOOLS "..\..\VC\vcvarsall.bat"))) {
+    if ((Test-Path env:\VS140COMNTOOLS) -and (Test-Path (Join-Path $env:VS140COMNTOOLS "VsMSBuildCmd.bat"))) {
         return '2015'
     }
 
