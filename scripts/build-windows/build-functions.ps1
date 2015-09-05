@@ -168,7 +168,7 @@ Function Import-VisualStudioVars
     Param
     (
         [Parameter(Mandatory = $true, Position = 0)]
-        [ValidateSet('2010', '2012', '2013', 'Windows7.1SDK')]
+        [ValidateSet('2010', '2012', '2013', '2015', 'Windows7.1SDK')]
         [string]$VisualStudioVersion,
         [Parameter(Position = 1)]
         [string]$Architecture = 'amd64',
@@ -193,6 +193,11 @@ Function Import-VisualStudioVars
             '2013' {
                 Push-Environment
                 Invoke-BatchFile (Join-Path $env:VS120COMNTOOLS "..\..\VC\vcvarsall.bat") -Parameters $Architecture -RedirectStdErrToNull $false
+            }
+            
+            '2015' {
+                Push-Environment
+                Invoke-BatchFile (Join-Path $env:VS140COMNTOOLS "..\..\VC\vcvarsall.bat") -Parameters $Architecture -RedirectStdErrToNull $false
             }
 
             'Windows7.1SDK' {
@@ -248,7 +253,7 @@ Function Get-GuessedVisualStudioVersion {
         return '2010'
     }
 
-    throw "Can't find any of VS2010-2013 or WindowsSDK7.1."
+    throw "Can't find any of VS2010-2015 or WindowsSDK7.1."
 }
 
 Function Get-PlatformToolsetForVisualStudioVersion {
@@ -257,7 +262,9 @@ Function Get-PlatformToolsetForVisualStudioVersion {
         [string]$VisualStudioVersion
     )
     Process {
-        if ($VisualStudioVersion -eq "2013") {
+        if  ($VisualStudioVersion -eq "2015") {
+            return "v140"
+        } elseif($VisualStudioVersion -eq "2013") {
             return "v120"
         } elseif($VisualStudioVersion -eq "2012") {
             return "v110"
