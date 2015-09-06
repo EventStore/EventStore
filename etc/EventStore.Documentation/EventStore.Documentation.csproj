@@ -35,6 +35,9 @@
     <Reference Include="EventStore.Common">
       <HintPath>..\..\bin\intermediate\EventStore.Common.dll</HintPath>
     </Reference>
+    <Reference Include="EventStore.Rags">
+      <HintPath>..\..\src\libs\EventStore.Rags.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
