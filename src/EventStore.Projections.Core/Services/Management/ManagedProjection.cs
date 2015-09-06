@@ -328,7 +328,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 message.Envelope.ReplyWith(
                     new ProjectionManagementMessage.ProjectionState(
-                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
+                        message.Name, message.Partition, "", position: null));
             }
         }
 
@@ -347,7 +347,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 message.Envelope.ReplyWith(
                     new ProjectionManagementMessage.ProjectionResult(
-                        message.Name, message.Partition, "*** UNKNOWN ***", position: null));
+                        message.Name, message.Partition, "", position: null));
             }
         }
 
