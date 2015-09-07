@@ -73,7 +73,8 @@ function build_js1() {
     fi
 
     pushd $V8_BUILD_DIRECTORY > /dev/null 
-    CFLAGS="-fPIC" CXXFLAGS="-fPIC" make x64.$CONFIGURATION $WERRORSTRING
+    pushd $V8_BUILD_DIRECTORY > /dev/null
+    CFLAGS="-fPIC" CXXFLAGS="-fPIC" make x64.$CONFIGURATION $WERROR_STRING
     popd > /dev/null
 
     local outputDir="$EVENTSTORE_ROOT/src/libs/x64/$ES_DISTRO-$ES_DISTRO_VERSION"
@@ -95,4 +96,4 @@ if [ "$ES_DISTRO" == "osx" ]; then
     exit 1
 fi
 get_v8_and_dependencies $V8_REVISION
-build_js1
+build_js1 $1
