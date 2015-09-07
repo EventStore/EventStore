@@ -73,6 +73,9 @@ function getSystemInformation() {
                 fi
             fi
         fi
+    elif [ -f /etc/SuSE-brand ] ; then
+        ES_TMP_DISTRO=`cat /etc/SuSE-brand | head -n1`
+        ES_TMP_DISTRO_VERSION=`cat /etc/SuSE-brand | sed -n '2p' | awk '{print $3}'`
     elif [ -f /etc/system-release ]; then
         ES_TMP_PLATFORM=`cat /etc/system-release | head -n 1`
         ES_TMP_DISTRO=`echo $ES_TMP_PLATFORM | awk '{print $1}'`
