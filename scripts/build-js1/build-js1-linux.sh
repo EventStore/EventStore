@@ -64,7 +64,7 @@ function get_v8_and_dependencies() {
 }
 
 function build_js1() {
-    local werror_string=$1
+    local WERROR_STRING=$1
     local v8OutputDir="$V8_BUILD_DIRECTORY/out/x64.$CONFIGURATION/obj.target"
 
     if [ "$WERROR_STRING" != "" ] && [ "$WERROR_STRING" != "werror=no" ]; then
