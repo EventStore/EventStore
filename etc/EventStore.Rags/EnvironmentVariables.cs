@@ -11,7 +11,7 @@ namespace EventStore.Rags
             return
                 (from property in typeof (TOptions).GetProperties()
                     let environmentVariableName = nameTranslator(property.Name)
-                    let environmentVariableValue = Environment.GetEnvironmentVariable(environmentVariableName)
+                    let environmentVariableValue = Environment.GetEnvironmentVariable(environmentVariableName.ToUpper())
                     where !String.IsNullOrEmpty(environmentVariableValue)
                     select OptionSource.String("Environment Variable", property.Name, environmentVariableValue));
         }
