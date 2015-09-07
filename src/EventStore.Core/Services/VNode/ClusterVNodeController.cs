@@ -354,7 +354,7 @@ namespace EventStore.Core.Services.VNode
             if (_stateCorrelationId != message.CorrelationId)
                 return;
 
-            Log.Info("========== [{0}] IS MASTER...", _nodeInfo.InternalHttp);
+            Log.Info("========== [{0}] IS MASTER... SPARTA!", _nodeInfo.InternalHttp);
             _state = VNodeState.Master;
             _outputBus.Publish(message);
         }
