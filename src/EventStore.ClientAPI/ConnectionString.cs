@@ -22,7 +22,7 @@ namespace EventStore.ClientAPI
             translators = new Dictionary<Type, Func<string, object>>()
             {
                 {typeof(int), x => int.Parse(x)},
-                {typeof(decimal), x=>double.Parse(x)},
+                {typeof(decimal), x=>decimal.Parse(x)},
                 {typeof(string), x => x},
                 {typeof(bool), x=>bool.Parse(x)},
                 {typeof(long), x=>long.Parse(x)},
