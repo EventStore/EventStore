@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
+using Newtonsoft.Json.Linq;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.ClientAPI.Projections
@@ -50,23 +52,41 @@ namespace EventStore.ClientAPI.Projections
 
         public Task CreateContinuous(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1", name), 
+            return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1", name),
                             query, userCredentials, HttpStatusCode.Created);
         }
 
-        public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK)
+                    .ContinueWith(x =>
+                    {
+                        if (x.IsFaulted) throw x.Exception;
+                        var r = JObject.Parse(x.Result);
+                        return r["projections"] != null ? r["projections"].ToObject<List<ProjectionDetails>>() : null;
+                    });
         }
 
-        public Task<string> ListOneTime(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListOneTime(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK)
+                    .ContinueWith(x =>
+                    {
+                        if (x.IsFaulted) throw x.Exception;
+                        var r = JObject.Parse(x.Result);
+                        return r["projections"] != null ? r["projections"].ToObject<List<ProjectionDetails>>() : null;
+                    });
         }
 
-        public Task<string> ListContinuous(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListContinuous(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/continuous"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl("/projections/continuous"), userCredentials, HttpStatusCode.OK)
+                    .ContinueWith(x =>
+                    {
+                        if (x.IsFaulted) throw x.Exception;
+                        var r = JObject.Parse(x.Result);
+                        return r["projections"] != null ? r["projections"].ToObject<List<ProjectionDetails>>() : null;
+                    });
         }
 
         public Task<string> GetStatus(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
@@ -109,7 +110,7 @@ namespace EventStore.ClientAPI.Projections
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
-        public Task<string> ListAllAsync(UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListAllAsync(UserCredentials userCredentials = null)
         {
             return _client.ListAll(_httpEndPoint, userCredentials);
         }
@@ -119,7 +120,7 @@ namespace EventStore.ClientAPI.Projections
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
-        public Task<string> ListOneTimeAsync(UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListOneTimeAsync(UserCredentials userCredentials = null)
         {
             return _client.ListOneTime(_httpEndPoint, userCredentials);
         }
@@ -129,7 +130,7 @@ namespace EventStore.ClientAPI.Projections
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
-        public Task<string> ListContinuousAsync(UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListContinuousAsync(UserCredentials userCredentials = null)
         {
             return _client.ListContinuous(_httpEndPoint, userCredentials);
         }
