@@ -12,6 +12,7 @@
     <description>The embedded client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</description>
     <releaseNotes>Embedded Client API for version 3 of the Event Store</releaseNotes>
     <copyright>Copyright 2012-2013 Event Store LLP</copyright>
+    <tags>eventstore client embedded</tags>
     <dependencies>
       <dependency id="EventStore.Client" version="3.0.0" />
     </dependencies>

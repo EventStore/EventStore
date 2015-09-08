@@ -12,6 +12,7 @@
     <description>The client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</description>
     <releaseNotes>Client API for version 3 of the Event Store</releaseNotes>
     <copyright>Copyright 2012-2015 Event Store LLP</copyright>
+    <tags>eventstore client</tags>
     <dependencies>
     </dependencies>
   </metadata>
