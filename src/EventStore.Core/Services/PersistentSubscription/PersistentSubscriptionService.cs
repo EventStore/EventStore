@@ -153,7 +153,14 @@ namespace EventStore.Core.Services.PersistentSubscription
                     "Group '" + message.GroupName + "' already exists."));
                 return;
             }
-
+            
+            if(message.EventStreamId == null || message.EventStreamId == "")
+            {
+                message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
+                    ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Fail,
+                    "Bad stream name."));
+                return;
+            }
             if (!_consumerStrategyRegistry.ValidateStrategy(message.NamedConsumerStrategy))
             {
                 message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
