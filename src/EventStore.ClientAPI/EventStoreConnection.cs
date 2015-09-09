@@ -136,7 +136,7 @@ namespace EventStore.ClientAPI
         private static Uri GetUriFromConnectionString(string connectionString)
         {
             var connto = ConnectionString.GetConnectionStringInfo(connectionString)
-                .First(x => x.Key.ToLower() == "connectto").Value;
+                .First(x => x.Key.ToUpperInvariant() == "CONNECTTO").Value;
             if (connto == null) throw new Exception(string.Format("Did not find ConnectTo in the connection string.\n'{0}'", connectionString));
             return new Uri(connto);
         }
