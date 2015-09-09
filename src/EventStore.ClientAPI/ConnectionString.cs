@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -21,15 +22,15 @@ namespace EventStore.ClientAPI
         {
             translators = new Dictionary<Type, Func<string, object>>()
             {
-                {typeof(int), x => int.Parse(x)},
-                {typeof(decimal), x=>decimal.Parse(x)},
+                {typeof(int), x => int.Parse(x, CultureInfo.InvariantCulture)},
+                {typeof(decimal), x=>decimal.Parse(x, CultureInfo.InvariantCulture)},
                 {typeof(string), x => x},
                 {typeof(bool), x=>bool.Parse(x)},
-                {typeof(long), x=>long.Parse(x)},
-                {typeof(byte), x=>byte.Parse(x)},
-                {typeof(double), x=>double.Parse(x)},
-                {typeof(float), x=>float.Parse(x)},
-                {typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x))},
+                {typeof(long), x=>long.Parse(x, CultureInfo.InvariantCulture)},
+                {typeof(byte), x=>byte.Parse(x, CultureInfo.InvariantCulture)},
+                {typeof(double), x=>double.Parse(x, CultureInfo.InvariantCulture)},
+                {typeof(float), x=>float.Parse(x, CultureInfo.InvariantCulture)},
+                {typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x, CultureInfo.InvariantCulture))},
                 {typeof(GossipSeed[]), x => x.Split(',').Select(q =>
                 {
                     try
@@ -58,9 +59,9 @@ namespace EventStore.ClientAPI
             var builder = new DbConnectionStringBuilder(false) { ConnectionString = connectionString };
             //can someome mutate this builder before the enumerable is closed sure but thats the fun!
             return from object key in builder.Keys
-                select new KeyValuePair<string, string>(key.ToString(), builder[key.ToString()].ToString());
+                   select new KeyValuePair<string, string>(key.ToString().ToUpperInvariant(), builder[key.ToString()].ToString());
         }
- 
+
         /// <summary>
         /// Returns a <see cref="ConnectionSettings"></see> for a given connection string.
         /// </summary>
@@ -78,7 +79,7 @@ namespace EventStore.ClientAPI
             var ret = "";
             foreach (var c in name)
             {
-                if(char.IsUpper(c))
+                if (char.IsUpper(c))
                 {
                     ret += " ";
                 }
@@ -87,12 +88,12 @@ namespace EventStore.ClientAPI
             return ret.Trim();
         }
 
-        private static T Apply<T>(IEnumerable<KeyValuePair<string , string>> items, T obj)
+        private static T Apply<T>(IEnumerable<KeyValuePair<string, string>> items, T obj)
         {
-            var fields = typeof (T).GetFields().Where(x=>x.IsPublic).Select(x => new Tuple<string, FieldInfo>(x.Name.ToLower(), x))
-                .Concat(typeof(T).GetFields().Where(x => x.IsPublic).Select(x => new Tuple<string, FieldInfo>(WithSpaces(x.Name).ToLower(), x)))
+            var fields = typeof(T).GetFields().Where(x => x.IsPublic).Select(x => new Tuple<string, FieldInfo>(x.Name.ToUpperInvariant(), x))
+                .Concat(typeof(T).GetFields().Where(x => x.IsPublic).Select(x => new Tuple<string, FieldInfo>(WithSpaces(x.Name).ToUpperInvariant(), x)))
                 .GroupBy(x => x.Item1)
-                .ToDictionary(x => x.First().Item1.ToLower(), x=>x.First().Item2);
+                .ToDictionary(x => x.First().Item1.ToUpperInvariant(), x => x.First().Item2);
             foreach (var item in items)
             {
                 FieldInfo fi = null;
