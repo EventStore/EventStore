@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListAll' instead")]
-        public Task<string> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<string> ListAllAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
             return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK);
         }
@@ -74,7 +74,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListOneTime' instead")]
-        public Task<string> ListOneTime(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<string> ListOneTimeAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
             return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK);
         }
@@ -91,7 +91,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListContinuous' instead")]
-        public Task<string> ListContinuous(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<string> ListContinuousAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
             return SendGet(endPoint.ToHttpUrl("/projections/continuous"), userCredentials, HttpStatusCode.OK);
         }
