@@ -78,17 +78,17 @@ namespace EventStore.Padmin
             {
                 case "all":
                     Log("Listing all projections...");
-                    LogUnformatted(manager.ListAllAsync(userCredentials).Result);
+                    LogUnformatted(string.Join(" | ", manager.ListAllAsync(userCredentials).Result));
                     Log("All projections listed");
                     break;
                 case "onetime":
                     Log("Listing onetime projections...");
-                    LogUnformatted(manager.ListOneTimeAsync(userCredentials).Result);
+                    LogUnformatted(string.Join(" | ", manager.ListOneTimeAsync(userCredentials).Result));
                     Log("Onetime projections listed");
                     break;
                 case "continuous":
                     Log("Listing continuous projections...");
-                    LogUnformatted(manager.ListContinuousAsync(userCredentials).Result);
+                    LogUnformatted(string.Join(" | ", manager.ListContinuousAsync(userCredentials).Result));
                     Log("Continuous projections listed");
                     break;
                 default:

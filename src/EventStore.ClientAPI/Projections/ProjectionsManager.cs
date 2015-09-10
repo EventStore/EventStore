@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
@@ -109,7 +110,18 @@ namespace EventStore.ClientAPI.Projections
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
-        public Task<string> ListAllAsync(UserCredentials userCredentials = null)
+        [Obsolete("Use 'Task<List<ProjectionDetails>> ListAll' instead")]
+        public Task<string> ListAllAsStringAsync(UserCredentials userCredentials = null)
+        {
+            return _client.ListAllAsString(_httpEndPoint, userCredentials);
+        }
+
+        /// <summary>
+        /// Asynchronously lists this status of all projections.
+        /// </summary>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        /// <returns>List of all ProjectionDetails items containing projection statuses.</returns>
+        public Task<List<ProjectionDetails>> ListAllAsync(UserCredentials userCredentials = null)
         {
             return _client.ListAll(_httpEndPoint, userCredentials);
         }
@@ -119,7 +131,18 @@ namespace EventStore.ClientAPI.Projections
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
-        public Task<string> ListOneTimeAsync(UserCredentials userCredentials = null)
+        [Obsolete("Use 'Task<List<ProjectionDetails>> ListOneTime' instead")]
+        public Task<string> ListOneTimeAsStringAsync(UserCredentials userCredentials = null)
+        {
+            return _client.ListOneTimeAsString(_httpEndPoint, userCredentials);
+        }
+
+        /// <summary>
+        /// Asynchronously lists this status of all one-time projections.
+        /// </summary>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        /// <returns>List of one-time ProjectionDetails items containing projection statuses.</returns>
+        public Task<List<ProjectionDetails>> ListOneTimeAsync(UserCredentials userCredentials = null)
         {
             return _client.ListOneTime(_httpEndPoint, userCredentials);
         }
@@ -129,7 +152,18 @@ namespace EventStore.ClientAPI.Projections
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
-        public Task<string> ListContinuousAsync(UserCredentials userCredentials = null)
+        [Obsolete("Use 'Task<List<ProjectionDetails>> ListContinuous' instead")]
+        public Task<string> ListContinuousAsStringAsync(UserCredentials userCredentials = null)
+        {
+            return _client.ListContinuousAsString(_httpEndPoint, userCredentials);
+        }
+
+        /// <summary>
+        /// Synchronously lists this status of all continuous projections.
+        /// </summary>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        /// <returns>List of continuous ProjectionDetails items containing projection statuses.</returns>
+        public Task<List<ProjectionDetails>> ListContinuousAsync(UserCredentials userCredentials = null)
         {
             return _client.ListContinuous(_httpEndPoint, userCredentials);
         }

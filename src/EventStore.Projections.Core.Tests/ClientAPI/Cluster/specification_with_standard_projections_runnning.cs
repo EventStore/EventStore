@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             base.TestFixtureSetUp();
 #if (!DEBUG)
             throw new NotSupportedException("These tests require DEBUG conditional");
-#else 
+#else
             QueueStatsCollector.InitializeIdleDetection();
             _nodeEndpoints[0] = new Endpoints(
                 PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
@@ -77,14 +77,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
             PortsHelper.GetAvailablePort(IPAddress.Loopback);
 
-            _nodes[0] = CreateNode(0, 
-                _nodeEndpoints[0], new IPEndPoint[] {_nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp});
-            _nodes[1] = CreateNode(1, 
+            _nodes[0] = CreateNode(0,
+                _nodeEndpoints[0], new IPEndPoint[] { _nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp });
+            _nodes[1] = CreateNode(1,
                 _nodeEndpoints[1], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp });
-            
-            _nodes[2] = CreateNode(2, 
+
+            _nodes[2] = CreateNode(2,
                 _nodeEndpoints[2], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp });
-            
+
 
             _nodes[0].Start();
             _nodes[1].Start();
@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             var node = new MiniClusterNode(
                 PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
                 endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
-                subsystems: new ISubsystem[] {_projections}, gossipSeeds: gossipSeeds);
+                subsystems: new ISubsystem[] { _projections }, gossipSeeds: gossipSeeds);
             WaitIdle();
             return node;
         }
@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         public void PostTestAsserts()
         {
             var all = _manager.ListAllAsync(_admin).Result;
-            if (all.Contains("Faulted"))
+            if (all.Any(p => p.Name == "Faulted"))
                 Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
         }
 
@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
         protected void PostEvent(string stream, string eventType, string data)
         {
-            _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] {CreateEvent(eventType, data)}).Wait();
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { CreateEvent(eventType, data) }).Wait();
         }
 
         protected void HardDeleteStream(string stream)

@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             base.TestFixtureSetUp();
 #if (!DEBUG)
             Assert.Ignore("These tests require DEBUG conditional");
-#else 
+#else
             QueueStatsCollector.InitializeIdleDetection();
             CreateNode();
             try
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             var projectionWorkerThreadCount = GivenWorkerThreadCount();
             _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All, developmentMode: false);
             _node = new MiniNode(
-                PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] {_projections});
+                PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] { _projections });
             _node.Start();
         }
 
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         public void PostTestAsserts()
         {
             var all = _manager.ListAllAsync(_admin).Result;
-            if (all.Contains("Faulted"))
+            if (all.Any(p => p.Name == "Faulted"))
                 Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
         }
 
@@ -131,11 +131,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-	    if (_conn != null)
-		_conn.Close();
+            if (_conn != null)
+                _conn.Close();
 
-	    if (_node != null)
-		_node.Shutdown();
+            if (_node != null)
+                _node.Shutdown();
 
             base.TestFixtureTearDown();
 #if DEBUG
@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
         protected void PostEvent(string stream, string eventType, string data)
         {
-            _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] {event_by_type_index.with_existing_events.CreateEvent(eventType, data)}).Wait();
+            _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { event_by_type_index.with_existing_events.CreateEvent(eventType, data) }).Wait();
         }
 
         protected void HardDeleteStream(string stream)
