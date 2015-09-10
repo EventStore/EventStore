@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI.Projections
         /// <summary>
         /// The CoreProcessingTime
         /// </summary>
-        public readonly int CoreProcessingTime;
+        public readonly long CoreProcessingTime;
 
         /// <summary>
         /// The projection version
@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI.Projections
         /// <summary>
         /// The projection Progress
         /// </summary>
-        public readonly decimal Progress;
+        public readonly float Progress;
 
         /// <summary>
         /// LastCheckpoint
@@ -161,7 +161,7 @@ namespace EventStore.ClientAPI.Projections
         /// <param name="writePendingEventsBeforeCheckpoint"></param>
         /// <param name="writePendingEventsAfterCheckpoint"></param>
         public ProjectionDetails(
-            int coreProcessingTime,
+            long coreProcessingTime,
             int version,
             int epoch,
             string effectiveName,
@@ -173,7 +173,7 @@ namespace EventStore.ClientAPI.Projections
             string name,
             string mode,
             string position,
-            decimal progress,
+            float progress,
             string lastCheckpoint,
             int eventsProcessedAfterRestart,
             Uri statusUrl,

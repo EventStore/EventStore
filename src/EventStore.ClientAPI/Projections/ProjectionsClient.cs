@@ -56,6 +56,12 @@ namespace EventStore.ClientAPI.Projections
                             query, userCredentials, HttpStatusCode.Created);
         }
 
+        [Obsolete("Use 'Task<List<ProjectionDetails>> ListAll' instead")]
+        public Task<string> ListAllAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        {
+            return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK);
+        }
+
         public Task<List<ProjectionDetails>> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
             return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK)
@@ -67,6 +73,12 @@ namespace EventStore.ClientAPI.Projections
                     });
         }
 
+        [Obsolete("Use 'Task<List<ProjectionDetails>> ListOneTime' instead")]
+        public Task<string> ListOneTimeAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        {
+            return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK);
+        }
+
         public Task<List<ProjectionDetails>> ListOneTime(IPEndPoint endPoint, UserCredentials userCredentials = null)
         {
             return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK)
@@ -76,6 +88,12 @@ namespace EventStore.ClientAPI.Projections
                         var r = JObject.Parse(x.Result);
                         return r["projections"] != null ? r["projections"].ToObject<List<ProjectionDetails>>() : null;
                     });
+        }
+
+        [Obsolete("Use 'Task<List<ProjectionDetails>> ListContinuous' instead")]
+        public Task<string> ListContinuousAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        {
+            return SendGet(endPoint.ToHttpUrl("/projections/continuous"), userCredentials, HttpStatusCode.OK);
         }
 
         public Task<List<ProjectionDetails>> ListContinuous(IPEndPoint endPoint, UserCredentials userCredentials = null)
