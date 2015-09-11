@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
                 _manager = new ProjectionsManager(
                     new ConsoleLogger(),
-                    _node.IntHttpEndPoint,
+                    _node.ExtHttpEndPoint,
                     TimeSpan.FromMilliseconds(10000));
                 WaitIdle();
                 if (GivenStandardProjectionsRunning())
