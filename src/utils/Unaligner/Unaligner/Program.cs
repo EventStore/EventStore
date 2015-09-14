@@ -70,6 +70,12 @@ namespace Unaligner
                         footer.MapSize,
                         footer.IsMap12Bytes,
                         footer.MD5Hash);
+                    Console.WriteLine("Adjusting version.");
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var header2 = new ChunkHeader(2, header.ChunkSize, header.ChunkStartNumber, header.ChunkEndNumber,
+                        header.IsScavenged, header.ChunkId);
+                    var headerbytes = header2.AsByteArray();
+                    stream.Write(headerbytes, 0, headerbytes.Length);
                     if (!footer.IsCompleted)
                     {
                         Console.WriteLine("Not truncating chunk as its not completed.");
@@ -82,11 +88,6 @@ namespace Unaligner
                     stream.Seek(length - ChunkFooter.Size, SeekOrigin.Begin);
                     var footbytes = footer.AsByteArray();
                     stream.Write(footbytes,0, footbytes.Length);
-                    stream.Seek(0, SeekOrigin.Begin);
-                    var header2 = new ChunkHeader(2, header.ChunkSize, header.ChunkStartNumber, header.ChunkEndNumber,
-                        header.IsScavenged, header.ChunkId);
-                    var headerbytes = header2.AsByteArray();
-                    stream.Write(headerbytes, 0, headerbytes.Length);
                 }
             }
             finally
