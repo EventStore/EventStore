@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
+using System.Text;
 
 namespace EventStore.ClientAPI
 {
@@ -59,7 +58,7 @@ namespace EventStore.ClientAPI
             var builder = new DbConnectionStringBuilder(false) { ConnectionString = connectionString };
             //can someome mutate this builder before the enumerable is closed sure but thats the fun!
             return from object key in builder.Keys
-                   select new KeyValuePair<string, string>(key.ToString().ToUpperInvariant(), builder[key.ToString()].ToString());
+                   select new KeyValuePair<string, string>(key.ToString(), builder[key.ToString()].ToString());
         }
 
         /// <summary>
@@ -76,24 +75,31 @@ namespace EventStore.ClientAPI
 
         private static string WithSpaces(string name)
         {
-            var ret = "";
-            foreach (var c in name)
+            StringBuilder nameWithSpaces = new StringBuilder(32);
+            nameWithSpaces.Append(name[0]);
+
+            for (int i = 1; i < name.Length; i++)
             {
+                char c = name[i];
                 if (char.IsUpper(c))
                 {
-                    ret += " ";
+                    nameWithSpaces.Append(' ');
                 }
-                ret += c;
+                nameWithSpaces.Append(c);
             }
-            return ret.Trim();
+
+            return nameWithSpaces.ToString();
         }
 
         private static T Apply<T>(IEnumerable<KeyValuePair<string, string>> items, T obj)
         {
-            var fields = typeof(T).GetFields().Where(x => x.IsPublic).Select(x => new Tuple<string, FieldInfo>(x.Name.ToUpperInvariant(), x))
-                .Concat(typeof(T).GetFields().Where(x => x.IsPublic).Select(x => new Tuple<string, FieldInfo>(WithSpaces(x.Name).ToUpperInvariant(), x)))
+            var typeFields = typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public);
+
+            var fields = typeFields.Select(x => new Tuple<string, FieldInfo>(x.Name, x))
+                .Concat(typeFields.Select(x => new Tuple<string, FieldInfo>(WithSpaces(x.Name), x)))
                 .GroupBy(x => x.Item1)
-                .ToDictionary(x => x.First().Item1.ToUpperInvariant(), x => x.First().Item2);
+                .ToDictionary(x => x.First().Item1, x => x.First().Item2, StringComparer.InvariantCultureIgnoreCase);
+
             foreach (var item in items)
             {
                 FieldInfo fi = null;
