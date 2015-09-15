@@ -57,6 +57,13 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
+  <Choose>
+    <When Condition=" '$(OS)' == 'Unix' ">
+      <ItemGroup>
+        <Reference Include="Mono.Posix" />
+      </ItemGroup>
+    </When>
+  </Choose>
   <ItemGroup>
     <Compile Include="Authentication\AuthenticationRequest.cs" />
     <Compile Include="Authentication\IAuthenticationProvider.cs" />
