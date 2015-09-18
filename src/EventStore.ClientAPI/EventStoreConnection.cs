@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Linq;
+using System.Net.Sockets;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Internal;
 using System;
@@ -119,7 +120,9 @@ namespace EventStore.ClientAPI
             {
                 var entries = Dns.GetHostAddresses(uri.Host);
                 if (entries.Length == 0) throw new Exception(string.Format("Unable to parse IP address or lookup DNS host for '{0}'", uri.Host));
-                ipaddress = entries[0];
+                //pick an IPv4 address, if one exists
+                ipaddress = entries.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                if (ipaddress == null) throw new Exception(string.Format("Could not get an IPv4 address for host '{0}'", uri.Host));
             }
             var port = uri.IsDefaultPort ? 2113 : uri.Port;
             return new IPEndPoint(ipaddress, port);
