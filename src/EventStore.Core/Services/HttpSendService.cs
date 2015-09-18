@@ -152,22 +152,22 @@ namespace EventStore.Core.Services
             // Copy unrestricted headers (including cookies, if any)
             foreach (var headerKey in srcReq.Headers.AllKeys)
             {
-                switch (headerKey)
+                switch (headerKey.ToLower())
                 {
-                    case "Accept":            fwReq.Accept = srcReq.Headers[headerKey]; break;
-                    case "Connection":        break;
-                    case "Content-Type":      fwReq.ContentType = srcReq.ContentType; break;
-                    case "Content-Length":    fwReq.ContentLength = srcReq.ContentLength64; break;
-                    case "Date":              fwReq.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "Expect":            break;
-                    case "Host":              fwReq.Headers["X-Forwarded-Host"] = srcReq.Headers[headerKey];
+                    case "accept":            fwReq.Accept = srcReq.Headers[headerKey]; break;
+                    case "connection":        break;
+                    case "content-type":      fwReq.ContentType = srcReq.ContentType; break;
+                    case "content-length":    fwReq.ContentLength = srcReq.ContentLength64; break;
+                    case "date":              fwReq.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                    case "expect":            break;
+                    case "host":              fwReq.Headers["X-Forwarded-Host"] = srcReq.Headers[headerKey];
                                               fwReq.Host = forwardUri.Host; break; 
-                    case "If-Modified-Since": fwReq.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "Proxy-Connection":  break;
-                    case "Range":             break;
-                    case "Referer":           fwReq.Referer = srcReq.Headers[headerKey]; break;
-                    case "Transfer-Encoding": fwReq.TransferEncoding = srcReq.Headers[headerKey]; break;
-                    case "User-Agent":        fwReq.UserAgent = srcReq.Headers[headerKey]; break;
+                    case "if-modified-since": fwReq.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                    case "proxy-connection":  break;
+                    case "range":             break;
+                    case "referer":           fwReq.Referer = srcReq.Headers[headerKey]; break;
+                    case "transfer-encoding": fwReq.TransferEncoding = srcReq.Headers[headerKey]; break;
+                    case "user-agent":        fwReq.UserAgent = srcReq.Headers[headerKey]; break;
 
                     default:
                         fwReq.Headers[headerKey] = srcReq.Headers[headerKey];
