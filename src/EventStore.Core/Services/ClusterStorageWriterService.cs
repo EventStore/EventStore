@@ -107,10 +107,9 @@ namespace EventStore.Core.Services
                 EpochRecord lastEpoch = EpochManager.GetLastEpoch();
                 if (AreAnyCommittedRecordsTruncatedWithLastEpoch(message.SubscriptionPosition, lastEpoch, lastCommitPosition))
                 {
-                    Log.Error("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is less than our last epoch and LastCommitPosition {3} (0x{3:X}) >= lastEpoch.EpochPosition {3} (0x{3:X})."
-                                + "That might be bad, especially if the LastCommitPosition is way beyond EpochPosition.\n" 
-                                + "ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF JUST-ELECTED MASTER FAILS IMMEDIATELY AFTER ITS ELECTION.",
+                    Log.Error("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is less than our last epoch and LastCommitPosition {3} (0x{3:X}) >= lastEpoch.EpochPosition {4} (0x{4:X}). That might be bad, especially if the LastCommitPosition is way beyond EpochPosition.",
                                 message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, lastCommitPosition, lastEpoch.EpochPosition);
+                    Log.Error("ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF JUST-ELECTED MASTER FAILS IMMEDIATELY AFTER ITS ELECTION.");
                 }
 
                 Db.Config.TruncateCheckpoint.Write(message.SubscriptionPosition);

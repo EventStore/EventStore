@@ -263,35 +263,32 @@ namespace EventStore.Transport.Tcp
 
         private void DisplaySslStreamInfo(SslStream stream)
         {
-            var sb = new StringBuilder();
-            sb.AppendFormat("[S{0}, L{1}]:\n", RemoteEndPoint, LocalEndPoint);
-            sb.AppendFormat("Cipher: {0} strength {1}\n", stream.CipherAlgorithm, stream.CipherStrength);
-            sb.AppendFormat("Hash: {0} strength {1}\n", stream.HashAlgorithm, stream.HashStrength);
-            sb.AppendFormat("Key exchange: {0} strength {1}\n", stream.KeyExchangeAlgorithm, stream.KeyExchangeStrength);
-            sb.AppendFormat("Protocol: {0}\n", stream.SslProtocol);
-            sb.AppendFormat("Is authenticated: {0} as server? {1}\n", stream.IsAuthenticated, stream.IsServer);
-            sb.AppendFormat("IsSigned: {0}\n", stream.IsSigned);
-            sb.AppendFormat("Is Encrypted: {0}\n", stream.IsEncrypted);
-            sb.AppendFormat("Can read: {0}, write {1}\n", stream.CanRead, stream.CanWrite);
-            sb.AppendFormat("Can timeout: {0}\n", stream.CanTimeout);
-            sb.AppendFormat("Certificate revocation list checked: {0}\n", stream.CheckCertRevocationStatus);
+            Log.Info("[S{0}, L{1}]", RemoteEndPoint, LocalEndPoint);
+            Log.Info("Cipher: {0} strength {1}", stream.CipherAlgorithm, stream.CipherStrength);
+            Log.Info("Hash: {0} strength {1}", stream.HashAlgorithm, stream.HashStrength);
+            Log.Info("Key exchange: {0} strength {1}", stream.KeyExchangeAlgorithm, stream.KeyExchangeStrength);
+            Log.Info("Protocol: {0}", stream.SslProtocol);
+            Log.Info("Is authenticated: {0} as server? {1}", stream.IsAuthenticated, stream.IsServer);
+            Log.Info("IsSigned: {0}", stream.IsSigned);
+            Log.Info("Is Encrypted: {0}", stream.IsEncrypted);
+            Log.Info("Can read: {0}, write {1}", stream.CanRead, stream.CanWrite);
+            Log.Info("Can timeout: {0}", stream.CanTimeout);
+            Log.Info("Certificate revocation list checked: {0}", stream.CheckCertRevocationStatus);
 
             X509Certificate localCert = stream.LocalCertificate;
             if (localCert != null)
-                sb.AppendFormat("Local certificate was issued to {0} and is valid from {1} until {2}.\n",
+                Log.Info("Local certificate was issued to {0} and is valid from {1} until {2}.",
                                 localCert.Subject, localCert.GetEffectiveDateString(), localCert.GetExpirationDateString());
             else
-                sb.AppendFormat("Local certificate is null.\n");
+                Log.Info("Local certificate is null.");
 
             // Display the properties of the client's certificate.
             X509Certificate remoteCert = stream.RemoteCertificate;
             if (remoteCert != null)
-                sb.AppendFormat("Remote certificate was issued to {0} and is valid from {1} until {2}.\n",
+                Log.Info("Remote certificate was issued to {0} and is valid from {1} until {2}.",
                                 remoteCert.Subject, remoteCert.GetEffectiveDateString(), remoteCert.GetExpirationDateString());
             else
-                sb.AppendFormat("Remote certificate is null.\n");
-
-            Log.Info(sb.ToString());
+                Log.Info("Remote certificate is null.");
         }
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
@@ -522,13 +519,18 @@ namespace EventStore.Transport.Tcp
 
             if (_verbose)
             {
-                Log.Info("ES {12} closed [{0:HH:mm:ss.fff}: S{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
-                         + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
-                         DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
-                         TotalBytesReceived, TotalBytesSent,
-                         SendCalls, SendCallbacks,
-                         ReceiveCalls, ReceiveCallbacks,
-                         socketError, reason, GetType().Name);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Received bytes: {5}, Sent bytes: {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        TotalBytesReceived, TotalBytesSent);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Send calls: {5}, callbacks: {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        SendCalls, SendCallbacks);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Receive calls: {5}, callbacks: {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        ReceiveCalls, ReceiveCallbacks);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Close reason: [{5}] {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        socketError, reason);
             }
 
             if (_sslStream != null)

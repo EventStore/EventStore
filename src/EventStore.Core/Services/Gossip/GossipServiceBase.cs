@@ -277,21 +277,19 @@ namespace EventStore.Core.Services.Gossip
 
         private static void LogClusterChange(ClusterInfo oldCluster, ClusterInfo newCluster, string source)
         {
-            var sb = new StringBuilder();
-            sb.AppendFormat("CLUSTER HAS CHANGED{0}\n", source.IsNotEmptyString() ? " (" + source + ")" : string.Empty);
-            sb.AppendLine("Old:");
+            Log.Trace("CLUSTER HAS CHANGED{0}", source.IsNotEmptyString() ? " (" + source + ")" : string.Empty);
+            Log.Trace("Old:");
             var ipEndPointComparer = new IPEndPointComparer();
             foreach (var oldMember in oldCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
             {
-                sb.AppendLine(oldMember.ToString());
+                Log.Trace(oldMember.ToString());
             }
-            sb.AppendLine("New:");
+            Log.Trace("New:");
             foreach (var newMember in newCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
             {
-                sb.AppendLine(newMember.ToString());
+                Log.Trace(newMember.ToString());
             }
-            sb.Append(new string('-', 80));
-            Log.Trace(sb.ToString());
+            Log.Trace(new string('-', 80));
         }
     }
 }

@@ -71,7 +71,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     {
                         var msg = string.Format("Received as RESPONSE invalid ClusterInfo from [{0}]. Content-Type: {1}, Body:\n{2}.",
                                                 url, response.ContentType, response.Body);
-                        Log.Error(msg);
+                        Log.Error(string.Format("Received as RESPONSE invalid ClusterInfo from [{0}]. Content-Type: {1}.",
+                                                url, response.ContentType));
+                        Log.Error(string.Format("Received as RESPONSE invalid ClusterInfo from [{0}]. Body: {1}.",
+                                                url, response.Body));
                         Publish(new GossipMessage.GossipSendFailed(msg, endPoint));
                         return;
                     }
@@ -93,7 +96,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             {
                 var msg = string.Format("Received as POST invalid ClusterInfo from [{0}]. Content-Type: {1}, Body:\n{2}.",
                                         manager.RequestedUrl, manager.RequestCodec.ContentType, body);
-                Log.Error(msg);
+                Log.Error(string.Format("Received as POST invalid ClusterInfo from [{0}]. Content-Type: {1}.",
+                                        manager.RequestedUrl, manager.RequestCodec.ContentType));
+                Log.Error(string.Format("Received as POST invalid ClusterInfo from [{0}]. Body: {1}.",
+                                        manager.RequestedUrl, body));
                 SendBadRequest(manager, msg);
                 return;
             }

@@ -331,13 +331,18 @@ namespace EventStore.Transport.Tcp
 
             if (_verbose)
             {
-                Log.Info("ES {12} closed [{0:HH:mm:ss.fff}: N{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
-                         + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
-                         DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
-                         TotalBytesReceived, TotalBytesSent,
-                         SendCalls, SendCallbacks,
-                         ReceiveCalls, ReceiveCallbacks,
-                         socketError, reason, GetType().Name);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Received bytes: {5}, Sent bytes: {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        TotalBytesReceived, TotalBytesSent);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Send calls: {5}, callbacks: {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        SendCalls, SendCallbacks);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Receive calls: {5}, callbacks: {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        ReceiveCalls, ReceiveCallbacks);
+                Log.Info("ES {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:Close reason: [{5}] {6}",
+                        GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
+                        socketError, reason);
             }
 
             if (_socket != null)
