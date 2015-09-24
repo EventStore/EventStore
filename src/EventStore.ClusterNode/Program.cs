@@ -51,6 +51,13 @@ namespace EventStore.ClusterNode
         {
             base.PreInit(options);
 
+            if (options.Db.StartsWith("~") && !options.Force){
+                throw new ApplicationInitializationException("The given database path starts with a '~'. We don't expand '~'. You can use --force to override this error.");
+            }
+            if (options.Log.StartsWith("~") && !options.Force){
+                throw new ApplicationInitializationException("The given log path starts with a '~'. We don't expand '~'. You can use --force to override this error.");
+            }
+
             //Never seen this problem occur on the .NET framework
             if (!Runtime.IsMono)
                 return;
