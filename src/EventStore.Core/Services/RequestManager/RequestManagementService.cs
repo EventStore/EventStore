@@ -6,6 +6,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Services.TimerService;
+using System.Diagnostics;
+using EventStore.Core.Services.Histograms;
 
 namespace EventStore.Core.Services.RequestManager
 {
@@ -32,6 +34,8 @@ namespace EventStore.Core.Services.RequestManager
         private readonly IPublisher _bus;
         private readonly TimerMessage.Schedule _tickRequestMessage;
         private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
+        private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
+        private const string _requestManagerHistogram = "request-manager";
 
         private readonly int _prepareCount;
         private readonly int _commitCount;
@@ -64,6 +68,7 @@ namespace EventStore.Core.Services.RequestManager
         {
             var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.InternalCorrId, manager);
+            _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
         }
 
@@ -71,6 +76,7 @@ namespace EventStore.Core.Services.RequestManager
         {
             var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.InternalCorrId, manager);
+            _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
         }
 
@@ -78,6 +84,7 @@ namespace EventStore.Core.Services.RequestManager
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
             _currentRequests.Add(message.InternalCorrId, manager);
+            _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
         }
         
@@ -85,6 +92,7 @@ namespace EventStore.Core.Services.RequestManager
         {
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
             _currentRequests.Add(message.InternalCorrId, manager);
+            _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
         }
 
@@ -92,11 +100,19 @@ namespace EventStore.Core.Services.RequestManager
         {
             var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.InternalCorrId, manager);
+            _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
         }
 
         public void Handle(StorageMessage.RequestCompleted message)
         {
+            Stopwatch watch = null;
+            if (_currentTimedRequests.TryGetValue(message.CorrelationId, out watch))
+            {
+                HistogramService.SetValue(_requestManagerHistogram,
+                (long)((((double)watch.ElapsedTicks) / Stopwatch.Frequency) * 1000000000));
+                _currentTimedRequests.Remove(message.CorrelationId);
+            }
             if (!_currentRequests.Remove(message.CorrelationId))
                 throw new InvalidOperationException("Should never complete request twice.");
         }

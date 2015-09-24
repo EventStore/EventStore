@@ -62,6 +62,7 @@ namespace EventStore.Core.Services.Histograms
             CreateHistogram("reader-readevent");
             CreateHistogram("reader-streamrange");
             CreateHistogram("reader-allrange");
+            CreateHistogram("request-manager");
         }
 
         public static void StartJitterMonitor()
