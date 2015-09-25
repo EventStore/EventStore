@@ -130,7 +130,7 @@ namespace EventStore.ClientAPI
 
         private static UserCredentials GetCredentialFromUri(Uri uri)
         {
-            if (string.IsNullOrEmpty(uri.UserInfo)) return null;
+            if (uri == null || string.IsNullOrEmpty(uri.UserInfo)) return null;
             var pieces = uri.UserInfo.Split(':');
             if (pieces.Length != 2) throw new Exception(string.Format("Unable to parse user information '{0}'", uri.UserInfo));
             return new UserCredentials(pieces[0], pieces[1]);
