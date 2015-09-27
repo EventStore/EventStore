@@ -96,6 +96,10 @@ function getSystemInformation() {
         ES_TMP_DISTRO_VERSION=`cat /etc/debian_version`
         INFO="$ES_TMP_DISTRO $ES_TMP_DISTRO_VERSION"
         ES_TMP_PLATFORM=$INFO
+    elif [ -f /etc/arch-release ] ; then
+        ES_TMP_PLATFORM="Arch"
+        ES_TMP_DISTRO="Arch"
+        ES_TMP_DISTRO_VERSION=`uname -r`
     elif [ -f /etc/os-release ] ; then
         . /etc/os-release
         ES_TMP_PLATFORM=$PRETTY_NAME
@@ -128,4 +132,3 @@ function getSystemInformation() {
     ES_DISTRO=`echo "$ES_TMP_DISTRO" | awk '{print tolower($0)}'`
     ES_DISTRO_VERSION=`echo "$ES_TMP_DISTRO_VERSION" | awk '{print tolower($0)}'`
 }
-
