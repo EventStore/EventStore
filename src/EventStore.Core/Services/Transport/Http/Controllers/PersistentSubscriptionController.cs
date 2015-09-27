@@ -111,34 +111,31 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 {
                     var data = http.RequestCodec.From<SubscriptionConfigData>(s);
 
-                    var namedConsumerStrategy = CalculateNamedConsumerStrategyForOldClients(data);
-
-                    //TODO competing validate data?
-                    var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), 
+                    var config = GetConfig(data);
+                    var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(),
                         Guid.NewGuid(),
-                        envelope, 
+                        envelope,
                         stream, 
-                        groupname, 
-                        data == null || data.ResolveLinktos, 
-                        data == null ? 0 : data.StartFrom, 
-                        data == null ? 0 : data.MessageTimeoutMilliseconds, 
-                        data == null || data.ExtraStatistics,
-                        data == null ? 10 : data.MaxRetryCount,
-                        data == null ? 500 : data.BufferSize,
-                        data == null ? 500 : data.LiveBufferSize,
-                        data == null ? 20 : data.ReadBatchSize,
-                        data == null ? 1000 : data.CheckPointAfterMilliseconds,
-                        data == null ? 10 : data.MinCheckPointCount,
-                        data == null ? 500 : data.MaxCheckPointCount,
-                        data == null ? 0 : data.MaxSubscriberCount,
-                        namedConsumerStrategy,
+                        groupname,
+                        config.ResolveLinktos,
+                        config.StartFrom,
+                        config.MessageTimeoutMilliseconds,
+                        config.ExtraStatistics,
+                        config.MaxRetryCount,
+                        config.BufferSize,
+                        config.LiveBufferSize,
+                        config.ReadBatchSize,
+                        config.CheckPointAfterMilliseconds,
+                        config.MinCheckPointCount,
+                        config.MaxCheckPointCount,
+                        config.MaxSubscriberCount,
+                        CalculateNamedConsumerStrategyForOldClients(data),
                         http.User,
                         "",
                         "");
                     Publish(message);
                 }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
-
 
         private void PostSubscription(HttpEntityManager http, UriTemplateMatch match)
         {
@@ -178,32 +175,50 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 {
                     var data = http.RequestCodec.From<SubscriptionConfigData>(s);
 
-                    var namedConsumerStrategy = CalculateNamedConsumerStrategyForOldClients(data);
-
-                    //TODO competing validate data?
+                    var config = GetConfig(data);
                     var message = new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(),
                         Guid.NewGuid(),
                         envelope,
                         stream,
                         groupname,
-                        data == null || data.ResolveLinktos,
-                        data == null ? 0 : data.StartFrom,
-                        data == null ? 0 : data.MessageTimeoutMilliseconds,
-                        data == null || data.ExtraStatistics,
-                        data == null ? 10 : data.MaxRetryCount,
-                        data == null ? 500 : data.BufferSize,
-                        data == null ? 500 : data.LiveBufferSize,
-                        data == null ? 20 : data.ReadBatchSize,
-                        data == null ? 1000 : data.CheckPointAfterMilliseconds,
-                        data == null ? 10 : data.MinCheckPointCount,
-                        data == null ? 500 : data.MaxCheckPointCount,
-                        data == null ? 0 : data.MaxSubscriberCount,
-                        namedConsumerStrategy,
+                        config.ResolveLinktos,
+                        config.StartFrom,
+                        config.MessageTimeoutMilliseconds,
+                        config.ExtraStatistics,
+                        config.MaxRetryCount,
+                        config.BufferSize,
+                        config.LiveBufferSize,
+                        config.ReadBatchSize,
+                        config.CheckPointAfterMilliseconds,
+                        config.MinCheckPointCount,
+                        config.MaxCheckPointCount,
+                        config.MaxSubscriberCount,
+                        CalculateNamedConsumerStrategyForOldClients(data),
                         http.User,
                         "",
                         "");
                     Publish(message);
                 }, x => Log.DebugException(x, "Reply Text Content Failed."));
+        }
+
+        private SubscriptionConfigData GetConfig(SubscriptionConfigData config){
+            if(config == null){
+                return new SubscriptionConfigData();
+            }
+            return new SubscriptionConfigData{
+                ResolveLinktos = config.ResolveLinktos,
+                StartFrom = config.StartFrom,
+                MessageTimeoutMilliseconds = config.MessageTimeoutMilliseconds,
+                ExtraStatistics = config.ExtraStatistics,
+                MaxRetryCount = config.MaxRetryCount,
+                BufferSize = config.BufferSize,
+                LiveBufferSize = config.LiveBufferSize,
+                ReadBatchSize = config.ReadBatchSize,
+                CheckPointAfterMilliseconds = config.CheckPointAfterMilliseconds,
+                MinCheckPointCount = config.MinCheckPointCount,
+                MaxCheckPointCount = config.MaxCheckPointCount,
+                MaxSubscriberCount = config.MaxSubscriberCount
+            };
         }
 
         private static string CalculateNamedConsumerStrategyForOldClients(SubscriptionConfigData data)
@@ -432,6 +447,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int MaxCheckPointCount { get; set; }
             public int MaxSubscriberCount { get; set; }
             public string NamedConsumerStrategy { get; set; }
+            public SubscriptionConfigData(){
+                StartFrom = 0;
+                MessageTimeoutMilliseconds = 0;
+                MaxRetryCount = 10;
+                BufferSize = 500;
+                LiveBufferSize = 500;
+                ReadBatchSize = 20;
+                CheckPointAfterMilliseconds = 1000;
+                MinCheckPointCount = 10;
+                MaxCheckPointCount = 500;
+                MaxSubscriberCount = 10;
+                NamedConsumerStrategy = "RoundRobin";
+            }
         }
 
         private class SubscriptionSummary
