@@ -14,7 +14,7 @@
     <copyright>Copyright 2012-2013 Event Store LLP</copyright>
     <tags>eventstore client embedded</tags>
     <dependencies>
-      <dependency id="EventStore.Client" version="3.0.0" />
+      <dependency id="EventStore.Client" version="[$version$]" />
     </dependencies>
   </metadata>
   <files>
