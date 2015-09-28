@@ -128,7 +128,7 @@ namespace EventStore.Core.Services.Transport.Http
                         }
                         if (headEvent)
                         {
-                            var etag = GetPositionETag(msg.Record.OriginalEventNumber, codec.ContentType);
+                            var etag = msg.Record.OriginalEvent != null ? GetPositionETag(msg.Record.OriginalEventNumber, codec.ContentType) : String.Empty;
                             var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
                             return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                         }

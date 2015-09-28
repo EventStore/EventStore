@@ -155,7 +155,13 @@ namespace EventStore.Core.Services.Storage
                                          : ResolvedEvent.ForUnresolvedEvent(result.Record);
                     if (record == null)
                         return NoData(msg, ReadEventResult.AccessDenied);
-
+                    if ((result.Result == ReadEventResult.NoStream || 
+                        result.Result == ReadEventResult.NotFound) && 
+                        result.OriginalStreamExists &&
+                        SystemStreams.IsSystemStream(msg.EventStreamId))
+                    {
+                        return NoData(msg, ReadEventResult.Success);
+                    }
                     return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result.Result,
                                                                 record.Value, result.Metadata, access.Public, null);
                 }
