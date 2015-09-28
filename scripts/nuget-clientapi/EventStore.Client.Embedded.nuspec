@@ -31,5 +31,6 @@
     <file src="..\..\src\EventStore.Projections.Core\**\*.cs" target="src\EventStore.Projections.Core\" />
     <file src="..\..\src\EventStore.Transport.Http\**\*.cs" target="src\EventStore.Transport.Http\" />
     <file src="..\..\src\EventStore.Transport.Tcp\**\*.cs" target="src\EventStore.Transport.Tcp\" />
+    <file src="..\..\bin\clusternode\Prelude\**\*.js" target="Prelude\" />
   </files>
 </package>

@@ -6,10 +6,17 @@
   <Target Name="CopyJs1">
     <Copy SourceFiles="$(Js1DllPath)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true"/>
   </Target>
+  <Target Name="CopyPrelude">
+    <ItemGroup>
+      <PreludeFiles Include="$(MSBuildThisFileDirectory)..\Prelude\*.js" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PreludeFiles)" DestinationFiles="@(PreludeFiles->'$(OutDir)Prelude\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
 
   <PropertyGroup>
     <AfterBuildDependsOn>
       CopyJs1;
+      CopyPrelude;
     </AfterBuildDependsOn>
   </PropertyGroup>
   
