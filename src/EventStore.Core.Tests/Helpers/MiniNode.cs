@@ -126,6 +126,7 @@ namespace EventStore.Core.Tests.Helpers
                                                          TimeSpan.FromSeconds(10),
                                                          false,
                                                          memTableSize,
+                                                         false,
                                                          false);
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"

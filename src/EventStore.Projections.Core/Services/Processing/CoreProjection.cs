@@ -571,7 +571,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             EnsureUnsubscribed();
             StopSlaveProjections(); 
-            _publisher.Publish(new CoreProjectionStatusMessage.Stopped(_projectionCorrelationId, _completed));
+            _publisher.Publish(new CoreProjectionStatusMessage.Stopped(_projectionCorrelationId, _name, _completed));
         }
 
         private void EnterFaultedStopping()

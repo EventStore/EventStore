@@ -11,11 +11,11 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core
 {
-    public sealed class ProjectionsSubsystem : ISubsystem
+    public sealed class ProjectionsSubsystem : ISubsystem, IHandle<CoreProjectionStatusMessage.Stopped>
     {
         private readonly int _projectionWorkerThreadCount;
         private readonly ProjectionType _runProjections;
-        private readonly bool _developmentMode;
+        private readonly bool _startStandardProjections;
         public const int VERSION = 3;
 
         private QueuedHandler _masterInputQueue;
@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core
         private IDictionary<Guid, QueuedHandler> _coreQueues;
         private Dictionary<Guid, IPublisher> _queueMap;
 
-        public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections, bool developmentMode)
+        public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections, bool startStandardProjections)
         {
             if (runProjections <= ProjectionType.System)
                 _projectionWorkerThreadCount = 1;
@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core
                 _projectionWorkerThreadCount = projectionWorkerThreadCount;
 
             _runProjections = runProjections;
-            _developmentMode = developmentMode;
+            _startStandardProjections = startStandardProjections;
         }
 
         public void Register(StandardComponents standardComponents)
@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core
             _queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher)v.Value);
 
             ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap);
-
+            projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
         }
 
         private static void CreateAwakerService(StandardComponents standardComponents)
@@ -72,14 +72,6 @@ namespace EventStore.Projections.Core
                 _masterInputQueue.Start();
             foreach (var queue in _coreQueues)
                 queue.Value.Start();
-
-            if (_developmentMode) {
-                var standardProjections = new List<string> { "$by_category", "$stream_by_category", "$streams", "$by_event_type" };
-                foreach (var standardProjection in standardProjections) {
-                    var envelope = new NoopEnvelope();
-                    _masterMainBus.Publish(new ProjectionManagementMessage.Command.Enable(envelope, standardProjection, ProjectionManagementMessage.RunAs.System));
-                }
-            }
         }
 
         public void Stop()
@@ -88,6 +80,20 @@ namespace EventStore.Projections.Core
                 _masterInputQueue.Stop();
             foreach (var queue in _coreQueues)
                 queue.Value.Stop();
+        }
+
+        private List<string> _standardProjections = new List<string> { "$by_category", "$stream_by_category", "$streams", "$by_event_type" };
+        public void Handle(CoreProjectionStatusMessage.Stopped message)
+        {
+            if (_startStandardProjections)
+            {
+                if (_standardProjections.Contains(message.Name))
+                {
+                    _standardProjections.Remove(message.Name);
+                    var envelope = new NoopEnvelope();
+                    _masterMainBus.Publish(new ProjectionManagementMessage.Command.Enable(envelope, message.Name, ProjectionManagementMessage.RunAs.System));
+                }
+            }
         }
     }
 }

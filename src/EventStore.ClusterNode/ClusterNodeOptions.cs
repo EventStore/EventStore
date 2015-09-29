@@ -20,8 +20,10 @@ namespace EventStore.ClusterNode
         public string[] Defines { get; set; }
         [ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
         public bool WhatIf { get; set; }
-        [ArgDescription(Opts.DevelopmentModeDescr, Opts.AppGroup)]
-        public bool DevelopmentMode { get; set; }
+        [ArgDescription(Opts.StartStandardProjectionsDescr, Opts.AppGroup)]
+        public bool StartStandardProjections { get; set; }
+        [ArgDescription(Opts.DisableHttpCachingDescr, Opts.AppGroup)]
+        public bool DisableHTTPCaching { get; set; }
 
         [ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
         public int MonoMinThreadpoolSize { get; set; }
@@ -264,6 +266,9 @@ namespace EventStore.ClusterNode
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
             IndexCacheDepth = Opts.IndexCacheDepthDefault;
             EnableHistograms = Opts.HistogramEnabledDefault;
+
+            StartStandardProjections = Opts.StartStandardProjectionsDefault;
+            DisableHTTPCaching = Opts.DisableHttpCachingDefault;
         }
     }
 }

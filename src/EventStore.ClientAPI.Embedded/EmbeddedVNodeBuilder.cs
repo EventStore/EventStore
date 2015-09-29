@@ -31,7 +31,8 @@ namespace EventStore.ClientAPI.Embedded
         private string _dbPath;
         private long _chunksCacheSize;
         private bool _inMemoryDb;
-        private bool _developmentMode;
+        private bool _startStandardProjections;
+        private bool _disableHTTPCaching;
 
         private IPEndPoint _internalTcp;
         private IPEndPoint _internalSecureTcp;
@@ -150,6 +151,9 @@ namespace EventStore.ClientAPI.Embedded
             _maxMemtableSize = Opts.MaxMemtableSizeDefault;
             _subsystems = new List<ISubsystem>();
             _clusterGossipPort = Opts.ClusterGossipPortDefault;
+
+            _startStandardProjections = Opts.StartStandardProjectionsDefault;
+            _disableHTTPCaching = Opts.DisableHttpCachingDefault;
         }
 
         /// <summary>
@@ -184,15 +188,24 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         /// <summary>
-        /// Enable development mode. This disables caching for events over HTTP.
+        /// Start standard projections.
         /// </summary>
         /// <returns></returns>
-        public EmbeddedVNodeBuilder EnableDevelopmentMode()
+        public EmbeddedVNodeBuilder StartStandardProjections()
         {
-            _developmentMode = true;
+            _startStandardProjections = true;
             return this;
         }
 
+        /// <summary>
+        /// Disable HTTP Caching.
+        /// </summary>
+        /// <returns></returns>
+        public EmbeddedVNodeBuilder DisableHTTPCaching()
+        {
+            _disableHTTPCaching = true;
+            return this;
+        }
 
         /// <summary>
         /// Sets the mode and the number of threads on which to run projections.
@@ -627,7 +640,7 @@ namespace EventStore.ClientAPI.Embedded
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType, _developmentMode));
+            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType, _startStandardProjections));
         }
 
         /// <summary>
@@ -695,7 +708,8 @@ namespace EventStore.ClientAPI.Embedded
                     _extTcpHeartbeatInterval,
                     !_skipVerifyDbHashes,
                     _maxMemtableSize,
-                    _developmentMode);
+                    _startStandardProjections,
+                    _disableHTTPCaching);
             var infoController = new InfoController(null, _projectionType);
             return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }

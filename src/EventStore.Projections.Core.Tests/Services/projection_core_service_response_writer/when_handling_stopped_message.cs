@@ -11,16 +11,18 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
     {
         private Guid _projectionId;
         private bool _completed;
+        private string _projectionName;
 
         protected override void Given()
         {
             _projectionId = Guid.NewGuid();
             _completed = true;
+            _projectionName = Guid.NewGuid().ToString();
         }
 
         protected override void When()
         {
-            _sut.Handle(new CoreProjectionStatusMessage.Stopped(_projectionId, _completed));
+            _sut.Handle(new CoreProjectionStatusMessage.Stopped(_projectionId, _projectionName, _completed));
         }
 
         [Test]

@@ -198,6 +198,7 @@ namespace EventStore.Projections.Core.Services.Management
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.Stopped(
                             Guid.ParseExact(commandBody.Id, "N"),
+                            commandBody.Name,
                             commandBody.Completed));
                     break;
                 }

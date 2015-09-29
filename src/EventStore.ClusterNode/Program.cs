@@ -140,7 +140,7 @@ namespace EventStore.ClusterNode
             var enabledNodeSubsystems = runProjections >= ProjectionType.System
                 ? new[] { NodeSubsystems.Projections }
             : new NodeSubsystems[0];
-            _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections, opts.DevelopmentMode);
+            _projections = new Projections.Core.ProjectionsSubsystem(opts.ProjectionThreads, opts.RunProjections, opts.StartStandardProjections);
             var infoController = new InfoController(opts, opts.RunProjections);
             _node = new ClusterVNode(db, vNodeSettings, gossipSeedSource, infoController, _projections);
             RegisterWebControllers(enabledNodeSubsystems, vNodeSettings);
@@ -276,7 +276,8 @@ namespace EventStore.ClusterNode
                     TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout),
                     TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval),
                     !options.SkipDbVerify, options.MaxMemTableSize,
-                    options.DevelopmentMode,
+                    options.StartStandardProjections,
+                    options.DisableHTTPCaching,
                     options.EnableHistograms,
                     options.IndexCacheDepth);
         }
