@@ -241,16 +241,22 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly bool _completed;
+            private readonly string _name;
 
-            public Stopped(Guid projectionId, bool completed)
+            public Stopped(Guid projectionId, string name, bool completed)
                 : base(projectionId)
             {
                 _completed = completed;
+                _name = name;
             }
 
             public bool Completed
             {
                 get { return _completed; }
+            }
+            public string Name
+            {
+                get { return _name; }
             }
         }
     }

@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Http
     public static class Configure
     {
         private const int MaxPossibleAge = 31536000;
-        public static bool DevelopmentMode = false;
+        public static bool DisableHTTPCaching = false;
 
         public static ResponseConfiguration Ok(string contentType)
         {
@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Transport.Http
                                                params KeyValuePair<string, string>[] headers)
         {
             var headrs = new List<KeyValuePair<string, string>>(headers);
-            if (DevelopmentMode)
+            if (DisableHTTPCaching)
             {
                 headrs.Add(new KeyValuePair<string, string>(
                     "Cache-Control",

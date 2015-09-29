@@ -18,7 +18,8 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool EnableTrustedAuth;
         public readonly X509Certificate2 Certificate;
         public readonly int WorkerThreads;
-        public readonly bool DevelopmentMode;
+        public readonly bool StartStandardProjections;
+        public readonly bool DisableHTTPCaching;
 
         public readonly bool DiscoverViaDns;
         public readonly string ClusterDns;
@@ -100,7 +101,8 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan extTcpHeartbeatInterval,
 				                    bool verifyDbHash,
 				                    int maxMemtableEntryCount,
-                                    bool developmentMode,
+                                    bool startStandardProjections,
+                                    bool disableHTTPCaching,
                                     bool enableHistograms = false,
                                     int indexCacheDepth = 16)
         {
@@ -137,7 +139,8 @@ namespace EventStore.Core.Cluster.Settings
             EnableTrustedAuth = enableTrustedAuth;
             Certificate = certificate;
             WorkerThreads = workerThreads;
-            DevelopmentMode = developmentMode;
+            StartStandardProjections = startStandardProjections;
+            DisableHTTPCaching = disableHTTPCaching;
 
             DiscoverViaDns = discoverViaDns;
             ClusterDns = clusterDns;
@@ -212,7 +215,8 @@ namespace EventStore.Core.Cluster.Settings
                                  + "GossipInterval: {29}\n"
                                  + "GossipAllowedTimeDifference: {30}\n"
                                  + "GossipTimeout: {31}\n"
-                                 + "HistogramEnabled: {32}\n",
+                                 + "HistogramEnabled: {32}\n"
+                                 + "HTTPCachingDisabled: {33}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -227,7 +231,7 @@ namespace EventStore.Core.Cluster.Settings
                                  PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
                                  UseSsl, SslTargetHost, SslValidateServer,
                                  StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
-                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout, EnableHistograms);
+                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout, EnableHistograms, DisableHTTPCaching);
         }
     }
 }

@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionStatusMessage.Stopped message)
         {
-            var command = new Stopped {Id = message.ProjectionId.ToString("N"), Completed = message.Completed,};
+            var command = new Stopped {Id = message.ProjectionId.ToString("N"), Completed = message.Completed, Name = message.Name};
             _writer.PublishCommand("$stopped", command);
         }
 

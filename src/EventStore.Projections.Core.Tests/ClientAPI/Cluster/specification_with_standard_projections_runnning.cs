@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
         private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds)
         {
-            _projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All, developmentMode: false);
+            _projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All, startStandardProjections: false);
             var node = new MiniClusterNode(
                 PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
                 endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
