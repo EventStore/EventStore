@@ -28,11 +28,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService
             throw new NotImplementedException();
         }
 
-        public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound)
-        {
-            throw new NotImplementedException();
-        }
-
         public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId)
         {
             throw new NotImplementedException();
