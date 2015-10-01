@@ -82,5 +82,37 @@ namespace EventStore.Core.Tests.Http.Streams
         }
     }
 
+    [TestFixture]
+    public class when_getting_metadata_for_an_existing_stream_and_no_metadata_exists : HttpBehaviorSpecificationWithSingleEvent
+    {
+        protected override void Given()
+        {
+            _response = MakeArrayEventsPost(
+                TestStream,
+                new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
+        }
 
+        protected override void When()
+        {
+            Get(TestStream + "/metadata", String.Empty, EventStore.Transport.Http.ContentType.Json, DefaultData.AdminNetworkCredentials);
+        }
+
+        [Test]
+        public void returns_ok_status_code()
+        {
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void returns_empty_etag()
+        {
+            Assert.IsNullOrEmpty(_lastResponse.Headers["ETag"]);
+        }
+
+        [Test]
+        public void returns_empty_body()
+        {
+            Assert.AreEqual("{}", _lastResponseBody);
+        }
+    }
 }

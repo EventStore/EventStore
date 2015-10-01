@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var msg = message as ClientMessage.ReadEventCompleted;
             if (msg == null || msg.Result != ReadEventResult.Success || msg.Record.Event == null)
-                return string.Empty;
+                return entity.ResponseCodec.To(new {});
 
             switch (entity.ResponseCodec.ContentType)
             {

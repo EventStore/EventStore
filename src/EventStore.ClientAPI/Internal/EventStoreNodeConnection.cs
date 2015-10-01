@@ -448,6 +448,7 @@ namespace EventStore.ClientAPI.Internal
                     case EventReadStatus.Success:
                         if (res.Event == null) throw new Exception("Event is null while operation result is Success.");
                         var evnt = res.Event.Value.OriginalEvent;
+                        if (evnt == null) return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
                         return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
                     case EventReadStatus.NotFound:
                     case EventReadStatus.NoStream:
