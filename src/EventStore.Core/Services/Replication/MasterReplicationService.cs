@@ -215,9 +215,6 @@ namespace EventStore.Core.Services.Replication
                 return Math.Min(replicaPosition, masterCheckpoint);
 
             var nextEpoch = _epochManager.GetEpoch(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
-            if(nextEpoch == null){
-                nextEpoch = _epochManager.GetEpochWithAllEpochs(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
-            }
             if (nextEpoch == null)
             {
                 var msg = string.Format("Replica [{0},S:{1},{2}(0x{2:X}),epochs:\n{3}]\n provided epochs which are not in "

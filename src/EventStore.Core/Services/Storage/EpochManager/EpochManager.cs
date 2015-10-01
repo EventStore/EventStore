@@ -50,19 +50,6 @@ namespace EventStore.Core.Services.Storage.EpochManager
 
         public void Init()
         {
-            ReadEpochs(CachedEpochCount);
-        }
-
-        public EpochRecord GetLastEpoch()
-        {
-            lock (_locker)
-            {
-                return _lastEpochNumber < 0 ? null : GetEpoch(_lastEpochNumber, throwIfNotFound: true);
-            }
-        }
-
-        private void ReadEpochs(int maxEpochCount)
-        {
             lock (_locker)
             {
                 var reader = _readers.Get();
@@ -85,7 +72,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                     }
 
                     int cnt = 0;
-                    while (epochPos >= 0 && cnt < maxEpochCount)
+                    while (epochPos >= 0 && cnt < CachedEpochCount)
                     {
                         var result = reader.TryReadAt(epochPos);
                         if (!result.Success)
@@ -111,6 +98,14 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 {
                     _readers.Return(reader);
                 }
+            }
+        }
+
+        public EpochRecord GetLastEpoch()
+        {
+            lock (_locker)
+            {
+                return _lastEpochNumber < 0 ? null : GetEpoch(_lastEpochNumber, throwIfNotFound: true);
             }
         }
 
@@ -273,12 +268,6 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 Log.Debug("=== Update Last Epoch E{0}@{1}:{2:B} (previous epoch at {3}).", 
                           epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition);
             }
-        }
-
-        public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound)
-        {
-            ReadEpochs(int.MaxValue);
-            return GetEpoch(epochNumber, throwIfNotFound);
         }
     }
 }
