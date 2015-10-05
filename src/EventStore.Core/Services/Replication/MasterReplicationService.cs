@@ -129,10 +129,10 @@ namespace EventStore.Core.Services.Replication
                 {
                     ReplicaSubscription existingSubscr;
                     _subscriptions.TryGetValue(subscription.SubscriptionId, out existingSubscr);
-                    var msg = string.Format("There is already a subscription with SubscriptionID {0:B}: {1}.\nSubscription we tried to add: {2}",
-                                            subscription.SubscriptionId, existingSubscr, subscription);
-                    Log.Error(msg);
-                    subscription.SendBadRequestAndClose(message.CorrelationId, msg);
+                    Log.Error("There is already a subscription with SubscriptionID {0:B}: {1}.", subscription.SubscriptionId, existingSubscr);
+                    Log.Error("Subscription we tried to add: {0}.", existingSubscr);
+                    subscription.SendBadRequestAndClose(message.CorrelationId, string.Format("There is already a subscription with SubscriptionID {0:B}: {1}.\nSubscription we tried to add: {2}",
+                                            subscription.SubscriptionId, existingSubscr, subscription));
                     subscription.Dispose();
                 }
             }

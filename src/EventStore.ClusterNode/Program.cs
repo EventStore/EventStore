@@ -124,18 +124,12 @@ namespace EventStore.ClusterNode
 
             var runProjections = opts.RunProjections;
 
-            Log.Info("\n{0,-25} {1}\n"
-                    + "{2,-25} {3}\n"
-                    + "{4,-25} {5} (0x{5:X})\n"
-                    + "{6,-25} {7} (0x{7:X})\n"
-                    + "{8,-25} {9} (0x{9:X})\n"
-                    + "{10,-25} {11} (0x{11:X})\n",
-                    "INSTANCE ID:", vNodeSettings.NodeInfo.InstanceId,
-                    "DATABASE:", db.Config.Path,
-                    "WRITER CHECKPOINT:", db.Config.WriterCheckpoint.Read(),
-                    "CHASER CHECKPOINT:", db.Config.ChaserCheckpoint.Read(),
-                    "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
-                    "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
+            Log.Info("{0,-25} {1}", "INSTANCE ID:", vNodeSettings.NodeInfo.InstanceId);
+            Log.Info("{0,-25} {1}", "DATABASE:", db.Config.Path);
+            Log.Info("{0,-25} {1} (0x{1:X})", "WRITER CHECKPOINT:", db.Config.WriterCheckpoint.Read());
+            Log.Info("{0,-25} {1} (0x{1:X})", "CHASER CHECKPOINT:", db.Config.ChaserCheckpoint.Read());
+            Log.Info("{0,-25} {1} (0x{1:X})", "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read());
+            Log.Info("{0,-25} {1} (0x{1:X})", "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
             var enabledNodeSubsystems = runProjections >= ProjectionType.System
                 ? new[] { NodeSubsystems.Projections }
