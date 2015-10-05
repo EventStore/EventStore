@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.Internal
 
         public override string ToString()
         {
-            return string.Format("Subscription {0} ({1:B}): {2}, is subscribed: {3}, retry count: {4}, "
+            return string.Format("Subscription {0} ({1:D}): {2}, is subscribed: {3}, retry count: {4}, "
                                  + "created: {5:HH:mm:ss.fff}, last updated: {6:HH:mm:ss.fff}",
                                  Operation.GetType().Name, CorrelationId, Operation, IsSubscribed, RetryCount, CreatedTime, LastUpdated);
         }

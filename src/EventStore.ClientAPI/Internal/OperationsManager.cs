@@ -40,7 +40,7 @@ namespace EventStore.ClientAPI.Internal
 
         public override string ToString()
         {
-            return string.Format("Operation {0} ({1:B}): {2}, retry count: {3}, created: {4:HH:mm:ss.fff}, last updated: {5:HH:mm:ss.fff}",
+            return string.Format("Operation {0} ({1:D}): {2}, retry count: {3}, created: {4:HH:mm:ss.fff}, last updated: {5:HH:mm:ss.fff}",
                                  Operation.GetType().Name, CorrelationId, Operation, RetryCount, CreatedTime, LastUpdated);
         }
     }
