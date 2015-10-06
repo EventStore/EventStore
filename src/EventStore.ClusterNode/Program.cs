@@ -221,11 +221,13 @@ namespace EventStore.ClusterNode
 
             var intTcpPort = options.IntTcpPortAdvertiseAs > 0 ? options.IntTcpPortAdvertiseAs : options.IntTcpPort;
             var intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
-            var intSecureTcpEndPoint = options.IntSecureTcpPort > 0 ? new IPEndPoint(intIpAddressToAdvertise, intTcpPort) : null;
+            var intSecureTcpPort = options.IntSecureTcpPortAdvertiseAs > 0 ? options.IntSecureTcpPortAdvertiseAs : options.IntSecureTcpPort;
+            var intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
 
             var extTcpPort = options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort;
             var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
-            var extSecureTcpEndPoint = options.ExtSecureTcpPort > 0 ? new IPEndPoint(extIpAddressToAdvertise, extTcpPort) : null;
+            var extSecureTcpPort = options.ExtSecureTcpPortAdvertiseAs > 0 ? options.ExtSecureTcpPortAdvertiseAs : options.ExtSecureTcpPort;
+            var extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
             
             var intHttpPort = options.IntHttpPortAdvertiseAs > 0 ? options.IntHttpPortAdvertiseAs : options.IntHttpPort;
             var extHttpPort = options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort;
