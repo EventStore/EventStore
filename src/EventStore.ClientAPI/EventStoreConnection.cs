@@ -91,7 +91,7 @@ namespace EventStore.ClientAPI
                 var tcpEndPoint = GetSingleNodeIPEndPointFrom(uri);
                 return new EventStoreNodeConnection(connectionSettings, null, new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection), connectionName);
             }
-            if (connectionSettings.GossipSeeds.Length > 0)
+            if (connectionSettings.GossipSeeds != null && connectionSettings.GossipSeeds.Length > 0)
             {
                 var clusterSettings = new ClusterSettings(connectionSettings.GossipSeeds,
                     connectionSettings.MaxDiscoverAttempts,
