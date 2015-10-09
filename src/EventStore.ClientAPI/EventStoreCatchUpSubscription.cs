@@ -278,7 +278,7 @@ namespace EventStore.ClientAPI
                 {
                     if (e.Event == null) // drop subscription artificial ResolvedEvent
                     {
-                        if (_dropData == null) throw new Exception("Drop reason not specified.");
+                        if (_dropData == null) _dropData = new DropData(SubscriptionDropReason.Unknown, new Exception("Drop reason not specified."));
                         DropSubscription(_dropData.Reason, _dropData.Error);
                         Interlocked.CompareExchange(ref _isProcessing, 0, 1);
                         return;
