@@ -49,15 +49,16 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
     {
         private static int _nextConnId = -1;
 
-        public static IEventStoreConnection To(MiniNode miniNode)
+        public static IEventStoreConnection To(MiniNode miniNode, UserCredentials credentials = null)
         {
-            return EmbeddedEventStoreConnection.Create(miniNode.Node, Settings(),
+            return EmbeddedEventStoreConnection.Create(miniNode.Node, Settings(credentials),
                                                string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
         }
 
-        private static ConnectionSettingsBuilder Settings()
+        private static ConnectionSettingsBuilder Settings(UserCredentials credentials = null)
         {
             var settings = ConnectionSettings.Create()
+                                             .SetDefaultUserCredentials(credentials)
                                              .UseCustomLogger(ClientApiLoggerBridge.Default)
                                              .EnableVerboseLogging()
                                              .LimitReconnectionsTo(10)

@@ -47,13 +47,13 @@ namespace EventStore.ClientAPI.Embedded
             _actionQueue = new ConcurrentQueue<Action>();
         }
 
-        public void DropSubscription(Core.Services.SubscriptionDropReason reason)
+        public void DropSubscription(Core.Services.SubscriptionDropReason reason, Exception ex)
         {
             switch (reason)
             {
                 case Core.Services.SubscriptionDropReason.AccessDenied:
                     DropSubscription(SubscriptionDropReason.AccessDenied,
-                        new AccessDeniedException(string.Format("Subscription to '{0}' failed due to access denied.",
+                        ex ?? new AccessDeniedException(string.Format("Subscription to '{0}' failed due to access denied.",
                             StreamId == string.Empty ? "<all>" : StreamId)));
                     break;
                 case Core.Services.SubscriptionDropReason.Unsubscribed:
