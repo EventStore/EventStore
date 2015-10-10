@@ -23,6 +23,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             _userCredentials = userCredentials;
         }
 
+        public virtual IEventStoreConnection SetupConnection(MiniNode node)
+        {
+            return TestConnection.Create(node.TcpEndPoint, TcpType.Normal, _userCredentials);
+        }
+
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
@@ -39,7 +44,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                             m =>
                             {
                                 Assert.IsTrue(m is UserManagementMessage.UpdateResult);
-                                var msg = (UserManagementMessage.UpdateResult) m;
+                                var msg = (UserManagementMessage.UpdateResult)m;
                                 Assert.IsTrue(msg.Success);
 
                                 userCreateEvent1.Set();
@@ -57,7 +62,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                             m =>
                             {
                                 Assert.IsTrue(m is UserManagementMessage.UpdateResult);
-                                var msg = (UserManagementMessage.UpdateResult) m;
+                                var msg = (UserManagementMessage.UpdateResult)m;
                                 Assert.IsTrue(msg.Success);
 
                                 userCreateEvent2.Set();
@@ -75,7 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                             m =>
                             {
                                 Assert.IsTrue(m is UserManagementMessage.UpdateResult);
-                                var msg = (UserManagementMessage.UpdateResult) m;
+                                var msg = (UserManagementMessage.UpdateResult)m;
                                 Assert.IsTrue(msg.Success);
 
                                 adminCreateEvent2.Set();
@@ -83,14 +88,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                         SystemAccount.Principal,
                         "adm",
                         "Administrator User",
-                        new[] {SystemRoles.Admins},
+                        new[] { SystemRoles.Admins },
                         "admpa$$"));
 
                 Assert.IsTrue(userCreateEvent1.Wait(10000), "User 1 creation failed");
                 Assert.IsTrue(userCreateEvent2.Wait(10000), "User 2 creation failed");
                 Assert.IsTrue(adminCreateEvent2.Wait(10000), "Administrator User creation failed");
 
-                Connection = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, _userCredentials);
+                Connection = SetupConnection(_node);
                 Connection.ConnectAsync().Wait();
 
                 Connection.SetStreamMetadataAsync("noacl-stream", ExpectedVersion.NoStream, StreamMetadata.Build())
@@ -207,7 +212,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected EventStoreTransaction TransStart(string streamId, string login, string password)
         {
-            return  Connection.StartTransactionAsync(streamId, ExpectedVersion.Any,
+            return Connection.StartTransactionAsync(streamId, ExpectedVersion.Any,
                                                 login == null && password == null ? null : new UserCredentials(login, password))
             .Result;
         }
@@ -270,7 +275,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void DeleteStream(string streamId, string login, string password)
         {
-            Connection.DeleteStreamAsync(streamId, ExpectedVersion.Any, true, 
+            Connection.DeleteStreamAsync(streamId, ExpectedVersion.Any, true,
                                     login == null && password == null ? null : new UserCredentials(login, password)).Wait();
         }
 
@@ -286,7 +291,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected EventData[] CreateEvents()
         {
-            return new[] { new EventData(Guid.NewGuid(), "some-type", false, new byte[] {1, 2, 3}, null) };
+            return new[] { new EventData(Guid.NewGuid(), "some-type", false, new byte[] { 1, 2, 3 }, null) };
         }
     }
 }
