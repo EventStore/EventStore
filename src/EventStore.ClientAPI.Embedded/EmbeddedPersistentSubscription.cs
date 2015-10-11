@@ -43,7 +43,7 @@ namespace EventStore.ClientAPI.Embedded
             CorrelationId = correlationId;
 
             Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials, 
-                _ => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied),
+                ex => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied, ex),
                 user => new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
                     new PublishEnvelope(Publisher, true), ConnectionId, _subscriptionId, StreamId, _bufferSize,
                     String.Empty,
@@ -65,7 +65,7 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(reason, "reason");
 
             Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials,
-                _ => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied),
+                ex => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied, ex),
                 user => new ClientMessage.PersistentSubscriptionNackEvents(CorrelationId, CorrelationId,
                     new PublishEnvelope(Publisher, true), _subscriptionId, reason,
                     (ClientMessage.PersistentSubscriptionNackEvents.NakAction) action, processedEvents,

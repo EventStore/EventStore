@@ -40,8 +40,8 @@ namespace EventStore.ClientAPI.Embedded
         {
             CorrelationId = correlationId;
 
-            Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials, 
-                _ => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied), 
+            Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials,
+                ex => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied, ex), 
                 user => new ClientMessage.SubscribeToStream(
                     correlationId,
                     correlationId,

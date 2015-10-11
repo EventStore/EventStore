@@ -125,7 +125,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
-            return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
+            return DeleteStreamAsync(stream, expectedVersion, false, GetUserCredentials(_settings, userCredentials));
         }
 
         public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
@@ -138,7 +138,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.DeleteStream(corrId, corrId, envelope, false,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.DeleteStream(corrId, corrId, envelope, false,
                 stream, expectedVersion, hardDelete, user));
 
             return source.Task;
@@ -156,7 +156,7 @@ namespace EventStore.ClientAPI.Embedded
         public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
             // ReSharper disable RedundantCast
-            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials);
+            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, GetUserCredentials(_settings, userCredentials));
             // ReSharper restore RedundantCast
         }
 
@@ -172,7 +172,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.WriteEvents(corrId, corrId, envelope, false,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.WriteEvents(corrId, corrId, envelope, false,
                 stream, expectedVersion, events.ConvertToEvents(), user));
 
             return source.Task;
@@ -189,7 +189,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.TransactionStart(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.TransactionStart(corrId, corrId, envelope,
                 false, stream, expectedVersion, user));
 
             return source.Task;
@@ -198,7 +198,7 @@ namespace EventStore.ClientAPI.Embedded
         public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null)
         {
             Ensure.Nonnegative(transactionId, "transactionId");
-            return new EventStoreTransaction(transactionId, userCredentials, this);
+            return new EventStoreTransaction(transactionId, GetUserCredentials(_settings, userCredentials), this);
         }
 
         Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials)
@@ -213,7 +213,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.TransactionWrite(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.TransactionWrite(corrId, corrId, envelope,
                 false, transaction.TransactionId, events.ConvertToEvents(), user));
 
             return source.Task;
@@ -231,7 +231,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.TransactionCommit(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.TransactionCommit(corrId, corrId, envelope,
                 false, transaction.TransactionId, user));
 
             return source.Task;
@@ -248,7 +248,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadEvent(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.ReadEvent(corrId, corrId, envelope,
                 stream, eventNumber, resolveLinkTos, false, user));
 
             return source.Task;
@@ -266,7 +266,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope,
                 stream, start, count, resolveLinkTos, false, null, user));
 
             return source.Task;
@@ -283,7 +283,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope,
                 stream, start, count, resolveLinkTos, false, null, user));
 
             return source.Task;
@@ -299,13 +299,12 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
                 position.CommitPosition,
                 position.PreparePosition, maxCount, resolveLinkTos, false, null, user));
 
             return source.Task;
         }
-
 
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
@@ -317,7 +316,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
                 position.CommitPosition,
                 position.PreparePosition, maxCount, resolveLinkTos, false, null, user));
 
@@ -337,7 +336,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.StartSubscription(corrId, source, stream, userCredentials, resolveLinkTos, eventAppeared, subscriptionDropped);
+            _subscriptions.StartSubscription(corrId, source, stream, GetUserCredentials(_settings, userCredentials), resolveLinkTos, eventAppeared, subscriptionDropped);
             
             return source.Task;
         }
@@ -355,7 +354,7 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription =
                 new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint,
-                    resolveLinkTos, userCredentials, eventAppeared,
+                    resolveLinkTos, GetUserCredentials(_settings, userCredentials), eventAppeared,
                     liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
@@ -373,7 +372,7 @@ namespace EventStore.ClientAPI.Embedded
         
             Guid corrId = Guid.NewGuid();
 
-            _subscriptions.StartSubscription(corrId, source, string.Empty, userCredentials, resolveLinkTos,  eventAppeared, subscriptionDropped);
+            _subscriptions.StartSubscription(corrId, source, string.Empty, GetUserCredentials(_settings, userCredentials), resolveLinkTos, eventAppeared, subscriptionDropped);
 
             return source.Task;
         }
@@ -390,7 +389,7 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var subscription = new EmbeddedEventStorePersistentSubscription(groupName, stream, eventAppeared, subscriptionDropped,
-                userCredentials, _settings.Log, _settings.VerboseLogging, _settings, _subscriptions, bufferSize,
+                GetUserCredentials(_settings, userCredentials), _settings.Log, _settings.VerboseLogging, _settings, _subscriptions, bufferSize,
                 autoAck);
 
             subscription.Start();
@@ -410,14 +409,14 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription =
                 new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint, resolveLinkTos,
-                    userCredentials, eventAppeared, liveProcessingStarted,
+                    GetUserCredentials(_settings, userCredentials), eventAppeared, liveProcessingStarted,
                     subscriptionDropped, _settings.VerboseLogging, readBatchSize);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
 
         public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
-            UserCredentials credentials)
+            UserCredentials userCredentials)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
@@ -430,7 +429,7 @@ namespace EventStore.ClientAPI.Embedded
             var corrId = Guid.NewGuid();
 
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, credentials, source.SetException, user => new ClientMessage.CreatePersistentSubscription(
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.CreatePersistentSubscription(
                 corrId, 
                 corrId,
                 envelope,
@@ -450,14 +449,14 @@ namespace EventStore.ClientAPI.Embedded
                 settings.MaxSubscriberCount,
                 settings.NamedConsumerStrategy,
                 user,
-                credentials == null ? null : credentials.Username,
-                credentials == null ? null : credentials.Password));
+                userCredentials == null ? null : userCredentials.Username,
+                userCredentials == null ? null : userCredentials.Password));
 
             return source.Task;
         }
 
         public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
-            UserCredentials credentials)
+            UserCredentials userCredentials)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
@@ -468,7 +467,7 @@ namespace EventStore.ClientAPI.Embedded
 
             var corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, credentials, source.SetException, user => new ClientMessage.UpdatePersistentSubscription(
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.UpdatePersistentSubscription(
                 corrId,
                 corrId,
                 envelope,
@@ -488,8 +487,8 @@ namespace EventStore.ClientAPI.Embedded
                 settings.MaxSubscriberCount,
                 settings.NamedConsumerStrategy,
                 user,
-                credentials == null ? null : credentials.Username,
-                credentials == null ? null : credentials.Password));
+                userCredentials == null ? null : userCredentials.Username,
+                userCredentials == null ? null : userCredentials.Password));
 
             return source.Task;
         }
@@ -508,7 +507,7 @@ namespace EventStore.ClientAPI.Embedded
 
             var corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.DeletePersistentSubscription(
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.DeletePersistentSubscription(
                 corrId,
                 corrId,
                 envelope,
@@ -521,7 +520,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
-            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);
+            return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), GetUserCredentials(_settings, userCredentials));
         }
 
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
@@ -540,7 +539,7 @@ namespace EventStore.ClientAPI.Embedded
 
             var corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user => new ClientMessage.WriteEvents(corrId, corrId, envelope, false, metastream,
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.WriteEvents(corrId, corrId, envelope, false, metastream,
                 expectedMetastreamVersion, metaevent.ConvertToEvent(), user));
 
             return source.Task;
@@ -548,7 +547,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null)
         {
-            return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ContinueWith(t =>
+            return GetStreamMetadataAsRawBytesAsync(stream, GetUserCredentials(_settings, userCredentials)).ContinueWith(t =>
             {
                 if (t.Exception != null)
                     throw t.Exception.InnerException;
@@ -562,7 +561,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null)
         {
-            return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, userCredentials).ContinueWith(t =>
+            return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, GetUserCredentials(_settings, userCredentials)).ContinueWith(t =>
             {
                 if (t.Exception != null)
                     throw t.Exception.InnerException;
@@ -587,7 +586,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null)
         {
-            return AppendToStreamAsync(SystemStreams.SettingsStream, ExpectedVersion.Any, userCredentials,
+            return AppendToStreamAsync(SystemStreams.SettingsStream, ExpectedVersion.Any, GetUserCredentials(_settings, userCredentials),
                 new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
         }
 
@@ -625,7 +624,7 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, userCredentials, source.SetException, user =>  new ClientMessage.TransactionWrite(corrId, corrId, envelope,false, 
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.TransactionWrite(corrId, corrId, envelope, false, 
                 transaction.TransactionId, events.ConvertToEvents(), user));
             
             return source.Task;
@@ -641,11 +640,16 @@ namespace EventStore.ClientAPI.Embedded
             Guid corrId = Guid.NewGuid();
 
             _publisher.PublishWithAuthentication(
-                _authenticationProvider, userCredentials, source.SetException,
+                _authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException,
                 user => new ClientMessage.TransactionCommit(corrId, corrId, envelope, false,
                     transaction.TransactionId, user));
 
             return source.Task;
+        }
+
+        private UserCredentials GetUserCredentials(ConnectionSettings settings, UserCredentials givenCredentials)
+        {
+            return givenCredentials ?? settings.DefaultUserCredentials;
         }
     }
 }

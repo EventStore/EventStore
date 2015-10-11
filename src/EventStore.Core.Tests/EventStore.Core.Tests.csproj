@@ -89,6 +89,7 @@
     <Compile Include="ClientAPI\Embedded\connecting_to_a_persistent_subscription.cs" />
     <Compile Include="ClientAPI\Embedded\create_persistent_subscription.cs" />
     <Compile Include="ClientAPI\Embedded\deleting_persistent_subscription.cs" />
+    <Compile Include="ClientAPI\Embedded\Security\authorized_default_credentials_security.cs" />
     <Compile Include="ClientAPI\Embedded\update_persistent_subscription.cs" />
     <Compile Include="ClientAPI\when_working_with_metadata.cs" />
     <Compile Include="ClientAPI\persistent_connect_integration_tests.cs" />
