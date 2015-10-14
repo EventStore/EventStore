@@ -59,6 +59,8 @@ namespace EventStore.Core.Cluster.Settings
         public readonly int MaxMemtableEntryCount;
         public readonly int IndexCacheDepth;
 
+        public readonly string Index;
+
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
                                     IPEndPoint internalSecureTcpEndPoint,
@@ -103,6 +105,7 @@ namespace EventStore.Core.Cluster.Settings
 				                    int maxMemtableEntryCount,
                                     bool startStandardProjections,
                                     bool disableHTTPCaching,
+                                    string index = null,
                                     bool enableHistograms = false,
                                     int indexCacheDepth = 16)
         {
@@ -180,6 +183,7 @@ namespace EventStore.Core.Cluster.Settings
 
             EnableHistograms = enableHistograms;
             IndexCacheDepth = indexCacheDepth;
+            Index = index;
         }
 
         public override string ToString()
@@ -216,7 +220,8 @@ namespace EventStore.Core.Cluster.Settings
                                  + "GossipAllowedTimeDifference: {30}\n"
                                  + "GossipTimeout: {31}\n"
                                  + "HistogramEnabled: {32}\n"
-                                 + "HTTPCachingDisabled: {33}\n",
+                                 + "HTTPCachingDisabled: {33}\n"
+                                 + "IndexPath: {34}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -231,7 +236,7 @@ namespace EventStore.Core.Cluster.Settings
                                  PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
                                  UseSsl, SslTargetHost, SslValidateServer,
                                  StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
-                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout, EnableHistograms, DisableHTTPCaching);
+                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout, EnableHistograms, DisableHTTPCaching, Index);
         }
     }
 }
