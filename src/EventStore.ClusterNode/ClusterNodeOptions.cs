@@ -116,6 +116,8 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.DbPathDescr, Opts.DbGroup)]
         public string Db { get; set; }
+        [ArgDescription(Opts.IndexPathDescr, Opts.DbGroup)]
+        public string Index { get; set; }
         [ArgDescription(Opts.InMemDbDescr, Opts.DbGroup)]
         public bool MemDb { get; set; }
         [ArgDescription(Opts.SkipDbVerifyDescr, Opts.DbGroup)]
@@ -219,6 +221,7 @@ namespace EventStore.ClusterNode
             ChunksCacheSize = Opts.ChunksCacheSizeDefault;
 
             Db = Locations.DefaultDataDirectory;
+            Index = Locations.DefaultDataDirectory;
             MemDb = Opts.InMemDbDefault;
             SkipDbVerify = Opts.SkipDbVerifyDefault;
             RunProjections = Opts.RunProjectionsDefault;
