@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
-        private static readonly ICodec[] DefaultCodecs = {Codec.Json, Codec.Xml};
+        private static readonly ICodec[] DefaultCodecs = { Codec.Json, Codec.Xml };
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionController>();
 
         public PersistentSubscriptionController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
@@ -34,6 +34,129 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PostSubscription, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked", HttpMethod.Post, ReplayParkedMessages);
+            Register(service, "/subscriptions/{stream}/{subscription}/messages?count={count}", HttpMethod.Get, GetNextNMessages, Codec.NoCodecs, DefaultCodecs);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/messages/{messageid}/ack", HttpMethod.Post, AckMessage);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/messages/{messageid}/nack", HttpMethod.Post, NackMessage);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post, AckMessages);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack?ids={messageids}", HttpMethod.Post, NackMessages);
+
+        }
+
+        private void AckMessages(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = new NoopEnvelope();
+            var groupname = match.BoundVariables["subscription"];
+            var stream = match.BoundVariables["stream"];
+            var messageIds = match.BoundVariables["messageIds"];
+            var ids = new List<Guid>();
+            foreach (var messageId in messageIds.Split(new[] { ',' }))
+            {
+                Guid id;
+                if (!Guid.TryParse(messageId, out id))
+                {
+                    http.ReplyStatus(HttpStatusCode.BadRequest, "messageid should be a properly formed guid", exception => { });
+                    return;
+                }
+                ids.Add(id);
+            }
+
+            var cmd = new ClientMessage.PersistentSubscriptionAckEvents(
+                                             Guid.NewGuid(),
+                                             Guid.NewGuid(),
+                                             envelope,
+                                             BuildSubscriptionGroupKey(groupname, stream),
+                                             ids.ToArray(),
+                                             http.User);
+            Publish(cmd);
+            //TODO CLC how to check for fail here??
+            //ACK/NACK dont have responses!
+            http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
+        }
+
+        private void NackMessages(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = new NoopEnvelope();
+            var groupname = match.BoundVariables["subscription"];
+            var stream = match.BoundVariables["stream"];
+            var messageIds = match.BoundVariables["messageIds"];
+            var ids = new List<Guid>();
+            foreach (var messageId in messageIds.Split(new[] { ',' }))
+            {
+                Guid id;
+                if (!Guid.TryParse(messageId, out id))
+                {
+                    http.ReplyStatus(HttpStatusCode.BadRequest, "messageid should be a properly formed guid", exception => { });
+                    return;
+                }
+                ids.Add(id);
+            }
+            var cmd = new ClientMessage.PersistentSubscriptionNackEvents(
+                                             Guid.NewGuid(),
+                                             Guid.NewGuid(),
+                                             envelope,
+                                             BuildSubscriptionGroupKey(groupname, stream),
+                                             "Naked from http",
+                                             ClientMessage.PersistentSubscriptionNackEvents.NakAction.Unknown, //TODO more nak actions?
+                                             ids.ToArray(),
+                                             http.User);
+            Publish(cmd);
+            //ACK/NACK dont have responses!
+            http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
+        }
+
+        private static string BuildSubscriptionGroupKey(string stream, string groupName)
+        {
+            return stream + "::" + groupName;
+        }
+
+        private void AckMessage(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = new NoopEnvelope();
+            var groupname = match.BoundVariables["subscription"];
+            var stream = match.BoundVariables["stream"];
+            var messageId = match.BoundVariables["messageId"];
+            var id = Guid.NewGuid();
+            if (!Guid.TryParse(messageId, out id))
+            {
+                http.ReplyStatus(HttpStatusCode.BadRequest, "messageid should be a properly formed guid", exception => { });
+                return;
+            }
+            var cmd = new ClientMessage.PersistentSubscriptionAckEvents(
+                                             Guid.NewGuid(),
+                                             Guid.NewGuid(),
+                                             envelope,
+                                             BuildSubscriptionGroupKey(groupname, stream),
+                                             new[] { id },
+                                             http.User);
+            Publish(cmd);
+            //ACK/NACK dont have responses!
+            http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
+        }
+
+        private void NackMessage(HttpEntityManager http, UriTemplateMatch match)
+        {
+            var envelope = new NoopEnvelope();
+            var groupname = match.BoundVariables["subscription"];
+            var stream = match.BoundVariables["stream"];
+            var messageId = match.BoundVariables["messageId"];
+            var id = Guid.NewGuid();
+            if (!Guid.TryParse(messageId, out id))
+            {
+                http.ReplyStatus(HttpStatusCode.BadRequest, "messageid should be a properly formed guid", exception => { });
+                return;
+            }
+            var cmd = new ClientMessage.PersistentSubscriptionNackEvents(
+                                             Guid.NewGuid(),
+                                             Guid.NewGuid(),
+                                             envelope,
+                                             BuildSubscriptionGroupKey(groupname, stream),
+                                             "Naked from http",
+                                             ClientMessage.PersistentSubscriptionNackEvents.NakAction.Unknown, //TODO more nak actions?
+                                             new[] { id },
+                                             http.User);
+            Publish(cmd);
+            //ACK/NACK dont have responses!
+            http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
         }
 
         private void ReplayParkedMessages(HttpEntityManager http, UriTemplateMatch match)
@@ -82,11 +205,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
                 (args, message) => http.ResponseCodec.To(message),
-                (args,message) =>
+                (args, message) =>
                 {
                     int code;
                     var m = message as ClientMessage.CreatePersistentSubscriptionCompleted;
-                    if(m==null) throw new Exception("unexpected message " + message);
+                    if (m == null) throw new Exception("unexpected message " + message);
                     switch (m.Result)
                     {
                         case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success:
@@ -110,12 +233,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (o, s) =>
                 {
                     var data = http.RequestCodec.From<SubscriptionConfigData>(s);
-
-                    var config = GetConfig(data);
+                    var config = ParseConfig(data);
+                    if (!ValidateConfig(config, http)) return;
                     var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(),
                         Guid.NewGuid(),
                         envelope,
-                        stream, 
+                        stream,
                         groupname,
                         config.ResolveLinktos,
                         config.StartFrom,
@@ -174,8 +297,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (o, s) =>
                 {
                     var data = http.RequestCodec.From<SubscriptionConfigData>(s);
-
-                    var config = GetConfig(data);
+                    var config = ParseConfig(data);
+                    if (!ValidateConfig(config, http)) return;
                     var message = new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(),
                         Guid.NewGuid(),
                         envelope,
@@ -201,11 +324,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 }, x => Log.DebugException(x, "Reply Text Content Failed."));
         }
 
-        private SubscriptionConfigData GetConfig(SubscriptionConfigData config){
-            if(config == null){
+        private SubscriptionConfigData ParseConfig(SubscriptionConfigData config)
+        {
+            if (config == null)
+            {
                 return new SubscriptionConfigData();
             }
-            return new SubscriptionConfigData{
+            return new SubscriptionConfigData
+            {
                 ResolveLinktos = config.ResolveLinktos,
                 StartFrom = config.StartFrom,
                 MessageTimeoutMilliseconds = config.MessageTimeoutMilliseconds,
@@ -221,6 +347,47 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             };
         }
 
+        private bool ValidateConfig(SubscriptionConfigData config, HttpEntityManager http)
+        {
+            if (config.BufferSize <= 0)
+            {
+                SendBadRequest(
+                       http,
+                       string.Format(
+                           "Buffer Size ({0}) must be positive",
+                           config.BufferSize));
+                return false;
+            }
+            if (config.LiveBufferSize <= 0)
+            {
+                SendBadRequest(
+                       http,
+                       string.Format(
+                           "Live Buffer Size ({0}) must be positive",
+                           config.LiveBufferSize));
+                return false;
+            }
+            if (config.ReadBatchSize <= 0)
+            {
+                SendBadRequest(
+                       http,
+                       string.Format(
+                           "Read Batch Size ({0}) must be positive",
+                           config.ReadBatchSize));
+                return false;
+            }
+            if (!(config.BufferSize > config.ReadBatchSize))
+            {
+                SendBadRequest(
+                       http,
+                       string.Format(
+                           "BufferSize ({0}) must be larger than ReadBatchSize ({1})",
+                           config.BufferSize, config.ReadBatchSize));
+                return false;
+            }
+            return true;
+        }
+
         private static string CalculateNamedConsumerStrategyForOldClients(SubscriptionConfigData data)
         {
             var namedConsumerStrategy = data == null ? null : data.NamedConsumerStrategy;
@@ -233,7 +400,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             return namedConsumerStrategy;
         }
-
 
         private void DeleteSubscription(HttpEntityManager http, UriTemplateMatch match)
         {
@@ -268,7 +434,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 });
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
-            var cmd = new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(),envelope, stream, groupname, http.User);
+            var cmd = new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(), envelope, stream, groupname, http.User);
             Publish(cmd);
         }
 
@@ -311,7 +477,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(cmd);
         }
 
-
         private static ResponseConfiguration StatsConfiguration(HttpEntityManager http, Message message)
         {
             int code;
@@ -335,6 +500,78 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
                 http.ResponseCodec.Encoding);
+        }
+
+        private void GetNextNMessages(HttpEntityManager http, UriTemplateMatch match)
+        {
+            //called on GET of messages
+            //trial implementation 
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+            var groupname = match.BoundVariables["subscription"];
+            var stream = match.BoundVariables["stream"];
+            var count = 1; //default
+            if (match.QueryParameters.HasKeys() &&
+                match.QueryParameters.AllKeys.Contains("count")
+                )
+            {
+                var toParse = match.QueryParameters["count"];
+                if (!int.TryParse(toParse, out count) ||
+                    count > 100 ||
+                    count < 1)
+                {
+                    SendBadRequest(
+                        http,
+                        string.Format(
+                            "Message count must be an integer between 1 and 100 'count' ='{0}'",
+                            toParse));
+                    return;
+                }
+            }
+            var envelope = new SendToHttpEnvelope(
+                _networkSendQueue, http,
+                //GFY TODO right now this is actually sending the message as its response.
+                //This is probably not wanted, probably we want to convert it into a DTO
+                //as there are other things we want to add to it such as the rel links
+                //that point back to the ACK/NAK links.
+                (args, message) => http.ResponseCodec.To(message),
+                (args, message) =>
+                {
+                    int code;
+                    var m = message as ClientMessage.ReadNextNPersistentMessagesCompleted;
+                    if (m == null) throw new Exception("unexpected message " + message);
+                    switch (m.Result)
+                    {
+                        case
+                            ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.Success:
+                            code = HttpStatusCode.OK;
+                            break;
+                        case
+                            ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.DoesNotExist:
+                            code = HttpStatusCode.NotFound;
+                            break;
+                        case
+                            ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.AccessDenied:
+                            code = HttpStatusCode.Unauthorized;
+                            break;
+                        default:
+                            code = HttpStatusCode.InternalServerError;
+                            break;
+                    }
+
+                    return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
+                        http.ResponseCodec.Encoding);
+                });
+
+            var cmd = new ClientMessage.ReadNextNPersistentMessages(
+                                             Guid.NewGuid(),
+                                             Guid.NewGuid(),
+                                             envelope,
+                                             stream,
+                                             groupname,
+                                             count,
+                                             http.User);
+            Publish(cmd);
         }
 
         private IEnumerable<SubscriptionInfo> ToDto(HttpEntityManager manager, MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
@@ -363,6 +600,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     RetryBufferCount = stat.RetryBufferCount,
                     TotalInFlightMessages = stat.TotalInFlightMessages,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
+                    GetMessagesUri = MakeUrl(manager, string.Format("/streams/{0}/{1}/messages?c=10", stat.EventStreamId, stat.GroupName)),
                     Config = new SubscriptionConfigData
                     {
                         CheckPointAfterMilliseconds = stat.CheckPointAfterMilliseconds,
@@ -387,7 +625,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     {
                         info.Connections.Add(new ConnectionInfo
                         {
-                            Username = connection.Username, 
+                            Username = connection.Username,
                             From = connection.From,
                             AverageItemsPerSecond = connection.AverageItemsPerSecond,
                             CountSinceLastMeasurement = connection.CountSinceLastMeasurement,
@@ -422,6 +660,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     LastKnownEventNumber = stat.LastKnownMessage,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
+                    GetMessagesUri = MakeUrl(manager, string.Format("/streams/{0}/{1}/messages?c=10", stat.EventStreamId, stat.GroupName)),
                     TotalInFlightMessages = stat.TotalInFlightMessages,
                 };
                 if (stat.Connections != null)
@@ -431,6 +670,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 yield return info;
             }
         }
+
         private class SubscriptionConfigData
         {
             public bool ResolveLinktos { get; set; }
@@ -447,18 +687,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int MaxCheckPointCount { get; set; }
             public int MaxSubscriberCount { get; set; }
             public string NamedConsumerStrategy { get; set; }
-            public SubscriptionConfigData(){
+            public SubscriptionConfigData()
+            {
                 StartFrom = 0;
                 MessageTimeoutMilliseconds = 10000;
                 MaxRetryCount = 10;
-                BufferSize = 500;
-                LiveBufferSize = 500;
-                ReadBatchSize = 20;
                 CheckPointAfterMilliseconds = 1000;
                 MinCheckPointCount = 10;
                 MaxCheckPointCount = 500;
                 MaxSubscriberCount = 10;
                 NamedConsumerStrategy = "RoundRobin";
+
+                BufferSize = 500;
+                LiveBufferSize = 500;
+                ReadBatchSize = 20;
             }
         }
 
@@ -468,6 +710,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string EventStreamId { get; set; }
             public string GroupName { get; set; }
             public string ParkedMessageUri { get; set; }
+            public string GetMessagesUri { get; set; }
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
             public long TotalItemsProcessed { get; set; }
@@ -476,6 +719,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int ConnectionCount { get; set; }
             public int TotalInFlightMessages { get; set; }
         }
+
         private class SubscriptionInfo
         {
             public List<RelLink> Links { get; set; }
@@ -485,6 +729,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
             public string ParkedMessageUri { get; set; }
+            public string GetMessagesUri { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
             public int LastProcessedEventNumber { get; set; }

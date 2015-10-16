@@ -31,6 +31,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         IHandle<ClientMessage.CreatePersistentSubscription>,
                                         IHandle<ClientMessage.UpdatePersistentSubscription>,
                                         IHandle<ClientMessage.DeletePersistentSubscription>,
+                                        IHandle<ClientMessage.ReadNextNPersistentMessages>,
                                         IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
                                         IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
                                         IHandle<MonitoringMessage.GetStreamPersistentSubscriptionStats>
@@ -528,6 +529,52 @@ namespace EventStore.Core.Services.PersistentSubscription
                 subscription.NotAcknowledgeMessagesProcessed(message.CorrelationId, message.ProcessedEventIds, (NakAction) message.Action, message.Message);
             }
         }
+
+        public void Handle(ClientMessage.ReadNextNPersistentMessages message)
+        {
+            if (!_started) return;
+            var streamAccess = _readIndex.CheckStreamAccess(
+                message.EventStreamId, StreamAccessType.Read, message.User);
+
+            if (!streamAccess.Granted)
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ReadNextNPersistentMessagesCompleted(message.CorrelationId,
+                                                                           ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.AccessDenied,
+                                                                           "Access Denied.",
+                                                                           null));
+                return;
+            }
+
+            List<PersistentSubscription> subscribers;
+            if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers))
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ReadNextNPersistentMessagesCompleted(message.CorrelationId,
+                                                                           ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.DoesNotExist,
+                                                                           "Not found.",
+                                                                           null));
+                return;
+            }
+            var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
+            PersistentSubscription subscription;
+            if (!_subscriptionsById.TryGetValue(key, out subscription))
+            {
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ReadNextNPersistentMessagesCompleted(message.CorrelationId,
+                                                                           ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.DoesNotExist,
+                                                                           "Not found.",
+                                                                           null));
+                return;
+            }
+            var messages = subscription.GetNextNOrLessMessages(message.Count).ToArray();
+            message.Envelope.ReplyWith(
+                new ClientMessage.ReadNextNPersistentMessagesCompleted(message.CorrelationId,
+                                                                       ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.Success,
+                                                                       string.Format("{0} read.", messages.Length),
+                                                                       messages));
+        }
+
 
         public void Handle(ClientMessage.ReplayAllParkedMessages message)
         {

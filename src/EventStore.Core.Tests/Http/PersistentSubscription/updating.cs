@@ -16,6 +16,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void Given()
         {
+            _response = MakeJsonPut(
+                "/subscriptions/stream/groupname337",
+                new
+                {
+                    ResolveLinkTos = true
+                }, _admin);
         }
 
         protected override void When()
@@ -29,7 +35,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_created_status_code()
+        public void returns_unauthorised()
         {
             Assert.AreEqual(HttpStatusCode.Unauthorized, _response.StatusCode);
         }
@@ -51,18 +57,18 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 new
                 {
                     ResolveLinkTos = true
-                }, DefaultData.AdminNetworkCredentials);
+                }, new NetworkCredential("admin", "changeit"));
         }
 
         [Test]
-        public void returns_created_not_found_code()
+        public void returns_not_found()
         {
             Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    class when_updating_a_existent_subscription : with_admin_user
+    class when_updating_an_existing_subscription : with_admin_user
     {
         private HttpWebResponse _response;
         private readonly string _groupName = Guid.NewGuid().ToString();
@@ -84,7 +90,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         private void SetupSubscription()
         {
-            _connection.ConnectToPersistentSubscription(_stream,_groupName, (x, y) => { },
+            _connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => { },
                 (sub, reason, ex) =>
                 {
                     _droppedReason = reason;
@@ -104,7 +110,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_created_ok_code()
+        public void returns_ok()
         {
             Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
         }
@@ -118,7 +124,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void the_location_header_is_set()
+        public void location_header_is_present()
         {
             Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _stream, _groupName), _response.Headers["Location"]);
         }

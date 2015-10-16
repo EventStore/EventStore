@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
     [TestFixture, Category("LongRunning")]
-    class when_deleting_existing_subscription : with_admin_user
+    class when_deleting_an_existing_subscription : with_admin_user
     {
         private HttpWebResponse _response;
 
@@ -29,14 +29,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_ok_status_code()
+        public void returns_ok()
         {
             Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    class when_deleting_existing_subscription_with_subscribers : with_admin_user
+    class when_deleting_an_existing_subscription_with_subscribers : with_admin_user
     {
         private HttpWebResponse _response;
         private const string _stream = "astreamname";
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_ok_status_code()
+        public void returns_ok()
         {
             Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
         }
@@ -83,9 +83,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
     }
 
-
     [TestFixture, Category("LongRunning")]
-    class when_deleting_existing_subscription_without_permissions : with_admin_user
+    class when_deleting_an_existing_subscription_without_permissions : with_admin_user
     {
         private HttpWebResponse _response;
 
@@ -106,11 +105,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_unauthorized_status_code()
+        public void returns_unauthorized()
         {
             Assert.AreEqual(HttpStatusCode.Unauthorized, _response.StatusCode);
         }
     }
+
     [TestFixture, Category("LongRunning")]
     class when_deleting_non_existing_subscription : with_admin_user
     {
@@ -128,10 +128,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_ok_status_code()
+        public void returns_ok()
         {
             Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
         }
     }
-
 }

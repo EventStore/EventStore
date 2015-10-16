@@ -417,6 +417,8 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher);
             var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
             var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeMaster, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
@@ -428,6 +430,7 @@ namespace EventStore.Core
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNackEvents, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReplayAllParkedMessages, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReplayParkedMessage, Message>());
+            _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReadNextNPersistentMessages, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
@@ -450,6 +453,7 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<ClientMessage.UpdatePersistentSubscription>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.ReplayAllParkedMessages>(persistentSubscription);
             perSubscrBus.Subscribe<ClientMessage.ReplayParkedMessage>(persistentSubscription);
+            perSubscrBus.Subscribe<ClientMessage.ReadNextNPersistentMessages>(persistentSubscription);
             perSubscrBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(persistentSubscription);
             perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
             perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
