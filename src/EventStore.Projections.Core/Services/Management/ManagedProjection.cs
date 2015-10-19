@@ -400,11 +400,9 @@ namespace EventStore.Projections.Core.Services.Management
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             SetLastReplyEnvelope(message.Envelope);
-            if (DoDisable(message.Envelope))
-            {
-                UpdateProjectionVersion();
-                StopUnlessPreparedOrLoaded();
-            }
+            Disable();
+            UpdateProjectionVersion();
+            StopUnlessPreparedOrLoaded();
         }
 
         public void Handle(ProjectionManagementMessage.Command.Abort message)
@@ -413,16 +411,21 @@ namespace EventStore.Projections.Core.Services.Management
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             UpdateProjectionVersion();
             SetLastReplyEnvelope(message.Envelope);
-            if (DoDisable(message.Envelope))
-                Abort();
+            Disable();
+            Abort();
         }
 
         public void Handle(ProjectionManagementMessage.Command.Enable message)
         {
             _lastAccessed = _timeProvider.Now;
             if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
-            if(Enabled){
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
+            if (Enabled
+                && !(_state == ManagedProjectionState.Completed || _state == ManagedProjectionState.Faulted
+                     || _state == ManagedProjectionState.Aborted || _state == ManagedProjectionState.Loaded
+                     || _state == ManagedProjectionState.Prepared || _state == ManagedProjectionState.Stopped))
+            {
+                //Projection is probably Running
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
                 return;
             }
             Enable();
@@ -974,16 +977,10 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        private bool DoDisable(IEnvelope envelope)
+        private void Disable()
         {
-            if (!Enabled)
-            {
-                envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
-                return false;
-            }
             Enabled = false;
             _pendingPersistedState = true;
-            return true;
         }
 
         private void PrepareWriteStartOrLoadStopped()
