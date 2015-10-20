@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands
                             case TcpClientMessageDto.OperationResult.Success:
                                 Interlocked.Add(ref succ, batchSize);
                                 if(succ - last > 1000) {
-                                    last = succ / 1000;
+                                    last = succ;
                                     Console.Write(".");
                                 }
                                 break;
