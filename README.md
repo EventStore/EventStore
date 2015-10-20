@@ -1,7 +1,7 @@
 
 #Event Store
 
-[![Build status](https://ci.appveyor.com/api/projects/status/g6n7i0d6uyalro0p?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore)
+[![Build status](https://ci.appveyor.com/api/projects/status/5n7fybgq52a6848d?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore)
 
 **The main documentation has moved to <a href="https://docs.geteventstore.com">https://docs.geteventstore.com</a>.**
 
