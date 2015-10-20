@@ -232,6 +232,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
             {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
                 _projections.Remove(message.Name);
                 _projectionsMap.Remove(projection.Id);
@@ -264,7 +265,10 @@ namespace EventStore.Projections.Core.Services.Management
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Read, projection.RunAs, message)) return;
                 projection.Handle(message);
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Command.UpdateQuery message)
@@ -280,7 +284,10 @@ namespace EventStore.Projections.Core.Services.Management
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message); // update query text
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Command.Disable message)
@@ -293,7 +300,10 @@ namespace EventStore.Projections.Core.Services.Management
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Command.Enable message)
@@ -309,7 +319,10 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             }
             else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Command.Abort message)
@@ -322,7 +335,10 @@ namespace EventStore.Projections.Core.Services.Management
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Command.SetRunAs message)
@@ -338,7 +354,14 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             }
             else
+            {
+                if (
+                    !ProjectionManagementMessage.RunAs.ValidateRunAs(
+                        projection.GetMode(), ReadWrite.Write, projection.RunAs, message,
+                        message.Action == ProjectionManagementMessage.Command.SetRunAs.SetRemove.Set)) return;
+
                 projection.Handle(message);
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Command.Reset message)
@@ -354,7 +377,10 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             }
             else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Command.GetStatistics message)

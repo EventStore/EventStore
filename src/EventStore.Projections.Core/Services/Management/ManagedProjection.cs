@@ -220,6 +220,11 @@ namespace EventStore.Projections.Core.Services.Management
             get { return _id; }
         }
 
+        public IPrincipal RunAs
+        {
+            get { return _runAs; }
+        }
+
         internal void SetState(ManagedProjectionState value)
         {
 //            _logger.Trace("MP: {0} {1} => {2}", _name, _state, value);
@@ -354,7 +359,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Command.GetQuery message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Read, _runAs, message)) return;
 
             var emitEnabled = _persistedState.EmitEnabled ?? false;
 
@@ -378,7 +382,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Command.UpdateQuery message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
 
             _prepared = false;
             DoUpdateQuery1(message);
@@ -398,7 +401,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Command.Disable message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             SetLastReplyEnvelope(message.Envelope);
             Disable();
             UpdateProjectionVersion();
@@ -408,7 +410,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Command.Abort message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             UpdateProjectionVersion();
             SetLastReplyEnvelope(message.Envelope);
             Disable();
@@ -418,7 +419,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Command.Enable message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             if (Enabled
                 && !(_state == ManagedProjectionState.Completed || _state == ManagedProjectionState.Faulted
                      || _state == ManagedProjectionState.Aborted || _state == ManagedProjectionState.Loaded
@@ -438,12 +438,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Command.SetRunAs message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (
-                !ProjectionManagementMessage.RunAs.ValidateRunAs(
-                    Mode, ReadWrite.Write, _runAs, message,
-                    message.Action == ProjectionManagementMessage.Command.SetRunAs.SetRemove.Set)) return;
-
-
             _prepared = false;
             DoSetRunAs1(message);
             UpdateProjectionVersion();
@@ -456,7 +450,6 @@ namespace EventStore.Projections.Core.Services.Management
             if (_state != ManagedProjectionState.Stopped)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Cannot delete a projection that hasn't been stopped.")); 
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             if (message.DeleteCheckpointStream)
             {
                 DeleteCheckpointStream();
@@ -470,7 +463,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Command.Reset message)
         {
             _lastAccessed = _timeProvider.Now;
-            if (!ProjectionManagementMessage.RunAs.ValidateRunAs(Mode, ReadWrite.Write, _runAs, message)) return;
             _prepared = false;
             DoReset1();
             UpdateProjectionVersion();
