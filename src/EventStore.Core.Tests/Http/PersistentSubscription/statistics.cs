@@ -9,55 +9,59 @@ using EventStore.Transport.Http;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using EventStore.Core.Tests.Helpers;
+using System.Xml.Linq;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
     [TestFixture, Category("LongRunning")]
-    public class when_getting_all_statistics_in_json : HttpBehaviorSpecification
+    class when_getting_all_statistics_in_json : with_subscription_having_events
     {
-        private HttpWebResponse _response;
-
-        protected override void Given()
-        {
-        }
+        private JArray _json;
 
         protected override void When()
         {
-            var request = CreateRequest("/subscriptions", null, "GET", "application/json", null);
-            _response = GetRequestResponse(request);
+            _json = GetJson<JArray>("/subscriptions", accept: ContentType.Json);
         }
 
         [Test]
         public void returns_ok()
         {
-            Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void body_contains_valid_json()
+        {
+            Assert.AreEqual(TestStreamName, _json[0]["eventStreamId"].Value<string>());
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    public class when_getting_all_statistics_in_xml : HttpBehaviorSpecification
+    class when_getting_all_statistics_in_xml : with_subscription_having_events
     {
-        private HttpWebResponse _response;
-
-        protected override void Given()
-        {
-        }
+        private XDocument _xml;
 
         protected override void When()
         {
-            var request = CreateRequest("/subscriptions", null, "GET", "text/xml", null);
-            _response = GetRequestResponse(request);
+            _xml = GetXml(MakeUrl("/subscriptions"));
         }
 
         [Test]
         public void returns_ok()
         {
-            Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void body_contains_valid_xml()
+        {
+            Assert.AreEqual(TestStreamName, _xml.Descendants("EventStreamId").First().Value);
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    public class when_getting_non_existent_single_statistics : HttpBehaviorSpecification
+    class when_getting_non_existent_single_statistics : HttpBehaviorSpecification
     {
         private HttpWebResponse _response;
 
@@ -79,7 +83,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     }
 
     [TestFixture, Category("LongRunning")]
-    public class when_getting_non_existent_stream_statistics : HttpBehaviorSpecification
+    class when_getting_non_existent_stream_statistics : HttpBehaviorSpecification
     {
         private HttpWebResponse _response;
 
@@ -101,14 +105,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     }
 
     [TestFixture, Category("LongRunning")]
-    public class when_getting_subscription_statistics_for_individual : SpecificationWithPersistentSubscriptionAndConnections
+    class when_getting_subscription_statistics_for_individual : SpecificationWithPersistentSubscriptionAndConnections
     {
         private JObject _json;
 
 
         protected override void When()
         {
-            _json = GetJson<JObject>("/subscriptions/" + _streamName + "/" + _groupName, ContentType.Json);
+            _json = GetJson<JObject>("/subscriptions/" + _streamName + "/" + _groupName + "/info", ContentType.Json);
         }
 
         [Test]
@@ -120,7 +124,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void detail_rel_href_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, _groupName),
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
                 _json["links"][0]["href"].Value<string>());
         }
 
@@ -188,7 +192,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     }
 
     [TestFixture, Category("LongRunning")]
-    public class when_getting_subscription_stats_summary : SpecificationWithPersistentSubscriptionAndConnections
+    class when_getting_subscription_stats_summary : SpecificationWithPersistentSubscriptionAndConnections
     {
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
@@ -241,7 +245,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, _groupName),
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
                 _json[0]["links"][0]["href"].Value<string>());
         }
 
@@ -262,7 +266,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_second_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, "secondgroup"),
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, "secondgroup"),
                 _json[1]["links"][0]["href"].Value<string>());
         }
 
@@ -324,7 +328,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     }
 
     [TestFixture, Category("LongRunning")]
-    public class when_getting_subscription_statistics_for_stream : SpecificationWithPersistentSubscriptionAndConnections
+    class when_getting_subscription_statistics_for_stream : SpecificationWithPersistentSubscriptionAndConnections
     {
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
@@ -384,14 +388,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, _groupName),
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
                 _json[0]["links"][0]["href"].Value<string>());
         }
 
         [Test]
         public void the_second_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, "secondgroup"),
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, "secondgroup"),
                 _json[1]["links"][0]["href"].Value<string>());
         }
 
@@ -473,7 +477,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [TestFixtureTearDown]
         public void Teardown()
         {
-            _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, new UserCredentials("admin", "changeit")).Wait();
+            _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, DefaultData.AdminCredentials).Wait();
             _conn.Close();
             _conn.Dispose();
         }

@@ -735,7 +735,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(id1, "type", "streamName", 0),
                 Helper.BuildFakeEvent(id2, "type", "streamName", 1)
             }, 1, false);
-            var nonsense = sub.GetNextNOrLessMessages(2);
+            sub.GetNextNOrLessMessages(2);
             sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
             var retries = sub.GetNextNOrLessMessages(2).ToArray();
             Assert.AreEqual(id1, retries[0].Event.EventId);
@@ -765,7 +765,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(id1, "type", "streamName", 0),
                 Helper.BuildFakeEvent(id2, "type", "streamName", 1)
             }, 1, false);
-            var nonsense = sub.GetNextNOrLessMessages(2).ToArray();
+            sub.GetNextNOrLessMessages(2).ToArray();
             sub.AcknowledgeMessagesProcessed(Guid.Empty, new[] { id1, id2 });
             sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
             var retries = sub.GetNextNOrLessMessages(2).ToArray();

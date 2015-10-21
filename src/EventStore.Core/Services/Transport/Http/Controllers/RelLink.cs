@@ -10,6 +10,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public readonly string href;
         public readonly string rel;
 
+        private RelLink() { }
         public RelLink(string href, string rel)
         {
             this.href = href;

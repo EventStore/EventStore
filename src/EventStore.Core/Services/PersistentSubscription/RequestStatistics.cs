@@ -41,25 +41,25 @@ namespace EventStore.Core.Services.PersistentSubscription
             _measurements.Enqueue((int)ms);
         }
 
-        public ObservedTimingMeausrement GetMeasurementDetails()
+        public ObservedTimingMeasurement GetMeasurementDetails()
         {
-            var ret = new ObservedTimingMeausrement();
+            var ret = new ObservedTimingMeasurement();
             if (_measurements == null || _measurements.Count == 0) return ret;
             var items = _measurements.ToArray();
             Array.Sort(items);
-            ret.Measurements.Add("Mean", items.Sum()/items.Length);
-            ret.Measurements.Add("Median", items[items.Length/2]);
-            ret.Measurements.Add("Fastest", items[0]);
+            ret.Measurements.Add(Measurement.From("Mean", items.Sum() / items.Length));
+            ret.Measurements.Add(Measurement.From("Median", items[items.Length / 2]));
+            ret.Measurements.Add(Measurement.From("Fastest", items[0]));
             for (var i = 0; i < 5; i++)
             {
-                ret.Measurements.Add("Quintile " + (i+1), items[GetPercentile(i * 20, items.Length)]);
+                ret.Measurements.Add(Measurement.From("Quintile " + (i + 1), items[GetPercentile(i * 20, items.Length)]));
             }
-            ret.Measurements.Add("90%", items[GetPercentile(90m, items.Length)]);
-            ret.Measurements.Add("95%", items[GetPercentile(95m, items.Length)]);
-            ret.Measurements.Add("99%", items[GetPercentile(99m, items.Length)]);
-            ret.Measurements.Add("99.5%", items[GetPercentile(99.5m, items.Length)]);
-            ret.Measurements.Add("99.9%", items[GetPercentile(99.9m, items.Length)]);
-            ret.Measurements.Add("Highest", items[items.Length - 1]);
+            ret.Measurements.Add(Measurement.From("90%", items[GetPercentile(90m, items.Length)]));
+            ret.Measurements.Add(Measurement.From("95%", items[GetPercentile(95m, items.Length)]));
+            ret.Measurements.Add(Measurement.From("99%", items[GetPercentile(99m, items.Length)]));
+            ret.Measurements.Add(Measurement.From("99.5%", items[GetPercentile(99.5m, items.Length)]));
+            ret.Measurements.Add(Measurement.From("99.9%", items[GetPercentile(99.9m, items.Length)]));
+            ret.Measurements.Add(Measurement.From("Highest", items[items.Length - 1]));
             return ret;
         }
 
@@ -83,8 +83,23 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
     }
 
-    public class ObservedTimingMeausrement
+    public class ObservedTimingMeasurement
     {
-        public readonly Dictionary<string, int> Measurements = new Dictionary<string, int>();
+        public readonly List<Measurement> Measurements = new List<Measurement>();
+    }
+
+    public struct Measurement
+    {
+        public string Key;
+        public int Value;
+        public Measurement(string key, int value)
+        {
+            this.Key = key;
+            this.Value = value;
+        }
+        public static Measurement From(string key, int value)
+        {
+            return new Measurement(key, value);
+        }
     }
 }

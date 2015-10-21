@@ -111,7 +111,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _envelope.ReplyWith(new ClientMessage.SubscriptionDropped(CorrelationId, SubscriptionDropReason.Unsubscribed));
         }
 
-        public ObservedTimingMeausrement GetExtraStats()
+        public ObservedTimingMeasurement GetExtraStats()
         {
             return _extraStatistics == null ? null : _extraStatistics.GetMeasurementDetails();
         }

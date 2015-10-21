@@ -10,12 +10,14 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace EventStore.Core.Services.Transport.Http
 {
     public static class Convert
     {
         private static readonly string AllEscaped = Uri.EscapeDataString("$all");
+
         public static FeedElement ToStreamEventForwardFeed(ClientMessage.ReadStreamEventsForwardCompleted msg, Uri requestedUrl, EmbedLevel embedContent)
         {
             Ensure.NotNull(msg, "msg");
@@ -141,6 +143,42 @@ namespace EventStore.Core.Services.Transport.Http
             for (int i = 0; i < msg.Events.Length; ++i)
             {
                 feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(),requestedUrl, embedContent));
+            }
+            return feed;
+        }
+
+        public static FeedElement ToNextNPersistentMessagesFeed(ClientMessage.ReadNextNPersistentMessagesCompleted msg, Uri requestedUrl, string streamId, string groupName, int count, EmbedLevel embedContent)
+        {
+            string escapedStreamId = Uri.EscapeDataString(streamId);
+            string escapedGroupName = Uri.EscapeDataString(groupName);
+            var self = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}", escapedStreamId, escapedGroupName);
+            var feed = new FeedElement();
+            feed.SetTitle("All Events Persistent Subscription");
+            feed.SetId(self);
+            feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetAuthor(AtomSpecs.Author);
+
+            if (msg.Events != null && msg.Events.Length > 0)
+            {
+                var ackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack?ids={2}", escapedStreamId, escapedGroupName, String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                feed.AddLink("ackAll", ackAll);
+
+                var nackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack?ids={2}", escapedStreamId, escapedGroupName, String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                feed.AddLink("nackAll", nackAll);
+            }
+
+            var prev = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/{2}?embed={3}", escapedStreamId, escapedGroupName, count, embedContent);
+            feed.AddLink("previous", prev);
+
+            feed.AddLink("self", self);
+            for (int i = msg.Events.Length - 1; i >= 0; --i)
+            {
+                var entry = ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent);
+                var ack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack/{2}", escapedStreamId, escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+                var nack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack/{2}", escapedStreamId, escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+                entry.AddLink("ack", ack);
+                entry.AddLink("nack", nack);
+                feed.AddEntry(entry);
             }
             return feed;
         }

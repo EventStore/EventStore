@@ -6,8 +6,11 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.Threading;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Transport.Http;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common;
 
 // ReSharper disable InconsistentNaming
 
@@ -19,6 +22,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected List<object> Events;
         protected string SubscriptionPath;
         protected string GroupName;
+        protected int? NumberOfEventsToCreate;
 
         protected override void Given()
         {
@@ -32,7 +36,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
             var response = MakeArrayEventsPost(
                          TestStream,
-                         Events,
+                         Events.Take(NumberOfEventsToCreate ?? Events.Count),
                          _admin);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
@@ -41,16 +45,62 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             response = MakeJsonPut(SubscriptionPath,
                 new
                 {
-                    ResolveLinkTos = true
+                    ResolveLinkTos = true,
+                    MessageTimeoutMilliseconds = 10000,
                 },
                 _admin);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-
         }
 
         protected override void When()
         {
 
+        }
+
+        protected void SecureStream()
+        {
+            var metadata =
+                (StreamMetadata)
+                StreamMetadata.Build()
+                              .SetMetadataReadRole("admin")
+                              .SetMetadataWriteRole("admin")
+                              .SetReadRole("admin")
+                              .SetWriteRole("admin");
+            var jsonMetadata = metadata.AsJsonString();
+            var response = MakeArrayEventsPost(
+                TestMetadataStream,
+                new[]
+                    {
+                            new
+                                {
+                                    EventId = Guid.NewGuid(),
+                                    EventType = SystemEventTypes.StreamMetadata,
+                                    Data = new JRaw(jsonMetadata)
+                                }
+                    });
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
+    class when_getting_messages_without_permission : with_subscription_having_events
+    {
+        protected override void Given()
+        {
+            base.Given();
+            SecureStream();
+        }
+        protected override void When()
+        {
+            GetJson<JObject>(
+               SubscriptionPath,
+               ContentType.AtomJson);
+        }
+
+        [Test]
+        public void returns_unauthorised()
+        {
+            Assert.AreEqual(HttpStatusCode.Unauthorized, _lastResponse.StatusCode);
         }
     }
 
@@ -83,36 +133,35 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             response = MakeJsonPut(SubscriptionPath,
                 new
                 {
-                    ResolveLinkTos = true
+                    ResolveLinkTos = true,
+                    MessageTimeoutMilliseconds = 10000
                 },
                 _admin);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
             //pull all events out.
             _response = GetJson<JObject>(
-                       SubscriptionPath + "/messages?count=" + Events.Count,
-                       ContentType.Any, //todo CLC sort out allowed content types
+                       SubscriptionPath + "/" + Events.Count,
+                       ContentType.AtomJson, //todo CLC sort out allowed content types
                        _admin);
 
-            var count = ((JArray)_response["events"]).Count;
+            var count = ((JObject)_response)["entries"].Count();
             Assert.AreEqual(Events.Count, count, "Expected {0} events, received {1}", Events.Count, count);
         }
 
         protected override void When()
         {
             _response = GetJson<JObject>(
-                      SubscriptionPath + "/messages?count=" + 1,
-                      ContentType.Any,
+                      SubscriptionPath,
+                      ContentType.AtomJson,
                       _admin);
         }
 
         [Test]
         public void return_0_messages()
         {
-
-            var count = ((JArray)_response["events"]).Count;
+            var count = ((JObject)_response)["entries"].Count();
             Assert.AreEqual(0, count, "Expected {0} events, received {1}", 0, count);
-
         }
     }
 
@@ -124,15 +173,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
 
             _response = GetJson<JObject>(
-                                SubscriptionPath + "/messages?count=" + Events.Count,
-                                ContentType.Any, //todo CLC sort out allowed content types
+                                SubscriptionPath + "/" + Events.Count,
+                                ContentType.AtomJson, //todo CLC sort out allowed content types
                                 _admin);
         }
 
         [Test]
         public void returns_n_messages()
         {
-            var count = ((JArray)_response["events"]).Count;
+            var count = ((JObject)_response)["entries"].Count();
             Assert.AreEqual(Events.Count, count, "Expected {0} events, received {1}", Events.Count, count);
         }
     }
@@ -145,15 +194,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
 
             _response = GetJson<JObject>(
-                                SubscriptionPath + "/messages?count=" + (Events.Count - 1),
-                                ContentType.Any, //todo CLC sort out allowed content types
+                                SubscriptionPath + "/" + (Events.Count - 1),
+                                ContentType.AtomJson, //todo CLC sort out allowed content types
                                 _admin);
         }
 
         [Test]
         public void returns_n_messages()
         {
-            var count = ((JArray)_response["events"]).Count;
+            var count = ((JArray)_response["entries"]).Count;
             Assert.AreEqual(Events.Count - 1, count, "Expected {0} events, received {1}", Events.Count - 1, count);
         }
     }
@@ -165,15 +214,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected override void When()
         {
             _response = GetJson<JObject>(
-                                SubscriptionPath + "/messages?count=" + (Events.Count + 1),
-                                ContentType.Any, //todo CLC sort out allowed content types
+                                SubscriptionPath + "/" + (Events.Count + 1),
+                                ContentType.AtomJson, //todo CLC sort out allowed content types
                                 _admin);
         }
 
         [Test]
         public void returns_all_messages()
         {
-            var count = ((JArray)_response["events"]).Count;
+            var count = ((JArray)_response["entries"]).Count;
             Assert.AreEqual(Events.Count, count, "Expected {0} events, received {1}", Events.Count, count);
         }
     }
@@ -185,15 +234,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
 
             _response = GetJson<JObject>(
-                                SubscriptionPath + "/messages",
-                                ContentType.Any,
+                                SubscriptionPath,
+                                ContentType.AtomJson,
                                 _admin);
         }
 
         [Test]
         public void returns_1_message()
         {
-            var count = ((JArray)_response["events"]).Count;
+            var count = ((JArray)_response["entries"]).Count;
             Assert.AreEqual(1, count, "Expected {0} events, received {1}", 1, count);
         }
     }
@@ -202,9 +251,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     {
         protected override void When()
         {
-            Get(SubscriptionPath + "/messages?count=-1",
+            Get(SubscriptionPath + "/-1",
                 "",
-                ContentType.Any,
+                ContentType.AtomJson,
                 _admin);
         }
 
@@ -219,9 +268,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     {
         protected override void When()
         {
-            Get(SubscriptionPath + "/messages?count=0",
+            Get(SubscriptionPath + "/0",
               "",
-              ContentType.Any,
+              ContentType.AtomJson,
               _admin);
         }
 
@@ -236,9 +285,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     {
         protected override void When()
         {
-            Get(SubscriptionPath + "/messages?count=101",
+            Get(SubscriptionPath + "/101",
                 "",
-                ContentType.Any,
+                ContentType.AtomJson,
                 _admin);
         }
 
@@ -253,9 +302,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     {
         protected override void When()
         {
-            Get(SubscriptionPath + "/messages?count=10.1",
+            Get(SubscriptionPath + "/10.1",
               "",
-              ContentType.Any,
+              ContentType.AtomJson,
               _admin);
         }
 
@@ -270,9 +319,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     {
         protected override void When()
         {
-            Get(SubscriptionPath + "/messages?count=one",
+            Get(SubscriptionPath + "/one",
             "",
-            ContentType.Any,
+            ContentType.AtomJson,
             _admin);
         }
 

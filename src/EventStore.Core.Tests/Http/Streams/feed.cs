@@ -360,9 +360,6 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
-
-
-
         [TestFixture, Category("LongRunning")]
         public class when_reading_a_stream_forward_with_maxcount_deleted_linktos : SpecificationWithLinkToToMaxCountDeletedEvents
         {
@@ -408,7 +405,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
             protected override void When()
             {
-                _feed = GetXml(MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content"));
+                _feed = GetAtomXml(MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content"));
                 _entries = _feed.GetEntries();
             }
 

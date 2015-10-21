@@ -8,6 +8,11 @@ using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using ClientMessages = EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
+using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Data;
+using EventStore.Common.Utils;
+using EventStore.Transport.Http.Atom;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
@@ -15,7 +20,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
+        private const int DefaultNumberOfMessagesToGet = 1;
         private static readonly ICodec[] DefaultCodecs = { Codec.Json, Codec.Xml };
+        private static readonly ICodec[] AtomCodecs =
+                                                      {
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
+                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom, false, false),
+                                                          Codec.Xml,
+                                                          Codec.ApplicationXml,
+                                                          Codec.Json,
+                                                      };
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionController>();
 
         public PersistentSubscriptionController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
@@ -27,19 +41,33 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
-            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Get, GetSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
-            Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs, DefaultCodecs);
             Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
+            Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs, DefaultCodecs);
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Put, PutSubscription, DefaultCodecs, DefaultCodecs);
             Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PostSubscription, DefaultCodecs, DefaultCodecs);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
-            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked", HttpMethod.Post, ReplayParkedMessages);
-            Register(service, "/subscriptions/{stream}/{subscription}/messages?count={count}", HttpMethod.Get, GetNextNMessages, Codec.NoCodecs, DefaultCodecs);
-            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/messages/{messageid}/ack", HttpMethod.Post, AckMessage);
-            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/messages/{messageid}/nack", HttpMethod.Post, NackMessage);
+            Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Get, GetNextNMessages, Codec.NoCodecs, AtomCodecs);
+            Register(service, "/subscriptions/{stream}/{subscription}?embed={embed}", HttpMethod.Get, GetNextNMessages, Codec.NoCodecs, AtomCodecs);
+            Register(service, "/subscriptions/{stream}/{subscription}/{count}?embed={embed}", HttpMethod.Get, GetNextNMessages, Codec.NoCodecs, AtomCodecs);
+            Register(service, "/subscriptions/{stream}/{subscription}/info", HttpMethod.Get, GetSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post, AckMessage);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack/{messageid}?action={action}", HttpMethod.Post, NackMessage);
             RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post, AckMessages);
-            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack?ids={messageids}", HttpMethod.Post, NackMessages);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack?ids={messageids}&action={action}", HttpMethod.Post, NackMessages);
+            RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked", HttpMethod.Post, ReplayParkedMessages);
+        }
 
+        private static ClientMessages.NakAction GetNackAction(HttpEntityManager manager, UriTemplateMatch match, NakAction nakAction = NakAction.Unknown)
+        {
+            var rawValue = match.BoundVariables["action"] ?? string.Empty;
+            switch (rawValue.ToLowerInvariant())
+            {
+                case "park": return ClientMessages.NakAction.Park;
+                case "retry": return ClientMessages.NakAction.Retry;
+                case "skip": return ClientMessages.NakAction.Skip;
+                case "stop": return ClientMessages.NakAction.Stop;
+                default: return ClientMessages.NakAction.Unknown;
+            }
         }
 
         private void AckMessages(HttpEntityManager http, UriTemplateMatch match)
@@ -64,12 +92,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              Guid.NewGuid(),
                                              Guid.NewGuid(),
                                              envelope,
-                                             BuildSubscriptionGroupKey(groupname, stream),
+                                             BuildSubscriptionGroupKey(stream, groupname),
                                              ids.ToArray(),
                                              http.User);
             Publish(cmd);
-            //TODO CLC how to check for fail here??
-            //ACK/NACK dont have responses!
             http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
         }
 
@@ -79,6 +105,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
             var messageIds = match.BoundVariables["messageIds"];
+            var nakAction = GetNackAction(http, match);
             var ids = new List<Guid>();
             foreach (var messageId in messageIds.Split(new[] { ',' }))
             {
@@ -94,13 +121,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              Guid.NewGuid(),
                                              Guid.NewGuid(),
                                              envelope,
-                                             BuildSubscriptionGroupKey(groupname, stream),
-                                             "Naked from http",
-                                             ClientMessage.PersistentSubscriptionNackEvents.NakAction.Unknown, //TODO more nak actions?
+                                             BuildSubscriptionGroupKey(stream, groupname),
+                                             "Naked from HTTP",
+                                             nakAction,
                                              ids.ToArray(),
                                              http.User);
             Publish(cmd);
-            //ACK/NACK dont have responses!
             http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
         }
 
@@ -125,11 +151,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              Guid.NewGuid(),
                                              Guid.NewGuid(),
                                              envelope,
-                                             BuildSubscriptionGroupKey(groupname, stream),
+                                             BuildSubscriptionGroupKey(stream, groupname),
                                              new[] { id },
                                              http.User);
             Publish(cmd);
-            //ACK/NACK dont have responses!
             http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
         }
 
@@ -139,6 +164,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
             var messageId = match.BoundVariables["messageId"];
+            var nakAction = GetNackAction(http, match);
             var id = Guid.NewGuid();
             if (!Guid.TryParse(messageId, out id))
             {
@@ -149,13 +175,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              Guid.NewGuid(),
                                              Guid.NewGuid(),
                                              envelope,
-                                             BuildSubscriptionGroupKey(groupname, stream),
-                                             "Naked from http",
-                                             ClientMessage.PersistentSubscriptionNackEvents.NakAction.Unknown, //TODO more nak actions?
+                                             BuildSubscriptionGroupKey(stream, groupname),
+                                             "Naked from HTTP",
+                                             nakAction,
                                              new[] { id },
                                              http.User);
             Publish(cmd);
-            //ACK/NACK dont have responses!
             http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
         }
 
@@ -214,7 +239,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     {
                         case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Success:
                             code = HttpStatusCode.Created;
-                            //TODO competing return uri to subscription
                             break;
                         case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists:
                             code = HttpStatusCode.Conflict;
@@ -444,7 +468,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
-                (args, message) => http.ResponseCodec.To(ToSummaryDto(http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+                (args, message) => http.ResponseCodec.To(ToSummaryDto(http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).ToArray()),
                 (args, message) => StatsConfiguration(http, message));
             var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
             Publish(cmd);
@@ -457,7 +481,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var stream = match.BoundVariables["stream"];
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
-                (args, message) => http.ResponseCodec.To(ToSummaryDto(http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+                (args, message) => http.ResponseCodec.To(ToSummaryDto(http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).ToArray()),
                 (args, message) => StatsConfiguration(http, message));
             var cmd = new MonitoringMessage.GetStreamPersistentSubscriptionStats(envelope, stream);
             Publish(cmd);
@@ -504,37 +528,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void GetNextNMessages(HttpEntityManager http, UriTemplateMatch match)
         {
-            //called on GET of messages
-            //trial implementation 
             if (_httpForwarder.ForwardRequest(http))
                 return;
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
-            var count = 1; //default
-            if (match.QueryParameters.HasKeys() &&
-                match.QueryParameters.AllKeys.Contains("count")
-                )
+            var cnt = match.BoundVariables["count"];
+            var embed = GetEmbedLevel(http, match);
+            int count = DefaultNumberOfMessagesToGet;
+            if (!cnt.IsEmptyString() && (!int.TryParse(cnt, out count) || count > 100 || count < 1))
             {
-                var toParse = match.QueryParameters["count"];
-                if (!int.TryParse(toParse, out count) ||
-                    count > 100 ||
-                    count < 1)
-                {
-                    SendBadRequest(
-                        http,
-                        string.Format(
-                            "Message count must be an integer between 1 and 100 'count' ='{0}'",
-                            toParse));
-                    return;
-                }
+                SendBadRequest(http, string.Format("Message count must be an integer between 1 and 100 'count' ='{0}'", count));
+                return;
             }
             var envelope = new SendToHttpEnvelope(
                 _networkSendQueue, http,
-                //GFY TODO right now this is actually sending the message as its response.
-                //This is probably not wanted, probably we want to convert it into a DTO
-                //as there are other things we want to add to it such as the rel links
-                //that point back to the ACK/NAK links.
-                (args, message) => http.ResponseCodec.To(message),
+                (args, message) => Format.ReadNextNPersistentMessagesCompleted(http, message as ClientMessage.ReadNextNPersistentMessagesCompleted, stream, groupname, count, embed),
                 (args, message) =>
                 {
                     int code;
@@ -558,7 +566,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                             code = HttpStatusCode.InternalServerError;
                             break;
                     }
-
                     return new ResponseConfiguration(code, http.ResponseCodec.ContentType,
                         http.ResponseCodec.Encoding);
                 });
@@ -574,6 +581,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(cmd);
         }
 
+        private static EmbedLevel GetEmbedLevel(HttpEntityManager manager, UriTemplateMatch match, EmbedLevel htmlLevel = EmbedLevel.PrettyBody)
+        {
+            if (manager.ResponseCodec is IRichAtomCodec)
+                return htmlLevel;
+            var rawValue = match.BoundVariables["embed"] ?? string.Empty;
+            switch (rawValue.ToLowerInvariant())
+            {
+                case "content": return EmbedLevel.Content;
+                case "rich": return EmbedLevel.Rich;
+                case "body": return EmbedLevel.Body;
+                case "pretty": return EmbedLevel.PrettyBody;
+                case "tryharder": return EmbedLevel.TryHarder;
+                default: return EmbedLevel.None;
+            }
+        }
+
         private IEnumerable<SubscriptionInfo> ToDto(HttpEntityManager manager, MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
         {
             if (message == null) yield break;
@@ -584,7 +607,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 {
                     Links = new List<RelLink>()
                     {
-                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)), "detail"),
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/info", stat.EventStreamId,stat.GroupName)), "detail"),
                         new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/replayParked", stat.EventStreamId,stat.GroupName)), "replayParked")
                     },
                     EventStreamId = stat.EventStreamId,
@@ -600,7 +623,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     RetryBufferCount = stat.RetryBufferCount,
                     TotalInFlightMessages = stat.TotalInFlightMessages,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
-                    GetMessagesUri = MakeUrl(manager, string.Format("/streams/{0}/{1}/messages?c=10", stat.EventStreamId, stat.GroupName)),
+                    GetMessagesUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/{2}", stat.EventStreamId, stat.GroupName, DefaultNumberOfMessagesToGet)),
                     Config = new SubscriptionConfigData
                     {
                         CheckPointAfterMilliseconds = stat.CheckPointAfterMilliseconds,
@@ -632,7 +655,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                             TotalItemsProcessed = connection.TotalItems,
                             AvailableSlots = connection.AvailableSlots,
                             InFlightMessages = connection.InFlightMessages,
-                            ExtraStatistics = connection.ObservedMeasurements ?? new Dictionary<string, int>()
+                            ExtraStatistics = connection.ObservedMeasurements ?? new List<Measurement>()
                         });
                     }
                 }
@@ -650,7 +673,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 {
                     Links = new List<RelLink>()
                     {
-                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}", stat.EventStreamId,stat.GroupName)), "detail"),
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/info", stat.EventStreamId,stat.GroupName)), "detail"),
                     },
                     EventStreamId = stat.EventStreamId,
                     GroupName = stat.GroupName,
@@ -660,7 +683,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     LastKnownEventNumber = stat.LastKnownMessage,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
                     ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
-                    GetMessagesUri = MakeUrl(manager, string.Format("/streams/{0}/{1}/messages?c=10", stat.EventStreamId, stat.GroupName)),
+                    GetMessagesUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/{2}", stat.EventStreamId, stat.GroupName, DefaultNumberOfMessagesToGet)),
                     TotalInFlightMessages = stat.TotalInFlightMessages,
                 };
                 if (stat.Connections != null)
@@ -671,7 +694,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
         }
 
-        private class SubscriptionConfigData
+        public class SubscriptionConfigData
         {
             public bool ResolveLinktos { get; set; }
             public int StartFrom { get; set; }
@@ -704,7 +727,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
         }
 
-        private class SubscriptionSummary
+        public class SubscriptionSummary
         {
             public List<RelLink> Links { get; set; }
             public string EventStreamId { get; set; }
@@ -720,7 +743,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int TotalInFlightMessages { get; set; }
         }
 
-        private class SubscriptionInfo
+        public class SubscriptionInfo
         {
             public List<RelLink> Links { get; set; }
             public SubscriptionConfigData Config { get; set; }
@@ -741,14 +764,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public List<ConnectionInfo> Connections { get; set; }
         }
 
-        private class ConnectionInfo
+        public class ConnectionInfo
         {
             public string From { get; set; }
             public string Username { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public Dictionary<string, int> ExtraStatistics { get; set; }
+            public List<Measurement> ExtraStatistics { get; set; }
             public int AvailableSlots { get; set; }
             public int InFlightMessages { get; set; }
         }

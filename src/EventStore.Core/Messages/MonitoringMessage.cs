@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.Core.Messages
 {
@@ -121,7 +122,7 @@ namespace EventStore.Core.Messages
             public int AverageItemsPerSecond { get; set; }
             public long TotalItems { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public Dictionary<string, int> ObservedMeasurements { get; set; }
+            public List<Measurement> ObservedMeasurements { get; set; }
             public int AvailableSlots { get; set; }
             public int InFlightMessages { get; set; }
         }

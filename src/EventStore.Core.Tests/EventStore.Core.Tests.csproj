@@ -223,10 +223,12 @@
     <Compile Include="Http\BasicAuthentication\basic_authentication.cs" />
     <Compile Include="Http\HttpBehaviorSpecification.cs" />
     <Compile Include="Http\PersistentSubscription\ack.cs" />
+    <Compile Include="Http\PersistentSubscription\feed.cs" />
     <Compile Include="Http\PersistentSubscription\nack.cs" />
     <Compile Include="Http\PersistentSubscription\creating.cs" />
     <Compile Include="Http\PersistentSubscription\deleting.cs" />
     <Compile Include="Http\PersistentSubscription\getting.cs" />
+    <Compile Include="Http\PersistentSubscription\parked.cs" />
     <Compile Include="Http\PersistentSubscription\statistics.cs" />
     <Compile Include="Http\PersistentSubscription\updating.cs" />
     <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />

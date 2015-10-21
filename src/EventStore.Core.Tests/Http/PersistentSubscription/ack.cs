@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Transport.Http;
 
@@ -14,54 +15,55 @@ using EventStore.Transport.Http;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
-    class when_getting_a_message_to_ack : with_subscription_having_events
+    class when_acking_a_message : with_subscription_having_events
     {
-        private JObject _response;
+        private HttpWebResponse _response;
+        private string _ackLink;
+        protected override void Given()
+        {
+            base.Given();
+            var json = GetJson<JObject>(
+               SubscriptionPath + "/1",
+               ContentType.AtomJson,
+               _admin);
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            _ackLink = ((JObject)json)["entries"].Children().First()["links"].Children().First(x => x.Value<string>("relation") == "ack").Value<string>("uri");
+        }
+
         protected override void When()
         {
-            _response = GetJson<JObject>(
-                           SubscriptionPath + "/messages?count=1",
-                           ContentType.Any,
-                           _admin);
+            _response = MakePost(_ackLink, _admin);
         }
 
         [Test]
-        public void can_ack()
+        public void returns_accepted()
         {
-            //TODO: CLC Add links into returned messages
-            var id = Guid.Parse(((JArray)_response["events"])[0]["event"]["eventId"].ToString());
-            var path = SubscriptionPath + "/messages/" + id + "/ack";
-            ///subscriptions/{stream}/{subscription}/messages/{messageid}/ack
-            var response = MakePost(path, _admin);
-
-            Assert.AreEqual(HttpStatusCode.Accepted, response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Accepted, _response.StatusCode);
         }
     }
 
-    class when_getting_n_messages_to_ack : with_subscription_having_events
+    class when_acking_messages : with_subscription_having_events
     {
         private HttpWebResponse _response;
+        private string _ackAllLink;
+        protected override void Given()
+        {
+            base.Given();
+            var json = GetJson<JObject>(
+               SubscriptionPath + "/" + Events.Count,
+               ContentType.AtomJson,
+               _admin);
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            _ackAllLink = ((JObject)json)["links"].Children().First(x => x.Value<string>("relation") == "ackAll").Value<string>("uri");
+        }
+
         protected override void When()
         {
-            var json = GetJson<JObject>(
-                           SubscriptionPath + "/messages?count=" + Events.Count,
-                           ContentType.Any,
-                           _admin);
-            //TODO: CLC Add links into returned messages
-            StringBuilder path = new StringBuilder(SubscriptionPath + "//ack?ids=");
-            //"/subscriptions/{stream}/{subscription}/ack?ids={messageids}"
-
-            for (int i = 0; i < Events.Count; i++)
-            {
-                var id = Guid.Parse(((JArray)json["events"])[i]["event"]["eventId"].ToString());
-                path.AppendFormat("{0},", id.ToString());
-            }
-
-            _response = MakePost(path.ToString().TrimEnd(new[] { ',' }), _admin);
+            _response = MakePost(_ackAllLink, _admin);
         }
-        //todo: add test for rejecting duplicate guids
+
         [Test]
-        public void can_ack_n_messages()
+        public void returns_accepted()
         {
             Assert.AreEqual(HttpStatusCode.Accepted, _response.StatusCode);
         }

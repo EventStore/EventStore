@@ -575,7 +575,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                                                                        messages));
         }
 
-
         public void Handle(ClientMessage.ReplayAllParkedMessages message)
         {
             Log.Debug("Replying parked messages.");
