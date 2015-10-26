@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace EventStore.ClientAPI.Embedded
@@ -9,7 +10,7 @@ namespace EventStore.ClientAPI.Embedded
         
         public EmbeddedSubcriptionsManager()
         {
-            _activeSubscriptions = new Dictionary<Guid, IEmbeddedSubscription>();
+            _activeSubscriptions = new ConcurrentDictionary<Guid, IEmbeddedSubscription>();
         }
 
         public bool TryGetActiveSubscription(Guid correlationId, out IEmbeddedSubscription subscription)
