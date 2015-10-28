@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
             {
                 Log.Info("Request shut down of node because shutdown command has been received.");
                 Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
@@ -41,7 +41,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins))
+            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
             {
                 Log.Info("Request scavenging because /admin/scavenge request has been received.");
                 Publish(new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.Empty, entity.User));
