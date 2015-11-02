@@ -221,7 +221,6 @@ namespace EventStore.ClusterNode
             ChunksCacheSize = Opts.ChunksCacheSizeDefault;
 
             Db = Locations.DefaultDataDirectory;
-            Index = Locations.DefaultDataDirectory;
             MemDb = Opts.InMemDbDefault;
             SkipDbVerify = Opts.SkipDbVerifyDefault;
             RunProjections = Opts.RunProjectionsDefault;
