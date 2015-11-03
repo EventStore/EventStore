@@ -1,11 +1,32 @@
 version: "{build}"
 build_script:
-- cmd: >-
-    build.cmd -Platform x64 -Configuration release
+    - ps: >-
+        $env:appveyor_repo_branch -match "release-v(?<content>.*)"
 
-    powershell.exe -File scripts\package-windows\package-windows.ps1 -Version 0.0.0.0
-test_script:
-- cmd: nunit-console bin\tests\EventStore.BufferManagement.Tests.dll bin\tests\EventStore.Core.Tests.dll bin\tests\EventStore.Projections.Core.Tests.dll /framework:net-4.5 /noshadow
-artifacts:
-- path: packages/*.*
-  name: Binaries ZIP
+        $env:eventstore_semver=$matches["content"]
+
+        $env:eventstore_artefact_path=($env:eventstore_semver + "/" + "$((Get-Date).ToString('yyyy-MM-dd-HHmmss'))")
+
+        $env:eventstore_oss_artefact=("EventStore-OSS-Win-v" + $env:eventstore_semver + ".zip")
+
+        .\build.cmd -Platform x64 -Configuration release -Version ($env:eventstore_semver + ".0")
+
+#test_script:
+#    - cmd: nunit-console bin\tests\EventStore.BufferManagement.Tests.dll bin\tests\EventStore.Core.Tests.dll bin\tests\EventStore.Projections.Core.Tests.dll /framework:net-4.5 /noshadow
+test: off
+after_build:
+    - ps: >-
+        .\scripts\package-windows\package-windows.ps1 -Version $env:eventstore_semver
+
+        Push-AppveyorArtifact ("packages/" + $env:eventstore_oss_artefact) -FileName $env:eventstore_oss_artefact -DeploymentName s3_deploy_artefact
+
+deploy:
+  - name: s3_deploy_artefact
+    provider: S3
+    access_key_id:
+      secure: 75bPF19ck4CLNmLIyNNryHf4sJTWxECSJc4EgBWrPew=
+    secret_access_key:
+      secure: r6SJphMHQeJY8w/JAKpkI41hgRRiOidqq9r4GqCUleqs93ySXhIz70qqClA5TrAk 
+    bucket: eventstore-ci-release-artefacts
+    folder: $(eventstore_artefact_path)
+    set_public: false
