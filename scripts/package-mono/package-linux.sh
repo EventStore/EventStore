@@ -5,16 +5,14 @@ set -e
 version=$1
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MKBUNDLE_BIN=`which mkbundle`
+CONFIGPREFIX="/usr/local/etc"
+
+# shellcheck source=../detect-system/detect-system.sh disable=SC1091
+source "$SCRIPT_ROOT/../detect-system/detect-system.sh"
 
 function usage {
-	echo <<EOF
-Usage:
-  $0 version
-
-Note: This script assumes Mono is installed at the default locations from
-      the Xamarin package files.
-EOF
+	echo "Usage:"
+	echo "  $0 version"
 	exit
 }
 
@@ -31,11 +29,9 @@ else
 	writeLog "Version set to: $VERSIONSTRING"
 fi
 
-MONOPREFIX="/usr/local"
-CONFIGPREFIX="/usr/local/etc"
-
-if [[ -f $MKBUNDLE_BIN ]] ; then
-	writeLog "Using mkbundle: $MKBUNDLE_BIN"
+MKBUNDLEPATH=$(which mkbundle)
+if [[ -f $MKBUNDLEPATH ]] ; then
+	writeLog "Using mkbundle: $MKBUNDLEPATH"
 else
 	writeLog "Cannot find mkbundle"
 	exit 1
@@ -57,7 +53,7 @@ else
     exit 1
 fi
 
-GCCPATH=`which gcc`
+GCCPATH=$(which gcc)
 if [[ $? != 0 ]] ; then
 	writeLog "Cannot find gcc"
 	exit 1
@@ -66,22 +62,20 @@ else
 fi
 
 OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
-[[ -d $OUTPUTDIR ]] || mkdir -p $OUTPUTDIR
+[[ -d $OUTPUTDIR ]] || mkdir -p "$OUTPUTDIR"
 
 soext="so"
-PACKAGENAME="EventStore-OSS-Amazon2015.03-v$VERSIONSTRING"
+PACKAGENAME="EventStore-OSS-$ES_DISTRO$ESDISTRO_VERSION-v$VERSIONSTRING"
 
 PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
 
 if [[ -d $PACKAGEDIRECTORY ]] ; then
-    rm -rf $PACKAGEDIRECTORY
+    rm -rf "$PACKAGEDIRECTORY"
 fi
-mkdir $PACKAGEDIRECTORY
+mkdir "$PACKAGEDIRECTORY"
 
 
-pushd $SCRIPTDIR/../../bin/clusternode/
-
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$MONOPREFIX/lib/pkgconfig
+pushd "$SCRIPTDIR/../../bin/clusternode/"
 
 mkbundle -c -o clusternode.c -oo clusternode.a \
 	EventStore.ClusterNode.exe \
@@ -93,7 +87,7 @@ mkbundle -c -o clusternode.c -oo clusternode.a \
 	EventStore.ClusterNode.Web.dll \
 	EventStore.Transport.Http.dll \
 	EventStore.Transport.Tcp.dll \
-    HdrHistogram.NET.dll \
+	HdrHistogram.NET.dll \
 	Newtonsoft.Json.dll \
 	NLog.dll protobuf-net.dll \
 	Mono.Security.dll \
@@ -103,28 +97,30 @@ mkbundle -c -o clusternode.c -oo clusternode.a \
 sed -e '/_config_/ s/unsigned //' -i"" clusternode.c
 
 # Forcibly set MONO_GC_DEBUG=clear-at-gc unless it's set to something else
+# shellcheck disable=SC1004
+# (literal linebreak is desired)
 sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
         mono_mkbundle_init();/' -i"" clusternode.c
 
 cc -o eventstored \
-	-Wall `pkg-config --cflags monosgen-2` \
+    -Wall "$(pkg-config --cflags monosgen-2)" \
 	clusternode.c \
-	`pkg-config --libs-only-L monosgen-2` \
+    "$(pkg-config --libs-only-L monosgen-2)" \
 	-Wl,-Bstatic -lmonosgen-2.0 \
-	-Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //"` \
+    -Wl,-Bdynamic "$(pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //")" \
 	clusternode.a
 
-cp -r clusternode-web $PACKAGEDIRECTORY/
-cp -r Prelude $PACKAGEDIRECTORY/
-cp -r projections $PACKAGEDIRECTORY/
-cp libjs1.$soext $PACKAGEDIRECTORY/
-cp eventstored $PACKAGEDIRECTORY/
-cp log.config $PACKAGEDIRECTORY/
-cp $SCRIPTDIR/run-node.sh $PACKAGEDIRECTORY/run-node.sh
+cp -r clusternode-web "$PACKAGEDIRECTORY/"
+cp -r Prelude "$PACKAGEDIRECTORY/"
+cp -r projections "$PACKAGEDIRECTORY/"
+cp libjs1.$soext "$PACKAGEDIRECTORY/"
+cp eventstored "$PACKAGEDIRECTORY/"
+cp log.config "$PACKAGEDIRECTORY/"
+cp "$SCRIPTDIR/run-node.sh" "$PACKAGEDIRECTORY/run-node.sh"
 
 popd
 
-pushd $SCRIPTDIR/../../bin/testclient
+pushd "$SCRIPTDIR/../../bin/testclient"
 
 mkbundle -c \
 	-o testclient.c \
@@ -137,7 +133,7 @@ mkbundle -c \
 	EventStore.Common.dll \
 	EventStore.Transport.Http.dll \
 	EventStore.Transport.Tcp.dll \
-    HdrHistogram.NET.dll \
+	HdrHistogram.NET.dll \
 	Newtonsoft.Json.dll \
 	NLog.dll \
 	protobuf-net.dll \
@@ -147,30 +143,31 @@ mkbundle -c \
 sed -e '/_config_/ s/unsigned //' -i"" testclient.c
 
 # Forcibly set MONO_GC_DEBUG=clear-at-gc unless it's set to something else
+# shellcheck disable=SC1004
+# (literal linebreak is desired)
 sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
         mono_mkbundle_init();/' -i"" testclient.c
 
 cc -o testclient \
-	-Wall `pkg-config --cflags monosgen-2` \
+    -Wall "$(pkg-config --cflags monosgen-2)" \
 	testclient.c \
-	`pkg-config --libs-only-L monosgen-2` \
+    "$(pkg-config --libs-only-L monosgen-2)" \
 	-Wl,-Bstatic -lmonosgen-2.0 \
-	-Wl,-Bdynamic `pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //"` \
+    -Wl,-Bdynamic "$(pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //")" \
 	testclient.a
 
-cp testclient $PACKAGEDIRECTORY/
+cp testclient "$PACKAGEDIRECTORY/"
 
 popd
 
-pushd $OUTPUTDIR
+pushd "$OUTPUTDIR"
 
-tar -zcvf $PACKAGENAME.tar.gz $PACKAGENAME
-rm -r $PACKAGEDIRECTORY
+tar -zcvf "$PACKAGENAME.tar.gz" "$PACKAGENAME"
+rm -r "$PACKAGEDIRECTORY"
 
 [[ -d ../../packages ]] || mkdir -p ../../packages
-mv $PACKAGENAME.tar.gz ../../packages/
+mv "$PACKAGENAME.tar.gz" ../../packages/
 
 popd
 
-rm -r $OUTPUTDIR
-
+rm -r "$OUTPUTDIR"
