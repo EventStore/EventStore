@@ -72,7 +72,7 @@ function checkParams() {
         # shellcheck source=../detect-system/detect-system.sh disable=SC1091
         source "$BASE_DIR/scripts/detect-system/detect-system.sh"
         getSystemInformation
-        CURRENT_DISTRO="$ES_DISTRO$ES_DISTRO_VERSION"
+        CURRENT_DISTRO="$ES_DISTRO-$ES_DISTRO_VERSION"
     else
         CURRENT_DISTRO=$platform_override
     fi
