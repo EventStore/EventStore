@@ -28,8 +28,8 @@ else
 	writeLog "Version set to: $VERSIONSTRING"
 fi
 
-MONOPREFIX=/usr
-CONFIGPREFIX=/etc
+MONOPREFIX="/usr/local"
+CONFIGPREFIX="/usr/local/etc"
 
 MKBUNDLEPATH=$MONOPREFIX/bin/mkbundle
 if [[ -f $MKBUNDLEPATH ]] ; then
