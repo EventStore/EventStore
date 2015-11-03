@@ -225,7 +225,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void MarkBeginProcessing(OutstandingMessage message)
         {
             _statistics.IncrementProcessed();
-            _outstandingMessages.StartMessage(message, DateTime.Now + _settings.MessageTimeout);
+            _outstandingMessages.StartMessage(message, DateTime.UtcNow + _settings.MessageTimeout);
         }
 
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
