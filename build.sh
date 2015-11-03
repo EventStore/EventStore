@@ -120,29 +120,29 @@ function patchVersionFiles {
 
     newAssemblyVersion="[assembly: AssemblyVersion(\"$VERSIONSTRING\")]"
     newAssemblyFileVersion="[assembly: AssemblyFileVersion(\"$VERSIONSTRING\")]"
-    newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion("$VERSIONSTRING.$branchName@$commitHashAndTime")]"
+    newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion(\"$VERSIONSTRING.$branchName@$commitHashAndTime\")]"
     newAssemblyProductName="[assembly: AssemblyProduct(\"$PRODUCTNAME\")]"
     newAssemblyCopyright="[assembly: AssemblyCopyright(\"$COPYRIGHT\")]"
     newAssemblyCompany="[assembly: AssemblyCompany(\"$COMPANYNAME\")]"
 
-    assemblyVersionPattern='AssemblyVersion(.*'
-    assemblyFileVersionPattern='AssemblyFileVersion(.*'
-    assemblyVersionInformationalPattern='AssemblyInformationalVersion(.*'
-    assemblyProductNamePattern='AssemblyProduct(.*'
-    assemblyCopyrightPattern='AssemblyCopyright(.*'
-    assemblyCompanyPattern='AssemblyCompany(.*'
+    assemblyVersionPattern='.*AssemblyVersion(.*'
+    assemblyFileVersionPattern='.*AssemblyFileVersion(.*'
+    assemblyVersionInformationalPattern='.*AssemblyInformationalVersion(.*'
+    assemblyProductNamePattern='.*AssemblyProduct(.*'
+    assemblyCopyrightPattern='.*AssemblyCopyright(.*'
+    assemblyCompanyPattern='.*AssemblyCompany(.*'
 
     files=$( find . -name "AssemblyInfo.cs" )
 
     for file in $files
     do
         tempfile="$file.tmp"
-        sed -e "/$assemblyVersionPattern/c\'$'\n''$newAssemblyVersion" \
-            -e "/$assemblyFileVersionPattern/c\'$'\n''$newAssemblyFileVersion" \
-            -e "/$assemblyVersionInformationalPattern/c\'$'\n''$newAssemblyVersionInformational" \
-            -e "/$assemblyProductNamePattern/c\'$'\n''$newAssemblyProductName" \
-            -e "/$assemblyCopyrightPattern/c\'$'\n''$newAssemblyCopyright" \
-            -e "/$assemblyCompanyPattern/c\'$'\n''$newAssemblyCompany" \
+        sed -e "s/$assemblyVersionPattern/$newAssemblyVersion/g" \
+            -e "s/$assemblyFileVersionPattern/$newAssemblyFileVersion/g" \
+            -e "s/$assemblyVersionInformationalPattern/$newAssemblyVersionInformational/g" \
+            -e "s/$assemblyProductNamePattern/$newAssemblyProductName/g" \
+            -e "s/$assemblyCopyrightPattern/$newAssemblyCopyright/g" \
+            -e "s/$assemblyCompanyPattern/$newAssemblyCompany/g" \
             "$file" > "$tempfile" || err
 
         mv "$tempfile" "$file"
