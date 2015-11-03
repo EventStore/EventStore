@@ -3,11 +3,18 @@
 set -e
 
 version=$1
+platform_override=$2
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# shellcheck source=../detect-system/detect-system.sh disable=SC1091
-source "$SCRIPT_ROOT/../detect-system/detect-system.sh"
+if [[ "$platform_override" == "" ]] ; then
+    # shellcheck source=../detect-system/detect-system.sh disable=SC1091
+    source "$BASE_DIR/scripts/detect-system/detect-system.sh"
+    getSystemInformation
+    CURRENT_DISTRO="$ES_DISTRO$ES_DISTRO_VERSION"
+else
+    CURRENT_DISTRO=$platform_override
+fi
 
 function usage {
 	echo "Usage:"
@@ -32,7 +39,7 @@ OUTPUTDIR="$SCRIPTDIR/../../bin/packaged"
 [[ -d $OUTPUTDIR ]] || mkdir -p "$OUTPUTDIR"
 
 soext="so"
-PACKAGENAME="EventStore-OSS-Mono-$ES_DISTRO$ES_DISTROVERSION-v$VERSIONSTRING"
+PACKAGENAME="EventStore-OSS-Mono-$CURRENT_DISTRO-v$VERSIONSTRING"
 
 PACKAGEDIRECTORY="$OUTPUTDIR/$PACKAGENAME"
 
