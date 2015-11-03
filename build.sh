@@ -39,7 +39,6 @@ EOF
 }
 
 CONFIGURATION="Release"
-WERRORSTRING=""
 
 function checkParams() {
     version=$1
@@ -70,9 +69,10 @@ function checkParams() {
     fi
 
     if [[ "$platform_override" == "" ]] ; then
-        source $BASE_DIR/scripts/build-js1/detect-system.sh
+        # shellcheck source=../detect-system/detect-system.sh disable=SC1091
+        source "$BASE_DIR/scripts/detect-system/detect-system.sh"
         getSystemInformation
-        CURRENT_DISTRO="$ES_DISTRO-$ES_DISTRO_VERSION"
+        CURRENT_DISTRO="$ES_DISTRO$ES_DISTRO_VERSION"
     else
         CURRENT_DISTRO=$platform_override
     fi
@@ -81,7 +81,7 @@ function checkParams() {
         LIBJS1EXT="dylib"
     fi
     LIBJS1PATH="$BASE_DIR/src/libs/x64/$CURRENT_DISTRO/libjs1.$LIBJS1EXT"
-    if [ ! -f $LIBJS1PATH ]; then
+    if [ ! -f "$LIBJS1PATH" ]; then
         echo "$LIBJS1PATH does not exist. Did you build libjs1 for this distribution/version?"
         exit 1
     fi
@@ -92,7 +92,7 @@ function revertVersionFiles() {
 
     for file in $files
     do
-        git checkout $file
+        git checkout "$file"
         echo "Reverted $file"
     done
 }
@@ -102,7 +102,7 @@ function revertVersionInfo() {
 
     for file in $files
     do
-        git checkout $file
+        git checkout "$file"
         echo "Reverted $file"
     done
 }
@@ -115,12 +115,12 @@ function err() {
 }
 
 function patchVersionFiles {
-    branchName=`git rev-parse --abbrev-ref HEAD`
-    commitHashAndTime=`git log -n1 --pretty=format:"%H@%aD" HEAD`
+    branchName=$(git rev-parse --abbrev-ref HEAD)
+    commitHashAndTime=$(git log -n1 --pretty=format:"%H@%aD" HEAD)
 
     newAssemblyVersion="[assembly: AssemblyVersion(\"$VERSIONSTRING\")]"
     newAssemblyFileVersion="[assembly: AssemblyFileVersion(\"$VERSIONSTRING\")]"
-    newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion(\"$VERSIONSTRING.$branchName@$commitHashAndTime\")]"
+    newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion("$VERSIONSTRING.$branchName@$commitHashAndTime")]"
     newAssemblyProductName="[assembly: AssemblyProduct(\"$PRODUCTNAME\")]"
     newAssemblyCopyright="[assembly: AssemblyCopyright(\"$COPYRIGHT\")]"
     newAssemblyCompany="[assembly: AssemblyCompany(\"$COMPANYNAME\")]"
@@ -137,30 +137,30 @@ function patchVersionFiles {
     for file in $files
     do
         tempfile="$file.tmp"
-        sed -e '/$assemblyVersionPattern/c\'$'\n''$newAssemblyVersion' \
-            -e '/$assemblyFileVersionPattern/c\'$'\n''$newAssemblyFileVersion' \
-            -e '/$assemblyVersionInformationalPattern/c\'$'\n''$newAssemblyVersionInformational' \
-            -e '/$assemblyProductNamePattern/c\'$'\n''$newAssemblyProductName' \
-            -e '/$assemblyCopyrightPattern/c\'$'\n''$newAssemblyCopyright' \
-            -e '/$assemblyCompanyPattern/c\'$'\n''$newAssemblyCompany' \
-            $file > $tempfile || err
+        sed -e "/$assemblyVersionPattern/c\'$'\n''$newAssemblyVersion" \
+            -e "/$assemblyFileVersionPattern/c\'$'\n''$newAssemblyFileVersion" \
+            -e "/$assemblyVersionInformationalPattern/c\'$'\n''$newAssemblyVersionInformational" \
+            -e "/$assemblyProductNamePattern/c\'$'\n''$newAssemblyProductName" \
+            -e "/$assemblyCopyrightPattern/c\'$'\n''$newAssemblyCopyright" \
+            -e "/$assemblyCompanyPattern/c\'$'\n''$newAssemblyCompany" \
+            "$file" > "$tempfile" || err
 
-        mv $tempfile $file
+        mv "$tempfile" "$file"
 
-        if grep "AssemblyInformationalVersion" $file > /dev/null ; then
+        if grep "AssemblyInformationalVersion" "$file" > /dev/null ; then
             echo "Patched $file with version information"
         else
-            echo " " >> $file
-            echo $newAssemblyVersionInformational >> $file
+            echo " " >> "$file"
+            echo "$newAssemblyVersionInformational" >> "$file"
             echo "Patched $file with version information"
         fi
     done
 }
 
 function patchVersionInfo {
-    branchName=`git rev-parse --abbrev-ref HEAD`
-    commitHash=`git log -n1 --pretty=format:"%H" HEAD`
-    commitTimestamp=`git log -n1 --pretty=format:"%aD" HEAD`
+    branchName=$(git rev-parse --abbrev-ref HEAD)
+    commitHash=$(git log -n1 --pretty=format:"%H" HEAD)
+    commitTimestamp=$(git log -n1 --pretty=format:"%aD" HEAD)
 
     newVersion="public static readonly string Version = \"$VERSIONSTRING\";"
     newBranch="public static readonly string Branch = \"$branchName\";"
@@ -181,17 +181,17 @@ function patchVersionInfo {
             -e "s/$branchPattern/$newBranch/" \
             -e "s/$commitHashPattern/$newCommitHash/" \
             -e "s/$timestampPattern/$newTimestamp/" \
-            $file > $tempfile
+            "$file" > "$tempfile"
 
-        mv $tempfile $file
+        mv "$tempfile" "$file"
         echo "Patched $file with version information"
     done
 }
 
 function linkCurrentJS1 {
-    mkdir -p $BASE_DIR/src/libs/x64/current
+    mkdir -p "$BASE_DIR/src/libs/x64/current"
     for f in $BASE_DIR/src/libs/x64/$CURRENT_DISTRO/*; do
-        ln -s $f "$BASE_DIR/src/libs/x64/current/`basename $f`"
+        ln -s "$f" "$BASE_DIR/src/libs/x64/current/$(basename "$f")"
     done
 }
 
@@ -205,15 +205,14 @@ function buildEventStore {
 }
 
 function exitWithError {
-    echo $1
+    echo "$1"
     exit 1
 }
 
-checkParams $1 $2 $3
+checkParams "$1" "$2" "$3"
 
 echo "Running from base directory: $BASE_DIR"
 echo "Running on distribution: $CURRENT_DISTRO"
-#[[ -f src/libs/x64/ubuntu-trusty/libjs1.so ]] || [[ -f src/libs/x64/mac/libjs1.dylib ]] || exitWithError "Cannot find libjs1.[so|dylib] - at src/libs/x64/$distribution - cannot do a quick build!"
 linkCurrentJS1
 buildEventStore
-rm -rf $BASE_NAME/src/libs/x64/$CURRENT_DISTRO
+rm -rf "$BASE_NAME/src/libs/x64/$CURRENT_DISTRO"
