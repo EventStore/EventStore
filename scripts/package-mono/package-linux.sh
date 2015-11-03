@@ -109,12 +109,13 @@ sed -e '/_config_/ s/unsigned //' -i"" clusternode.c
 sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
         mono_mkbundle_init();/' -i"" clusternode.c
 
+# shellcheck disable=SC2046
 cc -o eventstored \
-    -Wall "$(pkg-config --cflags monosgen-2)" \
+    -Wall $(pkg-config --cflags monosgen-2) \
 	clusternode.c \
-    "$(pkg-config --libs-only-L monosgen-2)" \
+    $(pkg-config --libs-only-L monosgen-2) \
 	-Wl,-Bstatic -lmonosgen-2.0 \
-    -Wl,-Bdynamic "$(pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //")" \
+    -Wl,-Bdynamic $(pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //") \
 	clusternode.a
 
 cp -r clusternode-web "$PACKAGEDIRECTORY/"
@@ -155,12 +156,13 @@ sed -e '/_config_/ s/unsigned //' -i"" testclient.c
 sed -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
         mono_mkbundle_init();/' -i"" testclient.c
 
+# shellcheck disable=SC2046
 cc -o testclient \
-    -Wall "$(pkg-config --cflags monosgen-2)" \
+    -Wall $(pkg-config --cflags monosgen-2) \
 	testclient.c \
-    "$(pkg-config --libs-only-L monosgen-2)" \
+    $(pkg-config --libs-only-L monosgen-2) \
 	-Wl,-Bstatic -lmonosgen-2.0 \
-    -Wl,-Bdynamic "$(pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //")" \
+    -Wl,-Bdynamic $(pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //") \
 	testclient.a
 
 cp testclient "$PACKAGEDIRECTORY/"
