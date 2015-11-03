@@ -9,9 +9,9 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [[ "$platform_override" == "" ]] ; then
     # shellcheck source=../detect-system/detect-system.sh disable=SC1091
-    source "$BASE_DIR/scripts/detect-system/detect-system.sh"
+    source "$SCRIPTDIR/../scripts/detect-system/detect-system.sh"
     getSystemInformation
-    CURRENT_DISTRO="$ES_DISTRO-$ES_DISTRO_VERSION"
+    CURRENT_DISTRO="$ES_FRIENDLY_DISTRO-$ES_DISTRO_VERSION"
 else
     CURRENT_DISTRO=$platform_override
 fi

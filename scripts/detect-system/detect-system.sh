@@ -128,7 +128,12 @@ function getSystemInformation() {
             fi
         fi
     fi
-
     ES_DISTRO=`echo "$ES_TMP_DISTRO" | awk '{print tolower($0)}'`
     ES_DISTRO_VERSION=`echo "$ES_TMP_DISTRO_VERSION" | awk '{print tolower($0)}'`
+    if [[ $ES_DISTRO == osx* ]] ; then
+        ES_FRIENDLY_DISTRO=`echo "MacOSX$(echo $ES_DISTRO | cut -c4-)"`
+    else
+        ES_FRIENDLY_DISTRO=`echo "$(echo $ES_DISTRO | cut -c1 | tr '[:lower:]' '[:upper:]')$(echo $ES_DISTRO | cut -c2-)"`
+    fi
+
 }
