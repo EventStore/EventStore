@@ -449,7 +449,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string NamedConsumerStrategy { get; set; }
             public SubscriptionConfigData(){
                 StartFrom = 0;
-                MessageTimeoutMilliseconds = 0;
+                MessageTimeoutMilliseconds = 10000;
                 MaxRetryCount = 10;
                 BufferSize = 500;
                 LiveBufferSize = 500;
