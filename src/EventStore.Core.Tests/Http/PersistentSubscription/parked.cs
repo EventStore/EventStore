@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             base.Given();
             var json = GetJson<JObject>(
                SubscriptionPath + "/1?embed=rich",
-               ContentType.AtomJson,
+               ContentType.CompetingJson,
                _admin);
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             _entries = json != null ? json["entries"].ToList() : new List<JToken>();
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
             var json = GetJson<JObject>(
                SubscriptionPath + "/1?embed=rich",
-               ContentType.AtomJson,
+               ContentType.CompetingJson,
                _admin);
 
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);

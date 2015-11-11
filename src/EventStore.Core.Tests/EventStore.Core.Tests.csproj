@@ -234,6 +234,7 @@
     <Compile Include="Http\StreamSecurity\SetUpFixture.cs" />
     <Compile Include="Http\StreamSecurity\SpecificationWithUsers.cs" />
     <Compile Include="Http\StreamSecurity\stream_access.cs" />
+    <Compile Include="Http\Streams\description_document.cs" />
     <Compile Include="Http\Streams\HttpSpecificationWithLinkToToDeletedEvents.cs" />
     <Compile Include="Http\Streams\HttpSpecificationWithLinkToToEvents.cs" />
     <Compile Include="Http\Streams\idempotency.cs" />

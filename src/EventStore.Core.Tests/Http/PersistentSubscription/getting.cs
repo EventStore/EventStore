@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             GetJson<JObject>(
                SubscriptionPath,
-               ContentType.AtomJson);
+               ContentType.CompetingJson);
         }
 
         [Test]
@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             //pull all events out.
             _response = GetJson<JObject>(
                        SubscriptionPath + "/" + Events.Count,
-                       ContentType.AtomJson, //todo CLC sort out allowed content types
+                       ContentType.CompetingJson, //todo CLC sort out allowed content types
                        _admin);
 
             var count = ((JObject)_response)["entries"].Count();
@@ -153,7 +153,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             _response = GetJson<JObject>(
                       SubscriptionPath,
-                      ContentType.AtomJson,
+                      ContentType.CompetingJson,
                       _admin);
         }
 
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
             _response = GetJson<JObject>(
                                 SubscriptionPath + "/" + Events.Count,
-                                ContentType.AtomJson, //todo CLC sort out allowed content types
+                                ContentType.CompetingJson, //todo CLC sort out allowed content types
                                 _admin);
         }
 
@@ -195,7 +195,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
             _response = GetJson<JObject>(
                                 SubscriptionPath + "/" + (Events.Count - 1),
-                                ContentType.AtomJson, //todo CLC sort out allowed content types
+                                ContentType.CompetingJson, //todo CLC sort out allowed content types
                                 _admin);
         }
 
@@ -215,7 +215,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             _response = GetJson<JObject>(
                                 SubscriptionPath + "/" + (Events.Count + 1),
-                                ContentType.AtomJson, //todo CLC sort out allowed content types
+                                ContentType.CompetingJson, //todo CLC sort out allowed content types
                                 _admin);
         }
 
@@ -235,7 +235,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
             _response = GetJson<JObject>(
                                 SubscriptionPath,
-                                ContentType.AtomJson,
+                                ContentType.CompetingJson,
                                 _admin);
         }
 
@@ -253,7 +253,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             Get(SubscriptionPath + "/-1",
                 "",
-                ContentType.AtomJson,
+                ContentType.CompetingJson,
                 _admin);
         }
 
@@ -270,7 +270,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             Get(SubscriptionPath + "/0",
               "",
-              ContentType.AtomJson,
+              ContentType.CompetingJson,
               _admin);
         }
 
@@ -287,7 +287,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             Get(SubscriptionPath + "/101",
                 "",
-                ContentType.AtomJson,
+                ContentType.CompetingJson,
                 _admin);
         }
 
@@ -304,7 +304,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             Get(SubscriptionPath + "/10.1",
               "",
-              ContentType.AtomJson,
+              ContentType.CompetingJson,
               _admin);
         }
 
@@ -321,7 +321,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             Get(SubscriptionPath + "/one",
             "",
-            ContentType.AtomJson,
+            ContentType.CompetingJson,
             _admin);
         }
 

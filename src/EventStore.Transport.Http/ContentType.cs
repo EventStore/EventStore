@@ -21,5 +21,10 @@
 
         public const string EventsJson = "application/vnd.eventstore.events+json";
         public const string EventsXml = "application/vnd.eventstore.events+xml";
+
+        public const string DescriptionDocJson = "application/vnd.eventstore.streamdesc+json";
+        
+        public const string Competing = "application/vnd.eventstore.competingatom+xml";
+        public const string CompetingJson = "application/vnd.eventstore.competingatom+json";
     }
 }

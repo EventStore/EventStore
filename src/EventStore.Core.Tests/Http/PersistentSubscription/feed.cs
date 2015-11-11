@@ -87,13 +87,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected override void Given()
         {
             base.Given();
-            _head = GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.AtomJson);
+            _head = GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.CompetingJson);
             _previous = GetLink(_head, "previous");
         }
 
         protected override void When()
         {
-            _feed = GetJson<JObject>(_previous, ContentType.AtomJson);
+            _feed = GetJson<JObject>(_previous, ContentType.CompetingJson);
         }
 
         [Test]
@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected override void When()
         {
             var allMessagesFeedLink = String.Format("{0}/{1}", _subscriptionEndpoint, _numberOfEvents);
-            _feed = GetJson<JObject>(allMessagesFeedLink, ContentType.AtomJson);
+            _feed = GetJson<JObject>(allMessagesFeedLink, ContentType.CompetingJson);
             _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
         }
 
@@ -182,14 +182,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected override void Given()
         {
             base.Given();
-            _head = GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.AtomJson);
+            _head = GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.CompetingJson);
             _previous = GetLink(_head, "previous");
             _lastEventLocation = PostEvent(-1);
         }
 
         protected override void When()
         {
-            _feed = GetJson<JObject>(_previous, ContentType.AtomJson);
+            _feed = GetJson<JObject>(_previous, ContentType.CompetingJson);
             _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
         }
 
@@ -225,21 +225,77 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     }
 
     [TestFixture, Category("LongRunning")]
-    class when_retrieving_a_feed_content_enabled_as_xml : SpecificationWithLongFeed
+    class when_retrieving_a_feed_with_events_with_competing_xml : SpecificationWithLongFeed
     {
-        private XDocument _feed;
+        private XDocument document;
         private XElement[] _entries;
 
         protected override void When()
         {
-            _feed = GetAtomXml(MakeUrl(_subscriptionEndpoint + "/" + _numberOfEvents, "embed=content"));
-            _entries = _feed.GetEntries();
+            Get(MakeUrl(_subscriptionEndpoint + "/" + 1).ToString(), String.Empty, ContentType.Competing);
+            document = XDocument.Parse(_lastResponseBody);
+            _entries = document.GetEntries();
         }
 
         [Test]
         public void the_feed_has_n_events()
         {
-            Assert.AreEqual(_numberOfEvents, _entries.Length);
+            Assert.AreEqual(1, _entries.Length);
+        }
+
+        [Test]
+        public void contains_all_the_events()
+        {
+            Assert.AreEqual(1, _entries.Length);
+        }
+
+        [Test]
+        public void the_ackAll_link_is_to_correct_uri()
+        {
+            var ackAllLink = String.Format("subscriptions/{0}/{1}/ack?ids={2}", TestStreamName, SubscriptionGroupName, String.Join(",", _eventIds[0]));
+            Assert.AreEqual(MakeUrl(ackAllLink), document.Element(XDocumentAtomExtensions.AtomNamespace + "feed").GetLink("ackAll"));
+        }
+
+        [Test]
+        public void the_nackAll_link_is_to_correct_uri()
+        {
+            var nackAllLink = String.Format("subscriptions/{0}/{1}/nack?ids={2}", TestStreamName, SubscriptionGroupName, String.Join(",", _eventIds[0]));
+            Assert.AreEqual(MakeUrl(nackAllLink), document.Element(XDocumentAtomExtensions.AtomNamespace + "feed").GetLink("nackAll"));
+        }
+
+        [Test]
+        public void the_ack_link_is_to_correct_uri()
+        {
+            var result = document.Element(XDocumentAtomExtensions.AtomNamespace + "feed")
+                                  .Element(XDocumentAtomExtensions.AtomNamespace + "entry")
+                                  .GetLink("ack");
+            var ackLink = String.Format("subscriptions/{0}/{1}/ack/{2}", TestStreamName, SubscriptionGroupName, _eventIds[0]);
+            Assert.AreEqual(MakeUrl(ackLink), result);
+        }
+
+        [Test]
+        public void the_nack_link_is_to_correct_uri()
+        {
+            var result = document.Element(XDocumentAtomExtensions.AtomNamespace + "feed")
+                                  .Element(XDocumentAtomExtensions.AtomNamespace + "entry")
+                                  .GetLink("nack"); ;
+            var nackLink = String.Format("subscriptions/{0}/{1}/nack/{2}", TestStreamName, SubscriptionGroupName, _eventIds[0]);
+            Assert.AreEqual(MakeUrl(nackLink), result);
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
+    class when_retrieving_a_feed_with_invalid_content_type : SpecificationWithLongFeed
+    {
+        protected override void When()
+        {
+            Get(MakeUrl(_subscriptionEndpoint + "/" + _numberOfEvents).ToString(), String.Empty, ContentType.Xml);
+        }
+
+        [Test]
+        public void returns_not_acceptable()
+        {
+            Assert.AreEqual(HttpStatusCode.NotAcceptable, _lastResponse.StatusCode);
         }
     }
 }

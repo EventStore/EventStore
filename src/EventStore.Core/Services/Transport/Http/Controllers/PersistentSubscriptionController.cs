@@ -24,11 +24,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ICodec[] DefaultCodecs = { Codec.Json, Codec.Xml };
         private static readonly ICodec[] AtomCodecs =
                                                       {
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
-                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom, false, false),
-                                                          Codec.Xml,
-                                                          Codec.ApplicationXml,
-                                                          Codec.Json,
+                                                          Codec.CompetingXml,
+                                                          Codec.CompetingJson,
                                                       };
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionController>();
 
@@ -122,7 +119,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              Guid.NewGuid(),
                                              envelope,
                                              BuildSubscriptionGroupKey(stream, groupname),
-                                             "Naked from HTTP",
+                                             "Nacked from HTTP",
                                              nakAction,
                                              ids.ToArray(),
                                              http.User);
@@ -176,7 +173,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                              Guid.NewGuid(),
                                              envelope,
                                              BuildSubscriptionGroupKey(stream, groupname),
-                                             "Naked from HTTP",
+                                             "Nacked from HTTP",
                                              nakAction,
                                              new[] { id },
                                              http.User);

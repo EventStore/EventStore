@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             base.Given();
             var json = GetJson<JObject>(
                SubscriptionPath + "/1",
-               ContentType.AtomJson,
+               ContentType.CompetingJson,
                _admin);
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             _nackLink = ((JObject)json)["entries"].Children().First()["links"].Children().First(x => x.Value<string>("relation") == "nack").Value<string>("uri");
@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             base.Given();
             var json = GetJson<JObject>(
                SubscriptionPath + "/" + Events.Count,
-               ContentType.AtomJson,
+               ContentType.CompetingJson,
                _admin);
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             _nackAllLink = ((JObject)json)["links"].Children().First(x => x.Value<string>("relation") == "nackAll").Value<string>("uri");

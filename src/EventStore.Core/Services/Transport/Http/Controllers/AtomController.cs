@@ -12,6 +12,7 @@ using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
+using System.Linq;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
@@ -34,33 +35,34 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
 
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
-        private static readonly ICodec EventStoreJsonCodec = Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Helper.UTF8NoBom, false, false);
 
-        private static readonly ICodec[] AtomCodecsWithoutBatches = 
+        private static readonly ICodec[] AtomCodecsWithoutBatches =
                                                       {
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
-                                                          EventStoreJsonCodec,
+                                                          Codec.EventStoreXmlCodec,
+                                                          Codec.EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
                                                           Codec.Json
                                                       };
 
-        private static readonly ICodec[] AtomCodecs = 
+        private static readonly ICodec[] AtomCodecs =
                                                       {
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),                                                        
-                                                          EventStoreJsonCodec,
+                                                          Codec.DescriptionJson,
+                                                          Codec.EventStoreXmlCodec,
+                                                          Codec.EventStoreJsonCodec,
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
                                                           Codec.Json,
                                                           Codec.EventXml,
                                                           Codec.EventJson,
                                                           Codec.EventsXml,
-                                                          Codec.EventsJson
+                                                          Codec.EventsJson,
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs =
                                                               {
-                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Helper.UTF8NoBom, false, false),
-                                                                  EventStoreJsonCodec,
+                                                                  Codec.DescriptionJson,
+                                                                  Codec.EventStoreXmlCodec,
+                                                                  Codec.EventStoreJsonCodec,
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
                                                                   Codec.Json,
@@ -74,7 +76,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private readonly IHttpForwarder _httpForwarder;
         private readonly IPublisher _networkSendQueue;
 
-        public AtomController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue, bool disableHTTPCaching = false): base(publisher)
+        public AtomController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue, bool disableHTTPCaching = false) : base(publisher)
         {
             _httpForwarder = httpForwarder;
             _networkSendQueue = networkSendQueue;
@@ -130,12 +132,48 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             RegisterCustom(http, "/streams/%24all/{position}/forward/{count}?embed={embed}", HttpMethod.Get, GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
         }
 
+        private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match)
+        {
+            if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson)
+            {
+                var stream = match.BoundVariables["stream"];
+                var accepts = manager.HttpEntity.Request.AcceptTypes == null || manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
+                var responseStatusCode = accepts ? HttpStatusCode.NotAcceptable : HttpStatusCode.OK;
+                var responseMessage = manager.HttpEntity.Request.AcceptTypes == null ? "We are unable to represent the stream in the format requested." : "Description Document";
+                var envelope = new SendToHttpEnvelope(
+                    _networkSendQueue, manager,
+                    (args, message) =>
+                    {
+                        var m = message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted;
+                        if (m == null)
+                            throw new Exception("Could not get subscriptions for stream " + stream);
+
+                        string[] persistentSubscriptionGroups = null;
+                        if (m.Result == MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success)
+                        {
+                            persistentSubscriptionGroups = m.SubscriptionStats.Select(x => x.GroupName).ToArray();
+                        }
+                        manager.ReplyTextContent(Format.GetDescriptionDocument(manager, stream, persistentSubscriptionGroups),
+                                      responseStatusCode, responseMessage,
+                                      manager.ResponseCodec.ContentType,
+                                      null,
+                                      e => Log.ErrorException(e, "Error while writing HTTP response"));
+                        return String.Empty;
+                    },
+                    (args, message) => new ResponseConfiguration(HttpStatusCode.OK, manager.ResponseCodec.ContentType, manager.ResponseCodec.Encoding));
+                var cmd = new MonitoringMessage.GetStreamPersistentSubscriptionStats(envelope, stream);
+                Publish(cmd);
+                return true;
+            }
+            return false;
+        }
+
         private void RedirectKeepVerb(HttpEntityManager httpEntity, UriTemplateMatch uriTemplateMatch)
         {
             var original = uriTemplateMatch.RequestUri.ToString();
-            var header = new []
+            var header = new[]
                              {new KeyValuePair<string, string>("Location", original.Substring(0, original.Length - 1)),
-                             new KeyValuePair<string, string>("Cache-Control", "max-age=31536000, public"), };
+                              new KeyValuePair<string, string>("Cache-Control", "max-age=31536000, public"), };
             httpEntity.ReplyTextContent("Moved Permanently", HttpStatusCode.RedirectKeepVerb, "", "", header, e => { });
         }
 
@@ -149,22 +187,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
             string includedType;
-            if(!GetIncludedType(manager, out includedType)) {
+            if (!GetIncludedType(manager, out includedType))
+            {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
-                return;   
+                return;
             }
-            if(!manager.RequestCodec.HasEventTypes && includedType == null) {
+            if (!manager.RequestCodec.HasEventTypes && includedType == null)
+            {
                 SendBadRequest(manager, "Must include an event type with the request either in body or as ES-EventType header.");
                 return;
             }
             Guid includedId;
-            if(!GetIncludedId(manager, out includedId)) {
+            if (!GetIncludedId(manager, out includedId))
+            {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
-                return;   
+                return;
             }
-            if(!manager.RequestCodec.HasEventIds && includedId == Guid.Empty) {
+            if (!manager.RequestCodec.HasEventIds && includedId == Guid.Empty)
+            {
                 var uri = new Uri(new Uri(match.RequestUri + "/"), "incoming/" + Guid.NewGuid()).ToString();
-                var header = new []
+                var header = new[]
                              {new KeyValuePair<string, string>("Location", uri)};
                 manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb, "Temporary Redirect", "text/plain", header, e => { });
                 return;
@@ -191,7 +233,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var stream = match.BoundVariables["stream"];
             var guid = match.BoundVariables["guid"];
             Guid id;
-            if(!Guid.TryParse(guid, out id)) {
+            if (!Guid.TryParse(guid, out id))
+            {
                 SendBadRequest(manager, string.Format("Invalid request. Unable to parse guid"));
                 return;
             }
@@ -201,9 +244,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
             string includedType;
-            if(!GetIncludedType(manager, out includedType)) {
+            if (!GetIncludedType(manager, out includedType))
+            {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
-                return;   
+                return;
             }
             int expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
@@ -259,10 +303,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var stream = match.BoundVariables["stream"];
             var evNum = match.BoundVariables["event"];
-            
+
             int eventNumber = -1;
             var embed = GetEmbedLevel(manager, match, EmbedLevel.TryHarder);
-            
+
             if (stream.IsEmptyString())
             {
                 SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
@@ -291,10 +335,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void GetStreamEventsBackward(HttpEntityManager manager, UriTemplateMatch match)
         {
+            if (GetDescriptionDocument(manager, match)) return;
+
             var stream = match.BoundVariables["stream"];
             var evNum = match.BoundVariables["event"];
             var cnt = match.BoundVariables["count"];
-            
+
             int eventNumber = -1;
             int count = AtomSpecs.FeedPageSize;
             var embed = GetEmbedLevel(manager, match);
@@ -359,7 +405,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var etag = GetETagStreamVersion(manager);
 
             GetStreamEventsForward(manager, stream, eventNumber, count, resolveLinkTos, requireMaster, etag, longPollTimeout, embed);
-            return new RequestParams((longPollTimeout ?? TimeSpan.Zero) +  ESConsts.HttpTimeout);
+            return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
         }
 
         // METASTREAMS
@@ -372,13 +418,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
             Guid includedId;
-            if(!GetIncludedId(manager, out includedId)) {
+            if (!GetIncludedId(manager, out includedId))
+            {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventId));
-                return;   
+                return;
             }
             string foo;
             GetIncludedType(manager, out foo);
-            if(!(foo == null || foo == SystemEventTypes.StreamMetadata)) {
+            if (!(foo == null || foo == SystemEventTypes.StreamMetadata))
+            {
                 SendBadRequest(manager, "Bad Request. You should not include an event type for metadata.");
                 return;
             }
@@ -519,7 +567,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             int count = AtomSpecs.FeedPageSize;
             var embed = GetEmbedLevel(manager, match);
 
-            if (pos != null && pos != "head" 
+            if (pos != null && pos != "head"
                 && (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 || position.CommitPosition < 0))
             {
                 SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
@@ -683,35 +731,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             manager.ReadTextRequestAsync(
                 (man, body) =>
                     {
-                    var events = new Event[0];
-                    try
-                    {
-                        events = AutoEventConverter.SmartParse(body, manager.RequestCodec, idIncluded, typeIncluded);
-                    }
-                    catch(Exception ex)
-                    {
-                        SendBadRequest(manager, ex.Message);
-                        return;
-                    }
-                    if (events.IsEmpty())
-                    {
-                        SendBadRequest(manager, "Write request body invalid.");
-                        return;
-                    }
-                    foreach(var e in events) {
-                        if(e.Data.Length + e.Metadata.Length > 4 * 1024 * 1024) {
-                            SendTooBig(manager);
+                        var events = new Event[0];
+                        try
+                        {
+                            events = AutoEventConverter.SmartParse(body, manager.RequestCodec, idIncluded, typeIncluded);
                         }
-                    }
-                    var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                          manager,
-                                                          Format.WriteEventsCompleted,
-                                                          (a, m) => Configure.WriteEventsCompleted(a, m, stream));
-                    var corrId = Guid.NewGuid();
-                    var msg = new ClientMessage.WriteEvents(corrId, corrId, envelope, requireMaster,
-                                                            stream, expectedVersion, events, manager.User);
-                    Publish(msg);
-                },
+                        catch (Exception ex)
+                        {
+                            SendBadRequest(manager, ex.Message);
+                            return;
+                        }
+                        if (events.IsEmpty())
+                        {
+                            SendBadRequest(manager, "Write request body invalid.");
+                            return;
+                        }
+                        foreach (var e in events)
+                        {
+                            if (e.Data.Length + e.Metadata.Length > 4 * 1024 * 1024)
+                            {
+                                SendTooBig(manager);
+                            }
+                        }
+                        var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                              manager,
+                                                              Format.WriteEventsCompleted,
+                                                              (a, m) => Configure.WriteEventsCompleted(a, m, stream));
+                        var corrId = Guid.NewGuid();
+                        var msg = new ClientMessage.WriteEvents(corrId, corrId, envelope, requireMaster,
+                                                                stream, expectedVersion, events, manager.User);
+                        Publish(msg);
+                    },
                 e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
         }
 
@@ -804,11 +854,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
     internal class HtmlFeedCodec : ICodec, IRichAtomCodec
     {
-        public string ContentType  { get { return "text/html"; } }
+        public string ContentType { get { return "text/html"; } }
         public Encoding Encoding { get { return Helper.UTF8NoBom; } }
-        public bool HasEventIds { get { return false; }}
-        public bool HasEventTypes { get { return false; }}
-        
+        public bool HasEventIds { get { return false; } }
+        public bool HasEventTypes { get { return false; } }
+
         public bool CanParse(MediaType format)
         {
             throw new NotImplementedException();
