@@ -95,6 +95,67 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
+        public void multiple_idempotent_writes()
+        {
+            const string stream = "multiple_idempotent_writes";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+
+                var events = new[] { TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent(), TestEvent.NewTestEvent() };
+                Assert.AreEqual(3, store.AppendToStreamAsync(stream, ExpectedVersion.Any, events).Result.NextExpectedVersion);
+                Assert.AreEqual(3, store.AppendToStreamAsync(stream, ExpectedVersion.Any, events).Result.NextExpectedVersion);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void multiple_idempotent_writes_with_same_id_bug_case()
+        {
+            const string stream = "multiple_idempotent_writes_with_same_id_bug_case";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+                var x = TestEvent.NewTestEvent();
+                var events = new[] { x,x,x,x,x,x};
+                Assert.AreEqual(5,store.AppendToStreamAsync(stream, ExpectedVersion.Any, events).Result.NextExpectedVersion);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void in_wtf_multiple_case_of_multiple_writes_expected_version_any_per_all_same_id()
+        {
+            const string stream = "in_wtf_multiple_case_of_multiple_writes_expected_version_any_per_all_same_id";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+                var x = TestEvent.NewTestEvent();
+                var events = new[] { x, x, x, x, x, x };
+                Assert.AreEqual(5, store.AppendToStreamAsync(stream, ExpectedVersion.Any, events).Result.NextExpectedVersion);
+                var f = store.AppendToStreamAsync(stream, ExpectedVersion.Any, events).Result;
+                Assert.AreEqual(0, f.NextExpectedVersion);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void in_slightly_reasonable_multiple_case_of_multiple_writes_with_expected_version_per_all_same_id()
+        {
+            const string stream = "in_slightly_reasonable_multiple_case_of_multiple_writes_with_expected_version_per_all_same_id";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+                var x = TestEvent.NewTestEvent();
+                var events = new[] { x, x, x, x, x, x };
+                Assert.AreEqual(5, store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events).Result.NextExpectedVersion);
+                var f = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events).Result;
+                Assert.AreEqual(5, f.NextExpectedVersion);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
         public void should_fail_writing_with_correct_exp_ver_to_deleted_stream()
         {
             const string stream = "should_fail_writing_with_correct_exp_ver_to_deleted_stream";

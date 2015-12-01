@@ -267,6 +267,7 @@ namespace EventStore.Core.Messages
                 if (lastEventNumber < firstEventNumber)
                     throw new ArgumentOutOfRangeException("lastEventNumber", "LastEventNumber is less than FirstEventNumber");
 
+
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 FirstEventNumber = firstEventNumber;
