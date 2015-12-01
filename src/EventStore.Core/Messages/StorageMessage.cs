@@ -264,8 +264,6 @@ namespace EventStore.Core.Messages
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
-                if (lastEventNumber < firstEventNumber)
-                    throw new ArgumentOutOfRangeException("lastEventNumber", "LastEventNumber is less than FirstEventNumber");
 
 
                 CorrelationId = correlationId;

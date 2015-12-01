@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
@@ -11,7 +10,7 @@ namespace EventStore.ClientAPI
     /// Maintains a full duplex connection to the EventStore
     /// </summary>
     /// <remarks>
-    /// An <see cref="IEventStoreConnection"/> operates quite differently than say a <see cref="SqlConnection"/>. Normally
+    /// An <see cref="IEventStoreConnection"/> operates quite differently than say a SqlConnection. Normally
     /// when using an <see cref="IEventStoreConnection"/> you want to keep the connection open for a much longer of time than 
     /// when you use a SqlConnection. If you prefer the usage pattern of using(new Connection()) .. then you would likely
     /// want to create a FlyWeight on top of the <see cref="EventStoreConnection"/>.
