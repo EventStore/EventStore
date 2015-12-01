@@ -507,7 +507,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
             }, 1, false);
             sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
-            sub.NotifyClockTick(DateTime.Now);
+            sub.NotifyClockTick(DateTime.UtcNow);
             Assert.AreEqual(1, cp);
         }
 
@@ -538,7 +538,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
             }, 1, false);
             sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
-            sub.NotifyClockTick(DateTime.Now);
+            sub.NotifyClockTick(DateTime.UtcNow);
             Assert.AreEqual(1, cp);
         }
     }
@@ -571,7 +571,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(id2, "type", "streamName", 1)
             }, 1, false);
             envelope1.Replies.Clear();
-            sub.NotifyClockTick(DateTime.Now.AddSeconds(1));
+            sub.NotifyClockTick(DateTime.UtcNow.AddSeconds(1));
             Assert.AreEqual(0, envelope1.Replies.Count);
             Assert.AreEqual(0, parker.ParkedEvents.Count);
         }
@@ -603,7 +603,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 
             }, 1, false);
             envelope1.Replies.Clear();
-            sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
+            sub.NotifyClockTick(DateTime.UtcNow.AddSeconds(3));
             Assert.AreEqual(2, envelope1.Replies.Count);
             var msg1 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared)envelope1.Replies[0];
             var msg2 = (Messages.ClientMessage.PersistentSubscriptionStreamEventAppeared)envelope1.Replies[1];
@@ -636,7 +636,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(id1, "type", "streamName", 0),
             }, 1, false);
             envelope1.Replies.Clear();
-            sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
+            sub.NotifyClockTick(DateTime.UtcNow.AddSeconds(3));
             Assert.AreEqual(0, envelope1.Replies.Count);
             Assert.AreEqual(1, parker.ParkedEvents.Count);
             Assert.AreEqual(id1, parker.ParkedEvents[0].OriginalEvent.EventId);
@@ -668,7 +668,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(id2, "type", "streamName", 1),
             }, 1, false);
             envelope1.Replies.Clear();
-            sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
+            sub.NotifyClockTick(DateTime.UtcNow.AddSeconds(3));
             Assert.AreEqual(0, envelope1.Replies.Count);
             Assert.AreEqual(2, parker.ParkedEvents.Count);
             Assert.IsTrue(id1 == parker.ParkedEvents[0].OriginalEvent.EventId ||
@@ -704,7 +704,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             Assert.AreEqual(2, envelope1.Replies.Count);
 
             // Should expire first 2 and send to park.
-            sub.NotifyClockTick(DateTime.Now.AddSeconds(1));
+            sub.NotifyClockTick(DateTime.UtcNow.AddSeconds(1));
             parker.ParkMessageCompleted(0, OperationResult.Success);
             parker.ParkMessageCompleted(1, OperationResult.Success);
             Assert.AreEqual(2, parker.ParkedEvents.Count);
@@ -1070,12 +1070,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             return
                 ResolvedEvent.ForUnresolvedEvent(new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version,
-                    DateTime.Now, PrepareFlags.SingleWrite, type, new byte[0], new byte[0]));
+                    DateTime.UtcNow, PrepareFlags.SingleWrite, type, new byte[0], new byte[0]));
         }
 
         public static ResolvedEvent BuildLinkEvent(Guid id, string stream, int version, ResolvedEvent ev, bool resolved = true)
         {
-            var link = new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version, DateTime.Now, PrepareFlags.SingleWrite, SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes(string.Format("{0}@{1}", ev.OriginalEventNumber, ev.OriginalStreamId)), new byte[0]);
+            var link = new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version, DateTime.UtcNow, PrepareFlags.SingleWrite, SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes(string.Format("{0}@{1}", ev.OriginalEventNumber, ev.OriginalStreamId)), new byte[0]);
             if (resolved)
                 return ResolvedEvent.ForResolvedLink(ev.Event, link);
             else
