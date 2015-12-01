@@ -777,7 +777,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void WakeSubscriptions()
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
 
             foreach (var subscription in _subscriptionsById.Values)
             {

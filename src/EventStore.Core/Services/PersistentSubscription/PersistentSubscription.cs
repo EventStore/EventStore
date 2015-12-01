@@ -289,7 +289,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 //no outstanding messages. in this case we can say that the last known
                 //event would be our checkpoint place (we have already completed it)
                 var difference = lowest - _lastCheckPoint;
-                var now = DateTime.Now;
+                var now = DateTime.UtcNow;
                 var timedifference = now - _lastCheckPointTime;
                 if (timedifference < _settings.CheckPointAfter && difference < _settings.MaxCheckPointCount) return;
                 if ((difference >= _settings.MinCheckPointCount && isTimeCheck) ||
@@ -308,7 +308,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             lock (_lock)
             {
                 _outstandingMessages.StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0),
-                    DateTime.Now + _settings.MessageTimeout);
+                    DateTime.UtcNow + _settings.MessageTimeout);
             }
         }
 

@@ -46,13 +46,13 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent msg)
         {
-            if (msg.Expires < DateTime.Now) return;
+            if (msg.Expires < DateTime.UtcNow) return;
             msg.Envelope.ReplyWith(ReadEvent(msg));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward msg)
         {
-            if (msg.Expires < DateTime.Now) return;
+            if (msg.Expires < DateTime.UtcNow) return;
             using (HistogramService.Measure(_readerStreamRangeHistogram))
             {
                 var res = ReadStreamEventsForward(msg);
@@ -85,13 +85,13 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward msg)
         {
-            if (msg.Expires < DateTime.Now) return;
+            if (msg.Expires < DateTime.UtcNow) return;
             msg.Envelope.ReplyWith(ReadStreamEventsBackward(msg));
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward msg)
         {
-            if (msg.Expires < DateTime.Now) return;
+            if (msg.Expires < DateTime.UtcNow) return;
             using (HistogramService.Measure(_readerAllRangeHistogram))
             {
                 var res = ReadAllEventsForward(msg);
@@ -129,13 +129,13 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward msg)
         {
-            if (msg.Expires < DateTime.Now) return;
+            if (msg.Expires < DateTime.UtcNow) return;
             msg.Envelope.ReplyWith(ReadAllEventsBackward(msg));
         }
 
         void IHandle<StorageMessage.CheckStreamAccess>.Handle(StorageMessage.CheckStreamAccess msg)
         {
-            if (msg.Expires < DateTime.Now) return;
+            if (msg.Expires < DateTime.UtcNow) return;
             msg.Envelope.ReplyWith(CheckStreamAccess(msg));
         }
 
