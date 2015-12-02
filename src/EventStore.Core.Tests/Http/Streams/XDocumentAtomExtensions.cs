@@ -6,7 +6,7 @@ namespace EventStore.Core.Tests.Http.Streams
 {
     internal static class XDocumentAtomExtensions
     {
-        static readonly XNamespace AtomNamespace = "http://www.w3.org/2005/Atom";
+        internal static readonly XNamespace AtomNamespace = "http://www.w3.org/2005/Atom";
 
         public static XElement[] GetEntries(this XDocument self)
         {

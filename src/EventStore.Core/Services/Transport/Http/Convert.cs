@@ -10,12 +10,17 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
+using System.Collections.Generic;
+using EventStore.Transport.Http.Codecs;
+using System.Xml.Serialization;
 
 namespace EventStore.Core.Services.Transport.Http
 {
     public static class Convert
     {
         private static readonly string AllEscaped = Uri.EscapeDataString("$all");
+
         public static FeedElement ToStreamEventForwardFeed(ClientMessage.ReadStreamEventsForwardCompleted msg, Uri requestedUrl, EmbedLevel embedContent)
         {
             Ensure.NotNull(msg, "msg");
@@ -45,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
             if (!msg.IsEndOfStream || msg.Events.Length > 0)
                 feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
-            if(!escapedStreamId.StartsWith("$$"))
+            if (!escapedStreamId.StartsWith("$$"))
                 feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
             for (int i = msg.Events.Length - 1; i >= 0; --i)
             {
@@ -140,9 +145,68 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
             for (int i = 0; i < msg.Events.Length; ++i)
             {
-                feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(),requestedUrl, embedContent));
+                feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
             }
             return feed;
+        }
+
+        public static FeedElement ToNextNPersistentMessagesFeed(ClientMessage.ReadNextNPersistentMessagesCompleted msg, Uri requestedUrl, string streamId, string groupName, int count, EmbedLevel embedContent)
+        {
+            string escapedStreamId = Uri.EscapeDataString(streamId);
+            string escapedGroupName = Uri.EscapeDataString(groupName);
+            var self = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}", escapedStreamId, escapedGroupName);
+            var feed = new FeedElement();
+            feed.SetTitle("All Events Persistent Subscription");
+            feed.SetId(self);
+            feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetAuthor(AtomSpecs.Author);
+
+            if (msg.Events != null && msg.Events.Length > 0)
+            {
+                var ackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack?ids={2}", escapedStreamId, escapedGroupName, String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                feed.AddLink("ackAll", ackAll);
+
+                var nackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack?ids={2}", escapedStreamId, escapedGroupName, String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                feed.AddLink("nackAll", nackAll);
+            }
+
+            var prev = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/{2}?embed={3}", escapedStreamId, escapedGroupName, count, embedContent);
+            feed.AddLink("previous", prev);
+
+            feed.AddLink("self", self);
+            for (int i = msg.Events.Length - 1; i >= 0; --i)
+            {
+                var entry = ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent);
+                var ack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack/{2}", escapedStreamId, escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+                var nack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack/{2}", escapedStreamId, escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+                entry.AddLink("ack", ack);
+                entry.AddLink("nack", nack);
+                feed.AddEntry(entry);
+            }
+            return feed;
+        }
+
+        public static DescriptionDocument ToDescriptionDocument(Uri requestedUrl, string streamId, string[] subscriptions)
+        {
+            var descriptionDocument = new DescriptionDocument();
+            descriptionDocument.SetTitle("description document for " + streamId);
+            descriptionDocument.SetDescription(@"The description document will be presented when the following is true for the Accept Header. (No Accept Header, Unsupported Response Type, Description Document Requested)");
+
+            descriptionDocument.SetSelf("/streams/" + streamId,
+                                    Codec.DescriptionJson.ContentType);
+
+            descriptionDocument.SetStream("/streams/" + streamId,
+                                    Codec.EventStoreXmlCodec.ContentType,
+                                    Codec.EventStoreJsonCodec.ContentType);
+
+            if (subscriptions != null) {
+                foreach (var group in subscriptions) {
+                    descriptionDocument.AddStreamSubscription(String.Format("/subscriptions/{0}/{1}", streamId, group),
+                                    Codec.CompetingXml.ContentType,
+                                    Codec.CompetingJson.ContentType);
+                }
+            }
+            return descriptionDocument;
         }
 
         public static EntryElement ToEntry(ResolvedEvent eventLinkPair, Uri requestedUrl, EmbedLevel embedContent, bool singleEntry = false)
@@ -195,7 +259,7 @@ namespace EventStore.Core.Services.Transport.Http
                             // it is json if successed
                             richEntry.IsJson = true;
                         }
-                        catch 
+                        catch
                         {
                             // ignore - we tried
                         }
@@ -208,7 +272,7 @@ namespace EventStore.Core.Services.Transport.Http
                             richEntry.MetaData = Helper.UTF8NoBom.GetString(evnt.Metadata);
                             richEntry.IsMetaData = richEntry.MetaData.IsNotEmptyString();
                             // next step may fail, so we have already assigned body
-                            if(embedContent >= EmbedLevel.PrettyBody)
+                            if (embedContent >= EmbedLevel.PrettyBody)
                             {
                                 richEntry.MetaData = FormatJson(richEntry.MetaData);
                             }
@@ -225,7 +289,7 @@ namespace EventStore.Core.Services.Transport.Http
                                 richEntry.LinkMetaData = Helper.UTF8NoBom.GetString(lnk.Metadata);
                                 richEntry.IsLinkMetaData = richEntry.LinkMetaData.IsNotEmptyString();
                                 // next step may fail, so we have already assigned body
-                                if(embedContent >= EmbedLevel.PrettyBody)
+                                if (embedContent >= EmbedLevel.PrettyBody)
                                 {
                                     richEntry.LinkMetaData = FormatJson(richEntry.LinkMetaData);
                                 }
@@ -253,7 +317,7 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 var eventLoc = GetLinkData(Encoding.UTF8.GetString(link.Data));
                 SetEntryProperties(eventLoc.Item1, eventLoc.Item2, link.TimeStamp, requestedUrl, entry);
-		        entry.SetSummary("$>");
+                entry.SetSummary("$>");
             }
             return entry;
         }
@@ -262,13 +326,13 @@ namespace EventStore.Core.Services.Transport.Http
         {
             Ensure.NotNull(link, "link data cannot be null");
             var loc = link.IndexOf("@", StringComparison.Ordinal);
-            if(loc == -1) throw new Exception(String.Format("Unable to parse link {0}", link));
+            if (loc == -1) throw new Exception(String.Format("Unable to parse link {0}", link));
             var position = int.Parse(link.Substring(0, loc));
             var stream = link.Substring(loc + 1, link.Length - loc - 1);
             return new Tuple<string, int>(stream, position);
         }
 
-        private static void SetEntryProperties(string stream, int eventNumber, DateTime timestamp, Uri requestedUrl,EntryElement entry)
+        private static void SetEntryProperties(string stream, int eventNumber, DateTime timestamp, Uri requestedUrl, EntryElement entry)
         {
             var escapedStreamId = Uri.EscapeDataString(stream);
             entry.SetTitle(eventNumber + "@" + stream);
@@ -291,4 +355,53 @@ namespace EventStore.Core.Services.Transport.Http
         }
     }
 
+    public class Links
+    {
+        public Link Self;
+        public Link Stream;
+        public List<Link> StreamSubscription;
+    }
+
+    public class Link
+    {
+        public string Href;
+        public string[] SupportedContentTypes;
+        public Link() { }
+        public Link(string href, string[] supportedContentTypes)
+        {
+            Href = href;
+            SupportedContentTypes = supportedContentTypes;
+        }
+    }
+
+    public class DescriptionDocument
+    {
+        public string Title;
+        public string Description;
+        [JsonProperty("_links")]
+        public Links Links = new Links();
+        public void SetTitle(string title)
+        {
+            Title = title;
+        }
+        public void SetDescription(string description)
+        {
+            Description = description;
+        }
+        public void SetSelf(string href, params string[] supportedContentTypes)
+        {
+            Links.Self = new Link(href, supportedContentTypes);
+        }
+        public void AddStreamSubscription(string href, params string[] supportedContentTypes)
+        {
+            if (Links.StreamSubscription == null) Links.StreamSubscription = new List<Link>();
+
+            Links.StreamSubscription.Add(new Link(href, supportedContentTypes));
+        }
+
+        public void SetStream(string href, params string[] supportedContentTypes)
+        {
+            Links.Stream = new Link(href, supportedContentTypes);
+        }
+    }
 }

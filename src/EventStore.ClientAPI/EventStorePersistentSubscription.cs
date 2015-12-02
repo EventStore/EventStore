@@ -6,11 +6,14 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
-    class EventStorePersistentSubscription : EventStorePersistentSubscriptionBase
+    /// <summary>
+    /// Represents a persistent subscription connection.
+    /// </summary>
+    public class EventStorePersistentSubscription : EventStorePersistentSubscriptionBase
     {
         private readonly EventStoreConnectionLogicHandler _handler;
 
-        public EventStorePersistentSubscription(
+        internal EventStorePersistentSubscription(
             string subscriptionId, string streamId,
             Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,

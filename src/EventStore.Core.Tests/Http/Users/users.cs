@@ -9,7 +9,6 @@ namespace EventStore.Core.Tests.Http.Users
 {
     namespace users
     {
-
         abstract class with_admin_user : HttpBehaviorSpecification
         {
             protected readonly ICredentials _admin = DefaultData.AdminNetworkCredentials;

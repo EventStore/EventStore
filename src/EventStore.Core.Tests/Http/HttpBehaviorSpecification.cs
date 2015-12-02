@@ -18,6 +18,7 @@ using EventStore.Core.Tests.Http.Users;
 using NUnit.Framework;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.Core.Tests.Http
 {
@@ -278,9 +279,15 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
         
+        protected XDocument GetAtomXml(Uri uri, ICredentials credentials = null)
+        {
+            Get(uri.ToString(), "", ContentType.Atom, credentials);
+            return XDocument.Parse(_lastResponseBody);
+        }
+
         protected XDocument GetXml(Uri uri, ICredentials credentials = null)
         {
-            Get(uri.ToString(), "", "application/atom+xml", credentials);
+            Get(uri.ToString(), "", ContentType.Xml, credentials);
             return XDocument.Parse(_lastResponseBody);
         }
 

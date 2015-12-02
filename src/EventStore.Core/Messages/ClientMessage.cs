@@ -1018,7 +1018,51 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class ReadNextNPersistentMessages : ReadRequestMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
+            public readonly string GroupName;
+            public readonly string EventStreamId;
+            public readonly int Count;
+
+            public ReadNextNPersistentMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+                  string eventStreamId, string groupName, int count, IPrincipal user)
+                : base(internalCorrId, correlationId, envelope, user)
+            {
+                GroupName = groupName;
+                EventStreamId = eventStreamId;
+                Count = count;
+            }
+        }
+
+        public class ReadNextNPersistentMessagesCompleted : ReadResponseMessage
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid CorrelationId;
+            public readonly string Reason;
+            public readonly ReadNextNPersistentMessagesResult Result;
+            public readonly ResolvedEvent[] Events;
+
+            public ReadNextNPersistentMessagesCompleted(Guid correlationId, ReadNextNPersistentMessagesResult result, string reason, ResolvedEvent[] events)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                CorrelationId = correlationId;
+                Result = result;
+                Reason = reason;
+                Events = events;
+            }
+
+            public enum ReadNextNPersistentMessagesResult
+            {
+                Success = 0,
+                DoesNotExist = 1,
+                Fail = 2,
+                AccessDenied = 3
+            }
+        }
 
         public class DeletePersistentSubscription : ReadRequestMessage
         {

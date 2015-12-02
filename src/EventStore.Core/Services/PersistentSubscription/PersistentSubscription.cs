@@ -330,7 +330,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 foreach (var id in processedEventIds)
                 {
                     Log.Info("Message NAK'ed id {0} action to take {1} reason '{2}'", id, action, reason ?? "");
-                    HandleNakedMessage(action, id, reason);
+                    HandleNackedMessage(action, id, reason);
                 }
                 RemoveProcessingMessages(correlationId, processedEventIds);
                 TryMarkCheckpoint(false);
@@ -339,7 +339,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        private void HandleNakedMessage(NakAction action, Guid id, string reason)
+        private void HandleNackedMessage(NakAction action, Guid id, string reason)
         {
             OutstandingMessage e;
             switch (action)

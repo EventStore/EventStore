@@ -5,6 +5,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
+using EventStore.Transport.Http.Atom;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -100,5 +101,19 @@ namespace EventStore.Core.Services.Transport.Http
 					   ? entity.ResponseCodec.To(new ClusterInfoDto(sendGossip.ClusterInfo, sendGossip.ServerEndPoint))
 					   : string.Empty;
 		}
+
+        public static string ReadNextNPersistentMessagesCompleted(HttpResponseFormatterArgs entity, Message message, string streamId, string groupName, int count, EmbedLevel embed)
+        {
+            var msg = message as ClientMessage.ReadNextNPersistentMessagesCompleted;
+            if (msg == null || msg.Result != ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.Success)
+                return String.Empty;
+
+            return entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.RequestedUrl, streamId, groupName, count, embed));
+        }
+
+        public static string GetDescriptionDocument(HttpResponseFormatterArgs entity, string streamId, string[] persistentSubscriptionStats)
+        {
+            return entity.ResponseCodec.To(Convert.ToDescriptionDocument(entity.RequestedUrl, streamId, persistentSubscriptionStats));
+        }
     }
 }

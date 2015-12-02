@@ -3,62 +3,65 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.BasicAuthentication.basic_authentication;
 using EventStore.Transport.Http;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using EventStore.Core.Tests.Helpers;
+using System.Xml.Linq;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
     [TestFixture, Category("LongRunning")]
-    public class can_get_all_statistics_in_json : HttpBehaviorSpecification
+    class when_getting_all_statistics_in_json : with_subscription_having_events
     {
-        private HttpWebResponse _response;
-
-        protected override void Given()
-        {
-        }
+        private JArray _json;
 
         protected override void When()
         {
-            var request = CreateRequest("/subscriptions", null, "GET", "application/json", null);
-            _response = GetRequestResponse(request);
+            _json = GetJson<JArray>("/subscriptions", accept: ContentType.Json);
         }
 
         [Test]
-        public void the_response_code_is_ok()
+        public void returns_ok()
         {
-            Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void body_contains_valid_json()
+        {
+            Assert.AreEqual(TestStreamName, _json[0]["eventStreamId"].Value<string>());
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    public class can_get_all_statistics_in_xml : HttpBehaviorSpecification
+    class when_getting_all_statistics_in_xml : with_subscription_having_events
     {
-        private HttpWebResponse _response;
-
-        protected override void Given()
-        {
-        }
+        private XDocument _xml;
 
         protected override void When()
         {
-            var request = CreateRequest("/subscriptions", null, "GET", "text/xml", null);
-            _response = GetRequestResponse(request);
+            _xml = GetXml(MakeUrl("/subscriptions"));
         }
 
         [Test]
-        public void the_response_code_is_ok()
+        public void returns_ok()
         {
-            Assert.AreEqual(HttpStatusCode.OK, _response.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void body_contains_valid_xml()
+        {
+            Assert.AreEqual(TestStreamName, _xml.Descendants("EventStreamId").First().Value);
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    public class requesting_non_existing_single_stat_causes_404 : HttpBehaviorSpecification
+    class when_getting_non_existent_single_statistics : HttpBehaviorSpecification
     {
         private HttpWebResponse _response;
 
@@ -73,14 +76,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void the_response_code_is_ok()
+        public void returns_not_found()
         {
             Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    public class requesting_non_existing_strea_stat_causes_404 : HttpBehaviorSpecification
+    class when_getting_non_existent_stream_statistics : HttpBehaviorSpecification
     {
         private HttpWebResponse _response;
 
@@ -95,25 +98,25 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void the_response_code_is_ok()
+        public void returns_not_found()
         {
             Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
         }
     }
 
     [TestFixture, Category("LongRunning")]
-    public class subscription_stats_for_individual_have_right_data : SpecificationWithPersistentSubscriptionAndConnections
+    class when_getting_subscription_statistics_for_individual : SpecificationWithPersistentSubscriptionAndConnections
     {
         private JObject _json;
 
 
         protected override void When()
         {
-            _json = GetJson<JObject>("/subscriptions/" + _streamName + "/" + _groupName, ContentType.Json);
+            _json = GetJson<JObject>("/subscriptions/" + _streamName + "/" + _groupName + "/info", ContentType.Json);
         }
 
         [Test]
-        public void the_response_code_is_ok()
+        public void returns_ok()
         {
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
         }
@@ -121,7 +124,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void detail_rel_href_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, _groupName),
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
                 _json["links"][0]["href"].Value<string>());
         }
 
@@ -138,6 +141,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.AreEqual("detail",
                 _json["links"][0]["rel"].Value<string>());
         }
+
         [Test]
         public void the_event_stream_is_correct()
         {
@@ -168,7 +172,6 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.IsNotNull(_json["connections"][0]["from"]);
         }
 
-
         [Test]
         public void the_second_connection_has_endpoint()
         {
@@ -181,7 +184,6 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.AreEqual("anonymous", _json["connections"][0]["username"].Value<string>());
         }
 
-
         [Test]
         public void the_second_connection_has_user()
         {
@@ -190,30 +192,27 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     }
 
     [TestFixture, Category("LongRunning")]
-    public class subscription_stats_summary_has_right_data : SpecificationWithPersistentSubscriptionAndConnections
+    class when_getting_subscription_stats_summary : SpecificationWithPersistentSubscriptionAndConnections
     {
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
                                                     .StartFromCurrent();
 
         private JArray _json;
-        private EventStorePersistentSubscriptionBase _sub4;
-        private EventStorePersistentSubscriptionBase _sub3;
-        private EventStorePersistentSubscriptionBase _sub5;
 
         protected override void Given()
         {
             base.Given();
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
                         DefaultData.AdminCredentials).Wait();
-            _sub3 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
+            _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine());
-            _sub4 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
+            _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
-            _sub5 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
+            _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
@@ -222,10 +221,6 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void When()
         {
-            //make mcs stop bitching
-            Console.WriteLine(_sub3);
-            Console.WriteLine(_sub4);
-            Console.WriteLine(_sub5);
             _json = GetJson<JArray>("/subscriptions", ContentType.Json);
         }
 
@@ -250,7 +245,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, _groupName), 
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
                 _json[0]["links"][0]["href"].Value<string>());
         }
 
@@ -271,7 +266,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_second_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, "secondgroup"), 
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, "secondgroup"),
                 _json[1]["links"][0]["href"].Value<string>());
         }
 
@@ -289,11 +284,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 _json[1]["links"][0]["rel"].Value<string>());
         }
 
-
         [Test]
         public void the_first_parked_message_queue_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/streams/$persistentsubscription-{1}::{2}-parked",_node.ExtHttpEndPoint, _streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/streams/$persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
         }
 
         [Test]
@@ -326,18 +320,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.AreEqual("secondgroup", _json[1]["groupName"].Value<string>());
         }
 
-
         [Test]
         public void second_subscription_there_are_three_connections()
         {
             Assert.AreEqual(3, _json[1]["connectionCount"].Value<int>());
         }
-
     }
 
-
     [TestFixture, Category("LongRunning")]
-    public class subscription_stats_for_stream_have_summary_data : SpecificationWithPersistentSubscriptionAndConnections
+    class when_getting_subscription_statistics_for_stream : SpecificationWithPersistentSubscriptionAndConnections
     {
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
@@ -353,14 +344,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             base.Given();
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
                         DefaultData.AdminCredentials).Wait();
-            _sub3 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
+            _sub3 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine());
-            _sub4 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
+            _sub4 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
-            _sub5 = _conn.ConnectToPersistentSubscription(_streamName,"secondgroup",
+            _sub5 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
                         (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
@@ -397,14 +388,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, _groupName), 
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
                 _json[0]["links"][0]["href"].Value<string>());
         }
 
         [Test]
         public void the_second_event_stream_detail_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _streamName, "secondgroup"), 
+            Assert.AreEqual(string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, "secondgroup"),
                 _json[1]["links"][0]["href"].Value<string>());
         }
 
@@ -444,7 +435,6 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.AreEqual("secondgroup", _json[1]["groupName"].Value<string>());
         }
 
-
         [Test]
         public void second_subscription_there_are_three_connections()
         {
@@ -465,12 +455,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void Given()
         {
-            _conn = EventStoreConnection.Create(_node.TcpEndPoint.ToESTcpUri());
+            _conn = EventStoreConnection.Create(_node.TcpEndPoint);
             _conn.ConnectAsync().Wait();
             _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
                     DefaultData.AdminCredentials).Wait();
-            _sub1 = _conn.ConnectToPersistentSubscription(_streamName,_groupName,
-                        (subscription, @event) => Console.WriteLine(), 
+            _sub1 = _conn.ConnectToPersistentSubscription(_streamName, _groupName,
+                        (subscription, @event) => Console.WriteLine(),
                         (subscription, reason, arg3) => Console.WriteLine());
             _sub2 = _conn.ConnectToPersistentSubscription(_streamName, _groupName,
                         (subscription, @event) => Console.WriteLine(),
@@ -481,13 +471,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void When()
         {
-            
+
         }
 
         [TestFixtureTearDown]
         public void Teardown()
         {
-             _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, DefaultData.AdminCredentials).Wait();
+            _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, DefaultData.AdminCredentials).Wait();
             _conn.Close();
             _conn.Dispose();
         }
