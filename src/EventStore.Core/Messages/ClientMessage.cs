@@ -195,7 +195,7 @@ namespace EventStore.Core.Messages
                     throw new ArgumentOutOfRangeException("firstEventNumber", String.Format("FirstEventNumber: {0}", firstEventNumber));
                 if (lastEventNumber - firstEventNumber + 1 < 0)
                     throw new ArgumentOutOfRangeException("lastEventNumber", String.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
-
+ 
                 CorrelationId = correlationId;
                 Result = OperationResult.Success;
                 Message = null;
