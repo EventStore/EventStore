@@ -201,7 +201,7 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(SystemMessage.BecomeMaster message)
         {
-            if (!_skipInitializeStandardUsersCheck)
+            if (!_skipInitializeStandardUsersCheck){
                 BeginReadUserDetails(
                     "admin", completed =>
                         {
@@ -210,6 +210,15 @@ namespace EventStore.Core.Services.UserManagement
                             else
                                 NotifyInitialized();
                         });
+                BeginReadUserDetails(
+                    "ops", completed =>
+                        {
+                            if (completed.Result == ReadStreamResult.NoStream)
+                                CreateOperationsUser();
+                            else
+                                NotifyInitialized();
+                        });
+            }
             else
                 NotifyInitialized();
         }
@@ -546,6 +555,61 @@ namespace EventStore.Core.Services.UserManagement
                                                 break;
                                             default:
                                                 _log.Error("'admin' user account could not be created.");
+                                                NotifyInitialized();
+                                                break;
+                                        }
+                                    });
+                            break;
+                    }
+                });
+        }
+
+        private void CreateOperationsUser()
+        {
+            var userData = CreateUserData(
+                SystemUsers.Operations, "Event Store Operations", new[] {SystemRoles.Operations},
+                SystemUsers.DefaultAdminPassword);
+            WriteStreamAcl(
+                SystemUsers.Operations, completed1 =>
+                {
+                    switch (completed1.Result)
+                    {
+                        case OperationResult.CommitTimeout:
+                        case OperationResult.PrepareTimeout:
+                            CreateOperationsUser();
+                            break;
+                        default:
+                            _log.Error("'ops' user account could not be created");
+                            NotifyInitialized();
+                            break;
+                        case OperationResult.Success:
+                            WriteUserEvent(
+                                userData, "$UserCreated", ExpectedVersion.NoStream, completed =>
+                                    {
+                                        switch (completed.Result)
+                                        {
+                                            case OperationResult.Success:
+                                                _log.Info("'ops' user account has been created.");
+                                                WriteUsersStreamEvent("ops", x =>
+                                                    {
+                                                        if (x.Result == OperationResult.Success)
+                                                        {
+                                                            _log.Info("'ops' user added to $users.");
+                                                        }
+                                                        else
+                                                        {
+                                                            _log.Error(string.Format("unable to add 'ops' to $users. {0}", x.Result));
+                                                        }
+                                                        NotifyInitialized();
+                                                    });
+                                                break;
+                                            case OperationResult.CommitTimeout:
+                                            case OperationResult.PrepareTimeout:
+                                                _log.Error("'ops' user account creation timed out retrying.");
+                                                CreateOperationsUser();
+                                                break;
+                                            default:
+                                                _log.Error("'ops' user account could not be created.");
                                                 NotifyInitialized();
                                                 break;
                                         }

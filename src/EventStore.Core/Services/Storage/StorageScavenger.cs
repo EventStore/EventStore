@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Storage
             long spaceSaved = 0;
             try
             {
-                if (message.User == null || !message.User.IsInRole(SystemRoles.Admins))
+                if (message.User == null || (!message.User.IsInRole(SystemRoles.Admins) && !message.User.IsInRole(SystemRoles.Operations)))
                 {
                     result = ClientMessage.ScavengeDatabase.ScavengeResult.Failed;
                     error = "Access denied.";
