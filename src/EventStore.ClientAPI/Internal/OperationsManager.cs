@@ -104,7 +104,7 @@ namespace EventStore.ClientAPI.Internal
                     var err = string.Format("EventStoreConnection '{0}': operation never got response from server.\n"
                                             + "UTC now: {1:HH:mm:ss.fff}, operation: {2}.",
                                             _connectionName, DateTime.UtcNow, operation);
-                    _settings.Log.Error(err);
+                    _settings.Log.Debug(err);
 
                     if (_settings.FailOnNoServerResponse)
                     {
