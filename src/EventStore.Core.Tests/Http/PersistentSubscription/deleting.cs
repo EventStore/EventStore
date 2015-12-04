@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void returns_ok()
+        public void returns_not_found()
         {
             Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
         }
