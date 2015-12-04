@@ -161,6 +161,8 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.AuthenticationTypeDescr, Opts.AuthGroup)]
         public string AuthenticationType { get; set; }
+        [ArgDescription(Opts.AuthenticationConfigFileDescr, Opts.AuthGroup)]
+        public string AuthenticationConfig { get; set; }
 
         [ArgDescription(Opts.PrepareTimeoutMsDescr, Opts.DbGroup)]
         public int PrepareTimeoutMs { get; set; }
@@ -261,6 +263,7 @@ namespace EventStore.ClusterNode
             SslValidateServer = Opts.SslValidateServerDefault;
 
             AuthenticationType = Opts.AuthenticationTypeDefault;
+            AuthenticationConfig = Opts.AuthenticationConfigFileDefault;
 
             UnsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
             PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
