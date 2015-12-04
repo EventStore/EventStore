@@ -193,6 +193,46 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
+        /// Asynchronously gets the state of a projection for a specified partition.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="partitionId">The id of the partition.</param>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        /// <returns>String of JSON containing projection state.</returns>
+        public Task<string> GetPartitionStateAsync(string name, string partitionId, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(partitionId, "partitionId");
+            return _client.GetPartitionStateAsync(_httpEndPoint, name, partitionId, userCredentials);
+        }
+
+        /// <summary>
+        /// Asynchronously gets the state of a projection.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        /// <returns>String of JSON containing projection state.</returns>
+        public Task<string> GetResultAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetState(_httpEndPoint, name, userCredentials);
+        }
+
+        /// <summary>
+        /// Asynchronously gets the state of a projection for a specified partition.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="partitionId">The id of the partition.</param>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        /// <returns>String of JSON containing projection state.</returns>
+        public Task<string> GetPartitionResultAsync(string name, string partitionId, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(partitionId, "partitionId");
+            return _client.GetPartitionStateAsync(_httpEndPoint, name, partitionId, userCredentials);
+        }
+
+        /// <summary>
         /// Asynchronously gets the statistics of a projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>

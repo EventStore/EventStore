@@ -117,6 +117,21 @@ namespace EventStore.ClientAPI.Projections
             return SendGet(endPoint.ToHttpUrl("/projection/{0}/state", name), userCredentials, HttpStatusCode.OK);
         }
 
+        public Task<string> GetPartitionStateAsync(IPEndPoint endPoint, string name, string partition, UserCredentials userCredentials = null)
+        {
+            return SendGet(endPoint.ToHttpUrl("/projection/{0}/state?partition={1}", name, partition), userCredentials, HttpStatusCode.OK);
+        }
+
+        public Task<string> GetResult(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        {
+            return SendGet(endPoint.ToHttpUrl("/projection/{0}/result", name), userCredentials, HttpStatusCode.OK);
+        }
+
+        public Task<string> GetPartitionResultAsync(IPEndPoint endPoint, string name, string partition, UserCredentials userCredentials = null)
+        {
+            return SendGet(endPoint.ToHttpUrl("/projection/{0}/result?partition={1}", name, partition), userCredentials, HttpStatusCode.OK);
+        }
+
         public Task<string> GetStatistics(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
         {
             return SendGet(endPoint.ToHttpUrl("/projection/{0}/statistics", name), userCredentials, HttpStatusCode.OK);
