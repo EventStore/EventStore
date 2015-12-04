@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -12,7 +13,7 @@ namespace EventStore.Core.Services.Histograms
     {
         private const long NUMBEROFNS = 1000000000L;
         private static readonly Stopwatch _stopwatch = new Stopwatch();
-        private static readonly Dictionary<string, Histogram> Histograms = new Dictionary<string, Histogram>();
+        private static readonly ConcurrentDictionary<string, Histogram> Histograms = new ConcurrentDictionary<string, Histogram>();
 
         static HistogramService()
         {
@@ -48,10 +49,7 @@ namespace EventStore.Core.Services.Histograms
 
         public static void CreateHistogram(string name)
         {
-            if (!Histograms.ContainsKey(name))
-            {
-                Histograms.Add(name, new Histogram(NUMBEROFNS, 3));
-            }
+            Histograms.TryAdd(name, new Histogram(NUMBEROFNS, 3));
         }
 
         public static void CreateHistograms()
