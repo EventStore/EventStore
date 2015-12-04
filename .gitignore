@@ -43,6 +43,7 @@ bin
 *.cache
 *.ncrunchsolution
 *.ncrunchproject
+src/.vs/
 
 .idea
 
@@ -95,3 +96,4 @@ test_results
 
 # Mac
 .DS_Store
+
