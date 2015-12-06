@@ -481,11 +481,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     // hash header and data
                     MD5Hash.ContinuousHashFor(md5, stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
                     // hash mapping and footer except MD5 hash sum which should always be last
-                    
+
+                    MD5Hash.ContinuousHashFor(md5, stream, ChunkHeader.Size + footer.PhysicalDataSize, footer.MapSize);
+
                     MD5Hash.ContinuousHashFor(md5, 
                                               stream,
                                               (int) stream.Length - ChunkHeader.Size,
-                                              footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
+                                              ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
                     hash = md5.Hash;
                 }
