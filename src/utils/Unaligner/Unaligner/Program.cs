@@ -1,8 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.TransactionLog.Unbuffered;
+using EventStore.Core.Util;
 
 namespace Unaligner
 {
@@ -53,6 +58,7 @@ namespace Unaligner
                 SetAttributes(filename, false);
                 using (var stream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
                 {
+                    var hashBefore = CalculateHash(stream);
                     Console.WriteLine("\n\nFile name '{0}' size is {1}", filename, stream.Length);
                     var header = ChunkHeader.FromStream(new MemoryStream(ReadHeader(stream)));
                     Console.WriteLine("Read header chunk {0} ({1}-{2} start: {3} end: {4} size : {5}", 
@@ -70,6 +76,14 @@ namespace Unaligner
                         footer.MapSize,
                         footer.IsMap12Bytes,
                         footer.MD5Hash);
+
+                    
+                    if (footer.IsCompleted && !hashBefore.SequenceEqual(footer.MD5Hash))
+                    {
+                        Console.WriteLine("File hash is not correct. Skipping.");
+                        return;
+                    }
+
                     Console.WriteLine("Adjusting version.");
                     stream.Seek(0, SeekOrigin.Begin);
                     var header2 = new ChunkHeader(2, header.ChunkSize, header.ChunkStartNumber, header.ChunkEndNumber,
@@ -88,11 +102,43 @@ namespace Unaligner
                     stream.Seek(length - ChunkFooter.Size, SeekOrigin.Begin);
                     var footbytes = footer.AsByteArray();
                     stream.Write(footbytes,0, footbytes.Length);
+
+                    var hashAfter = CalculateHash(stream);
+
+                    footer = new ChunkFooter(footer.IsCompleted, footer.IsMap12Bytes, footer.PhysicalDataSize, footer.LogicalDataSize, footer.MapSize, hashAfter);
+                    footbytes = footer.AsByteArray();
+                    stream.Seek(length - ChunkFooter.Size, SeekOrigin.Begin);
+                    stream.Write(footbytes, 0, footbytes.Length);
+
                 }
             }
             finally
             {
                 SetAttributes(filename, true);
+            }
+        }
+
+        static byte[] CalculateHash(Stream stream)
+        {
+            stream.Seek(-ChunkHeader.Size, SeekOrigin.End);
+            var footer = ChunkFooter.FromStream(stream);
+                
+            using (var md5 = MD5.Create())
+            {
+
+                // hash header and data
+                MD5Hash.ContinuousHashFor(md5, stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
+                // hash mapping and footer except MD5 hash sum which should always be last
+
+                // hash map
+                MD5Hash.ContinuousHashFor(md5, stream, ChunkHeader.Size + footer.PhysicalDataSize, footer.MapSize );
+
+                MD5Hash.ContinuousHashFor(md5,
+                                            stream,
+                                            (int)stream.Length - ChunkHeader.Size,
+                                            ChunkFooter.Size - ChunkFooter.ChecksumSize);
+                md5.TransformFinalBlock(new byte[0], 0, 0);
+                return md5.Hash;
             }
         }
 
