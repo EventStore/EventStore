@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
@@ -73,18 +72,28 @@ namespace EventStore.Projections.Core.Services.Processing
                             positionEvent.Metadata.ParseCheckpointTagVersionExtraJson(default(ProjectionVersion));
                         tag = checkpointTagJson.Tag;
                         extraMetadata = checkpointTagJson.ExtraMetadata;
+
+                        var parsedPosition = tag.Position;
+
+                        eventOrLinkTargetPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
+                            ? parsedPosition
+                            : new TFPos(-1, positionEvent.LogPosition);
                     }
                     else
                     {
                         tag = positionEvent.Metadata.ParseCheckpointTagJson();
+
+                        var parsedPosition = tag.Position;
+                        eventOrLinkTargetPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
+                            ? parsedPosition
+                            : new TFPos(-1, resolvedEvent.Event.LogPosition);
                     }
-                    var parsedPosition = tag.Position;
-                    eventOrLinkTargetPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
-                        ? parsedPosition
-                        : new TFPos(-1, resolvedEvent.Event.LogPosition);
+
                 }
                 else
-                    eventOrLinkTargetPosition = new TFPos(-1, resolvedEvent.Event.LogPosition);
+                {
+                    eventOrLinkTargetPosition = @event != null ? new TFPos(-1, @event.LogPosition) : new TFPos(-1, positionEvent.LogPosition); 
+                }
 
                 JToken deletedValue;
                 IsLinkToDeletedStreamTombstone = extraMetadata != null
