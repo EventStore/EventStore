@@ -21,6 +21,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using System.Net.NetworkInformation;
 using EventStore.Core.Data;
+using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.ClusterNode
 {
@@ -249,8 +250,9 @@ namespace EventStore.ClusterNode
             }
 
             var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig) ? options.Config : options.AuthenticationConfig;
-            var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig);
-
+            var plugInContainer = FindPlugins();
+            var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
+            var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
             return new ClusterVNodeSettings(Guid.NewGuid(), 0,
                     intTcp, intSecTcp, extTcp, extSecTcp, intHttp, extHttp, gossipAdvertiseInfo,
                     intHttpPrefixes, extHttpPrefixes, options.EnableTrustedAuth,
@@ -277,7 +279,8 @@ namespace EventStore.ClusterNode
                     options.DisableHTTPCaching,
                     options.Index,
                     options.EnableHistograms,
-                    options.IndexCacheDepth);
+                    options.IndexCacheDepth,
+                    consumerStrategyFactories);
         }
 
         private static IPAddress GetNonLoopbackAddress(){
@@ -297,27 +300,32 @@ namespace EventStore.ClusterNode
             return null;
         }
 
-        private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile)
+        private static IPersistentSubscriptionConsumerStrategyFactory[] GetPlugInConsumerStrategyFactories(CompositionContainer plugInContainer)
         {
-            var catalog = new AggregateCatalog();
+            var allPlugins = plugInContainer.GetExports<IPersistentSubscriptionConsumerStrategyPlugin>();
 
-            var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var pluginsPath = Path.Combine(currentPath ?? String.Empty, "plugins");
+            var strategyFactories = new List<IPersistentSubscriptionConsumerStrategyFactory>();
 
-            catalog.Catalogs.Add(new AssemblyCatalog(typeof(Program).Assembly));
-
-            if (Directory.Exists(pluginsPath))
+            foreach (var potentialPlugin in allPlugins)
             {
-                Log.Info("Plugins path: {0}", pluginsPath);
-                catalog.Catalogs.Add(new DirectoryCatalog(pluginsPath));
-            }
-            else
-            {
-                Log.Info("Cannot find plugins path: {0}", pluginsPath);
+                try
+                {
+                    var plugin = potentialPlugin.Value;
+                    Log.Info("Loaded consumer strategy plugin: {0} version {1}.", plugin.Name, plugin.Version);
+                    strategyFactories.Add(plugin.GetConsumerStrategyFactory());
+                }
+                catch (CompositionException ex)
+                {
+                    Log.ErrorException(ex, "Error loading consumer strategy plugin.");
+                }
             }
 
-            var compositionContainer = new CompositionContainer(catalog);
-            var potentialPlugins = compositionContainer.GetExports<IAuthenticationPlugin>();
+            return strategyFactories.ToArray();
+        }
+
+        private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType, string authenticationConfigFile, CompositionContainer plugInContainer)
+        {
+            var potentialPlugins = plugInContainer.GetExports<IAuthenticationPlugin>();
 
             var authenticationTypeToPlugin = new Dictionary<string, Func<IAuthenticationProviderFactory>> {
                 { "internal", () => new InternalAuthenticationProviderFactory() }
@@ -343,10 +351,29 @@ namespace EventStore.ClusterNode
             {
                 throw new ApplicationInitializationException(string.Format("The authentication type {0} is not recognised. If this is supposed " +
                             "to be provided by an authentication plugin, confirm the plugin DLL is located in {1}.\n" +
-                            "Valid options for authentication are: {2}.", authenticationType, pluginsPath, string.Join(", ", authenticationTypeToPlugin.Keys)));
+                            "Valid options for authentication are: {2}.", authenticationType, Locations.PluginsDirectory, string.Join(", ", authenticationTypeToPlugin.Keys)));
             }
 
             return factory();
+        }
+
+        private static CompositionContainer FindPlugins()
+        {
+            var catalog = new AggregateCatalog();
+
+            catalog.Catalogs.Add(new AssemblyCatalog(typeof (Program).Assembly));
+
+            if (Directory.Exists(Locations.PluginsDirectory))
+            {
+                Log.Info("Plugins path: {0}", Locations.PluginsDirectory);
+                catalog.Catalogs.Add(new DirectoryCatalog(Locations.PluginsDirectory));
+            }
+            else
+            {
+                Log.Info("Cannot find plugins path: {0}", Locations.PluginsDirectory);
+            }
+
+            return new CompositionContainer(catalog);
         }
 
         protected override void Start()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -6,6 +7,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.Core.Cluster.Settings
 {
@@ -61,6 +63,8 @@ namespace EventStore.Core.Cluster.Settings
 
         public readonly string Index;
 
+        public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
+
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
                                     IPEndPoint internalSecureTcpEndPoint,
@@ -104,10 +108,9 @@ namespace EventStore.Core.Cluster.Settings
 				                    bool verifyDbHash,
 				                    int maxMemtableEntryCount,
                                     bool startStandardProjections,
-                                    bool disableHTTPCaching,
-                                    string index = null,
-                                    bool enableHistograms = false,
-                                    int indexCacheDepth = 16)
+                                    bool disableHTTPCaching, string index = null, bool enableHistograms = false,
+                                    int indexCacheDepth = 16,
+                                    IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -144,6 +147,7 @@ namespace EventStore.Core.Cluster.Settings
             WorkerThreads = workerThreads;
             StartStandardProjections = startStandardProjections;
             DisableHTTPCaching = disableHTTPCaching;
+            AdditionalConsumerStrategies = additionalConsumerStrategies ?? new IPersistentSubscriptionConsumerStrategyFactory[0];
 
             DiscoverViaDns = discoverViaDns;
             ClusterDns = clusterDns;
@@ -185,6 +189,8 @@ namespace EventStore.Core.Cluster.Settings
             IndexCacheDepth = indexCacheDepth;
             Index = index;
         }
+
+        
 
         public override string ToString()
         {

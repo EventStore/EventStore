@@ -1,24 +1,44 @@
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
-    internal class PersistentSubscriptionConsumerStrategyRegistry
+    public class PersistentSubscriptionConsumerStrategyRegistry
     {
-        private readonly IDictionary<string, Func<IPersistentSubscriptionConsumerStrategy>> _factoryLookup = new Dictionary<string, Func<IPersistentSubscriptionConsumerStrategy>>()
-        {
-            {SystemConsumerStrategies.RoundRobin, () => new RoundRobinPersistentSubscriptionConsumerStrategy()},
-            {SystemConsumerStrategies.DispatchToSingle, () => new DispatchToSinglePersistentSubscriptionConsumerStrategy()}
-        };
+        private readonly IPublisher _mainQueue;
+        private readonly ISubscriber _mainBus;
 
-        public IPersistentSubscriptionConsumerStrategy GetInstance(string namedConsumerStrategy)
+        private readonly IDictionary<string, IPersistentSubscriptionConsumerStrategyFactory> _factoryLookup =
+            new Dictionary<string, IPersistentSubscriptionConsumerStrategyFactory>();
+
+        public PersistentSubscriptionConsumerStrategyRegistry(IPublisher mainQueue, ISubscriber mainBus, IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies)
+        {
+            _mainQueue = mainQueue;
+            _mainBus = mainBus;
+            Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.RoundRobin, (subId, queue, bus) => new RoundRobinPersistentSubscriptionConsumerStrategy()));
+            Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.DispatchToSingle, (subId, queue, bus) => new DispatchToSinglePersistentSubscriptionConsumerStrategy()));
+
+            foreach (var consumerStrategyFactory in additionalConsumerStrategies)
+            {
+                Register(consumerStrategyFactory);
+            }
+        }
+
+        private void Register(IPersistentSubscriptionConsumerStrategyFactory factory)
+        {
+            // Note this is designed to replace strategies of the same name to allow overriding.
+            _factoryLookup[factory.StrategyName] = factory;
+        }
+
+        public IPersistentSubscriptionConsumerStrategy GetInstance(string namedConsumerStrategy, string subscriptionId)
         {
             if (!ValidateStrategy(namedConsumerStrategy))
             {
-                throw new ArgumentException("The named consumer strategy is unknown.", "namedConsumerStrategy");
+                throw new ArgumentException(string.Format("The named consumer strategy '{0}' is unknown.", namedConsumerStrategy), "namedConsumerStrategy");
             }
 
-            return _factoryLookup[namedConsumerStrategy]();
+            return _factoryLookup[namedConsumerStrategy].Create(subscriptionId, _mainQueue, _mainBus);
         }
 
         public bool ValidateStrategy(string name)
