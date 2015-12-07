@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Http.Streams
 
         protected override void When()
         {
-            _descriptionDocument = GetJson<JObject>(TestStream, "", null);
+            _descriptionDocument = GetJsonWithoutAcceptHeader<JObject>(TestStream);
         }
 
         [Test]
