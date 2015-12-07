@@ -319,6 +319,25 @@ namespace EventStore.Core.Tests.Http
             }
         }
 
+        protected T GetJsonWithoutAcceptHeader<T>(string path)
+        {
+            var request = CreateRequest(path, "", "GET", null);
+            _lastResponse = GetRequestResponse(request);
+            var memoryStream = new MemoryStream();
+            _lastResponse.GetResponseStream().CopyTo(memoryStream);
+            var bytes = memoryStream.ToArray();
+            _lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
+            try
+            {
+                return _lastResponseBody.ParseJson<T>();
+            }
+            catch (JsonException ex)
+            {
+                _lastJsonException = ex;
+                return default(T);
+            }
+        }
+
         protected void Get(string path, string extra, string accept = null, ICredentials credentials = null)
         {
             var request = CreateRequest(path, extra, "GET", null, credentials);

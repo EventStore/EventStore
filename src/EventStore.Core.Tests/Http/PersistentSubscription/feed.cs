@@ -158,15 +158,17 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_ackAll_link_is_to_correct_uri()
         {
-            var ackAllLink = String.Format("subscriptions/{0}/{1}/ack?ids={2}", TestStreamName, SubscriptionGroupName, String.Join(",", _eventIds.ToArray()));
-            Assert.AreEqual(MakeUrl(ackAllLink), GetLink(_feed, "ackAll"));
+            var ids = String.Format("ids={0}", String.Join(",", _eventIds.ToArray()));
+            var ackAllLink = String.Format("subscriptions/{0}/{1}/ack", TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(ackAllLink, ids), GetLink(_feed, "ackAll"));
         }
 
         [Test]
         public void the_nackAll_link_is_to_correct_uri()
         {
-            var nackAllLink = String.Format("subscriptions/{0}/{1}/nack?ids={2}", TestStreamName, SubscriptionGroupName, String.Join(",", _eventIds.ToArray()));
-            Assert.AreEqual(MakeUrl(nackAllLink), GetLink(_feed, "nackAll"));
+            var ids = String.Format("ids={0}", String.Join(",", _eventIds.ToArray()));
+            var nackAllLink = String.Format("subscriptions/{0}/{1}/nack", TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(nackAllLink, ids), GetLink(_feed, "nackAll"));
         }
     }
 
@@ -252,15 +254,17 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_ackAll_link_is_to_correct_uri()
         {
-            var ackAllLink = String.Format("subscriptions/{0}/{1}/ack?ids={2}", TestStreamName, SubscriptionGroupName, String.Join(",", _eventIds[0]));
-            Assert.AreEqual(MakeUrl(ackAllLink), document.Element(XDocumentAtomExtensions.AtomNamespace + "feed").GetLink("ackAll"));
+            var ids = String.Format("ids={0}", _eventIds[0]);
+            var ackAllLink = String.Format("subscriptions/{0}/{1}/ack", TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(ackAllLink, ids), document.Element(XDocumentAtomExtensions.AtomNamespace + "feed").GetLink("ackAll"));
         }
 
         [Test]
         public void the_nackAll_link_is_to_correct_uri()
         {
-            var nackAllLink = String.Format("subscriptions/{0}/{1}/nack?ids={2}", TestStreamName, SubscriptionGroupName, String.Join(",", _eventIds[0]));
-            Assert.AreEqual(MakeUrl(nackAllLink), document.Element(XDocumentAtomExtensions.AtomNamespace + "feed").GetLink("nackAll"));
+            var ids = String.Format("ids={0}", _eventIds[0]);
+            var nackAllLink = String.Format("subscriptions/{0}/{1}/nack", TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(nackAllLink, ids), document.Element(XDocumentAtomExtensions.AtomNamespace + "feed").GetLink("nackAll"));
         }
 
         [Test]

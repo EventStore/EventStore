@@ -156,21 +156,23 @@ namespace EventStore.Core.Services.Transport.Http
             string escapedGroupName = Uri.EscapeDataString(groupName);
             var self = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}", escapedStreamId, escapedGroupName);
             var feed = new FeedElement();
-            feed.SetTitle("All Events Persistent Subscription");
+            feed.SetTitle(String.Format("Messages for {0}/{1}", escapedStreamId, escapedGroupName));
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
 
             if (msg.Events != null && msg.Events.Length > 0)
             {
-                var ackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack?ids={2}", escapedStreamId, escapedGroupName, String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                var ackAllQueryString = String.Format("?ids={0}", String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                var ackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack", escapedStreamId, escapedGroupName) + ackAllQueryString;
                 feed.AddLink("ackAll", ackAll);
 
-                var nackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack?ids={2}", escapedStreamId, escapedGroupName, String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                var nackAllQueryString = String.Format("?ids={0}", String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+                var nackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack", escapedStreamId, escapedGroupName) + nackAllQueryString;
                 feed.AddLink("nackAll", nackAll);
             }
 
-            var prev = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/{2}?embed={3}", escapedStreamId, escapedGroupName, count, embedContent);
+            var prev = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/{2}", escapedStreamId, escapedGroupName, count);
             feed.AddLink("previous", prev);
 
             feed.AddLink("self", self);
@@ -190,7 +192,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var descriptionDocument = new DescriptionDocument();
             descriptionDocument.SetTitle("description document for " + streamId);
-            descriptionDocument.SetDescription(@"The description document will be presented when the following is true for the Accept Header. (No Accept Header, Unsupported Response Type, Description Document Requested)");
+            descriptionDocument.SetDescription(@"The description document will be presented when no accept header is present or it was requested)");
 
             descriptionDocument.SetSelf("/streams/" + streamId,
                                     Codec.DescriptionJson.ContentType);
