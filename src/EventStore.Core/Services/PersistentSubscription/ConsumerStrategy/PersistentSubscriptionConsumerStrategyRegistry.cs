@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
 {
@@ -18,6 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
             _mainBus = mainBus;
             Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.RoundRobin, (subId, queue, bus) => new RoundRobinPersistentSubscriptionConsumerStrategy()));
             Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.DispatchToSingle, (subId, queue, bus) => new DispatchToSinglePersistentSubscriptionConsumerStrategy()));
+            Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.Pinned, (subId, queue, bus) => new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe())));
 
             foreach (var consumerStrategyFactory in additionalConsumerStrategies)
             {

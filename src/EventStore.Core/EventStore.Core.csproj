@@ -190,6 +190,10 @@
     <Compile Include="Services\PersistentSubscription\ConsumerStrategy\IPersistentSubscriptionConsumerStrategy.cs" />
     <Compile Include="Services\PersistentSubscription\ConsumerStrategy\IPersistentSubscriptionConsumerStrategyFactory.cs" />
     <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PersistentSubscriptionConsumerStrategyRegistry.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedPersistentSubscriptionConsumerStrategy.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedState\BucketAssignment.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedState\Node.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedState\PinnedConsumerState.cs" />
     <Compile Include="Services\PersistentSubscription\ConsumerStrategy\RoundRobinPersistentSubscriptionConsumerStrategy.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointReader.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointWriter.cs" />

@@ -178,6 +178,18 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         /// <summary>
+        /// Sets the consumer strategy to the one provided.
+        /// </summary>
+        /// <param name="consumerStrategy"></param>
+        /// <returns></returns>
+        public PersistentSubscriptionParamsBuilder CustomConsumerStrategy(IPersistentSubscriptionConsumerStrategy consumerStrategy)
+        {
+            _consumerStrategy = consumerStrategy;
+            return this;
+        }
+
+
+        /// <summary>
         /// Sets that the subscription should start from the beginning of the stream.
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
