@@ -22,6 +22,7 @@ using EventStore.Core.Util;
 using System.Net.NetworkInformation;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.ClusterNode
 {

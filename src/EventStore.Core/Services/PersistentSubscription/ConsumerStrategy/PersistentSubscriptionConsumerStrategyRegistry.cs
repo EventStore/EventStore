@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 
-namespace EventStore.Core.Services.PersistentSubscription
+namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
 {
     public class PersistentSubscriptionConsumerStrategyRegistry
     {
