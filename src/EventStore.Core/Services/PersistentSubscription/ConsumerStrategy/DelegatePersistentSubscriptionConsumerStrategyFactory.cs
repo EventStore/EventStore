@@ -5,7 +5,7 @@ namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
 {
     class DelegatePersistentSubscriptionConsumerStrategyFactory : IPersistentSubscriptionConsumerStrategyFactory
     {
-        public string StrategyName { get; }
+        public string StrategyName { get; private set; }
 
         private readonly Func<string, IPublisher, ISubscriber, IPersistentSubscriptionConsumerStrategy> _factory;
 
