@@ -1,7 +1,8 @@
 
 #Event Store
 
-[![Build status](https://ci.appveyor.com/api/projects/status/5n7fybgq52a6848d?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore)
+[![Build status](https://ci.appveyor.com/api/projects/status/rpg0xvt6facomw0b/branch/release-v3.4.0?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore-aasj1/branch/release-v3.4.0)
+[![Build status](https://travis-ci.org/EventStore/EventStore.svg?branch=release-v3.4.0)](https://travis-ci.org/EventStore/EventStore)
 
 **The main documentation has moved to <a href="https://docs.geteventstore.com">https://docs.geteventstore.com</a>.**
 
