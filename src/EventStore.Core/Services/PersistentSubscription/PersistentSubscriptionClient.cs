@@ -22,11 +22,6 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly RequestStatistics _extraStatistics;
         private readonly Dictionary<Guid, ResolvedEvent> _unconfirmedEvents = new Dictionary<Guid, ResolvedEvent>();
 
-        public int InflightMessages
-        {
-            get { return _unconfirmedEvents.Count; }
-        }
-
         public PersistentSubscriptionClient(Guid correlationId,
             Guid connectionId,
             IEnvelope envelope,
@@ -47,6 +42,16 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 _extraStatistics = new RequestStatistics(watch, 1000);
             }
+        }
+
+        /// <summary>
+        /// Raised whenever an in-flight event has been confirmed. This could be because of ack, nak, timeout or disconnection.
+        /// </summary>
+        public event Action<PersistentSubscriptionClient, ResolvedEvent> EventConfirmed;
+
+        public int InflightMessages
+        {
+            get { return _unconfirmedEvents.Count; }
         }
 
         public int AvailableSlots
@@ -71,7 +76,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _correlationId; }
         }
 
-        public bool RemoveFromProcessing(Guid[] processedEventIds)
+        internal bool RemoveFromProcessing(Guid[] processedEventIds)
         {
             bool removedAny = false;
             foreach (var processedEventId in processedEventIds)
@@ -83,9 +88,11 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _unconfirmedEvents.Remove(processedEventId);
                 removedAny = true;
                 _allowedMessages++;
+                OnEventConfirmed(ev);
             }
             return removedAny;
         }
+
         public bool Push(ResolvedEvent evnt)
         {
             if (!CanSend()) { return false; }
@@ -106,12 +113,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _unconfirmedEvents.Values;
         }
 
-        public void SendDropNotification()
+        internal void SendDropNotification()
         {
             _envelope.ReplyWith(new ClientMessage.SubscriptionDropped(CorrelationId, SubscriptionDropReason.Unsubscribed));
         }
 
-        public ObservedTimingMeasurement GetExtraStats()
+        internal ObservedTimingMeasurement GetExtraStats()
         {
             return _extraStatistics == null ? null : _extraStatistics.GetMeasurementDetails();
         }
@@ -119,6 +126,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         private bool CanSend()
         {
             return AvailableSlots > 0;
+        }
+
+        private void OnEventConfirmed(ResolvedEvent ev)
+        {
+            var handler = EventConfirmed;
+            if (handler != null) handler(this, ev);
         }
     }
 }
