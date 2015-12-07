@@ -8,6 +8,7 @@ namespace EventStore.Core.Services.PersistentSubscription
     public enum ConsumerPushResult
     {
         Sent,
+        Skipped,
         NoMoreCapacity
     }
 

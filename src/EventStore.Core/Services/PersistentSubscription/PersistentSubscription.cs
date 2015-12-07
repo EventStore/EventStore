@@ -169,19 +169,24 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 if (_state == PersistentSubscriptionState.NotReady) return;
 
-                while (true)
+                foreach (StreamBuffer.OutstandingMessagePointer messagePointer in _streamBuffer.Scan())
                 {
-                    OutstandingMessage message;
-                    if (!_streamBuffer.TryPeek(out message)) return;
-                    if (_pushClients.PushMessageToClient(message.ResolvedEvent) == ConsumerPushResult.NoMoreCapacity) return;
-                    if (!_streamBuffer.TryDequeue(out message))
+                    OutstandingMessage message = messagePointer.Message;
+                    ConsumerPushResult result = _pushClients.PushMessageToClient(message.ResolvedEvent);
+                    if (result == ConsumerPushResult.Sent)
                     {
-                        throw new WTFException(
-                            "This should never happen. Something is very wrong in the threading model.");
+                        messagePointer.MarkSent();
+                        MarkBeginProcessing(message);
+                        _lastKnownMessage = Math.Max(_lastKnownMessage, message.ResolvedEvent.OriginalEventNumber);
                     }
-                    if (message.ResolvedEvent.OriginalEventNumber > _lastKnownMessage)
-                        _lastKnownMessage = message.ResolvedEvent.OriginalEventNumber;
-                    MarkBeginProcessing(message);
+                    else if (result == ConsumerPushResult.Skipped)
+                    {                        
+                        // The consumer strategy skipped the message so leave it in the buffer and continue.
+                    }
+                    else if (result == ConsumerPushResult.NoMoreCapacity)
+                    {
+                        return;
+                    }
                 }
                 
             }
@@ -210,14 +215,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             lock (_lock)
             {
-                for (var i = 0; i < count; i++)
+                foreach (var messagePointer in _streamBuffer.Scan().Take(count))
                 {
-                    OutstandingMessage message;
-                    if (_streamBuffer.TryDequeue(out message))
-                    {
-                        MarkBeginProcessing(message);
-                        yield return message.ResolvedEvent;
-                    }
+                    messagePointer.MarkSent();
+                    MarkBeginProcessing(messagePointer.Message);
+                    yield return messagePointer.Message.ResolvedEvent;
                 }
             }
         }
@@ -529,11 +531,4 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
     }
 
-    public class WTFException : Exception
-    {
-        public WTFException(string message)
-            : base(message)
-        {
-        }
-    }
 }
