@@ -1,0 +1,11 @@
+language: csharp
+solution: src/EventStore.sln
+sudo: required
+dist: trusty
+mono:
+  - 3.12.0
+script:
+  - ./build.sh
+  - ./run_travis_tests.sh
+  - grep "test-results" TestResult.xml
+  - ./check-test-results.sh
