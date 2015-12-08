@@ -593,19 +593,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 default: return EmbedLevel.None;
             }
         }
-
+        string parkedMessageUriTemplate = "/streams/" + Uri.EscapeDataString("$persistentsubscription") + "-{0}::{1}-parked";
         private IEnumerable<SubscriptionInfo> ToDto(HttpEntityManager manager, MonitoringMessage.GetPersistentSubscriptionStatsCompleted message)
         {
             if (message == null) yield break;
             if (message.SubscriptionStats == null) yield break;
+
             foreach (var stat in message.SubscriptionStats)
             {
+                string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+                string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
                 var info = new SubscriptionInfo
                 {
                     Links = new List<RelLink>()
                     {
-                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/info", stat.EventStreamId,stat.GroupName)), "detail"),
-                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/replayParked", stat.EventStreamId,stat.GroupName)), "replayParked")
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/info", escapedStreamId, escapedGroupName)), "detail"),
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/replayParked", escapedStreamId, escapedGroupName)), "replayParked")
                     },
                     EventStreamId = stat.EventStreamId,
                     GroupName = stat.GroupName,
@@ -619,8 +622,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     LiveBufferCount = stat.LiveBufferCount,
                     RetryBufferCount = stat.RetryBufferCount,
                     TotalInFlightMessages = stat.TotalInFlightMessages,
-                    ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
-                    GetMessagesUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/{2}", stat.EventStreamId, stat.GroupName, DefaultNumberOfMessagesToGet)),
+                    ParkedMessageUri = MakeUrl(manager, string.Format(parkedMessageUriTemplate, escapedStreamId, escapedGroupName)),
+                    GetMessagesUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/{2}", escapedStreamId, escapedGroupName, DefaultNumberOfMessagesToGet)),
                     Config = new SubscriptionConfigData
                     {
                         CheckPointAfterMilliseconds = stat.CheckPointAfterMilliseconds,
@@ -664,13 +667,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             if (message == null) yield break;
             if (message.SubscriptionStats == null) yield break;
+
             foreach (var stat in message.SubscriptionStats)
             {
+                string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+                string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
                 var info = new SubscriptionSummary
                 {
                     Links = new List<RelLink>()
                     {
-                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/info", stat.EventStreamId,stat.GroupName)), "detail"),
+                        new RelLink(MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/info", escapedStreamId, escapedGroupName)), "detail"),
                     },
                     EventStreamId = stat.EventStreamId,
                     GroupName = stat.GroupName,
@@ -679,8 +685,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     TotalItemsProcessed = stat.TotalItems,
                     LastKnownEventNumber = stat.LastKnownMessage,
                     LastProcessedEventNumber = stat.LastProcessedEventNumber,
-                    ParkedMessageUri = MakeUrl(manager, string.Format("/streams/$persistentsubscription-{0}::{1}-parked", stat.EventStreamId, stat.GroupName)),
-                    GetMessagesUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/{2}", stat.EventStreamId, stat.GroupName, DefaultNumberOfMessagesToGet)),
+                    ParkedMessageUri = MakeUrl(manager, string.Format(parkedMessageUriTemplate, escapedStreamId, escapedGroupName)),
+                    GetMessagesUri = MakeUrl(manager, string.Format("/subscriptions/{0}/{1}/{2}", escapedStreamId, escapedGroupName, DefaultNumberOfMessagesToGet)),
                     TotalInFlightMessages = stat.TotalInFlightMessages,
                 };
                 if (stat.Connections != null)

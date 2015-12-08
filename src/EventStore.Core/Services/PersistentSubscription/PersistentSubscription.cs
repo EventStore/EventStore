@@ -220,6 +220,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     messagePointer.MarkSent();
                     MarkBeginProcessing(messagePointer.Message);
+                    _lastKnownMessage = Math.Max(_lastKnownMessage, messagePointer.Message.ResolvedEvent.OriginalEventNumber);
                     yield return messagePointer.Message.ResolvedEvent;
                 }
             }
