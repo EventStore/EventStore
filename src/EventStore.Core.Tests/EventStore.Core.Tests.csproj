@@ -331,6 +331,7 @@
     <Compile Include="Services\PersistentSubscription\OutstandingMessageCacheTests.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConfigPersistence.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionTests.cs" />
+    <Compile Include="Services\PersistentSubscription\PinnedConsumerStrategyTests.cs" />
     <Compile Include="Services\PersistentSubscription\StreamBufferTests.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit.cs" />
     <Compile Include="Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />

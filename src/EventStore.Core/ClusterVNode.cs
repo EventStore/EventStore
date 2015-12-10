@@ -34,6 +34,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.PersistentSubscription;
 using System.Threading;
 using EventStore.Core.Services.Histograms;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.Core
 {
@@ -436,7 +437,8 @@ namespace EventStore.Core
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionTimerTick, Message>());
 
             //TODO CC can have multiple threads working on subscription if partition
-            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher, _mainQueue);
+            var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus, vNodeSettings.AdditionalConsumerStrategies);
+            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher, _mainQueue, consumerStrategyRegistry);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);

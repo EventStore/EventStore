@@ -172,6 +172,7 @@
     <Compile Include="Messages\UserManagementMessage.cs" />
     <Compile Include="Messaging\RequestResponseDispatcher.cs" />
     <Compile Include="PluginModel\IAuthenticationPlugin.cs" />
+    <Compile Include="PluginModel\IPersistentSubscriptionConsumerStrategyPlugin.cs" />
     <Compile Include="Services\AwakeReaderService\AwakeService.cs" />
     <Compile Include="Services\AwakeReaderService\AwakeServiceMessage.cs" />
     <Compile Include="Services\ClusterStorageWriterService.cs" />
@@ -183,9 +184,19 @@
     <Compile Include="Services\Gossip\LoopbackDns.cs" />
     <Compile Include="Services\Gossip\NodeGossipService.cs" />
     <Compile Include="Services\Histograms\HistogramService.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\ConsumerPushResult.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\DelegatePersistentSubscriptionConsumerStrategyFactory.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\DispatchToSinglePersistentSubscriptionConsumerStrategy.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\IPersistentSubscriptionConsumerStrategy.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\IPersistentSubscriptionConsumerStrategyFactory.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PersistentSubscriptionConsumerStrategyRegistry.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedPersistentSubscriptionConsumerStrategy.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedState\BucketAssignment.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedState\Node.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\PinnedState\PinnedConsumerState.cs" />
+    <Compile Include="Services\PersistentSubscription\ConsumerStrategy\RoundRobinPersistentSubscriptionConsumerStrategy.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointReader.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionCheckpointWriter.cs" />
-    <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionConsumerStrategy.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionMessageParker.cs" />
     <Compile Include="Services\PersistentSubscription\IPersistentSubscriptionStreamReader.cs" />
     <Compile Include="Services\PersistentSubscription\NakAction.cs" />
@@ -197,7 +208,6 @@
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClient.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionClientCollection.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConfig.cs" />
-    <Compile Include="Services\PersistentSubscription\PersistentSubscriptionConsumerStrategyRegistry.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionMessageParker.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParams.cs" />
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionParamsBuilder.cs" />

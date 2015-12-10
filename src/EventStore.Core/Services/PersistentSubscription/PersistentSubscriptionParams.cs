@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {

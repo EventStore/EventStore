@@ -10,6 +10,7 @@ namespace EventStore.Common.Utils
         public static readonly string WebContentDirectory;
         public static readonly string ProjectionsDirectory;
         public static readonly string PreludeDirectory;
+        public static readonly string PluginsDirectory;
         public static readonly string DefaultContentDirectory;
         public static readonly string DefaultConfigurationDirectory;
         public static readonly string DefaultDataDirectory;
@@ -20,6 +21,8 @@ namespace EventStore.Common.Utils
         {
             ApplicationDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
                                    Path.GetFullPath(".");
+
+            PluginsDirectory = Path.Combine(ApplicationDirectory, "plugins");
 
             switch (Platforms.GetPlatform())
             {
@@ -51,6 +54,7 @@ namespace EventStore.Common.Utils
                         Path.Combine(ApplicationDirectory, "Prelude"),
                         Path.Combine(DefaultContentDirectory, "Prelude")
                         );
+
         }
 
         /// <summary>

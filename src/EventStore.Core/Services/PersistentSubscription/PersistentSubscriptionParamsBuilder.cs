@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
@@ -175,6 +176,18 @@ namespace EventStore.Core.Services.PersistentSubscription
             _consumerStrategy = new DispatchToSinglePersistentSubscriptionConsumerStrategy();
             return this;
         }
+
+        /// <summary>
+        /// Sets the consumer strategy to the one provided.
+        /// </summary>
+        /// <param name="consumerStrategy"></param>
+        /// <returns></returns>
+        public PersistentSubscriptionParamsBuilder CustomConsumerStrategy(IPersistentSubscriptionConsumerStrategy consumerStrategy)
+        {
+            _consumerStrategy = consumerStrategy;
+            return this;
+        }
+
 
         /// <summary>
         /// Sets that the subscription should start from the beginning of the stream.

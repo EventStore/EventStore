@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.DataStructures;
 
@@ -8,8 +9,8 @@ namespace EventStore.Core.Services.PersistentSubscription
     {
         private readonly int _maxBufferSize;
         private readonly int _initialSequence;
-        private readonly Queue<OutstandingMessage> _retry = new Queue<OutstandingMessage>();
-        private readonly Queue<OutstandingMessage> _buffer = new Queue<OutstandingMessage>();
+        private readonly LinkedList<OutstandingMessage> _retry = new LinkedList<OutstandingMessage>();
+        private readonly LinkedList<OutstandingMessage> _buffer = new LinkedList<OutstandingMessage>();
 
         private readonly BoundedQueue<OutstandingMessage> _liveBuffer;
 
@@ -36,7 +37,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             while (_liveBuffer.Count > 0)
             {
-                _buffer.Enqueue(_liveBuffer.Dequeue());
+                _buffer.AddLast(_liveBuffer.Dequeue());
             }
             Live = true;
         }
@@ -51,7 +52,24 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void AddRetry(OutstandingMessage ev)
         {
-            _retry.Enqueue(ev);    
+            // Insert the retried event before any events with higher version number.
+
+            var retryEventNumber = (ev.ResolvedEvent.Event ?? ev.ResolvedEvent.Link).EventNumber;
+
+            var currentNode = _retry.First;
+
+            while (currentNode != null)
+            {
+                var resolvedEvent = currentNode.Value.ResolvedEvent.Event ?? currentNode.Value.ResolvedEvent.Link;
+                if (retryEventNumber < resolvedEvent.EventNumber)
+                {
+                    _retry.AddBefore(currentNode, ev);
+                    return;
+                }
+                currentNode = currentNode.Next;
+            }
+
+            _retry.AddLast(ev);
         }
 
         public void AddLiveMessage(OutstandingMessage ev)
@@ -59,7 +77,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (Live)
             {
                 if (_buffer.Count < _maxBufferSize)
-                    _buffer.Enqueue(ev);
+                    _buffer.AddLast(ev);
                 else
                     Live = false;
             }
@@ -73,7 +91,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
             if (ev.ResolvedEvent.OriginalEventNumber < TryPeekLive())
             {
-                _buffer.Enqueue(ev);
+                _buffer.AddLast(ev);
             }
             else if (ev.ResolvedEvent.OriginalEventNumber > TryPeekLive())
             {
@@ -91,30 +109,28 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _liveBuffer.Count == 0 ? int.MaxValue : _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber;
         }
 
-        public bool TryDequeue(out OutstandingMessage ev)
+        public IEnumerable<OutstandingMessagePointer> Scan()
         {
-            ev = new OutstandingMessage();
-            if (_retry.Count > 0)
-            {
-                ev = _retry.Dequeue();
-                return true;
-            }
-            if (_buffer.Count <= 0) return false;
-            ev = _buffer.Dequeue();
-            return true;
-        }
+            // This enumerator assumes that nothing is added to the buffers during enumeration.
 
-        public bool TryPeek(out OutstandingMessage ev)
-        {
-            ev = new OutstandingMessage();
-            if (_retry.Count > 0)
+            foreach (var list in new []{_retry, _buffer}) // save on code duplication
             {
-                ev = _retry.Peek();
-                return true;
+                var current = list.First;
+                if (current != null)
+                {
+                    do
+                    {
+                        // We have to copy next before yielding as the expectation is
+                        // that current is removed from the list setting next to null.
+                        var next = current.Next; 
+
+                        yield return new OutstandingMessagePointer(current);
+
+                        current = next;
+
+                    } while (current != null);
+                }
             }
-            if (_buffer.Count <= 0) return false;
-            ev = _buffer.Peek();
-            return true;
         }
 
         public void MoveToLive()
@@ -127,6 +143,35 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_retry.Count == 0) return int.MaxValue;
             return _retry.Min(x => x.ResolvedEvent.OriginalEventNumber);
         }
+
+        public struct OutstandingMessagePointer
+        {
+            private readonly LinkedListNode<OutstandingMessage> _entry;
+
+            internal OutstandingMessagePointer(LinkedListNode<OutstandingMessage> entry)
+                : this()
+            {
+                _entry = entry;
+            }
+
+            public OutstandingMessage Message
+            {
+                get
+                {
+                    return _entry.Value;
+                }
+            }
+
+            public void MarkSent()
+            {
+                if (_entry.List == null)
+                {
+                    throw new InvalidOperationException("The message can only be accepted once.");
+                }
+                _entry.List.Remove(_entry);
+            }
+        }
+
     }
 
     public enum BufferedStreamReaderState

@@ -8,6 +8,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
@@ -54,7 +55,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly TimerMessage.Schedule _tickRequestMessage;
         private bool _handleTick;
 
-        public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher, IPublisher bus)
+        internal PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex, IODispatcher ioDispatcher, IPublisher bus, PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry)
         {
             Ensure.NotNull(queuedHandler, "queuedHandler");
             Ensure.NotNull(readIndex, "readIndex");
@@ -64,7 +65,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _readIndex = readIndex;
             _ioDispatcher = ioDispatcher;
             _bus = bus;
-            _consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry();
+            _consumerStrategyRegistry = consumerStrategyRegistry;
             _checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
             _streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
             //TODO CC configurable
@@ -325,7 +326,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     minCheckPointCount,
                     maxCheckPointCount,
                     maxSubscriberCount,
-                    _consumerStrategyRegistry.GetInstance(namedConsumerStrategy),
+                    _consumerStrategyRegistry.GetInstance(namedConsumerStrategy, key),
                     _streamReader,
                     _checkpointReader,
                     new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
