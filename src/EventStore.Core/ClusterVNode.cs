@@ -204,19 +204,11 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 
-            var storageScavenger = new StorageScavenger(db, tableIndex, hash, readIndex,
-                                                        Application.IsDefined(Application.AlwaysKeepScavenged),
-                                                        mergeChunks: !vNodeSettings.DisableScavengeMerging);
-
-			// ReSharper disable RedundantTypeArgumentsOfMethod
-            _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
-            // ReSharper restore RedundantTypeArgumentsOfMethod
-
             // AUTHENTICATION INFRASTRUCTURE - delegate to plugins
 	        _internalAuthenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus, _workersHandler, _workerBuses);
 
             Ensure.NotNull(_internalAuthenticationProvider, "authenticationProvider");
-		
+
             {
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
@@ -458,6 +450,16 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
             perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
             perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
+
+            // STORAGE SCAVENGER
+            var storageScavenger = new StorageScavenger(db, ioDispatcher, tableIndex, hash, readIndex,
+                                                        Application.IsDefined(Application.AlwaysKeepScavenged),
+                                                        _nodeInfo.ExternalHttp.ToString(), !vNodeSettings.DisableScavengeMerging, vNodeSettings.ScavengeHistoryMaxAge);
+
+			// ReSharper disable RedundantTypeArgumentsOfMethod
+            _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
+            // ReSharper restore RedundantTypeArgumentsOfMethod
+
 
             // TIMER
             _timeProvider = new RealTimeProvider();

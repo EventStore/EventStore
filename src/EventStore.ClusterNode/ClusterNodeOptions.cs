@@ -95,6 +95,8 @@ namespace EventStore.ClusterNode
         public bool GossipOnExt { get; set; }
         [ArgDescription(Opts.DisableScavengeMergeDescr, Opts.DbGroup)]
         public bool DisableScavengeMerging { get; set; }
+        [ArgDescription(Opts.ScavengeHistoryMaxAgeDescr, Opts.DbGroup)]
+        public int ScavengeHistoryMaxAge { get; set; }
 
         [ArgDescription(Opts.DiscoverViaDnsDescr, Opts.ClusterGroup)]
         public bool DiscoverViaDns { get; set; }
@@ -269,6 +271,7 @@ namespace EventStore.ClusterNode
             PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
             CommitTimeoutMs = Opts.CommitTimeoutMsDefault;
             DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
+            ScavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
             GossipOnExt = Opts.GossipOnExtDefault;
             StatsOnExt = Opts.StatsOnExtDefault;
             AdminOnExt = Opts.AdminOnExtDefault;

@@ -398,6 +398,7 @@
     <Compile Include="Services\Storage\Scavenge\when_writing_delete_prepare_without_commit_on_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_running_a_scavenge_from_storage_scavenger.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_in_db_with_other_streams_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\deleting_stream_tests_2.cs" />
     <Compile Include="Services\Storage\DeletingStream\deleting_stream_tests_3.cs" />

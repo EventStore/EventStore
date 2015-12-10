@@ -7,10 +7,12 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -21,21 +23,30 @@ namespace EventStore.Core.TransactionLog.Chunks
         private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkScavenger>();
 
         private readonly TFChunkDb _db;
+        private readonly IODispatcher _ioDispatcher;
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
+        private readonly Guid _scavengeId;
+        private readonly string _nodeEndpoint;
         private readonly IReadIndex _readIndex;
         private readonly long _maxChunkDataSize;
 
-        public TFChunkScavenger(TFChunkDb db, ITableIndex tableIndex, IHasher hasher, IReadIndex readIndex, long? maxChunkDataSize = null)
+        public TFChunkScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IHasher hasher, IReadIndex readIndex,
+                                Guid scavengeId, string nodeEndpoint, long? maxChunkDataSize = null)
         {
             Ensure.NotNull(db, "db");
+            Ensure.NotNull(ioDispatcher, "ioDispatcher");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
+            Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
             Ensure.NotNull(readIndex, "readIndex");
- 
+
             _db = db;
+            _ioDispatcher = ioDispatcher;
             _tableIndex = tableIndex;
             _hasher = hasher;
+            _scavengeId = scavengeId;
+            _nodeEndpoint = nodeEndpoint;
             _readIndex = readIndex;
             _maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
         }
@@ -46,7 +57,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var sw = Stopwatch.StartNew();
             long spaceSaved = 0;
 
-            Log.Trace("SCAVENGING: started scavenging of DB. Chunks count at start: {0}. Options: alwaysKeepScavenged = {1}, mergeChunks = {2}", 
+            Log.Trace("SCAVENGING: started scavenging of DB. Chunks count at start: {0}. Options: alwaysKeepScavenged = {1}, mergeChunks = {2}",
                       _db.Manager.ChunksCount, alwaysKeepScavenged, mergeChunks);
 
             for (long scavengePos = 0; scavengePos < _db.Config.ChaserCheckpoint.Read(); )
@@ -125,14 +136,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             spaceSaved = 0;
 
             if (oldChunks.IsEmpty()) throw new ArgumentException("Provided list of chunks to scavenge and merge is empty.");
-            
+
             var sw = Stopwatch.StartNew();
 
             int chunkStartNumber = oldChunks.First().ChunkHeader.ChunkStartNumber;
             long chunkStartPos = oldChunks.First().ChunkHeader.ChunkStartPosition;
             int chunkEndNumber = oldChunks.Last().ChunkHeader.ChunkEndNumber;
             long chunkEndPos = oldChunks.Last().ChunkHeader.ChunkEndPosition;
-            
+
             var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".scavenge.tmp");
             var oldChunksList = string.Join("\n", oldChunks);
             Log.Trace("SCAVENGING: started to scavenge & merge chunks: {0}\nResulting temp chunk file: {1}.",
@@ -170,7 +181,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 foreach (var oldChunk in oldChunks)
                 {
                     TraverseChunk(oldChunk,
-                                  prepare => 
+                                  prepare =>
                                   {
                                       if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
                                           positionMapping.Add(WriteRecord(newChunk, prepare));
@@ -197,6 +208,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                               + "Scavenged chunk removed.", oldChunksList, sw.Elapsed, oldSize, newSize);
 
                     newChunk.MarkForDeletion();
+                    PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
                     return false;
                 }
 
@@ -210,6 +222,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                               oldChunksList, sw.Elapsed, Path.GetFileName(tmpChunkPath),
                               chunkStartNumber, chunkEndNumber, Path.GetFileName(chunk.FileName), oldSize, newSize);
                     spaceSaved = oldSize - newSize;
+                    PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, true, spaceSaved);
                     return true;
                 }
                 else
@@ -220,6 +233,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                               + "Old chunks total size: {5}, scavenged chunk size: {6}.",
                               oldChunksList, sw.Elapsed,
                               chunkStartNumber, chunkEndNumber, Path.GetFileName(tmpChunkPath), oldSize, newSize);
+                    PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
                     return false;
                 }
             }
@@ -234,8 +248,26 @@ namespace EventStore.Core.TransactionLog.Chunks
                     File.SetAttributes(tmpChunkPath, FileAttributes.Normal);
                     File.Delete(tmpChunkPath);
                 });
+                PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
                 return false;
             }
+        }
+
+        private void PublishChunksCompletedEvent(int chunkStartNumber, int chunkEndNumber,
+                                                 TimeSpan elapsed, bool wasScavenged, long spaceSaved)
+        {
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeChunksCompleted, true, new Dictionary<string, object>{
+                    {"scavengeId", _scavengeId},
+                    {"chunkStartNumber", chunkStartNumber},
+                    {"chunkEndNumber", chunkEndNumber},
+                    {"timeTaken", elapsed},
+                    {"wasScavenged", wasScavenged},
+                    {"spaceSaved", spaceSaved},
+                    {"nodeEndpoint", _nodeEndpoint}
+                }.ToJsonBytes(), null);
+
+            var streamName = string.Format("{0}-{1}", SystemStreams.ScavengesStream, _scavengeId);
+            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, evnt, SystemAccount.Principal, x => { });
         }
 
         private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits, long chunkStart, long chunkEnd)
@@ -258,7 +290,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // in transaction, as in some circumstances we need it.
                 // For instance, this prepare could be part of ongoing transaction and though we sometimes can determine
                 // that prepare wouldn't ever be needed (e.g., stream was deleted, $maxAge or $maxCount rule it out)
-                // we still need the first prepare to find out StreamId for possible commit in StorageWriterService.WriteCommit method. 
+                // we still need the first prepare to find out StreamId for possible commit in StorageWriterService.WriteCommit method.
                 // There could be other reasons where it is needed, so we just safely filter it out to not bother further.
                 return true;
             }
@@ -288,9 +320,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // transactions so we can safely remove it. The performance shouldn't hurt, because
                 // TransactionBegin prepare is never needed either way and TransactionEnd should be in most
                 // circumstances close to commit, so shouldn't hurt performance too much.
-                // The advantage of getting rid of system prepares is ability to completely eliminate transaction 
+                // The advantage of getting rid of system prepares is ability to completely eliminate transaction
                 // prepares and commit, if transaction events are completely ruled out by $maxAge/$maxCount.
-                // Otherwise we'd have to either keep prepare not requiring to keep commit, which could leave 
+                // Otherwise we'd have to either keep prepare not requiring to keep commit, which could leave
                 // this prepare as never discoverable garbage, or we could insist on keeping commit forever
                 // even if all events in transaction are scavenged.
                 commitInfo.TryNotToKeep();
@@ -367,8 +399,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             return true;
         }
 
-        private void TraverseChunk(TFChunk.TFChunk chunk, 
-                                   Action<PrepareLogRecord> processPrepare, 
+        private void TraverseChunk(TFChunk.TFChunk chunk,
+                                   Action<PrepareLogRecord> processPrepare,
                                    Action<CommitLogRecord> processCommit,
                                    Action<SystemLogRecord> processSystem)
         {

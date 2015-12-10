@@ -23,6 +23,7 @@ namespace EventStore.Core.Services
         public const string StreamsStream = "$streams";
         public const string SettingsStream = "$settings";
         public const string StatsStreamPrefix = "$stats";
+        public const string ScavengesStream = "$scavenges";
 
         public static bool IsSystemStream(string streamId)
         {
@@ -77,6 +78,10 @@ namespace EventStore.Core.Services
         public const string V2__StreamCreated_InIndex = "StreamCreated";
         public const string V1__StreamCreated__ = "$stream-created";
         public const string V1__StreamCreatedImplicit__ = "$stream-created-implicit";
+
+        public const string ScavengeStarted = "$scavengeStarted";
+        public const string ScavengeCompleted = "$scavengeCompleted";
+        public const string ScavengeChunksCompleted = "$scavengeChunksCompleted";
 
         public static string StreamReferenceEventToStreamId(string eventType, byte[] data)
         {

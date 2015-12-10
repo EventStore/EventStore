@@ -1,8 +1,11 @@
 ﻿using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
@@ -26,6 +29,8 @@ namespace EventStore.Core.Tests.Services.Storage
         protected TFChunkWriter Writer;
         protected ICheckpoint WriterCheckpoint;
         protected ICheckpoint ChaserCheckpoint;
+        protected IODispatcher IODispatcher;
+        protected InMemoryBus Bus;
 
         private TFChunkScavenger _scavenger;
         private bool _scavenge;
@@ -45,6 +50,9 @@ namespace EventStore.Core.Tests.Services.Storage
 
             WriterCheckpoint = new InMemoryCheckpoint(0);
             ChaserCheckpoint = new InMemoryCheckpoint(0);
+
+            Bus = new InMemoryBus("bus");
+            IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
 
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
@@ -89,7 +97,7 @@ namespace EventStore.Core.Tests.Services.Storage
             {
                 if (_completeLastChunkOnScavenge)
                     Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
-                _scavenger = new TFChunkScavenger(Db, TableIndex, hasher, ReadIndex);
+                _scavenger = new TFChunkScavenger(Db, IODispatcher, TableIndex, hasher, ReadIndex, Guid.NewGuid(), "fakeNodeIp");
                 _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
             }
         }
@@ -109,8 +117,8 @@ namespace EventStore.Core.Tests.Services.Storage
 
         protected abstract void WriteTestScenario();
 
-        protected EventRecord WriteSingleEvent(string eventStreamId, 
-                                               int eventNumber, 
+        protected EventRecord WriteSingleEvent(string eventStreamId,
+                                               int eventNumber,
                                                string data,
                                                DateTime? timestamp = null,
                                                Guid eventId = default(Guid),
@@ -268,10 +276,10 @@ namespace EventStore.Core.Tests.Services.Storage
             return prepare;
         }
 
-        protected PrepareLogRecord WritePrepare(string streamId, 
-                                                int expectedVersion, 
-                                                Guid eventId = default(Guid), 
-                                                string eventType = null, 
+        protected PrepareLogRecord WritePrepare(string streamId,
+                                                int expectedVersion,
+                                                Guid eventId = default(Guid),
+                                                string eventType = null,
                                                 string data = null)
         {
             long pos;

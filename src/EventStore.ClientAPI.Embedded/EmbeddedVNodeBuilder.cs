@@ -70,6 +70,7 @@ namespace EventStore.ClientAPI.Embedded
 
         private IAuthenticationProviderFactory _authenticationProviderFactory;
         private bool _disableScavengeMerging;
+        private int _scavengeHistoryMaxAge;
         private bool _adminOnPublic;
         private bool _statsOnPublic;
         private bool _gossipOnPublic;
@@ -135,6 +136,7 @@ namespace EventStore.ClientAPI.Embedded
 
             _authenticationProviderFactory = new InternalAuthenticationProviderFactory();
             _disableScavengeMerging = Opts.DisableScavengeMergeDefault;
+            _scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
             _adminOnPublic = Opts.AdminOnExtDefault;
             _statsOnPublic = Opts.StatsOnExtDefault;
             _gossipOnPublic = Opts.GossipOnExtDefault;
@@ -696,6 +698,7 @@ namespace EventStore.ClientAPI.Embedded
                     _nodePriority,
                     _authenticationProviderFactory,
                     _disableScavengeMerging,
+                    _scavengeHistoryMaxAge,
                     _adminOnPublic,
                     _statsOnPublic,
                     _gossipOnPublic,

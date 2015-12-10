@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Fakes;
@@ -66,7 +69,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
             //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
-            var scavenger = new TFChunkScavenger(_dbResult.Db, tableIndex, hasher, ReadIndex);
+            var bus = new InMemoryBus("Bus");
+            var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
+            var scavenger = new TFChunkScavenger(_dbResult.Db, ioDispatcher, tableIndex, hasher, ReadIndex, Guid.NewGuid(), "fakeNodeIp");
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
         }
 

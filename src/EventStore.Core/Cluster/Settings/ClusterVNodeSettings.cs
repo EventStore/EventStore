@@ -47,6 +47,7 @@ namespace EventStore.Core.Cluster.Settings
 
         public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
         public readonly bool DisableScavengeMerging;
+        public readonly int ScavengeHistoryMaxAge;
         public bool AdminOnPublic;
         public bool StatsOnPublic;
         public bool GossipOnPublic;
@@ -96,6 +97,7 @@ namespace EventStore.Core.Cluster.Settings
                                     int nodePriority,
                                     IAuthenticationProviderFactory authenticationProviderFactory,
                                     bool disableScavengeMerging,
+                                    int scavengeHistoryMaxAge,
                                     bool adminOnPublic,
                                     bool statsOnPublic,
                                     bool gossipOnPublic,
@@ -172,6 +174,7 @@ namespace EventStore.Core.Cluster.Settings
 
             NodePriority = nodePriority;
             DisableScavengeMerging = disableScavengeMerging;
+            ScavengeHistoryMaxAge = scavengeHistoryMaxAge;
             AdminOnPublic = adminOnPublic;
             StatsOnPublic = statsOnPublic;
             GossipOnPublic = gossipOnPublic;
@@ -228,7 +231,8 @@ namespace EventStore.Core.Cluster.Settings
                                  + "GossipTimeout: {31}\n"
                                  + "HistogramEnabled: {32}\n"
                                  + "HTTPCachingDisabled: {33}\n"
-                                 + "IndexPath: {34}\n",
+                                 + "IndexPath: {34}\n"
+                                 + "ScavengeHistoryMaxAge: {35}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -243,7 +247,8 @@ namespace EventStore.Core.Cluster.Settings
                                  PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
                                  UseSsl, SslTargetHost, SslValidateServer,
                                  StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
-                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout, EnableHistograms, DisableHTTPCaching, Index);
+                                 NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
+                                 EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge);
         }
     }
 }
