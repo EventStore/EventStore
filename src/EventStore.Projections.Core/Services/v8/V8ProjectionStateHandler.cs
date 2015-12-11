@@ -158,11 +158,15 @@ namespace EventStore.Projections.Core.Services.v8
             out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
             CheckDisposed();
-            if (data == null)
-                throw new ArgumentNullException("data");
             _eventPosition = eventPosition;
             _emittedEvents = null;
-            var newStates = _query.Push(
+            Tuple<string, string> newStates = null;
+            if(data == null || data.Data == null){
+                newStates = _query.Push(
+                "",
+                new string[]{});
+            }else{
+                newStates = _query.Push(
                 data.Data.Trim(), // trimming data passed to a JS 
                 new[]
                 {
@@ -170,6 +174,7 @@ namespace EventStore.Projections.Core.Services.v8
                     data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
                     data.PositionMetadata ?? "", partition, ""
                 });
+            }
             newState = newStates.Item1;
             newSharedState = newStates.Item2;
 /*            try
@@ -197,7 +202,11 @@ namespace EventStore.Projections.Core.Services.v8
             CheckDisposed();
             _eventPosition = createPosition;
             _emittedEvents = null;
-            /*var newStates = */_query.NotifyCreated(
+            if(data == null || data.Data == null){
+                emittedEvents = null;
+                return true;
+            }
+            _query.NotifyCreated(
                 data.Data.Trim(), // trimming data passed to a JS 
                 new[]
                 {
