@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Transport.Http
             string escapedGroupName = Uri.EscapeDataString(groupName);
             var self = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}", escapedStreamId, escapedGroupName);
             var feed = new FeedElement();
-            feed.SetTitle(String.Format("Messages for {0}/{1}", escapedStreamId, escapedGroupName));
+            feed.SetTitle(string.Format("Messages for '{0}/{1}'", streamId, groupName));
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
@@ -190,20 +190,21 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static DescriptionDocument ToDescriptionDocument(Uri requestedUrl, string streamId, string[] subscriptions)
         {
+            string escapedStreamId = Uri.EscapeDataString(streamId);
             var descriptionDocument = new DescriptionDocument();
-            descriptionDocument.SetTitle("description document for " + streamId);
-            descriptionDocument.SetDescription(@"The description document will be presented when no accept header is present or it was requested)");
+            descriptionDocument.SetTitle(string.Format("Description document for '{0}'", streamId));
+            descriptionDocument.SetDescription(@"The description document will be presented when no accept header is present or it was requested");
 
-            descriptionDocument.SetSelf("/streams/" + streamId,
+            descriptionDocument.SetSelf("/streams/" + escapedStreamId,
                                     Codec.DescriptionJson.ContentType);
 
-            descriptionDocument.SetStream("/streams/" + streamId,
+            descriptionDocument.SetStream("/streams/" + escapedStreamId,
                                     Codec.EventStoreXmlCodec.ContentType,
                                     Codec.EventStoreJsonCodec.ContentType);
 
             if (subscriptions != null) {
                 foreach (var group in subscriptions) {
-                    descriptionDocument.AddStreamSubscription(String.Format("/subscriptions/{0}/{1}", streamId, group),
+                    descriptionDocument.AddStreamSubscription(String.Format("/subscriptions/{0}/{1}", escapedStreamId, group),
                                     Codec.CompetingXml.ContentType,
                                     Codec.CompetingJson.ContentType);
                 }

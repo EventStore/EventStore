@@ -287,13 +287,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_parked_message_queue_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/streams/$persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
         }
 
         [Test]
         public void the_second_parked_message_queue_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/streams/$persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, "secondgroup"), _json[1]["parkedMessageUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, "secondgroup"), _json[1]["parkedMessageUri"].Value<string>());
         }
 
         [Test]
@@ -402,13 +402,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void the_first_parked_message_queue_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/streams/$persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
         }
 
         [Test]
         public void the_second_parked_message_queue_uri_is_correct()
         {
-            Assert.AreEqual(string.Format("http://{0}/streams/$persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, "secondgroup"), _json[1]["parkedMessageUri"].Value<string>());
+            Assert.AreEqual(string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint, _streamName, "secondgroup"), _json[1]["parkedMessageUri"].Value<string>());
         }
 
         [Test]

@@ -642,6 +642,35 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             sub.NotifyClockTick(DateTime.UtcNow);
             Assert.AreEqual(1, cp);
         }
+
+        [Test]
+        public void subscription_does_write_checkpoint_for_disconnected_clients_on_time_when_min_is_hit()
+        {
+            int cp = -1;
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
+                    .StartFromBeginning()
+                    .MinimumToCheckPoint(1)
+                    .MaximumToCheckPoint(5));
+            reader.Load(null);
+            var corrid = Guid.NewGuid();
+            var eventId1 = Guid.NewGuid();
+            var eventId2 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(eventId1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(eventId2, "type", "streamName", 1),
+            }, 1, false);
+            sub.GetNextNOrLessMessages(2).ToArray();
+            sub.AcknowledgeMessagesProcessed(corrid, new[] { eventId1, eventId2 });
+            sub.NotifyClockTick(DateTime.UtcNow);
+            Assert.AreEqual(1, cp);
+        }
     }
 
     [TestFixture]
