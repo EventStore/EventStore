@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Http.Streams
     {
         public abstract class SpecificationWithLongFeed : HttpBehaviorSpecification
         {
-            private int _numberOfEvents;
+            protected int _numberOfEvents;
 
             protected override void Given()
             {
@@ -575,5 +575,52 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+        [TestFixture, Category("LongRunning")]
+        public class when_reading_a_stream_forward_from_beginning_asking_for_less_events_than_in_the_stream : SpecificationWithLongFeed
+        {
+            private JObject _feed;
+            protected override void When()
+            {
+                _feed = GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents - 1), accept: ContentType.AtomJson);
+            }
+
+            [Test]
+            public void the_head_of_stream_is_false()
+            {
+                Assert.AreEqual(false, _feed.Value<bool>("headOfStream"));
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_reading_a_stream_forward_from_beginning_asking_for_more_events_than_in_the_stream : SpecificationWithLongFeed
+        {
+            private JObject _feed;
+            protected override void When()
+            {
+                _feed = GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents + 1), accept: ContentType.AtomJson);
+            }
+
+            [Test]
+            public void the_head_of_stream_is_true()
+            {
+                Assert.AreEqual(true, _feed.Value<bool>("headOfStream"));
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_reading_a_stream_forward_from_beginning_asking_for_exactly_the_events_in_the_stream : SpecificationWithLongFeed
+        {
+            private JObject _feed;
+            protected override void When()
+            {
+                _feed = GetJson<JObject>(TestStream + "/0/forward/" + _numberOfEvents, accept: ContentType.AtomJson);
+            }
+
+            [Test]
+            public void the_head_of_stream_is_true()
+            {
+                Assert.AreEqual(true, _feed.Value<bool>("headOfStream"));
+            }
+        }
     }
 }

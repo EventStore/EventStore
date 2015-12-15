@@ -33,6 +33,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
+            feed.SetHeadOfStream(msg.IsEndOfStream);
 
             var prevEventNumber = Math.Min(msg.FromEventNumber + msg.MaxCount - 1, msg.LastEventNumber) + 1;
             var nextEventNumber = msg.FromEventNumber - 1;
@@ -43,10 +44,6 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
                 feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
-            }
-            if (!msg.IsEndOfStream && msg.Events.Length == msg.MaxCount)
-            {
-                feed.SetHeadOfStream(true);
             }
             if (!msg.IsEndOfStream || msg.Events.Length > 0)
                 feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
