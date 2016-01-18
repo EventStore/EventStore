@@ -169,8 +169,8 @@ namespace EventStore.ClientAPI
 
         private void OnReconnect(object sender, ClientConnectionEventArgs clientConnectionEventArgs)
         {
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: recovering after reconnection.");
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.");
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: recovering after reconnection.", IsSubscribedToAll ? "<all>" : StreamId);
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.", IsSubscribedToAll ? "<all>" : StreamId);
             _connection.Connected -= OnReconnect;
             RunSubscription();
         }
@@ -180,6 +180,9 @@ namespace EventStore.ClientAPI
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 if (Verbose) Log.Debug("Catch-up Subscription to {0}: running...", IsSubscribedToAll ? "<all>" : StreamId);
+
+                while (_isProcessing == 1)
+                    Thread.Sleep(10);
 
                 _stopped.Reset();
                 try
@@ -218,14 +221,14 @@ namespace EventStore.ClientAPI
                 if (_liveProcessingStarted != null)
                     _liveProcessingStarted(this);
 
-                if (Verbose) Log.Debug("Catch-up Subscription to {0}: hooking to connection.Connected");
+                if (Verbose) Log.Debug("Catch-up Subscription to {0}: hooking to connection.Connected", IsSubscribedToAll ? "<all>" : StreamId);
                 _connection.Connected += OnReconnect;
 
                 _allowProcessing = true;
                 EnsureProcessingPushQueue();
             });
         }
-        
+
         private void EnqueuePushedEvent(EventStoreSubscription subscription, ResolvedEvent e)
         {
             if (Verbose)
@@ -291,6 +294,7 @@ namespace EventStore.ClientAPI
                     catch (Exception exc)
                     {
                         DropSubscription(SubscriptionDropReason.EventHandlerException, exc);
+                        Interlocked.CompareExchange(ref _isProcessing, 0, 1);
                         return;
                     }
                 }

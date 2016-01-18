@@ -230,7 +230,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private void ProcessReceive(SocketAsyncEventArgs socketArgs)
         {
             // socket closed normally or some error occurred
-            if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
+            if (socketArgs.BytesTransferred == 0 && socketArgs.SocketError != SocketError.Success)
             {
                 NotifyReceiveCompleted(0);
                 ReturnReceivingSocketArgs();
