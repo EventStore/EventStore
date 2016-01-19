@@ -167,6 +167,46 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class GetFreshTcpConnectionStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly IEnvelope Envelope;
+
+            public GetFreshTcpConnectionStats(IEnvelope envelope)
+            {
+                Ensure.NotNull(envelope, "envelope");
+
+                Envelope = envelope;
+            }
+        }
+
+        public class GetFreshTcpConnectionStatsCompleted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly List<TcpConnectionStats> ConnectionStats;
+
+            public GetFreshTcpConnectionStatsCompleted(List<TcpConnectionStats> connectionStats)
+            {
+                ConnectionStats = connectionStats;
+            }
+        }
+
+        public class TcpConnectionStats
+        {
+            public string RemoteEndPoint { get; set; }
+            public string LocalEndPoint { get; set; }
+            public Guid ConnectionId { get; set; }
+            public long TotalBytesSent { get; set; }
+            public long TotalBytesReceived { get; set; }
+            public int PendingSendBytes { get; set; }
+            public int PendingReceivedBytes { get; set; }
+            public bool IsExternalConnection { get; set; }
+        }
+
         public class InternalStatsRequest : Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

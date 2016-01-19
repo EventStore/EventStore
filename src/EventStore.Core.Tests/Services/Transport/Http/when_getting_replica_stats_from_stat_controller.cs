@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Transport.Http;
-using EventStore.Transport.Http.Client;
-using EventStore.Transport.Http.Codecs;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
@@ -18,19 +17,15 @@ namespace EventStore.Core.Tests.Services.Transport.Http
     {
         private readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
         protected MiniClusterNode[] _nodes = new MiniClusterNode[2];
-        protected Endpoints[] _nodeEndpoints = new Endpoints[3];
-        protected HttpAsyncClient _client;
+        protected Endpoints[] _nodeEndpoints = new Endpoints[2];
+
+		private string _replicationStatsUrl;
+
+        private List<ReplicationMessage.ReplicationStats> _response;
         
-		private string _replicationUrl = "/stats/replication";
-        private string[] _urls = new string[2];
         
-        private List<List<ReplicationMessage.ReplicationStats>> _responses;
-        
-        [TestFixtureSetUp]
-        protected void SetUp()
+        private void StartNodes()
         {
-            _client = new HttpAsyncClient();
-            
             _nodeEndpoints[0] = new Endpoints(
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
@@ -39,90 +34,80 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
-            _nodeEndpoints[2] = new Endpoints(
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
             
-            // We only need two nodes running
             _nodes[0] = CreateNode(0,
-                _nodeEndpoints[0], new IPEndPoint[] { _nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp });
+                _nodeEndpoints[0], new IPEndPoint[] { _nodeEndpoints[1].InternalHttp });
             _nodes[1] = CreateNode(1,
-                _nodeEndpoints[1], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp });
+                _nodeEndpoints[1], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp });
 
             _nodes[0].Start();
             _nodes[1].Start();
             
-            var nodesStarted = new CountdownEvent(2);
+            WaitHandle.WaitAll(new[] { _nodes[0].StartedEvent, _nodes[1].StartedEvent });
+        }
+        
+        [TestFixtureSetUp]
+        protected void SetUp()
+        {
+            StartNodes();
+            
+            // Find the master
+            var replicaSubscribed = new ManualResetEvent(false);
+            IPEndPoint masterEndPoint = null;
+            
+            var replicaSubscribedHandler = new Action<ReplicationMessage.ReplicaSubscribed>(msg => {
+                masterEndPoint = msg.MasterEndPoint;
+                replicaSubscribed.Set();
+            });
+            
             _nodes[0].Node.MainBus.Subscribe(
-                new AdHocHandler<SystemMessage.SystemStart>(m => nodesStarted.Signal()));
+                new AdHocHandler<ReplicationMessage.ReplicaSubscribed>(replicaSubscribedHandler));
             _nodes[1].Node.MainBus.Subscribe(
-                new AdHocHandler<SystemMessage.SystemStart>(m => nodesStarted.Signal()));
-
-            if(!nodesStarted.Wait(Timeout))
+                new AdHocHandler<ReplicationMessage.ReplicaSubscribed>(replicaSubscribedHandler));
+            
+            if(!replicaSubscribed.WaitOne(Timeout))
             {
-                Assert.Fail("Timed out while waiting for the nodes to start");
+                Assert.Fail("Timed out while waiting for replica to subscribe to master.");
+            }
+            var masterNode = _nodes.First(n => n.InternalTcpEndPoint.ToString() == masterEndPoint.ToString());
+            _replicationStatsUrl = masterNode.ExternalHttpEndPoint.ToHttpUrl("/stats/replication");
+            
+            // Wait for user management service to initialize
+            var managementInitialised = new ManualResetEvent(false);
+            masterNode.Node.MainBus.Subscribe(
+                new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(msg => managementInitialised.Set()));
+            if(!managementInitialised.WaitOne(Timeout))
+            {
+                Assert.Fail("Timed out while waiting for User Management Service to initialize.");
             }
             
-            var replicasSubscribed = new CountdownEvent(1);
-            _nodes[0].Node.MainBus.Subscribe(
-                new AdHocHandler<ReplicationMessage.ReplicaSubscribed>(m => replicasSubscribed.Signal()));
-            _nodes[1].Node.MainBus.Subscribe(
-                new AdHocHandler<ReplicationMessage.ReplicaSubscribed>(m => replicasSubscribed.Signal()));
-
-            if(!replicasSubscribed.Wait(Timeout)) 
-            {
-                Assert.Fail("Timed out while waiting for replicas to subscribe to master");
-            }
-            
-            _urls[0] = string.Format("http://{0}{1}", _nodeEndpoints[0].ExternalHttp.ToString(), _replicationUrl);
-            _urls[1] = string.Format("http://{0}{1}", _nodeEndpoints[1].ExternalHttp.ToString(), _replicationUrl);
-
             When();
         }
         
         protected void When() 
         {
-            var signal = new CountdownEvent(2);
-            _responses = new List<List<ReplicationMessage.ReplicationStats>>();
+            var httpWebRequest = WebRequest.Create(_replicationStatsUrl);
+            httpWebRequest.Method = "GET";
+            httpWebRequest.UseDefaultCredentials = true;
             
-            var handleResponse = new Action<HttpResponse>(response => {
-                _responses.Add(Codec.Json.From<List<ReplicationMessage.ReplicationStats>>(response.Body));
-                signal.Signal();
-            });
-            var handleException = new Action<Exception>(exception => {
-                Assert.Fail("Exception when getting replica stats, {0}", exception.ToString());
-                signal.Signal();
-            });
+            var response = httpWebRequest.GetResponse();
             
-			_client.Get(_urls[0], Timeout, handleResponse, handleException);
-			_client.Get(_urls[1], Timeout, handleResponse, handleException);
-			
-            if(!signal.Wait(Timeout)) 
+            using (var memoryStream = new MemoryStream())
             {
-                Assert.Fail("Timed out while waiting for replica stats");
+                response.GetResponseStream().CopyTo(memoryStream);
+                var bytes = memoryStream.ToArray();
+                var body = Helper.UTF8NoBom.GetString(bytes);
+                
+                _response = body.ParseJson<List<ReplicationMessage.ReplicationStats>>();
             }
         }
-        
-        [Test]
-        public void should_have_a_response_from_each_running_node() 
-        {
-            Assert.AreEqual(2, _responses.Count());
-        }
-        
-        [Test]
-        public void should_return_empty_list_from_replica_node() 
-        {
-			Assert.AreEqual(1, _responses.Count(res => res != null && res.Count() == 0));
-        }
-        
+
         [Test]
         public void should_return_replica_stats_from_the_master_node()
         {
-            var masterStats = _responses.FirstOrDefault(res => res != null && res.Count() > 0);
-        		Assert.IsNotNull(masterStats, "No replication stats were returned from master.");
-			Assert.AreEqual(1, masterStats.Count(),
-                string.Format("Expected master to have 1 set of replication stats. Got {0}", masterStats.Count()));
+            Assert.IsNotNull(_response, "No replication stats were returned from master.");
+			Assert.AreEqual(1, _response.Count(),
+                string.Format("Expected master to have 1 set of replication stats. Got {0}", _response.Count()));
         }
         
         [TestFixtureTearDown]

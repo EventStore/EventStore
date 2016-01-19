@@ -99,6 +99,15 @@ namespace EventStore.Core.Services.Transport.Http
             return entity.ResponseCodec.To(completed.ReplicationStats);
         }
 
+        public static string GetFreshTcpConnectionStatsCompleted(HttpResponseFormatterArgs entity, Message message)
+        {
+            var completed = message as MonitoringMessage.GetFreshTcpConnectionStatsCompleted;
+            if (completed == null)
+                return String.Empty;
+
+            return entity.ResponseCodec.To(completed.ConnectionStats);
+        }
+
 		public static string SendGossip(HttpResponseFormatterArgs entity, Message message)
 		{
 			if (message.GetType() != typeof(GossipMessage.SendGossip))
