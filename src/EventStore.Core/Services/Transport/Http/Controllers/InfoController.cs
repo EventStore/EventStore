@@ -14,7 +14,8 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    public class InfoController : IHttpController, IHandle<SystemMessage.StateChangeMessage>
+    public class InfoController : IHttpController,
+                                  IHandle<SystemMessage.StateChangeMessage>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<InfoController>();
         private static readonly ICodec[] SupportedCodecs = { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
@@ -22,6 +23,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private readonly IOptions _options;
         private readonly ProjectionType _projectionType;
         private VNodeState _currentState;
+
         public InfoController(IOptions options, ProjectionType projectionType)
         {
             _options = options;

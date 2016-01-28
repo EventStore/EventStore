@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.Storage;
+using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -69,7 +73,10 @@ namespace EventStore.Core.Tests.TransactionLog
             _db.Config.ChaserCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
             _db.Config.ChaserCheckpoint.Flush();
 
-            var scavenger = new TFChunkScavenger(_db, new FakeTableIndex(), new XXHashUnsafe(), new FakeReadIndex(x => x == "es-to-scavenge"));
+            var bus = new InMemoryBus("Bus");
+            var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
+            var scavenger = new TFChunkScavenger(_db, ioDispatcher, new FakeTableIndex(), new XXHashUnsafe(),
+                                                 new FakeReadIndex(x => x == "es-to-scavenge"), Guid.NewGuid(), "fakeNodeIp");
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
             _scavengedChunk = _db.Manager.GetChunk(0);

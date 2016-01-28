@@ -114,6 +114,7 @@ namespace EventStore.Core.Tests.Helpers
                                                          1,
                                                          new InternalAuthenticationProviderFactory(),
                                                          true,
+                                                         30,
                                                          true,
                                                          true,
                                                          false,

@@ -83,6 +83,9 @@ namespace EventStore.Core.Util
         public const string DisableScavengeMergeDescr = "Disables the merging of chunks when scavenge is running";
         public static readonly bool DisableScavengeMergeDefault = false;
 
+        public const string ScavengeHistoryMaxAgeDescr = "The number of days to keep scavenge history";
+        public static readonly int ScavengeHistoryMaxAgeDefault = 30;
+
         public const string DbPathDescr = "The path the db should be loaded/saved to.";
         public const string IndexPathDescr = "The path the index should be loaded/saved to.";
 
