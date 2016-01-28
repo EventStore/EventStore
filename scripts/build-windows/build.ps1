@@ -43,7 +43,7 @@ $libsDirectory = Join-Path $srcDirectory "libs"
     $v8Directory = Join-Path $baseDirectory "v8"
 
     #Python
-    $pythonRepository = "http://src.chromium.org/svn/trunk/tools/third_party/python_26"
+    $pythonRepository = "https://src.chromium.org/svn/trunk/tools/third_party/python_26"
     $pythonRevision = "89111"
     $pythonDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "python_26")
 
@@ -58,7 +58,7 @@ $libsDirectory = Join-Path $srcDirectory "libs"
     $icuDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "icu")
 
     #Cygwin
-    $cygwinRepository = "http://src.chromium.org/svn/trunk/deps/third_party/cygwin"
+    $cygwinRepository = "https://src.chromium.org/svn/trunk/deps/third_party/cygwin"
     $cygwinRevision = "66844"
     $cygwinDirectory = Join-Path $v8Directory (Join-Path "third_party" "cygwin")
 
