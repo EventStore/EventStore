@@ -9,17 +9,19 @@ namespace EventStore.Transport.Http.EntityManagement
 {
     public class HttpEntity
     {
+        private readonly bool _logHttpRequests;
         public readonly Uri RequestedUrl;
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
         public readonly IPrincipal User;
 
-        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user)
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, bool logHttpRequests)
         {
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
 
+            _logHttpRequests = logHttpRequests;
             RequestedUrl = BuildRequestedUrl(request.Url, request.Headers);
             Request = request;
             Response = response;
@@ -50,44 +52,45 @@ namespace EventStore.Transport.Http.EntityManagement
             return uriBuilder.Uri;
         }
 
-        private HttpEntity(IPrincipal user)
+        private HttpEntity(IPrincipal user, bool logHttpRequests)
         {
             RequestedUrl = null;
 
             Request = null;
             Response = null;
             User = user;
+            _logHttpRequests = logHttpRequests;
         }
 
-        private HttpEntity(HttpEntity httpEntity, IPrincipal user)
+        private HttpEntity(HttpEntity httpEntity, IPrincipal user, bool logHttpRequests)
         {
             RequestedUrl = httpEntity.RequestedUrl;
 
             Request = httpEntity.Request;
             Response = httpEntity.Response;
             User = user;
-            
+            _logHttpRequests = logHttpRequests;
         }
 
         public HttpEntityManager CreateManager(
             ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
-            return new HttpEntityManager(this, allowedMethods, onRequestSatisfied, requestCodec, responseCodec);
+            return new HttpEntityManager(this, allowedMethods, onRequestSatisfied, requestCodec, responseCodec, _logHttpRequests);
         }
 
         public HttpEntityManager CreateManager()
         {
-            return new HttpEntityManager(this, Empty.StringArray, entity => { }, Codec.NoCodec, Codec.NoCodec);
+            return new HttpEntityManager(this, Empty.StringArray, entity => { }, Codec.NoCodec, Codec.NoCodec, _logHttpRequests);
         }
 
         public HttpEntity SetUser(IPrincipal user)
         {
-            return new HttpEntity(this, user);
+            return new HttpEntity(this, user, _logHttpRequests);
         }
 
         public static HttpEntity Test(IPrincipal user)
         {
-            return new HttpEntity(user);
+            return new HttpEntity(user, false);
         }
     }
 }

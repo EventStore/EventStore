@@ -302,7 +302,7 @@ namespace EventStore.Core
 
             // EXTERNAL HTTP
             _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-                                                    _workersHandler, vNodeSettings.ExtHttpPrefixes);
+                                                    _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.ExtHttpPrefixes);
             _externalHttpService.SetupController(persistentSubscriptionController);
             if(vNodeSettings.AdminOnPublic)
                 _externalHttpService.SetupController(adminController);
@@ -321,7 +321,7 @@ namespace EventStore.Core
             // INTERNAL HTTP
             if(!isSingleNode) {
                 _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
-                                                       _workersHandler, vNodeSettings.IntHttpPrefixes);
+                                                       _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.IntHttpPrefixes);
                 _internalHttpService.SetupController(adminController);
                 _internalHttpService.SetupController(pingController);
                 _internalHttpService.SetupController(infoController);

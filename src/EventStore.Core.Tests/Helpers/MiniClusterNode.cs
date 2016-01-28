@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.Helpers
                 gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
                 extTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), extTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
                 intTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), intTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
-                verifyDbHash: false, maxMemtableEntryCount: memTableSize, startStandardProjections: false, disableHTTPCaching: false);
+                verifyDbHash: false, maxMemtableEntryCount: memTableSize, startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false);
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"

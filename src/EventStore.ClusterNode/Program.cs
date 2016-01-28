@@ -278,6 +278,7 @@ namespace EventStore.ClusterNode
                     !options.SkipDbVerify, options.MaxMemTableSize,
                     options.StartStandardProjections,
                     options.DisableHTTPCaching,
+                    options.LogHttpRequests,
                     options.Index,
                     options.EnableHistograms,
                     options.IndexCacheDepth,
