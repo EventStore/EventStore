@@ -67,6 +67,8 @@ namespace EventStore.ClientAPI.Embedded
         private readonly IAuthenticationProvider _authenticationProvider;
         private readonly IBus _subscriptionBus;
         private readonly EmbeddedSubscriber _subscriptions;
+        private readonly Task _userManagementServiceInitialized;
+        private readonly Task _becameMaster;
 
         static EventStoreEmbeddedNodeConnection()
         {
@@ -82,12 +84,17 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid connectionId = Guid.NewGuid();
 
+            var userManagementServiceInitialized = new TaskCompletionSource<int>();
+            var becameMaster = new TaskCompletionSource<int>();
+
             _settings = settings;
             _connectionName = connectionName;
             _publisher = publisher;
             _authenticationProvider = authenticationProvider;
             _subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
             _subscriptions = new EmbeddedSubscriber(_subscriptionBus, _authenticationProvider, _settings.Log, connectionId);
+            _userManagementServiceInitialized = userManagementServiceInitialized.Task;
+            _becameMaster = becameMaster.Task;
             
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
@@ -97,6 +104,8 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.ConnectToPersistentSubscription>(_publisher.Publish));
+            _subscriptionBus.Subscribe(new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(_ => userManagementServiceInitialized.TrySetResult(0)));
+            _subscriptionBus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(_ => becameMaster.TrySetResult(0)));
 
             bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(_ => Disconnected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)))));
         }
@@ -105,13 +114,9 @@ namespace EventStore.ClientAPI.Embedded
 
         public Task ConnectAsync()
         {
-            var source = new TaskCompletionSource<object>();
-            
-            source.SetResult(null);
-
             Connected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)));
 
-            return source.Task;
+            return _becameMaster.ContinueWith(_ => _userManagementServiceInitialized);
         }
 
         public void Close()
