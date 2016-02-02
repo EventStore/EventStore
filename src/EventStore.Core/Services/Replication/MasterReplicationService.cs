@@ -18,6 +18,7 @@ using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Replication
 {
@@ -25,7 +26,8 @@ namespace EventStore.Core.Services.Replication
                                             IHandle<SystemMessage.SystemStart>,
                                             IHandle<SystemMessage.StateChangeMessage>,
                                             IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
-                                            IHandle<ReplicationMessage.ReplicaLogPositionAck>
+                                            IHandle<ReplicationMessage.ReplicaLogPositionAck>,
+                                            IHandle<ReplicationMessage.GetReplicationStats>
     {
         public const int MaxQueueSize = 100;
         public const int CloneThreshold = 1024;
@@ -143,6 +145,24 @@ namespace EventStore.Core.Services.Replication
             ReplicaSubscription subscription;
             if (_subscriptions.TryGetValue(message.SubscriptionId, out subscription))
                 Interlocked.Exchange(ref subscription.AckedLogPosition, message.ReplicationLogPosition);
+        }
+
+        public void Handle(ReplicationMessage.GetReplicationStats message)
+        {
+            var connections = TcpConnectionMonitor.Default.GetTcpConnectionStats();
+            var replicaStats = new List<ReplicationMessage.ReplicationStats>();
+            foreach (var conn in connections)
+            {
+                var tcpConn = conn as TcpConnection;
+                var subscription = _subscriptions.FirstOrDefault(x => x.Value.ConnectionId == tcpConn.ConnectionId);
+                if (subscription.Value != null)
+                {
+                    var stats = new ReplicationMessage.ReplicationStats(subscription.Key, tcpConn.ConnectionId, subscription.Value.ReplicaEndPoint.ToString(), tcpConn.SendQueueSize,
+                                        (int)conn.TotalBytesSent, (int)conn.TotalBytesReceived, conn.PendingSendBytes, conn.PendingReceivedBytes);
+                    replicaStats.Add(stats);
+                }
+            }
+            message.Envelope.ReplyWith(new ReplicationMessage.GetReplicationStatsCompleted(replicaStats));
         }
 
         private bool SubscribeReplica(ReplicaSubscription replica, Epoch[] lastEpochs, Guid correlationId, long logPosition, Guid chunkId)

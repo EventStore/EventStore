@@ -393,5 +393,14 @@ namespace EventStore.Core.Services.Transport.Http
                 ? Ok(entity.ResponseCodec.ContentType, Helper.UTF8NoBom, null, cacheSeconds, isCachePublic: true)
                 : NotFound();
         }
-    }
+
+        public static ResponseConfiguration GetReplicationStatsCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        {
+            var completed = message as ReplicationMessage.GetReplicationStatsCompleted;
+            if (completed == null)
+                return InternalServerError();
+
+            var cacheSeconds = (int)MonitoringService.MemoizePeriod.TotalSeconds;
+            return Ok(entity.ResponseCodec.ContentType, Helper.UTF8NoBom, null, cacheSeconds, isCachePublic: true);
+        }}
 }

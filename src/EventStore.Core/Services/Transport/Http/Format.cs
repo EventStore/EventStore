@@ -89,6 +89,16 @@ namespace EventStore.Core.Services.Transport.Http
             return entity.ResponseCodec.To(completed.Stats);
         }
 
+        public static string GetReplicationStatsCompleted(HttpResponseFormatterArgs entity, Message message)
+        {
+            if (message.GetType() != typeof(ReplicationMessage.GetReplicationStatsCompleted))
+                throw new Exception(string.Format("Unexpected type of Response message: {0}, expected: {1}",
+                                                    message.GetType().Name,
+                                                    typeof(ReplicationMessage.GetReplicationStatsCompleted).Name));
+            var completed = message as ReplicationMessage.GetReplicationStatsCompleted;
+            return entity.ResponseCodec.To(completed.ReplicationStats);
+        }
+
 		public static string SendGossip(HttpResponseFormatterArgs entity, Message message)
 		{
 			if (message.GetType() != typeof(GossipMessage.SendGossip))

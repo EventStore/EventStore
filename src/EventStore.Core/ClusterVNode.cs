@@ -482,6 +482,7 @@ namespace EventStore.Core
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
                 _mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
                 _mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
+                monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(masterReplicationService);
 
                 // REPLICA REPLICATION
                 var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, _internalAuthenticationProvider,
