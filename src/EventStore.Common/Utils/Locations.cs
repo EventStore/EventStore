@@ -16,6 +16,7 @@ namespace EventStore.Common.Utils
         public static readonly string DefaultDataDirectory;
         public static readonly string DefaultLogDirectory;
         public static readonly string DefaultTestClientLogDirectory;
+        public static readonly string FallbackDefaultDataDirectory;
 
         static Locations()
         {
@@ -23,6 +24,7 @@ namespace EventStore.Common.Utils
                                    Path.GetFullPath(".");
 
             PluginsDirectory = Path.Combine(ApplicationDirectory, "plugins");
+            FallbackDefaultDataDirectory = Path.Combine(ApplicationDirectory, "data");
 
             switch (Platforms.GetPlatform())
             {

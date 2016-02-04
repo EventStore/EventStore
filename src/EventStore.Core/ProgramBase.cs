@@ -180,9 +180,26 @@ namespace EventStore.Core
             }
             else
             {
-                if (!Directory.Exists(dbPath)) // mono crashes without this check
-                    Directory.CreateDirectory(dbPath);
+                try
+                {
+                    if (!Directory.Exists(dbPath)) // mono crashes without this check
+                        Directory.CreateDirectory(dbPath);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    if (dbPath == Locations.DefaultDataDirectory)
+                    {
+                        Log.Info("Access to path {0} denied. The Event Store database will be created in {1}", dbPath, Locations.FallbackDefaultDataDirectory);
+                        dbPath = Locations.FallbackDefaultDataDirectory;
+                        Log.Info("Defaulting DB Path to {0}", dbPath);
 
+                        if (!Directory.Exists(dbPath)) // mono crashes without this check
+                            Directory.CreateDirectory(dbPath);
+                    }
+                    else {
+                        throw;
+                    }
+                }
                 var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
                 var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
                 var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
