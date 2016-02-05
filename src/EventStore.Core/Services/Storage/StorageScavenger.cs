@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Storage
                 }
                 else
                 {
-                    PublishScavengeStartedEvent(streamName, scavengeId);
+                    WriteScavengeStartedEvent(streamName, scavengeId);
                     
                     var scavenger = new TFChunkScavenger(_db, _ioDispatcher, _tableIndex, _hasher, _readIndex, scavengeId, _nodeEndpoint);
 					spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
@@ -102,22 +102,13 @@ namespace EventStore.Core.Services.Storage
 
             Interlocked.Exchange(ref _isScavengingRunning, 0);
 
-            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeCompleted, true, new Dictionary<string, object>{
-                    {"scavengeId", scavengeId},
-                    {"nodeEndpoint", _nodeEndpoint},
-                    {"result", result},
-                    {"error", error},
-                    {"timeTaken", sw.Elapsed},
-                    {"spaceSaved", spaceSaved}
-                }.ToJsonBytes(), null);
-
-            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, evnt, SystemAccount.Principal, x => WriteScavengeEventCompleted(x, streamName));
+            WriteScavengeCompletedEvent(streamName, scavengeId, result, error, spaceSaved, sw.Elapsed);
             message.Envelope.ReplyWith(
                 new ClientMessage.ScavengeDatabaseCompleted(message.CorrelationId, result, error, sw.Elapsed, spaceSaved)
             );
         }
 
-        private void PublishScavengeStartedEvent(string streamName, Guid scavengeId)
+        private void WriteScavengeStartedEvent(string streamName, Guid scavengeId)
         {
             var metadataEventId = Guid.NewGuid();
             var metaStreamId = SystemStreams.MetastreamOf(streamName);
@@ -126,18 +117,31 @@ namespace EventStore.Core.Services.Storage
                                             data: metadata.ToJsonBytes(), metadata: null);
             _ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccount.Principal, m => { });
 
-            var scavengeStartEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeStarted, true, new Dictionary<string, object>{
+            var scavengeStartedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeStarted, true, new Dictionary<string, object>{
                     {"scavengeId", scavengeId},
                     {"nodeEndpoint", _nodeEndpoint},
                 }.ToJsonBytes(), null);
-            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, scavengeStartEvent, SystemAccount.Principal, x => WriteScavengeEventCompleted(x, streamName));
+            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, scavengeStartedEvent, SystemAccount.Principal, x => WriteScavengeEventCompleted(x, streamName));
+        }
+        
+        private void WriteScavengeCompletedEvent(string streamName, Guid scavengeId, ClientMessage.ScavengeDatabase.ScavengeResult result, string error, long spaceSaved, TimeSpan timeTaken)
+        {
+            var scavengeCompletedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeCompleted, true, new Dictionary<string, object>{
+                    {"scavengeId", scavengeId},
+                    {"nodeEndpoint", _nodeEndpoint},
+                    {"result", result},
+                    {"error", error},
+                    {"timeTaken", timeTaken},
+                    {"spaceSaved", spaceSaved}
+                }.ToJsonBytes(), null);
+            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, scavengeCompletedEvent, SystemAccount.Principal, x => WriteScavengeEventCompleted(x, streamName));
         }
 
-        private void WriteScavengeEventCompleted(ClientMessage.WriteEventsCompleted msg, string streamName)
+        private void WriteScavengeEventCompleted(ClientMessage.WriteEventsCompleted msg, string streamId)
         {
-            string eventLinkTo = string.Format("{0}@{1}", msg.FirstEventNumber, streamName);
-            var scavengeCompleteEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, eventLinkTo, null);
-            _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.Any, scavengeCompleteEvent, SystemAccount.Principal, n => { });
+            string eventLinkTo = string.Format("{0}@{1}", msg.FirstEventNumber, streamId);
+            var linkToIndexEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, eventLinkTo, null);
+            _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.Any, linkToIndexEvent, SystemAccount.Principal, n => { });
         }
     }
 }
