@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -11,14 +9,14 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Commands;
-using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Utils;
+using EventStore.Common.Log;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProjectionCoreServiceCommandReader
         : IHandle<ProjectionCoreServiceMessage.StartCore>, IHandle<ProjectionCoreServiceMessage.StopCore>
     {
+        private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionCoreServiceCommandReader>();
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private readonly string _coreServiceId;
@@ -37,11 +35,18 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
-            DebugLogger.Log("starting projection core reader");
             _cancellationScope = new IODispatcherAsync.CancellationScope();
+            Log.Debug("PROJECTIONS: Starting Projection Core Reader (reads from $projections-${0})", _coreServiceId);
             _stopped = false;
             StartCoreSteps().Run();
             ControlSteps().Run();
+        }
+
+        public void Handle(ProjectionCoreServiceMessage.StopCore message)
+        {
+            Log.Debug("Stopping Projection Core Reader ({0})", _coreServiceId);
+            _cancellationScope.Cancel();
+            _stopped = true;
         }
 
         private IEnumerable<IODispatcherAsync.Step> ControlSteps()
@@ -72,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 fromEventNumber = readResult.LastEventNumber + 1;
             }
 
-            DebugLogger.Log("Starting read control from: " + fromEventNumber);
+            Log.Debug("Starting read control from {0}", fromEventNumber);
 
             //TODO: handle shutdown here and in other readers
             long subscribeFrom = 0;
@@ -90,8 +95,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             "{\"id\":\"" + _coreServiceId + "\"}",
                             null)
                     };
-                    DebugLogger.Log("Registering worker " + _coreServiceId);
-//                    ClientMessage.WriteEventsCompleted response = null;
                     yield return
                         _ioDispatcher.BeginWriteEvents(
                         _cancellationScope,
@@ -100,7 +103,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             SystemAccount.Principal,
                             events,
                             r => { });
-                    DebugLogger.Log("Worker registered: " );
                 }
                 do
                 {
@@ -114,7 +116,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             false,
                             SystemAccount.Principal,
                             completed => readResultForward = completed);
-                    DebugLogger.Log("Control stream read forward result: " + readResultForward.Result);
 
                     if (readResultForward.Result != ReadStreamResult.Success
                         && readResultForward.Result != ReadStreamResult.NoStream)
@@ -129,7 +130,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                     if (readResultForward.Result == ReadStreamResult.Success)
                         subscribeFrom = readResultForward.TfLastCommitPosition;
-                    DebugLogger.Log("Awaiting control stream");
 
                     yield return
                         _ioDispatcher.BeginSubscribeAwake(
@@ -137,7 +137,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             ProjectionNamesBuilder._projectionsControlStream,
                             new TFPos(subscribeFrom, subscribeFrom),
                             message => { });
-                    DebugLogger.Log("Control stream await completed");
                 } while (!_stopped);
             }
         }
@@ -145,7 +144,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private IEnumerable<IODispatcherAsync.Step> StartCoreSteps()
         {
             var coreControlStreamID = "$projections-$" + _coreServiceId;
-            DebugLogger.Log("Writing ACL to {0}", coreControlStreamID);
             yield return
                 _ioDispatcher.BeginUpdateStreamAcl(
                 _cancellationScope,
@@ -154,15 +152,40 @@ namespace EventStore.Projections.Core.Services.Processing
                     SystemAccount.Principal,
                     new StreamMetadata(maxAge: ProjectionNamesBuilder.CoreControlStreamMaxAge),
                     completed => { });
-            DebugLogger.Log("ACL write completed to {0}", coreControlStreamID);
+
+            ClientMessage.ReadStreamEventsBackwardCompleted readResult = null;
+            yield return
+                _ioDispatcher.BeginReadBackward(
+                _cancellationScope,
+                    coreControlStreamID,
+                    -1,
+                    1,
+                    false,
+                    SystemAccount.Principal,
+                    completed => readResult = completed);
+
+
             var from = 0;
+
+            if (readResult.Result == ReadStreamResult.NoStream)
+            {
+                from = 0;
+            }
+            else
+            {
+                if (readResult.Result != ReadStreamResult.Success)
+                    throw new Exception("Cannot start control reader. Read result: " + readResult.Result);
+
+                from = readResult.LastEventNumber + 1;
+            }
+
+            Log.Debug("PROJECTIONS: Finished Starting Projection Core Reader (reads from $projections-${0})", _coreServiceId);
             while (!_stopped)
             {
                 var eof = false;
                 var subscribeFrom = default(TFPos);
                 do
                 {
-                    DebugLogger.Log("Reading core control stream: {0}",coreControlStreamID);
                     yield return
                         _ioDispatcher.BeginReadForward(
                         _cancellationScope,
@@ -173,7 +196,6 @@ namespace EventStore.Projections.Core.Services.Processing
                             SystemAccount.Principal,
                             completed =>
                             {
-                                DebugLogger.Log("Core control stream read completed {0}: {1}", coreControlStreamID, completed.Result);
                                 @from = completed.NextEventNumber == -1 ? 0 : completed.NextEventNumber;
                                 eof = completed.IsEndOfStream;
                                 // subscribeFrom is only used if eof
@@ -184,17 +206,15 @@ namespace EventStore.Projections.Core.Services.Processing
                                     PublishCommand(e);
                             });
                 } while (!eof);
-                DebugLogger.Log("Awaiting core control stream: {0}", coreControlStreamID);
                 yield return
                     _ioDispatcher.BeginSubscribeAwake(_cancellationScope, coreControlStreamID, subscribeFrom, message => { });
-                DebugLogger.Log("Core control stream await complted: {0}", coreControlStreamID);
             }
         }
 
         private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            DebugLogger.Log("RCVD: " + command);
+            Log.Debug("PROJECTIONS: Command received: {0}@{1}", resolvedEvent.OriginalEventNumber,command);
             switch (command)
             {
                 case "$create-prepared":
@@ -325,13 +345,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 default:
                     throw new Exception("Unknown command: " + command);
             }
-        }
-
-        public void Handle(ProjectionCoreServiceMessage.StopCore message)
-        {
-            DebugLogger.Log("Stopping projection core reader");
-            _cancellationScope.Cancel();
-            _stopped = true;
         }
     }
 }

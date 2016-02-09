@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendEof();
                     break;
                 case ReadStreamResult.Success:
-                    var oldFromSequenceNumber = _fromSequenceNumber;
+                    var oldFromSequenceNumber = StartFrom(message, _fromSequenceNumber);
                     _fromSequenceNumber = message.NextEventNumber;
                     var eof = message.Events.Length == 0;
                     _eof = eof;
@@ -121,6 +121,16 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private int StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, int fromSequenceNumber)
+        {
+            if (fromSequenceNumber != 0) return fromSequenceNumber;
+            if(message.Events.Length > 0)
+            {
+                return message.Events[0].OriginalEventNumber;
+            }
+            return fromSequenceNumber;
         }
 
         private void SendIdle()

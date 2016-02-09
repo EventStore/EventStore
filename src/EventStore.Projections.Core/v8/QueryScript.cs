@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
-using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Utils;
+using EventStore.Common.Log;
 
 namespace EventStore.Projections.Core.v8
 {
     public class QueryScript : IDisposable
     {
+        private readonly ILogger Log = LogManager.GetLoggerFor<QueryScript>();
         private readonly PreludeScript _prelude;
         private readonly CompiledScript _script;
         private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.v8
                         DoEmit(commandBody);
                         break;
                     default:
-                        DebugLogger.Log("Ignoring unknown reverse command: '{0}'", commandName);
+                        Log.Debug("Ignoring unknown reverse command: '{0}'", commandName);
                         break;
                 }
             }
@@ -134,7 +134,7 @@ namespace EventStore.Projections.Core.v8
                     // ignore - browser based debugging only
                     break;
                 default:
-                    DebugLogger.Log(
+                    Log.Debug(
                         string.Format("Unknown command handler registered. Command name: {0}", commandName));
                     break;
             }

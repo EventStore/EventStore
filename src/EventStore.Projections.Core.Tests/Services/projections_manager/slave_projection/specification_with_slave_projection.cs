@@ -29,6 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
         protected override IEnumerable<WhenStep> When()
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.SystemReady();
             yield return
                 new CoreProjectionManagementMessage.CreateAndPrepareSlave(
                     _coreProjectionCorrelationId,

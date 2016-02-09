@@ -23,6 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionQuery = @"fromAll(); on_any(function(){});log(1);";
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return (new SystemMessage.SystemReady());
             yield return
                 (new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionManagementMessage.RunAs.Anonymous, _projectionQuery,

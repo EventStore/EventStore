@@ -92,7 +92,7 @@
     <Compile Include="ClientAPI\when_handling_deleted\with_from_all_foreach_projection\when_running_and_no_indexing_and_other_events.cs" />
     <Compile Include="ClientAPI\with_standard_projections_running.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
-    <Compile Include="Integration\from_streams_matching\when_running_wit_stream_metadata.cs" />
+    <Compile Include="Integration\from_streams_matching\when_running_with_stream_metadata.cs" />
     <Compile Include="Integration\scenarios\when_deleting_already_categorized_stream.cs" />
     <Compile Include="Integration\system_projections\when_changing_categorization_projection_configurations.cs" />
     <Compile Include="Other\json_serialization.cs" />
@@ -114,6 +114,7 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_soft_deleted_stream_with_a_single_event_event_reader.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_not_authorised.cs" />
     <Compile Include="Services\projections_manager\when_recreating_a_deleted_projection.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_keep_checkpoint_stream.cs" />

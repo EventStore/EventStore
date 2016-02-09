@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Integration.from_streams_matching
 {
     [TestFixture]
-    public class when_running_wit_stream_metadata : specification_with_a_v8_query_posted
+    public class when_running_with_stream_metadata : specification_with_a_v8_query_posted
     {
         protected override void GivenEvents()
         {
