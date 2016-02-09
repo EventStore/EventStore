@@ -26,6 +26,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Ensure.NotNull(service, "service");
 
             service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
+            service.RegisterAction(new ControllerAction("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetReplicationStats);
             service.RegisterAction(new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
         }
 
@@ -90,6 +91,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
                 return dict;
             };
+        }
+
+        private void OnGetReplicationStats(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
+                                                  Format.GetReplicationStatsCompleted,
+                                                  Configure.GetReplicationStatsCompleted);
+            Publish(new ReplicationMessage.GetReplicationStats(envelope));
         }
     }
 }

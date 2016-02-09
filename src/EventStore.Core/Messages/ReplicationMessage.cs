@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -396,6 +397,56 @@ namespace EventStore.Core.Messages
                 return string.Format("DataChunkBulk message: MasterId: {0}, SubscriptionId: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, SubscriptionPosition: {4}, DataBytes length: {5}, CompleteChunk: {6}",
                                      MasterId, SubscriptionId, ChunkStartNumber, ChunkEndNumber, 
                                      SubscriptionPosition, DataBytes.Length, CompleteChunk);
+            }
+        }
+
+        public class GetReplicationStats : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public IEnvelope Envelope;
+
+            public GetReplicationStats(IEnvelope envelope)
+            {
+                Envelope = envelope;
+            }
+        }
+
+        public class GetReplicationStatsCompleted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public List<ReplicationMessage.ReplicationStats> ReplicationStats;
+
+            public GetReplicationStatsCompleted(List<ReplicationMessage.ReplicationStats> replicationStats)
+            {
+                ReplicationStats = replicationStats;
+            }
+        }
+
+        public class ReplicationStats
+        {
+            public Guid SubscriptionId { get; private set; }
+            public Guid ConnectionId { get; private set; }
+            public string SubscriptionEndpoint { get; private set; }
+            public int TotalBytesSent { get; private set; }
+            public int TotalBytesReceived { get; private set; }
+            public int PendingSendBytes { get; private set; }
+            public int PendingReceivedBytes { get; private set; }
+            public int SendQueueSize { get; private set; }
+
+            public ReplicationStats(Guid subscriptionId, Guid connectionId, string subscriptionEndpoint, int sendQueueSize,
+                                int totalBytesSent, int totalBytesReceived, int pendingSendBytes, int pendingReceivedBytes)
+            {
+                SubscriptionId = subscriptionId;
+                ConnectionId = connectionId;
+                SubscriptionEndpoint = subscriptionEndpoint;
+                SendQueueSize = sendQueueSize;
+                TotalBytesSent = totalBytesSent;
+                TotalBytesReceived = totalBytesReceived;
+                PendingSendBytes = pendingSendBytes;
+                PendingReceivedBytes = pendingReceivedBytes;
             }
         }
     }

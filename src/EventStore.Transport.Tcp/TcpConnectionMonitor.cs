@@ -51,6 +51,13 @@ namespace EventStore.Transport.Tcp
                 return stats;
             }
         }
+        
+        public IMonitoredTcpConnection[] GetTcpConnectionStats()
+        {
+            GetTcpStats();
+            var monitoredConnections = _connections.Values.Select(conn => conn.Connection).ToArray();
+            return monitoredConnections;
+        }
 
         private TcpStats AnalyzeConnections(ConnectionData[] connections, TimeSpan measurePeriod)
         {

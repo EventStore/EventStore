@@ -459,6 +459,7 @@
     <Compile Include="Services\Transport\Http\http_service_should.cs" />
     <Compile Include="Services\Transport\Http\PortableServer.cs" />
     <Compile Include="Services\Transport\Http\ping_controller_should.cs" />
+    <Compile Include="Services\Transport\Http\when_getting_replica_stats_from_stat_controller.cs" />
     <Compile Include="MightyMooseIgnoreAttribute.cs" />
     <Compile Include="Services\Transport\Http\proxy_headers.cs" />
     <Compile Include="Services\Transport\Http\speed_test.cs" />
