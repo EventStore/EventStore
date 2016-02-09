@@ -1,4 +1,5 @@
-﻿using EventStore.Core.Bus;
+﻿using EventStore.Common.Log;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Commands;
 
@@ -15,13 +16,19 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionManagementMessage.Dispose>,
             IHandle<CoreProjectionManagementMessage.GetState>,
             IHandle<CoreProjectionManagementMessage.GetResult>,
-            IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>
+            IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>,
+            IHandle<ProjectionManagementMessage.Starting>
     {
         private readonly IMultiStreamMessageWriter _commandWriter;
 
         public ProjectionManagerCommandWriter(IMultiStreamMessageWriter commandWriter)
         {
             _commandWriter = commandWriter;
+        }
+
+        public void Handle(ProjectionManagementMessage.Starting message)
+        {
+            _commandWriter.Reset();
         }
 
         public void Handle(CoreProjectionManagementMessage.CreatePrepared message)
