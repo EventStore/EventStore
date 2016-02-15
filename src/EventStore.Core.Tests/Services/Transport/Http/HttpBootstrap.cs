@@ -2,6 +2,7 @@
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Tests.Fakes;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
 {
@@ -24,6 +25,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public static void RegisterPing(HttpService service)
         {
             service.SetupController(new PingController());
+        }
+
+        public static void RegisterStat(HttpService service)
+        {
+            service.SetupController(new StatController(new FakePublisher(), new FakePublisher()));
         }
     }
 }

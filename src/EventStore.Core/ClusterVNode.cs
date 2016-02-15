@@ -131,7 +131,8 @@ namespace EventStore.Core
                                                    db.Config.Path,
                                                    vNodeSettings.StatsPeriod,
                                                    _nodeInfo.ExternalHttp,
-                                                   vNodeSettings.StatsStorage);
+                                                   vNodeSettings.StatsStorage,
+                                                   _nodeInfo.ExternalTcp);
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
@@ -143,6 +144,7 @@ namespace EventStore.Core
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShutdown>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
+            monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshTcpConnectionStats>(monitoring);
 
             var truncPos = db.Config.TruncateCheckpoint.Read();
             if (truncPos != -1)

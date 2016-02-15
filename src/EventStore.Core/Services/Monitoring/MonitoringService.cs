@@ -12,6 +12,7 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Monitoring
 {
@@ -29,7 +30,8 @@ namespace EventStore.Core.Services.Monitoring
                                      IHandle<SystemMessage.BecomeShuttingDown>,
                                      IHandle<SystemMessage.BecomeShutdown>,
                                      IHandle<ClientMessage.WriteEventsCompleted>,
-                                     IHandle<MonitoringMessage.GetFreshStats>
+                                     IHandle<MonitoringMessage.GetFreshStats>,
+                                     IHandle<MonitoringMessage.GetFreshTcpConnectionStats>
     {
         private static readonly ILogger RegularLog = LogManager.GetLogger("REGULAR-STATS-LOGGER");
         private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
@@ -54,6 +56,9 @@ namespace EventStore.Core.Services.Monitoring
         private readonly string _nodeStatsStream;
         private bool _statsStreamCreated;
         private Guid _streamMetadataWriteCorrId;
+        private IMonitoredTcpConnection[] _memoizedTcpConnections;
+        private DateTime _lastTcpConnectionsRequestTime;
+        private IPEndPoint _tcpEndpoint;
 
         public MonitoringService(IQueuedHandler monitoringQueue,
                                  IPublisher statsCollectionBus,
@@ -62,7 +67,8 @@ namespace EventStore.Core.Services.Monitoring
                                  string dbPath,
                                  TimeSpan statsCollectionPeriod,
                                  IPEndPoint nodeEndpoint,
-                                 StatsStorage statsStorage)
+                                 StatsStorage statsStorage,
+                                 IPEndPoint tcpEndpoint)
         {
             Ensure.NotNull(monitoringQueue, "monitoringQueue");
             Ensure.NotNull(statsCollectionBus, "statsCollectionBus");
@@ -70,6 +76,7 @@ namespace EventStore.Core.Services.Monitoring
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNullOrEmpty(dbPath, "dbPath");
             Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
+            Ensure.NotNull(tcpEndpoint, "tcpEndpoint");
 
             _monitoringQueue = monitoringQueue;
             _statsCollectionBus = statsCollectionBus;
@@ -79,6 +86,7 @@ namespace EventStore.Core.Services.Monitoring
             _statsStorage = statsStorage;
             _statsCollectionPeriodMs = statsCollectionPeriod > TimeSpan.Zero ? (long)statsCollectionPeriod.TotalMilliseconds : Timeout.Infinite;
             _nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
+            _tcpEndpoint = tcpEndpoint;
             _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
         }
 
@@ -281,6 +289,50 @@ namespace EventStore.Core.Services.Monitoring
             }
         }
 
+        public void Handle(MonitoringMessage.GetFreshTcpConnectionStats message)
+        {
+            try
+            {
+                IMonitoredTcpConnection[] connections = null;
+                if (!TryGetMemoizedTcpConnections(out connections))
+                {
+                    connections = TcpConnectionMonitor.Default.GetTcpConnectionStats();
+                    if (connections != null)
+                    {
+                        _memoizedTcpConnections = connections;
+                        _lastTcpConnectionsRequestTime = DateTime.UtcNow;
+                    }
+                }
+                List<MonitoringMessage.TcpConnectionStats> connStats = new List<MonitoringMessage.TcpConnectionStats>();
+                foreach (var conn in connections)
+                {
+                    var tcpConn = conn as TcpConnection;
+                    if (tcpConn != null)
+                    {
+                        var isExternalConnection = _tcpEndpoint.Port == tcpConn.LocalEndPoint.Port;
+                        connStats.Add(new MonitoringMessage.TcpConnectionStats
+                        {
+                            IsExternalConnection = isExternalConnection,
+                            RemoteEndPoint = tcpConn.RemoteEndPoint.ToString(),
+                            LocalEndPoint = tcpConn.LocalEndPoint.ToString(),
+                            ConnectionId = tcpConn.ConnectionId,
+                            TotalBytesSent = tcpConn.TotalBytesSent,
+                            TotalBytesReceived = tcpConn.TotalBytesReceived,
+                            PendingSendBytes = tcpConn.PendingSendBytes,
+                            PendingReceivedBytes = tcpConn.PendingReceivedBytes
+                        });
+                    }
+                }
+                message.Envelope.ReplyWith(
+                    new MonitoringMessage.GetFreshTcpConnectionStatsCompleted(connStats)
+                );
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorException(ex, "Error on getting fresh tcp connection stats");
+            }
+        }
+
         private bool TryGetMemoizedStats(out StatsContainer stats)
         {
             if (_memoizedStats == null || DateTime.UtcNow - _lastStatsRequestTime > MemoizePeriod)
@@ -289,6 +341,17 @@ namespace EventStore.Core.Services.Monitoring
                 return false;
             }
             stats = _memoizedStats;
+            return true;
+        }
+
+        private bool TryGetMemoizedTcpConnections(out IMonitoredTcpConnection[] connections)
+        {
+            if (_memoizedTcpConnections == null || DateTime.UtcNow - _lastTcpConnectionsRequestTime > MemoizePeriod)
+            {
+                connections = null;
+                return false;
+            }
+            connections = _memoizedTcpConnections;
             return true;
         }
     }

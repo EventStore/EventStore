@@ -154,12 +154,15 @@ namespace EventStore.Core.Services.Replication
             foreach (var conn in connections)
             {
                 var tcpConn = conn as TcpConnection;
-                var subscription = _subscriptions.FirstOrDefault(x => x.Value.ConnectionId == tcpConn.ConnectionId);
-                if (subscription.Value != null)
+                if (tcpConn != null)
                 {
-                    var stats = new ReplicationMessage.ReplicationStats(subscription.Key, tcpConn.ConnectionId, subscription.Value.ReplicaEndPoint.ToString(), tcpConn.SendQueueSize,
-                                        (int)conn.TotalBytesSent, (int)conn.TotalBytesReceived, conn.PendingSendBytes, conn.PendingReceivedBytes);
-                    replicaStats.Add(stats);
+                    var subscription = _subscriptions.FirstOrDefault(x => x.Value.ConnectionId == tcpConn.ConnectionId);
+                    if (subscription.Value != null)
+                    {
+                        var stats = new ReplicationMessage.ReplicationStats(subscription.Key, tcpConn.ConnectionId, subscription.Value.ReplicaEndPoint.ToString(), tcpConn.SendQueueSize,
+                                            (int)conn.TotalBytesSent, (int)conn.TotalBytesReceived, conn.PendingSendBytes, conn.PendingReceivedBytes);
+                        replicaStats.Add(stats);
+                    }
                 }
             }
             message.Envelope.ReplyWith(new ReplicationMessage.GetReplicationStatsCompleted(replicaStats));
