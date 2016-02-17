@@ -407,7 +407,7 @@ namespace EventStore.ClientAPI.Embedded
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder NoStatsOnPublicInterface()
         {
-            _adminOnPublic = false;
+            _statsOnPublic = false;
             return this;
         }
 
