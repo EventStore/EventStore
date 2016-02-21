@@ -215,7 +215,7 @@ namespace EventStore.Core
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
                                                    TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
-                                                   vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
+                                                   vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
                                                    _internalAuthenticationProvider, null);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
