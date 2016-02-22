@@ -37,9 +37,12 @@ namespace EventStore.Projections.Core
                 inputQueue: projectionsStandardComponents.MasterInputQueue,
                 externalRequestQueue: standardComponents.MainQueue);
 
-            foreach (var httpService in standardComponents.HttpServices)
+            if (projectionsStandardComponents.RunProjections != ProjectionType.None)
             {
-                httpService.SetupController(projectionsController);
+                foreach (var httpService in standardComponents.HttpServices)
+                {
+                    httpService.SetupController(projectionsController);
+                }
             }
 
             var commandWriter = new MultiStreamMessageWriter(ioDispatcher);
