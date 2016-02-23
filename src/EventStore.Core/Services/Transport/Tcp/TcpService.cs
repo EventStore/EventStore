@@ -111,15 +111,16 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionAccepted(IPEndPoint endPoint, Socket socket)
         {
-            var conn = _securityType == TcpSecurityType.Secure 
+            var conn = _securityType == TcpSecurityType.Secure
                 ? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, verbose: true)
                 : TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
-            Log.Info("{0} TCP connection accepted: [{1}, {2}, L{3}, {4:B}].", 
+            Log.Info("{0} TCP connection accepted: [{1}, {2}, L{3}, {4:B}].",
                      _serviceType, _securityType, conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
 
             var dispatcher = _dispatcherFactory(conn.ConnectionId, _serverEndPoint);
             var manager = new TcpConnectionManager(
                     string.Format("{0}-{1}", _serviceType.ToString().ToLower(), _securityType.ToString().ToLower()),
+                    _serviceType,
                     dispatcher,
                     _publisher,
                     conn,
