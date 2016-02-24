@@ -53,6 +53,8 @@ namespace EventStore.Projections.Core.Tests.Services.slave_projection_response_w
             {
                 _container.PublishResponse(command, workerId, body);
             }
+
+            public void Reset() { }
         }
 
         private void PublishResponse(string command, Guid workerId, object body)

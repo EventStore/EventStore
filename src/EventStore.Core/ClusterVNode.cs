@@ -38,7 +38,9 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.Core
 {
-    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>, IHandle<SystemMessage.BecomeShutdown>
+    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>, 
+                                IHandle<SystemMessage.BecomeShutdown>,
+                                IHandle<UserManagementMessage.UserManagementServiceInitialized>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
@@ -120,6 +122,7 @@ namespace EventStore.Core
             //SELF
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
+            _mainBus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(this);
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -547,10 +550,18 @@ namespace EventStore.Core
         public void Start() 
         {
             _mainQueue.Publish(new SystemMessage.SystemInit());
+        }
 
+        private int _subSystemsStarted;
+        public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
+        {
+            bool subSystemsAlreadyStarted = Interlocked.CompareExchange(ref _subSystemsStarted, 1, 0) == 1;
+            if (subSystemsAlreadyStarted) return;
             if (_subsystems != null)
                 foreach (var subsystem in _subsystems)
                     subsystem.Start();
+
+            _mainQueue.Publish(new SystemMessage.SystemReady());
         }
 
         public void StopNonblocking(bool exitProcess, bool shutdownHttp)

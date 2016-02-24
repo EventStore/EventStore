@@ -156,7 +156,7 @@ namespace EventStore.Core.Tests.Helpers
 
             var startedEvent = new ManualResetEventSlim(false);
             Node.MainBus.Subscribe(
-                new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => startedEvent.Set()));
+                new AdHocHandler<SystemMessage.SystemReady>(m => startedEvent.Set()));
 
             Node.Start();
 

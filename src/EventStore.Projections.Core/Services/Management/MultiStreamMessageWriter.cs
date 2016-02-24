@@ -7,14 +7,13 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Management
 {
     public sealed class MultiStreamMessageWriter : IMultiStreamMessageWriter
     {
+        private readonly ILogger Log = LogManager.GetLoggerFor<MultiStreamMessageWriter>();
         private readonly IODispatcher _ioDispatcher;
-        private readonly ILogger _logger = LogManager.GetLoggerFor<MultiStreamMessageWriter>();
 
         private readonly Dictionary<Guid, Queue> _queues = new Dictionary<Guid, Queue>();
         private IODispatcherAsync.CancellationScope _cancellationScope;
@@ -23,6 +22,14 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _ioDispatcher = ioDispatcher;
             _cancellationScope = new IODispatcherAsync.CancellationScope();
+        }
+
+        public void Reset()
+        {
+            Log.Debug("PROJECTIONS: Resetting Worker Writer");
+            _cancellationScope.Cancel();
+            _cancellationScope = new IODispatcherAsync.CancellationScope();
+            _queues.Clear();
         }
 
         public void PublishResponse(string command, Guid workerId, object body)
@@ -34,7 +41,8 @@ namespace EventStore.Projections.Core.Services.Management
                 _queues.Add(workerId, queue);
             }
 
-            queue.Items.Add(new Queue.Item {Command = command, Body = body});
+            Log.Debug("PROJECTIONS: Scheduling the writing of {0} to {1}. Current status of Writer: Busy: {2}", command, "$projections-$" + workerId, queue.Busy);
+            queue.Items.Add(new Queue.Item { Command = command, Body = body });
             if (!queue.Busy)
             {
                 EmitEvents(queue, workerId);
@@ -47,10 +55,6 @@ namespace EventStore.Projections.Core.Services.Management
             var events = queue.Items.Select(CreateEvent).ToArray();
             queue.Items.Clear();
             var streamId = "$projections-$" + workerId.ToString("N");
-            foreach (var e in events)
-            {
-              DebugLogger.Log("Writing a {0} command to {1}", e.EventType, streamId);
-            }
             _ioDispatcher.BeginWriteEvents(
                 _cancellationScope,
                 streamId,
@@ -59,16 +63,18 @@ namespace EventStore.Projections.Core.Services.Management
                 events,
                 completed =>
                 {
-                    DebugLogger.Log("Writing to {0} completed", streamId);
                     queue.Busy = false;
-                    if (completed.Result != OperationResult.Success)
+                    if (completed.Result == OperationResult.Success)
                     {
-                        var message = string.Format(
-                            "Cannot write commands to the stream {0}. status: {1}",
-                            streamId,
-                            completed.Result);
-                        _logger.Fatal(message);
-                        throw new Exception(message);
+                        Log.Debug("PROJECTIONS: Finished writing events to {0}: {1}", streamId, String.Join(",", events.Select(x => String.Format("{0}", x.EventType))));
+                    }
+                    else
+                    {
+                        var message = String.Format("PROJECTIONS: Failed writing events to {0} because of {1}: {2}", 
+                            streamId, 
+                            completed.Result, String.Join(",", events.Select(x => String.Format("{0}", x.EventType))));
+                        Log.Debug(message); //Can't do anything about it, log and move on
+                        //throw new Exception(message);
                     }
 
                     if (queue.Items.Count > 0)

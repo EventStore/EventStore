@@ -99,14 +99,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
-            _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
+            _bus.Subscribe<SystemMessage.SystemReady>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
             _bus.Subscribe(
                 CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(
                     starting => _queue.Publish(new ProjectionManagementMessage.ReaderReady())));
 
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_coordinator);
+            _bus.Subscribe<SystemMessage.SystemReady>(_coordinator);
 
             if (GetInputQueue() != _processingQueues.First().Item2)
             {
@@ -204,8 +205,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
             bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(coreService);
             bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(coreService);
-//            bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(coreServiceCommandReader);
-//            bus.Subscribe<ProjectionCoreServiceMessage.StopCore>(coreServiceCommandReader);
             bus.Subscribe<ReaderCoreServiceMessage.StartReader>(readerService);
             bus.Subscribe<ReaderCoreServiceMessage.StopReader>(readerService);
             bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(coreService);

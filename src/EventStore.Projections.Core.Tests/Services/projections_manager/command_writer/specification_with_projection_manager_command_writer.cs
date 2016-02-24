@@ -53,6 +53,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
             {
                 _container.PublishCommand(command, workerId, body);
             }
+
+            public void Reset() { }
         }
 
         private void PublishCommand(string command, Guid workerId, object body)

@@ -129,8 +129,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_pausedSubscriptions.Contains(message.SubscriptionId))
                 Handle(new ReaderSubscriptionManagement.Pause(message.SubscriptionId));
-            var eventReaderId = _subscriptionEventReaders[message.SubscriptionId];
-            if (eventReaderId != Guid.Empty)
+            var eventReaderId = Guid.Empty;
+            _subscriptionEventReaders.TryGetValue(message.SubscriptionId, out eventReaderId);
+            if(eventReaderId != Guid.Empty)
             {
                 //TODO: test it
                 _eventReaders[eventReaderId].Dispose();

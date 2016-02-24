@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
@@ -29,6 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override IEnumerable<WhenStep> When()
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.SystemReady();
             yield return
                 new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,

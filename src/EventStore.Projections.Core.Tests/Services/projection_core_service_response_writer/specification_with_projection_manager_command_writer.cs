@@ -52,6 +52,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             {
                 _container.PublishCommand(command, body);
             }
+
+            public void Reset() { }
         }
 
         private void PublishCommand(string command, object body)
