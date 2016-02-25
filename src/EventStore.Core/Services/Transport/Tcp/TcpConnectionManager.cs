@@ -51,8 +51,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private readonly IAuthenticationProvider _authProvider;
         private UserCredentials _defaultUser;
+        private TcpServiceType _serviceType;
 
-        public TcpConnectionManager(string connectionName, 
+        public TcpConnectionManager(string connectionName,
+                                    TcpServiceType serviceType,
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
                                     ITcpConnection openedConnection,
@@ -71,6 +73,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             ConnectionId = openedConnection.ConnectionId;
             ConnectionName = connectionName;
 
+            _serviceType = serviceType;
             _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
@@ -225,8 +228,13 @@ namespace EventStore.Core.Services.Transport.Tcp
             }
         }
 
-        private void ProcessPackage(TcpPackage package)
+        public void ProcessPackage(TcpPackage package)
         {
+            if (_serviceType == TcpServiceType.External && (package.Flags & TcpFlags.TrustedWrite) != 0)
+            {
+                SendBadRequestAndClose(package.CorrelationId, "Trusted writes aren't accepted over the external TCP interface");
+                return;
+            }
             switch (package.Command)
             {
                 case TcpCommand.HeartbeatResponseCommand:
@@ -260,7 +268,11 @@ namespace EventStore.Core.Services.Transport.Tcp
                 default:
                 {
                     var defaultUser = _defaultUser;
-                    if ((package.Flags & TcpFlags.Authenticated) != 0)
+                    if ((package.Flags & TcpFlags.TrustedWrite) != 0)
+                    {
+                        UnwrapAndPublishPackage(package, UserManagement.SystemAccount.Principal, null, null);
+                    }
+                    else if ((package.Flags & TcpFlags.Authenticated) != 0)
                     {
                         _authProvider.Authenticate(new TcpAuthRequest(this, package, package.Login, package.Password));
                     }
@@ -307,7 +319,6 @@ namespace EventStore.Core.Services.Transport.Tcp
             _tcpEnvelope.ReplyWith(new ClientMessage.NotHandled(correlationId, TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, description));
         }
 
-
         private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, IPrincipal user)
         {
             var authCredentials = new UserCredentials(userCredentials.Login, userCredentials.Password, user);
@@ -331,7 +342,6 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Helper.UTF8NoBom.GetBytes(message)), checkQueueSize: false);
         }
-
 
         public void Stop(string reason = null)
         {

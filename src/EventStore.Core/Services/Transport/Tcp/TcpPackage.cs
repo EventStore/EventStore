@@ -9,6 +9,7 @@ namespace EventStore.Core.Services.Transport.Tcp
     {
         None = 0x00,
         Authenticated = 0x01,
+        TrustedWrite = 0x02
     }
 
     public struct TcpPackage
