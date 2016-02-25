@@ -218,7 +218,7 @@ namespace EventStore.ClientAPI
                 if (_liveProcessingStarted != null)
                     _liveProcessingStarted(this);
 
-                if (Verbose) Log.Debug("Catch-up Subscription to {0}: hooking to connection.Connected");
+                if (Verbose) Log.Debug("Catch-up Subscription to {0}: hooking to connection.Connected", IsSubscribedToAll ? "<all>" : StreamId);
                 _connection.Connected += OnReconnect;
 
                 _allowProcessing = true;
