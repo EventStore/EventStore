@@ -1,4 +1,5 @@
-﻿using EventStore.Core.Bus;
+﻿using EventStore.Common.Log;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Responses;
 
@@ -25,13 +26,19 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<ProjectionManagementMessage.Command.SetRunAs>,
             IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
             IHandle<ProjectionManagementMessage.Command.UpdateQuery>,
-            IHandle<ProjectionManagementMessage.Command.Delete>
+            IHandle<ProjectionManagementMessage.Command.Delete>,
+            IHandle<ProjectionCoreServiceMessage.StartCore>
     {
         private readonly IResponseWriter _writer;
 
         public ProjectionCoreResponseWriter(IResponseWriter responseWriter)
         {
             _writer = responseWriter;
+        }
+
+        public void Handle(ProjectionCoreServiceMessage.StartCore message)
+        {
+            _writer.Reset();
         }
 
         public void Handle(CoreProjectionStatusMessage.Faulted message)

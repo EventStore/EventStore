@@ -6,13 +6,16 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Utils;
+using EventStore.Common.Log;
 
 namespace EventStore.Projections.Core.Services.Management
 {
     public class ProjectionCoreCoordinator
-        : IHandle<ProjectionManagementMessage.Internal.RegularTimeout>, IHandle<SystemMessage.StateChangeMessage>
+        : IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
+        IHandle<SystemMessage.StateChangeMessage>,
+        IHandle<UserManagementMessage.UserManagementServiceInitialized>
     {
+        private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionCoreCoordinator>();
         private readonly ProjectionType _runProjections;
         private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly IPublisher[] _queues;
@@ -42,18 +45,27 @@ namespace EventStore.Projections.Core.Services.Management
                 _timeoutSchedulers[i].Tick();
         }
 
+        private bool _systemReady = false;
+        private VNodeState _currentState = VNodeState.Unknown;
+        public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
+        {
+            _systemReady = true;
+            StartWhenConditionsAreMet();
+        }
+
         public void Handle(SystemMessage.StateChangeMessage message)
         {
-            DebugLogger.Log();
-            DebugLogger.Log();
-            DebugLogger.Log();
-            DebugLogger.Log("=======================" + message.State + "================");
-            if (message.State == VNodeState.Master // || message.State == VNodeState.Clone
-                || message.State == VNodeState.Slave)
+            _currentState = message.State;
+            StartWhenConditionsAreMet();
+        }
+
+        private void StartWhenConditionsAreMet()
+        {
+            if (_systemReady && (_currentState == VNodeState.Master || _currentState == VNodeState.Slave))
             {
                 if (!_started)
                 {
-                    DebugLogger.Log("*** STARTING PROJECTION CORE ***");
+                    Log.Debug("PROJECTIONS: Starting Projections Core Coordinator. (Node State : {0})", _currentState);
                     Start();
                 }
             }
@@ -61,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 if (_started)
                 {
-                    DebugLogger.Log("*** STOPPING PROJECTION CORE ***");
+                    Log.Debug("PROJECTIONS: Stopping Projections Core Coordinator. (Node State : {0})", _currentState);
                     Stop();
                 }
             }
@@ -109,6 +121,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void SetupMessaging(IBus bus)
         {
             bus.Subscribe<SystemMessage.StateChangeMessage>(this);
+            bus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(this);
             if (_runProjections >= ProjectionType.System)
             {
                 bus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(this);

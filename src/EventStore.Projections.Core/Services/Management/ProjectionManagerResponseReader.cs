@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -11,14 +10,15 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Responses;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Utils;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
+using EventStore.Common.Log;
 
 namespace EventStore.Projections.Core.Services.Management
 {
     //TODO: response reader must start before Manager (otherwise misses first responses at least in case with pre-registered workers)
     public class ProjectionManagerResponseReader : IHandle<ProjectionManagementMessage.Starting>
     {
+        private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionManagerResponseReader>();
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private IODispatcherAsync.CancellationScope _cancellationScope;
@@ -35,7 +35,13 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Starting message)
         {
+            if (_cancellationScope != null)
+            {
+                Log.Debug("PROJECTIONS: There was an active cancellation scope, cancelling now");
+                _cancellationScope.Cancel();
+            }
             _cancellationScope = new IODispatcherAsync.CancellationScope();
+            Log.Debug("PROJECTIONS: Starting Projection Manager Response Reader (reads from $projections-$master)");
             PerformStartReader().Run();
         }
 
@@ -60,7 +66,6 @@ namespace EventStore.Projections.Core.Services.Management
                     completed => { });
 
             ClientMessage.WriteEventsCompleted writeResult = null;
-            DebugLogger.Log("Writing $response-reader-starting");
             yield return
                 _ioDispatcher.BeginWriteEvents(
                 _cancellationScope,
@@ -74,11 +79,9 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
             var from = writeResult.LastEventNumber;
-            DebugLogger.Log("$response-reader-starting has been written. Starting event number is: " + from);
 
             _publisher.Publish(new ProjectionManagementMessage.ReaderReady());
 
-            DebugLogger.Log("Writing $response-reader-started");
             yield return
                 _ioDispatcher.BeginWriteEvents(
                 _cancellationScope,
@@ -91,15 +94,13 @@ namespace EventStore.Projections.Core.Services.Management
             if (writeResult.Result != OperationResult.Success)
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
-            DebugLogger.Log("$response-reader-started has been written");
-
+            Log.Debug("PROJECTIONS: Finished Starting Projection Manager Response Reader (reads from $projections-$master)");
             while (true)
             {
                 var eof = false;
                 var subscribeFrom = default(TFPos);
                 do
                 {
-                    DebugLogger.Log("Reading " + ProjectionNamesBuilder._projectionsMasterStream);
                     yield return
                         _ioDispatcher.BeginReadForward(
                         _cancellationScope,
@@ -110,7 +111,6 @@ namespace EventStore.Projections.Core.Services.Management
                             SystemAccount.Principal,
                             completed =>
                             {
-                                DebugLogger.Log(ProjectionNamesBuilder._projectionsMasterStream + " read completed: " + completed.Result);
                                 if (completed.Result == ReadStreamResult.Success
                                     || completed.Result == ReadStreamResult.NoStream)
                                 {
@@ -126,27 +126,21 @@ namespace EventStore.Projections.Core.Services.Management
                                             PublishCommand(e);
                                     }
                                 }
-                                else
-                                    DebugLogger.Log(
-                                        ProjectionNamesBuilder._projectionsMasterStream + " read completed: "
-                                        + completed.Result);
                             });
                 } while (!eof);
-                DebugLogger.Log("Awaiting " + ProjectionNamesBuilder._projectionsMasterStream);
                 yield return
                     _ioDispatcher.BeginSubscribeAwake(
                     _cancellationScope,
                         ProjectionNamesBuilder._projectionsMasterStream,
                         subscribeFrom,
                         message => { });
-                DebugLogger.Log(ProjectionNamesBuilder._projectionsMasterStream + " await completed");
             }
         }
 
         private void PublishCommand(ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            DebugLogger.Log("Response received: " + command);
+            Log.Debug("PROJECTIONS: Response received: {0}@{1}", resolvedEvent.OriginalEventNumber, command);
             switch (command)
             {
                 case "$response-reader-starting":
