@@ -23,6 +23,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly int WorkerThreads;
         public readonly bool StartStandardProjections;
         public readonly bool DisableHTTPCaching;
+        public readonly bool LogHttpRequests;
 
         public readonly bool DiscoverViaDns;
         public readonly string ClusterDns;
@@ -111,7 +112,9 @@ namespace EventStore.Core.Cluster.Settings
 				                    bool verifyDbHash,
 				                    int maxMemtableEntryCount,
                                     bool startStandardProjections,
-                                    bool disableHTTPCaching, string index = null, bool enableHistograms = false,
+                                    bool disableHTTPCaching,
+                                    bool logHttpRequests,
+                                    string index = null, bool enableHistograms = false,
                                     int indexCacheDepth = 16,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null)
         {
@@ -150,6 +153,7 @@ namespace EventStore.Core.Cluster.Settings
             WorkerThreads = workerThreads;
             StartStandardProjections = startStandardProjections;
             DisableHTTPCaching = disableHTTPCaching;
+            LogHttpRequests = logHttpRequests;
             AdditionalConsumerStrategies = additionalConsumerStrategies ?? new IPersistentSubscriptionConsumerStrategyFactory[0];
 
             DiscoverViaDns = discoverViaDns;
@@ -209,6 +213,7 @@ namespace EventStore.Core.Cluster.Settings
                                  + "ExtHttpPrefixes: {8}\n"
                                  + "EnableTrustedAuth: {9}\n"
                                  + "Certificate: {10}\n"
+                                 + "LogHttpRequests: {11}\n"
                                  + "WorkerThreads: {12}\n"
                                  + "DiscoverViaDns: {13}\n"
                                  + "ClusterDns: {14}\n"
@@ -241,6 +246,7 @@ namespace EventStore.Core.Cluster.Settings
                                  string.Join(", ", ExtHttpPrefixes),
                                  EnableTrustedAuth,
                                  Certificate == null ? "n/a" : Certificate.ToString(true),
+                                 LogHttpRequests,
                                  WorkerThreads, DiscoverViaDns, ClusterDns,
                                  string.Join(",", GossipSeeds.Select(x => x.ToString())),
                                  ClusterNodeCount, MinFlushDelay,

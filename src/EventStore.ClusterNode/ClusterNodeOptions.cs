@@ -186,6 +186,9 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.HistogramDescr, Opts.AppGroup)]
         public bool EnableHistograms { get; set; }
+
+        [ArgDescription(Opts.LogHttpRequestsDescr, Opts.AppGroup)]
+        public bool LogHttpRequests { get; set; }
         public ClusterNodeOptions()
         {
             Config = "";
@@ -283,6 +286,7 @@ namespace EventStore.ClusterNode
 
             StartStandardProjections = Opts.StartStandardProjectionsDefault;
             DisableHTTPCaching = Opts.DisableHttpCachingDefault;
+            LogHttpRequests = Opts.LogHttpRequestsDefault;
         }
     }
 }

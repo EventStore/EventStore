@@ -128,6 +128,9 @@ namespace EventStore.Core.Util
         public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
         public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
 
+        public const string LogHttpRequestsDescr = "Log Http Requests and Responses before processing them.";
+        public static readonly bool LogHttpRequestsDefault = false;
+
         //Loading certificates from files
         public const string CertificateFileDescr = "The path to certificate file.";
         public static readonly string CertificateFileDefault = string.Empty;

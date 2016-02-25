@@ -33,6 +33,7 @@ namespace EventStore.ClientAPI.Embedded
         private bool _inMemoryDb;
         private bool _startStandardProjections;
         private bool _disableHTTPCaching;
+        private bool _logHttpRequests;
 
         private IPEndPoint _internalTcp;
         private IPEndPoint _internalSecureTcp;
@@ -156,6 +157,7 @@ namespace EventStore.ClientAPI.Embedded
 
             _startStandardProjections = Opts.StartStandardProjectionsDefault;
             _disableHTTPCaching = Opts.DisableHttpCachingDefault;
+            _logHttpRequests = Opts.LogHttpRequestsDefault;
         }
 
         /// <summary>
@@ -712,7 +714,8 @@ namespace EventStore.ClientAPI.Embedded
                     !_skipVerifyDbHashes,
                     _maxMemtableSize,
                     _startStandardProjections,
-                    _disableHTTPCaching);
+                    _disableHTTPCaching,
+                    _logHttpRequests);
             var infoController = new InfoController(null, _projectionType);
             return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }

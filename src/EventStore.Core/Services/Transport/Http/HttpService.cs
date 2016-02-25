@@ -29,12 +29,13 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly IPublisher _inputBus;
         private readonly IUriRouter _uriRouter;
         private readonly IEnvelope _publishEnvelope;
+        private readonly bool _logHttpRequests;
 
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
 
         public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
-                           MultiQueuedHandler multiQueuedHandler, params string[] prefixes)
+                           MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(uriRouter, "uriRouter");
@@ -46,6 +47,7 @@ namespace EventStore.Core.Services.Transport.Http
             _publishEnvelope = new PublishEnvelope(inputBus);
 
             _requestsMultiHandler = multiQueuedHandler;
+            _logHttpRequests = logHttpRequests;
 
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
@@ -93,7 +95,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
-            var entity = new HttpEntity(context.Request, context.Response, context.User);
+            var entity = new HttpEntity(context.Request, context.Response, context.User, _logHttpRequests);
             _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(this, entity, _requestsMultiHandler));
         }
 

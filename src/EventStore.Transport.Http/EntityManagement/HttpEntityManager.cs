@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Security.Principal;
@@ -30,11 +31,12 @@ namespace EventStore.Transport.Http.EntityManagement
         private readonly ICodec _requestCodec;
         private readonly ICodec _responseCodec;
         private readonly Uri _requestedUrl;
+        private readonly bool _logHttpRequests;
         public readonly DateTime TimeStamp;
 
         internal HttpEntityManager(
             HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied, ICodec requestCodec,
-            ICodec responseCodec)
+            ICodec responseCodec, bool logHttpRequests)
         {
             Ensure.NotNull(httpEntity, "httpEntity");
             Ensure.NotNull(allowedMethods, "allowedMethods");
@@ -48,6 +50,12 @@ namespace EventStore.Transport.Http.EntityManagement
             _requestCodec = requestCodec;
             _responseCodec = responseCodec;
             _requestedUrl = httpEntity.RequestedUrl;
+            _logHttpRequests = logHttpRequests;
+
+            if (HttpEntity.Request != null && HttpEntity.Request.ContentLength64 == 0)
+            {
+                LogRequest(new byte[0]);
+            }
         }
 
         public ICodec RequestCodec { get { return _requestCodec; } }
@@ -230,11 +238,13 @@ namespace EventStore.Transport.Http.EntityManagement
 
             if (response == null || response.Length == 0)
             {
+                LogResponse(new byte[0]);
                 SetResponseLength(0);
                 CloseConnection(onError);
             }
             else
             {
+                LogResponse(response);
                 SetResponseLength(response.Length);
                 BeginWriteResponse();
                 ContinueWriteResponseAsync(response, () => { }, onError, () => { });
@@ -345,6 +355,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 request = new byte[memory.Length];
                 Buffer.BlockCopy(memory.GetBuffer(), 0, request, 0, (int) memory.Length);
             }
+            LogRequest(request);
             state.OnReadSuccess(this, request);
         }
 
@@ -358,6 +369,51 @@ namespace EventStore.Transport.Http.EntityManagement
             catch (Exception e)
             {
                 onError(e);
+            }
+        }
+
+        private string CreateHeaderLog(NameValueCollection headers)
+        {
+            var logBuilder = new StringBuilder();
+            foreach (var header in HttpEntity.Request.Headers)
+            {
+                logBuilder.AppendFormat("{0}: {1}\n", header.ToString(), HttpEntity.Request.Headers[header.ToString()]);
+            }
+            return logBuilder.ToString();
+        }
+
+        private void LogRequest(byte[] body)
+        {
+            if (_logHttpRequests)
+            {
+                var logBuilder = new StringBuilder();
+                logBuilder.AppendLine("HTTP Request Received");
+                logBuilder.AppendFormat("{0}\n", DateTime.Now);
+                logBuilder.AppendFormat("From: {0}\n", HttpEntity.Request.RemoteEndPoint.ToString());
+                logBuilder.AppendFormat("{0} {1}\n", HttpEntity.Request.HttpMethod, HttpEntity.Request.Url);
+                logBuilder.AppendLine(CreateHeaderLog(HttpEntity.Request.Headers));
+                if (body != null && body.Length > 0)
+                {
+                    logBuilder.AppendLine(System.Text.Encoding.Default.GetString(body));
+                }
+                Log.Debug(logBuilder.ToString());
+            }
+        }
+
+        private void LogResponse(byte[] body)
+        {
+            if (_logHttpRequests)
+            {
+                var logBuilder = new StringBuilder();
+                logBuilder.AppendLine("HTTP Response");
+                logBuilder.AppendFormat("{0}\n", DateTime.Now);
+                logBuilder.AppendFormat("{0} {1}\n", HttpEntity.Response.StatusCode, HttpEntity.Response.StatusDescription);
+                logBuilder.AppendLine(CreateHeaderLog(HttpEntity.Response.Headers));
+                if (body != null && body.Length > 0)
+                {
+                    logBuilder.AppendLine(System.Text.Encoding.Default.GetString(body));
+                }
+                Log.Debug(logBuilder.ToString());
             }
         }
     }
