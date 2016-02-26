@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             // when
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return (new UserManagementMessage.UserManagementServiceInitialized());
+            yield return (new SystemMessage.SystemReady());
         }
 
         [Test]

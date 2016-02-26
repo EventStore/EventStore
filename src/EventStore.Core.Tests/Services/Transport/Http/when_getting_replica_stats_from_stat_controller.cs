@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             // Wait for user management service to initialize
             var managementInitialised = new ManualResetEvent(false);
             masterNode.Node.MainBus.Subscribe(
-                new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(msg => managementInitialised.Set()));
+                new AdHocHandler<SystemMessage.SystemReady>(msg => managementInitialised.Set()));
             if(!managementInitialised.WaitOne(Timeout))
             {
                 Assert.Fail("Timed out while waiting for User Management Service to initialize.");

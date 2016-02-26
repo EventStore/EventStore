@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core
             ProjectionManagerCommandWriter projectionManagerCommandWriter)
         {
             mainBus.Subscribe<SystemMessage.StateChangeMessage>(projectionManager);
-            mainBus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(projectionManager);
+            mainBus.Subscribe<SystemMessage.SystemReady>(projectionManager);
             if (runProjections >= ProjectionType.System)
             {
                 mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(projectionManager);
@@ -158,7 +158,7 @@ namespace EventStore.Projections.Core
             standardComponents.MainBus.Subscribe(
                 Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.MasterInputQueue));
             standardComponents.MainBus.Subscribe(
-                Forwarder.Create<UserManagementMessage.UserManagementServiceInitialized>(projectionsStandardComponents.MasterInputQueue));
+                Forwarder.Create<SystemMessage.SystemReady>(projectionsStandardComponents.MasterInputQueue));
             projectionsStandardComponents.MasterMainBus.Subscribe(new UnwrapEnvelopeHandler());
         }
     }

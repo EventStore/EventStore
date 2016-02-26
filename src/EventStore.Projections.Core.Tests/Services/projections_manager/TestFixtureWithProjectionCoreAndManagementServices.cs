@@ -100,14 +100,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
-            _bus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(_manager);
+            _bus.Subscribe<SystemMessage.SystemReady>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
             _bus.Subscribe(
                 CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(
                     starting => _queue.Publish(new ProjectionManagementMessage.ReaderReady())));
 
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_coordinator);
-            _bus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(_coordinator);
+            _bus.Subscribe<SystemMessage.SystemReady>(_coordinator);
 
             if (GetInputQueue() != _processingQueues.First().Item2)
             {
