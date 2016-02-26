@@ -12,10 +12,11 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
 {
+	[Category("debug")]
     [TestFixture]
     public class when_getting_replica_stats_from_stat_controller : SpecificationWithDirectoryPerTestFixture
     {
-        private readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
+        private readonly TimeSpan Timeout = TimeSpan.FromSeconds(120);
         protected MiniClusterNode[] _nodes = new MiniClusterNode[2];
         protected Endpoints[] _nodeEndpoints = new Endpoints[2];
 
@@ -39,11 +40,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 _nodeEndpoints[0], new IPEndPoint[] { _nodeEndpoints[1].InternalHttp });
             _nodes[1] = CreateNode(1,
                 _nodeEndpoints[1], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp });
-
-            _nodes[0].Start();
-            WaitHandle.WaitAll(new [] {_nodes[0].StartedEvent});
-            _nodes[1].Start();
-            WaitHandle.WaitAll(new [] {_nodes[1].StartedEvent});
         }
         
         [TestFixtureSetUp]
@@ -64,6 +60,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 new AdHocHandler<ReplicationMessage.ReplicaSubscribed>(replicaSubscribedHandler));
             _nodes[1].Node.MainBus.Subscribe(
                 new AdHocHandler<ReplicationMessage.ReplicaSubscribed>(replicaSubscribedHandler));
+
+			_nodes[0].Start();
+			_nodes[1].Start();
+			WaitHandle.WaitAll(new [] {_nodes[0].StartedEvent, _nodes[1].StartedEvent});
             
             if(!replicaSubscribed.WaitOne(Timeout))
             {
@@ -71,15 +71,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             }
             var masterNode = _nodes.First(n => n.InternalTcpEndPoint.ToString() == masterEndPoint.ToString());
             _replicationStatsUrl = masterNode.ExternalHttpEndPoint.ToHttpUrl("/stats/replication");
-            
-            // Wait for user management service to initialize
-            var managementInitialised = new ManualResetEvent(false);
-            masterNode.Node.MainBus.Subscribe(
-                new AdHocHandler<SystemMessage.SystemReady>(msg => managementInitialised.Set()));
-            if(!managementInitialised.WaitOne(Timeout))
-            {
-                Assert.Fail("Timed out while waiting for User Management Service to initialize.");
-            }
             
             When();
         }
