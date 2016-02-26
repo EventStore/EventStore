@@ -10,6 +10,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.Persisted.Commands;
 using EventStore.Common.Log;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -214,7 +215,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishCommand(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            Log.Debug("PROJECTIONS: Command received: {0}@{1}", resolvedEvent.OriginalEventNumber,command);
+            if (!Logging.FilteredMessages.Contains(command))
+            {
+                Log.Debug("PROJECTIONS: Command received: {0}@{1}", resolvedEvent.OriginalEventNumber, command);
+            }
             switch (command)
             {
                 case "$create-prepared":

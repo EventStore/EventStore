@@ -8,6 +8,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -43,7 +44,11 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void PublishCommand(string command, object body)
         {
-            _logger.Debug("PROJECTIONS: Scheduling the writing of {0} to {1}. Current status of Writer: Busy: {2}", command, ProjectionNamesBuilder._projectionsMasterStream, Busy);
+            //TODO: PROJECTIONS: Remove before release
+            if (!Logging.FilteredMessages.Contains(command))
+            {
+                _logger.Debug("PROJECTIONS: Scheduling the writing of {0} to {1}. Current status of Writer: Busy: {2}", command, ProjectionNamesBuilder._projectionsMasterStream, Busy);
+            }
             Items.Add(new Item { Command = command, Body = body });
             if (!Busy)
             {
@@ -55,7 +60,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             Busy = true;
             var events = Items.Select(CreateEvent).ToArray();
-            _logger.Debug("PROJECTIONS: Writing events to {0}: {1}", ProjectionNamesBuilder._projectionsMasterStream, String.Join(",", events.Select(x => String.Format("{0}", x.EventType))));
             Items.Clear();
             _ioDispatcher.BeginWriteEvents(
                 _cancellationScope,
@@ -68,7 +72,14 @@ namespace EventStore.Projections.Core.Services.Management
                     Busy = false;
                     if (completed.Result == OperationResult.Success)
                     {
-                        _logger.Debug("PROJECTIONS: Finished writing events to {0}: {1}", ProjectionNamesBuilder._projectionsMasterStream, String.Join(",", events.Select(x => String.Format("{0}", x.EventType))));
+                        foreach (var evt in events)
+                        {
+                            //TODO: PROJECTIONS: Remove before release
+                            if (!Logging.FilteredMessages.Contains(evt.EventType))
+                            {
+                                _logger.Debug("PROJECTIONS: Finished writing events to {0}: {1}", ProjectionNamesBuilder._projectionsMasterStream, evt.EventType);
+                            }
+                        }
                     }
                     else
                     {
