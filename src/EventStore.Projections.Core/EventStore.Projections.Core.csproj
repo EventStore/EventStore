@@ -359,6 +359,7 @@
     <Compile Include="Standard\StubHandler.cs" />
     <Compile Include="Utils\EncodingExtensions.cs" />
     <Compile Include="Utils\EnumExtensions.cs" />
+    <Compile Include="Utils\Logging.cs" />
     <Compile Include="v8\CompiledScript.cs" />
     <Compile Include="v8\js1.cs" />
     <Compile Include="v8\Js1Exception.cs" />
