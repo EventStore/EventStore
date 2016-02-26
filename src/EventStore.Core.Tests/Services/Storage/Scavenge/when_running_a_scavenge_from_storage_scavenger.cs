@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 		private static readonly ILogger Log = LogManager.GetLoggerFor<when_running_scavenge_from_storage_scavenger>();
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 		private MiniNode _node;
+		private List<ResolvedEvent> _result;
 
 		public override void TestFixtureSetUp()
         {
@@ -32,6 +33,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 
 			var scavengeMessage = new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccount.Principal);
 			_node.Node.MainQueue.Publish(scavengeMessage);
+
+			When();
         }
 
 		[TearDown]
@@ -40,20 +43,17 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 			_node.Shutdown();
 		}
 
-		[Test]
-		public void should_create_scavenge_started_and_completed_link_to_events_on_index_stream_which_resolves_to_scavenge_stream() 
+		public void When() 
 		{
 			using(var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, DefaultData.AdminCredentials))
 			{
 				conn.ConnectAsync().Wait();
-				var countdown = new CountdownEvent(2);
-				var events = new List<ResolvedEvent>();
-
-				var subscription = conn.SubscribeToStreamFrom(
-					SystemStreams.ScavengesStream, null, true,
-                    (x, y) =>
-					{
-						events.Add(y);
+				var countdown = new CountdownEvent(3);
+				_result = new List<ResolvedEvent>();
+				
+				conn.SubscribeToStreamFrom(SystemStreams.ScavengesStream, null, true,
+					(x, y) => {
+						_result.Add(y);
 						countdown.Signal();
 					},
 					_ => Log.Info("Processing events started."),
@@ -62,26 +62,41 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 						Log.Info("Subscription dropped: {0}, {1}.", y, z);
 					}
 				);
-
+				
 				if (!countdown.Wait(Timeout))
 				{
 					Assert.Fail("Timeout expired while waiting for events.");
 				}
-
-				Assert.AreEqual(2, events.Count);
-
-				var scavengeStartedEvent = events.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeStarted);
-				var scavengeCompletedEvent = events.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeCompleted);
-
-				Assert.IsNotNull(scavengeStartedEvent, "A scavenge started event was not written.");
-				Assert.IsNotNull(scavengeCompletedEvent, "A scavenge completed event was not written.");
-
-				Assert.AreEqual(scavengeStartedEvent.Event.EventStreamId, scavengeCompletedEvent.Event.EventStreamId, 
-					string.Format("Scavenge started and completed events are not in the same stream. ScavengeStartedEvent Stream Id: {0}, ScavengeCompletedEvent Stream Id: {1}", 
-				    	scavengeStartedEvent.Event.EventStreamId, scavengeCompletedEvent.Event.EventStreamId));
-
-				subscription.Stop(Timeout);
 			}
+		}
+
+		[Test]
+		public void should_create_scavenge_index_initialized_event() 
+		{
+			var scavengeIndexInitialized = _result.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeIndexInitialized);
+			Assert.IsNotNull(scavengeIndexInitialized);
+		}
+
+		[Test]
+		public void should_create_scavenge_started_event_on_index_stream() 
+		{
+			var scavengeStartedEvent = _result.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeStarted);
+			Assert.IsNotNull(scavengeStartedEvent);
+		}
+
+		[Test]
+		public void should_create_scavenge_completed_event_on_index_stream() 
+		{
+			var scavengeCompletedEvent = _result.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeCompleted);
+			Assert.IsNotNull(scavengeCompletedEvent);
+		}
+
+		[Test]
+		public void should_link_started_and_completed_events_to_the_same_stream()
+		{
+			var scavengeStartedEvent = _result.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeStarted);
+			var scavengeCompletedEvent = _result.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeCompleted);
+			Assert.AreEqual (scavengeStartedEvent.Event.EventStreamId, scavengeCompletedEvent.Event.EventStreamId);
 		}
     }
 }

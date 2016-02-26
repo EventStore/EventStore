@@ -82,6 +82,7 @@ namespace EventStore.Core.Services
         public const string ScavengeStarted = "$scavengeStarted";
         public const string ScavengeCompleted = "$scavengeCompleted";
         public const string ScavengeChunksCompleted = "$scavengeChunksCompleted";
+        public const string ScavengeIndexInitialized = "$scavengeIndexInitialized";
 
         public static string StreamReferenceEventToStreamId(string eventType, byte[] data)
         {
