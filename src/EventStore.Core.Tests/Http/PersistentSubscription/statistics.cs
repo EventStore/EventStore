@@ -1,19 +1,40 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.BasicAuthentication.basic_authentication;
 using EventStore.Transport.Http;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using HttpStatusCode = System.Net.HttpStatusCode;
-using EventStore.Core.Tests.Helpers;
 using System.Xml.Linq;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
+    [TestFixture, Category("LongRunning")]
+    class when_getting_statistics_for_new_subscription_for_stream_with_existing_events : with_subscription_having_events
+    {
+        private JArray _json;
+
+        protected override void When()
+        {
+            _json = GetJson<JArray>("/subscriptions", accept: ContentType.Json);
+        }
+
+        [Test]
+        public void returns_ok()
+        {
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void should_reflect_the_known_number_of_events_in_the_stream()
+        {
+            var knownNumberOfEvents = _json[0]["lastKnownEventNumber"].Value<int>() + 1;
+            Assert.AreEqual(Events.Count, knownNumberOfEvents, "Expected the subscription statistics to know about {0} events but seeing {1}", Events.Count, knownNumberOfEvents);
+        }
+    }
+
     [TestFixture, Category("LongRunning")]
     class when_getting_all_statistics_in_json : with_subscription_having_events
     {

@@ -148,6 +148,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     _streamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
                 }
+                if (events.Length > 0)
+                {
+                    _statistics.SetLastKnownEventNumber(events[events.Length - 1].OriginalEventNumber);
+                }
                 if (_streamBuffer.Live)
                 {
                     SetLive();
