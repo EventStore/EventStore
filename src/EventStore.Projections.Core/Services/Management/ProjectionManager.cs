@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Services.Management
     public class ProjectionManager
         : IDisposable,
             IHandle<SystemMessage.StateChangeMessage>,
-            IHandle<UserManagementMessage.UserManagementServiceInitialized>,
+            IHandle<SystemMessage.SystemReady>,
             IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
             IHandle<ClientMessage.WriteEventsCompleted>,
             IHandle<ClientMessage.DeleteStreamCompleted>,
@@ -533,7 +533,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private VNodeState _currentState = VNodeState.Unknown;
         private bool _systemIsReady = false;
-        public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
+        public void Handle(SystemMessage.SystemReady message)
         {
             _systemIsReady = true;
             StartWhenConditionsAreMet();

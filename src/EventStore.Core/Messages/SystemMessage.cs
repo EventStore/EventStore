@@ -21,6 +21,12 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
         }
 
+        public class SystemReady : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+        }
+
         public class ServiceInitialized: Message
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

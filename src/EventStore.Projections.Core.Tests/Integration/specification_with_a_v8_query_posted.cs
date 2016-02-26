@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Integration
         protected override IEnumerable<WhenStep> When()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return (new UserManagementMessage.UserManagementServiceInitialized());
+            yield return (new SystemMessage.SystemReady());
             if (_startSystemProjections)
             {
                 yield return

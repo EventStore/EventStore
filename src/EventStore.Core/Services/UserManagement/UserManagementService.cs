@@ -32,6 +32,7 @@ namespace EventStore.Core.Services.UserManagement
         private readonly IODispatcher _ioDispatcher;
         private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
         private readonly bool _skipInitializeStandardUsersCheck;
+        private int _numberOfStandardUsersToBeCreated = 2;
         private readonly ILogger _log;
 
         public UserManagementService(
@@ -201,7 +202,9 @@ namespace EventStore.Core.Services.UserManagement
 
         public void Handle(SystemMessage.BecomeMaster message)
         {
-            if (!_skipInitializeStandardUsersCheck){
+            _numberOfStandardUsersToBeCreated = 2;
+            if (!_skipInitializeStandardUsersCheck)
+            {
                 BeginReadUserDetails(
                     "admin", completed =>
                         {
@@ -219,14 +222,20 @@ namespace EventStore.Core.Services.UserManagement
                                 NotifyInitialized();
                         });
             }
-            else
-                NotifyInitialized();
+            else {
+                _publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+            }
         }
 
         private void NotifyInitialized()
         {
-            _publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+            _numberOfStandardUsersToBeCreated -= 1;
+            if (_numberOfStandardUsersToBeCreated == 0)
+            {
+                _publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+            }
         }
+
 
         private UserData CreateUserData(UserManagementMessage.Create message)
         {
