@@ -41,9 +41,9 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 _nodeEndpoints[1], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp });
 
             _nodes[0].Start();
+            WaitHandle.WaitAll(new [] {_nodes[0].StartedEvent});
             _nodes[1].Start();
-            
-            WaitHandle.WaitAll(new[] { _nodes[0].StartedEvent, _nodes[1].StartedEvent });
+            WaitHandle.WaitAll(new [] {_nodes[1].StartedEvent});
         }
         
         [TestFixtureSetUp]
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 		{
 			return new MiniClusterNode(
 				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
-				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false, gossipSeeds: gossipSeeds);
+				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false, gossipSeeds: gossipSeeds, clusterCount: 2);
 		}
         
         protected class Endpoints

@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Helpers
             IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
             ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
             bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-            bool inMemDb = true, bool disableFlushToDisk = false)
+            bool inMemDb = true, bool disableFlushToDisk = false, int clusterCount = 3)
         {
             RunningTime.Start();
             RunCount += 1;
@@ -84,11 +84,11 @@ namespace EventStore.Core.Tests.Helpers
                                              ExternalTcpEndPoint, ExternalTcpSecEndPoint,
                                              InternalHttpEndPoint, ExternalHttpEndPoint),
                 new[] {InternalHttpEndPoint.ToHttpUrl()}, new[]{ExternalHttpEndPoint.ToHttpUrl()}, enableTrustedAuth, ssl_connections.GetCertificate(), 1, false,
-                "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
+                "", gossipSeeds, TFConsts.MinFlushDelayMs, clusterCount, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
                 false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
                 new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30, adminOnPublic: true,
-                statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
-                gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
+                statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(3),
+                gossipAllowedTimeDifference: TimeSpan.FromSeconds(10), gossipTimeout: TimeSpan.FromSeconds(3),
                 extTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), extTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
                 intTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), intTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
                 verifyDbHash: false, maxMemtableEntryCount: memTableSize, startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false);
