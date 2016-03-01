@@ -10,6 +10,7 @@ namespace EventStore.Common.Utils
         public static readonly string WebContentDirectory;
         public static readonly string ProjectionsDirectory;
         public static readonly string PreludeDirectory;
+        public static readonly string PreludeResourcesPath;
         public static readonly string PluginsDirectory;
         public static readonly string DefaultContentDirectory;
         public static readonly string DefaultConfigurationDirectory;
@@ -56,6 +57,7 @@ namespace EventStore.Common.Utils
                         Path.Combine(ApplicationDirectory, "Prelude"),
                         Path.Combine(DefaultContentDirectory, "Prelude")
                         );
+            PreludeResourcesPath = "EventStore.Projections.Core.Prelude";
 
         }
 

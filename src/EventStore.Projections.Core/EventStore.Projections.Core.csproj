@@ -384,18 +384,18 @@
     <Folder Include="Prelude\Modules\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Prelude\1Prelude.js">
+    <EmbeddedResource Include="Prelude\1Prelude.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Prelude\Modules.js">
+    </EmbeddedResource>
+    <EmbeddedResource Include="Prelude\Modules.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Prelude\ModulesExecuted.js">
+    </EmbeddedResource>
+    <EmbeddedResource Include="Prelude\ModulesExecuted.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Prelude\Projections.js">
+    </EmbeddedResource>
+    <EmbeddedResource Include="Prelude\Projections.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </EmbeddedResource>
     <Content Include="Services\Management\TODO.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
