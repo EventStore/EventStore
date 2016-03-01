@@ -68,7 +68,10 @@ namespace EventStore.ClientAPI.Embedded
 
         public void EventAppeared(Core.Data.ResolvedEvent resolvedEvent)
         {
-            _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()));
+            if (resolvedEvent.OriginalPosition == null)
+                _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToClientResolvedIndexEvent()));
+            else
+                _eventAppeared(_subscription, new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()));
         }
 
         public void ConfirmSubscription(long lastCommitPosition, int? lastEventNumber)
