@@ -12,6 +12,7 @@ using EventStore.Projections.Core.Messages.Persisted.Responses;
 using EventStore.Projections.Core.Services.Processing;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Common.Log;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -140,7 +141,11 @@ namespace EventStore.Projections.Core.Services.Management
         private void PublishCommand(ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            Log.Debug("PROJECTIONS: Response received: {0}@{1}", resolvedEvent.OriginalEventNumber, command);
+            //TODO: PROJECTIONS: Remove before release
+            if (!Logging.FilteredMessages.Contains(x => x == command))
+            {
+                Log.Debug("PROJECTIONS: Response received: {0}@{1}", resolvedEvent.OriginalEventNumber, command);
+            }
             switch (command)
             {
                 case "$response-reader-starting":

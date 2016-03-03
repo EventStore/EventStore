@@ -155,13 +155,7 @@ namespace EventStore.Core.Tests.Helpers
         {
             StartingTime.Start();
 
-            var startedEvent = new ManualResetEventSlim(false);
-            Node.MainBus.Subscribe(
-                new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => startedEvent.Set()));
-
-            Node.Start();
-
-            if (!startedEvent.Wait(60000))
+            if (!Node.StartAndWaitUntilReady().Wait(60000))
                 throw new TimeoutException("MiniNode has not started in 60 seconds.");
 
             StartingTime.Stop();

@@ -35,10 +35,14 @@ using EventStore.Core.Services.PersistentSubscription;
 using System.Threading;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using System.Threading.Tasks;
 
 namespace EventStore.Core
 {
-    public class ClusterVNode : IHandle<SystemMessage.StateChangeMessage>, IHandle<SystemMessage.BecomeShutdown>
+    public class ClusterVNode : 
+        IHandle<SystemMessage.StateChangeMessage>, 
+        IHandle<SystemMessage.BecomeShutdown>,
+        IHandle<UserManagementMessage.UserManagementServiceInitialized>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
@@ -120,6 +124,7 @@ namespace EventStore.Core
             //SELF
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
+            _mainBus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(this);
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -460,6 +465,7 @@ namespace EventStore.Core
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
+            _mainBus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
 
@@ -547,10 +553,6 @@ namespace EventStore.Core
         public void Start() 
         {
             _mainQueue.Publish(new SystemMessage.SystemInit());
-
-            if (_subsystems != null)
-                foreach (var subsystem in _subsystems)
-                    subsystem.Start();
         }
 
         public void StopNonblocking(bool exitProcess, bool shutdownHttp)
@@ -573,6 +575,14 @@ namespace EventStore.Core
             return _shutdownEvent.WaitOne(timeout);
         }
 
+        public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
+        {
+            if (_subsystems != null)
+                foreach (var subsystem in _subsystems)
+                    subsystem.Start();
+            _mainQueue.Publish(new SystemMessage.SystemReady());
+        }
+
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
@@ -581,6 +591,18 @@ namespace EventStore.Core
         public void Handle(SystemMessage.BecomeShutdown message)
         {
             _shutdownEvent.Set();
+        }
+
+        public Task<ClusterVNode> StartAndWaitUntilReady()
+        {
+            var tcs = new TaskCompletionSource<ClusterVNode>();
+
+            _mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
+                    _ => tcs.TrySetResult(this)));
+
+            Start();
+
+            return tcs.Task;
         }
 
         public override string ToString()

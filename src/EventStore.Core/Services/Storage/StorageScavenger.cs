@@ -16,7 +16,8 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage
 {
-    public class StorageScavenger: IHandle<ClientMessage.ScavengeDatabase>
+    public class StorageScavenger : IHandle<ClientMessage.ScavengeDatabase>,
+                                    IHandle<UserManagementMessage.UserManagementServiceInitialized>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
 
@@ -51,6 +52,11 @@ namespace EventStore.Core.Services.Storage
             _mergeChunks = mergeChunks;
             _nodeEndpoint = nodeEndpoint;
             _scavengeHistoryMaxAge = scavengeHistoryMaxAge;
+        }
+        
+        public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
+        {
+            WriteScavengeIndexInitializedEvent();
         }
 
         public void Handle(ClientMessage.ScavengeDatabase message)
@@ -108,6 +114,13 @@ namespace EventStore.Core.Services.Storage
             );
         }
 
+        private void WriteScavengeIndexInitializedEvent()
+        {
+            var indexInitializedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeIndexInitialized,
+                    true, new Dictionary<string, object>{}.ToJsonBytes(), null);
+            _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.NoStream, indexInitializedEvent, SystemAccount.Principal, m => { });
+        }
+        
         private void WriteScavengeStartedEvent(string streamName, Guid scavengeId)
         {
             var metadataEventId = Guid.NewGuid();

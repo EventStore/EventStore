@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override IEnumerable<WhenStep> When()
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-            yield return new UserManagementMessage.UserManagementServiceInitialized();
+            yield return new SystemMessage.SystemReady();
             yield return
                 new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,

@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -40,8 +41,11 @@ namespace EventStore.Projections.Core.Services.Management
                 queue = new Queue();
                 _queues.Add(workerId, queue);
             }
-
-            Log.Debug("PROJECTIONS: Scheduling the writing of {0} to {1}. Current status of Writer: Busy: {2}", command, "$projections-$" + workerId, queue.Busy);
+            //TODO: PROJECTIONS: Remove before release
+            if (!Logging.FilteredMessages.Contains(command))
+            {
+                Log.Debug("PROJECTIONS: Scheduling the writing of {0} to {1}. Current status of Writer: Busy: {2}", command, "$projections-$" + workerId, queue.Busy);
+            }
             queue.Items.Add(new Queue.Item { Command = command, Body = body });
             if (!queue.Busy)
             {
@@ -66,7 +70,14 @@ namespace EventStore.Projections.Core.Services.Management
                     queue.Busy = false;
                     if (completed.Result == OperationResult.Success)
                     {
-                        Log.Debug("PROJECTIONS: Finished writing events to {0}: {1}", streamId, String.Join(",", events.Select(x => String.Format("{0}", x.EventType))));
+                        foreach(var evt in events)
+                        {
+                            //TODO: PROJECTIONS: Remove before release
+                            if (!Logging.FilteredMessages.Contains(evt.EventType))
+                            {
+                                Log.Debug("PROJECTIONS: Finished writing events to {0}: {1}", streamId, evt.EventType);
+                            }
+                        }
                     }
                     else
                     {
