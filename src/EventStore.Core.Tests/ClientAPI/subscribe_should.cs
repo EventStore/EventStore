@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void allow_multiple_subscriptions_to_same_stream()
         {
             const string stream = "subscribe_should_allow_multiple_subscriptions_to_same_stream";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
                 var appeared = new CountdownEvent(2);
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void call_dropped_callback_after_unsubscribe_method_call()
         {
             const string stream = "subscribe_should_call_dropped_callback_after_unsubscribe_method_call";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void catch_deleted_events_as_well()
         {
             const string stream = "subscribe_should_catch_created_and_deleted_events_as_well";
-            using (var store = TestConnection.Create(_node.TcpEndPoint))
+            using (var store = BuildConnection(_node))
             {
                 store.ConnectAsync().Wait();
 
