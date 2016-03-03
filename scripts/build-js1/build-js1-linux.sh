@@ -85,7 +85,7 @@ function build_js1() {
 
     local outputObj=$outputDir/libjs1.so
 
-    g++ -I "$V8_BUILD_DIRECTORY/include *.cpp" -o "$outputObj" -fPIC -shared -std=c++0x -lstdc++ -Wl,--start-group "$v8OutputDir/tools/gyp/libv8_{base.x64,nosnapshot.x64}.a" "$v8OutputDir/third_party/icu/libicu{i18n,uc,data}.a" -Wl,--end-group -lrt -lpthread 
+    g++ -I "$V8_BUILD_DIRECTORY/include *.cpp" -o "$outputObj" -fPIC -shared -std=c++0x -lstdc++ -Wl,--start-group "$v8OutputDir/tools/gyp/libv8_base.x64.a" "$v8OutputDir/tools/gyp/libv8_nosnapshot.x64.a" "$v8OutputDir/third_party/icu/libicui18n.a" "$v8OutputDir/third_party/icu/libicuuc.a" "$v8OutputDir/third_party/icu/libicudata.a" -Wl,--end-group -lrt -lpthread 
     echo "Output: $(readlink -f "$outputObj")"
 
     popd > /dev/null
