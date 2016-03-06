@@ -276,6 +276,10 @@ namespace EventStore.Core.Services.Transport.Http
                             {
                                 richEntry.MetaData = FormatJson(richEntry.MetaData);
                             }
+                            if (string.IsNullOrEmpty(richEntry.MetaData))
+                            {
+                                richEntry.MetaData = null;
+                            }
                         }
                         catch
                         {
