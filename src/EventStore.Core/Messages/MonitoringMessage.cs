@@ -113,6 +113,7 @@ namespace EventStore.Core.Messages
             public int RetryBufferCount { get; set; }
             public int TotalInFlightMessages { get; set; }
             public string NamedConsumerStrategy { get; set; }
+            public int MaxSubscriberCount { get; set; }
         }
 
         public class ConnectionInfo

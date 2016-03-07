@@ -639,6 +639,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         ResolveLinktos = stat.ResolveLinktos,
                         StartFrom = stat.StartFrom,
                         ExtraStatistics = stat.ExtraStatistics,
+                        MaxSubscriberCount = stat.MaxSubscriberCount
                     },
                     Connections = new List<ConnectionInfo>()
                 };
