@@ -88,7 +88,9 @@
     <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <Compile Include="ClientAPI\catchup_subscription_handles_small_batch_sizes.cs" />
     <Compile Include="ClientAPI\connecting_to_a_persistent_subscription_async.cs" />
+    <Compile Include="ClientAPI\catch_up_subscription_handles_errors.cs" />
     <Compile Include="ClientAPI\connecting_to_a_persistent_subscription.cs" />
     <Compile Include="ClientAPI\connection_string.cs" />
     <Compile Include="ClientAPI\create_persistent_subscription.cs" />
