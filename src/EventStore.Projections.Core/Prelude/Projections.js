@@ -100,7 +100,7 @@ var $projections = {
             },
 
             get_state_partition: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata) {
-                return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata, linkMetadata);
+                return getStatePartition(event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata);
             },
 
             transform_catalog_event: function (event, isJson, streamId, eventType, category, sequenceNumber, metadata, linkMetadata, partition, streamMetadataRaw) {
