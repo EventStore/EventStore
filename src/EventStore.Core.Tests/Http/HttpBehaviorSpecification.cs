@@ -337,11 +337,13 @@ namespace EventStore.Core.Tests.Http
                 return default(T);
             }
         }
-
-        protected void Get(string path, string extra, string accept = null, ICredentials credentials = null)
+			
+		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null, bool setAcceptHeader = true)
         {
             var request = CreateRequest(path, extra, "GET", null, credentials);
-            request.Accept = accept ?? "application/json";
+			if (setAcceptHeader) {
+				request.Accept = accept ?? "application/json";
+			}
             _lastResponse = GetRequestResponse(request);
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);

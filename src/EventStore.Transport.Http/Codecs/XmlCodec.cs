@@ -54,6 +54,9 @@ namespace EventStore.Transport.Http.Codecs
             if ((object)value == null)
                 return null;
 
+            if((object)value == Empty.Result)
+                return Empty.Xml;
+
             try
             {
                 using (var memory = new MemoryStream())

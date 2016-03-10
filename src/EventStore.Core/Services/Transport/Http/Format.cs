@@ -5,7 +5,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
-using EventStore.Transport.Http.Atom;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var msg = message as ClientMessage.ReadEventCompleted;
             if (msg == null || msg.Result != ReadEventResult.Success || msg.Record.Event == null)
-                return entity.ResponseCodec.To(new {});
+                return entity.ResponseCodec.To(Empty.Result);
 
             switch (entity.ResponseCodec.ContentType)
             {
