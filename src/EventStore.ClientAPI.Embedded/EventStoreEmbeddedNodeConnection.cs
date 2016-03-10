@@ -103,6 +103,11 @@ namespace EventStore.ClientAPI.Embedded
 
         public string ConnectionName { get { return _connectionName; } }
 
+        public ConnectionSettings Settings
+        {
+            get { return _settings; }
+        }
+
         public Task ConnectAsync()
         {
             var source = new TaskCompletionSource<object>();

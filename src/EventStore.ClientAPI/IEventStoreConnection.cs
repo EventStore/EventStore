@@ -488,5 +488,11 @@ namespace EventStore.ClientAPI
         /// Fired when a client fails to authenticate to an Event Store server.
         /// </summary>
         event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed;
+
+        /// <summary>
+        /// A <see cref="ConnectionSettings"/> object is an immutable representation of the settings for an
+        /// <see cref="IEventStoreConnection"/>.
+        /// </summary>
+        ConnectionSettings Settings { get; }
     }
 }
