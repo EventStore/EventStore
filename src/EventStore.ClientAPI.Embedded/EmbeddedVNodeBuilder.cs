@@ -580,7 +580,6 @@ namespace EventStore.ClientAPI.Embedded
             throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
         }
 
-
         /// <summary>
         /// Sets the transaction file chunk size. Default is <see cref="TFConsts.ChunkSize"/>
         /// </summary>
@@ -601,6 +600,18 @@ namespace EventStore.ClientAPI.Embedded
         public EmbeddedVNodeBuilder WithTfChunksCacheSize(long chunksCacheSize)
         {
             _chunksCacheSize = chunksCacheSize;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets Logging of Http Requests. Default is <see cref="Opts.LogHttpRequestsDefault"/>
+        /// </summary>
+        /// <param name="logHttpRequests">Whether or not to log http requests</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder LogHttpRequests(bool logHttpRequests)
+        {
+            _logHttpRequests = logHttpRequests;
 
             return this;
         }
@@ -719,7 +730,6 @@ namespace EventStore.ClientAPI.Embedded
             var infoController = new InfoController(null, _projectionType);
             return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }
-
 
         private IGossipSeedSource GetGossipSource()
         {
