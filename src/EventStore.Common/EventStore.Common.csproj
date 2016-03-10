@@ -93,9 +93,7 @@
     <None Include="Log\log.config">
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Locks\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <PreBuildEvent>powershell.exe $(MSBuildProjectDirectory)\..\Scripts\version\updateCommitHash.ps1 $(MSBuildProjectDirectory)\Properties\AssemblyInfo.cs</PreBuildEvent>

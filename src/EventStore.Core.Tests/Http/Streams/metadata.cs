@@ -4,6 +4,8 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Streams.basic;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using System.Xml.Linq;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Http.Streams
 {
@@ -83,6 +85,27 @@ namespace EventStore.Core.Tests.Http.Streams
     }
 
     [TestFixture]
+    public class when_getting_metadata_for_an_existing_stream_without_an_accept_header : HttpBehaviorSpecificationWithSingleEvent
+    {
+        protected override void When()
+        {
+			Get(TestStream + "/metadata", null, null, DefaultData.AdminNetworkCredentials, false);
+        }
+
+        [Test]
+        public void returns_ok_status_code()
+        {
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void returns_empty_body()
+        {
+            Assert.AreEqual(Empty.Xml, _lastResponseBody);
+        }
+    }
+
+    [TestFixture]
     public class when_getting_metadata_for_an_existing_stream_and_no_metadata_exists : HttpBehaviorSpecificationWithSingleEvent
     {
         protected override void Given()
@@ -112,7 +135,7 @@ namespace EventStore.Core.Tests.Http.Streams
         [Test]
         public void returns_empty_body()
         {
-            Assert.AreEqual("{}", _lastResponseBody);
+            Assert.AreEqual(Empty.Json, _lastResponseBody);
         }
     }
 }

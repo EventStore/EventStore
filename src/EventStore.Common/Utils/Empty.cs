@@ -9,5 +9,8 @@ namespace EventStore.Common.Utils
         public static readonly object[] ObjectArray = new object[0];
 
         public static readonly Action Action = () => { };
+        public static readonly object Result = new object();
+        public static readonly string Xml = String.Empty;
+        public static readonly string Json = "{}";
     }
 }

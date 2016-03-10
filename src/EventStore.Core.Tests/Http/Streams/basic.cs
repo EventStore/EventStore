@@ -8,6 +8,7 @@ using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using System.Xml.Linq;
 
 namespace EventStore.Core.Tests.Http.Streams
 {
@@ -633,29 +634,6 @@ namespace EventStore.Core.Tests.Http.Streams
 
         }
 
-        [TestFixture, Category("LongRunning")]
-        public class when_requesting_a_single_event_in_the_stream_as_atom_json: HttpBehaviorSpecificationWithSingleEvent
-        {
-            private JObject _json;
-
-            protected override void When()
-            {
-                _json = GetJson<JObject>(TestStream + "/0", accept: ContentType.AtomJson);
-            }
-
-            [Test]
-            public void request_succeeds()
-            {
-                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-            }
-
-            [Test]
-            public void returns_correct_body()
-            {
-                HelperExtensions.AssertJson(new { Content = new { Data = new {A = "1"}}}, _json);
-            }
-
-        }
 
         [TestFixture, Category("LongRunning")]
         public class when_requesting_a_single_event_that_is_deleted_linkto : HttpSpecificationWithLinkToToDeletedEvents
@@ -691,8 +669,31 @@ namespace EventStore.Core.Tests.Http.Streams
 
 
         [TestFixture, Category("LongRunning")]
-        public class when_requesting_a_single_event_in_the_stream_as_event_json
-            : HttpBehaviorSpecificationWithSingleEvent
+        public class when_requesting_a_single_event_in_the_stream_without_an_accept_header : HttpBehaviorSpecificationWithSingleEvent
+        {
+            private XDocument _xmlDocument;
+
+            protected override void When()
+            {
+                _xmlDocument = GetXml(MakeUrl(TestStream + "/0"));
+            }
+
+            [Test]
+            public void request_succeeds()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                Assert.AreEqual("1", _xmlDocument.Element("data").Element("a").Value);
+            }
+
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_requesting_a_single_event_in_the_stream_as_event_json : HttpBehaviorSpecificationWithSingleEvent
         {
             private JObject _json;
 
@@ -738,30 +739,9 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
-
-        [TestFixture, Category("LongRunning")]
-        public class when_requesting_a_single_event_in_the_stream_as_atom_xml: HttpBehaviorSpecificationWithSingleEvent
-        {
-            //private JObject _json;
-
-            protected override void When()
-            {
-                Get(TestStream + "/0", "", accept: ContentType.Atom);
-            }
-
-            [Test]
-            public void request_succeeds()
-            {
-                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-            }
-
-        }
-
         [TestFixture, Category("LongRunning")]
         public class when_requesting_a_single_event_in_the_stream_as_event_xml: HttpBehaviorSpecificationWithSingleEvent
         {
-            //private JObject _json;
-
             protected override void When()
             {
                 Get(TestStream + "/0", "", accept: ContentType.EventXml);
@@ -778,8 +758,6 @@ namespace EventStore.Core.Tests.Http.Streams
         [TestFixture, Category("LongRunning")]
         public class when_requesting_a_single_event_in_the_stream_as_xml: HttpBehaviorSpecificationWithSingleEvent
         {
-            //private JObject _json;
-
             protected override void When()
             {
                 Get(TestStream + "/0", "", accept: ContentType.Xml);
