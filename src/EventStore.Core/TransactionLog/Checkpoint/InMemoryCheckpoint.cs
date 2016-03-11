@@ -11,8 +11,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private long _lastFlushed;
         private readonly string _name;
 
-        private readonly object _flushLocker = new object();
-
         public InMemoryCheckpoint(long initialValue) : this(Guid.NewGuid().ToString(), initialValue) {}
 
         public InMemoryCheckpoint() : this(Guid.NewGuid().ToString(), 0) {}
