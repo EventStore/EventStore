@@ -100,6 +100,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _stream.Write(buffer, 0, buffer.Length);
 
             Interlocked.Exchange(ref _lastFlushed, last);
+
+            OnFlushed(last);
             //FlushFileBuffers(_file.SafeMemoryMappedFileHandle.DangerousGetHandle());
         }
 
@@ -118,10 +120,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         {
             return Interlocked.Read(ref _last);
         }
+        
+        public event Action<long> Flushed;
 
-        public bool WaitForFlush(TimeSpan timeout)
+        protected virtual void OnFlushed(long obj)
         {
-            throw new NotImplementedException();
+            var onFlushed = Flushed;
+            if (onFlushed != null)
+                onFlushed.Invoke(obj);
         }
 
         public void Dispose()

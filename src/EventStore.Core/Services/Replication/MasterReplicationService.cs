@@ -63,6 +63,7 @@ namespace EventStore.Core.Services.Replication
         private volatile bool _newSubscriptions;
         private TimeSpan _noQuorumTimestamp = TimeSpan.Zero;
         private bool _noQuorumNotified;
+        private ManualResetEventSlim _flushSignal = new ManualResetEventSlim();
         
         public MasterReplicationService(IPublisher publisher, 
                                         Guid instanceId, 
@@ -328,11 +329,18 @@ namespace EventStore.Core.Services.Replication
             _queueStats.Start();
             QueueMonitor.Default.Register(this);
 
+            _db.Config.WriterCheckpoint.Flushed += OnWriterFlushed;
+
             while (!_stop)
             {
                 try
                 {
+                    
                     _queueStats.EnterBusy();
+
+                    _queueStats.ProcessingStarted(typeof(SendReplicationData), _subscriptions.Count);
+
+                    _flushSignal.Reset(); // Reset the flush signal as we're about to read anyway. This could be closer to the actual read but no harm from too many checks.
 
                     var dataFound = ManageSubscriptions();
                     ManageNoQuorumDetection();
@@ -340,10 +348,13 @@ namespace EventStore.Core.Services.Replication
                     _newSubscriptions = false;
                     ManageRoleAssignments(force: newSubscriptions);
 
+                    _queueStats.ProcessingEnded(_subscriptions.Count);
+
                     if (!dataFound)
                     {
                         _queueStats.EnterIdle();
-                        Thread.Sleep(1);
+
+                        _flushSignal.Wait(TimeSpan.FromMilliseconds(500));
                     }
                 }
                 catch (Exception exc)
@@ -357,10 +368,17 @@ namespace EventStore.Core.Services.Replication
                 subscription.Dispose();
             }
 
-            _publisher.Publish(new SystemMessage.ServiceShutdown(Name));
+            _db.Config.WriterCheckpoint.Flushed -= OnWriterFlushed;
 
+            _publisher.Publish(new SystemMessage.ServiceShutdown(Name));
+            
             _queueStats.Stop();
             QueueMonitor.Default.Unregister(this);
+        }
+
+        private void OnWriterFlushed(long obj)
+        {
+            _flushSignal.Set();
         }
 
         private bool ManageSubscriptions()
@@ -600,6 +618,11 @@ namespace EventStore.Core.Services.Replication
             Slave
         }
 
+        private class SendReplicationData
+        {
+
+        }
+
         private class ReplicaSubscription: IDisposable
         {
             public readonly byte[] DataBuffer = new byte[BulkSize];
@@ -670,6 +693,7 @@ namespace EventStore.Core.Services.Replication
                 if (bulkReader != null)
                     bulkReader.Release();
             }
+
         }
     }
 }

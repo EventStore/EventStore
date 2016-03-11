@@ -47,18 +47,16 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
             Interlocked.Exchange(ref _lastFlushed, last);
 
-            lock (_flushLocker)
-            {
-                Monitor.PulseAll(_flushLocker);
-            }
+            OnFlushed(last);
         }
+        
+        public event Action<long> Flushed;
 
-        public bool WaitForFlush(TimeSpan timeout)
+        protected virtual void OnFlushed(long obj)
         {
-            lock (_flushLocker)
-            {
-                return Monitor.Wait(_flushLocker, timeout);
-            }
+            var onFlushed = Flushed;
+            if (onFlushed != null)
+                onFlushed.Invoke(obj);
         }
 
         public void Close()
