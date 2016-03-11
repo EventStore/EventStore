@@ -18,8 +18,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private readonly BinaryWriter _writer;
         private readonly BinaryReader _reader;
 
-        private readonly object _flushLocker = new object();
-
         public FileCheckpoint(string filename)
             : this(filename, Guid.NewGuid().ToString())
         {
@@ -83,11 +81,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
             _fileStream.FlushToDisk();
             Interlocked.Exchange(ref _lastFlushed, last);
-
-            lock (_flushLocker)
-            {
-                Monitor.PulseAll(_flushLocker);
-            }
+            
+            OnFlushed(last);
         }
 
         public long Read()
@@ -101,17 +96,19 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             return Interlocked.Read(ref _last);
         }
 
-        public bool WaitForFlush(TimeSpan timeout)
-        {
-            lock (_flushLocker)
-            {
-                return Monitor.Wait(_flushLocker, timeout);
-            }
-        }
+        public event Action<long> Flushed;
 
         public void Dispose()
         {
             Close();
         }
+
+        protected virtual void OnFlushed(long obj)
+        {
+            var onFlushed = Flushed;
+            if (onFlushed != null)
+                onFlushed.Invoke(obj);
+        }
+
     }
 }

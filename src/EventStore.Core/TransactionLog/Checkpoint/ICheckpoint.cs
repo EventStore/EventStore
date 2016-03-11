@@ -8,10 +8,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         void Write(long checkpoint);
         void Flush();
         void Close();
-
         long Read();
         long ReadNonFlushed();
 
-        bool WaitForFlush(TimeSpan timeout);
+        event Action<long> Flushed;
     }
 }

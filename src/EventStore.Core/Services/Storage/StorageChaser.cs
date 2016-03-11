@@ -26,7 +26,9 @@ namespace EventStore.Core.Services.Storage
 
         private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2 * TicksPerMs;
+        private readonly ManualResetEventSlim _flushSignal = new ManualResetEventSlim();
         private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(100);
+
 
         public string Name { get { return _queueStats.Name; } }
 
@@ -92,6 +94,8 @@ namespace EventStore.Core.Services.Storage
 
             try
             {
+                _writerCheckpoint.Flushed += OnWriterFlushed;
+
                 _chaser.Open();
                 
                 // We rebuild index till the chaser position, because
@@ -121,7 +125,11 @@ namespace EventStore.Core.Services.Storage
                 }
                 _queueStats.ProcessingEnded(0);
             }
+
+            _writerCheckpoint.Flushed -= OnWriterFlushed;
+
             _chaser.Close();
+
             _masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
 
             _queueStats.EnterIdle();
@@ -129,9 +137,17 @@ namespace EventStore.Core.Services.Storage
             QueueMonitor.Default.Unregister(this);
         }
 
+        private void OnWriterFlushed(long obj)
+        {
+            _flushSignal.Set();
+        }
+
         private void ChaserIteration()
         {
             _queueStats.EnterBusy();
+
+            _flushSignal.Reset(); // Reset the flush signal just before a read to reduce pointless reads from [flush flush read] patterns.
+
             var result = _chaser.TryReadNext();
 
             if (result.Success)
@@ -159,9 +175,9 @@ namespace EventStore.Core.Services.Storage
             if (!result.Success)
             {
                 _queueStats.EnterIdle();
-                //Thread.Sleep(1);
+                
                 var startwait = _watch.ElapsedTicks;
-                _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
+                _flushSignal.Wait(FlushWaitTimeout);
                 HistogramService.SetValue(_chaserWaitHistogram,
                     (long)((((double)_watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
             }
