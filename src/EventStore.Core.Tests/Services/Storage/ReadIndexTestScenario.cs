@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Storage
             ChaserCheckpoint.Write(WriterCheckpoint.Read());
             ChaserCheckpoint.Flush();
 
-            var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
+            var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5, () => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
             TableIndex = new TableIndex(GetFilePathFor("index"),
                                         () => new HashListMemTable(MaxEntriesInMemTable * 2),
                                         () => new TFReaderLease(readers),
