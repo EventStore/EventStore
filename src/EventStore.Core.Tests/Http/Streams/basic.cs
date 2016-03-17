@@ -1,19 +1,69 @@
 ﻿using System;
 using System.Net;
 using System.Text;
-using EventStore.Core.Tests.ClientAPI;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Users;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace EventStore.Core.Tests.Http.Streams
 {
     namespace basic
     {
+        [TestFixture, Category("LongRunning")]
+        public class when_requesting_a_single_event_in_the_stream_as_atom_json : HttpBehaviorSpecificationWithSingleEvent
+        {
+            private JObject _json;
+
+            protected override void When()
+            {
+                _json = GetJson<JObject>(TestStream + "/0", accept: ContentType.AtomJson);
+            }
+
+            [Test]
+            public void request_succeeds()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                HelperExtensions.AssertJson(new { Content = new { Data = new { A = "1" } } }, _json);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_requesting_a_single_event_in_the_stream_as_atom_xml : HttpBehaviorSpecificationWithSingleEvent
+        {
+            private XDocument document;
+            protected override void When()
+            {
+                Get(TestStream + "/0", "", accept: ContentType.Atom);
+                document = XDocument.Parse(_lastResponseBody);
+            }
+
+            [Test]
+            public void request_succeeds()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                var val = document.GetEntry()
+                                 .Elements(XDocumentAtomExtensions.AtomNamespace + "content").First()
+                                 .Element("data")
+                                 .Element("a").Value;
+                Assert.AreEqual(val, "1");
+            }
+        }
+
         [TestFixture]
         public class when_posting_an_event_as_raw_json_without_eventtype : HttpBehaviorSpecification
         {

@@ -17,6 +17,11 @@ namespace EventStore.Core.Tests.Http.Streams
             return feed.Elements(AtomNamespace + "entry").ToArray();
         }
 
+        public static XElement GetEntry(this XDocument self)
+        {
+            return self.Element(AtomNamespace + "entry");
+        }
+
         public static string GetLink(this XElement self, string rel)
         {
             var matchingLinks = self.Elements(AtomNamespace + "link")

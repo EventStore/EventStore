@@ -75,6 +75,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private static readonly ICodec[] DefaultCodecs =
                                                               {
+                                                                  Codec.EventStoreXmlCodec,
+                                                                  Codec.EventStoreJsonCodec,
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
                                                                   Codec.Json,
