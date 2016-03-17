@@ -601,7 +601,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             foreach (var stat in message.SubscriptionStats)
             {
-                string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+                string escapedStreamId = DoubleEscapeDataString(stat.EventStreamId);
                 string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
                 var info = new SubscriptionInfo
                 {
@@ -671,7 +671,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             foreach (var stat in message.SubscriptionStats)
             {
-                string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+                string escapedStreamId = DoubleEscapeDataString(stat.EventStreamId);
                 string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
                 var info = new SubscriptionSummary
                 {
@@ -696,6 +696,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 }
                 yield return info;
             }
+        }
+        
+        private string DoubleEscapeDataString(string data) 
+        {
+            return Uri.EscapeDataString(Uri.EscapeDataString(data));
         }
 
         public class SubscriptionConfigData

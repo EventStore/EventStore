@@ -36,6 +36,10 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing
 //            [TestCase("%2F", "/", "2", "2")] // /
             [TestCase("%20", " ", "2", "2")] // space
             [TestCase("%25", "%", "2", "2")] // %
+            [TestCase("%2525", "%", "2", "2")] // %
+            [TestCase("%252F", "/", "2", "2")] // /
+            [TestCase("%253F", "?", "2", "2")] // ?
+            [TestCase("%2524", "$", "2", "2")] // $
             public void returns_ok_status_code(string _a, string _ra, string _b, string _rb)
             {
                 _response = GetJson2<JObject>("/test-encoding/" + _a, "b=" + _b);

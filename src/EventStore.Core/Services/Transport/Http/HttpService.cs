@@ -144,7 +144,11 @@ namespace EventStore.Core.Services.Transport.Http
 
         public List<UriToActionMatch> GetAllUriMatches(Uri uri)
         {
-            return _uriRouter.GetAllUriMatches(uri);
+            var uriToMatch = uri;
+#if !__MonoCS__
+            uriToMatch = new Uri(Uri.EscapeUriString(uri.OriginalString));
+#endif
+            return _uriRouter.GetAllUriMatches(uriToMatch);
         }
     }
 }

@@ -90,7 +90,16 @@ namespace EventStore.Core.Services.Transport.Http
                 var route = routes[i];
                 var match = route.UriTemplate.Match(baseAddress, uri);
                 if (match != null)
+                {
+                    for(var j = 0; j < match.BoundVariables.Keys.Count; j++)
+                    {
+                        var key = match.BoundVariables.Keys[j];
+                        var boundVar = match.BoundVariables[key];
+                        if(boundVar != null)
+                            match.BoundVariables[key] = Uri.UnescapeDataString(boundVar);
+                    }
                     matches.Add(new UriToActionMatch(match, route.Action, route.Handler));
+                }
             }
         }
 
@@ -121,7 +130,16 @@ namespace EventStore.Core.Services.Transport.Http
                 var route = _actions[i];
                 var match = route.UriTemplate.Match(baseAddress, uri);
                 if (match != null)
+                {
+                    for(var j = 0; j < match.BoundVariables.Keys.Count; j++)
+                    {
+                        var key = match.BoundVariables.Keys[j];
+                        var boundVar = match.BoundVariables[key];
+                        if(boundVar != null)
+                            match.BoundVariables[key] = Uri.UnescapeDataString(boundVar);
+                    }
                     matches.Add(new UriToActionMatch(match, route.Action, route.Handler));
+                }
             }
             return matches;
         }

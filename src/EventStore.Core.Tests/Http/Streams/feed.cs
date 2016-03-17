@@ -118,6 +118,94 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+        [TestFixture, Category("LongRunning")]
+        public class when_retrieving_feed_head_with_slash_in_stream_id : SpecificationWithLongFeed
+        {
+            private JObject _feed;
+            private string _encodedStreamName = "test%252Fstream";
+            private string _decodedStreamName = "test/stream";
+            
+            [TestFixtureSetUp]
+            public override void TestFixtureSetUp() 
+            {
+                _testStreamName = _encodedStreamName;
+                base.TestFixtureSetUp();
+            }
+            
+            protected override void When()
+            {
+                _feed = GetJson<JObject>(TestStream, ContentType.AtomJson);
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+            
+            [Test]
+            public void contains_a_decoded_stream_id() 
+            {
+                var streamId = _feed["streamId"].ToString();
+                Assert.AreEqual(_decodedStreamName + Tag, streamId);
+            }
+
+            [Test]
+            public void contains_a_link_rel_previous_with_the_stream_id_double_encoded()
+            {
+                var rel = GetLink(_feed, "previous");
+                Assert.IsNotEmpty(rel);
+                Assert.IsTrue(rel.Contains(_encodedStreamName));
+            }
+
+            [Test]
+            public void contains_a_link_rel_next_with_the_stream_id_double_encoded()
+            {
+                var rel = GetLink(_feed, "next");
+                Assert.IsNotEmpty(rel);
+                Assert.IsTrue(rel.Contains(_encodedStreamName));
+            }
+
+            [Test]
+            public void contains_a_link_rel_self_with_the_stream_id_double_encoded()
+            {
+                var rel = GetLink(_feed, "self");
+                Assert.IsNotEmpty(rel);
+                Assert.IsTrue(rel.Contains(_encodedStreamName));
+            }
+
+            [Test]
+            public void contains_a_link_rel_first_with_the_stream_id_double_encoded()
+            {
+                var rel = GetLink(_feed, "first");
+                Assert.IsNotEmpty(rel);
+                Assert.IsTrue(rel.Contains(_encodedStreamName));
+            }
+
+            [Test]
+            public void contains_a_link_rel_last_with_the_stream_id_double_encoded()
+            {
+                var rel = GetLink(_feed, "last");
+                Assert.IsNotEmpty(rel);
+                Assert.IsTrue(rel.Contains(_encodedStreamName));
+            }
+            
+            [Test]
+            public void contains_events_with_titles_using_decoded_stream_id()
+            {
+                var entry = _feed["entries"].FirstOrDefault();
+                var title = entry["title"].ToString();
+                Assert.IsTrue(title.Contains(_decodedStreamName));
+            }
+            
+            [Test]
+            public void contains_events_with_link_using_double_encoded_stream_id()
+            {
+                var entry = _feed["entries"].FirstOrDefault();
+                var id = entry["id"].ToString();
+                Assert.IsTrue(id.Contains(_encodedStreamName));
+            }
+        }
 
         [TestFixture, Category("LongRunning")]
         public class when_retrieving_the_previous_link_of_the_feed_head: SpecificationWithLongFeed
@@ -332,7 +420,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 //TODO GFY I really wish we were targeting 4.5 only so I could use Uri.EscapeDataString
                 //given the choice between this and a dependency on system.web well yeah. When we have 4.5
                 //only lets use Uri
-                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/0"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%2540") + "/0"), foo["uri"].ToString());
             }
 
             [Test]
@@ -340,7 +428,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[1]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/0"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%2540") + "/0"), foo["uri"].ToString());
             }
 
             [Test]
@@ -348,7 +436,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][0];
                 Assert.AreEqual("edit", foo["relation"].ToString());
-                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/1"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%2540") + "/1"), foo["uri"].ToString());
             }
 
             [Test]
@@ -356,7 +444,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var foo = _entries[0]["links"][1];
                 Assert.AreEqual("alternate", foo["relation"].ToString());
-                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%40") + "/1"), foo["uri"].ToString());
+                Assert.AreEqual(MakeUrl("/streams/" + StreamName.Replace("@", "%2540") + "/1"), foo["uri"].ToString());
             }
         }
 

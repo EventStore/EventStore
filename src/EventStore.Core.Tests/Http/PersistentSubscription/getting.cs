@@ -185,6 +185,44 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.AreEqual(Events.Count, count, "Expected {0} events, received {1}", Events.Count, count);
         }
     }
+    
+    [TestFixture]
+    class when_getting_messages_from_a_subscription_on_a_stream_with_containing_a_slash : with_subscription_having_events
+    {
+        private JObject _response;
+        private string _unencodedStreamName = "test/stream";
+        private string _doubleEncodedStreamName = "test%252Fstream";
+
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp() 
+        {
+            _testStreamName = _doubleEncodedStreamName;
+            base.TestFixtureSetUp();
+        }
+        
+        protected override void When()
+        {
+
+            _response = GetJson<JObject>(
+                                SubscriptionPath + "/" + Events.Count,
+                                ContentType.CompetingJson, //todo CLC sort out allowed content types
+                                _admin);
+        }
+        
+        [Test]
+        public void returns_title_containing_unencoded_stream_name() 
+        {
+            var title = _response["title"].ToString();
+            Assert.IsTrue(title.Contains(_unencodedStreamName));
+        }
+
+        [Test]
+        public void returns_links_with_double_encoded_stream_name()
+        {
+            var link = ((JObject)_response["links"].First())["uri"].ToString();
+            Assert.IsTrue(link.Contains(_doubleEncodedStreamName));
+        }
+    }
 
     class when_getting_messages_from_a_subscription_with_more_than_n_messages : with_subscription_having_events
     {

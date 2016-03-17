@@ -99,16 +99,18 @@ namespace EventStore.Core.Tests.Http
             }
         }
 
+        protected string _testStreamName = "test";
+        
         public string TestStream {
-            get { return "/streams/test" + Tag; }
+            get { return "/streams/" + _testStreamName + Tag; }
         }
 
         public string TestStreamName {
-            get { return "test" + Tag; }
+            get { return _testStreamName + Tag; }
         }
 
         public string TestMetadataStream {
-            get { return "/streams/$$test" + Tag; }
+            get { return "/streams/$$" + _testStreamName + Tag; }
         }
 
         public string Tag

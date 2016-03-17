@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             Ensure.NotNull(msg, "msg");
 
-            string escapedStreamId = Uri.EscapeDataString(msg.EventStreamId);
+            string escapedStreamId = DoubleEscapeDataString(msg.EventStreamId);
             var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             Ensure.NotNull(msg, "msg");
 
-            string escapedStreamId = Uri.EscapeDataString(msg.EventStreamId);
+            string escapedStreamId = DoubleEscapeDataString(msg.EventStreamId);
             var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
             var feed = new FeedElement();
             feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
@@ -149,7 +149,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static FeedElement ToNextNPersistentMessagesFeed(ClientMessage.ReadNextNPersistentMessagesCompleted msg, Uri requestedUrl, string streamId, string groupName, int count, EmbedLevel embedContent)
         {
-            string escapedStreamId = Uri.EscapeDataString(streamId);
+            string escapedStreamId = DoubleEscapeDataString(streamId);
             string escapedGroupName = Uri.EscapeDataString(groupName);
             var self = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}", escapedStreamId, escapedGroupName);
             var feed = new FeedElement();
@@ -187,7 +187,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static DescriptionDocument ToDescriptionDocument(Uri requestedUrl, string streamId, string[] subscriptions)
         {
-            string escapedStreamId = Uri.EscapeDataString(streamId);
+            string escapedStreamId = DoubleEscapeDataString(streamId);
             var descriptionDocument = new DescriptionDocument();
             descriptionDocument.SetTitle(string.Format("Description document for '{0}'", streamId));
             descriptionDocument.SetDescription(@"The description document will be presented when no accept header is present or it was requested");
@@ -338,7 +338,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private static void SetEntryProperties(string stream, int eventNumber, DateTime timestamp, Uri requestedUrl, EntryElement entry)
         {
-            var escapedStreamId = Uri.EscapeDataString(stream);
+            var escapedStreamId = DoubleEscapeDataString(stream);
             entry.SetTitle(eventNumber + "@" + stream);
             entry.SetId(HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
             entry.SetUpdated(timestamp);
@@ -356,6 +356,11 @@ namespace EventStore.Core.Services.Transport.Http
             var jo = JObject.Parse(unformattedjson);
             var json = JsonConvert.SerializeObject(jo, Formatting.Indented);
             return json;
+        }
+
+        private static string DoubleEscapeDataString(string data)
+        {
+            return Uri.EscapeDataString(Uri.EscapeDataString(data));
         }
     }
 
