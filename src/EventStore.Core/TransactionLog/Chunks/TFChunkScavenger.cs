@@ -30,9 +30,10 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly string _nodeEndpoint;
         private readonly IReadIndex _readIndex;
         private readonly long _maxChunkDataSize;
+        private readonly bool _unsafeIgnoreHardDeletes;
 
         public TFChunkScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IHasher hasher, IReadIndex readIndex,
-                                Guid scavengeId, string nodeEndpoint, long? maxChunkDataSize = null)
+                                Guid scavengeId, string nodeEndpoint, long? maxChunkDataSize = null, bool unsafeIgnoreHardDeletes=false)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(ioDispatcher, "ioDispatcher");
@@ -49,6 +50,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             _nodeEndpoint = nodeEndpoint;
             _readIndex = readIndex;
             _maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
+            _unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
         }
 
         public long Scavenge(bool alwaysKeepScavenged, bool mergeChunks)
@@ -68,7 +70,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Trace("SCAVENGING: stopping scavenging pass due to non-completed TFChunk for position {0}.", scavengePos);
                     break;
                 }
-                
+
                 long saved;
                 ScavengeChunks(alwaysKeepScavenged, new[] {chunk}, out saved);
                 spaceSaved += saved;
@@ -199,7 +201,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
                 var newSize = (long)newChunk.PhysicalDataSize + PosMap.FullSize * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
 
-                if (oldSize <= newSize && !alwaysKeepScavenged)
+                if(_unsafeIgnoreHardDeletes) {
+                    Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
+                }
+
+                if (oldSize <= newSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes)
                 {
                     Log.Trace("Scavenging of chunks:\n{0}\n"
                               + "completed in {1}.\n"
@@ -211,7 +217,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                     PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
                     return false;
                 }
-
                 var chunk = _db.Manager.SwitchChunk(newChunk, verifyHash: false, removeChunksWithGreaterNumbers: false);
                 if (chunk != null)
                 {
@@ -278,9 +283,13 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete))
             {
-                // We should always keep delete tombstone.
-                commitInfo.ForciblyKeep();
-                return true;
+                if(_unsafeIgnoreHardDeletes) {
+                    Log.Info("Removing hard deleted stream tombstone for stream {0} at position {1}", prepare.EventStreamId, prepare.TransactionPosition);
+                    commitInfo.TryNotToKeep();
+                } else {
+                    commitInfo.ForciblyKeep();
+                }
+                return !_unsafeIgnoreHardDeletes;
             }
 
             if (!isCommitted && prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))

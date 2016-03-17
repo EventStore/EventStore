@@ -39,8 +39,8 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core
 {
-    public class ClusterVNode : 
-        IHandle<SystemMessage.StateChangeMessage>, 
+    public class ClusterVNode :
+        IHandle<SystemMessage.StateChangeMessage>,
         IHandle<SystemMessage.BecomeShutdown>,
         IHandle<UserManagementMessage.UserManagementServiceInitialized>
     {
@@ -117,7 +117,7 @@ namespace EventStore.Core
 
             _controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
-            
+
             _controller.SetMainQueue(_mainQueue);
 
             _subsystems = subsystems;
@@ -459,9 +459,16 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 
             // STORAGE SCAVENGER
-            var storageScavenger = new StorageScavenger(db, ioDispatcher, tableIndex, hash, readIndex,
+            var storageScavenger = new StorageScavenger(db,
+                                                        ioDispatcher,
+                                                        tableIndex,
+                                                        hash,
+                                                        readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
-                                                        _nodeInfo.ExternalHttp.ToString(), !vNodeSettings.DisableScavengeMerging, vNodeSettings.ScavengeHistoryMaxAge);
+                                                        _nodeInfo.ExternalHttp.ToString(),
+                                                        !vNodeSettings.DisableScavengeMerging,
+                                                        vNodeSettings.ScavengeHistoryMaxAge,
+                                                        unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
@@ -550,7 +557,7 @@ namespace EventStore.Core
             }
         }
 
-        public void Start() 
+        public void Start()
         {
             _mainQueue.Publish(new SystemMessage.SystemInit());
         }

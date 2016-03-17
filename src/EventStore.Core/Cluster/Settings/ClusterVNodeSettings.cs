@@ -59,7 +59,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan IntTcpHeartbeatInterval;
         public readonly TimeSpan ExtTcpHeartbeatTimeout;
         public readonly TimeSpan ExtTcpHeartbeatInterval;
-
+        public readonly bool UnsafeIgnoreHardDeletes;
         public readonly bool VerifyDbHash;
         public readonly int MaxMemtableEntryCount;
         public readonly int IndexCacheDepth;
@@ -116,7 +116,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool logHttpRequests,
                                     string index = null, bool enableHistograms = false,
                                     int indexCacheDepth = 16,
-                                    IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null)
+                                    IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
+                                    bool unsafeIgnoreHardDeletes = false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -196,9 +197,10 @@ namespace EventStore.Core.Cluster.Settings
             EnableHistograms = enableHistograms;
             IndexCacheDepth = indexCacheDepth;
             Index = index;
+            UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
         }
 
-        
+
 
         public override string ToString()
         {

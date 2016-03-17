@@ -174,6 +174,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
         public bool UnsafeDisableFlushToDisk { get; set; }
 
+        [ArgDescription(Opts.UnsafeIgnoreHardDeleteDescr, Opts.DbGroup)]
+        public bool UnsafeIgnoreHardDelete { get; set; }
+
         [ArgDescription(Opts.IndexCacheDepthDescr, Opts.DbGroup)]
         public int IndexCacheDepth { get; set; }
 
@@ -270,6 +273,7 @@ namespace EventStore.ClusterNode
             AuthenticationType = Opts.AuthenticationTypeDefault;
             AuthenticationConfig = Opts.AuthenticationConfigFileDefault;
 
+            UnsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
             UnsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
             PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
             CommitTimeoutMs = Opts.CommitTimeoutMsDefault;

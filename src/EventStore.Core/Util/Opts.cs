@@ -21,7 +21,7 @@ namespace EventStore.Core.Util
         public const string ManagerGroup = "Manager Options";
 
         /*
-         *  COMMON OPTIONS 
+         *  COMMON OPTIONS
          */
 
         public const string ForceDescr = "Force the Event Store to run in possibly harmful environments such as with Boehm GC.";
@@ -119,8 +119,11 @@ namespace EventStore.Core.Util
         public const string ExtHttpPrefixesDescr = "The prefixes that the external HTTP server should respond to.";
         public static readonly string[] ExtHttpPrefixesDefault = new string[0];
 
+        public const string UnsafeIgnoreHardDeleteDescr = "Disables Hard Deletes (UNSAFE: use to remove hard deletes)";
+        public static readonly bool UnsafeIgnoreHardDeleteDefault = false;
+
         public const string UnsafeDisableFlushToDiskDescr = "Disable flushing to disk.  (UNSAFE: on power off)";
-        public static readonly bool UnsafeDisableFlushToDiskDefault = false; 
+        public static readonly bool UnsafeDisableFlushToDiskDefault = false;
 
         public const string PrepareTimeoutMsDescr = "Prepare timeout (in milliseconds).";
         public static readonly int PrepareTimeoutMsDefault = 2000; // 2 seconds
@@ -150,7 +153,7 @@ namespace EventStore.Core.Util
 
         public const string CertificateThumbprintDescr = "The certificate fingerprint/thumbprint.";
         public static readonly string CertificateThumbprintDefault = string.Empty;
-        
+
         /*
          *  SINGLE NODE OPTIONS
          */
@@ -241,7 +244,7 @@ namespace EventStore.Core.Util
         public const string CommitCountDescr = "The number of nodes which must acknowledge commits before acknowledging to a client.";
         public const int    CommitCountDefault = -1;
 
-        public const string PrepareCountDescr = "The number of nodes which must acknowledge prepares.";	
+        public const string PrepareCountDescr = "The number of nodes which must acknowledge prepares.";
         public const int    PrepareCountDefault = -1;
 
         public const string InternalManagerIpDescr = null;
@@ -267,7 +270,7 @@ namespace EventStore.Core.Util
 
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
  	    public const bool DiscoverViaDnsDefault = true;
- 
+
  		public const string ClusterDnsDescr = "DNS name from which other nodes can be discovered.";
  		public const string ClusterDnsDefault = "fake.dns";
 
@@ -278,7 +281,7 @@ namespace EventStore.Core.Util
  		public static readonly IPEndPoint[] GossipSeedDefault = new IPEndPoint[0];
 
         /*
-         *  MANAGER OPTIONS 
+         *  MANAGER OPTIONS
          */
         public const string EnableWatchdogDescr = null;
         public const bool   EnableWatchdogDefault = true;

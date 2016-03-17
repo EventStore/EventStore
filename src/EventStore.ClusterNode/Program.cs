@@ -194,7 +194,7 @@ namespace EventStore.ClusterNode
             if ((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
                 options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
             {
-                IPAddress nonLoopbackAddress = GetNonLoopbackAddress(); 
+                IPAddress nonLoopbackAddress = GetNonLoopbackAddress();
                 IPAddress addressToAdvertise = options.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
                 if(options.IntIp.Equals(IPAddress.Parse("0.0.0.0"))){
@@ -230,13 +230,13 @@ namespace EventStore.ClusterNode
             var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
             var extSecureTcpPort = options.ExtSecureTcpPortAdvertiseAs > 0 ? options.ExtSecureTcpPortAdvertiseAs : options.ExtSecureTcpPort;
             var extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
-            
+
             var intHttpPort = options.IntHttpPortAdvertiseAs > 0 ? options.IntHttpPortAdvertiseAs : options.IntHttpPort;
             var extHttpPort = options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort;
 
             var intHttpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intHttpPort);
             var extHttpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extHttpPort);
-            
+
             gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
                                                           extTcpEndPoint, extSecureTcpEndPoint,
                                                           intHttpEndPoint, extHttpEndPoint);
@@ -282,7 +282,9 @@ namespace EventStore.ClusterNode
                     options.Index,
                     options.EnableHistograms,
                     options.IndexCacheDepth,
-                    consumerStrategyFactories);
+                    consumerStrategyFactories,
+                    options.UnsafeIgnoreHardDelete
+                    );
         }
 
         private static IPAddress GetNonLoopbackAddress(){

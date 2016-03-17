@@ -30,11 +30,12 @@ namespace EventStore.Core.Services.Storage
         private readonly bool _mergeChunks;
         private readonly string _nodeEndpoint;
         private readonly int _scavengeHistoryMaxAge;
-
+        private readonly bool _unsafeIgnoreHardDeletes;
         private int _isScavengingRunning;
 
         public StorageScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IHasher hasher,
-                                IReadIndex readIndex, bool alwaysKeepScavenged, string nodeEndpoint, bool mergeChunks, int scavengeHistoryMaxAge)
+                                IReadIndex readIndex, bool alwaysKeepScavenged, string nodeEndpoint, bool mergeChunks,
+                                int scavengeHistoryMaxAge, bool unsafeIgnoreHardDeletes)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(ioDispatcher, "ioDispatcher");
@@ -52,8 +53,9 @@ namespace EventStore.Core.Services.Storage
             _mergeChunks = mergeChunks;
             _nodeEndpoint = nodeEndpoint;
             _scavengeHistoryMaxAge = scavengeHistoryMaxAge;
+            _unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
         }
-        
+
         public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
         {
             WriteScavengeIndexInitializedEvent();
@@ -93,8 +95,9 @@ namespace EventStore.Core.Services.Storage
                 else
                 {
                     WriteScavengeStartedEvent(streamName, scavengeId);
-                    
-                    var scavenger = new TFChunkScavenger(_db, _ioDispatcher, _tableIndex, _hasher, _readIndex, scavengeId, _nodeEndpoint);
+
+                    var scavenger = new TFChunkScavenger(_db, _ioDispatcher, _tableIndex, _hasher, _readIndex, scavengeId,
+                                                                                 _nodeEndpoint, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
 					spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
                     result = ClientMessage.ScavengeDatabase.ScavengeResult.Success;
                 }
@@ -120,7 +123,7 @@ namespace EventStore.Core.Services.Storage
                     true, new Dictionary<string, object>{}.ToJsonBytes(), null);
             _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.NoStream, indexInitializedEvent, SystemAccount.Principal, m => { });
         }
-        
+
         private void WriteScavengeStartedEvent(string streamName, Guid scavengeId)
         {
             var metadataEventId = Guid.NewGuid();
@@ -136,7 +139,7 @@ namespace EventStore.Core.Services.Storage
                 }.ToJsonBytes(), null);
             _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, scavengeStartedEvent, SystemAccount.Principal, x => WriteScavengeEventCompleted(x, streamName));
         }
-        
+
         private void WriteScavengeCompletedEvent(string streamName, Guid scavengeId, ClientMessage.ScavengeDatabase.ScavengeResult result, string error, long spaceSaved, TimeSpan timeTaken)
         {
             var scavengeCompletedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeCompleted, true, new Dictionary<string, object>{
