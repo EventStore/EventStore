@@ -453,7 +453,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             throw new NotImplementedException();
         }
-
+        public ConnectionSettings Settings { get { return null; } }
         public void Close()
         {
             throw new NotImplementedException();
