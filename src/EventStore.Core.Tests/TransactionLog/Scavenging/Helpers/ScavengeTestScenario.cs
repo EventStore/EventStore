@@ -30,6 +30,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         private LogRecord[][] _keptRecords;
         private bool _checked;
 
+        protected virtual bool UnsafeIgnoreHardDelete() {
+            return false;
+        }
+
         protected ScavengeTestScenario(int metastreamMaxCount = 1)
         {
             _metastreamMaxCount = metastreamMaxCount;
@@ -71,7 +75,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
             var bus = new InMemoryBus("Bus");
             var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
-            var scavenger = new TFChunkScavenger(_dbResult.Db, ioDispatcher, tableIndex, hasher, ReadIndex, Guid.NewGuid(), "fakeNodeIp");
+            var scavenger = new TFChunkScavenger(_dbResult.Db, ioDispatcher, tableIndex, hasher, ReadIndex, Guid.NewGuid(), "fakeNodeIp",
+                                            unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
         }
 
