@@ -27,8 +27,7 @@ namespace EventStore.Core.Services.Storage
         private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2 * TicksPerMs;
         private readonly ManualResetEventSlim _flushSignal = new ManualResetEventSlim();
-        private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(100);
-
+        private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(10);
 
         public string Name { get { return _queueStats.Name; } }
 
@@ -52,10 +51,10 @@ namespace EventStore.Core.Services.Storage
         private const string _chaserWaitHistogram = "chaser-wait";
         private const string _chaserFlushHistogram = "chaser-flush";
 
-        public StorageChaser(IPublisher masterBus, 
-                             ICheckpoint writerCheckpoint, 
-                             ITransactionFileChaser chaser, 
-                             IIndexCommitter indexCommitter, 
+        public StorageChaser(IPublisher masterBus,
+                             ICheckpoint writerCheckpoint,
+                             ITransactionFileChaser chaser,
+                             IIndexCommitter indexCommitter,
                              IEpochManager epochManager)
         {
             Ensure.NotNull(masterBus, "masterBus");
@@ -97,10 +96,10 @@ namespace EventStore.Core.Services.Storage
                 _writerCheckpoint.Flushed += OnWriterFlushed;
 
                 _chaser.Open();
-                
+
                 // We rebuild index till the chaser position, because
                 // everything else will be done by chaser as during replication
-                // with no concurrency issues with writer, as writer before jumping 
+                // with no concurrency issues with writer, as writer before jumping
                 // into master-mode and accepting writes will wait till chaser caught up.
                 _indexCommitter.Init(_chaser.Checkpoint.Read());
                 _masterBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
@@ -272,9 +271,9 @@ namespace EventStore.Core.Services.Storage
 
             if (record.SystemRecordType == SystemRecordType.Epoch)
             {
-                // Epoch record is written to TF, but possibly is not added to EpochManager 
-                // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
-                // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
+                // Epoch record is written to TF, but possibly is not added to EpochManager
+                // as we could be in Slave\Clone mode. We try to add epoch to EpochManager
+                // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent,
                 // but does integrity checks.
                 var epoch = record.GetEpochRecord();
                 _epochManager.SetLastEpoch(epoch);
