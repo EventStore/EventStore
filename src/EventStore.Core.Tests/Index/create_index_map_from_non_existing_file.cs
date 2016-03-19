@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void commit_checkpoint_is_equal_to_minus_one()
         {
-            Assert.AreEqual(-1, _map.PrepareCheckpoint);
+            Assert.AreEqual(-1, _map.CommitCheckpoint);
         }
     }
 }
