@@ -56,7 +56,7 @@ namespace EventStore.ClientAPI.Internal
         private readonly Dictionary<Guid, OperationItem> _activeOperations = new Dictionary<Guid, OperationItem>();
         private readonly Queue<OperationItem> _waitingOperations = new Queue<OperationItem>();
         private readonly List<OperationItem> _retryPendingOperations = new List<OperationItem>();
-
+        private readonly object _lock = new object();
         private int _totalOperationCount;
 
         public OperationsManager(string connectionName, ConnectionSettings settings)
@@ -141,7 +141,7 @@ namespace EventStore.ClientAPI.Internal
                 _retryPendingOperations.Clear();
             }
 
-            ScheduleWaitingOperations(connection);
+            TryScheduleWaitingOperations(connection);
         }
 
         public void ScheduleOperationRetry(OperationItem operation)
@@ -170,14 +170,27 @@ namespace EventStore.ClientAPI.Internal
             return true;
         }
 
-        public void ScheduleWaitingOperations(TcpPackageConnection connection)
+        public void TryScheduleWaitingOperations(TcpPackageConnection connection)
         {
             Ensure.NotNull(connection, "connection");
-            while (_waitingOperations.Count > 0 && _activeOperations.Count < _settings.MaxConcurrentItems)
+            lock(_lock)
             {
-                ScheduleOperation(_waitingOperations.Dequeue(), connection);
+                while (_waitingOperations.Count > 0 && _activeOperations.Count < _settings.MaxConcurrentItems)
+                {
+                    ExecuteOperation(_waitingOperations.Dequeue(), connection);
+                }
+                _totalOperationCount = _activeOperations.Count + _waitingOperations.Count;
             }
-            _totalOperationCount = _activeOperations.Count + _waitingOperations.Count;
+        }
+
+        public void ExecuteOperation(OperationItem operation, TcpPackageConnection connection) {
+                operation.ConnectionId = connection.ConnectionId;
+                operation.LastUpdated = DateTime.UtcNow;
+                _activeOperations.Add(operation.CorrelationId, operation);
+
+                var package = operation.Operation.CreateNetworkPackage(operation.CorrelationId);
+                LogDebug("ExecuteOperation package {0}, {1}, {2}.", package.Command, package.CorrelationId, operation);
+                connection.EnqueueSend(package);
         }
 
         public void EnqueueOperation(OperationItem operation)
@@ -189,23 +202,8 @@ namespace EventStore.ClientAPI.Internal
         public void ScheduleOperation(OperationItem operation, TcpPackageConnection connection)
         {
             Ensure.NotNull(connection, "connection");
-
-            if (_activeOperations.Count >= _settings.MaxConcurrentItems)
-            {
-                LogDebug("ScheduleOperation WAITING for {0}.", operation);
-                _waitingOperations.Enqueue(operation);
-            }
-            else
-            {
-                operation.ConnectionId = connection.ConnectionId;
-                operation.LastUpdated = DateTime.UtcNow;
-                _activeOperations.Add(operation.CorrelationId, operation);
-
-                var package = operation.Operation.CreateNetworkPackage(operation.CorrelationId);
-                LogDebug("ScheduleOperation package {0}, {1}, {2}.", package.Command, package.CorrelationId, operation);
-                connection.EnqueueSend(package);
-            }
-            _totalOperationCount = _activeOperations.Count + _waitingOperations.Count;
+            _waitingOperations.Enqueue(operation);
+            TryScheduleWaitingOperations(connection);
         }
 
         private void LogDebug(string message, params object[] parameters)

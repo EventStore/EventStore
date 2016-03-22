@@ -177,7 +177,7 @@ namespace EventStore.ClientAPI.Internal
                 LogDebug("CloseConnection IGNORED because is ESConnection is CLOSED, reason {0}, exception {1}.", reason, exception);
                 return;
             }
-            
+
             LogDebug("CloseConnection, reason {0}, exception {1}.", reason, exception);
 
             _state = ConnectionState.Closed;
@@ -214,8 +214,8 @@ namespace EventStore.ClientAPI.Internal
             if (_state == ConnectionState.Init) throw new Exception();
             if (_state == ConnectionState.Closed || _connection != connection)
             {
-                LogDebug("IGNORED (_state: {0}, _conn.ID: {1:B}, conn.ID: {2:B}): TCP connection to [{3}, L{4}] closed.", 
-                         _state, _connection == null ? Guid.Empty : _connection.ConnectionId,  connection.ConnectionId, 
+                LogDebug("IGNORED (_state: {0}, _conn.ID: {1:B}, conn.ID: {2:B}): TCP connection to [{3}, L{4}] closed.",
+                         _state, _connection == null ? Guid.Empty : _connection.ConnectionId,  connection.ConnectionId,
                          connection.RemoteEndPoint, connection.LocalEndPoint);
                 return;
             }
@@ -238,8 +238,8 @@ namespace EventStore.ClientAPI.Internal
         {
             if (_state != ConnectionState.Connecting || _connection != connection || connection.IsClosed)
             {
-                LogDebug("IGNORED (_state {0}, _conn.Id {1:B}, conn.Id {2:B}, conn.closed {3}): TCP connection to [{4}, L{5}] established.", 
-                         _state, _connection == null ? Guid.Empty : _connection.ConnectionId, connection.ConnectionId, 
+                LogDebug("IGNORED (_state {0}, _conn.Id {1:B}, conn.Id {2:B}, conn.closed {3}): TCP connection to [{4}, L{5}] established.",
+                         _state, _connection == null ? Guid.Empty : _connection.ConnectionId, connection.ConnectionId,
                          connection.IsClosed, connection.RemoteEndPoint, connection.LocalEndPoint);
                 return;
             }
@@ -256,7 +256,7 @@ namespace EventStore.ClientAPI.Internal
                                                        TcpFlags.Authenticated,
                                                        _authInfo.CorrelationId,
                                                        _settings.DefaultUserCredentials.Username,
-                                                       _settings.DefaultUserCredentials.Password, 
+                                                       _settings.DefaultUserCredentials.Password,
                                                        null));
             }
             else
@@ -339,7 +339,7 @@ namespace EventStore.ClientAPI.Internal
             if (_connection == null) throw new Exception();
 
             var timeout = _heartbeatInfo.IsIntervalStage ? _settings.HeartbeatInterval : _settings.HeartbeatTimeout;
-            if (_stopwatch.Elapsed - _heartbeatInfo.TimeStamp < timeout) 
+            if (_stopwatch.Elapsed - _heartbeatInfo.TimeStamp < timeout)
                 return;
 
             var packageNumber = _packageNumber;
@@ -355,7 +355,7 @@ namespace EventStore.ClientAPI.Internal
                 _connection.EnqueueSend(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
                 _heartbeatInfo = new HeartbeatInfo(_heartbeatInfo.LastPackageNumber, false, _stopwatch.Elapsed);
             }
-            else 
+            else
             {
                 // TcpMessage.HeartbeatTimeout analog
                 var msg = string.Format("EventStoreConnection '{0}': closing TCP connection [{1}, L{2}, {3:B}] due to HEARTBEAT TIMEOUT at pkgNum {4}.",
@@ -397,8 +397,8 @@ namespace EventStore.ClientAPI.Internal
                     break;
                 case ConnectionState.Connecting:
                 case ConnectionState.Connected:
-                    var operation = new VolatileSubscriptionOperation(_settings.Log, msg.Source, msg.StreamId, msg.ResolveLinkTos, 
-                                                              msg.UserCredentials, msg.EventAppeared, msg.SubscriptionDropped, 
+                    var operation = new VolatileSubscriptionOperation(_settings.Log, msg.Source, msg.StreamId, msg.ResolveLinkTos,
+                                                              msg.UserCredentials, msg.EventAppeared, msg.SubscriptionDropped,
                                                               _settings.VerboseLogging, () => _connection);
                     LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");
                     var subscription = new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout);
@@ -447,7 +447,7 @@ namespace EventStore.ClientAPI.Internal
                 LogDebug("IGNORED: HandleTcpPackage connId {0}, package {1}, {2}.", connection.ConnectionId, package.Command, package.CorrelationId);
                 return;
             }
-            
+
             LogDebug("HandleTcpPackage connId {0}, package {1}, {2}.", _connection.ConnectionId, package.Command, package.CorrelationId);
             _packageNumber += 1;
 
@@ -490,12 +490,12 @@ namespace EventStore.ClientAPI.Internal
                 LogDebug("HandleTcpPackage OPERATION DECISION {0} ({1}), {2}", result.Decision, result.Description, operation);
                 switch (result.Decision)
                 {
-                    case InspectionDecision.DoNothing: break; 
-                    case InspectionDecision.EndOperation: 
-                        _operations.RemoveOperation(operation); 
+                    case InspectionDecision.DoNothing: break;
+                    case InspectionDecision.EndOperation:
+                        _operations.RemoveOperation(operation);
                         break;
-                    case InspectionDecision.Retry: 
-                        _operations.ScheduleOperationRetry(operation); 
+                    case InspectionDecision.Retry:
+                        _operations.ScheduleOperationRetry(operation);
                         break;
                     case InspectionDecision.Reconnect:
                         ReconnectTo(new NodeEndPoints(result.TcpEndPoint, result.SecureTcpEndPoint));
@@ -504,7 +504,7 @@ namespace EventStore.ClientAPI.Internal
                     default: throw new Exception(string.Format("Unknown InspectionDecision: {0}", result.Decision));
                 }
                 if (_state == ConnectionState.Connected)
-                    _operations.ScheduleWaitingOperations(connection);
+                    _operations.TryScheduleWaitingOperations(connection);
             }
             else if (_subscriptions.TryGetActiveSubscription(package.CorrelationId, out subscription))
             {
@@ -513,11 +513,11 @@ namespace EventStore.ClientAPI.Internal
                 switch (result.Decision)
                 {
                     case InspectionDecision.DoNothing: break;
-                    case InspectionDecision.EndOperation: 
-                        _subscriptions.RemoveSubscription(subscription); 
+                    case InspectionDecision.EndOperation:
+                        _subscriptions.RemoveSubscription(subscription);
                         break;
-                    case InspectionDecision.Retry: 
-                        _subscriptions.ScheduleSubscriptionRetry(subscription); 
+                    case InspectionDecision.Retry:
+                        _subscriptions.ScheduleSubscriptionRetry(subscription);
                         break;
                     case InspectionDecision.Reconnect:
                         ReconnectTo(new NodeEndPoints(result.TcpEndPoint, result.SecureTcpEndPoint));
