@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
     public class SingleAckRequestManager : IRequestManager,
                                            IHandle<ClientMessage.TransactionStart>,
                                            IHandle<ClientMessage.TransactionWrite>,
-                                           IHandle<StorageMessage.CheckStreamAccessCompleted>, 
+                                           IHandle<StorageMessage.CheckStreamAccessCompleted>,
                                            IHandle<StorageMessage.PrepareAck>,
                                            IHandle<StorageMessage.WrongExpectedVersion>,
                                            IHandle<StorageMessage.InvalidTransaction>,
@@ -32,17 +32,18 @@ namespace EventStore.Core.Services.RequestManager.Managers
         private bool _completed;
         private bool _initialized;
         private DateTime _nextTimeoutTime;
-
+        private readonly bool _betterOrdering;
         private RequestType _requestType;
         private ClientMessage.TransactionStart _request;
 
-        public SingleAckRequestManager(IPublisher bus, TimeSpan prepareTimeout)
+        public SingleAckRequestManager(IPublisher bus, TimeSpan prepareTimeout, bool betterOrdering)
         {
             Ensure.NotNull(bus, "bus");
 
             _bus = bus;
             _prepareTimeout = prepareTimeout;
             _publishEnvelope = new PublishEnvelope(_bus);
+            _betterOrdering = betterOrdering;
         }
 
         public void Handle(ClientMessage.TransactionStart request)
@@ -60,7 +61,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _request = request;
             _bus.Publish(new StorageMessage.CheckStreamAccess(
-                _publishEnvelope, _internalCorrId, request.EventStreamId, null, StreamAccessType.Write, request.User));
+                _publishEnvelope, _internalCorrId, request.EventStreamId, null, StreamAccessType.Write, request.User, _betterOrdering));
 
             _nextTimeoutTime = DateTime.UtcNow + _prepareTimeout;
         }
@@ -130,7 +131,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             if (_completed || message.UtcNow < _nextTimeoutTime)
                 return;
-        
+
             CompleteFailedRequest(OperationResult.PrepareTimeout, "Prepare phase timeout.");
         }
 

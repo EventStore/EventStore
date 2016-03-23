@@ -174,6 +174,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
         public bool UnsafeDisableFlushToDisk { get; set; }
 
+        [ArgDescription(Opts.BetterOrderingDescr, Opts.DbGroup)]
+        public bool BetterOrdering { get; set; }
+
         [ArgDescription(Opts.UnsafeIgnoreHardDeleteDescr, Opts.DbGroup)]
         public bool UnsafeIgnoreHardDelete { get; set; }
 
@@ -236,6 +239,7 @@ namespace EventStore.ClusterNode
             RunProjections = Opts.RunProjectionsDefault;
             ProjectionThreads = Opts.ProjectionThreadsDefault;
             WorkerThreads = Opts.WorkerThreadsDefault;
+            BetterOrdering = Opts.BetterOrderingDefault;
 
             IntHttpPrefixes = Opts.IntHttpPrefixesDefault;
             ExtHttpPrefixes = Opts.ExtHttpPrefixesDefault;

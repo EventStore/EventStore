@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.RequestManager
     }
 
     public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
-                                            IHandle<ClientMessage.WriteEvents>, 
+                                            IHandle<ClientMessage.WriteEvents>,
                                             IHandle<ClientMessage.DeleteStream>,
                                             IHandle<ClientMessage.TransactionStart>,
                                             IHandle<ClientMessage.TransactionWrite>,
@@ -36,13 +36,18 @@ namespace EventStore.Core.Services.RequestManager
         private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
         private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
         private const string _requestManagerHistogram = "request-manager";
-
+        private readonly bool _betterOrdering;
         private readonly int _prepareCount;
         private readonly int _commitCount;
         private readonly TimeSpan _prepareTimeout;
         private readonly TimeSpan _commitTimeout;
 
-        public RequestManagementService(IPublisher bus, int prepareCount, int commitCount, TimeSpan prepareTimeout, TimeSpan commitTimeout)
+        public RequestManagementService(IPublisher bus,
+                                                             int prepareCount,
+                                                             int commitCount,
+                                                             TimeSpan prepareTimeout,
+                                                             TimeSpan commitTimeout,
+                                                             bool betterOrdering)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.Nonnegative(prepareCount, "prepareCount");
@@ -57,16 +62,17 @@ namespace EventStore.Core.Services.RequestManager
             _commitCount = commitCount;
             _prepareTimeout = prepareTimeout;
             _commitTimeout = commitTimeout;
+            _betterOrdering = betterOrdering;
         }
 
         public void Handle(SystemMessage.SystemInit message)
         {
-            _bus.Publish(_tickRequestMessage);   
+            _bus.Publish(_tickRequestMessage);
         }
 
         public void Handle(ClientMessage.WriteEvents message)
         {
-            var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
+            var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
@@ -74,7 +80,7 @@ namespace EventStore.Core.Services.RequestManager
 
         public void Handle(ClientMessage.DeleteStream message)
         {
-            var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
+            var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
@@ -82,15 +88,15 @@ namespace EventStore.Core.Services.RequestManager
 
         public void Handle(ClientMessage.TransactionStart message)
         {
-            var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
+            var manager = new SingleAckRequestManager(_bus, _prepareTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
         }
-        
+
         public void Handle(ClientMessage.TransactionWrite message)
         {
-            var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
+            var manager = new SingleAckRequestManager(_bus, _prepareTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);
@@ -98,7 +104,7 @@ namespace EventStore.Core.Services.RequestManager
 
         public void Handle(ClientMessage.TransactionCommit message)
         {
-            var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
+            var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
             manager.Handle(message);

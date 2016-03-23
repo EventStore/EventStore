@@ -283,7 +283,8 @@ namespace EventStore.ClusterNode
                     options.EnableHistograms,
                     options.IndexCacheDepth,
                     consumerStrategyFactories,
-                    options.UnsafeIgnoreHardDelete
+                    options.UnsafeIgnoreHardDelete,
+                    options.BetterOrdering
                     );
         }
 

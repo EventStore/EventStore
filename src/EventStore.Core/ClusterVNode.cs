@@ -368,7 +368,8 @@ namespace EventStore.Core
                                                                  vNodeSettings.PrepareAckCount,
                                                                  vNodeSettings.CommitAckCount,
                                                                  vNodeSettings.PrepareTimeout,
-                                                                 vNodeSettings.CommitTimeout);
+                                                                 vNodeSettings.CommitTimeout,
+                                                                 vNodeSettings.BetterOrdering);
             _mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
             _mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
             _mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);

@@ -43,8 +43,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         private bool _completed;
         private bool _initialized;
-
-        protected TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount, TimeSpan prepareTimeout, TimeSpan commitTimeout)
+        private bool _betterOrdering;
+        protected TwoPhaseRequestManagerBase(IPublisher publisher,
+                                                                       int prepareCount,
+                                                                       int commitCount,
+                                                                       TimeSpan prepareTimeout,
+                                                                       TimeSpan commitTimeout,
+                                                                       bool betterOrdering)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.Positive(prepareCount, "prepareCount");
@@ -55,6 +60,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             PrepareTimeout = prepareTimeout;
             CommitTimeout = commitTimeout;
+            _betterOrdering = betterOrdering;
 
             _awaitingPrepare = prepareCount;
             _awaitingCommit = commitCount;
@@ -76,9 +82,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
             _awaitingPrepare = 0;
-
             Publisher.Publish(new StorageMessage.CheckStreamAccess(
-                PublishEnvelope, internalCorrId, eventStreamId, null, accessType, user));
+                PublishEnvelope, internalCorrId, eventStreamId, null, accessType, user, _betterOrdering));
         }
 
         protected void InitTwoPhase(IEnvelope responseEnvelope, Guid internalCorrId, Guid clientCorrId,
@@ -131,20 +136,20 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             if (_awaitingPrepare != 0)
                 CompleteFailedRequest(OperationResult.PrepareTimeout, "Prepare phase timeout.");
-            else 
+            else
                 CompleteFailedRequest(OperationResult.CommitTimeout, "Commit phase timeout.");
         }
 
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
             Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {0}, {1}.", _clientCorrId, message);
-            CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, -1, -1); 
+            CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, -1, -1);
             //TODO GFY WE NEED TO GET THE LOG POSITION HERE WHEN ITS AN IDEMPOTENT WRITE
         }
 
         public void Handle(StorageMessage.PrepareAck message)
         {
-            if (_completed) 
+            if (_completed)
                 return;
 
             if (_transactionId == -1)
@@ -157,7 +162,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 {
                     Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, PublishEnvelope, _transactionId));
                     _nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
-                } 
+                }
             }
         }
 
