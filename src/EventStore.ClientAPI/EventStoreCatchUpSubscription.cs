@@ -13,8 +13,6 @@ namespace EventStore.ClientAPI
     /// </summary>
     public abstract class EventStoreCatchUpSubscription
     {
-        private const int DefaultReadBatchSize = 500;
-        private const int DefaultMaxPushQueueSize = 10000;
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
 
         /// <summary>
@@ -37,7 +35,7 @@ namespace EventStore.ClientAPI
         private readonly bool _resolveLinkTos;
         private readonly UserCredentials _userCredentials;
         private readonly string _streamId;
-        
+
         /// <summary>
         /// The batch size to use during the read phase of the subscription.
         /// </summary>
@@ -97,44 +95,35 @@ namespace EventStore.ClientAPI
         /// <param name="connection">The connection.</param>
         /// <param name="log">The <see cref="ILogger"/> to use.</param>
         /// <param name="streamId">The stream name.</param>
-        /// <param name="resolveLinkTos">Whether to resolve Link events.</param>
         /// <param name="userCredentials">User credentials for the operations.</param>
         /// <param name="eventAppeared">Action invoked when events are received.</param>
         /// <param name="liveProcessingStarted">Action invoked when the read phase finishes.</param>
         /// <param name="subscriptionDropped">Action invoked if the subscription drops.</param>
-        /// <param name="verboseLogging">Whether to use verbose logging.</param>
-        /// <param name="readBatchSize">Batch size for use in the reading phase.</param>
-        /// <param name="maxPushQueueSize">The maximum number of events to buffer before dropping the subscription.</param>
-        protected EventStoreCatchUpSubscription(IEventStoreConnection connection, 
+        /// <param name="settings">Settings for this subscription.</param>
+        protected EventStoreCatchUpSubscription(IEventStoreConnection connection,
                                                 ILogger log,
                                                 string streamId,
-                                                bool resolveLinkTos,
                                                 UserCredentials userCredentials,
-                                                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared, 
+                                                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                 Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
-                                                bool verboseLogging,
-                                                int readBatchSize = DefaultReadBatchSize,
-                                                int maxPushQueueSize = DefaultMaxPushQueueSize)
+                                                CatchUpSubscriptionSettings settings)
         {
             Ensure.NotNull(connection, "connection");
             Ensure.NotNull(log, "log");
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            Ensure.Positive(readBatchSize, "readBatchSize");
-            Ensure.Positive(maxPushQueueSize, "maxPushQueueSize");
-            if (readBatchSize > Consts.MaxReadSize) throw new ArgumentException(string.Format("Read batch size should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             _connection = connection;
             Log = log;
             _streamId = string.IsNullOrEmpty(streamId) ? string.Empty : streamId;
-            _resolveLinkTos = resolveLinkTos;
+            _resolveLinkTos = settings.ResolveLinkTos;
             _userCredentials = userCredentials;
-            ReadBatchSize = readBatchSize;
-            MaxPushQueueSize = maxPushQueueSize;
+            ReadBatchSize = settings.ReadBatchSize;
+            MaxPushQueueSize = settings.MaxLiveQueueSize;
 
             EventAppeared = eventAppeared;
             _liveProcessingStarted = liveProcessingStarted;
             _subscriptionDropped = subscriptionDropped;
-            Verbose = verboseLogging;
+            Verbose = settings.VerboseLogging;
         }
 
         internal Task Start()
@@ -363,7 +352,7 @@ namespace EventStore.ClientAPI
 
                 if (_subscription != null)
                     _subscription.Unsubscribe();
-                if (_subscriptionDropped != null) 
+                if (_subscriptionDropped != null)
                     _subscriptionDropped(this, reason, error);
                 _stopped.Set();
             }
@@ -410,15 +399,13 @@ namespace EventStore.ClientAPI
         internal EventStoreAllCatchUpSubscription(IEventStoreConnection connection,
                                                   ILogger log,
                                                   Position? fromPositionExclusive, /* if null -- from the very beginning */
-                                                  bool resolveLinkTos,
                                                   UserCredentials userCredentials,
                                                   Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                   Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                   Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
-                                                  bool verboseLogging,
-                                                  int readBatchSize = 500)
-                : base(connection, log, string.Empty, resolveLinkTos, userCredentials, 
-                       eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging, readBatchSize)
+                                                 CatchUpSubscriptionSettings settings)
+                : base(connection, log, string.Empty, userCredentials,
+                       eventAppeared, liveProcessingStarted, subscriptionDropped, settings)
         {
             _lastProcessedPosition = fromPositionExclusive ?? new Position(-1, -1);
             _nextReadPosition = fromPositionExclusive ?? Position.Start;
@@ -491,7 +478,7 @@ namespace EventStore.ClientAPI
                 processed = true;
             }
             if (Verbose)
-                Log.Debug("Catch-up Subscription to {0}: {1} event ({2}, {3}, {4} @ {5}).", 
+                Log.Debug("Catch-up Subscription to {0}: {1} event ({2}, {3}, {4} @ {5}).",
                           IsSubscribedToAll ? "<all>" : StreamId, processed ? "processed" : "skipping",
                           e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalPosition);
         }
@@ -514,15 +501,13 @@ namespace EventStore.ClientAPI
                                                      ILogger log,
                                                      string streamId,
                                                      int? fromEventNumberExclusive, /* if null -- from the very beginning */
-                                                     bool resolveLinkTos,
                                                      UserCredentials userCredentials,
                                                      Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                      Action<EventStoreCatchUpSubscription> liveProcessingStarted,
                                                      Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
-                                                     bool verboseLogging,
-                                                     int readBatchSize = 500)
-            : base(connection, log, streamId, resolveLinkTos, userCredentials, 
-                   eventAppeared, liveProcessingStarted, subscriptionDropped, verboseLogging, readBatchSize)
+                                                     CatchUpSubscriptionSettings settings)
+            : base(connection, log, streamId, userCredentials,
+                   eventAppeared, liveProcessingStarted, subscriptionDropped, settings)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
 

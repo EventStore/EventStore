@@ -15,10 +15,10 @@ namespace EventStore.ClientAPI.Internal
     /// </summary>
     /// <remarks>
     /// An <see cref="EventStoreConnection"/> operates quite differently than say a <see cref="SqlConnection"/>. Normally
-    /// when using an <see cref="EventStoreConnection"/> you want to keep the connection open for a much longer of time than 
+    /// when using an <see cref="EventStoreConnection"/> you want to keep the connection open for a much longer of time than
     /// when you use a SqlConnection. If you prefer the usage pattern of using(new Connection()) .. then you would likely
     /// want to create a FlyWeight on top of the <see cref="EventStoreConnection"/>.
-    /// 
+    ///
     /// Another difference is that with the <see cref="EventStoreConnection"/> all operations are handled in a full async manner
     /// (even if you call the synchronous behaviors). Many threads can use an <see cref="EventStoreConnection"/> at the same
     /// time or a single thread can make many asynchronous requests. To get the most performance out of the connection
@@ -96,7 +96,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<DeleteResult>();
-            EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.RequireMaster, 
+            EnqueueOperation(new DeleteStreamOperation(_settings.Log, source, _settings.RequireMaster,
                                                        stream, expectedVersion, hardDelete, userCredentials));
             return source.Task;
         }
@@ -124,7 +124,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<WriteResult>();
-            EnqueueOperation(new AppendToStreamOperation(_settings.Log, source, _settings.RequireMaster, 
+            EnqueueOperation(new AppendToStreamOperation(_settings.Log, source, _settings.RequireMaster,
                                                          stream, expectedVersion, events, userCredentials));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
@@ -135,7 +135,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            EnqueueOperation(new StartTransactionOperation(_settings.Log, source, _settings.RequireMaster, 
+            EnqueueOperation(new StartTransactionOperation(_settings.Log, source, _settings.RequireMaster,
                                                            stream, expectedVersion, this, userCredentials));
             return source.Task;
         }
@@ -153,7 +153,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            EnqueueOperation(new TransactionalWriteOperation(_settings.Log, source, _settings.RequireMaster, 
+            EnqueueOperation(new TransactionalWriteOperation(_settings.Log, source, _settings.RequireMaster,
                                                              transaction.TransactionId, events, userCredentials));
             return source.Task;
 // ReSharper restore PossibleMultipleEnumeration
@@ -164,7 +164,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNull(transaction, "transaction");
 
             var source = new TaskCompletionSource<WriteResult>();
-            EnqueueOperation(new CommitTransactionOperation(_settings.Log, source, _settings.RequireMaster, 
+            EnqueueOperation(new CommitTransactionOperation(_settings.Log, source, _settings.RequireMaster,
                                                             transaction.TransactionId, userCredentials));
             return source.Task;
         }
@@ -249,7 +249,7 @@ namespace EventStore.ClientAPI.Internal
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
             _handler.EnqueueMessage(new StartSubscriptionMessage(source, stream, resolveLinkTos, userCredentials,
-                                                                 eventAppeared, subscriptionDropped, 
+                                                                 eventAppeared, subscriptionDropped,
                                                                  _settings.MaxRetries, _settings.OperationTimeout));
             return source.Task;
         }
@@ -263,19 +263,34 @@ namespace EventStore.ClientAPI.Internal
                                                                          UserCredentials userCredentials = null,
                                                                          int readBatchSize = 500)
         {
+            var settings = new CatchUpSubscriptionSettings(Consts.CatchUpDefaultMaxPushQueueSize, readBatchSize,
+                                                                                    _settings.VerboseLogging, resolveLinkTos);
+            return SubscribeToStreamFrom(stream, lastCheckpoint, settings, eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
+        }
+
+        public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
+                string stream,
+                int? lastCheckpoint,
+                CatchUpSubscriptionSettings settings,
+                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null)
+        {
             Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(settings, "settings");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription =
-                    new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint, 
-                                                            resolveLinkTos, userCredentials, eventAppeared, 
-                                                            liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+                    new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint,
+                                                            userCredentials, eventAppeared, liveProcessingStarted,
+                                                            subscriptionDropped, settings);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
 
         public Task<EventStoreSubscription> SubscribeToAllAsync(
-                bool resolveLinkTos, 
-                Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                bool resolveLinkTos,
+                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null)
         {
@@ -289,29 +304,43 @@ namespace EventStore.ClientAPI.Internal
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
-                Position? lastCheckpoint,
-                bool resolveLinkTos,
-                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
-                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null,
-                int readBatchSize = 500)
+            Position? lastCheckpoint,
+            bool resolveLinkTos,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null,
+            int readBatchSize = 500)
+        {
+            var settings = new CatchUpSubscriptionSettings(Consts.CatchUpDefaultMaxPushQueueSize, readBatchSize,
+                                                                                    _settings.VerboseLogging, resolveLinkTos);
+            return SubscribeToAllFrom(lastCheckpoint, settings,eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
+        }
+
+        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
+            Position? lastCheckpoint,
+            CatchUpSubscriptionSettings settings,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            var catchUpSubscription = 
-                    new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint, resolveLinkTos,
-                                                         userCredentials, eventAppeared, liveProcessingStarted, 
-                                                         subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+            Ensure.NotNull(settings, "settings");
+            var catchUpSubscription =
+                    new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint,
+                                                         userCredentials, eventAppeared, liveProcessingStarted,
+                                                         subscriptionDropped, settings);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
 
         public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
-            string stream, 
-            string groupName, 
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, 
+            string stream,
+            string groupName,
+            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
-            UserCredentials userCredentials = null, 
+            UserCredentials userCredentials = null,
             int bufferSize = 10,
             bool autoAck = true)
         {
@@ -405,7 +434,7 @@ namespace EventStore.ClientAPI.Internal
         public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
-            if (SystemStreams.IsMetastream(stream)) 
+            if (SystemStreams.IsMetastream(stream))
                 throw new ArgumentException(string.Format("Setting metadata for metastream '{0}' is not supported.", stream), "stream");
 
             var source = new TaskCompletionSource<WriteResult>();
@@ -439,7 +468,7 @@ namespace EventStore.ClientAPI.Internal
         {
             return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, userCredentials).ContinueWith(t =>
             {
-                if (t.Exception != null) 
+                if (t.Exception != null)
                     throw t.Exception.InnerException;
 
                 var res = t.Result;

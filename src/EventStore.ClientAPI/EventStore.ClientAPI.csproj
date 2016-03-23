@@ -129,6 +129,7 @@
     <Compile Include="DeleteResult.cs" />
     <Compile Include="SystemSettings.cs" />
     <Compile Include="EventReadResult.cs" />
+    <Compile Include="CatchUpSubscriptionSettings.cs" />
     <Compile Include="Internal\EventStoreConnectionLogicHandler.cs" />
     <Compile Include="Internal\IEndPointDiscoverer.cs" />
     <Compile Include="Internal\OperationsManager.cs" />
@@ -228,7 +229,7 @@ $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProject
   <PropertyGroup>
     <PreBuildEvent />
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   -->
   <Target Name="BeforeBuild">

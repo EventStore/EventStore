@@ -88,7 +88,7 @@ namespace EventStore.ClientAPI.Embedded
             _authenticationProvider = authenticationProvider;
             _subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
             _subscriptions = new EmbeddedSubscriber(_subscriptionBus, _authenticationProvider, _settings.Log, connectionId);
-            
+
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
             _subscriptionBus.Subscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
@@ -111,7 +111,7 @@ namespace EventStore.ClientAPI.Embedded
         public Task ConnectAsync()
         {
             var source = new TaskCompletionSource<object>();
-            
+
             source.SetResult(null);
 
             Connected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)));
@@ -231,7 +231,7 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(transaction, "transaction");
 
             var source = new TaskCompletionSource<WriteResult>();
-            
+
             var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.TransactionCommit(source));
 
             Guid corrId = Guid.NewGuid();
@@ -248,7 +248,7 @@ namespace EventStore.ClientAPI.Embedded
             if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
 
             var source = new TaskCompletionSource<EventReadResult>();
-            
+
             var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadEvent(source, stream, eventNumber));
 
             Guid corrId = Guid.NewGuid();
@@ -342,25 +342,40 @@ namespace EventStore.ClientAPI.Embedded
             Guid corrId = Guid.NewGuid();
 
             _subscriptions.StartSubscription(corrId, source, stream, GetUserCredentials(_settings, userCredentials), resolveLinkTos, eventAppeared, subscriptionDropped);
-            
+
             return source.Task;
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
+                                                                         int? lastCheckpoint,
+                                                                         bool resolveLinkTos,
+                                                                         Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                                                                         Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                                                                         Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                                                                         UserCredentials userCredentials = null,
+                                                                         int readBatchSize = 500)
+        {
+            var settings = new CatchUpSubscriptionSettings(Consts.CatchUpDefaultMaxPushQueueSize, readBatchSize,
+                                                                                    _settings.VerboseLogging, resolveLinkTos);
+            return SubscribeToStreamFrom(stream, lastCheckpoint, settings, eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
+        }
+
+        public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
+            string stream,
             int? lastCheckpoint,
-            bool resolveLinkTos,
+            CatchUpSubscriptionSettings settings,
             Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
             Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-            UserCredentials userCredentials = null,
-            int readBatchSize = 500)
+            UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(settings, "settings");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             var catchUpSubscription =
-                new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint,
-                    resolveLinkTos, GetUserCredentials(_settings, userCredentials), eventAppeared,
-                    liveProcessingStarted, subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+                    new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint,
+                                                            userCredentials, eventAppeared, liveProcessingStarted,
+                                                            subscriptionDropped, settings);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
@@ -374,7 +389,7 @@ namespace EventStore.ClientAPI.Embedded
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
             var source = new TaskCompletionSource<EventStoreSubscription>();
-        
+
             Guid corrId = Guid.NewGuid();
 
             _subscriptions.StartSubscription(corrId, source, string.Empty, GetUserCredentials(_settings, userCredentials), resolveLinkTos, eventAppeared, subscriptionDropped);
@@ -411,11 +426,25 @@ namespace EventStore.ClientAPI.Embedded
             UserCredentials userCredentials = null,
             int readBatchSize = 500)
         {
+            var settings = new CatchUpSubscriptionSettings(Consts.CatchUpDefaultMaxPushQueueSize, readBatchSize,
+                                                                                    _settings.VerboseLogging, resolveLinkTos);
+            return SubscribeToAllFrom(lastCheckpoint, settings,eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
+        }
+
+        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
+            Position? lastCheckpoint,
+            CatchUpSubscriptionSettings settings,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
+        {
             Ensure.NotNull(eventAppeared, "eventAppeared");
+            Ensure.NotNull(settings, "settings");
             var catchUpSubscription =
-                new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint, resolveLinkTos,
-                    GetUserCredentials(_settings, userCredentials), eventAppeared, liveProcessingStarted,
-                    subscriptionDropped, _settings.VerboseLogging, readBatchSize);
+                    new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint,
+                                                         userCredentials, eventAppeared, liveProcessingStarted,
+                                                         subscriptionDropped, settings);
             catchUpSubscription.Start();
             return catchUpSubscription;
         }
@@ -435,7 +464,7 @@ namespace EventStore.ClientAPI.Embedded
 
 
             _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.CreatePersistentSubscription(
-                corrId, 
+                corrId,
                 corrId,
                 envelope,
                 stream,
@@ -629,9 +658,9 @@ namespace EventStore.ClientAPI.Embedded
 
             Guid corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.TransactionWrite(corrId, corrId, envelope, false, 
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.TransactionWrite(corrId, corrId, envelope, false,
                 transaction.TransactionId, events.ConvertToEvents(), user));
-            
+
             return source.Task;
         }
 

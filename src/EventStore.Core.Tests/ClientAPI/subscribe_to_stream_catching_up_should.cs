@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var subscription = store.SubscribeToStreamFrom(stream,
                                                                null,
-                                                               false,
+                                                               CatchUpSubscriptionSettings.Default,
                                                                (_, x) => appeared.Set(),
                                                                _ => Log.Info("Live processing started."),
                                                                (_, __, ___) => dropped.Signal());
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var subscription = store.SubscribeToStreamFrom(stream,
                                                                null,
-                                                               false,
+                                                               CatchUpSubscriptionSettings.Default,
                                                                (_, x) => appeared.Signal(),
                                                                _ => Log.Info("Live processing started."),
                                                                (_, __, ___) => dropped.Signal());
@@ -107,15 +107,15 @@ namespace EventStore.Core.Tests.ClientAPI
                 var dropped1 = new ManualResetEventSlim(false);
                 var dropped2 = new ManualResetEventSlim(false);
 
-                var sub1 = store.SubscribeToStreamFrom(stream, 
+                var sub1 = store.SubscribeToStreamFrom(stream,
                                                        null,
-                                                       false,
+                                                       CatchUpSubscriptionSettings.Default,
                                                        (_, e) => appeared.Signal(),
                                                         _ => Log.Info("Live processing started."),
                                                        (x, y, z) => dropped1.Set());
                 var sub2 = store.SubscribeToStreamFrom(stream,
                                                        null,
-                                                       false,
+                                                       CatchUpSubscriptionSettings.Default,
                                                        (_, e) => appeared.Signal(),
                                                         _ => Log.Info("Live processing started."),
                                                        (x, y, z) => dropped2.Set());
@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var dropped = new CountdownEvent(1);
                 var subscription = store.SubscribeToStreamFrom(stream,
                                                                null,
-                                                               false,
+                                                               CatchUpSubscriptionSettings.Default,
                                                                (x, y) => { },
                                                                _ => Log.Info("Live processing started."),
                                                                (x, y, z) => dropped.Signal());
@@ -179,7 +179,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var subscription = store.SubscribeToStreamFrom(stream,
                                                                null,
-                                                               false,
+                                                               CatchUpSubscriptionSettings.Default,
                                                                (x, y) =>
                                                                {
                                                                    events.Add(y);
@@ -229,7 +229,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var subscription = store.SubscribeToStreamFrom(stream,
                                                                9,
-                                                               false,
+                                                               CatchUpSubscriptionSettings.Default,
                                                                (x, y) =>
                                                                {
                                                                    events.Add(y);
@@ -283,7 +283,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var subscription = store.SubscribeToStreamFrom(stream,
                                                                9,
-                                                               false,
+                                                               CatchUpSubscriptionSettings.Default,
                                                                (x, y) =>
                                                                {
                                                                    events.Add(y);

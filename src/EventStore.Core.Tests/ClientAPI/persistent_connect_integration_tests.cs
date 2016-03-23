@@ -157,7 +157,9 @@ namespace EventStore.Core.Tests.ClientAPI
                     }
                 },
                 (sub, reason, exception) =>
-                    Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
+                {
+                    throw new Exception(string.Format("Subscription dropped (reason:{0}, exception:{1}).", reason, exception));
+                },
                 userCredentials: DefaultData.AdminCredentials,
                 autoAck: true);
 

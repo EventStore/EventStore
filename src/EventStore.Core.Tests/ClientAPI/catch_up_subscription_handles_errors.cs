@@ -42,9 +42,9 @@ namespace EventStore.Core.Tests.ClientAPI
             _liveProcessingStarted = false;
             _isDropped = false;
             _dropReason = SubscriptionDropReason.Unknown;
-            _dropException = null; 
-
-            _subscription = new EventStoreStreamCatchUpSubscription(_connection, new NoopLogger(), StreamId, null, false, null,
+            _dropException = null;
+            var settings = new CatchUpSubscriptionSettings(1, 1, false, false);
+            _subscription = new EventStoreStreamCatchUpSubscription(_connection, new NoopLogger(), StreamId, null, null,
                 (subscription, ev) =>
                 {
                     _raisedEvents.Add(ev);
@@ -61,8 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     _dropException = ex;
                     _dropEvent.Set();
                 },
-                false,
-                1);
+                settings);
         }
 
         [Test]
@@ -94,7 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test]
         public void read_events_til_stops_subscription_when_throws_asynchronously()
         {
-         
+
             var expectedException = new ApplicationException("Test");
             _connection.HandleReadStreamEventsForwardAsync((stream, start, max) =>
             {
@@ -132,9 +131,9 @@ namespace EventStore.Core.Tests.ClientAPI
                 else
                 {
                     Assert.That(start, Is.EqualTo(1));
-                    throw expectedException;    
+                    throw expectedException;
                 }
-                
+
             });
 
             AssertStartFailsAndDropsSubscriptionWithException(expectedException);
@@ -172,7 +171,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             AssertStartFailsAndDropsSubscriptionWithException(expectedException);
             Assert.That(_raisedEvents.Count, Is.EqualTo(1));
-        }       
+        }
 
         [Test]
         public void start_stops_subscription_if_subscribe_fails_immediately()
@@ -305,7 +304,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     taskCompletionSource.SetResult(CreateStreamEventsSlice(fromEvent:1, isEnd: true));
                     Assert.That(finalEvent.Wait(TimeoutMs));
                 }
-                
+
                 return taskCompletionSource.Task;
             });
 
@@ -319,7 +318,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var task = _subscription.Start();
 
             Assert.That(task.Status, Is.Not.EqualTo(TaskStatus.RanToCompletion));
-            
+
             finalEvent.Set();
 
             Assert.That(task.Wait(TimeoutMs));
@@ -387,7 +386,7 @@ namespace EventStore.Core.Tests.ClientAPI
             });
 
             var event1 = new ClientMessage.ResolvedEvent(new ClientMessage.EventRecord(StreamId, 1, Guid.NewGuid().ToByteArray(), null, 0, 0, null, null, null, null), null, 0, 0);
-            
+
             _connection.HandleSubscribeToStreamAsync((stream, raise, drop) =>
             {
                 var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
@@ -395,7 +394,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 taskCompletionSource.SetResult(volatileEventStoreSubscription);
 
                 raise(volatileEventStoreSubscription2, new ResolvedEvent(event1));
-                
+
                 return taskCompletionSource.Task;
             });
 
@@ -551,6 +550,18 @@ namespace EventStore.Core.Tests.ClientAPI
             throw new NotImplementedException();
         }
 
+        public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
+            string stream,
+            int? lastCheckpoint,
+            CatchUpSubscriptionSettings settings,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<EventStoreSubscription> SubscribeToAllAsync(bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
         {
@@ -571,6 +582,16 @@ namespace EventStore.Core.Tests.ClientAPI
             throw new NotImplementedException();
         }
 
+        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
+            Position? lastCheckpoint,
+            CatchUpSubscriptionSettings settings,
+            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+            Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            UserCredentials userCredentials = null)
+        {
+            throw new NotImplementedException();
+        }
         public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
             UserCredentials credentials)
         {
