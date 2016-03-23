@@ -354,11 +354,12 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CheckStreamAccess: ClientMessage.ReadRequestMessage
+        public class CheckStreamAccess: ClientMessage.ReadRequestMessage, IQueueAffineMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
+            public int QueueId { get { return EventStreamId.GetHashCode(); } }
             public readonly string EventStreamId;
             public readonly long? TransactionId;
             public readonly StreamAccessType AccessType;
