@@ -19,5 +19,8 @@ namespace EventStore.ClientAPI
         public static readonly int MaxReadSize = 4096;
         public const int DefaultMaxClusterDiscoverAttempts = 10;
         public const int DefaultClusterManagerExternalHttpPort = 30778;
+
+        public const int CatchUpDefaultReadBatchSize = 500;
+        public const int CatchUpDefaultMaxPushQueueSize = 10000;
     }
 }

@@ -2,7 +2,7 @@
 {
     /// <summary>
     /// This class contains constants to be used when setting up subscriptions
-    /// using the  <see cref="IEventStoreConnection.SubscribeToStreamFrom" /> method
+    /// using the  IEventStoreConnection.SubscribeToStreamFrom method
     /// on <see cref="IEventStoreConnection" />.
     /// </summary>
     public static class StreamCheckpoint

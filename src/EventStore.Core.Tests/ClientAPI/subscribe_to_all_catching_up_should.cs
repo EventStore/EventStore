@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var dropped = new CountdownEvent(1);
                 var subscription = store.SubscribeToAllFrom(null,
-                                                            false,
+                                                            CatchUpSubscriptionSettings.Default,
                                                             (x, y) => { },
                                                             _ => Log.Info("Live processing started."),
                                                             (x, y, z) => dropped.Signal());
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var dropped = new CountdownEvent(1);
 
                 var subscription = store.SubscribeToAllFrom(null,
-                                                            false,
+                                                            CatchUpSubscriptionSettings.Default,
                                                             (_, x) =>
                                                             {
                                                                 if (!SystemStreams.IsSystemStream(x.OriginalEvent.EventStreamId))
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 }
 
                 var subscription = store.SubscribeToAllFrom(null,
-                                                            false,
+                                                            CatchUpSubscriptionSettings.Default,
                                                             (x, y) =>
                                                             {
                                                                 if (!SystemStreams.IsSystemStream(y.OriginalEvent.EventStreamId))
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     Assert.Fail("Could not wait for all events.");
                 }
 
-                Assert.AreEqual(20, events.Count); 
+                Assert.AreEqual(20, events.Count);
                 for (int i = 0; i < 20; ++i)
                 {
                     Assert.AreEqual("et-" + i.ToString(), events[i].OriginalEvent.EventType);
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var lastEvent = allSlice.Events.Last();
 
                 var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
-                                                            false,
+                                                            CatchUpSubscriptionSettings.Default,
                                                             (x, y) =>
                                                             {
                                                                 events.Add(y);
@@ -228,7 +228,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var lastEvent = allSlice.Events[allSlice.Events.Length - 2];
 
                 var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
-                                                            false,
+                                                            CatchUpSubscriptionSettings.Default,
                                                             (x, y) =>
                                                             {
                                                                 events.Add(y);

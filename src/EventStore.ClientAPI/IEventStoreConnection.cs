@@ -11,10 +11,10 @@ namespace EventStore.ClientAPI
     /// </summary>
     /// <remarks>
     /// An <see cref="IEventStoreConnection"/> operates quite differently than say a SqlConnection. Normally
-    /// when using an <see cref="IEventStoreConnection"/> you want to keep the connection open for a much longer of time than 
+    /// when using an <see cref="IEventStoreConnection"/> you want to keep the connection open for a much longer of time than
     /// when you use a SqlConnection. If you prefer the usage pattern of using(new Connection()) .. then you would likely
     /// want to create a FlyWeight on top of the <see cref="EventStoreConnection"/>.
-    /// 
+    ///
     /// Another difference is that with the <see cref="IEventStoreConnection"/> all operations are handled in a full async manner
     /// (even if you call the synchronous behaviors). Many threads can use an <see cref="IEventStoreConnection"/> at the same
     /// time or a single thread can make many asynchronous requests. To get the most performance out of the connection
@@ -66,7 +66,7 @@ namespace EventStore.ClientAPI
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
         /// make a very large difference in the observed behavior. For example, if no stream exists
         /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
-        /// 
+        ///
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
         /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
@@ -84,7 +84,7 @@ namespace EventStore.ClientAPI
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
         /// make a very large difference in the observed behavior. For example, if no stream exists
         /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
-        /// 
+        ///
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
         /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
@@ -103,7 +103,7 @@ namespace EventStore.ClientAPI
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
         /// make a very large difference in the observed behavior. For example, if no stream exists
         /// and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
-        /// 
+        ///
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
         /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
@@ -153,7 +153,7 @@ namespace EventStore.ClientAPI
         Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
-        /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start 
+        /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start
         /// </summary>
         /// <param name="stream">The stream to read from</param>
         /// <param name="start">The starting point to read from</param>
@@ -195,7 +195,7 @@ namespace EventStore.ClientAPI
         Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
-        /// Asynchronously subscribes to a single event stream. New events 
+        /// Asynchronously subscribes to a single event stream. New events
         /// written to the stream while the subscription is active will be
         /// pushed to the client.
         /// </summary>
@@ -217,23 +217,23 @@ namespace EventStore.ClientAPI
         /// lastCheckpoint onwards are read from the stream
         /// and presented to the user of <see cref="EventStoreCatchUpSubscription"/>
         /// as if they had been pushed.
-        /// 
+        ///
         /// Once the end of the stream is read the subscription is
         /// transparently (to the user) switched to push new events as
         /// they are written.
-        /// 
+        ///
         /// The action liveProcessingStarted is called when the
         /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
         /// phase to the live subscription phase.
         /// </summary>
         /// <param name="stream">The stream to subscribe to</param>
         /// <param name="lastCheckpoint">The event number from which to start.
-        /// 
+        ///
         /// To receive all events in the stream, use <see cref="StreamCheckpoint.StreamStart" />.
         /// If events have already been received and resubscription from the same point
         /// is desired, use the event number of the last event processed which
         /// appeared on the subscription.
-        /// 
+        ///
         /// NOTE: Using <see cref="StreamPosition.Start" /> here will result in missing
         /// the first event in the stream.</param>
         /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
@@ -243,6 +243,7 @@ namespace EventStore.ClientAPI
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="readBatchSize">The batch size to use during the read phase</param>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
+        [Obsolete("This method will be obsoleted in the next major version please switch to the overload with a settings object")]
         EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
                 string stream,
                 int? lastCheckpoint,
@@ -252,6 +253,47 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null,
                 int readBatchSize = 500);
+
+        /// <summary>
+        /// Subscribes to a single event stream. Existing events from
+        /// lastCheckpoint onwards are read from the stream
+        /// and presented to the user of <see cref="EventStoreCatchUpSubscription"/>
+        /// as if they had been pushed.
+        ///
+        /// Once the end of the stream is read the subscription is
+        /// transparently (to the user) switched to push new events as
+        /// they are written.
+        ///
+        /// The action liveProcessingStarted is called when the
+        /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
+        /// phase to the live subscription phase.
+        /// </summary>
+        /// <param name="stream">The stream to subscribe to</param>
+        /// <param name="lastCheckpoint">The event number from which to start.
+        ///
+        /// To receive all events in the stream, use <see cref="StreamCheckpoint.StreamStart" />.
+        /// If events have already been received and resubscription from the same point
+        /// is desired, use the event number of the last event processed which
+        /// appeared on the subscription.
+        ///
+        /// NOTE: Using <see cref="StreamPosition.Start" /> here will result in missing
+        /// the first event in the stream.</param>
+        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <param name="settings">The <see cref="CatchUpSubscriptionSettings"/> for the subscription</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
+        EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
+                string stream,
+                int? lastCheckpoint,
+                CatchUpSubscriptionSettings settings,
+                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
+
+
 
         /// <summary>
         /// Asynchronously subscribes to all events in the Event Store. New
@@ -288,8 +330,8 @@ namespace EventStore.ClientAPI
         /// </remarks>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
-            string stream, 
-            string groupName, 
+            string stream,
+            string groupName,
             Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
@@ -327,22 +369,22 @@ namespace EventStore.ClientAPI
         /// Subscribes to a all events. Existing events from lastCheckpoint
         /// onwards are read from the Event Store and presented to the user of
         /// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
-        /// 
+        ///
         /// Once the end of the stream is read the subscription is
         /// transparently (to the user) switched to push new events as
         /// they are written.
-        /// 
+        ///
         /// The action liveProcessingStarted is called when the
         /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
         /// phase to the live subscription phase.
         /// </summary>
         /// <param name="lastCheckpoint">The position from which to start.
-        /// 
+        ///
         /// To receive all events in the database, use <see cref="AllCheckpoint.AllStart" />.
         /// If events have already been received and resubscription from the same point
         /// is desired, use the position representing the last event processed which
         /// appeared on the subscription.
-        /// 
+        ///
         /// NOTE: Using <see cref="Position.Start" /> here will result in missing
         /// the first event in the stream.</param>
         /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
@@ -352,6 +394,7 @@ namespace EventStore.ClientAPI
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="readBatchSize">The batch size to use during the read phase</param>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
+        [Obsolete("This overload will be removed in the next major release please use the overload with a settings object")]
         EventStoreAllCatchUpSubscription SubscribeToAllFrom(
                 Position? lastCheckpoint,
                 bool resolveLinkTos,
@@ -360,6 +403,45 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null,
                 int readBatchSize = 500);
+
+        /// <summary>
+        /// Subscribes to a all events. Existing events from lastCheckpoint
+        /// onwards are read from the Event Store and presented to the user of
+        /// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
+        ///
+        /// Once the end of the stream is read the subscription is
+        /// transparently (to the user) switched to push new events as
+        /// they are written.
+        ///
+        /// The action liveProcessingStarted is called when the
+        /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
+        /// phase to the live subscription phase.
+        /// </summary>
+        /// <param name="lastCheckpoint">The position from which to start.
+        ///
+        /// To receive all events in the database, use <see cref="AllCheckpoint.AllStart" />.
+        /// If events have already been received and resubscription from the same point
+        /// is desired, use the position representing the last event processed which
+        /// appeared on the subscription.
+        ///
+        /// NOTE: Using <see cref="Position.Start" /> here will result in missing
+        /// the first event in the stream.</param>
+        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
+        /// <param name="userCredentials">User credentials to use for the operation</param>
+        /// <param name="settings">The <see cref="CatchUpSubscriptionSettings"/> for the subscription</param>
+        /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
+        EventStoreAllCatchUpSubscription SubscribeToAllFrom(
+                Position? lastCheckpoint,
+                CatchUpSubscriptionSettings settings,
+                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                UserCredentials userCredentials = null);
+
+
+
         /*
 	/// <summary>
 	/// Asynchronously create a persistent subscription group for all events
@@ -431,7 +513,7 @@ namespace EventStore.ClientAPI
         /// <param name="userCredentials">User credentials to use for the operation.</param>
         /// <returns>A <see cref="WriteResult"/>.</returns>
         Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
-        
+
         /// <summary>
         /// Asynchronously reads the metadata for a stream and converts the metadata into a <see cref="StreamMetadata"/>.
         /// </summary>
