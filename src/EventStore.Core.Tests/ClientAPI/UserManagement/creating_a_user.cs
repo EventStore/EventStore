@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
             {
                 d = _manager.GetUserAsync("ouro", new UserCredentials("admin", "changeit")).Result;
             });
-            Assert.AreEqual("our", d.LoginName);
+            Assert.AreEqual("ouro", d.LoginName);
             Assert.AreEqual("ourofull", d.FullName);
             Assert.AreEqual("foo", d.Groups[0]);
             Assert.AreEqual("bar", d.Groups[1]);
