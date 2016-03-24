@@ -131,6 +131,9 @@ namespace EventStore.Core.Util
         public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
         public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
 
+        public const string BetterOrderingDescr = "Enable Queue affinity on reads during write process to try to get better ordering.";
+        public static readonly bool BetterOrderingDefault = false;
+
         public const string LogHttpRequestsDescr = "Log Http Requests and Responses before processing them.";
         public static readonly bool LogHttpRequestsDefault = false;
 

@@ -24,7 +24,7 @@ namespace EventStore.Core.Messages
 
         public interface IMasterWriteMessage
         {
-             
+
         }
 
         public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage
@@ -354,24 +354,26 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CheckStreamAccess: ClientMessage.ReadRequestMessage
+        public class CheckStreamAccess: ClientMessage.ReadRequestMessage, IQueueAffineMessage
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-
+            private readonly int _affinity;
+            public int QueueId { get { return _affinity; } }
             public readonly string EventStreamId;
             public readonly long? TransactionId;
             public readonly StreamAccessType AccessType;
 
-            public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId, 
-                                     StreamAccessType accessType, IPrincipal user)
+            public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId,
+                                     StreamAccessType accessType, IPrincipal user, bool singleAffinity = false)
                 : base(correlationId, correlationId, envelope, user)
             {
                 if (eventStreamId == null && transactionId == null)
                     throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");
-
                 EventStreamId = eventStreamId;
                 TransactionId = transactionId;
+                var hash = String.IsNullOrEmpty(EventStreamId) ? TransactionId.GetHashCode() : EventStreamId.GetHashCode();
+                _affinity = singleAffinity ? 1 : hash;
                 AccessType = accessType;
             }
         }
@@ -387,7 +389,7 @@ namespace EventStore.Core.Messages
             public readonly StreamAccessType AccessType;
             public readonly StreamAccess AccessResult;
 
-            public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, long? transactionId, 
+            public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, long? transactionId,
                                               StreamAccessType accessType, StreamAccess accessResult)
             {
                 CorrelationId = correlationId;

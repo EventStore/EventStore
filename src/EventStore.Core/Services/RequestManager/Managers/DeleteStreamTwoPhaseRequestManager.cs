@@ -2,22 +2,23 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
- 
+
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, 
+    public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase,
                                                       IHandle<ClientMessage.DeleteStream>
     {
         private string _eventStreamId;
         private int _expectedVersion;
         private bool _hardDelete;
 
-        public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,  
-                                                  int prepareCount, 
-                                                  int commitCount, 
+        public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,
+                                                  int prepareCount,
+                                                  int commitCount,
                                                   TimeSpan prepareTimeout,
-                                                  TimeSpan commitTimeout) 
-            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout)
+                                                  TimeSpan commitTimeout,
+                                                  bool betterOrdering)
+            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout, betterOrdering)
         {
         }
 

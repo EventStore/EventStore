@@ -64,6 +64,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly int MaxMemtableEntryCount;
         public readonly int IndexCacheDepth;
 
+        public readonly bool BetterOrdering;
         public readonly string Index;
 
         public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
@@ -117,7 +118,8 @@ namespace EventStore.Core.Cluster.Settings
                                     string index = null, bool enableHistograms = false,
                                     int indexCacheDepth = 16,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
-                                    bool unsafeIgnoreHardDeletes = false)
+                                    bool unsafeIgnoreHardDeletes = false,
+                                    bool betterOrdering = false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -198,6 +200,7 @@ namespace EventStore.Core.Cluster.Settings
             IndexCacheDepth = indexCacheDepth;
             Index = index;
             UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
+            BetterOrdering = betterOrdering;
         }
 
 
