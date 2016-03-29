@@ -117,6 +117,7 @@
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_handling_soft_deleted_stream_with_a_single_event_event_reader.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_not_authorised.cs" />
+    <Compile Include="Services\projections_manager\when_deleting_a_running_persistent_projection.cs" />
     <Compile Include="Services\projections_manager\when_recreating_a_deleted_projection.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_keep_checkpoint_stream.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection.cs" />

@@ -447,8 +447,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Delete message)
         {
-            if (_state != ManagedProjectionState.Stopped)
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Cannot delete a projection that hasn't been stopped.")); 
+            if (_state != ManagedProjectionState.Stopped && Mode != ProjectionMode.Transient)
+                throw new InvalidOperationException("Cannot delete a running projection");
             _lastAccessed = _timeProvider.Now;
             if (message.DeleteCheckpointStream)
             {
@@ -480,7 +480,6 @@ namespace EventStore.Projections.Core.Services.Management
                     // NOTE: workaround for stop not working on creating state (just ignore them)
                     return;
                 }
-
                 Handle(
                     new ProjectionManagementMessage.Command.Delete(
                         new NoopEnvelope(),
