@@ -23,7 +23,7 @@ namespace EventStore.Core.Services
                                    IHandle<HttpMessage.HttpEndSend>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<HttpSendService>();
-        
+
         private readonly HttpMessagePipe _httpPipe;
         private readonly bool _forwardRequests;
 
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services
                 switch (deniedToHandle.Reason)
                 {
                     case DenialReason.ServerTooBusy:
-                        code = HttpStatusCode.InternalServerError;
+                        code = HttpStatusCode.ServiceUnavailable;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -161,7 +161,7 @@ namespace EventStore.Core.Services
                     case "date":              fwReq.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "expect":            break;
                     case "host":              fwReq.Headers["X-Forwarded-Host"] = srcReq.Headers[headerKey];
-                                              fwReq.Host = forwardUri.Host; break; 
+                                              fwReq.Host = forwardUri.Host; break;
                     case "if-modified-since": fwReq.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "proxy-connection":  break;
                     case "range":             break;
