@@ -1,12 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
@@ -24,9 +26,10 @@ namespace EventStore.Core.Services
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<HttpSendService>();
 
+        private readonly Stopwatch _watch = Stopwatch.StartNew();
         private readonly HttpMessagePipe _httpPipe;
         private readonly bool _forwardRequests;
-
+        private const string _httpSendHistogram = "http-send";
         private VNodeInfo _masterInfo;
 
         public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests)
@@ -79,16 +82,19 @@ namespace EventStore.Core.Services
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-
+                var start = _watch.ElapsedTicks;
                 message.HttpEntityManager.ReplyStatus(
                     code,
                     deniedToHandle.Details,
                     exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message.Message, exc.Message));
+                HistogramService.SetValue(_httpSendHistogram,
+                   (long)((((double)_watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
             }
             else
             {
                 var response = message.Data;
                 var config = message.Configuration;
+                var start = _watch.ElapsedTicks;
                 message.HttpEntityManager.ReplyTextContent(
                     response,
                     config.Code,
@@ -96,6 +102,9 @@ namespace EventStore.Core.Services
                     config.ContentType,
                     config.Headers,
                     exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message.Message, exc.Message));
+                HistogramService.SetValue(_httpSendHistogram,
+                   (long)((((double)_watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
+
             }
         }
 

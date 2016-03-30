@@ -61,6 +61,8 @@ namespace EventStore.Core.Services.Histograms
             CreateHistogram("reader-streamrange");
             CreateHistogram("reader-allrange");
             CreateHistogram("request-manager");
+            CreateHistogram("tcp-send");
+            CreateHistogram("http-send");
         }
 
         public static void StartJitterMonitor()
@@ -81,7 +83,7 @@ namespace EventStore.Core.Services.Histograms
         }
     }
 
-     
+
         public struct Measurement : IDisposable
         {
             public Stopwatch watch;
