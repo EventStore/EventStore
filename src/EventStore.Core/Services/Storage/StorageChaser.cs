@@ -160,8 +160,8 @@ namespace EventStore.Core.Services.Storage
             if (!result.Success || start - _lastFlush >= _flushDelay + MinFlushDelay)
             {
                 _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
-                _chaser.Flush();
                 var startflush = _watch.ElapsedTicks;
+                _chaser.Flush();
                 HistogramService.SetValue(_chaserFlushHistogram,
                             (long)((((double)_watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
                 _queueStats.ProcessingEnded(1);
@@ -174,7 +174,7 @@ namespace EventStore.Core.Services.Storage
             if (!result.Success)
             {
                 _queueStats.EnterIdle();
-                
+
                 var startwait = _watch.ElapsedTicks;
                 _flushSignal.Wait(FlushWaitTimeout);
                 HistogramService.SetValue(_chaserWaitHistogram,
