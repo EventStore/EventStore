@@ -59,6 +59,9 @@ namespace EventStore.ClusterNode
             if (options.Log.StartsWith("~") && !options.Force){
                 throw new ApplicationInitializationException("The given log path starts with a '~'. We don't expand '~'. You can use --force to override this error.");
             }
+            if (options.GossipSeed.Length > 1 && options.ClusterSize == 1){
+                throw new ApplicationInitializationException("The given ClusterSize is set to 1 but GossipSeeds are multiple. We will never be able to sync up with this configuration.");
+            }
 
             //Never seen this problem occur on the .NET framework
             if (!Runtime.IsMono)
