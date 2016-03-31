@@ -234,7 +234,13 @@ namespace EventStore.Projections.Core.Services.Management
             else
             {
                 if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
-                projection.Handle(message);
+                try {
+                    projection.Handle(message);
+                }
+                catch (InvalidOperationException ex){
+                    message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed(ex.Message));
+                    return;
+                }
                 _projections.Remove(message.Name);
                 _projectionsMap.Remove(projection.Id);
                 const string eventStreamId = "$projections-$all";
