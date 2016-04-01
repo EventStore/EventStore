@@ -6,7 +6,7 @@ namespace EventStore.Core.Index
     public interface ISearchTable
     {
         Guid Id { get; }
-        int Count { get; }
+        long Count { get; }
 
         bool TryGetOneValue(uint stream, int number, out long position);
         bool TryGetLatestEntry(uint stream, out IndexEntry entry);

@@ -2,10 +2,10 @@
 {
     public struct Range
     {
-        public readonly int Lower;
-        public readonly int Upper;
+        public readonly long Lower;
+        public readonly long Upper;
 
-        public Range(int lower, int upper)
+        public Range(long lower, long upper)
         {
             Lower = lower;
             Upper = upper;

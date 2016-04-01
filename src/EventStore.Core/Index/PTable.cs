@@ -31,12 +31,12 @@ namespace EventStore.Core.Index
         private static readonly ILogger Log = LogManager.GetLoggerFor<PTable>();
 
         public Guid Id { get { return _id; } }
-        public int Count { get { return _count; } }
+        public long Count { get { return _count; } }
         public string Filename { get { return _filename; } }
 
         private readonly Guid _id;
         private readonly string _filename;
-        private readonly int _count;
+        private readonly long _count;
         private readonly Midpoint[] _midpoints;
         private readonly ulong _minEntry, _maxEntry;
         private readonly ObjectPool<WorkItem> _workItems;
@@ -44,10 +44,10 @@ namespace EventStore.Core.Index
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _deleteFile;
 
-        private PTable(string filename, 
-                       Guid id, 
-                       int initialReaders = ESConsts.PTableInitialReaderCount, 
-                       int maxReaders = ESConsts.PTableMaxReaderCount, 
+        private PTable(string filename,
+                       Guid id,
+                       int initialReaders = ESConsts.PTableInitialReaderCount,
+                       int maxReaders = ESConsts.PTableMaxReaderCount,
                        int depth = 16)
         {
             Ensure.NotNullOrEmpty(filename, "filename");
@@ -55,7 +55,7 @@ namespace EventStore.Core.Index
             Ensure.Positive(maxReaders, "maxReaders");
             Ensure.Nonnegative(depth, "depth");
 
-            if (!File.Exists(filename)) 
+            if (!File.Exists(filename))
                 throw new CorruptIndexException(new PTableNotFoundException(filename));
 
             _id = id;
@@ -63,8 +63,8 @@ namespace EventStore.Core.Index
 
             Log.Trace("Loading PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
-            
-            _count = (int)((new FileInfo(_filename).Length - PTableHeader.Size - MD5Size) / IndexEntrySize);
+
+            _count = ((new FileInfo(_filename).Length - PTableHeader.Size - MD5Size) / IndexEntrySize);
             File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
             _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
@@ -124,7 +124,6 @@ namespace EventStore.Core.Index
             if (count == 0 || depth == 0)
                 return null;
 
-            //TODO GFY can make slightly faster with a sequential worker.
             var workItem = GetWorkItem();
             try
             {
@@ -132,7 +131,7 @@ namespace EventStore.Core.Index
                 Midpoint[] midpoints;
                 try
                 {
-                    midpointsCount = Math.Max(2, Math.Min(1 << depth, count));
+                    midpointsCount = (int) Math.Max(2L, Math.Min((long) 1 << depth, count));
                     midpoints = new Midpoint[midpointsCount];
                 }
                 catch (OutOfMemoryException exc)
@@ -213,7 +212,7 @@ namespace EventStore.Core.Index
                                     BitConverter.ToString(hash))));
                 }
             }
-#if __MonoCS__            
+#if __MonoCS__
             finally
             {
                 ReturnWorkItem(workItem);
@@ -228,7 +227,7 @@ namespace EventStore.Core.Index
             try
             {
                 workItem.Stream.Position = PTableHeader.Size;
-                for (int i = 0, n = Count; i < n; i++)
+                for (long i = 0, n = Count; i < n; i++)
                 {
                     yield return ReadNextNoSeek(workItem);
                 }
@@ -275,8 +274,8 @@ namespace EventStore.Core.Index
             {
                 var recordRange = LocateRecordRange(endKey);
 
-                int low = recordRange.Lower;
-                int high = recordRange.Upper;
+                long low = recordRange.Lower;
+                long high = recordRange.Upper;
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
@@ -324,8 +323,8 @@ namespace EventStore.Core.Index
             {
                 var recordRange = LocateRecordRange(startKey);
 
-                int low = recordRange.Lower;
-                int high = recordRange.Upper;
+                long low = recordRange.Lower;
+                long high = recordRange.Upper;
                 while (low < high)
                 {
                     var mid = low + (high - low + 1) / 2;
@@ -367,8 +366,8 @@ namespace EventStore.Core.Index
             try
             {
                 var recordRange = LocateRecordRange(endKey);
-                int low = recordRange.Lower;
-                int high = recordRange.Upper;
+                long low = recordRange.Lower;
+                long high = recordRange.Upper;
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
@@ -378,12 +377,12 @@ namespace EventStore.Core.Index
                     else
                         low = mid + 1;
                 }
-                
+
                 PositionAtEntry(high, workItem);
-                for (int i=high, n=Count; i<n; ++i)
+                for (long i=high, n=Count; i<n; ++i)
                 {
                     IndexEntry entry = ReadNextNoSeek(workItem);
-                    if (entry.Key > endKey) 
+                    if (entry.Key > endKey)
                         throw new Exception(string.Format("enty.Key {0} > endKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", entry.Key, endKey, stream, startNumber, endNumber, Filename));
                     if (entry.Key < startKey)
                         return result;
@@ -405,7 +404,7 @@ namespace EventStore.Core.Index
         private Range LocateRecordRange(ulong stream)
         {
             var midpoints = _midpoints;
-            if (midpoints == null) 
+            if (midpoints == null)
                 return new Range(0, Count-1);
             int lowerMidpoint = LowerMidpointBound(midpoints, stream);
             int upperMidpoint = UpperMidpointBound(midpoints, stream);
@@ -442,14 +441,15 @@ namespace EventStore.Core.Index
             return r;
         }
 
-        private static void PositionAtEntry(int indexNum, WorkItem workItem)
+        private static void PositionAtEntry(long indexNum, WorkItem workItem)
         {
-            workItem.Stream.Seek(IndexEntrySize * (long)indexNum + PTableHeader.Size, SeekOrigin.Begin);
+            workItem.Stream.Seek(IndexEntrySize * indexNum + PTableHeader.Size, SeekOrigin.Begin);
         }
 
-        private static IndexEntry ReadEntry(int indexNum, WorkItem workItem)
+        private static IndexEntry ReadEntry(long indexNum, WorkItem workItem)
         {
-            workItem.Stream.Seek(IndexEntrySize*(long)indexNum + PTableHeader.Size, SeekOrigin.Begin);
+            var seekTo = IndexEntrySize * indexNum + PTableHeader.Size;
+            workItem.Stream.Seek(seekTo, SeekOrigin.Begin);
             return ReadNextNoSeek(workItem);
         }
 

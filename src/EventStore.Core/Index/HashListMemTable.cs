@@ -12,7 +12,7 @@ namespace EventStore.Core.Index
     {
         private static readonly IComparer<Entry> MemTableComparer = new EntryComparer();
 
-        public int Count { get { return _count; } }
+        public long Count { get { return _count; } }
         public Guid Id { get { return _id; } }
 
         private readonly ConcurrentDictionary<uint, SortedList<Entry, byte>> _hash;
@@ -156,7 +156,7 @@ namespace EventStore.Core.Index
 
             var keys = _hash.Keys.ToArray();
             Array.Sort(keys, new ReverseComparer<uint>());
-            
+
             foreach (var key in keys)
             {
                 var list = _hash[key];
