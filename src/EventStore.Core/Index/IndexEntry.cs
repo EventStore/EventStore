@@ -11,7 +11,6 @@ namespace EventStore.Core.Index
         [FieldOffset(0)] public Int32 Version;
         [FieldOffset(4)] public UInt32 Stream;
         [FieldOffset(8)] public Int64 Position;
-
         public IndexEntry(ulong key, long position) : this()
         {
             Key = key;
