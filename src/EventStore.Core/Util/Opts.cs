@@ -280,14 +280,11 @@ namespace EventStore.Core.Util
         /*
          *  MANAGER OPTIONS 
          */
-        public const string EnableWatchdogDescr = null;
+        public const string EnableWatchdogDescr = "Enable the node supervisor";
         public const bool   EnableWatchdogDefault = true;
 
-        public const string WatchdogConfigDescr = null;
+        public const string WatchdogConfigDescr = "Location of the watchdog configuration";
         public static readonly string WatchdogConfigDefault = string.Empty;
-
-        public const string WatchdogStateDescr = null;
-        public static readonly string WatchdogStateDefault = string.Empty;
 
         public const string WatchdogFailureTimeWindowDescr = "The time window for which to track supervised node failures.";
         public static readonly int WatchdogFailureTimeWindowDefault = -1;

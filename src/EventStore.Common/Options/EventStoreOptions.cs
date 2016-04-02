@@ -148,7 +148,8 @@ namespace EventStore.Common.Options
             var revived = new TOptions();
             foreach (var optionSource in optionSources)
             {
-                var property = properties.First(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
+                var property = properties.FirstOrDefault(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
+                if(property == null) continue;
                 try
                 {
                     if (optionSource.Value == null) continue;
