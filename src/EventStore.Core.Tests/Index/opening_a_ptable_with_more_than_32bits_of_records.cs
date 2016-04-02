@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Index
         [Test, Explicit]
         public void count_should_be_right()
         {
-            Assert.AreEqual((long) int.MaxValue + 10000000L, _ptable.Count);
+            Assert.AreEqual((long) uint.MaxValue + 10000000L, _ptable.Count);
         }
 
         [Test, Explicit]
