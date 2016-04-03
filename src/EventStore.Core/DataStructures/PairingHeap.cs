@@ -1,6 +1,4 @@
-﻿#define USE_POOL
-
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -9,14 +7,43 @@ namespace EventStore.Core.DataStructures
 
     public class PairingHeap<T>
     {
-#if USE_POOL
-        private readonly ObjectPool<HeapNode> _nodePool = new ObjectPool<HeapNode>(100, () => new HeapNode());
-#endif
         public int Count { get { return _count; } }
+
+        public interface IHeapNodeFactory
+        {
+            HeapNode Acquire();
+            void Release(HeapNode oldNode);
+        }
 
         private HeapNode _root;
         private int _count;
         private readonly Func<T, T, bool> _compare;
+        private readonly IHeapNodeFactory _nodeFactory = new ObjectPoolNodeFactory(100);
+
+        private class DefaultNodeFactory : IHeapNodeFactory
+        {
+            public HeapNode Acquire() { return new HeapNode(); }
+            public void Release(HeapNode oldNode) { }
+        }
+
+        private class ObjectPoolNodeFactory : ObjectPool<HeapNode>, IHeapNodeFactory
+        {
+            public ObjectPoolNodeFactory(int initialCount)
+                : base("PairingHeap", initialCount, int.MaxValue, () => new HeapNode(), null, null)
+            {}
+
+            public HeapNode Acquire()
+            {
+                return Get();
+            }
+
+            public void Release(HeapNode oldNode)
+            {
+                oldNode.Next = null;
+                oldNode.SubHeaps = null;
+                Return(oldNode);
+            }
+        }
 
         public PairingHeap(): this(null, null as IComparer<T>)
         {
@@ -61,8 +88,7 @@ namespace EventStore.Core.DataStructures
 
         public PairingHeap(IEnumerable<T> items, IComparer<T> comparer)
         {
-            var comp = comparer ?? Comparer<T>.Default;
-            _compare = (x, y) => comp.Compare(x, y) < 0;
+            _compare = ConvertComparer(comparer);
 
             if (items != null)
             {
@@ -73,13 +99,15 @@ namespace EventStore.Core.DataStructures
             }
         }
 
+        private static Func<T, T, bool> ConvertComparer(IComparer<T> comparer)
+        {
+            var comp = comparer ?? Comparer<T>.Default;
+            return (x, y) => comp.Compare(x, y) < 0;
+        }
+
         public void Add(T x)
         {
-#if USE_POOL
-            var newNode = _nodePool.Get();
-#else
-            var newNode = new HeapNode();
-#endif
+            var newNode = _nodeFactory.Acquire();
             newNode.Item = x;
             _root = Meld(_root, newNode);
             _count += 1;
@@ -101,11 +129,8 @@ namespace EventStore.Core.DataStructures
             var res = _root.Item;
             _root = Pair(_root.SubHeaps);
             _count -= 1;
-#if USE_POOL
-            oldRoot.Next = null;
-            oldRoot.SubHeaps = null;
-            _nodePool.Return(oldRoot);
-#endif
+
+            _nodeFactory.Release(oldRoot);
             return res;
         }
 
@@ -122,12 +147,10 @@ namespace EventStore.Core.DataStructures
                 heap1.SubHeaps = heap2;
                 return heap1;
             }
-            else
-            {
-                heap1.Next = heap2.SubHeaps;
-                heap2.SubHeaps = heap1;
-                return heap2;
-            }
+    
+            heap1.Next = heap2.SubHeaps;
+            heap2.SubHeaps = heap1;
+            return heap2;
         }
 
         private HeapNode Pair(HeapNode node)
@@ -156,52 +179,11 @@ namespace EventStore.Core.DataStructures
             return cur;
         }
 
-        private class HeapNode
+        public class HeapNode
         {
             public T Item;
             public HeapNode SubHeaps;
             public HeapNode Next;
         }
-
-#if USE_POOL
-        private class ObjectPool<TItem> where TItem : class
-        {
-            private readonly ConcurrentQueue<TItem> _items = new ConcurrentQueue<TItem>();
-
-            private readonly int _count;
-            private readonly Func<TItem> _creator;
-
-            public ObjectPool(int count, Func<TItem> creator)
-            {
-                if (count < 0)
-                    throw new ArgumentOutOfRangeException();
-                if (creator == null)
-                    throw new ArgumentNullException("creator");
-
-                _count = count;
-                _creator = creator;
-
-                for (int i = 0; i < count; ++i)
-                {
-                    _items.Enqueue(creator());
-                }
-            }
-
-            public TItem Get()
-            {
-                TItem res;
-                if (_items.TryDequeue(out res))
-                    return res;
-                return _creator();
-            }
-
-            public void Return(TItem item)
-            {
-                if (_items.Count < _count)
-                    _items.Enqueue(item);
-            }
-        }
-#endif
-    
     }
 }
