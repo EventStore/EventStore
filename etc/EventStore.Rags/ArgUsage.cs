@@ -38,6 +38,11 @@ namespace EventStore.Rags
             {
                 Aliases.Add("-" + Name.ToLower());
             }
+            var argAliases = Property.HasAttr<ArgAliasAttribute>() ? Property.Attr<ArgAliasAttribute>().Aliases : null;
+            if(argAliases != null)
+            {
+                Aliases.AddRange(argAliases.Select(x=> "-" + NameTranslators.CombineByPascalCase(x, "-")));
+            }
             Description = Property.HasAttr<ArgDescriptionAttribute>() ? Property.Attr<ArgDescriptionAttribute>().Description : "";
             Group = Property.HasAttr<ArgDescriptionAttribute>() ? Property.Attr<ArgDescriptionAttribute>().Group : "";
 

@@ -17,6 +17,7 @@ namespace EventStore.Common.Options
             _effectiveOptions = GetConfig<TOptions>(args, environmentPrefix, defaultConfigLocation)
                 .Flatten()
                 .Cleanup()
+                .UseAliases<TOptions>()
                 .ToLookup(x => x.Name.ToLower())
                 .Select(ResolvePrecedence)
                 .EnsureExistence<TOptions>()
