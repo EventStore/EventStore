@@ -171,5 +171,24 @@ namespace EventStore.Rags
                 x.Value.ToString() == "-" ?  false :
                 x.Value.ToString() == "" ? true  : x.Value));
         }
+
+        public static IEnumerable<OptionSource> UseAliases<TOptions>(this IEnumerable<OptionSource> optionSources) where TOptions : class
+        {
+            var properties = typeof(TOptions).GetProperties();
+            foreach (var property in properties)
+            {
+                var aliases = property.HasAttr<ArgAliasAttribute>() ? property.Attr<ArgAliasAttribute>().Aliases : null;
+                if (aliases != null)
+                {
+                    foreach (var alias in aliases)
+                    {
+                        optionSources = optionSources.Select(x => x.Name.Equals(alias, StringComparison.OrdinalIgnoreCase) ?
+                        new OptionSource(x.Source, property.Name, x.IsTyped, x.Value) :
+                        new OptionSource(x.Source, x.Name, x.IsTyped, x.Value));
+                    }
+                }
+            }
+            return optionSources;
+        }
     }
 }
