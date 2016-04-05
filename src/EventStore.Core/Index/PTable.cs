@@ -139,11 +139,11 @@ namespace EventStore.Core.Index
                     throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
                 }
                 workItem.Stream.Position = PTableHeader.Size;
-                for (int k = 0; k < midpointsCount; ++k)
+                for (long k = 0; k < midpointsCount; ++k)
                 {
                     var nextIndex = (long)k * (count - 1) / (midpointsCount - 1);
                     ReadUntil(PTableHeader.Size + IndexEntrySize*nextIndex, workItem.Stream);
-                    midpoints[k] = new Midpoint(ReadNextNoSeek(workItem).Key, (int)nextIndex);
+                    midpoints[k] = new Midpoint(ReadNextNoSeek(workItem).Key, nextIndex);
                 }
 
                 return midpoints;
@@ -413,8 +413,8 @@ namespace EventStore.Core.Index
 
         private long LowerMidpointBound(Midpoint[] midpoints, ulong stream)
         {
-            int l = 0;
-            int r = midpoints.Length - 1;
+            long l = 0;
+            long r = midpoints.Length - 1;
             while (l < r)
             {
                 long m = l + (r - l + 1) / 2;
@@ -448,7 +448,7 @@ namespace EventStore.Core.Index
 
         private static IndexEntry ReadEntry(long indexNum, WorkItem workItem)
         {
-            var seekTo = IndexEntrySize * indexNum + PTableHeader.Size;
+            long seekTo = IndexEntrySize * indexNum + PTableHeader.Size;
             workItem.Stream.Seek(seekTo, SeekOrigin.Begin);
             return ReadNextNoSeek(workItem);
         }
