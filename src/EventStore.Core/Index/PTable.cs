@@ -406,18 +406,18 @@ namespace EventStore.Core.Index
             var midpoints = _midpoints;
             if (midpoints == null)
                 return new Range(0, Count-1);
-            int lowerMidpoint = LowerMidpointBound(midpoints, stream);
-            int upperMidpoint = UpperMidpointBound(midpoints, stream);
+            long lowerMidpoint = LowerMidpointBound(midpoints, stream);
+            long upperMidpoint = UpperMidpointBound(midpoints, stream);
             return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
         }
 
-        private int LowerMidpointBound(Midpoint[] midpoints, ulong stream)
+        private long LowerMidpointBound(Midpoint[] midpoints, ulong stream)
         {
             int l = 0;
             int r = midpoints.Length - 1;
             while (l < r)
             {
-                int m = l + (r - l + 1) / 2;
+                long m = l + (r - l + 1) / 2;
                 if (midpoints[m].Key > stream)
                     l = m;
                 else
@@ -426,13 +426,13 @@ namespace EventStore.Core.Index
             return l;
         }
 
-        private int UpperMidpointBound(Midpoint[] midpoints, ulong stream)
+        private long UpperMidpointBound(Midpoint[] midpoints, ulong stream)
         {
-            int l = 0;
-            int r = midpoints.Length - 1;
+            long l = 0;
+            long r = midpoints.Length - 1;
             while (l < r)
             {
-                int m = l + (r - l) / 2;
+                long m = l + (r - l) / 2;
                 if (midpoints[m].Key < stream)
                     r = m;
                 else
@@ -517,9 +517,9 @@ namespace EventStore.Core.Index
         internal struct Midpoint
         {
             public readonly ulong Key;
-            public readonly int ItemIndex;
+            public readonly long ItemIndex;
 
-            public Midpoint(ulong key, int itemIndex)
+            public Midpoint(ulong key, long itemIndex)
             {
                 Key = key;
                 ItemIndex = itemIndex;
