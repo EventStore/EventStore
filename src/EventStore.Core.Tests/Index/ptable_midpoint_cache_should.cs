@@ -23,8 +23,7 @@ namespace EventStore.Core.Tests.Index
 
                     for (int depth = 0; depth < 15; ++depth)
                     {
-                        var cache = ptable.CacheMidpoints(depth);
-                        ValidateCache(cache, count, depth);
+                        ValidateCache(ptable.GetMidPoints(), count, depth);
                     }
                 }
                 finally

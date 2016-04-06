@@ -38,7 +38,7 @@ namespace EventStore.Core.Index
 
             _map = CopyFrom(tables);
             _maxTablesPerLevel = maxTablesPerLevel;
-            
+
             VerifyStructure();
         }
 
@@ -231,7 +231,6 @@ namespace EventStore.Core.Index
                     var ptablePath = Path.Combine(path, file);
 
                     ptable = PTable.FromFile(ptablePath, cacheDepth);
-                    ptable.VerifyFileHash();
 
                     CreateIfNeeded(level, tables);
                     tables[level].Insert(position, ptable);
@@ -287,7 +286,7 @@ namespace EventStore.Core.Index
                 memWriter.Flush();
 
                 memStream.Position = 0;
-                using (var f = File.OpenWrite(tmpIndexMap)) 
+                using (var f = File.OpenWrite(tmpIndexMap))
                 {
                     f.Write(memStream.GetBuffer(), 0, (int)memStream.Length);
                     f.FlushToDisk();
@@ -312,9 +311,9 @@ namespace EventStore.Core.Index
             }
         }
 
-        public MergeResult AddPTable(PTable tableToAdd, 
-                                     long prepareCheckpoint, 
-                                     long commitCheckpoint, 
+        public MergeResult AddPTable(PTable tableToAdd,
+                                     long prepareCheckpoint,
+                                     long commitCheckpoint,
                                      Func<IndexEntry, bool> recordExistsAt,
                                      IIndexFilenameProvider filenameProvider,
                                      int indexCacheDepth = 16)
