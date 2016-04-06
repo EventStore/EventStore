@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Index
                 Assert.AreEqual(0x0102, items[2].Stream);
                 Assert.AreEqual(0x0001, items[2].Version);
                 Assert.AreEqual(0x0101, items[3].Stream);
-                Assert.AreEqual(0x0001, items[3].Version);        
+                Assert.AreEqual(0x0001, items[3].Version);
             }
         }
 
@@ -76,10 +76,7 @@ namespace EventStore.Core.Tests.Index
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);
             table.Add(0x0102, 0x0002, 0x0003);
-            using (var sstable = PTable.FromMemtable(table, Filename))
-            {
-                Assert.DoesNotThrow(() => sstable.VerifyFileHash());
-            }
+            Assert.DoesNotThrow(() => {using (var sstable = PTable.FromMemtable(table, Filename)) {}});
         }
     }
 }
