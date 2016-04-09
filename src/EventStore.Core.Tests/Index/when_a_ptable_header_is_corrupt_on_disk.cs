@@ -30,13 +30,12 @@ namespace EventStore.Core.Tests.Index
                 f.Seek(22, SeekOrigin.Begin);
                 f.WriteByte(0x22);
             }
-            _table = PTable.FromFile(_copiedfilename, 16);
         }
 
-        [Test]          
+        [Test]
         public void the_hash_is_invalid()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => _table.VerifyFileHash());
+            var exc = Assert.Throws<CorruptIndexException>(() => _table = PTable.FromFile(_copiedfilename, 16));
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
 

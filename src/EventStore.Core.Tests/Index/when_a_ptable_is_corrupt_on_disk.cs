@@ -31,7 +31,6 @@ namespace EventStore.Core.Tests.Index
                 f.Seek(130, SeekOrigin.Begin);
                 f.WriteByte(0x22);
             }
-            _table = PTable.FromFile(_copiedfilename, 16);
         }
 
         [TearDown]
@@ -46,7 +45,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_hash_is_invalid()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => _table.VerifyFileHash());
+            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_copiedfilename, 16));
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
     }
