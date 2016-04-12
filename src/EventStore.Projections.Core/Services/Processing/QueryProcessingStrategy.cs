@@ -2,6 +2,7 @@ using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -53,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionCheckpointWriter(
                     namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
             var checkpointManager2 = new DefaultCheckpointManager(
-                publisher, projectionCorrelationId, _projectionVersion, _projectionConfig.RunAs, ioDispatcher,
+                publisher, projectionCorrelationId, _projectionVersion, SystemAccount.Principal, ioDispatcher,
                 _projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, GetUseCheckpoints(), false,
                 _sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
