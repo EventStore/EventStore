@@ -358,7 +358,7 @@ namespace EventStore.ClientAPI.Internal
             else
             {
                 // TcpMessage.HeartbeatTimeout analog
-                var msg = string.Format("EventStoreConnection '{0}': closing TCP connection [{1}, L{2}, {3:B}] due to HEARTBEAT TIMEOUT at pkgNum {4}.",
+                var msg = string.Format("EventStoreConnection '{0}': closing TCP connection [{1}, {2}, {3}] due to HEARTBEAT TIMEOUT at pkgNum {4}.",
                                         _esConnection.ConnectionName, _connection.RemoteEndPoint, _connection.LocalEndPoint,
                                         _connection.ConnectionId, packageNumber);
                 _settings.Log.Info(msg);
