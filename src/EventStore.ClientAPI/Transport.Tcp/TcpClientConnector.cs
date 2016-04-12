@@ -34,9 +34,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return socketArgs;
         }
 
-        public ITcpConnection ConnectTo(ILogger log, 
+        public ITcpConnection ConnectTo(ILogger log,
                                         Guid connectionId,
-                                        IPEndPoint remoteEndPoint, 
+                                        IPEndPoint remoteEndPoint,
                                         bool ssl,
                                         string targetHost,
                                         bool validateServer,
@@ -92,8 +92,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             {
                 HandleBadConnect(socketArgs);
             }
-            catch (InvalidOperationException)
+            catch (Exception)
             {
+
                 HandleBadConnect(socketArgs);
             }
         }
@@ -135,11 +136,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var callbacks = (CallbacksStateToken)socketArgs.UserToken;
             var onConnectionEstablished = callbacks.OnConnectionEstablished;
             var pendingConnection = callbacks.PendingConnection;
-                
+
             socketArgs.AcceptSocket = null;
             callbacks.Reset();
             _connectSocketArgsPool.Return(socketArgs);
-            
+
             if (RemoveFromConnecting(pendingConnection))
                 onConnectionEstablished(remoteEndPoint, socket);
         }
