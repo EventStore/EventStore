@@ -147,7 +147,7 @@ namespace EventStore.Core.Messages
             public readonly int ExpectedVersion;
             public readonly Event[] Events;
 
-            public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster, 
+            public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
                                string eventStreamId, int expectedVersion, Event[] events,
                                IPrincipal user, string login = null, string password = null)
                 : base(internalCorrId, correlationId, envelope, requireMaster, user, login, password)
@@ -195,7 +195,7 @@ namespace EventStore.Core.Messages
                     throw new ArgumentOutOfRangeException("firstEventNumber", String.Format("FirstEventNumber: {0}", firstEventNumber));
                 if (lastEventNumber - firstEventNumber + 1 < 0)
                     throw new ArgumentOutOfRangeException("lastEventNumber", String.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
- 
+
                 CorrelationId = correlationId;
                 Result = OperationResult.Success;
                 Message = null;
@@ -215,20 +215,23 @@ namespace EventStore.Core.Messages
                 Message = message;
                 FirstEventNumber = EventNumber.Invalid;
                 LastEventNumber = EventNumber.Invalid;
+                PreparePosition = EventNumber.Invalid;
             }
 
-            private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, int firstEventNumber, int lastEventNumber)
+            private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
             {
                 CorrelationId = correlationId;
                 Result = result;
                 Message = message;
                 FirstEventNumber = firstEventNumber;
                 LastEventNumber = lastEventNumber;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
             }
 
             public WriteEventsCompleted WithCorrelationId(Guid newCorrId)
             {
-                return new WriteEventsCompleted(newCorrId, Result, Message, FirstEventNumber, LastEventNumber);
+                return new WriteEventsCompleted(newCorrId, Result, Message, FirstEventNumber, LastEventNumber, PreparePosition, CommitPosition);
             }
 
             public override string ToString()
@@ -560,7 +563,7 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
             public readonly int FromEventNumber;
             public readonly int MaxCount;
-            
+
             public readonly ReadStreamResult Result;
             public readonly ResolvedEvent[] Events;
             public readonly StreamMetadata StreamMetadata;
@@ -818,7 +821,7 @@ namespace EventStore.Core.Messages
 
             public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
 
-            public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events, 
+            public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events,
                                                   StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
                                                   TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition)
             {
@@ -879,7 +882,7 @@ namespace EventStore.Core.Messages
             public readonly int BufferSize;
             public readonly int LiveBufferSize;
             public readonly int ReadBatchSize;
-            
+
             public readonly string GroupName;
             public readonly string EventStreamId;
             public int MaxSubscriberCount;
@@ -959,7 +962,7 @@ namespace EventStore.Core.Messages
             public readonly string GroupName;
             public readonly string EventStreamId;
             public int MaxSubscriberCount;
-            
+
             public int MaxCheckPointCount;
             public int MinCheckPointCount;
             public int CheckPointAfterMilliseconds;
@@ -1135,12 +1138,12 @@ namespace EventStore.Core.Messages
             public readonly string Message;
             public readonly NakAction Action;
 
-            public PersistentSubscriptionNackEvents(Guid internalCorrId, 
-                                                    Guid correlationId, 
-                                                    IEnvelope envelope, 
-                                                    string subscriptionId, 
-                                                    string message, 
-                                                    NakAction action, 
+            public PersistentSubscriptionNackEvents(Guid internalCorrId,
+                                                    Guid correlationId,
+                                                    IEnvelope envelope,
+                                                    string subscriptionId,
+                                                    string message,
+                                                    NakAction action,
                                                     Guid[] processedEventIds,
                                                     IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
