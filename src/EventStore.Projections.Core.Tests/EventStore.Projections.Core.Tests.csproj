@@ -115,6 +115,8 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
+    <Compile Include="Services\event_reader\all_streams_with_links_event_reader\when_not_including_links.cs" />
+    <Compile Include="Services\event_reader\all_streams_with_links_event_reader\when_including_links.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_handling_soft_deleted_stream_with_a_single_event_event_reader.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_not_authorised.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_running_persistent_projection.cs" />
