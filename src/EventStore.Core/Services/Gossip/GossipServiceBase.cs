@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.Gossip
         private ClusterInfo _cluster;
         private readonly Random _rnd = new Random(Math.Abs(Environment.TickCount));
 
-        protected GossipServiceBase(IPublisher bus, 
+        protected GossipServiceBase(IPublisher bus,
                                     IGossipSeedSource gossipSeedSource,
                                     VNodeInfo nodeInfo,
                                     TimeSpan gossipInterval,
@@ -124,7 +124,7 @@ namespace EventStore.Core.Services.Gossip
             if (node != null)
             {
                 _cluster = UpdateCluster(_cluster, x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x);
-                _bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint, new GossipMessage.SendGossip(_cluster, NodeInfo.InternalHttp)));
+                _bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint, new GossipMessage.SendGossip(_cluster, NodeInfo.InternalHttp),  DateTime.Now.Add(GossipInterval)));
             }
 
             var interval = message.GossipRound < 20 ? GossipStartupInterval : GossipInterval;
@@ -151,7 +151,7 @@ namespace EventStore.Core.Services.Gossip
                 return;
 
             var oldCluster = _cluster;
-            _cluster = MergeClusters(_cluster, 
+            _cluster = MergeClusters(_cluster,
                                      message.ClusterInfo,
                                      message.Server,
                                      x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x);
@@ -220,7 +220,7 @@ namespace EventStore.Core.Services.Gossip
             _bus.Publish(new GossipMessage.GossipUpdated(_cluster));
         }
 
-        private ClusterInfo MergeClusters(ClusterInfo myCluster, ClusterInfo othersCluster, 
+        private ClusterInfo MergeClusters(ClusterInfo myCluster, ClusterInfo othersCluster,
                                           IPEndPoint peerEndPoint, Func<MemberInfo, MemberInfo> update)
         {
             var mems = myCluster.Members.ToDictionary(member => member.InternalHttpEndPoint);
