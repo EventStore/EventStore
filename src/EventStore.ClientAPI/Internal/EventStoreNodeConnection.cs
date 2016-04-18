@@ -352,29 +352,48 @@ namespace EventStore.ClientAPI.Internal
                 groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
                 _settings.VerboseLogging, _settings, _handler, bufferSize, autoAck);
 
-            subscription.Start();
-
+            subscription.Start().Wait();
             return subscription;
         }
-/*
 
-        public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
+        public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(
+            string stream,
             string groupName,
-            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
-            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
-            int? bufferSize = null,
+            int bufferSize = 10,
             bool autoAck = true)
         {
-            return ConnectToPersistentSubscription(groupName,
-                SystemStreams.AllStream,
-                eventAppeared,
-                subscriptionDropped,
-                userCredentials,
-                bufferSize,
-                autoAck);
+            Ensure.NotNullOrEmpty(groupName, "groupName");
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+
+            var subscription = new EventStorePersistentSubscription(
+                groupName, stream, eventAppeared, subscriptionDropped, userCredentials, _settings.Log,
+                _settings.VerboseLogging, _settings, _handler, bufferSize, autoAck);
+
+            return subscription.Start();
         }
-*/
+        /*
+
+                public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
+                    string groupName,
+                    Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+                    Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+                    UserCredentials userCredentials = null,
+                    int? bufferSize = null,
+                    bool autoAck = true)
+                {
+                    return ConnectToPersistentSubscription(groupName,
+                        SystemStreams.AllStream,
+                        eventAppeared,
+                        subscriptionDropped,
+                        userCredentials,
+                        bufferSize,
+                        autoAck);
+                }
+        */
 
 
         public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null) {

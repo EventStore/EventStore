@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            try
+            _caught = Assert.Throws<AggregateException>(() =>
             {
                 _conn.ConnectToPersistentSubscription(
                     "nonexisting2",
@@ -27,11 +27,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                     });
                 throw new Exception("should have thrown");
-            }
-            catch (Exception ex)
-            {
-                _caught = ex;
-            }
+            }).InnerException;
         }
 
         [Test]
@@ -99,8 +95,9 @@ namespace EventStore.Core.Tests.ClientAPI
             }
             catch (Exception ex)
             {
-                Assert.IsInstanceOf<AggregateException>(ex);
-                Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
+                var innerEx = ex.InnerException;
+                Assert.IsInstanceOf<AggregateException>(innerEx);
+                Assert.IsInstanceOf<AccessDeniedException>(innerEx.InnerException);
             }
         }
     }
@@ -133,9 +130,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void When()
         {
-            //TODO GFY FIND TESTS USING THIS PATTERN AND REPLACE WITH HELPER THROWS METHOD
-            try
-            {
+            _exception = Assert.Throws<AggregateException>(() => {
                 _conn.ConnectToPersistentSubscription(
                     _stream,
                     _group,
@@ -143,11 +138,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     (sub, reason, ex) => { },
                     DefaultData.AdminCredentials);
                 throw new Exception("should have thrown.");
-            }
-            catch (Exception ex)
-            {
-                _exception = ex;
-            }
+            }).InnerException;
         }
 
         [Test]
@@ -685,6 +676,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.AreEqual(_id, _firstEvent.Event.EventId);
         }
     }
+
     //ALL
 
 /*

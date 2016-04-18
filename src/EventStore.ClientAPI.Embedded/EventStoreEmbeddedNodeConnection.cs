@@ -412,9 +412,21 @@ namespace EventStore.ClientAPI.Embedded
                 GetUserCredentials(_settings, userCredentials), _settings.Log, _settings.VerboseLogging, _settings, _subscriptions, bufferSize,
                 autoAck);
 
-            subscription.Start();
+            subscription.Start().Wait();
 
             return subscription;
+        }
+
+        public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(
+            string stream, string groupName, Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, 
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, 
+            UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
+        {
+            var subscription = new EmbeddedEventStorePersistentSubscription(groupName, stream, eventAppeared, subscriptionDropped,
+                GetUserCredentials(_settings, userCredentials), _settings.Log, _settings.VerboseLogging, _settings, _subscriptions, bufferSize,
+                autoAck);
+
+            return subscription.Start();
         }
 
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(

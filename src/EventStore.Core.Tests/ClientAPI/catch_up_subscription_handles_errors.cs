@@ -678,5 +678,10 @@ namespace EventStore.Core.Tests.ClientAPI
             var handler = Connected;
             if (handler != null) handler(this, e);
         }
+
+        public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
