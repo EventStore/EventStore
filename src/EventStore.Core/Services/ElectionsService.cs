@@ -63,13 +63,13 @@ namespace EventStore.Core.Services
         private MasterCandidate _masterProposal;
         private Guid? _master;
         private Guid? _lastElectedMaster;
-        
+
         private MemberInfo[] _servers;
 
-        public ElectionsService(IPublisher publisher, 
-                                VNodeInfo nodeInfo, 
-                                int clusterSize, 
-                                ICheckpoint writerCheckpoint, 
+        public ElectionsService(IPublisher publisher,
+                                VNodeInfo nodeInfo,
+                                int clusterSize,
+                                ICheckpoint writerCheckpoint,
                                 ICheckpoint chaserCheckpoint,
                                 IEpochManager epochManager,
                                 Func<long> getLastCommitPosition,
@@ -97,9 +97,9 @@ namespace EventStore.Core.Services
             _servers = new[]
             {
                 MemberInfo.ForVNode(nodeInfo.InstanceId,
-                                    DateTime.UtcNow, 
-                                    VNodeState.Initializing, 
-                                    true, 
+                                    DateTime.UtcNow,
+                                    VNodeState.Initializing,
+                                    true,
                                     nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp,
                                     nodeInfo.ExternalTcp, nodeInfo.ExternalSecureTcp,
                                     nodeInfo.InternalHttp, nodeInfo.ExternalHttp,
@@ -125,7 +125,7 @@ namespace EventStore.Core.Services
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
-            _state = ElectionsState.Shutdown;   
+            _state = ElectionsState.Shutdown;
         }
 
         public void Handle(GossipMessage.GossipUpdated message)
@@ -184,7 +184,7 @@ namespace EventStore.Core.Services
         {
             foreach (var server in _servers.Where(x => x.InstanceId != _nodeInfo.InstanceId))
             {
-                _publisher.Publish(new HttpMessage.SendOverHttp(server.InternalHttpEndPoint, message));
+                _publisher.Publish(new HttpMessage.SendOverHttp(server.InternalHttpEndPoint, message, DateTime.Now.Add(LeaderElectionProgressTimeout)));
             }
         }
 
@@ -278,7 +278,7 @@ namespace EventStore.Core.Services
                 ShiftToRegNonLeader();
 
             var prepareOk = CreatePrepareOk(message.View);
-            _publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk));
+            _publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk, DateTime.Now.Add(LeaderElectionProgressTimeout)));
         }
 
         private ElectionMessage.PrepareOk CreatePrepareOk(int view)
@@ -304,7 +304,7 @@ namespace EventStore.Core.Services
             if (_state != ElectionsState.ElectingLeader) return;
             if (msg.View != _lastAttemptedView) return;
 
-            Log.Debug("ELECTIONS: (V={0}) PREPARE_OK FROM {1}.", msg.View, 
+            Log.Debug("ELECTIONS: (V={0}) PREPARE_OK FROM {1}.", msg.View,
                       FormatNodeInfo(msg.ServerInternalHttp, msg.ServerId,
                                      msg.LastCommitPosition, msg.WriterCheckpoint, msg.ChaserCheckpoint,
                                      msg.EpochNumber, msg.EpochPosition, msg.EpochId));
@@ -342,7 +342,7 @@ namespace EventStore.Core.Services
             Log.Debug("ELECTIONS: (V={0}) SENDING PROPOSAL CANDIDATE: {1}, ME: {2}.",
                       _lastAttemptedView, FormatNodeInfo(master), FormatNodeInfo(GetOwnInfo()));
 
-            var proposal = new ElectionMessage.Proposal(_nodeInfo.InstanceId, _nodeInfo.InternalHttp, 
+            var proposal = new ElectionMessage.Proposal(_nodeInfo.InstanceId, _nodeInfo.InternalHttp,
                                                         master.InstanceId, master.InternalHttp,
                                                         _lastInstalledView,
                                                         master.EpochNumber, master.EpochPosition, master.EpochId,
@@ -518,7 +518,7 @@ namespace EventStore.Core.Services
                                              int epochNumber, long epochPosition, Guid epochId)
         {
             return string.Format("[{0},{1:B}](L={2},W={3},C={4},E{5}@{6}:{7:B})",
-                                 serverEndPoint, serverId, 
+                                 serverEndPoint, serverId,
                                  lastCommitPosition, writerCheckpoint, chaserCheckpoint,
                                  epochNumber, epochPosition, epochId);
         }

@@ -62,7 +62,7 @@ namespace EventStore.Core.Messages
 
             public readonly ResponseConfiguration Configuration;
 
-            public HttpBeginSend(Guid correlationId, IEnvelope envelope, 
+            public HttpBeginSend(Guid correlationId, IEnvelope envelope,
                 HttpEntityManager httpEntityManager, ResponseConfiguration configuration)
                 : base(correlationId, envelope, httpEntityManager)
             {
@@ -132,11 +132,13 @@ namespace EventStore.Core.Messages
 
             public readonly IPEndPoint EndPoint;
             public readonly Message Message;
+            public readonly DateTime LiveUntil;
 
-            public SendOverHttp(IPEndPoint endPoint, Message message)
+            public SendOverHttp(IPEndPoint endPoint, Message message, DateTime liveUntil)
             {
                 EndPoint = endPoint;
                 Message = message;
+                LiveUntil = liveUntil;
             }
         }
 

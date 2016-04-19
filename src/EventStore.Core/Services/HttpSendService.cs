@@ -65,7 +65,11 @@ namespace EventStore.Core.Services
 
         public void Handle(HttpMessage.SendOverHttp message)
         {
-            _httpPipe.Push(message.Message, message.EndPoint);
+            if(message.LiveUntil > DateTime.Now) {
+                _httpPipe.Push(message.Message, message.EndPoint);
+            } else {
+                Log.Debug("Dropping HTTP send message due to TTL being over. {1} To : {0}", message.EndPoint, message.Message.GetType().Name.ToString());
+            }
         }
 
         public void Handle(HttpMessage.HttpSend message)
