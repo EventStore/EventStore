@@ -49,6 +49,10 @@
       <HintPath>..\libs\nunit.framework.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
+    <Reference Include="System.Net.Http">
+        <SpecificVersion>False</SpecificVersion>
+        <HintPath Condition=" '$(OS)' == 'Windows_NT' ">..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ServiceModel" />

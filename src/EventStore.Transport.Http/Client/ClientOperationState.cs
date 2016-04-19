@@ -1,22 +1,18 @@
 using System;
-using System.IO;
-using System.Net;
+using System.Net.Http;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.Client
 {
     public class ClientOperationState
     {
-        public readonly HttpWebRequest Request;
+        public readonly HttpRequestMessage Request;
         public readonly Action<HttpResponse> OnSuccess;
         public readonly Action<Exception> OnError;
 
         public HttpResponse Response { get; set; }
 
-        public Stream InputStream { get; set; }
-        public Stream OutputStream { get; set; }
-
-        public ClientOperationState(HttpWebRequest request, Action<HttpResponse> onSuccess, Action<Exception> onError)
+        public ClientOperationState(HttpRequestMessage request, Action<HttpResponse> onSuccess, Action<Exception> onError)
         {
             Ensure.NotNull(request, "request");
             Ensure.NotNull(onSuccess, "onSuccess");
@@ -27,9 +23,9 @@ namespace EventStore.Transport.Http.Client
             OnError = onError;
         }
 
-        public void DisposeIOStreams()
+        public void Dispose()
         {
-            IOStreams.SafelyDispose(InputStream, OutputStream);
+            Request.Dispose();
         }
     }
 }

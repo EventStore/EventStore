@@ -27,6 +27,7 @@ namespace EventStore.Core.Tests.Http
             Register(service, "/test-encoding-reserved- ?b={b}", (manager, match) => TestEncodingHandler(manager, match, " "));
             Register(service, "/test-encoding-reserved-$?b={b}", (manager, match) => TestEncodingHandler(manager, match, "$"));
             Register(service, "/test-encoding-reserved-%?b={b}", (manager, match) => TestEncodingHandler(manager, match, "%"));
+            Register(service, "/test-timeout?sleepfor={sleepfor}", (manager, match) => TestTimeoutHandler(manager, match));
         }
 
         private void Register(
@@ -73,6 +74,13 @@ namespace EventStore.Core.Tests.Http
                         requestUri = match.RequestUri,
                         rawUrl = http.HttpEntity.Request.RawUrl
                     }.ToJson(), 200, "OK", "application/json");
+        }
+
+        private void TestTimeoutHandler(HttpEntityManager http, UriTemplateMatch match) 
+        {
+            var sleepFor = int.Parse(match.BoundVariables["sleepfor"]);
+            System.Threading.Thread.Sleep(sleepFor);
+            http.Reply("OK", 200, "OK", "text/plain");
         }
     }
 }

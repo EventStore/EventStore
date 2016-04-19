@@ -39,7 +39,7 @@ namespace EventStore.ClientAPI.Internal
             _managerExternalHttpPort = managerExternalHttpPort;
             _gossipSeeds = gossipSeeds;
             _gossipTimeout = gossipTimeout;
-            _client = new HttpAsyncClient(log);
+            _client = new HttpAsyncClient(_gossipTimeout);
         }
 
         public Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint )
@@ -181,7 +181,6 @@ namespace EventStore.ClientAPI.Internal
             _client.Get(
                 url,
                 null,
-                _gossipTimeout,
                 response =>
                 {
                     if (response.HttpStatusCode != HttpStatusCode.OK)

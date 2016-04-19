@@ -6,6 +6,8 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Http;
 using System.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 
@@ -90,7 +92,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             {
                 var i1 = i;
                 _portableServer.BuiltInClient.Get(_serverEndPoint.ToHttpUrl(requests[i]),
-                            TimeSpan.FromMilliseconds(10000),
                             response =>
                                 {
                                     successes[i1] = response.HttpStatusCode == (int) HttpStatusCode.NotFound;
@@ -120,6 +121,56 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
             var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
             Assert.IsTrue(result.Item1, result.Item2);
+        }
+    }
+
+
+    [TestFixture,Category("LongRunning")]
+    public class when_http_request_times_out
+    {
+        private readonly IPEndPoint _serverEndPoint;
+        private readonly PortableServer _portableServer;
+        private int _timeout;
+
+        public when_http_request_times_out()
+        {
+            _timeout = 2000;
+            var port = PortsHelper.GetAvailablePort(IPAddress.Loopback);
+            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, port);
+            _portableServer = new PortableServer(_serverEndPoint, _timeout);
+        }
+
+        [SetUp]
+        public void SetUp()
+        {
+            _portableServer.SetUp();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _portableServer.TearDown();
+        }
+
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            PortsHelper.ReturnPort(_serverEndPoint.Port);            
+        }
+
+        [Test]
+        [Category("Network")]
+        public void should_throw_an_exception()
+        {
+            var sleepFor = _timeout + 1000;
+            var url = _serverEndPoint.ToHttpUrl(string.Format("/test-timeout?sleepfor={0}", sleepFor));
+            Func<HttpResponse, bool> verifier = response => {
+                return true;
+            };
+            var result = _portableServer.StartServiceAndSendRequest(service => 
+                    service.SetupController(new TestController(new FakePublisher())), url, verifier);
+            Assert.IsFalse(result.Item1, "Should not have got a response"); // We should not have got a response
+            Assert.IsNotNullOrEmpty(result.Item2, "Error was empty");
         }
     }
 }

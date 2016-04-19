@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
-using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -25,6 +27,7 @@ namespace EventStore.Core.Services
                                    IHandle<HttpMessage.HttpEndSend>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<HttpSendService>();
+        private static HttpClient _client = new HttpClient();
 
         private readonly Stopwatch _watch = Stopwatch.StartNew();
         private readonly HttpMessagePipe _httpPipe;
@@ -159,31 +162,32 @@ namespace EventStore.Core.Services
         private static void ForwardRequest(HttpEntityManager manager, Uri forwardUri)
         {
             var srcReq = manager.HttpEntity.Request;
-            var fwReq = (HttpWebRequest)WebRequest.Create(forwardUri);
+            var request = new HttpRequestMessage();
+            request.RequestUri = forwardUri;
+            request.Method = new System.Net.Http.HttpMethod(srcReq.HttpMethod);
 
-            fwReq.Method = srcReq.HttpMethod;
             // Copy unrestricted headers (including cookies, if any)
             foreach (var headerKey in srcReq.Headers.AllKeys)
             {
                 switch (headerKey.ToLower())
                 {
-                    case "accept":            fwReq.Accept = srcReq.Headers[headerKey]; break;
+                    case "accept":            request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]); break;
                     case "connection":        break;
-                    case "content-type":      fwReq.ContentType = srcReq.ContentType; break;
-                    case "content-length":    fwReq.ContentLength = srcReq.ContentLength64; break;
-                    case "date":              fwReq.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                    case "content-type":      break;
+                    case "content-length":    break;
+                    case "date":              request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "expect":            break;
-                    case "host":              fwReq.Headers["X-Forwarded-Host"] = srcReq.Headers[headerKey];
-                                              fwReq.Host = forwardUri.Host; break;
-                    case "if-modified-since": fwReq.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                    case "host":              request.Headers.Add("X-Forwarded-Host", srcReq.Headers[headerKey]);
+                                              request.Headers.Host = forwardUri.Host; break;
+                    case "if-modified-since": request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "proxy-connection":  break;
                     case "range":             break;
-                    case "referer":           fwReq.Referer = srcReq.Headers[headerKey]; break;
-                    case "transfer-encoding": fwReq.TransferEncoding = srcReq.Headers[headerKey]; break;
-                    case "user-agent":        fwReq.UserAgent = srcReq.Headers[headerKey]; break;
+                    case "referer":           request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]); break;
+                    case "transfer-encoding": request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]); break;
+                    case "user-agent":        request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]); break;
 
                     default:
-                        fwReq.Headers[headerKey] = srcReq.Headers[headerKey];
+                        request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
                         break;
                 }
             }
@@ -192,41 +196,13 @@ namespace EventStore.Core.Services
                 && !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
                 && srcReq.ContentLength64 > 0)
             {
-                Task.Factory.FromAsync<Stream>(fwReq.BeginGetRequestStream, fwReq.EndGetRequestStream, null)
-                    .ContinueWith(t =>
-                    {
-                        if (t.Exception != null)
-                        {
-                            Log.Debug("Error on GetRequestStream for forwarded request for '{0}': {1}.",
-                                      manager.RequestedUrl, t.Exception.InnerException.Message);
-                            ForwardReplyFailed(manager);
-                            return;
-                        }
-                        new AsyncStreamCopier<object>(
-                            srcReq.InputStream,
-                            t.Result,
-                            t.Result,
-                            copier =>
-                                {
-                                var fwReqStream = (Stream)copier.AsyncState;
-                                if (copier.Error != null)
-                                {
-                                    Log.Debug("Error while forwarding request body from '{0}' to '{1}' ({2}): {3}.",
-                                              srcReq.Url, forwardUri, srcReq.HttpMethod, copier.Error.Message);
-                                    ForwardReplyFailed(manager);
-                                }
-                                else
-                                {
-                                    ForwardResponse(manager, fwReq);
-                                }
-                                Helper.EatException(fwReqStream.Close);
-                            }).Start();
-                    });
+                var streamContent = new StreamContent(srcReq.InputStream);
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(srcReq.ContentType);
+                streamContent.Headers.ContentLength = srcReq.ContentLength64;
+                request.Content = streamContent;
+
             }
-            else
-            {
-                ForwardResponse(manager, fwReq);
-            }
+            ForwardResponse(manager, request);
         }
 
         private static void ForwardReplyFailed(HttpEntityManager manager)
@@ -234,30 +210,22 @@ namespace EventStore.Core.Services
             manager.ReplyStatus(HttpStatusCode.InternalServerError, "Error while forwarding request", _ => { });
         }
 
-        private static void ForwardResponse(HttpEntityManager manager, HttpWebRequest fwReq)
+        private static void ForwardResponse(HttpEntityManager manager, HttpRequestMessage request)
         {
-            Task.Factory.FromAsync<WebResponse>(fwReq.BeginGetResponse, fwReq.EndGetResponse, null)
+            _client.SendAsync(request)
                 .ContinueWith(t =>
                 {
-                    HttpWebResponse response;
-                    if (t.Exception != null)
+                    HttpResponseMessage response;
+                    try 
                     {
-                        var exc = t.Exception.InnerException as WebException;
-                        if (exc != null)
-                        {
-                            response = (HttpWebResponse)exc.Response;
-                        }
-                        else
-                        {
-                            Log.Debug("Error on EndGetResponse for forwarded request for '{0}': {1}.",
-                                      manager.RequestedUrl, t.Exception.InnerException.Message);
-                            ForwardReplyFailed(manager);
-                            return;
-                        }
+                        response = t.Result;
                     }
-                    else
+                    catch(Exception ex) 
                     {
-                        response = (HttpWebResponse) t.Result;
+                        Log.Debug("Error in SendAsync for forwarded request for '{0}': {1}.",
+                                  manager.RequestedUrl, ex.InnerException.Message);
+                        ForwardReplyFailed(manager);
+                        return;
                     }
 
                     manager.ForwardReply(response, exc => Log.Debug("Error forwarding response for '{0}': {1}.", manager.RequestedUrl, exc.Message));
