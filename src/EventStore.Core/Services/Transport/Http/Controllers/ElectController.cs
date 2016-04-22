@@ -23,11 +23,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ElectController>();
         private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.Xml};
-
-        private readonly HttpAsyncClient _client = new HttpAsyncClient();
+        private TimeSpan _operationTimeout;
+        private readonly HttpAsyncClient _client;
 
         public ElectController(IPublisher publisher): base(publisher)
         {
+            _operationTimeout = TimeSpan.FromMilliseconds(2000); //TODO make these configurable
+            _client = new HttpAsyncClient(_operationTimeout);
         }
 
         protected override void SubscribeCore(IHttpService service)
@@ -58,7 +60,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _client.Post(endPoint.ToHttpUrl("/elections/viewchange"),
                         Codec.Json.To(new ElectionMessageDto.ViewChangeDto(message)),
                         Codec.Json.ContentType,
-                        TimeSpan.FromMilliseconds(2000), //TODO GFY make these configurable
                         r => {/*ignore*/},
                         e => {/*Log.ErrorException(e, "Error occured while writing request (elections/viewchange)")*/});
         }
@@ -71,7 +72,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _client.Post(endPoint.ToHttpUrl("/elections/viewchangeproof"),
                         Codec.Json.To(new ElectionMessageDto.ViewChangeProofDto(message)),
                         Codec.Json.ContentType,
-                        TimeSpan.FromMilliseconds(2000), //TODO make these configurable
                         r => {/*ignore*/},
                         e => {/*Log.ErrorException(e, "Error occured while writing request (elections/viewchangeproof)")*/});
         }
@@ -84,7 +84,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _client.Post(endPoint.ToHttpUrl("/elections/prepare"),
                         Codec.Json.To(new ElectionMessageDto.PrepareDto(message)),
                         Codec.Json.ContentType,
-                        TimeSpan.FromMilliseconds(2000), //TODO GFY make configurable
                         r => {/*ignore*/},
                         e => {/*Log.ErrorException(e, "Error occured while writing request (elections/prepare)")*/});
         }
@@ -97,7 +96,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _client.Post(endPoint.ToHttpUrl("/elections/prepareok"),
                         Codec.Json.To(new ElectionMessageDto.PrepareOkDto(message)),
                         Codec.Json.ContentType,
-                        TimeSpan.FromMilliseconds(2000), //TODO GFY
                         r => {/*ignore*/},
                         e => {/*Log.ErrorException(e, "Error occured while writing request (elections/prepareok)")*/});
         }
@@ -110,7 +108,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _client.Post(endPoint.ToHttpUrl("/elections/proposal"),
                         Codec.Json.To(new ElectionMessageDto.ProposalDto(message)),
                         Codec.Json.ContentType,
-                        TimeSpan.FromMilliseconds(2000), //TODO
                         r => {/*ignore*/},
                         e => {/*Log.ErrorException(e, "Error occured while writing request (elections/proposal)")*/});
         }
@@ -123,7 +120,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _client.Post(endPoint.ToHttpUrl("/elections/accept"),
                         Codec.Json.To(new ElectionMessageDto.AcceptDto(message)),
                         Codec.Json.ContentType,
-                        TimeSpan.FromMilliseconds(2000), //TODO
                         r => {/*ignore*/},
                         e => {/*Log.ErrorException(e, "Error occured while writing request (elections/accept)")*/});
         }

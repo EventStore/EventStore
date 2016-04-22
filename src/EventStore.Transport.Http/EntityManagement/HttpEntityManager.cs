@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
@@ -252,7 +254,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
         }
 
-        public void ForwardReply(HttpWebResponse response, Action<Exception> onError)
+        public void ForwardReply(HttpResponseMessage response, Action<Exception> onError)
         {
             Ensure.NotNull(response, "response");
             Ensure.NotNull(onError, "onError");
@@ -263,39 +265,47 @@ namespace EventStore.Transport.Http.EntityManagement
             try
             {
                 HttpEntity.Response.StatusCode = (int)response.StatusCode;
-                HttpEntity.Response.StatusDescription = response.StatusDescription;
-                HttpEntity.Response.ContentType = response.ContentType;
-                HttpEntity.Response.ContentLength64 = response.ContentLength;
-                foreach (var headerKey in response.Headers.AllKeys)
+                HttpEntity.Response.StatusDescription = response.ReasonPhrase;
+                if(response.Content != null) 
                 {
-                    switch (headerKey)
+                    HttpEntity.Response.ContentType = response.Content.Headers.ContentType.MediaType;
+                    HttpEntity.Response.ContentLength64 = response.Content.Headers.ContentLength.GetValueOrDefault();
+                }
+                foreach (var header in response.Headers)
+                {
+                    string headerValue;
+                    switch (header.Key)
                     {
                         case "Content-Length": break;
                         case "Keep-Alive": break;
                         case "Transfer-Encoding": break;
-                        case "WWW-Authenticate": HttpEntity.Response.AddHeader(headerKey, response.Headers[headerKey]); break;
+                        case "WWW-Authenticate": 
+                            headerValue = header.Value.FirstOrDefault();
+                            HttpEntity.Response.AddHeader(header.Key, headerValue); 
+                            break;
 
                         default:
-                            HttpEntity.Response.Headers.Add(headerKey, response.Headers[headerKey]);
+                            headerValue = header.Value.FirstOrDefault();
+                            HttpEntity.Response.Headers.Add(header.Key, headerValue);
                             break;
                     }
                 }
 
-                if (response.ContentLength > 0)
+                if (HttpEntity.Response.ContentLength64 > 0)
                 {
-                    new AsyncStreamCopier<object>(
-                        response.GetResponseStream(), HttpEntity.Response.OutputStream, null,
-                        copier =>
-                        {
-                            if (copier.Error != null)
-                                Log.Debug("Error copying forwarded response stream for '{0}': {1}.", RequestedUrl, copier.Error.Message);
-                            Helper.EatException(response.Close);
-                            Helper.EatException(HttpEntity.Response.Close);
-                        }).Start();
+                    response.Content.ReadAsStreamAsync()
+                        .ContinueWith(task => {
+                            new AsyncStreamCopier<HttpListenerResponse>(
+                                task.Result, 
+                                HttpEntity.Response.OutputStream, 
+                                HttpEntity.Response,
+                                copier => {
+                                    Helper.EatException(HttpEntity.Response.Close);
+                                }).Start();
+                        });
                 }
                 else
                 {
-                    Helper.EatException(response.Close);
                     Helper.EatException(HttpEntity.Response.Close);
                 }
             }

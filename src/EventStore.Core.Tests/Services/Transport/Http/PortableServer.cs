@@ -34,13 +34,15 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         private HttpService _service;
         private MultiQueuedHandler _multiQueuedHandler;
         private HttpAsyncClient _client;
+        private TimeSpan _timeout;
 
         private readonly IPEndPoint _serverEndPoint;
 
-        public PortableServer(IPEndPoint serverEndPoint)
+        public PortableServer(IPEndPoint serverEndPoint, int timeout = 10000)
         {
             Ensure.NotNull(serverEndPoint, "serverEndPoint");
             _serverEndPoint = serverEndPoint;
+            _timeout = TimeSpan.FromMilliseconds(timeout);
         }
 
         public void SetUp()
@@ -57,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 _service = new HttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
                                            _multiQueuedHandler, false, _serverEndPoint.ToHttpUrl());
                 HttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
-                _client = new HttpAsyncClient();
+                _client = new HttpAsyncClient(_timeout);
             }
 
             HttpBootstrap.Subscribe(_bus, _service);
@@ -89,7 +91,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var error = string.Empty;
 
             _client.Get(requestUrl,
-                        TimeSpan.FromMilliseconds(10000),
                         response =>
                             {
                                 success = verifyResponse(response);

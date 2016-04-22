@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
@@ -55,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void return_response_in_json_if_requested_by_query_param_and_set_content_type_header()
         {
             var url = _serverEndPoint.ToHttpUrl("/ping?format=json");
-            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.Headers[HttpResponseHeader.ContentType]),
+            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.ContentType),
                                                             ContentType.Json,
                                                             StringComparison.InvariantCultureIgnoreCase);
 
@@ -67,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void return_response_in_xml_if_requested_by_query_param_and_set_content_type_header()
         {
             var url = _serverEndPoint.ToHttpUrl("/ping?format=xml");
-            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.Headers[HttpResponseHeader.ContentType]),
+            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.ContentType),
                                                             ContentType.Xml,
                                                             StringComparison.InvariantCultureIgnoreCase);
 
@@ -79,7 +80,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void return_response_in_plaintext_if_requested_by_query_param_and_set_content_type_header()
         {
             var url = _serverEndPoint.ToHttpUrl("/ping?format=text");
-            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.Headers[HttpResponseHeader.ContentType]),
+            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.ContentType),
                                                             ContentType.PlainText,
                                                             StringComparison.InvariantCultureIgnoreCase);
 

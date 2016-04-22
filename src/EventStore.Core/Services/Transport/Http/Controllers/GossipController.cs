@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.ApplicationXml, Codec.Xml, Codec.Text};
 
         private readonly IPublisher _networkSendQueue;
-        private readonly HttpAsyncClient _client = new HttpAsyncClient();
+        private readonly HttpAsyncClient _client;
         private readonly TimeSpan _gossipTimeout;
         
         public GossipController(IPublisher publisher, IPublisher networkSendQueue, TimeSpan gossipTimeout)
@@ -30,6 +30,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             _networkSendQueue = networkSendQueue;
             _gossipTimeout = gossipTimeout;
+            _client = new HttpAsyncClient(_gossipTimeout);
         }
 
         protected override void SubscribeCore(IHttpService service)
@@ -56,7 +57,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 url,
                 Codec.Json.To(new ClusterInfoDto(message.ClusterInfo, message.ServerEndPoint)),
                 Codec.Json.ContentType,
-                _gossipTimeout, 
                 response =>
                 {
                     if (response.HttpStatusCode != HttpStatusCode.OK)

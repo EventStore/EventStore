@@ -42,6 +42,10 @@
     <Reference Include="protobuf-net">
       <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
     </Reference>
+    <Reference Include="System.Net.Http">
+        <SpecificVersion>False</SpecificVersion>
+        <HintPath Condition=" '$(OS)' == 'Windows_NT' ">..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />

@@ -2,63 +2,48 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Threading;
 using EventStore.Common.Utils;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Net.Http.Headers;
 
 namespace EventStore.Transport.Http.Client
 {
     public class HttpAsyncClient : IHttpClient
     {
+        private HttpClient _client;
+
         static HttpAsyncClient()
         {
             ServicePointManager.MaxServicePointIdleTime = 10000;
             ServicePointManager.DefaultConnectionLimit = 500;
         }
 
-        //TODO GFY
-        //this is a really really stupid way of doing this and it only works properly if
-        //the moons align correctly in the 7th slot of jupiter on a tuesday when mercury
-        //is rising. However it sort of works right now (unless you have proxies/dns/other
-        //problems. The easy solution is to use httpclient from portable libraries but
-        //it is currently limited in license to windows only.
-
-        private void TimeoutCallback(object state, bool timedOut)
-        {
-            if (timedOut)
-            {
-                var req = state as HttpWebRequest;
-                if (req != null)
-                {
-                    req.Abort();
-                }
-            }
+        public HttpAsyncClient(TimeSpan timeout) {
+            _client = new HttpClient();
+            _client.Timeout = timeout;
         }
 
+        public void Get(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        {
+            Get(url, null, onSuccess, onException);
+        }
 
-
-        public void Get(string url, TimeSpan timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Get(string url, IEnumerable<KeyValuePair<string,string>> headers, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Get, url, null, timeout, onSuccess, onException);
+            Receive(HttpMethod.Get, url, headers, onSuccess, onException);
         }
 
-        public void Get(string url, IEnumerable<KeyValuePair<string,string>> headers, TimeSpan timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Post(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
-            Ensure.NotNull(url, "url");
-            Ensure.NotNull(onSuccess, "onSuccess");
-            Ensure.NotNull(onException, "onException");
-
-            Receive(HttpMethod.Get, url, headers, timeout, onSuccess, onException);
-        }
-        public void Post(string url, string body, string contentType, TimeSpan timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
-        {
-            Post(url, body, contentType, null, timeout, onSuccess, onException);
+            Post(url, body, contentType, null, onSuccess, onException);
         }
 
-        public void Post(string url, string body, string contentType, IEnumerable<KeyValuePair<string,string>> headers, TimeSpan timeout,
+        public void Post(string url, string body, string contentType, IEnumerable<KeyValuePair<string,string>> headers, 
                          Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
@@ -67,19 +52,19 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Send(HttpMethod.Post, url, body, contentType, headers, timeout, onSuccess, onException);
+            Send(HttpMethod.Post, url, body, contentType, headers, onSuccess, onException);
         }
 
-        public void Delete(string url, TimeSpan timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Delete(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Receive(HttpMethod.Delete, url, null, timeout, onSuccess, onException);
+            Receive(HttpMethod.Delete, url, null, onSuccess, onException);
         }
 
-        public void Put(string url, string body, string contentType, TimeSpan timeout, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        public void Put(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(body, "body");
@@ -87,48 +72,47 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            Send(HttpMethod.Put, url, body, contentType, null, timeout, onSuccess, onException);
+            Send(HttpMethod.Put, url, body, contentType, null, onSuccess, onException);
         }
 
-        private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers, TimeSpan timeout,
+        private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers,
                              Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
-            var request = (HttpWebRequest)WebRequest.Create(url);
-            request.Method = method;
+            var request = new HttpRequestMessage();
 #if __MonoCS__
-            request.KeepAlive = false;
-            request.Pipelined = false;
-#else
-            request.KeepAlive = true;
-            request.Pipelined = true;
+            request.Headers.Add("Keep-alive", "false");
 #endif
-            if (headers != null)
+            request.Method = new System.Net.Http.HttpMethod(method);
+            request.RequestUri = new Uri(url);
+
+            if(headers != null)
             {
-                foreach (var header in headers)
+                foreach(var header in headers)
                 {
                     request.Headers.Add(header.Key, header.Value);
                 }
             }
 
-            var result = request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
-            ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle, TimeoutCallback, request,
-                           (int)timeout.TotalMilliseconds, true);
-
+            var state = new ClientOperationState(request, onSuccess, onException);
+            _client.SendAsync(request).ContinueWith(RequestSent(state));
         }
 
-        private void Send(string method, string url, string body, string contentType, 
-                          IEnumerable<KeyValuePair<string, string>> headers, TimeSpan timeout,
-                          Action<HttpResponse> onSuccess, Action<Exception> onException)
+        private void Send(string method, string url, string body, string contentType, IEnumerable<KeyValuePair<string, string>> headers, 
+                             Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
-            var request = (HttpWebRequest)WebRequest.Create(url);
+            var request = new HttpRequestMessage();
+            request.Method = new System.Net.Http.HttpMethod(method);
+            request.RequestUri = new Uri(url);
+
             var bodyBytes = Helper.UTF8NoBom.GetBytes(body);
-            request.Method = method;
-            request.KeepAlive = true;
-            request.Pipelined = true;
-            request.ContentLength = bodyBytes.Length;
-            request.ContentType = contentType;
+            var stream = new MemoryStream(bodyBytes);
+            var content = new StreamContent(stream);
+            content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+            content.Headers.ContentLength = bodyBytes.Length;
 
-            if (headers != null)
+            request.Content = content;
+
+            if(headers != null)
             {
                 foreach (var header in headers)
                 {
@@ -136,91 +120,44 @@ namespace EventStore.Transport.Http.Client
                 }
             }
 
-            var state = new ClientOperationState(request, onSuccess, onException)
+            var state = new ClientOperationState(request, onSuccess, onException);
+            _client.SendAsync(request).ContinueWith(RequestSent(state));
+        }
+
+        private Action<Task<HttpResponseMessage>> RequestSent(ClientOperationState state)
+        {
+            return task =>
             {
-                InputStream = new MemoryStream(bodyBytes)
+                try
+                {
+                    var responseMsg = task.Result;
+                    state.Response = new HttpResponse(responseMsg);
+                    responseMsg.Content.ReadAsStringAsync()
+                            .ContinueWith(ResponseRead(state));
+                }
+                catch (Exception ex)
+                {
+                    state.Dispose();
+                    state.OnError(ex);
+                }
             };
-            var result = request.BeginGetRequestStream(GotRequestStream, state);
-            ThreadPool.RegisterWaitForSingleObject(result.AsyncWaitHandle, TimeoutCallback, request,
-                           (int)timeout.TotalMilliseconds, true);
-
         }
 
-        private void ResponseAcquired(IAsyncResult ar)
+        private Action<Task<string>> ResponseRead(ClientOperationState state) 
         {
-            var state = (ClientOperationState)ar.AsyncState;
-            try
-            {
-                var response = (HttpWebResponse)state.Request.EndGetResponseExtended(ar);
-                var networkStream = response.GetResponseStream();
-
-                if (networkStream == null)
-                    throw new ArgumentNullException("networkStream", "Response stream was null");
-
-                state.Response = new HttpResponse(response);
-                state.InputStream = networkStream;
-                state.OutputStream = new MemoryStream();
-
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, state.OutputStream, state, ResponseRead);
-                copier.Start();
-            }
-            catch (Exception e)
-            {
-                state.DisposeIOStreams();
-                state.OnError(e);
-            }
-        }
-
-        private void ResponseRead(AsyncStreamCopier<ClientOperationState> copier)
-        {
-            var state = copier.AsyncState;
-
-            if (copier.Error != null)
-            {
-                state.DisposeIOStreams();
-                state.OnError(copier.Error);
-                return;
-            }
-
-            state.OutputStream.Seek(0, SeekOrigin.Begin);
-            var memStream = (MemoryStream)state.OutputStream;
-            state.Response.Body = Helper.UTF8NoBom.GetString(memStream.GetBuffer(), 0, (int) memStream.Length);
-
-            state.DisposeIOStreams();
-            state.OnSuccess(state.Response);
-        }
-
-        private void GotRequestStream(IAsyncResult ar)
-        {
-            var state = (ClientOperationState) ar.AsyncState;
-            try
-            {
-                var networkStream = state.Request.EndGetRequestStream(ar);
-                state.OutputStream = networkStream;
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, networkStream, state, RequestWrote);
-                copier.Start();
-            }
-            catch (Exception e)
-            {
-                state.DisposeIOStreams();
-                state.OnError(e);
-            }
-        }
-
-        private void RequestWrote(AsyncStreamCopier<ClientOperationState> copier)
-        {
-            var state = copier.AsyncState;
-            var httpRequest = state.Request;
-
-            if (copier.Error != null)
-            {
-                state.DisposeIOStreams();
-                state.OnError(copier.Error);
-                return;
-            }
-
-            state.DisposeIOStreams();
-            httpRequest.BeginGetResponse(ResponseAcquired, state);
+            return task => {
+                try 
+                {
+                    state.Response.Body = task.Result;
+                    state.Dispose();
+                    state.OnSuccess(state.Response);
+                }
+                catch(Exception ex)
+                {
+                    state.Dispose();
+                    state.OnError(ex);
+                }
+            };
         }
     }
 }
