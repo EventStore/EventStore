@@ -268,6 +268,101 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
+        [Test]
+        [Category("Network")]
+        public void should_append_with_stream_exists_exp_ver_to_existing_stream()
+        {
+            const string stream = "should_append_with_stream_exists_exp_ver_to_existing_stream";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+                store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+ 
+                var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, new[] { TestEvent.NewTestEvent() });
+                Assert.DoesNotThrow(append.Wait);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void should_append_with_stream_exists_exp_ver_to_stream_with_multiple_events()
+        {
+            const string stream = "should_append_with_stream_exists_exp_ver_to_stream_with_multiple_events";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+                for(var i = 0; i < 5; i++) {
+                    store.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).Wait();
+                }
+ 
+                var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, new[] { TestEvent.NewTestEvent() });
+                Assert.DoesNotThrow(append.Wait);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void should_append_with_stream_exists_exp_ver_if_metadata_stream_exists()
+        {
+            const string stream = "should_append_with_stream_exists_exp_ver_if_metadata_stream_exists";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+                store.SetStreamMetadataAsync(stream, ExpectedVersion.Any, new StreamMetadata(10, null, null, null, null)).Wait();
+ 
+                var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, new[] { TestEvent.NewTestEvent() });
+                Assert.DoesNotThrow(append.Wait);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void should_fail_appending_with_stream_exists_exp_ver_and_stream_does_not_exist()
+        {
+            const string stream = "should_fail_appending_with_stream_exists_exp_ver_and_stream_does_not_exist";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+ 
+                var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, new[] { TestEvent.NewTestEvent() });
+                Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void should_fail_appending_with_stream_exists_exp_ver_to_hard_deleted_stream()
+        {
+            const string stream = "should_fail_appending_with_stream_exists_exp_ver_to_hard_deleted_stream";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+                Assert.DoesNotThrow(delete.Wait);
+
+                var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, new[] { TestEvent.NewTestEvent() });
+                Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void should_fail_appending_with_stream_exists_exp_ver_to_soft_deleted_stream()
+        {
+            const string stream = "should_fail_appending_with_stream_exists_exp_ver_to_soft_deleted_stream";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+
+                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: false);
+                Assert.DoesNotThrow(delete.Wait);
+
+                var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, new[] { TestEvent.NewTestEvent() });
+                Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
+            }
+        }
+
         [Test, Category("Network")]
         public void can_append_multiple_events_at_once()
         {

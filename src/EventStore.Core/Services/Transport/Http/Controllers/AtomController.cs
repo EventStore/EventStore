@@ -648,7 +648,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 expectedVersion = ExpectedVersion.Any;
                 return true;
             }
-            return int.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.Any;
+            return int.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.StreamExists;
         }
 
         private bool GetIncludedId(HttpEntityManager manager, out Guid includedId)

@@ -153,7 +153,7 @@ namespace EventStore.Core.Messages
                 : base(internalCorrId, correlationId, envelope, requireMaster, user, login, password)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                if (expectedVersion < Data.ExpectedVersion.Any) throw new ArgumentOutOfRangeException("expectedVersion");
+                if (expectedVersion < Data.ExpectedVersion.StreamExists || expectedVersion == Data.ExpectedVersion.Invalid) throw new ArgumentOutOfRangeException("expectedVersion");
                 Ensure.NotNull(events, "events");
 
                 EventStreamId = eventStreamId;
