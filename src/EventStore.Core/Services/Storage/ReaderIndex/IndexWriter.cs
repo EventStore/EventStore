@@ -135,8 +135,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (curVersion == EventNumber.DeletedStream)
                 return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);
 
+            if(expectedVersion == ExpectedVersion.StreamExists) {
+                if(IsSoftDeleted(streamId))
+                    return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1, true);
+
+                if(curVersion < 0) {
+                    var metadataVersion = GetStreamLastEventNumber(SystemStreams.MetastreamOf(streamId));
+                    if(metadataVersion < 0)
+                        return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
+                }
+            }
+
             // idempotency checks
-            if (expectedVersion == ExpectedVersion.Any)
+            if (expectedVersion == ExpectedVersion.Any || expectedVersion == ExpectedVersion.StreamExists)
             {
                 var first = true;
                 int startEventNumber = -1;
