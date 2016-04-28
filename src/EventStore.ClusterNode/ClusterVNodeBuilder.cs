@@ -1,15 +1,15 @@
-﻿using EventStore.Core;
+using EventStore.Core;
 using EventStore.Projections.Core;
 
-namespace EventStore.ClientAPI.Embedded
+namespace EventStore.ClusterNode
 {
     /// <summary>
-    /// Allows a client to build a <see cref="ClusterVNode" /> for use with the Embedded client API by specifying
+    /// Allows a client to build a <see cref="ClusterVNode" /> for use in EventStore.ClusterNode by specifying
     /// high level options rather than using the constructor of <see cref="ClusterVNode"/> directly.
     /// </summary>
-    public class EmbeddedVNodeBuilder : VNodeBuilder
+    public class ClusterVNodeBuilder : VNodeBuilder
     {
-        private EmbeddedVNodeBuilder()
+        protected ClusterVNodeBuilder()
         {
         }
 
@@ -17,25 +17,22 @@ namespace EventStore.ClientAPI.Embedded
         /// Returns a builder set to construct options for a single node instance
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-        public static EmbeddedVNodeBuilder AsSingleNode()
+        public static ClusterVNodeBuilder AsSingleNode()
         {
-            var ret = new EmbeddedVNodeBuilder().WithSingleNodeSettings();
-            return (EmbeddedVNodeBuilder)ret;
+            var ret = new ClusterVNodeBuilder().WithSingleNodeSettings();
+            return (ClusterVNodeBuilder)ret;
         }
 
         /// <summary>
         /// Returns a builder set to construct options for a cluster node instance with a cluster size 
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-        public static EmbeddedVNodeBuilder AsClusterMember(int clusterSize)
+        public static ClusterVNodeBuilder AsClusterMember(int clusterSize)
         {
-            var ret = new EmbeddedVNodeBuilder().WithClusterNodeSettings(clusterSize);
-            return (EmbeddedVNodeBuilder)ret;
+            var ret = new ClusterVNodeBuilder().WithClusterNodeSettings(clusterSize);
+            return (ClusterVNodeBuilder)ret;
         }
-
-        /// <summary>
-        /// Sets up the projections subsystem
-        /// </summary>
+        
         protected override void SetUpProjectionsIfNeeded()
         {
             _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType, _startStandardProjections));

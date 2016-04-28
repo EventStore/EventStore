@@ -62,7 +62,7 @@ namespace EventStore.Core.Util
         public const int ExtTcpHeartbeatIntervalDefault = 2000;
 
         public const string IntTcpHeartbeatIntervalDescr = "Heartbeat interval for internal TCP sockets";
-        public const int IntTcpHeartbeatInvervalDefault = 700;
+        public const int IntTcpHeartbeatIntervalDefault = 700;
 
 
         public const string StatsPeriodDescr = "The number of seconds between statistics gathers.";

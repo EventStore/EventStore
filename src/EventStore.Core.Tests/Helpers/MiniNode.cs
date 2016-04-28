@@ -18,10 +18,9 @@ using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Cluster.Settings;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Tests.Common.VNodeBuilderTests;
 
 namespace EventStore.Core.Tests.Helpers
 {
@@ -70,66 +69,59 @@ namespace EventStore.Core.Tests.Helpers
             int intTcpPort = PortsHelper.GetAvailablePort(ip);
             int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
             int intHttpPort = PortsHelper.GetAvailablePort(ip);
+
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
-            Directory.CreateDirectory(_dbPath);
-            FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
-            Db = new TFChunkDb(CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize, inMemDb));
-            
+    
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             IntTcpEndPoint = new IPEndPoint(ip,intTcpPort);
             IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
             IntHttpEndPoint = new IPEndPoint(ip, intHttpPort);
             ExtHttpEndPoint = new IPEndPoint(ip, extHttpPort);
-            var vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
-                                                         0,
-                                                         IntTcpEndPoint,
-                                                         IntSecTcpEndPoint,
-                                                         TcpEndPoint,
-                                                         TcpSecEndPoint,
-                                                         IntHttpEndPoint,
-                                                         ExtHttpEndPoint,
-                                                         new Data.GossipAdvertiseInfo(IntTcpEndPoint, IntSecTcpEndPoint,
-                                                                                      TcpEndPoint, TcpSecEndPoint,
-                                                                                      IntHttpEndPoint, ExtHttpEndPoint),
-                                                         new [] {IntHttpEndPoint.ToHttpUrl()},
-                                                         new [] {ExtHttpEndPoint.ToHttpUrl()},
-                                                         enableTrustedAuth,
-                                                         ssl_connections.GetCertificate(),
-                                                         1,
-                                                         false,
-                                                         "whatever",
-                                                         new IPEndPoint[] {},
-                                                         TFConsts.MinFlushDelayMs,
-                                                         1,
-                                                         1,
-                                                         1,
-                                                         TimeSpan.FromSeconds(2),
-                                                         TimeSpan.FromSeconds(2),
-                                                         false,
-                                                         "",
-                                                         false,
-                                                         TimeSpan.FromHours(1),
-                                                         StatsStorage.None,
-                                                         1,
-                                                         new InternalAuthenticationProviderFactory(),
-                                                         true,
-                                                         30,
-                                                         true,
-                                                         true,
-                                                         false,
-                                                         TimeSpan.FromSeconds(30),
-                                                         TimeSpan.FromSeconds(30),
-                                                         TimeSpan.FromSeconds(10),
-                                                         TimeSpan.FromSeconds(10),
-                                                         TimeSpan.FromSeconds(10),
-                                                         TimeSpan.FromSeconds(10),
-                                                         TimeSpan.FromSeconds(10),
-                                                         false,
-                                                         memTableSize,
-                                                         false,
-                                                         false,
-                                                         false);
+
+            var builder = TestVNodeBuilder.AsSingleNode();
+            if(inMemDb)
+                builder.RunInMemory();
+            else 
+                builder.RunOnDisk(_dbPath);
+
+            builder.WithInternalTcpOn(IntTcpEndPoint)
+                   .WithInternalSecureTcpOn(IntSecTcpEndPoint)
+                   .WithExternalTcpOn(TcpEndPoint)
+                   .WithExternalSecureTcpOn(TcpSecEndPoint)
+                   .WithInternalHttpOn(IntHttpEndPoint)
+                   .WithExternalHttpOn(ExtHttpEndPoint)
+                   .WithTfChunkSize(chunkSize ?? ChunkSize)
+                   .WithTfChunksCacheSize(cachedChunkSize ?? CachedChunkSize)
+                   .WithServerCertificate(ssl_connections.GetCertificate())
+                   .WithWorkerThreads(1)
+                   .DisableDnsDiscovery()
+                   .WithPrepareTimeout(TimeSpan.FromSeconds(2))
+                   .WithCommitTimeout(TimeSpan.FromSeconds(2))
+                   .WithStatsPeriod(TimeSpan.FromHours(1))
+                   .DisableScavengeMerging()
+                   .NoGossipOnPublicInterface()
+                   .WithInternalHeartbeatInterval(TimeSpan.FromSeconds(10))
+                   .WithInternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
+                   .WithExternalHeartbeatInterval(TimeSpan.FromSeconds(10))
+                   .WithExternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
+                   .MaximumMemoryTableSizeOf(memTableSize)
+                   .DoNotVerifyDbHashes()
+                   .WithStatsStorage(StatsStorage.None);
+
+            if(enableTrustedAuth)
+                builder.EnableTrustedAuth();
+            if(disableFlushToDisk)
+                builder.WithUnsafeDisableFlushToDisk();
+
+            if(subsystems != null)
+            {
+                foreach(var subsystem in subsystems) 
+                {
+                    builder.AddCustomSubsystem(subsystem);
+                }
+            }
+
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
@@ -146,7 +138,9 @@ namespace EventStore.Core.Tests.Helpers
                      "TCP ENDPOINT:", TcpEndPoint,
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", ExtHttpEndPoint);
-            Node = new ClusterVNode(Db, vNodeSettings, new KnownEndpointGossipSeedSource(new [] {ExtHttpEndPoint}), new InfoController(null, ProjectionType.None), subsystems);
+            
+            Node = builder.Build();
+            Db = ((TestVNodeBuilder)builder).GetDb();
 
             Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
         }
@@ -204,52 +198,6 @@ namespace EventStore.Core.Tests.Helpers
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
             return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-        }
-
-        private TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, long chunksCacheSize, bool inMemDb)
-        {
-            ICheckpoint writerChk;
-            ICheckpoint chaserChk;
-            ICheckpoint epochChk;
-            ICheckpoint truncateChk;
-            if (inMemDb)
-            {
-                writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
-                chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
-                epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
-                truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
-            }
-            else
-            {
-                var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
-                var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
-                var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
-                var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-                if (Runtime.IsMono)
-                {
-                    writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                    chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                    epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                    truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-                }
-                else
-                {
-                    writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                    chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                    epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                    truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-                }
-            }
-            var nodeConfig = new TFChunkDbConfig(dbPath,
-                                                 new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                                                 chunkSize,
-                                                 chunksCacheSize,
-                                                 writerChk,
-                                                 chaserChk,
-                                                 epochChk,
-                                                 truncateChk,
-                                                 inMemDb);
-            return nodeConfig;
         }
     }
 }
