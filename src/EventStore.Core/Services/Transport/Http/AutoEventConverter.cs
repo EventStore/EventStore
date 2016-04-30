@@ -84,11 +84,11 @@ namespace EventStore.Core.Services.Transport.Http
                         return null;
                     return Parse(writeEvents);
 
+                case ContentType.ApplicationXml:
                 case ContentType.Xml:
                     return LoadRaw(request, false, includedId, includedType);
                 case ContentType.EventXml:
                 case ContentType.EventsXml:
-                case ContentType.ApplicationXml:
                 case ContentType.Atom:
                     var writeEvents2 = LoadFromXml(request);
                     if (writeEvents2.IsEmpty())
