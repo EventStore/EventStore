@@ -27,7 +27,7 @@ function get_v8_and_dependencies() {
         popd > /dev/null 
     else
         echo "Checking out V8 repository..."
-        svn checkout --quiet -r"$revision" http://v8.googlecode.com/svn/trunk "$V8_BUILD_DIRECTORY"
+        svn checkout --quiet -r"$revision" https://v8.googlecode.com/svn/trunk "$V8_BUILD_DIRECTORY"
     fi
 
     local needsDependencies=false

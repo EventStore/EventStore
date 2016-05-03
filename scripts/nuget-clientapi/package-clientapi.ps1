@@ -49,7 +49,7 @@ Function Get-SourceDependencies() {
     try {
         Push-Location $stagingDirectory
         if ((Test-Path "protobuf-net-read-only") -eq $false) {
-            $svnCommand = "$svnClientPath checkout --quiet -r 594 http://protobuf-net.googlecode.com/svn/trunk/ protobuf-net-read-only"
+            $svnCommand = "$svnClientPath checkout --quiet -r 594 https://protobuf-net.googlecode.com/svn/trunk/ protobuf-net-read-only"
             Exec([ScriptBlock]::Create($svnCommand))
         }
 

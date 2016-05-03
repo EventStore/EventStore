@@ -39,7 +39,7 @@ $libsDirectory = Join-Path $srcDirectory "libs"
 
     #V8
     $v8Revision = "18456" # Tag 3.24.10
-    $v8Repository = "http://v8.googlecode.com/svn/trunk"
+    $v8Repository = "https://v8.googlecode.com/svn/trunk"
     $v8Directory = Join-Path $baseDirectory "v8"
 
     #Python
@@ -48,7 +48,7 @@ $libsDirectory = Join-Path $srcDirectory "libs"
     $pythonDirectory = Join-Path (Join-Path $baseDirectory "v8") (Join-Path "third_party" "python_26")
 
     #GYP
-    $gypRepository = "http://gyp.googlecode.com/svn/trunk"
+    $gypRepository = "https://gyp.googlecode.com/svn/trunk"
     $gypRevision = "1806"
     $gypDirectory = Join-Path $v8Directory (Join-Path "build" "gyp")
 
