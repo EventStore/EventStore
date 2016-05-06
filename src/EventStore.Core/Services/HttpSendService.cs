@@ -197,7 +197,7 @@ namespace EventStore.Core.Services
                 && srcReq.ContentLength64 > 0)
             {
                 var streamContent = new StreamContent(srcReq.InputStream);
-                streamContent.Headers.ContentType = new MediaTypeHeaderValue(srcReq.ContentType);
+                streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse(srcReq.ContentType);
                 streamContent.Headers.ContentLength = srcReq.ContentLength64;
                 request.Content = streamContent;
 
