@@ -50,8 +50,8 @@
       <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="System.Net.Http">
-        <SpecificVersion>False</SpecificVersion>
-        <HintPath Condition=" '$(OS)' == 'Windows_NT' ">..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath Condition=" '$(OS)' == 'Windows_NT' ">..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -264,7 +264,7 @@
     <Compile Include="Index\adding_item_to_empty_index_map.cs" />
     <Compile Include="Index\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\destroying_ptable.cs" />
-    <Compile Include="Index\opening_a_ptable_with_more_than_32bits_of_records.cs"/>
+    <Compile Include="Index\opening_a_ptable_with_more_than_32bits_of_records.cs" />
     <Compile Include="Index\index_map_should.cs" />
     <Compile Include="Index\MemTableTests.cs" />
     <Compile Include="Index\FakeFilenameProvider.cs" />
@@ -610,6 +610,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="TestConfigs\test_config.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\es-tile.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

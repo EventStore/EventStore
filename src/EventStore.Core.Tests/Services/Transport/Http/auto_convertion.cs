@@ -154,7 +154,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var request = FakeRequest.JsonData;
             var id = Guid.NewGuid();
             var type = "EventType";
-            var events = AutoEventConverter.SmartParse(request, codec, id, type);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, id, type);
             Assert.NotNull(events);
             Assert.That(events.Length, Is.EqualTo(1));
 
@@ -176,7 +176,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var request = FakeRequest.XmlData;
             var id = Guid.NewGuid();
             var type = "EventType";
-            var events = AutoEventConverter.SmartParse(request, codec, id, type);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, id, type);
             Assert.NotNull(events);
             Assert.That(events.Length, Is.EqualTo(1));
 
@@ -201,7 +201,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                            Tuple.Create(FakeRequest.JsonData2, "\"metadata2\"")
                                                    });
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
@@ -223,7 +223,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                         Tuple.Create("\"data2\"", FakeRequest.JsonMetadata2)
                                                    });
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
@@ -245,7 +245,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                         Tuple.Create(FakeRequest.JsonData2, FakeRequest.JsonMetadata2)
                                                    });
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
@@ -267,7 +267,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                         Tuple.Create("\"data2\"", "\"metadata2\"")
                                                    });
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsFalse(events[0].IsJson);
@@ -289,7 +289,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                            Tuple.Create("\"data2\"", "\"metadata2\"")
                                                    });
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var codec = Codec.EventsXml;
             var request = FakeRequest.GetXmlWrite(FakeRequest.XmlData, "metadata");
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             var converted = events.Single();
 
             Assert.That(converted.IsJson);
@@ -325,7 +325,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var codec = Codec.EventsXml;
             var request = FakeRequest.GetXmlWrite("data", FakeRequest.XmlMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             var converted = events.Single();
 
             Assert.That(converted.IsJson);
@@ -339,7 +339,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var codec = Codec.EventsXml;
             var request = FakeRequest.GetXmlWrite(FakeRequest.XmlData, FakeRequest.XmlMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             var converted = events.Single();
 
             Assert.That(converted.IsJson);
@@ -353,7 +353,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var codec = Codec.EventsXml;
             var request = FakeRequest.GetXmlWrite("data", "metadata");
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             var converted = events.Single();
 
             Assert.That(!converted.IsJson);
@@ -371,7 +371,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                         Tuple.Create("data2", "metadata2")
                                                   });
 
-            var events = AutoEventConverter.SmartParse(request, codec, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), codec, Guid.Empty);
             Assert.That(events.Length, Is.EqualTo(2));
 
             Assert.IsTrue(events[0].IsJson);
@@ -392,7 +392,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite(FakeRequest.XmlData, "metadata");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetJsonEventReadResult(resolvedEvent, dataJson: true, metadataJson: false);
@@ -406,7 +406,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite(FakeRequest.JsonData, "\"metadata\"");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetJsonEventReadResult(resolvedEvent, dataJson: true, metadataJson: false);
@@ -420,7 +420,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite("data", FakeRequest.XmlMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
 
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
@@ -436,7 +436,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite("\"data\"", FakeRequest.JsonMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetJsonEventReadResult(resolvedEvent, dataJson: false, metadataJson: true);
@@ -450,7 +450,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite(FakeRequest.XmlData, FakeRequest.XmlMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetJsonEventReadResult(resolvedEvent, dataJson: true, metadataJson: true);
@@ -464,7 +464,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite(FakeRequest.JsonData, FakeRequest.JsonMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetJsonEventReadResult(resolvedEvent, dataJson: true, metadataJson: true);
@@ -478,7 +478,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite("\"data\"", "\"metadata\"");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetJsonEventReadResult(resolvedEvent, dataJson: false, metadataJson: false);
@@ -492,7 +492,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite("data", "metadata");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetJsonEventReadResult(resolvedEvent, dataJson: false, metadataJson: false);
@@ -516,7 +516,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite(FakeRequest.XmlData, "metadata");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: true, metadataJson: false);
@@ -530,7 +530,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite(FakeRequest.JsonData, "\"metadata\"");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: true, metadataJson: false);
@@ -544,7 +544,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite("data", FakeRequest.XmlMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: false, metadataJson: true);
@@ -558,7 +558,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite("\"data\"", FakeRequest.JsonMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: false, metadataJson: true);
@@ -572,7 +572,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite(FakeRequest.XmlData, FakeRequest.XmlMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: true, metadataJson: true);
@@ -586,7 +586,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite(FakeRequest.JsonData, FakeRequest.JsonMetadata);
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: true, metadataJson: true);
@@ -600,7 +600,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetJsonWrite("\"data\"", "\"metadata\"");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsJson, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsJson, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: false, metadataJson: false);
@@ -614,7 +614,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var request = FakeRequest.GetXmlWrite("data", "metadata");
 
-            var events = AutoEventConverter.SmartParse(request, Codec.EventsXml, Guid.Empty);
+            var events = AutoEventConverter.SmartParse(Helper.UTF8NoBom.GetBytes(request), Codec.EventsXml, Guid.Empty);
             var evnt = events.Single();
             var resolvedEvent = GenerateResolvedEvent(evnt.Data, evnt.Metadata);
             var expected = FakeRequest.GetXmlEventReadResult(resolvedEvent, dataJson: false, metadataJson: false);

@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Linq;
 using System.Xml.Linq;
+using System.IO;
 
 namespace EventStore.Core.Tests.Http.Streams
 {
@@ -81,7 +82,7 @@ namespace EventStore.Core.Tests.Http.Streams
             }
 
             [Test]
-            public void returns_created_status_code()
+            public void returns_bad_request_status_code()
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
             }
@@ -821,5 +822,36 @@ namespace EventStore.Core.Tests.Http.Streams
 
         }
 
+        [TestFixture]
+        public class when_requesting_a_single_raw_event_in_the_stream_as_raw : HttpBehaviorSpecification
+        {
+            protected HttpWebResponse _response;
+            protected byte[] _data;
+            protected override void Given()
+            {
+                var request = CreateRequest(TestStream, String.Empty, HttpMethod.Post, "application/octet-stream");
+                request.Headers.Add("ES-EventType", "TestEventType");
+                request.Headers.Add("ES-EventID", Guid.NewGuid().ToString());
+                if (_data == null)
+                {
+                    _data = File.ReadAllBytes("Resources/es-tile.png");
+                }
+                request.ContentLength = _data.Length;
+                request.GetRequestStream().Write(_data, 0, _data.Length);
+                _response = GetRequestResponse(request);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+            }
+
+            protected override void When()
+            {
+                Get(TestStream + "/0", "", "application/octet-stream");
+            }
+
+            [Test]
+            public void returns_correct_body()
+            {
+                Assert.AreEqual(_data, _lastResponseBytes);
+            }
+        }
     }
 }

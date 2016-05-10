@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Transport.Http
             return textMessage != null ? entity.ResponseCodec.To(textMessage) : String.Empty;
         }
 
-        public static string EventEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
+        public static object EventEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
         {
             var msg = message as ClientMessage.ReadEventCompleted;
             if (msg == null || msg.Result != ReadEventResult.Success || msg.Record.Event == null)

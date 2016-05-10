@@ -102,13 +102,26 @@ namespace EventStore.Core.Services
                 var response = message.Data;
                 var config = message.Configuration;
                 var start = _watch.ElapsedTicks;
-                message.HttpEntityManager.ReplyTextContent(
-                    response,
-                    config.Code,
-                    config.Description,
-                    config.ContentType,
-                    config.Headers,
-                    exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message.Message, exc.Message));
+                if(response is byte[])
+                {
+                    message.HttpEntityManager.ReplyContent(
+                        response as byte[],
+                        config.Code,
+                        config.Description,
+                        config.ContentType,
+                        config.Headers,
+                        exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message.Message, exc.Message));
+                }
+                else
+                {
+                    message.HttpEntityManager.ReplyTextContent(
+                        response as string,
+                        config.Code,
+                        config.Description,
+                        config.ContentType,
+                        config.Headers,
+                        exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message.Message, exc.Message));
+                }
                 HistogramService.SetValue(_httpSendHistogram,
                    (long)((((double)_watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
 
