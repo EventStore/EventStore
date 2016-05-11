@@ -564,6 +564,7 @@
     <Compile Include="TransactionLog\when_writing_commit_record_to_file.cs" />
     <Compile Include="TransactionLog\when_writing_prepare_record_to_file.cs" />
     <Compile Include="mono_filestream_bug.cs" />
+    <Compile Include="ClientAPI\connecting_with_connection_string.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

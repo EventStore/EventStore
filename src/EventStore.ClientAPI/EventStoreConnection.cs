@@ -34,6 +34,14 @@ namespace EventStore.ClientAPI
         {
             var settings = ConnectionString.GetConnectionSettings(connectionString);
             var uri = GetUriFromConnectionString(connectionString);
+            if(uri == null && (settings.GossipSeeds == null || settings.GossipSeeds.Length == 0))
+            {
+                throw new Exception(string.Format("Did not find ConnectTo or GossipSeeds in the connection string.\n'{0}'", connectionString));
+            }
+            if(uri != null && settings.GossipSeeds != null && settings.GossipSeeds.Length > 0)
+            {
+                throw new NotSupportedException(string.Format("Setting ConnectTo as well as GossipSeeds on the connection string is currently not supported.\n{0}", connectionString));
+            }
             return Create(settings, uri, connectionName);
         }
 
@@ -139,9 +147,8 @@ namespace EventStore.ClientAPI
         private static Uri GetUriFromConnectionString(string connectionString)
         {
             var connto = ConnectionString.GetConnectionStringInfo(connectionString)
-                .First(x => x.Key.ToUpperInvariant() == "CONNECTTO").Value;
-            if (connto == null) throw new Exception(string.Format("Did not find ConnectTo in the connection string.\n'{0}'", connectionString));
-            return new Uri(connto);
+                            .FirstOrDefault(x => x.Key.ToUpperInvariant() == "CONNECTTO").Value;
+            return connto == null ? null : new Uri(connto);
         }
         /// <summary>
         /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
