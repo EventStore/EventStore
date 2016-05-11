@@ -6,7 +6,7 @@ using EventStore.Core.Index;
 
 namespace EventStore.Core.Tests.Index
 {
-    [TestFixture, Explicit]
+    [TestFixture]
     public class opening_a_ptable_with_more_than_32bits_of_records: SpecificationWithFilePerTestFixture
     {
         private PTable _ptable;

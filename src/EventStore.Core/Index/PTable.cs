@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Security.Cryptography;
 using EventStore.Common.Log;
 using EventStore.Common.Streams;
 using EventStore.Common.Utils;
@@ -12,7 +11,6 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.Util;
-using EventStore.Core.TransactionLog.Unbuffered;
 
 namespace EventStore.Core.Index
 {
@@ -46,8 +44,6 @@ namespace EventStore.Core.Index
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _deleteFile;
 
-        internal Midpoint[] GetMidPoints() {return _midpoints;}
-
         private PTable(string filename,
                        Guid id,
                        int initialReaders = ESConsts.PTableInitialReaderCount,
@@ -65,7 +61,7 @@ namespace EventStore.Core.Index
             _id = id;
             _filename = filename;
 
-            Log.Trace("Loading and Verification of PTable '{0}' started...", Path.GetFileName(Filename));
+            Log.Trace("Loading PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
 
             _count = ((new FileInfo(_filename).Length - PTableHeader.Size - MD5Size) / IndexEntrySize);
@@ -109,81 +105,111 @@ namespace EventStore.Core.Index
 
             try
             {
-                _midpoints = CacheMidpointsAndVerifyHash(depth);
+                _midpoints = CacheMidpoints(depth);
             }
             catch (PossibleToHandleOutOfMemoryException)
             {
                 Log.Error("Unable to create midpoints for PTable '{0}' ({1} entries, depth {2} requested). "
-                          + "Performance hit will occur. OOM Exception.", Path.GetFileName(Filename), Count, depth);
+                          + "Performance hit possible. OOM Exception.", Path.GetFileName(Filename), Count, depth);
             }
             Log.Trace("Loading PTable '{0}' ({1} entries, cache depth {2}) done in {3}.",
                       Path.GetFileName(Filename), Count, depth, sw.Elapsed);
         }
 
-        internal Midpoint[] CacheMidpointsAndVerifyHash(int depth)
+        internal Midpoint[] CacheMidpoints(int depth)
         {
-            var buffer = new byte[4096];
             if (depth < 0 || depth > 30)
                 throw new ArgumentOutOfRangeException("depth");
             var count = Count;
             if (count == 0 || depth == 0)
                 return null;
+
+            var workItem = GetWorkItem();
+            try
+            {
+                int midpointsCount;
+                Midpoint[] midpoints;
+                try
+                {
+                    midpointsCount = (int) Math.Max(2L, Math.Min((long) 1 << depth, count));
+                    midpoints = new Midpoint[midpointsCount];
+                }
+                catch (OutOfMemoryException exc)
+                {
+                    throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
+                }
+                workItem.Stream.Position = PTableHeader.Size;
+                for (long k = 0; k < midpointsCount; ++k)
+                {
+                    var nextIndex = (long)k * (count - 1) / (midpointsCount - 1);
+                    ReadUntil(PTableHeader.Size + IndexEntrySize*nextIndex, workItem.Stream);
+                    midpoints[k] = new Midpoint(ReadNextNoSeek(workItem).Key, nextIndex);
+                }
+
+                return midpoints;
+            }
+            finally
+            {
+                ReturnWorkItem(workItem);
+            }
+        }
+
+        private static readonly byte[] TmpBuf = new byte[DefaultBufferSize];
+        private static void ReadUntil(long nextPos, FileStream fileStream)
+        {
+            long toRead = nextPos - fileStream.Position;
+            if (toRead < 0)
+            {
+                fileStream.Seek(nextPos, SeekOrigin.Begin);
+                return;
+            }
+            while (toRead > 0)
+            {
+                var localReadCount = Math.Min(toRead, TmpBuf.Length);
+                fileStream.Read(TmpBuf, 0, (int)localReadCount);
+                toRead -= localReadCount;
+            }
+        }
+
+        public void VerifyFileHash()
+        {
+            var sw = Stopwatch.StartNew();
+            Log.Trace("Verifying file hash of PTable '{0}' started...", Path.GetFileName(Filename));
 #if  __MonoCS__
             var workItem = GetWorkItem();
             var stream = workItem.Stream;
             try {
 #else
-            using (var stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false, 4096, 4096, false, 4096))
+            using (var stream = UnbufferedFileReadStream.Open(_filename))
             {
 #endif
-                try {
-                    int midpointsCount;
-                    Midpoint[] midpoints;
-                    using (MD5 md5 = MD5.Create())
-                    {
-                        try
-                        {
-                            midpointsCount = (int)Math.Max(2L, Math.Min((long)1 << depth, count));
-                            midpoints = new Midpoint[midpointsCount];
-                        }
-                        catch (OutOfMemoryException exc)
-                        {
-                            throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
-                        }
-                        stream.Seek(0, SeekOrigin.Begin);
-                        stream.Read(buffer, 0, PTableHeader.Size);
-                        md5.TransformBlock(buffer, 0, PTableHeader.Size, null, 0);
-                        long previousNextIndex = long.MinValue;
-                        UInt64 previousKey = long.MaxValue;
-                        for (long k = 0; k < midpointsCount; ++k)
-                        {
-                            var nextIndex = (long)k * (count - 1) / (midpointsCount - 1);
-                            if (previousNextIndex != nextIndex) {
-                                ReadUntilWithMd5(PTableHeader.Size + IndexEntrySize * nextIndex, stream, md5);
-                                stream.Read(buffer, 0, 8);
-                                md5.TransformBlock(buffer, 0, 8, null, 0);
-                                var key = BitConverter.ToUInt64(buffer, 0);
-                                midpoints[k] = new Midpoint(key, nextIndex);
-                                previousNextIndex = nextIndex;
-                                previousKey = key;
-                            } else {
-                                midpoints[k] = new Midpoint(previousKey, previousNextIndex);
-                            }
-                        }
+                //stream.Position = 0;
+                var hash = MD5Hash.GetHashFor(stream, 0, stream.Length - MD5Size);
 
-                        ReadUntilWithMd5(stream.Length - MD5Size, stream, md5);
-                        //verify hash (should be at stream.length - MD5Size)
-                        md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
-                        var fileHash = new byte[MD5Size];
-                        stream.Read(fileHash, 0, MD5Size);
-                        ValidateHash(md5.Hash, fileHash);
-                        return midpoints;
-                    }
-                }
-                catch
+                var fileHash = new byte[MD5Size];
+                stream.Read(fileHash, 0, MD5Size);
+
+                if (hash == null)
+                    throw new CorruptIndexException(new HashValidationException("Calculated MD5 hash is null!"));
+                if (fileHash.Length != hash.Length)
+                    throw new CorruptIndexException(
+                        new HashValidationException(
+                            string.Format(
+                                "Hash sizes differ! FileHash({0}): {1}, hash({2}): {3}.",
+                                fileHash.Length,
+                                BitConverter.ToString(fileHash),
+                                hash.Length,
+                                BitConverter.ToString(hash))));
+
+                for (int i = 0; i < fileHash.Length; i++)
                 {
-                    Dispose();
-                    throw;
+                    if (fileHash[i] != hash[i])
+                        throw new CorruptIndexException(
+                            new HashValidationException(
+                                string.Format(
+                                    "Hashes are different! FileHash: {0}, hash: {1}.",
+                                    BitConverter.ToString(fileHash),
+                                    BitConverter.ToString(hash))));
                 }
             }
 #if __MonoCS__
@@ -192,49 +218,7 @@ namespace EventStore.Core.Index
                 ReturnWorkItem(workItem);
             }
 #endif
-        }
-
-
-        private readonly byte[] TmpReadBuf = new byte[DefaultBufferSize];
-        private void ReadUntilWithMd5(long nextPos, Stream fileStream, MD5 md5)
-        {
-            long toRead = nextPos - fileStream.Position;
-            if (toRead < 0) throw new Exception("should not do negative reads.");
-            while (toRead > 0)
-            {
-                var localReadCount = Math.Min(toRead, TmpReadBuf.Length);
-                int read = fileStream.Read(TmpReadBuf, 0, (int)localReadCount);
-                md5.TransformBlock(TmpReadBuf, 0, read, null, 0);
-                toRead -= read;
-            }
-        }
-        void ValidateHash(byte [] fromFile, byte[] computed)
-        {
-            if (computed == null)
-                throw new CorruptIndexException(new HashValidationException("Calculated MD5 hash is null!"));
-            if (fromFile == null)
-                throw new CorruptIndexException(new HashValidationException("Read from file MD5 hash is null!"));
-
-            if (computed.Length != fromFile.Length)
-                throw new CorruptIndexException(
-                    new HashValidationException(
-                        string.Format(
-                           "Hash sizes differ! FileHash({0}): {1}, hash({2}): {3}.",
-                           computed.Length,
-                           BitConverter.ToString(computed),
-                           fromFile.Length,
-                           BitConverter.ToString(fromFile))));
-
-            for (int i = 0; i < fromFile.Length; i++)
-            {
-                if (fromFile[i] != computed[i])
-                    throw new CorruptIndexException(
-                        new HashValidationException(
-                            string.Format(
-                                "Hashes are different! computed: {0}, hash: {1}.",
-                                BitConverter.ToString(computed),
-                                BitConverter.ToString(fromFile))));
-            }
+            Log.Trace("Verifying file hash of PTable '{0}' ({1} entries) done in {2}.", Path.GetFileName(Filename), Count, sw.Elapsed);
         }
 
         public IEnumerable<IndexEntry> IterateAllInOrder()

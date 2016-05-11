@@ -48,6 +48,12 @@ namespace EventStore.Core.Tests.Index
         }
 
         [Test]
+        public void the_hash_can_be_verified()
+        {
+            Assert.DoesNotThrow(() => _newtable.VerifyFileHash());
+        }
+
+        [Test]
         public void the_items_are_sorted()
         {
             var last = new IndexEntry(ulong.MaxValue, long.MaxValue);
