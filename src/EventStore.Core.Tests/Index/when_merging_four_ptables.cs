@@ -59,5 +59,11 @@ namespace EventStore.Core.Tests.Index
                 last = item;
             }
         }
+
+        [Test]
+        public void the_hash_can_be_verified()
+        {
+            Assert.DoesNotThrow(() => _newtable.VerifyFileHash());
+        }
     }
 }
