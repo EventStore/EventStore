@@ -68,7 +68,7 @@ namespace EventStore.ClientAPI
         /// <returns>a <see cref="ConnectionSettings"/> from the connection string</returns>
         public static ConnectionSettings GetConnectionSettings(string connectionString)
         {
-            var settings = ConnectionSettings.Default;
+            var settings = ConnectionSettings.Create().Build();
             var items = GetConnectionStringInfo(connectionString).ToArray();
             return Apply(items, settings);
         }
