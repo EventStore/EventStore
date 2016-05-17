@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Xml.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
@@ -19,12 +18,14 @@ namespace EventStore.Core.Services.Transport.Http
     {
         private static readonly ILogger Log = LogManager.GetLogger("AutoEventConverter");
 
-        public static string SmartFormat(ResolvedEvent evnt, ICodec targetCodec)
+        public static object SmartFormat(ResolvedEvent evnt, ICodec targetCodec)
         {
             var dto = CreateDataDto(evnt);
 
             switch (targetCodec.ContentType)
             {
+                case ContentType.Raw:
+                    return evnt.Event.Data;
                 case ContentType.Xml:
                 case ContentType.ApplicationXml:
                     {
@@ -70,33 +71,42 @@ namespace EventStore.Core.Services.Transport.Http
         }
 
         //TODO GFY THERE IS WAY TOO MUCH COPYING/SERIALIZING/DESERIALIZING HERE!
-        public static Event[] SmartParse(string request, ICodec sourceCodec, Guid includedId, string includedType=null)
+        public static Event[] SmartParse(byte[] request, ICodec sourceCodec, Guid includedId, string includedType=null)
         {
             switch(sourceCodec.ContentType)
             {
+                case ContentType.Raw:
+                    return LoadRaw(request, includedId, includedType);
                 case ContentType.Json:
-                    return LoadRaw(request, true, includedId, includedType);
+                    return LoadRaw(sourceCodec.Encoding.GetString(request), true, includedId, includedType);
                 case ContentType.EventJson:
                 case ContentType.EventsJson:
                 case ContentType.AtomJson:
-                    var writeEvents = LoadFromJson(request);
+                    var writeEvents = LoadFromJson(sourceCodec.Encoding.GetString(request));
                     if (writeEvents.IsEmpty())
                         return null;
                     return Parse(writeEvents);
 
                 case ContentType.ApplicationXml:
                 case ContentType.Xml:
-                    return LoadRaw(request, false, includedId, includedType);
+                    return LoadRaw(sourceCodec.Encoding.GetString(request), false, includedId, includedType);
                 case ContentType.EventXml:
                 case ContentType.EventsXml:
                 case ContentType.Atom:
-                    var writeEvents2 = LoadFromXml(request);
+                    var writeEvents2 = LoadFromXml(sourceCodec.Encoding.GetString(request));
                     if (writeEvents2.IsEmpty())
                         return null;
                     return Parse(writeEvents2);
                 default:
                     return null;
             }
+        }
+
+        private static Event[] LoadRaw(byte[] data, Guid includedId, string includedType)
+        {
+            var ret = new Event[1];
+            ret[0] = new Event(includedId, includedType, false, data, null);
+            return ret;
         }
 
         private static Event[] LoadRaw(string data, bool isJson, Guid includedId, string includedType) {

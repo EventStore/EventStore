@@ -28,6 +28,7 @@ namespace EventStore.Core.Tests.Http
         protected IEventStoreConnection _connection;
         protected HttpWebResponse _lastResponse;
         protected string _lastResponseBody;
+        protected byte[] _lastResponseBytes;
         protected JsonException _lastJsonException;
 #if !__MonoCS__
         private Func<HttpWebResponse, byte[]> _dumpResponse;
@@ -68,6 +69,7 @@ namespace EventStore.Core.Tests.Http
             }
             _lastResponse = null;
             _lastResponseBody = null;
+            _lastResponseBytes = null;
             _lastJsonException = null;
             try
             {
@@ -348,6 +350,7 @@ namespace EventStore.Core.Tests.Http
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
             var bytes = memoryStream.ToArray();
+            _lastResponseBytes = bytes;
             _lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
         }
 

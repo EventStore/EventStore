@@ -26,5 +26,7 @@
         
         public const string Competing = "application/vnd.eventstore.competingatom+xml";
         public const string CompetingJson = "application/vnd.eventstore.competingatom+json";
+
+        public const string Raw = "application/octet-stream";
     }
 }

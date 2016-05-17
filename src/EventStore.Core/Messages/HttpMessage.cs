@@ -41,12 +41,12 @@ namespace EventStore.Core.Messages
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
-            public readonly string Data;
+            public readonly object Data;
             public readonly ResponseConfiguration Configuration;
             public readonly Message Message;
 
             public HttpSend(
-                HttpEntityManager httpEntityManager, ResponseConfiguration configuration, string data, Message message)
+                HttpEntityManager httpEntityManager, ResponseConfiguration configuration, object data, Message message)
                 : base(Guid.Empty, null, httpEntityManager)
             {
                 Data = data;

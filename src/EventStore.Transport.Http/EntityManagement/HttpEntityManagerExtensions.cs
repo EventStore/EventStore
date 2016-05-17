@@ -11,6 +11,17 @@ namespace EventStore.Transport.Http.EntityManagement
             self.Reply(null, code, description, null, null, null, onError);
         }
 
+        public static void ReplyContent(this HttpEntityManager self, 
+                                            byte[] response, 
+                                            int code, 
+                                            string description, 
+                                            string type,
+                                            IEnumerable<KeyValuePair<string, string>> headers, 
+                                            Action<Exception> onError)
+        {
+            self.Reply(response, code, description, type, null, headers, onError);
+        }
+
         public static void ReplyTextContent(this HttpEntityManager self, 
                                             string response, 
                                             int code, 

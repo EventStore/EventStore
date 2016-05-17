@@ -57,6 +57,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.EventJson,
                                                           Codec.EventsXml,
                                                           Codec.EventsJson,
+                                                          Codec.Raw,
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs =
                                                               {
@@ -82,6 +83,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   Codec.Json,
                                                                   Codec.EventXml,
                                                                   Codec.EventJson,
+                                                                  Codec.Raw,
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
 
@@ -740,7 +742,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream, Guid idIncluded, string typeIncluded)
         {
             //TODO GFY SHOULD WE MAKE THIS READ BYTE[] FOR RAW THEN CONVERT? AS OF NOW ITS ALL NO BOM UTF8
-            manager.ReadTextRequestAsync(
+            manager.ReadRequestAsync(
                 (man, body) =>
                     {
                         var events = new Event[0];

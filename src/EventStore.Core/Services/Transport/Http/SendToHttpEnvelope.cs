@@ -47,12 +47,12 @@ namespace EventStore.Core.Services.Transport.Http
     {
         private readonly IPublisher _networkSendQueue;
         private readonly HttpEntityManager _entity;
-        private readonly Func<HttpResponseFormatterArgs, Message, string> _formatter;
+        private readonly Func<HttpResponseFormatterArgs, Message, object> _formatter;
         private readonly Func<HttpResponseConfiguratorArgs, Message, ResponseConfiguration> _configurator;
 
         public SendToHttpEnvelope(IPublisher networkSendQueue, 
                                   HttpEntityManager entity,
-                                  Func<HttpResponseFormatterArgs, Message, string> formatter,
+                                  Func<HttpResponseFormatterArgs, Message, object> formatter,
                                   Func<HttpResponseConfiguratorArgs, Message, ResponseConfiguration> configurator)
         {
             Ensure.NotNull(networkSendQueue, "networkSendQueue");
