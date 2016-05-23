@@ -9,7 +9,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                                  IHandle<ClientMessage.ReadStreamEventsForward>,
                                                  IHandle<ClientMessage.ReadAllEventsForward>,
                                                  IHandle<ClientMessage.WriteEvents>,
-                                                 IHandle<ClientMessage.DeleteStream>
+                                                 IHandle<ClientMessage.DeleteStream>,
+                                                 IHandle<SystemMessage.SubSystemInitialized>
     {
         private readonly IPublisher _externalRequestQueue;
         private readonly IPublisher _inputQueue;
@@ -69,6 +70,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
                     msg.CommitPosition, msg.PreparePosition, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
                     msg.ValidationTfLastCommitPosition, msg.User));
+        }
+
+        public void Handle(SystemMessage.SubSystemInitialized msg)
+        {
+            _externalRequestQueue.Publish(
+                new SystemMessage.SubSystemInitialized(msg.SubSystemName));
         }
     }
 }

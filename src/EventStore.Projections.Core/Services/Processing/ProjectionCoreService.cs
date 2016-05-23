@@ -8,6 +8,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Management;
+using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -123,6 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
+
                 var projectionVersion = message.Version;
                 var projectionConfig = message.Config;
                 var namesBuilder = new ProjectionNamesBuilder(name, sourceDefinition);

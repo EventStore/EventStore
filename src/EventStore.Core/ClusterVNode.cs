@@ -41,8 +41,7 @@ namespace EventStore.Core
 {
     public class ClusterVNode :
         IHandle<SystemMessage.StateChangeMessage>,
-        IHandle<SystemMessage.BecomeShutdown>,
-        IHandle<UserManagementMessage.UserManagementServiceInitialized>
+        IHandle<SystemMessage.BecomeShutdown>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
@@ -115,16 +114,16 @@ namespace EventStore.Core
                                                             watchSlowMsg: true,
                                                             slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
-            _controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
+            _subsystems = subsystems;
+
+            _controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy, _subsystems);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
 
             _controller.SetMainQueue(_mainQueue);
 
-            _subsystems = subsystems;
             //SELF
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
-            _mainBus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(this);
             // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -581,14 +580,6 @@ namespace EventStore.Core
         {
             StopNonblocking(exitProcess, shutdownHttp);
             return _shutdownEvent.WaitOne(timeout);
-        }
-
-        public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
-        {
-            if (_subsystems != null)
-                foreach (var subsystem in _subsystems)
-                    subsystem.Start();
-            _mainQueue.Publish(new SystemMessage.SystemReady());
         }
 
         public void Handle(SystemMessage.StateChangeMessage message)

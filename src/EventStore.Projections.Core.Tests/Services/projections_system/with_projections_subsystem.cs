@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
         protected override IEnumerable<WhenStep> PreWhen()
         {
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            yield return (new SystemMessage.SystemReady());
+            yield return (new SystemMessage.SystemCoreReady());
             yield return Yield;
             if (_startSystemProjections)
             {
