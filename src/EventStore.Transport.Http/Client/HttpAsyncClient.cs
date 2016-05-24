@@ -22,6 +22,13 @@ namespace EventStore.Transport.Http.Client
         public HttpAsyncClient(TimeSpan timeout) {
             _client = new HttpClient();
             _client.Timeout = timeout;
+            GetProxy();
+        }
+
+        private void GetProxy()
+        {
+            var defaultProxy = WebRequest.DefaultWebProxy;
+            defaultProxy.GetProxy(new Uri("http://127.0.0.1"));
         }
 
         public void Get(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
