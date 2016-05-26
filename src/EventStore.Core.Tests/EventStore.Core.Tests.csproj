@@ -205,6 +205,12 @@
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_arguments.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_no_arguments.cs" />
     <Compile Include="Common\EventStoreOptionsTests\when_parsing\with_unknown_options.cs" />
+    <Compile Include="Common\VNodeBuilderTests\when_building\with_default_settings.cs" />
+    <Compile Include="Common\VNodeBuilderTests\VNodeBuilderScenarios.cs" />
+    <Compile Include="Common\VNodeBuilderTests\TestVNodeBuilder.cs" />
+    <Compile Include="Common\VNodeBuilderTests\when_building\with_single_node_and_custom_settings.cs" />
+    <Compile Include="Common\VNodeBuilderTests\when_building\with_cluster_node_and_custom_settings.cs" />
+    <Compile Include="Common\VNodeBuilderTests\TestAuthentictaionProviderFactory.cs" />
     <Compile Include="DefaultData.cs" />
     <Compile Include="Fakes\FakeTfReader.cs" />
     <Compile Include="Helpers\CollectionsExtensions.cs" />
@@ -567,6 +573,7 @@
     <Compile Include="TransactionLog\when_writing_prepare_record_to_file.cs" />
     <Compile Include="mono_filestream_bug.cs" />
     <Compile Include="ClientAPI\connecting_with_connection_string.cs" />
+    <Compile Include="Common\VNodeBuilderTests\when_building\with_secure_tcp.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

@@ -8,9 +8,6 @@ using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Rags;
 
@@ -164,151 +161,20 @@ namespace EventStore.Core
             return msg;
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize, bool inMemDb)
+        protected static StoreLocation GetCertificateStoreLocation(string certificateStoreLocation)
         {
-            ICheckpoint writerChk;
-            ICheckpoint chaserChk;
-            ICheckpoint epochChk;
-            ICheckpoint truncateChk;
-
-            if (inMemDb)
-            {
-                writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
-                chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
-                epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
-                truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
-            }
-            else
-            {
-                try
-                {
-                    if (!Directory.Exists(dbPath)) // mono crashes without this check
-                        Directory.CreateDirectory(dbPath);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    if (dbPath == Locations.DefaultDataDirectory)
-                    {
-                        Log.Info("Access to path {0} denied. The Event Store database will be created in {1}", dbPath, Locations.FallbackDefaultDataDirectory);
-                        dbPath = Locations.FallbackDefaultDataDirectory;
-                        Log.Info("Defaulting DB Path to {0}", dbPath);
-
-                        if (!Directory.Exists(dbPath)) // mono crashes without this check
-                            Directory.CreateDirectory(dbPath);
-                    }
-                    else {
-                        throw;
-                    }
-                }
-                var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
-                var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
-                var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
-                var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-                if (Runtime.IsMono)
-                {
-                    writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                    chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                    epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                    truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-                }
-                else
-                {
-                    writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-                    chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-                    epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                    truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-                }
-            }
-            var cache = cachedChunks >= 0
-                                ? cachedChunks*(long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
-                                : chunksCacheSize;
-            var nodeConfig = new TFChunkDbConfig(dbPath,
-                                                 new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                                                 TFConsts.ChunkSize,
-                                                 cache,
-                                                 writerChk,
-                                                 chaserChk,
-                                                 epochChk,
-                                                 truncateChk,
-                                                 inMemDb);
-            return nodeConfig;
+            StoreLocation location;
+            if (!Enum.TryParse(certificateStoreLocation, out location))
+                throw new Exception(string.Format("Could not find certificate store location '{0}'", certificateStoreLocation));
+            return location;
         }
 
-        protected static X509Certificate2 LoadCertificateFromFile(string path, string password)
+        protected static StoreName GetCertificateStoreName(string certificateStoreName)
         {
-            return new X509Certificate2(path, password);
-        }
-
-        protected static X509Certificate2 LoadCertificateFromStore(string certificateStoreLocation, string certificateStoreName, string certificateSubjectName, string certificateThumbprint)
-        {
-            X509Store store;
-
-            if (!string.IsNullOrWhiteSpace(certificateStoreLocation))
-            {
-                StoreLocation location;
-                if (!Enum.TryParse(certificateStoreLocation, out location))
-                    throw new Exception(string.Format("Could not find certificate store location '{0}'", certificateStoreLocation));
-
-                StoreName name;
-                if (!Enum.TryParse(certificateStoreName, out name))
-                    throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
-
-                store = new X509Store(name, location);
-                
-                try
-                {
-                    store.Open(OpenFlags.OpenExistingOnly);
-                }
-                catch (Exception exc)
-                {
-                    throw new Exception(string.Format("Could not open certificate store '{0}' in location {1}'.", name, location), exc);
-                }
-            }
-            else
-            {
-                StoreName name;
-                if (!Enum.TryParse(certificateStoreName, out name))
-                    throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
-
-                store = new X509Store(name);
-
-                try
-                {
-                    store.Open(OpenFlags.OpenExistingOnly);
-                }
-                catch (Exception exc)
-                {
-                    throw new Exception(string.Format("Could not open certificate store '{0}'.", name), exc);
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(certificateThumbprint))
-            {
-                var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, certificateThumbprint, true);
-                if (certificates.Count == 0)
-                    throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.", certificateThumbprint));
-                
-                //Can this even happen?
-                if (certificates.Count > 1)
-                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
-
-                return certificates[0];
-            }
-            
-            if (!string.IsNullOrWhiteSpace(certificateSubjectName))
-            {
-                var certificates = store.Certificates.Find(X509FindType.FindBySubjectName, certificateSubjectName, true);
-                if (certificates.Count == 0)
-                    throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.", certificateThumbprint));
-
-                //Can this even happen?
-                if (certificates.Count > 1)
-                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
-
-                return certificates[0];
-            }
-            
-            throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
+            StoreName name;
+            if (!Enum.TryParse(certificateStoreName, out name))
+                throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
+            return name;
         }
     }
 }

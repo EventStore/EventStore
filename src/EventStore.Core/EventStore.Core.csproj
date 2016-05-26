@@ -417,6 +417,7 @@
     <Compile Include="Util\Opts.cs" />
     <Compile Include="VNodeStatusChangeArgs.cs" />
     <Compile Include="Util\DefaultFiles.cs" />
+    <Compile Include="VNodeBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

@@ -250,7 +250,7 @@ namespace EventStore.ClusterNode
             IntTcpHeartbeatTimeout = Opts.IntTcpHeartbeatTimeoutDefault;
 
             ExtTcpHeartbeatInterval = Opts.ExtTcpHeartbeatIntervalDefault;
-            IntTcpHeartbeatInterval = Opts.IntTcpHeartbeatInvervalDefault;
+            IntTcpHeartbeatInterval = Opts.IntTcpHeartbeatIntervalDefault;
 
             ExtIpAdvertiseAs = Opts.ExternalIpAdvertiseAsDefault;
             ExtTcpPortAdvertiseAs = Opts.ExternalTcpPortAdvertiseAsDefault;
