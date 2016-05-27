@@ -98,6 +98,7 @@ mkbundle -c -o clusternode.c -oo clusternode.a \
 	Newtonsoft.Json.dll \
 	NLog.dll protobuf-net.dll \
 	Mono.Security.dll \
+	./System.Net.Http.dll \
 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
 
 # mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.
@@ -145,6 +146,7 @@ mkbundle -c \
 	Newtonsoft.Json.dll \
 	NLog.dll \
 	protobuf-net.dll \
+	./System.Net.Http.dll \
 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
 
 # mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.

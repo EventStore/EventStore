@@ -122,6 +122,7 @@ mkbundle -c \
     NLog.dll \
     protobuf-net.dll \
     Mono.Security.dll \
+    ./System.Net.Http.dll \
     --static --deps \
     --config $MONOCONFIG \
     --machine-config $MACHINECONFIG
@@ -166,6 +167,7 @@ mkbundle -c \
     Newtonsoft.Json.dll \
     NLog.dll \
     protobuf-net.dll \
+    ./System.Net.Http.dll \
     --static --deps \
     --config $MONOCONFIG \
     --machine-config $MACHINECONFIG
