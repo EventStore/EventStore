@@ -39,6 +39,9 @@ namespace EventStore.Core.Services.VNode
 
         private readonly MessageForwardingProxy _forwardingProxy;
         private readonly TimeSpan _forwardingTimeout;
+        private readonly ISubsystem[] _subSystems;
+
+        private int _subSystemInitsToExpect;
 
         private int _serviceInitsToExpect = 1 /* StorageChaser */
                                           + 1 /* StorageReader */
@@ -53,7 +56,7 @@ namespace EventStore.Core.Services.VNode
 
         public ClusterVNodeController(IPublisher outputBus, VNodeInfo nodeInfo, TFChunkDb db,
                                       ClusterVNodeSettings vnodeSettings, ClusterVNode node,
-                                      MessageForwardingProxy forwardingProxy)
+                                      MessageForwardingProxy forwardingProxy, ISubsystem[] subSystems)
         {
             Ensure.NotNull(outputBus, "outputBus");
             Ensure.NotNull(nodeInfo, "nodeInfo");
@@ -66,9 +69,12 @@ namespace EventStore.Core.Services.VNode
             _nodeInfo = nodeInfo;
             _db = db;
             _node = node;
+            _subSystems = subSystems;
             if(vnodeSettings.ClusterNodeCount == 1) {
                 _serviceShutdownsToExpect = 4;
             }
+
+            _subSystemInitsToExpect = _subSystems != null ? subSystems.Length : 0;
 
             _forwardingProxy = forwardingProxy;
             _forwardingTimeout = vnodeSettings.PrepareTimeout + vnodeSettings.CommitTimeout + TimeSpan.FromMilliseconds(300);
@@ -90,6 +96,9 @@ namespace EventStore.Core.Services.VNode
                 .InAnyState()
                     .When<SystemMessage.StateChangeMessage>()
                         .Do(m => Application.Exit(ExitCode.Error, string.Format("{0} message was unhandled in {1}.", m.GetType().Name, GetType().Name)))
+                    .When<UserManagementMessage.UserManagementServiceInitialized>().Do(Handle)
+                    .When<SystemMessage.SubSystemInitialized>().Do(Handle)
+                    .When<SystemMessage.SystemCoreReady>().Do(Handle)
 
                 .InState(VNodeState.Initializing)
                     .When<SystemMessage.SystemInit>().Do(Handle)
@@ -426,6 +435,34 @@ namespace EventStore.Core.Services.VNode
             _outputBus.Publish(message);
             if (_serviceInitsToExpect == 0)
                 _mainQueue.Publish(new SystemMessage.SystemStart());
+        }
+
+        private void Handle(UserManagementMessage.UserManagementServiceInitialized message)
+        {
+            if (_subSystems != null){
+                foreach (var subsystem in _subSystems)
+                    subsystem.Start();
+            }
+            _outputBus.Publish(message);
+            _fsm.Handle(new SystemMessage.SystemCoreReady());
+        }
+
+        private void Handle(SystemMessage.SystemCoreReady message)
+        {
+            if(_subSystems == null || _subSystems.Length == 0){
+                _outputBus.Publish(new SystemMessage.SystemReady());
+            }else{
+                _outputBus.Publish(message);
+            }
+        }
+
+        private void Handle(SystemMessage.SubSystemInitialized message)
+        {
+            Log.Info("========== [{0}] Sub System '{1}' initialized.", _nodeInfo.InternalHttp, message.SubSystemName);
+            _subSystemInitsToExpect -= 1;
+            if (_subSystemInitsToExpect == 0){
+                _outputBus.Publish(new SystemMessage.SystemReady());
+            }
         }
 
         private void HandleAsNonMaster(ClientMessage.ReadEvent message)

@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Services.Management
     public class ProjectionCoreCoordinator
         : IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
         IHandle<SystemMessage.StateChangeMessage>,
-        IHandle<SystemMessage.SystemReady>
+        IHandle<SystemMessage.SystemCoreReady>
     {
         private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionCoreCoordinator>();
         private readonly ProjectionType _runProjections;
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private bool _systemReady = false;
         private VNodeState _currentState = VNodeState.Unknown;
-        public void Handle(SystemMessage.SystemReady message)
+        public void Handle(SystemMessage.SystemCoreReady message)
         {
             _systemReady = true;
             StartWhenConditionsAreMet();
@@ -101,6 +101,9 @@ namespace EventStore.Projections.Core.Services.Management
                 queue.Publish(new ReaderCoreServiceMessage.StartReader());
                 if (_runProjections >= ProjectionType.System)
                     queue.Publish(new ProjectionCoreServiceMessage.StartCore());
+                else{
+                    _publisher.Publish(new SystemMessage.SubSystemInitialized("Projections"));
+                }
             }
         }
 
@@ -121,7 +124,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void SetupMessaging(IBus bus)
         {
             bus.Subscribe<SystemMessage.StateChangeMessage>(this);
-            bus.Subscribe<SystemMessage.SystemReady>(this);
+            bus.Subscribe<SystemMessage.SystemCoreReady>(this);
             if (_runProjections >= ProjectionType.System)
             {
                 bus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(this);

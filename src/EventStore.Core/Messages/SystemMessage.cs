@@ -21,6 +21,12 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
         }
 
+        public class SystemCoreReady : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+        }
+
         public class SystemReady : Message
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -38,6 +44,20 @@ namespace EventStore.Core.Messages
             {
                 Ensure.NotNullOrEmpty(serviceName, "serviceName");
                 ServiceName = serviceName;
+            }
+        }
+
+        public class SubSystemInitialized: Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly string SubSystemName;
+
+            public SubSystemInitialized(string subSystemName)
+            {
+                Ensure.NotNullOrEmpty(subSystemName, "subSystemName");
+                SubSystemName = subSystemName;
             }
         }
 

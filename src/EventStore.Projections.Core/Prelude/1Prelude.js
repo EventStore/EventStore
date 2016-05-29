@@ -33,7 +33,7 @@ var _log = $log;
 var _load_module = $load_module;
 
 function log(message) {
-    _log("P: " + message);
+    _log("PROJECTIONS (JS): " + message);
 }
 
 function initializeModules() {
