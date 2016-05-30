@@ -49,6 +49,7 @@ namespace EventStore.Core
 
         protected List<string> _intHttpPrefixes;
         protected List<string> _extHttpPrefixes;
+        protected bool _addInterfacePrefixes;
         protected bool _enableTrustedAuth;
         protected X509Certificate2 _certificate;
         protected int _workerThreads;
@@ -128,6 +129,7 @@ namespace EventStore.Core
 
             _intHttpPrefixes = new List<string>();
             _extHttpPrefixes = new List<string>();
+            _addInterfacePrefixes = true;
             _enableTrustedAuth = Opts.EnableTrustedAuthDefault;
             _certificate = null;
             _workerThreads = Opts.WorkerThreadsDefault;
@@ -515,6 +517,16 @@ namespace EventStore.Core
         public VNodeBuilder AddExternalHttpPrefix(string prefix)
         {
             _extHttpPrefixes.Add(prefix);
+            return this;
+        }
+
+        /// <summary>
+        /// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix) 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder DontAddInterfacePrefixes()
+        {
+            _addInterfacePrefixes = false;
             return this;
         }
 
@@ -934,20 +946,31 @@ namespace EventStore.Core
         private void EnsureHttpPrefixes()
         {
             if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
-                _intHttpPrefixes = new List<string>(new[] { _internalHttp.ToHttpUrl() });
+                _intHttpPrefixes = new List<string>();
             if (_extHttpPrefixes == null || _extHttpPrefixes.IsEmpty())
-                _extHttpPrefixes = new List<string>(new[] { _externalHttp.ToHttpUrl() });
+                _extHttpPrefixes = new List<string>();
 
-            if (!Runtime.IsMono)
-                return;
+            if (_addInterfacePrefixes)
+            {
+                var potentialInternalHttpPrefixToAdd = string.Format("http://{0}/", _internalHttp);
+                if (!_intHttpPrefixes.Contains(potentialInternalHttpPrefixToAdd))
+                {
+                    _intHttpPrefixes.Add(potentialInternalHttpPrefixToAdd);
+                }
+                if (!_intHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_internalHttp.Address, IPAddress.Loopback))
+                {
+                    _intHttpPrefixes.Add(string.Format("http://localhost:{0}/", _internalHttp.Port));
+                }
 
-            if (!_intHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_internalHttp.Address, IPAddress.Loopback))
-            {
-                _intHttpPrefixes.Add(string.Format("http://localhost:{0}/", _internalHttp.Port));
-            }
-            if (!_extHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_externalHttp.Address, IPAddress.Loopback))
-            {
-                _extHttpPrefixes.Add(string.Format("http://localhost:{0}/", _externalHttp.Port));
+                var potentialExternalHttpPrefixToAdd = string.Format("http://{0}/", _externalHttp);
+                if (!_extHttpPrefixes.Contains(potentialExternalHttpPrefixToAdd))
+                {
+                    _extHttpPrefixes.Add(potentialExternalHttpPrefixToAdd);
+                }
+                if (!_extHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_externalHttp.Address, IPAddress.Loopback))
+                {
+                    _extHttpPrefixes.Add(string.Format("http://localhost:{0}/", _externalHttp.Port));
+                }
             }
         }
 
