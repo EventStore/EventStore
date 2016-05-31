@@ -49,8 +49,13 @@ Function Get-SourceDependencies() {
     try {
         Push-Location $stagingDirectory
         if ((Test-Path "protobuf-net-read-only") -eq $false) {
-            $svnCommand = "$svnClientPath checkout --quiet -r 594 https://protobuf-net.googlecode.com/svn/trunk/ protobuf-net-read-only"
-            Exec([ScriptBlock]::Create($svnCommand))
+            Exec { git clone https://github.com/mgravell/protobuf-net protobuf-net-read-only 2> $null }
+            try {
+                Push-Location protobuf-net-read-only
+                Exec { git checkout 0034a10eca89471b655bdbbc8081b194ae644a2d 2> $null }
+            } finally {
+                Pop-Location
+            }
         }
 
         if ((Test-Path "Newtonsoft.Json") -eq $false) {
