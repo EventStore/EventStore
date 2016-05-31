@@ -3,6 +3,8 @@ using System;
 using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
+using System.Collections.Generic;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
 {
@@ -574,6 +576,75 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         public void should_set_external_http_prefixes()
         {
             CollectionAssert.AreEqual(new string[] {_extPrefix, _extLoopbackPrefix}, _settings.ExtHttpPrefixes);
+        }
+    }
+
+    [TestFixture]
+    public class with_add_interface_prefixes : SingleNodeScenario
+    {
+        private IPEndPoint _internalHttp;
+        private IPEndPoint _externalHttp;
+        private IPEndPoint _internalTcp;
+        private IPEndPoint _externalTcp;
+        public override void Given()
+        {
+            var baseIpAddress = IPAddress.Loopback;
+            _internalHttp = new IPEndPoint(baseIpAddress, 1112);
+            _externalHttp = new IPEndPoint(baseIpAddress, 1113);
+            _internalTcp = new IPEndPoint(baseIpAddress, 1114);
+            _externalTcp = new IPEndPoint(baseIpAddress, 1115);
+            _builder.WithInternalHttpOn(_internalHttp)
+                .WithExternalHttpOn(_externalHttp)
+                .WithExternalTcpOn(_externalTcp)
+                .WithInternalTcpOn(_internalTcp);
+        }
+
+        [Test]
+        public void should_set_internal_http_prefixes()
+        {
+            var internalHttpPrefixes = new List<string> { string.Format("http://{0}/", _internalHttp), string.Format("http://localhost:{0}/", _internalHttp.Port) };
+            CollectionAssert.AreEqual(internalHttpPrefixes, _settings.IntHttpPrefixes);
+        }
+
+        [Test]
+        public void should_set_external_http_prefixes()
+        {
+            var externalHttpPrefixes = new List<string> { string.Format("http://{0}/", _externalHttp), string.Format("http://localhost:{0}/", _externalHttp.Port) };
+            CollectionAssert.AreEqual(externalHttpPrefixes, _settings.ExtHttpPrefixes);
+        }
+    }
+
+    [TestFixture]
+    public class with_dont_add_interface_prefixes : SingleNodeScenario
+    {
+        private IPEndPoint _internalHttp;
+        private IPEndPoint _externalHttp;
+        private IPEndPoint _internalTcp;
+        private IPEndPoint _externalTcp;
+        public override void Given()
+        {
+            var baseIpAddress = IPAddress.Loopback;
+            _internalHttp = new IPEndPoint(baseIpAddress, 1112);
+            _externalHttp = new IPEndPoint(baseIpAddress, 1113);
+            _internalTcp = new IPEndPoint(baseIpAddress, 1114);
+            _externalTcp = new IPEndPoint(baseIpAddress, 1115);
+            _builder.WithInternalHttpOn(_internalHttp)
+                    .WithExternalHttpOn(_externalHttp)
+                    .WithExternalTcpOn(_externalTcp)
+                    .WithInternalTcpOn(_internalTcp)
+                    .DontAddInterfacePrefixes();
+        }
+
+        [Test]
+        public void should_set_no_internal_http_prefixes()
+        {
+            CollectionAssert.IsEmpty(_settings.IntHttpPrefixes);
+        }
+
+        [Test]
+        public void should_set_no_external_http_prefixes()
+        {
+            CollectionAssert.IsEmpty(_settings.ExtHttpPrefixes);
         }
     }
 
