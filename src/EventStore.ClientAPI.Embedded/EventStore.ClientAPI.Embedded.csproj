@@ -58,7 +58,6 @@
     <Compile Include="EmbeddedVolatileEventStoreSubscription.cs" />
     <Compile Include="EventStoreEmbeddedNodeConnection.cs" />
     <Compile Include="IEmbeddedSubscription.cs" />
-    <Compile Include="ProjectionsMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
