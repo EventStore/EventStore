@@ -1139,5 +1139,39 @@ namespace EventStore.Core
 
             return nodeConfig;
         }
+
+        /// <summary>
+        /// Sets the mode and the number of threads on which to run projections.
+        /// </summary>
+        /// <param name="projectionsMode">The mode in which to run the projections system</param>
+        /// <param name="numberOfThreads">The number of threads to use for projections. Defaults to 3.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        [Obsolete("Will be removed in 4.0, use the RunProjections method that uses EventStore.Common.Options.ProjectionType instead")]
+        public VNodeBuilder RunProjections(ClientAPI.Embedded.ProjectionsMode projectionsMode, int numberOfThreads = Opts.ProjectionThreadsDefault)
+        {
+            return RunProjections((ProjectionType)projectionsMode, numberOfThreads);
+        }
+    }
+}
+namespace EventStore.ClientAPI.Embedded
+{
+    /// <summary>
+    /// Enumerates possible modes for running projections
+    /// </summary>
+    [Obsolete("Will be removed in 4.0, use the EventStore.Common.Options.ProjectionType instead")]
+    public enum ProjectionsMode
+    {
+        /// <summary>
+        /// Run no projections
+        /// </summary>
+        None,
+        /// <summary>
+        /// Run only system projections
+        /// </summary>
+        System,
+        /// <summary>
+        /// Run user and system projections
+        /// </summary>
+        All
     }
 }
