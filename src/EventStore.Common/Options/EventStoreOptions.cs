@@ -37,7 +37,7 @@ namespace EventStore.Common.Options
             if (configFile == null && File.Exists(defaultConfigLocation))
             {
                 configFile = defaultConfigLocation;
-                yield return new OptionSource[] { OptionSource.String("Config File", "config", defaultConfigLocation) };
+                yield return new OptionSource[] { OptionSource.String("<DEFAULT>", "config", defaultConfigLocation) };
             }
             if (configFile != null)
             {
@@ -80,7 +80,7 @@ namespace EventStore.Common.Options
             var displayingModifiedOptions = true;
             dumpOptionsBuilder.AppendLine("MODIFIED OPTIONS:");
             dumpOptionsBuilder.AppendLine();
-            if (_effectiveOptions.First().Source.ToLower().Contains("default"))
+            if (_effectiveOptions.Count(x => !x.Source.ToLower().Contains("default")) == 0)
             {
                 dumpOptionsBuilder.AppendLine("NONE");
                 dumpOptionsBuilder.AppendLine();
@@ -88,7 +88,7 @@ namespace EventStore.Common.Options
                 dumpOptionsBuilder.AppendLine();
                 displayingModifiedOptions = false;
             }
-            foreach (var option in _effectiveOptions)
+            foreach (var option in _effectiveOptions.OrderBy(x => x.Source.ToLower().Contains("default") ? 1 : 0))
             {
                 if (option.Source.ToLower().Contains("default") && displayingModifiedOptions)
                 {
