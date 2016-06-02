@@ -21,6 +21,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests
             _node = _builder.Build();
             _settings = ((TestVNodeBuilder)_builder).GetSettings();
             _dbConfig = ((TestVNodeBuilder)_builder).GetDbConfig();
+            _node.Start();
         }
 
         [TestFixtureTearDown]
@@ -52,6 +53,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests
             _node = _builder.Build();
             _settings = ((TestVNodeBuilder)_builder).GetSettings();
             _dbConfig = ((TestVNodeBuilder)_builder).GetDbConfig();
+            _node.Start();
         }
         
         [TestFixtureTearDown]
