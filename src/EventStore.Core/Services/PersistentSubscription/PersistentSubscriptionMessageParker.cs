@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.PersistentSubscription
     {
         private readonly IODispatcher _ioDispatcher;
         private readonly string _parkedStreamId;
-        private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionCheckpointWriter>();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionMessageParker>();
 
         public PersistentSubscriptionMessageParker(string subscriptionId, IODispatcher ioDispatcher)
         {
