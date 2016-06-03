@@ -25,6 +25,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Event _checkpointEventToBePublished;
         private CheckpointTag _requestedCheckpointPosition;
         private IEnvelope _envelope;
+        private const int MaxNumberOfRetries = 5;
 
         public CoreProjectionCheckpointWriter(
             string projectionCheckpointStreamId, IODispatcher ioDispatcher, ProjectionVersion projectionVersion,
@@ -83,6 +84,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     case OperationResult.PrepareTimeout:
                     case OperationResult.ForwardTimeout:
                     case OperationResult.CommitTimeout:
+                        if (_inCheckpointWriteAttempt >= MaxNumberOfRetries)
+                        {
+                            //The first parameter is not needed in this case as the CoreProjectionCheckpointManager takes care of filling in the projection id when it reconstructs the message
+                            _envelope.ReplyWith(new CoreProjectionProcessingMessage.Failed(Guid.Empty, string.Format("After retrying {0} times, we failed to write the checkpoint for {1} to {2} due to a {3}", MaxNumberOfRetries, _name, eventStreamId, Enum.GetName(typeof(OperationResult), operationResult))));
+                            _inCheckpointWriteAttempt = 0;
+                            return;
+                        }
                         if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", eventStreamId);
                         _inCheckpointWriteAttempt++;
                         PublishWriteStreamMetadataAndCheckpointEvent();
