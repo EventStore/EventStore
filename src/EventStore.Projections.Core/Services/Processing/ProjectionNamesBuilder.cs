@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _checkpointStreamName;
         private readonly string _orderStreamName;
 
-        public static TimeSpan MastrerStreamMaxAge = TimeSpan.FromHours(2);
+        public static TimeSpan MasterStreamMaxAge = TimeSpan.FromHours(2);
         public static TimeSpan ControlStreamMaxAge = TimeSpan.FromHours(2);
         public static TimeSpan SlaveProjectionControlStreamMaxAge = TimeSpan.FromHours(2);
         public static TimeSpan CoreControlStreamMaxAge = TimeSpan.FromHours(2);

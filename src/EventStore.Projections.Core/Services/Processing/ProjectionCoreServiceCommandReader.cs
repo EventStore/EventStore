@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
-            Log.Debug("Stopping Projection Core Reader ({0})", _coreServiceId);
+            Log.Debug("PROJECTIONS: Stopping Projection Core Reader ({0})", _coreServiceId);
             _cancellationScope.Cancel();
             _stopped = true;
         }
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 fromEventNumber = readResult.LastEventNumber + 1;
             }
 
-            Log.Debug("Starting read control from {0}", fromEventNumber);
+            Log.Debug("PROJECTIONS: Starting read control from {0}", fromEventNumber);
 
             //TODO: handle shutdown here and in other readers
             long subscribeFrom = 0;
