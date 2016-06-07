@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
             AllWritesSucceed();
             NoOtherStreams();
 
-            _commandReader = new ProjectionManagerResponseReader(_bus, _ioDispatcher);
+            _commandReader = new ProjectionManagerResponseReader(_bus, _ioDispatcher, 0);
 
             _bus.Subscribe<ProjectionManagementMessage.Starting>(_commandReader);
         }

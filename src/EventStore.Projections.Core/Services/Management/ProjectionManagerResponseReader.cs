@@ -23,15 +23,17 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
         private IODispatcherAsync.CancellationScope _cancellationScope;
+        private readonly int _numberOfWorkers;
+        private int _numberOfStartedWorkers = 0;
 
-        public ProjectionManagerResponseReader(IPublisher publisher, IODispatcher ioDispatcher)
+        public ProjectionManagerResponseReader(IPublisher publisher, IODispatcher ioDispatcher, int numberOfWorkers)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
 
-
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
+            _numberOfWorkers = numberOfWorkers;
         }
 
         public void Handle(ProjectionManagementMessage.Starting message)
@@ -43,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             _cancellationScope = new IODispatcherAsync.CancellationScope();
             Log.Debug("PROJECTIONS: Starting Projection Manager Response Reader (reads from $projections-$master)");
+            _numberOfStartedWorkers = 0;
             PerformStartReader().Run();
         }
 
@@ -63,7 +66,7 @@ namespace EventStore.Projections.Core.Services.Management
                     ProjectionNamesBuilder._projectionsMasterStream,
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
-                    new StreamMetadata(maxAge: ProjectionNamesBuilder.MastrerStreamMaxAge),
+                    new StreamMetadata(maxAge: ProjectionNamesBuilder.MasterStreamMaxAge),
                     completed => { });
 
             ClientMessage.WriteEventsCompleted writeResult = null;
@@ -80,8 +83,6 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new Exception("Cannot start response reader. Write result: " + writeResult.Result);
 
             var from = writeResult.LastEventNumber;
-
-            _publisher.Publish(new ProjectionManagementMessage.ReaderReady());
 
             yield return
                 _ioDispatcher.BeginWriteEvents(
@@ -155,6 +156,11 @@ namespace EventStore.Projections.Core.Services.Management
                     var commandBody = resolvedEvent.Event.Data.ParseJson<ProjectionWorkerStarted>();
                     _publisher.Publish(
                         new CoreProjectionStatusMessage.ProjectionWorkerStarted(Guid.ParseExact(commandBody.Id, "N")));
+                    _numberOfStartedWorkers++;
+                    if(_numberOfStartedWorkers == _numberOfWorkers)
+                    {
+                        _publisher.Publish(new ProjectionManagementMessage.ReaderReady());
+                    }
                     break;
                 }
                 case "$prepared":
