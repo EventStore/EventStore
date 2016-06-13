@@ -134,11 +134,6 @@ namespace EventStore.ClusterNode
 
         private static ClusterVNode BuildNode(ClusterNodeOptions options)
         {
-            if (options.UseInternalSsl)
-            {
-                if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
-                if (options.IntSecureTcpPort > 0) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
-            }
             var quorumSize = GetQuorumSize(options.ClusterSize);
 
             IPAddress intIpAddressToAdvertise = options.IntIpAdvertiseAs ?? options.IntIp;
@@ -194,6 +189,11 @@ namespace EventStore.ClusterNode
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);
+            if (options.UseInternalSsl)
+            {
+                if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
+                if (intSecureTcpEndPoint == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
+            }
 
             VNodeBuilder builder;
             if(options.ClusterSize > 1) {
