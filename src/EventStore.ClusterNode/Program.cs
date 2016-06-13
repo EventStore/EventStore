@@ -192,6 +192,7 @@ namespace EventStore.ClusterNode
             var extHttpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extHttpPort);
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
+            var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);
 
             VNodeBuilder builder;
@@ -226,8 +227,8 @@ namespace EventStore.ClusterNode
                         .WithPrepareTimeout(TimeSpan.FromMilliseconds(options.PrepareTimeoutMs))
                         .WithCommitTimeout(TimeSpan.FromMilliseconds(options.CommitTimeoutMs))
                         .WithStatsPeriod(TimeSpan.FromSeconds(options.StatsPeriodSec))
-                        .WithPrepareCount(options.PrepareCount)
-                        .WithCommitCount(options.CommitCount)
+                        .WithPrepareCount(prepareCount)
+                        .WithCommitCount(commitCount)
                         .WithNodePriority(options.NodePriority)
                         .WithScavengeHistoryMaxAge(options.ScavengeHistoryMaxAge)
                         .WithIndexPath(options.Index)
