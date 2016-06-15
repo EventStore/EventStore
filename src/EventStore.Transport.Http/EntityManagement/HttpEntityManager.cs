@@ -268,7 +268,9 @@ namespace EventStore.Transport.Http.EntityManagement
                 HttpEntity.Response.StatusDescription = response.ReasonPhrase;
                 if(response.Content != null) 
                 {
-                    HttpEntity.Response.ContentType = response.Content.Headers.ContentType.MediaType;
+                    if(response.Content.Headers.ContentType != null) {
+                        HttpEntity.Response.ContentType = response.Content.Headers.ContentType.MediaType;
+                    }
                     HttpEntity.Response.ContentLength64 = response.Content.Headers.ContentLength.GetValueOrDefault();
                 }
                 foreach (var header in response.Headers)
