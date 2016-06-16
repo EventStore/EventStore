@@ -82,8 +82,16 @@ namespace EventStore.Projections.Core.Services.Processing
                     else
                     {
                         tag = positionEvent.Metadata.ParseCheckpointTagJson();
-
                         var parsedPosition = tag.Position;
+                        if (parsedPosition == new TFPos(long.MinValue, long.MinValue) && @event.Metadata.IsValidJson())
+                        {
+                            tag = @event.Metadata.ParseCheckpointTagJson();
+                            if(tag != null)
+                            {
+                                parsedPosition = tag.Position;
+                            }
+                        }
+
                         eventOrLinkTargetPosition = parsedPosition != new TFPos(long.MinValue, long.MinValue)
                             ? parsedPosition
                             : new TFPos(-1, resolvedEvent.Event.LogPosition);

@@ -79,5 +79,18 @@ namespace EventStore.Common.Utils
                 }
             });
         }
+        
+        public static bool IsValidJson(this byte[] value)
+        {
+            try
+            {
+                JToken.Parse(Helper.UTF8NoBom.GetString(value));
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
     }
 }
