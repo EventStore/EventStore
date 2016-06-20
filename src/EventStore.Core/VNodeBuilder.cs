@@ -6,7 +6,6 @@ using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using EventStore.Core;
 using EventStore.Core.Authentication;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Gossip;
@@ -18,6 +17,7 @@ using EventStore.Core.Util;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using System.Net.NetworkInformation;
 
 namespace EventStore.Core
 {
@@ -84,6 +84,7 @@ namespace EventStore.Core
         protected TimeSpan _gossipInterval;
         protected TimeSpan _gossipAllowedTimeDifference;
         protected TimeSpan _gossipTimeout;
+        protected GossipAdvertiseInfo _gossipAdvertiseInfo;
 
         protected TimeSpan _intTcpHeartbeatTimeout;
         protected TimeSpan _intTcpHeartbeatInterval;
@@ -106,6 +107,15 @@ namespace EventStore.Core
         protected TFChunkDb _db;
         protected ClusterVNodeSettings _vNodeSettings;
         protected TFChunkDbConfig _dbConfig;
+        private IPAddress _advertiseInternalIPAs;
+        private IPAddress _advertiseExternalIPAs;
+        private int _advertiseInternalHttpPortAs;
+        private int _advertiseExternalHttpPortAs;
+        private int _advertiseInternalSecureTcpPortAs;
+        private int _advertiseExternalSecureTcpPortAs;
+        private int _advertiseInternalTcpPortAs;
+        private int _advertiseExternalTcpPortAs;
+
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         protected VNodeBuilder()
@@ -281,6 +291,87 @@ namespace EventStore.Core
             _externalTcp = new IPEndPoint(Opts.InternalIpDefault, 1113);
             return this;
         }
+
+        /// <summary>
+        /// Sets up the Internal IP that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseInternalIPAs(IPAddress intIpAdvertiseAs)
+        {
+            _advertiseInternalIPAs = intIpAdvertiseAs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets up the External IP that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseExternalIPAs(IPAddress extIpAdvertiseAs)
+        {
+            _advertiseExternalIPAs = extIpAdvertiseAs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets up the Internal Http Port that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseInternalHttpPortAs(int intHttpPortAdvertiseAs)
+        {
+            _advertiseInternalHttpPortAs = intHttpPortAdvertiseAs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets up the External Http Port that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseExternalHttpPortAs(int extHttpPortAdvertiseAs)
+        {
+            _advertiseExternalHttpPortAs = extHttpPortAdvertiseAs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets up the Internal Secure TCP Port that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseInternalSecureTCPPortAs(int intSecureTcpPortAdvertiseAs)
+        {
+            _advertiseInternalSecureTcpPortAs = intSecureTcpPortAdvertiseAs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets up the External Secure TCP Port that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseExternalSecureTCPPortAs(int extSecureTcpPortAdvertiseAs)
+        {
+            _advertiseExternalSecureTcpPortAs = extSecureTcpPortAdvertiseAs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets up the Internal TCP Port that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseInternalTCPPortAs(int intTcpPortAdvertiseAs)
+        {
+            _advertiseInternalTcpPortAs = intTcpPortAdvertiseAs;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets up the External TCP Port that would be advertised 
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AdvertiseExternalTCPPortAs(int extTcpPortAdvertiseAs)
+        {
+            _advertiseExternalTcpPortAs = extTcpPortAdvertiseAs;
+            return this;
+        }
+
 
         /// <summary>
         /// Sets the internal gossip port (used when using cluster dns, this should point to a known port gossip will be running on)
@@ -950,28 +1041,107 @@ namespace EventStore.Core
             if (_extHttpPrefixes == null || _extHttpPrefixes.IsEmpty())
                 _extHttpPrefixes = new List<string>();
 
-            if (_addInterfacePrefixes)
+            if ((_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
+                 _externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes)
             {
-                var potentialInternalHttpPrefixToAdd = string.Format("http://{0}/", _internalHttp);
-                if (!_intHttpPrefixes.Contains(potentialInternalHttpPrefixToAdd))
+                if (_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0")))
                 {
-                    _intHttpPrefixes.Add(potentialInternalHttpPrefixToAdd);
+                    _intHttpPrefixes.Add(String.Format("http://*:{0}/", _internalHttp.Port));
                 }
-                if (!_intHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_internalHttp.Address, IPAddress.Loopback))
+                if (_externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0")))
                 {
-                    _intHttpPrefixes.Add(string.Format("http://localhost:{0}/", _internalHttp.Port));
-                }
-
-                var potentialExternalHttpPrefixToAdd = string.Format("http://{0}/", _externalHttp);
-                if (!_extHttpPrefixes.Contains(potentialExternalHttpPrefixToAdd))
-                {
-                    _extHttpPrefixes.Add(potentialExternalHttpPrefixToAdd);
-                }
-                if (!_extHttpPrefixes.Contains(x => x.Contains("localhost")) && Equals(_externalHttp.Address, IPAddress.Loopback))
-                {
-                    _extHttpPrefixes.Add(string.Format("http://localhost:{0}/", _externalHttp.Port));
+                    _extHttpPrefixes.Add(String.Format("http://*:{0}/", _externalHttp.Port));
                 }
             }
+            else if (_addInterfacePrefixes)
+            {
+                var intHttpPrefixToAdd = String.Format("http://{0}:{1}/", _internalHttp.Address, _internalHttp.Port);
+                if (!_intHttpPrefixes.Contains(intHttpPrefixToAdd))
+                {
+                    _intHttpPrefixes.Add(intHttpPrefixToAdd);
+                }
+
+                intHttpPrefixToAdd = String.Format("http://localhost:{0}/", _internalHttp.Port);
+                if (_internalHttp.Address.Equals(IPAddress.Loopback) && !_intHttpPrefixes.Contains(intHttpPrefixToAdd))
+                {
+                    _intHttpPrefixes.Add(intHttpPrefixToAdd);
+                }
+
+                var extHttpPrefixToAdd = String.Format("http://{0}:{1}/", _externalHttp.Address, _externalHttp.Port);
+                if (!_extHttpPrefixes.Contains(extHttpPrefixToAdd))
+                {
+                    _extHttpPrefixes.Add(extHttpPrefixToAdd);
+                }
+                extHttpPrefixToAdd = String.Format("http://localhost:{0}/", _externalHttp.Port);
+                if (_externalHttp.Address.Equals(IPAddress.Loopback) && !_extHttpPrefixes.Contains(extHttpPrefixToAdd))
+                {
+                    _extHttpPrefixes.Add(extHttpPrefixToAdd);
+                }
+            }
+        }
+
+        private GossipAdvertiseInfo EnsureGossipAdvertiseInfo()
+        {
+            if (_gossipAdvertiseInfo == null)
+            {
+                IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? _internalTcp.Address;
+                IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? _externalTcp.Address;
+
+                if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
+                     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes)
+                {
+                    IPAddress nonLoopbackAddress = GetNonLoopbackAddress();
+                    IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
+
+                    if (_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))
+                    {
+                        intIpAddressToAdvertise = addressToAdvertise;
+                    }
+                    if (_externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))
+                    {
+                        extIpAddressToAdvertise = addressToAdvertise;
+                    }
+                }
+                var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
+                var intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
+                var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs : _internalSecureTcp == null ? 0 : _internalSecureTcp.Port;
+                var intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+
+                var extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
+                var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
+                var extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs : _externalSecureTcp == null ? 0 : _externalSecureTcp.Port;
+                var extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+
+                var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
+                var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port; 
+
+                var intHttpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intHttpPort);
+                var extHttpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extHttpPort);
+
+                _gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
+                                                              extTcpEndPoint, extSecureTcpEndPoint,
+                                                              intHttpEndPoint, extHttpEndPoint);
+            }
+            return _gossipAdvertiseInfo;
+        }
+
+
+        private static IPAddress GetNonLoopbackAddress()
+        {
+            foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
+                {
+                    if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        if (!IPAddress.IsLoopback(address.Address))
+                        {
+                            return address.Address;
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         protected abstract void SetUpProjectionsIfNeeded();
@@ -996,6 +1166,8 @@ namespace EventStore.Core
         {
             EnsureHttpPrefixes();
             SetUpProjectionsIfNeeded();
+            _gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
+
 
             _dbConfig = CreateDbConfig(_chunkSize, _cachedChunks, _dbPath, _chunksCacheSize,
                     _inMemoryDb, _log);
@@ -1011,7 +1183,7 @@ namespace EventStore.Core
                     _externalSecureTcp,
                     _internalHttp,
                     _externalHttp,
-                    new GossipAdvertiseInfo(_internalTcp, _internalSecureTcp, _externalTcp, _externalSecureTcp, _internalHttp, _externalHttp),
+                    _gossipAdvertiseInfo,
                     _intHttpPrefixes.ToArray(),
                     _extHttpPrefixes.ToArray(),
                     _enableTrustedAuth,

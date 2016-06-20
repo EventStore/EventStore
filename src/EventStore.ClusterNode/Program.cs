@@ -12,16 +12,12 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authentication;
-using EventStore.Core.Cluster.Settings;
 using EventStore.Core.PluginModel;
-using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using System.Net.NetworkInformation;
 using EventStore.Core.Data;
-using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.ClusterNode
@@ -136,55 +132,12 @@ namespace EventStore.ClusterNode
         {
             var quorumSize = GetQuorumSize(options.ClusterSize);
 
-            IPAddress intIpAddressToAdvertise = options.IntIpAdvertiseAs ?? options.IntIp;
-            IPAddress extIpAddressToAdvertise = options.ExtIpAdvertiseAs ?? options.ExtIp;
-
-            var additionalIntHttpPrefixes = new List<string>(options.IntHttpPrefixes);
-            var additionalExtHttpPrefixes = new List<string>(options.ExtHttpPrefixes);
-
-            if ((options.IntIp.Equals(IPAddress.Parse("0.0.0.0")) ||
-                options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))) && options.AddInterfacePrefixes)
-            {
-                IPAddress nonLoopbackAddress = GetNonLoopbackAddress();
-                IPAddress addressToAdvertise = options.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
-
-                if(options.IntIp.Equals(IPAddress.Parse("0.0.0.0"))){
-                    intIpAddressToAdvertise = options.IntIpAdvertiseAs ?? addressToAdvertise;
-                    additionalIntHttpPrefixes.Add(String.Format("http://*:{0}/", options.IntHttpPort));
-                }
-                if(options.ExtIp.Equals(IPAddress.Parse("0.0.0.0"))){
-                    extIpAddressToAdvertise = options.ExtIpAdvertiseAs ?? addressToAdvertise;
-                    additionalExtHttpPrefixes.Add(String.Format("http://*:{0}/", options.ExtHttpPort));
-                }
-            }
-            else if (options.AddInterfacePrefixes)
-            {
-                additionalIntHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.IntIp, options.IntHttpPort));
-                if(options.IntIp.Equals(IPAddress.Loopback)){
-                    additionalIntHttpPrefixes.Add(String.Format("http://localhost:{0}/", options.IntHttpPort));
-                }
-                additionalExtHttpPrefixes.Add(String.Format("http://{0}:{1}/", options.ExtIp, options.ExtHttpPort));
-                if(options.ExtIp.Equals(IPAddress.Loopback)){
-                    additionalExtHttpPrefixes.Add(String.Format("http://localhost:{0}/", options.ExtHttpPort));
-                }
-            }
-
-            var intHttpPrefixes = additionalIntHttpPrefixes.ToArray();
-            var extHttpPrefixes = additionalExtHttpPrefixes.ToArray();
-
-            var intTcpPort = options.IntTcpPortAdvertiseAs > 0 ? options.IntTcpPortAdvertiseAs : options.IntTcpPort;
-            var intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
-            var intSecureTcpEndPoint = options.IntSecureTcpPort > 0 ? new IPEndPoint(intIpAddressToAdvertise, options.IntSecureTcpPort) : null;
-
-            var extTcpPort = options.ExtTcpPortAdvertiseAs > 0 ? options.ExtTcpPortAdvertiseAs : options.ExtTcpPort;
-            var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
-            var extSecureTcpEndPoint = options.ExtSecureTcpPort > 0 ? new IPEndPoint(extIpAddressToAdvertise, options.ExtSecureTcpPort) : null;
-
-            var intHttpPort = options.IntHttpPortAdvertiseAs > 0 ? options.IntHttpPortAdvertiseAs : options.IntHttpPort;
-            var extHttpPort = options.ExtHttpPortAdvertiseAs > 0 ? options.ExtHttpPortAdvertiseAs : options.ExtHttpPort;
-
-            var intHttpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intHttpPort);
-            var extHttpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extHttpPort);
+            var intHttp = new IPEndPoint(options.IntIp, options.IntHttpPort);
+            var extHttp = new IPEndPoint(options.ExtIp, options.ExtHttpPort);
+            var intTcp = new IPEndPoint(options.IntIp, options.IntTcpPort);
+            var intSecTcp = options.IntSecureTcpPort > 0 ? new IPEndPoint(options.IntIp, options.IntSecureTcpPort) : null;
+            var extTcp = new IPEndPoint(options.ExtIp, options.ExtTcpPort);
+            var extSecTcp = options.ExtSecureTcpPort > 0 ? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort) : null;
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
@@ -192,7 +145,7 @@ namespace EventStore.ClusterNode
             if (options.UseInternalSsl)
             {
                 if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
-                if (intSecureTcpEndPoint == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
+                if (intSecTcp == null) throw new Exception("Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
             }
 
             VNodeBuilder builder;
@@ -207,12 +160,12 @@ namespace EventStore.ClusterNode
                 builder = builder.RunOnDisk(options.Db);
             }
 
-            builder.WithInternalTcpOn(intTcpEndPoint)
-                        .WithInternalSecureTcpOn(intSecureTcpEndPoint)
-                        .WithExternalTcpOn(extTcpEndPoint)
-                        .WithExternalSecureTcpOn(extSecureTcpEndPoint)
-                        .WithInternalHttpOn(intHttpEndPoint)
-                        .WithExternalHttpOn(extHttpEndPoint)
+            builder.WithInternalTcpOn(intTcp)
+                        .WithInternalSecureTcpOn(intSecTcp)
+                        .WithExternalTcpOn(extTcp)
+                        .WithExternalSecureTcpOn(extSecTcp)
+                        .WithInternalHttpOn(intHttp)
+                        .WithExternalHttpOn(extHttp)
                         .WithWorkerThreads(options.WorkerThreads)
                         .WithInternalHeartbeatTimeout(TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout))
                         .WithInternalHeartbeatInterval(TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval))
@@ -237,7 +190,15 @@ namespace EventStore.ClusterNode
                         .RunProjections(options.RunProjections, options.ProjectionThreads)
                         .WithTfCachedChunks(options.CachedChunks)
                         .WithTfChunksCacheSize(options.ChunksCacheSize)
-                        .WithStatsStorage(StatsStorage.StreamAndCsv);
+                        .WithStatsStorage(StatsStorage.StreamAndCsv)
+                        .AdvertiseInternalIPAs(options.IntIpAdvertiseAs)
+                        .AdvertiseExternalIPAs(options.ExtIpAdvertiseAs)
+                        .AdvertiseInternalHttpPortAs(options.IntHttpPortAdvertiseAs)
+                        .AdvertiseExternalHttpPortAs(options.ExtHttpPortAdvertiseAs)
+                        .AdvertiseInternalTCPPortAs(options.IntTcpPortAdvertiseAs)
+                        .AdvertiseExternalTCPPortAs(options.ExtTcpPortAdvertiseAs)
+                        .AdvertiseInternalSecureTCPPortAs(options.IntSecureTcpPortAdvertiseAs)
+                        .AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs);
 
             if(options.GossipSeed.Length > 0)
                 builder.WithGossipSeeds(options.GossipSeed);
@@ -247,10 +208,14 @@ namespace EventStore.ClusterNode
             else
                 builder.DisableDnsDiscovery();
 
-            foreach(var prefix in intHttpPrefixes) {
+            if (!options.AddInterfacePrefixes){
+                builder.DontAddInterfacePrefixes();
+            }
+
+            foreach(var prefix in options.IntHttpPrefixes) {
                 builder.AddInternalHttpPrefix(prefix);
             }
-            foreach(var prefix in extHttpPrefixes) {
+            foreach(var prefix in options.ExtHttpPrefixes) {
                 builder.AddExternalHttpPrefix(prefix);
             }
             
@@ -313,23 +278,6 @@ namespace EventStore.ClusterNode
             builder.WithAuthenticationProvider(authenticationProviderFactory);
             
             return builder.Build(options, consumerStrategyFactories);
-        }
-
-        private static IPAddress GetNonLoopbackAddress(){
-            foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
-                {
-                    if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                    {
-                        if (!IPAddress.IsLoopback(address.Address))
-                        {
-                            return address.Address;
-                        }
-                    }
-                }
-            }
-            return null;
         }
 
         private static IPersistentSubscriptionConsumerStrategyFactory[] GetPlugInConsumerStrategyFactories(CompositionContainer plugInContainer)
