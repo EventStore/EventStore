@@ -728,4 +728,41 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         }
     }
 
+    public class with_custom_advertise_as : SingleNodeScenario
+    {
+        private Data.GossipAdvertiseInfo _advertiseInfo;
+        public override void Given()
+        {
+            var internalIPToAdvertise = IPAddress.Parse("192.168.1.1");
+            var externalIPToAdvertise = IPAddress.Parse("192.168.1.2");
+            var intTcpEndpoint = new IPEndPoint(internalIPToAdvertise, 1111);
+            var intSecTcpEndpoint = new IPEndPoint(internalIPToAdvertise, 1112);
+            var extTcpEndpoint = new IPEndPoint(externalIPToAdvertise, 1113);
+            var extSecTcpEndpoint = new IPEndPoint(externalIPToAdvertise, 1114);
+            var intHttpEndpoint = new IPEndPoint(internalIPToAdvertise, 1115);
+            var extHttpEndpoint = new IPEndPoint(externalIPToAdvertise, 1116);
+
+            _advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint, intSecTcpEndpoint, extTcpEndpoint, extSecTcpEndpoint, intHttpEndpoint, extHttpEndpoint);
+
+            _builder.AdvertiseInternalIPAs(internalIPToAdvertise)
+                    .AdvertiseExternalIPAs(externalIPToAdvertise)
+                    .AdvertiseInternalTCPPortAs(intTcpEndpoint.Port)
+                    .AdvertiseExternalTCPPortAs(extTcpEndpoint.Port)
+                    .AdvertiseInternalSecureTCPPortAs(intSecTcpEndpoint.Port)
+                    .AdvertiseExternalSecureTCPPortAs(extSecTcpEndpoint.Port)
+                    .AdvertiseInternalHttpPortAs(intHttpEndpoint.Port)
+                    .AdvertiseExternalHttpPortAs(extHttpEndpoint.Port);
+        }
+
+        [Test]
+        public void should_set_the_advertise_as_info_to_the_specified() 
+        {
+            Assert.AreEqual(_advertiseInfo.InternalTcp, _settings.GossipAdvertiseInfo.InternalTcp);
+            Assert.AreEqual(_advertiseInfo.ExternalTcp, _settings.GossipAdvertiseInfo.ExternalTcp);
+            Assert.AreEqual(_advertiseInfo.InternalSecureTcp, _settings.GossipAdvertiseInfo.InternalSecureTcp);
+            Assert.AreEqual(_advertiseInfo.ExternalSecureTcp, _settings.GossipAdvertiseInfo.ExternalSecureTcp);
+            Assert.AreEqual(_advertiseInfo.InternalHttp, _settings.GossipAdvertiseInfo.InternalHttp);
+            Assert.AreEqual(_advertiseInfo.ExternalHttp, _settings.GossipAdvertiseInfo.ExternalHttp);
+        }
+    }
 }

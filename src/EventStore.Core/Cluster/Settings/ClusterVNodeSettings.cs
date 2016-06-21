@@ -7,7 +7,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
-using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.Core.Cluster.Settings
