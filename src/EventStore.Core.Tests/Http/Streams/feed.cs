@@ -624,3 +624,103 @@ namespace EventStore.Core.Tests.Http.Streams
         }
     }
 }
+
+// This test needs to be out of the streams namespace to prevent it from inheriting the wrong mini node.
+namespace EventStore.Core.Tests.Http 
+{
+    public class when_running_the_node_advertising_a_different_ip_as
+    {
+        [TestFixture, Category("LongRunning")]
+        public class when_retrieving_feed_head_and_http_advertise_ip_is_set : HttpBehaviorSpecification
+        {
+            private JObject _feed;
+            private IPAddress advertisedAddress = IPAddress.Parse("192.168.10.1");
+            private int advertisedPort = 2116;
+
+            protected override MiniNode CreateMiniNode()
+            {
+                return new MiniNode(PathName, skipInitializeStandardUsersCheck: GivenSkipInitializeStandardUsersCheck(),
+                    advertisedExtIPAddress: advertisedAddress, advertisedExtHttpPort: advertisedPort);
+            }
+
+            protected override void Given()
+            {
+                var response = MakeArrayEventsPost(
+                    TestStream, new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Number = 1 } } });
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
+
+            protected string GetLink(JObject feed, string relation)
+            {
+                var rel = (from JObject link in feed["links"]
+                           from JProperty attr in link
+                           where attr.Name == "relation" && (string)attr.Value == relation
+                           select link).SingleOrDefault();
+                return (rel == null) ? (string)null : (string)rel["uri"];
+            }
+
+            protected string GetFirstEntryLink(JObject feed)
+            {
+                var rel = (from JObject entry in feed["entries"]
+                           from JObject link in entry["links"]
+                           from JProperty attr in link
+                           where attr.Name == "relation" && (string)attr.Value == "edit"
+                           select link).FirstOrDefault();
+                return (rel == null) ? (string)null : (string)rel["uri"];
+            }
+
+            protected override void When()
+            {
+                Console.WriteLine("Getting feed");
+                _feed = GetJson<JObject>(TestStream, ContentType.AtomJson);
+                Console.WriteLine("Feed: {0}", _feed);
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void contains_a_link_rel_previous_using_advertised_ip_and_port()
+            {
+                var rel = GetLink(_feed, "previous");
+                Assert.IsNotEmpty(rel);
+                var uri = new Uri(rel);
+                Assert.AreEqual(advertisedAddress.ToString(), uri.Host);
+                Assert.AreEqual(advertisedPort, uri.Port);
+            }
+
+            [Test]
+            public void contains_a_link_rel_self_using_advertised_ip_and_port()
+            {
+                var rel = GetLink(_feed, "self");
+                Assert.IsNotEmpty(rel);
+                var uri = new Uri(rel);
+                Assert.AreEqual(advertisedAddress.ToString(), uri.Host);
+                Assert.AreEqual(advertisedPort, uri.Port);
+            }
+
+            [Test]
+            public void contains_a_link_rel_first_using_advertised_ip_and_port()
+            {
+                var rel = GetLink(_feed, "first");
+                Assert.IsNotEmpty(rel);
+                var uri = new Uri(rel);
+                Assert.AreEqual(advertisedAddress.ToString(), uri.Host);
+                Assert.AreEqual(advertisedPort, uri.Port);
+            }
+
+            [Test]
+            public void contains_an_entry_with_rel_link_using_advertised_ip_and_port()
+            {
+                var rel = GetFirstEntryLink(_feed);
+                Assert.IsNotEmpty(rel);
+                var uri = new Uri(rel);
+                Assert.AreEqual(advertisedAddress.ToString(), uri.Host);
+                Assert.AreEqual(advertisedPort, uri.Port);
+            }
+        }
+    }
+}

@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[]{queue}, null);
             var providers = new HttpAuthenticationProvider[] {new AnonymousHttpAuthenticationProvider()};
             var httpService = new HttpService(ServiceAccessibility.Public, inputBus,
-                                              new TrieUriRouter(), multiQueuedHandler, false, "http://localhost:12345/");
+                                              new TrieUriRouter(), multiQueuedHandler, false, null, 0, "http://localhost:12345/");
             HttpService.CreateAndSubscribePipeline(bus, providers);
 
             var fakeController = new FakeController(iterations, null);

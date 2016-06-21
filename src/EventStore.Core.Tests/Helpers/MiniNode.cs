@@ -53,7 +53,8 @@ namespace EventStore.Core.Tests.Helpers
                         ISubsystem[] subsystems = null,
                         int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true,
                         int memTableSize = 1000,
-                        bool inMemDb = true, bool disableFlushToDisk = false)
+                        bool inMemDb = true, bool disableFlushToDisk = false,
+                        IPAddress advertisedExtIPAddress = null, int advertisedExtHttpPort = 0)
         {
             if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -107,7 +108,9 @@ namespace EventStore.Core.Tests.Helpers
                    .WithExternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
                    .MaximumMemoryTableSizeOf(memTableSize)
                    .DoNotVerifyDbHashes()
-                   .WithStatsStorage(StatsStorage.None);
+                   .WithStatsStorage(StatsStorage.None)
+                   .AdvertiseExternalIPAs(advertisedExtIPAddress)
+                   .AdvertiseExternalHttpPortAs(advertisedExtHttpPort);
 
             if(enableTrustedAuth)
                 builder.EnableTrustedAuth();
