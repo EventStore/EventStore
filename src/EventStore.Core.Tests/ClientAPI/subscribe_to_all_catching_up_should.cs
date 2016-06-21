@@ -70,6 +70,24 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning")]
+        public void call_dropped_callback_when_an_error_occurs_while_processing_an_event()
+        {
+            const string stream = "call_dropped_callback_when_an_error_occurs_while_processing_an_event";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+                store.AppendToStreamAsync(stream, ExpectedVersion.Any, new EventData(Guid.NewGuid(), "event", false, new byte[3], null)).Wait();
+
+                var dropped = new CountdownEvent(1);
+                store.SubscribeToAllFrom(null, CatchUpSubscriptionSettings.Default,
+                                           (x, y) => { throw new Exception("Error"); },
+                                           _ => Log.Info("Live processing started."),
+                                           (x, y, z) => dropped.Signal());
+                Assert.IsTrue(dropped.Wait(Timeout));
+            }
+        }
+
+        [Test, Category("LongRunning")]
         public void be_able_to_subscribe_to_empty_db()
         {
             using (var store = BuildConnection(_node))
