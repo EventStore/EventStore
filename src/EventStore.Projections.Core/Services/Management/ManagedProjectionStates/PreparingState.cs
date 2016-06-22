@@ -12,16 +12,16 @@ namespace EventStore.Projections.Core.Services.Management.ManagedProjectionState
         protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
         {
             SetFaulted(message.FaultedReason);
-            _managedProjection._persistedState.SourceDefinition = null;
+            _managedProjection.PersistedProjectionState.SourceDefinition = null;
             _managedProjection.WriteStartOrLoadStopped();
         }
 
         protected internal override void Prepared(CoreProjectionStatusMessage.Prepared message)
         {
             _managedProjection.SetState(ManagedProjectionState.Prepared);
-            _managedProjection._persistedState.SourceDefinition = message.SourceDefinition;
-            _managedProjection._prepared = true;
-            _managedProjection._created = true;
+            _managedProjection.PersistedProjectionState.SourceDefinition = message.SourceDefinition;
+            _managedProjection.Prepared = true;
+            _managedProjection.Created = true;
             _managedProjection.WriteStartOrLoadStopped();
         }
     }
