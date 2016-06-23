@@ -2,7 +2,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Management.ManagedProjectionStates
 {
-    class StoppingState : ManagedProjection.ManagedProjectionStateBase
+    class StoppingState : ManagedProjectionStateBase
     {
         public StoppingState(ManagedProjection managedProjection)
             : base(managedProjection)
@@ -13,13 +13,13 @@ namespace EventStore.Projections.Core.Services.Management.ManagedProjectionState
         {
             _managedProjection.SetState(
                 message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped);
-            _managedProjection.StoppedOrReadyToStart();
+            _managedProjection.PrepareOrWriteStartOrLoadStopped();
         }
 
         protected internal override void Faulted(CoreProjectionStatusMessage.Faulted message)
         {
             SetFaulted(message.FaultedReason);
-            _managedProjection.StoppedOrReadyToStart();
+            _managedProjection.PrepareOrWriteStartOrLoadStopped();
         }
 
     }

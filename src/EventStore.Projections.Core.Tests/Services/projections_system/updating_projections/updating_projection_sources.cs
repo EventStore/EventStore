@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                     new ProjectionManagementMessage.Command.Post(
                         Envelope, ProjectionMode.Continuous, _projectionName,
                         ProjectionManagementMessage.RunAs.System, "js", GivenOriginalSource(), true,
-                        _checkpointsEnabled, _emitEnabled);
+                        _checkpointsEnabled, _emitEnabled, _trackEmittedStreams);
                 yield return CreateWriteEvent("stream1", "type2", "{\"Data\": 2}");
                 yield return CreateWriteEvent("stream2", "type2", "{\"Data\": 3}");
                 yield return CreateWriteEvent("stream3", "type3", "{\"Data\": 4}");

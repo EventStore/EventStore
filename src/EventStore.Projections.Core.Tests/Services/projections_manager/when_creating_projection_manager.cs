@@ -9,6 +9,7 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
+using EventStore.Core.Helpers;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -18,6 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private ITimeProvider _timeProvider;
         private Dictionary<Guid, IPublisher> _queues;
         private TimeoutScheduler[] _timeoutSchedulers;
+        private IODispatcher _ioDispatcher;
 
         [SetUp]
         public void setup()
@@ -25,12 +27,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _timeProvider = new FakeTimeProvider();
             _queues = new Dictionary<Guid, IPublisher> {{Guid.NewGuid(), new FakePublisher()}};
             _timeoutSchedulers = ProjectionCoreWorkersNode.CreateTimeoutSchedulers(_queues.Count);
+            var fakePublisher = new FakePublisher();
             new ProjectionCoreCoordinator(
                 ProjectionType.All, 
                 _timeoutSchedulers,
                 _queues.Values.ToArray(),
-                new FakePublisher(),
+                fakePublisher,
                 new NoopEnvelope());
+            _ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher));
         }
 
         [Test]
@@ -42,7 +46,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     _queues,
                     _timeProvider,
-                    ProjectionType.All))
+                    ProjectionType.All,
+                    _ioDispatcher))
             {
             }
 
@@ -57,7 +62,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     _queues,
                     _timeProvider,
-                    ProjectionType.All))
+                    ProjectionType.All,
+                    _ioDispatcher))
             {
             }
         }
@@ -71,7 +77,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     null,
                     _queues,
                     _timeProvider,
-                    ProjectionType.All))
+                    ProjectionType.All,
+                    _ioDispatcher))
             {
             }
         }
@@ -85,7 +92,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     null,
                     _timeProvider,
-                    ProjectionType.All))
+                    ProjectionType.All,
+                    _ioDispatcher))
             {
             }
         }
@@ -99,7 +107,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new FakePublisher(),
                     new Dictionary<Guid, IPublisher>(),
                     _timeProvider,
-                    ProjectionType.All))
+                    ProjectionType.All,
+                    _ioDispatcher))
             {
             }
         }

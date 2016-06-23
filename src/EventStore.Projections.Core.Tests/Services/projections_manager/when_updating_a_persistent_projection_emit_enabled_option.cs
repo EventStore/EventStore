@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 (new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
                     ProjectionManagementMessage.RunAs.System, "JS", _source, enabled: true, checkpointsEnabled: true,
-                    emitEnabled: true));
+                    emitEnabled: true, trackEmittedStreams: true));
             // when
             yield return
                 (new ProjectionManagementMessage.Command.UpdateQuery(

@@ -188,6 +188,8 @@
     <Compile Include="ProjectionsSubsystem.cs" />
     <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
     <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\ManagedProjectionStateBase.cs" />
+    <Compile Include="Services\Management\ManagedProjectionStates\DeletingState.cs" />
     <Compile Include="Services\Management\MasterCoreProjectionResponseReader.cs" />
     <Compile Include="Services\Management\MultiStreamMessageWriter.cs" />
     <Compile Include="Services\Management\IMultiStreamMessageWriter.cs" />
@@ -238,6 +240,8 @@
     <Compile Include="Services\Processing\EmittedDataEvent.cs" />
     <Compile Include="Services\Processing\EmittedEventEnvelope.cs" />
     <Compile Include="Services\Processing\EmittedLinkTo.cs" />
+    <Compile Include="Services\Processing\EmittedStreamsDeleter.cs" />
+    <Compile Include="Services\Processing\EmittedStreamsTracker.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexEventFilter.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexEventReader.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexPositionTagger.cs" />
@@ -346,6 +350,7 @@
     <Compile Include="Services\Processing\RequestResponseQueueForwarder.cs" />
     <Compile Include="Services\ReaderSubscriptionDispatcher.cs" />
     <Compile Include="Services\ReadWrite.cs" />
+    <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\v8\DefaultV8ProjectionStateHandler.cs" />
     <Compile Include="Services\v8\V8ProjectionStateHandler.cs" />
     <Compile Include="Standard\CategorizeEventsByStreamPath.cs" />

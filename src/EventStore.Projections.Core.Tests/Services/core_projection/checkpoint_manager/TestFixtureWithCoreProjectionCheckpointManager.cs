@@ -17,6 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected int _maxWriteBatchLength;
         protected bool _emitEventEnabled;
         protected bool _checkpointsEnabled;
+        protected bool _trackEmittedStreams;
         protected bool _producesResults;
         protected bool _definesFold = true;
         protected Guid _projectionCorrelationId;
@@ -36,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _namingBuilder = ProjectionNamesBuilder.CreateForTest("projection");
             _config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
                 _pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
-                _checkpointsEnabled, _createTempStreams, _stopOnEof, isSlaveProjection: false);
+                _checkpointsEnabled, _createTempStreams, _stopOnEof, false, _trackEmittedStreams);
             When();
         }
 

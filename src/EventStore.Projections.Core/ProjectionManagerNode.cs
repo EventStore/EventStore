@@ -54,7 +54,8 @@ namespace EventStore.Projections.Core
                 outputBus,
                 queues,
                 new RealTimeProvider(),
-                projectionsStandardComponents.RunProjections);
+                projectionsStandardComponents.RunProjections,
+                ioDispatcher);
 
             SubscribeMainBus(
                 projectionsStandardComponents.MasterMainBus,

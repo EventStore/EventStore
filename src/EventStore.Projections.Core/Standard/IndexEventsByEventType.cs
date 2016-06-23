@@ -118,7 +118,7 @@ namespace EventStore.Projections.Core.Standard
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
-                        _indexCheckpointStream, Guid.NewGuid(), ProjectionNamesBuilder.EventType_PartitionCheckpoint,
+                        _indexCheckpointStream, Guid.NewGuid(), ProjectionEventTypes.PartitionCheckpoint,
                         true, checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null))
             };
         }

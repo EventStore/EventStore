@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new SlaveProjectionDefinitions.Definition(
                         "slave", StateHandlerFactory(), "",
                         SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread, ProjectionMode.Transient,
-                        false, false, true, ProjectionManagementMessage.RunAs.System));
+                        false, false, true, false, ProjectionManagementMessage.RunAs.System));
         }
 
         protected override IEnumerable<WhenStep> When()

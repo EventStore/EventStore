@@ -13,6 +13,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
         private ProjectionManagementMessage.RunAs _runAs;
         private bool _deleteCheckpointStream;
         private bool _deleteStateStream;
+        private bool _deleteEmittedStreams;
 
         protected override void Given()
         {
@@ -20,6 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             _runAs = ProjectionManagementMessage.RunAs.System;
             _deleteCheckpointStream = true;
             _deleteStateStream = true;
+            _deleteEmittedStreams = false;
         }
 
         protected override void When()
@@ -30,7 +32,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
                     _name,
                     _runAs,
                     _deleteCheckpointStream,
-                    _deleteStateStream));
+                    _deleteStateStream,
+                    _deleteEmittedStreams));
         }
 
         [Test]

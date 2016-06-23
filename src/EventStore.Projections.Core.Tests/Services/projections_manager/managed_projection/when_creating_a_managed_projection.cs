@@ -61,7 +61,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _bus,
                 _timeProvider,
                 _getStateDispatcher,
-                _getResultDispatcher);
+                _getResultDispatcher,
+                _ioDispatcher);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -90,7 +91,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     _bus,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
-                    new PublishEnvelope(_bus)));
+                    new PublishEnvelope(_bus)),
+                _ioDispatcher);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -119,7 +121,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     _bus,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
-                    new PublishEnvelope(_bus)));
+                    new PublishEnvelope(_bus)),
+                _ioDispatcher);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -148,7 +151,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     _bus,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
-                    new PublishEnvelope(_bus)));
+                    new PublishEnvelope(_bus)),
+                _ioDispatcher);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -177,7 +181,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     _bus,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
-                    new PublishEnvelope(_bus)));
+                    new PublishEnvelope(_bus)),
+                _ioDispatcher);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -206,7 +211,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     _bus,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
-                    new PublishEnvelope(_bus)));
+                    new PublishEnvelope(_bus)),
+                _ioDispatcher);
         }
     }
 }

@@ -42,7 +42,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                         _bus, 
                         v => v.CorrelationId,
                         v => v.CorrelationId,
-                        new PublishEnvelope(_bus)));
+                        new PublishEnvelope(_bus)),
+                _ioDispatcher);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -50,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 new NoopEnvelope(), ProjectionMode.OneTime, "name", ProjectionManagementMessage.RunAs.Anonymous,
-                (string)null, @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false);
+                (string)null, @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: false);
             _mp.InitializeNew(
                 new ManagedProjection.PersistedState
                 {
@@ -72,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 new NoopEnvelope(), ProjectionMode.OneTime, "name", ProjectionManagementMessage.RunAs.Anonymous, "",
-                @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false);
+                @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: false);
             _mp.InitializeNew(
                 new ManagedProjection.PersistedState
                 {
@@ -94,7 +95,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         {
             ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 new NoopEnvelope(), ProjectionMode.OneTime, "name", ProjectionManagementMessage.RunAs.Anonymous,
-                "JS", query: null, enabled: true, checkpointsEnabled: false, emitEnabled: false);
+                "JS", query: null, enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: false);
             _mp.InitializeNew(
                 new ManagedProjection.PersistedState
                 {

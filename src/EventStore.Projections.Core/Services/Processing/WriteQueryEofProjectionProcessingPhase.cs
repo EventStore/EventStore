@@ -12,8 +12,9 @@ namespace EventStore.Projections.Core.Services.Processing
             ICoreProjectionForProcessingPhase coreProjection,
             PartitionStateCache stateCache,
             ICoreProjectionCheckpointManager checkpointManager,
-            IEmittedEventWriter emittedEventWriter)
-            : base(publisher, phase, resultStream, coreProjection, stateCache, checkpointManager, emittedEventWriter)
+            IEmittedEventWriter emittedEventWriter,
+            IEmittedStreamsTracker emittedStreamsTracker)
+            : base(publisher, phase, resultStream, coreProjection, stateCache, checkpointManager, emittedEventWriter, emittedStreamsTracker)
         {
         }
 

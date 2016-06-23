@@ -21,6 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             protected Type _fakeProjectionType;
             protected ProjectionMode _projectionMode;
             protected bool _checkpointsEnabled;
+            protected bool _trackEmittedStreams;
             protected bool _emitEnabled;
             protected bool _projectionEnabled;
 
@@ -33,6 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 _fakeProjectionType = typeof (FakeProjection);
                 _projectionMode = ProjectionMode.Continuous;
                 _checkpointsEnabled = true;
+                _trackEmittedStreams = true;
                 _emitEnabled = true;
                 _projectionEnabled = true;
                 
@@ -50,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                     new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName, ProjectionManagementMessage.RunAs.System,
                         "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: _projectionEnabled,
-                        checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
+                        checkpointsEnabled: _checkpointsEnabled, trackEmittedStreams: _trackEmittedStreams, emitEnabled: _emitEnabled));
             }
         }
 

@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             return new ProjectionConfig(
                 null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, GivenPendingEventsThreshold(),
                 GivenMaxWriteBatchLength(), GivenEmitEventEnabled(), GivenCheckpointsEnabled(), _createTempStreams,
-                GivenStopOnEof(), isSlaveProjection: GivenIsSlaveProjection());
+                GivenStopOnEof(), GivenIsSlaveProjection(), GivenTrackEmittedStreams());
         }
 
         protected virtual bool GivenIsSlaveProjection()
@@ -128,6 +128,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         protected virtual bool GivenCheckpointsEnabled()
+        {
+            return true;
+        }
+
+        protected virtual bool GivenTrackEmittedStreams()
         {
             return true;
         }

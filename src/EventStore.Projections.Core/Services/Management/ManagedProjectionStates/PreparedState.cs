@@ -1,6 +1,6 @@
 namespace EventStore.Projections.Core.Services.Management.ManagedProjectionStates
 {
-    class PreparedState : ManagedProjection.ManagedProjectionStateBase
+    class PreparedState : ManagedProjectionStateBase
     {
         public PreparedState(ManagedProjection managedProjection)
             : base(managedProjection)

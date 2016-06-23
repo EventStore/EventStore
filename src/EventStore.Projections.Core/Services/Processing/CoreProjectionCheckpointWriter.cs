@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _inCheckpointWriteAttempt = 1;
             //TODO: pass correct expected version
             _checkpointEventToBePublished = new Event(
-                Guid.NewGuid(), ProjectionNamesBuilder.EventType_ProjectionCheckpoint, true,
+                Guid.NewGuid(), ProjectionEventTypes.ProjectionCheckpoint, true,
                 requestedCheckpointState == null ? null : Helper.UTF8NoBom.GetBytes(requestedCheckpointState),
                 requestedCheckpointPosition.ToJsonBytes(projectionVersion: _projectionVersion));
             PublishWriteStreamMetadataAndCheckpointEvent();

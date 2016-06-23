@@ -8,5 +8,6 @@ namespace EventStore.Projections.Core.Messages.Persisted.Responses
         public SerializedRunAs RunAs;
         public bool DeleteCheckpointStream;
         public bool DeleteStateStream;
+        public bool DeleteEmittedStreams;
     }
 }

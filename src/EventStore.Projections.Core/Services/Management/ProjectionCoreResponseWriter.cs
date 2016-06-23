@@ -194,6 +194,7 @@ namespace EventStore.Projections.Core.Services.Management
                 Name = message.Name,
                 RunAs = message.RunAs,
                 CheckpointsEnabled = message.CheckpointsEnabled,
+                TrackEmittedStreams = message.TrackEmittedStreams,
                 EmitEnabled = message.EmitEnabled,
                 EnableRunAs = message.EnableRunAs,
                 Enabled = message.Enabled,
@@ -260,6 +261,7 @@ namespace EventStore.Projections.Core.Services.Management
                 RunAs = message.RunAs,
                 DeleteCheckpointStream = message.DeleteCheckpointStream,
                 DeleteStateStream = message.DeleteStateStream,
+                DeleteEmittedStreams = message.DeleteEmittedStreams,
             };
             _writer.PublishCommand("$delete", command);
         }
