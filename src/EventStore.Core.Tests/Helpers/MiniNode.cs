@@ -122,23 +122,15 @@ namespace EventStore.Core.Tests.Helpers
                 }
             }
 
-            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
-                     + "{5,-25} {6} ({7})\n"
-                     + "{8,-25} {9} ({10}-bit)\n"
-                     + "{11,-25} {12}\n"
-                     + "{13,-25} {14}\n"
-                     + "{15,-25} {16}\n"
-                     + "{17,-25} {18}\n"
-                     + "{19,-25} {20}\n\n",
-                     "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
-                     "OS:", OS.OsFlavor, Environment.OSVersion,
-                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
-                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
-                     "DBPATH:", _dbPath,
-                     "TCP ENDPOINT:", TcpEndPoint,
-                     "TCP SECURE ENDPOINT:", TcpSecEndPoint,
-                     "HTTP ENDPOINT:", ExtHttpEndPoint);
-            
+            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})", "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+            Log.Info("{0,-25} {1} ({2})", "OS:", OS.OsFlavor, Environment.OSVersion);
+            Log.Info("{0,-25} {1} ({2}-bit)", "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8);
+            Log.Info("{0,-25} {1} ({2})", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+            Log.Info("{0,-25} {1}", "DBPATH:", _dbPath);
+            Log.Info("{0,-25} {1}", "TCP ENDPOINT:", TcpEndPoint);
+            Log.Info("{0,-25} {1}", "TCP SECURE ENDPOINT:", TcpSecEndPoint);
+            Log.Info("{0,-25} {1}", "HTTP ENDPOINT:", ExtHttpEndPoint);
+
             Node = builder.Build();
             Db = ((TestVNodeBuilder)builder).GetDb();
 

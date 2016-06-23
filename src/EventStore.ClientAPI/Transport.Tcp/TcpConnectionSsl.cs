@@ -415,13 +415,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             NotifyClosed();
 
-            _log.Info("ClientAPI {12} closed [{0:HH:mm:ss.fff}: S{1}, L{2}, {3:B}]:\nReceived bytes: {4}, Sent bytes: {5}\n"
-                      + "Send calls: {6}, callbacks: {7}\nReceive calls: {8}, callbacks: {9}\nClose reason: [{10}] {11}\n",
-                      DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
-                      TotalBytesReceived, TotalBytesSent,
-                      SendCalls, SendCallbacks,
-                      ReceiveCalls, ReceiveCallbacks,
-                      socketError, reason, GetType().Name);
+            _log.Info("ClientAPI {0} closed [{1:HH:mm:ss.fff}: S{2}, L{3}, {4:B}]:", GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId);
+            _log.Info("Received bytes: {0}, Sent bytes: {1}", TotalBytesReceived, TotalBytesSent);
+            _log.Info("Send calls: {0}, callbacks: {1}", SendCalls, SendCallbacks);
+            _log.Info("Receive calls: {0}, callbacks: {1}", ReceiveCalls, ReceiveCallbacks);
+            _log.Info("Close reason: [{0}] {1}", socketError, reason);
 
             if (_sslStream != null)
                 Helper.EatException(() => _sslStream.Close());

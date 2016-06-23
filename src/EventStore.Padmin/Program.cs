@@ -122,9 +122,8 @@ namespace EventStore.Padmin
             }
             catch (Exception e)
             {
-                Log("Config file failed to load ({0}).\n" +
-                    "Should be located near exe file, named 'padmin.esconfig', key=value formatted). Using defaults",
-                    e.Message);
+                Log("Config file failed to load ({0}).", e.Message);
+                Log("Should be located near exe file, named 'padmin.esconfig', key=value formatted). Using defaults");
 
                 var config = new Dictionary<string, string>();
                 FillDefaults(config);
