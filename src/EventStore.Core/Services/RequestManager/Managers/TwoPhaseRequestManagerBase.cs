@@ -118,7 +118,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed)
                 return;
 
-            CompleteFailedRequest(OperationResult.WrongExpectedVersion, "Wrong expected version.");
+            CompleteFailedRequest(OperationResult.WrongExpectedVersion, "Wrong expected version.", message.CurrentVersion);
         }
 
         public void Handle(StorageMessage.StreamDeleted message)
@@ -182,11 +182,11 @@ namespace EventStore.Core.Services.RequestManager.Managers
             Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true));
         }
 
-        protected virtual void CompleteFailedRequest(OperationResult result, string error)
+        protected virtual void CompleteFailedRequest(OperationResult result, string error, int currentVersion = -1)
         {
             Debug.Assert(result != OperationResult.Success);
             _completed = true;
-            Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, false));
+            Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, false, currentVersion));
         }
     }
 }

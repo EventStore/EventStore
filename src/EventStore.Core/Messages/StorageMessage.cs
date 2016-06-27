@@ -298,11 +298,13 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
+            public readonly int CurrentVersion;
 
-            public WrongExpectedVersion(Guid correlationId)
+            public WrongExpectedVersion(Guid correlationId, int currentVersion)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 CorrelationId = correlationId;
+                CurrentVersion = currentVersion;
             }
         }
 
@@ -327,12 +329,14 @@ namespace EventStore.Core.Messages
 
             public readonly Guid CorrelationId;
             public readonly bool Success;
+            public readonly int CurrentVersion;
 
-            public RequestCompleted(Guid correlationId, bool success)
+            public RequestCompleted(Guid correlationId, bool success, int currentVersion = -1)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 CorrelationId = correlationId;
                 Success = success;
+                CurrentVersion = currentVersion;
             }
         }
 

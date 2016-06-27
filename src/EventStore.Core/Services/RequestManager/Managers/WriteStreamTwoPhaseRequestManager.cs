@@ -42,10 +42,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
             ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber, lastEventNumber, preparePosition, commitPosition));
         }
 
-        protected override void CompleteFailedRequest(OperationResult result, string error)
+        protected override void CompleteFailedRequest(OperationResult result, string error, int currentVersion = -1)
         {
-            base.CompleteFailedRequest(result, error);
-            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, result, error));
+            base.CompleteFailedRequest(result, error, currentVersion);
+            ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, result, error, currentVersion));
         }
 
     }
