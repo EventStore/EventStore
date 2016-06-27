@@ -14,6 +14,7 @@ namespace EventStore.Core.Services
         public const string HardDelete = "ES-HardDelete";
         public const string EventId = "ES-EventId";
         public const string EventType = "ES-EventType";
+        public const string CurrentVersion = "ES-CurrentVersion";
     }
 
     public static class SystemStreams
