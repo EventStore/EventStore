@@ -188,6 +188,7 @@ namespace EventStore.Core.Messages
             public readonly int LastEventNumber;
             public readonly long PreparePosition;
             public readonly long CommitPosition;
+            public readonly int CurrentVersion;
 
             public WriteEventsCompleted(Guid correlationId, int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
             {
@@ -205,7 +206,7 @@ namespace EventStore.Core.Messages
                 CommitPosition = commitPosition;
             }
 
-            public WriteEventsCompleted(Guid correlationId, OperationResult result, string message)
+            public WriteEventsCompleted(Guid correlationId, OperationResult result, string message, int currentVersion = -1)
             {
                 if (result == OperationResult.Success)
                     throw new ArgumentException("Invalid constructor used for successful write.", "result");
@@ -216,6 +217,7 @@ namespace EventStore.Core.Messages
                 FirstEventNumber = EventNumber.Invalid;
                 LastEventNumber = EventNumber.Invalid;
                 PreparePosition = EventNumber.Invalid;
+                CurrentVersion = currentVersion;
             }
 
             private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)

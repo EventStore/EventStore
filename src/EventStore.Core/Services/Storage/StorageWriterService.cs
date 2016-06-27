@@ -572,7 +572,7 @@ namespace EventStore.Core.Services.Storage
             switch (result.Decision)
             {
                 case CommitDecision.WrongExpectedVersion:
-                    envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId));
+                    envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId, result.CurrentVersion));
                     break;
                 case CommitDecision.Deleted:
                     envelope.ReplyWith(new StorageMessage.StreamDeleted(correlationId));
@@ -586,7 +586,7 @@ namespace EventStore.Core.Services.Storage
                 case CommitDecision.CorruptedIdempotency:
                     // in case of corrupted idempotency (part of transaction is ok, other is different)
                     // then we can say that the transaction is not idempotent, so WrongExpectedVersion is ok answer
-                    envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId));
+                    envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId, result.CurrentVersion));
                     break;
                 case CommitDecision.InvalidTransaction:
                     envelope.ReplyWith(new StorageMessage.InvalidTransaction(correlationId));

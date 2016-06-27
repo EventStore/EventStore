@@ -104,6 +104,12 @@ namespace EventStore.Core.Tests.Http.Streams
             }
 
             [Test]
+            public void should_return_the_current_version_in_the_header()
+            {
+                Assert.AreEqual("0", _response.Headers.Get("CurrentVersion"));
+            }
+
+            [Test]
             public void should_not_append_to_stream()
             {
                 Assert.AreEqual(1, _read.Count);
@@ -254,6 +260,13 @@ namespace EventStore.Core.Tests.Http.Streams
                 Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
                 Assert.AreEqual(WrongExpectedVersionDesc, _response.StatusDescription);
             }
+
+            [Test]
+            public void should_return_the_current_version_in_the_header()
+            {
+                Assert.AreEqual("1", _response.Headers.Get("CurrentVersion"));
+            }
+
             [Test]
             public void should_not_append_event()
             {
@@ -282,6 +295,12 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
                 Assert.AreEqual(WrongExpectedVersionDesc, _response.StatusDescription);
+            }
+
+            [Test]
+            public void should_return_the_current_version_in_the_header()
+            {
+                Assert.AreEqual("-1", _response.Headers.Get("CurrentVersion"));
             }
 
             [Test]
@@ -458,6 +477,13 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
                 Assert.AreEqual(WrongExpectedVersionDesc, _response.StatusDescription);
+            }
+
+
+            [Test]
+            public void should_return_the_current_version_in_the_header()
+            {
+                Assert.AreEqual("-1", _response.Headers.Get("CurrentVersion"));
             }
 
             [Test]

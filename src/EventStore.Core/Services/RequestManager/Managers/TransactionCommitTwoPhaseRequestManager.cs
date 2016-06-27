@@ -42,9 +42,9 @@ namespace EventStore.Core.Services.RequestManager.Managers
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(OperationResult result, string error)
+        protected override void CompleteFailedRequest(OperationResult result, string error, int currentVersion)
         {
-            base.CompleteFailedRequest(result, error);
+            base.CompleteFailedRequest(result, error, currentVersion);
             var responseMsg = new ClientMessage.TransactionCommitCompleted(ClientCorrId, _transactionId, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
