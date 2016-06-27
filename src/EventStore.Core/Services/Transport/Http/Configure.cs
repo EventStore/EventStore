@@ -315,7 +315,7 @@ namespace EventStore.Core.Services.Transport.Http
                         return InternalServerError("Write timeout");
                     case OperationResult.WrongExpectedVersion:
                         return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected EventNumber", "text/plain", Helper.UTF8NoBom,
-                                                         new KeyValuePair<string, string>("CurrentVersion", msg.CurrentVersion.ToString()));
+                                                         new KeyValuePair<string, string>(SystemHeaders.CurrentVersion, msg.CurrentVersion.ToString()));
                     case OperationResult.StreamDeleted:
                         return Gone("Stream deleted");
                     case OperationResult.InvalidTransaction:

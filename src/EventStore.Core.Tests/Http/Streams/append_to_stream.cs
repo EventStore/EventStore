@@ -7,6 +7,7 @@ using EventStore.ClientAPI;
 using EventStore.Transport.Http;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using EventStore.Core.Services;
 using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Http.Streams
@@ -106,7 +107,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void should_return_the_current_version_in_the_header()
             {
-                Assert.AreEqual("0", _response.Headers.Get("CurrentVersion"));
+                Assert.AreEqual("0", _response.Headers.Get(SystemHeaders.CurrentVersion));
             }
 
             [Test]
@@ -264,7 +265,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void should_return_the_current_version_in_the_header()
             {
-                Assert.AreEqual("1", _response.Headers.Get("CurrentVersion"));
+                Assert.AreEqual("1", _response.Headers.Get(SystemHeaders.CurrentVersion));
             }
 
             [Test]
@@ -300,7 +301,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void should_return_the_current_version_in_the_header()
             {
-                Assert.AreEqual("-1", _response.Headers.Get("CurrentVersion"));
+                Assert.AreEqual("-1", _response.Headers.Get(SystemHeaders.CurrentVersion));
             }
 
             [Test]
@@ -483,7 +484,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void should_return_the_current_version_in_the_header()
             {
-                Assert.AreEqual("-1", _response.Headers.Get("CurrentVersion"));
+                Assert.AreEqual("-1", _response.Headers.Get(SystemHeaders.CurrentVersion));
             }
 
             [Test]
