@@ -742,7 +742,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
             var intHttpEndpoint = new IPEndPoint(internalIPToAdvertise, 1115);
             var extHttpEndpoint = new IPEndPoint(externalIPToAdvertise, 1116);
 
-            _advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint, intSecTcpEndpoint, extTcpEndpoint, extSecTcpEndpoint, intHttpEndpoint, extHttpEndpoint);
+            _advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint, intSecTcpEndpoint, extTcpEndpoint, extSecTcpEndpoint, intHttpEndpoint, extHttpEndpoint, internalIPToAdvertise, externalIPToAdvertise, intHttpEndpoint.Port, extHttpEndpoint.Port);
 
             _builder.AdvertiseInternalIPAs(internalIPToAdvertise)
                     .AdvertiseExternalIPAs(externalIPToAdvertise)
@@ -763,6 +763,10 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
             Assert.AreEqual(_advertiseInfo.ExternalSecureTcp, _settings.GossipAdvertiseInfo.ExternalSecureTcp);
             Assert.AreEqual(_advertiseInfo.InternalHttp, _settings.GossipAdvertiseInfo.InternalHttp);
             Assert.AreEqual(_advertiseInfo.ExternalHttp, _settings.GossipAdvertiseInfo.ExternalHttp);
+            Assert.AreEqual(_advertiseInfo.AdvertiseInternalIPAs, _settings.GossipAdvertiseInfo.AdvertiseInternalIPAs);
+            Assert.AreEqual(_advertiseInfo.AdvertiseExternalIPAs, _settings.GossipAdvertiseInfo.AdvertiseExternalIPAs);
+            Assert.AreEqual(_advertiseInfo.AdvertiseInternalHttpPortAs, _settings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs);
+            Assert.AreEqual(_advertiseInfo.AdvertiseExternalHttpPortAs, _settings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs);
         }
     }
 }

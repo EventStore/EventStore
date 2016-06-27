@@ -16,21 +16,30 @@ namespace EventStore.Transport.Http.EntityManagement
         internal readonly HttpListenerResponse Response;
         public readonly IPrincipal User;
 
-        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, bool logHttpRequests)
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort)
         {
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
 
             _logHttpRequests = logHttpRequests;
-            RequestedUrl = BuildRequestedUrl(request.Url, request.Headers);
+            RequestedUrl = BuildRequestedUrl(request.Url, request.Headers, advertiseAsAddress, advertiseAsPort);
             Request = request;
             Response = response;
             User = user;
         }
 
-        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders)
+        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders, IPAddress advertiseAsAddress, int advertiseAsPort)
         {
             var uriBuilder = new UriBuilder(requestUrl);
+
+            if(advertiseAsAddress != null)
+            {
+                uriBuilder.Host = advertiseAsAddress.ToString();
+            }
+            if(advertiseAsPort > 0)
+            {
+                uriBuilder.Port = advertiseAsPort;
+            }
 
             var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
 

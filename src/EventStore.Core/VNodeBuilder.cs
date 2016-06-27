@@ -1120,7 +1120,9 @@ namespace EventStore.Core
 
                 _gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
                                                               extTcpEndPoint, extSecureTcpEndPoint,
-                                                              intHttpEndPoint, extHttpEndPoint);
+                                                              intHttpEndPoint, extHttpEndPoint,
+                                                              _advertiseInternalIPAs, _advertiseExternalIPAs,
+                                                              _advertiseInternalHttpPortAs, _advertiseExternalHttpPortAs);
             }
             return _gossipAdvertiseInfo;
         }
