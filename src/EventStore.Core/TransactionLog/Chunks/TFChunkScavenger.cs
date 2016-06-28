@@ -15,6 +15,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Messages;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
@@ -31,6 +32,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly IReadIndex _readIndex;
         private readonly long _maxChunkDataSize;
         private readonly bool _unsafeIgnoreHardDeletes;
+        private const int MaxRetryCount = 5;
 
         public TFChunkScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IHasher hasher, IReadIndex readIndex,
                                 Guid scavengeId, string nodeEndpoint, long? maxChunkDataSize = null, bool unsafeIgnoreHardDeletes=false)
@@ -272,7 +274,22 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }.ToJsonBytes(), null);
 
             var streamName = string.Format("{0}-{1}", SystemStreams.ScavengesStream, _scavengeId);
-            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, evnt, SystemAccount.Principal, x => { });
+            WriteScavengeChunkCompletedEvent(streamName, evnt, MaxRetryCount);
+        }
+
+        private void WriteScavengeChunkCompletedEvent(string streamId, Event eventToWrite, int retryCount){
+            _ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal, m => WriteScavengeChunkCompletedEventCompleted(m, streamId, eventToWrite, retryCount));
+        }
+
+        private void WriteScavengeChunkCompletedEventCompleted(ClientMessage.WriteEventsCompleted msg, string streamId, Event eventToWrite, int retryCount){
+            if(msg.Result != OperationResult.Success){
+                if(retryCount > 0){
+                    Log.Error("Failed to write an event to the {0} stream. Retrying {1}/{2}. Reason: {3}", streamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount, msg.Result);
+                    WriteScavengeChunkCompletedEvent(streamId, eventToWrite, --retryCount);
+                }else{
+                    Log.Error("Failed to write an event to the {0} stream. Retry limit of {1} reached. Reason: {2}", streamId, MaxRetryCount, msg.Result);
+                }
+            }
         }
 
         private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits, long chunkStart, long chunkEnd)

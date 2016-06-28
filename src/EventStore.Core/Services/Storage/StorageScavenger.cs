@@ -32,6 +32,7 @@ namespace EventStore.Core.Services.Storage
         private readonly int _scavengeHistoryMaxAge;
         private readonly bool _unsafeIgnoreHardDeletes;
         private int _isScavengingRunning;
+        private const int MaxRetryCount = 5;
 
         public StorageScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IHasher hasher,
                                 IReadIndex readIndex, bool alwaysKeepScavenged, string nodeEndpoint, bool mergeChunks,
@@ -119,9 +120,24 @@ namespace EventStore.Core.Services.Storage
 
         private void WriteScavengeIndexInitializedEvent()
         {
+            var metadataEventId = Guid.NewGuid();
+            var metaStreamId = SystemStreams.MetastreamOf(SystemStreams.ScavengesStream);
+            var metadata = new StreamMetadata(maxAge: TimeSpan.FromDays(_scavengeHistoryMaxAge));
+            var metaStreamEvent = new Event(metadataEventId, SystemEventTypes.StreamMetadata, isJson: true,
+                                            data: metadata.ToJsonBytes(), metadata: null);
+            _ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccount.Principal, m => { 
+                if(m.Result != OperationResult.Success){
+                    Log.Error("Failed to write the $maxAge of {0} days metadata for the {1} stream. Reason: {2}", _scavengeHistoryMaxAge, SystemStreams.ScavengesStream, m.Result);
+                }
+            });
+
             var indexInitializedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeIndexInitialized,
                     true, new Dictionary<string, object>{}.ToJsonBytes(), null);
-            _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.NoStream, indexInitializedEvent, SystemAccount.Principal, m => { });
+            _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.NoStream, indexInitializedEvent, SystemAccount.Principal, m => {
+                if(m.Result != OperationResult.Success){
+                    Log.Error("Failed to write the {0} event to the {1} stream. Reason: {2}", SystemEventTypes.ScavengeIndexInitialized, SystemStreams.ScavengesStream, m.Result);
+                }
+             });
         }
 
         private void WriteScavengeStartedEvent(string streamName, Guid scavengeId)
@@ -131,13 +147,17 @@ namespace EventStore.Core.Services.Storage
             var metadata = new StreamMetadata(maxAge: TimeSpan.FromDays(_scavengeHistoryMaxAge));
             var metaStreamEvent = new Event(metadataEventId, SystemEventTypes.StreamMetadata, isJson: true,
                                             data: metadata.ToJsonBytes(), metadata: null);
-            _ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccount.Principal, m => { });
+            _ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccount.Principal, m => { 
+                if(m.Result != OperationResult.Success){
+                    Log.Error("Failed to write the $maxAge of {0} days metadata for the {1} stream. Reason: {2}", _scavengeHistoryMaxAge, streamName, m.Result);
+                }
+            });
 
             var scavengeStartedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeStarted, true, new Dictionary<string, object>{
                     {"scavengeId", scavengeId},
                     {"nodeEndpoint", _nodeEndpoint},
                 }.ToJsonBytes(), null);
-            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, scavengeStartedEvent, SystemAccount.Principal, x => WriteScavengeEventCompleted(x, streamName));
+            WriteScavengeDetailEvent(streamName, scavengeStartedEvent, MaxRetryCount);
         }
 
         private void WriteScavengeCompletedEvent(string streamName, Guid scavengeId, ClientMessage.ScavengeDatabase.ScavengeResult result, string error, long spaceSaved, TimeSpan timeTaken)
@@ -150,14 +170,42 @@ namespace EventStore.Core.Services.Storage
                     {"timeTaken", timeTaken},
                     {"spaceSaved", spaceSaved}
                 }.ToJsonBytes(), null);
-            _ioDispatcher.WriteEvent(streamName, ExpectedVersion.Any, scavengeCompletedEvent, SystemAccount.Principal, x => WriteScavengeEventCompleted(x, streamName));
+            WriteScavengeDetailEvent(streamName, scavengeCompletedEvent, MaxRetryCount);
         }
 
-        private void WriteScavengeEventCompleted(ClientMessage.WriteEventsCompleted msg, string streamId)
+        private void WriteScavengeDetailEvent(string streamId, Event eventToWrite, int retryCount){
+            _ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal, x => WriteScavengeDetailEventCompleted(x, eventToWrite, streamId, retryCount));
+        }
+
+        private void WriteScavengeIndexEvent(Event linkToEvent, int retryCount){
+            _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.Any, linkToEvent, SystemAccount.Principal, m => WriteScavengeIndexEventCompleted(m, linkToEvent, retryCount));
+        }
+
+        private void WriteScavengeIndexEventCompleted(ClientMessage.WriteEventsCompleted msg, Event linkToEvent, int retryCount){
+            if(msg.Result != OperationResult.Success){
+                if(retryCount > 0){
+                    Log.Error("Failed to write an event to the {0} stream. Retrying {1}/{2}. Reason: {3}", SystemStreams.ScavengesStream, (MaxRetryCount - retryCount) + 1, MaxRetryCount, msg.Result);
+                    WriteScavengeIndexEvent(linkToEvent, --retryCount);
+                }else{
+                    Log.Error("Failed to write an event to the {0} stream. Retry limit of {1} reached. Reason: {2}", SystemStreams.ScavengesStream, MaxRetryCount, msg.Result);
+                }
+            }
+        }
+
+        private void WriteScavengeDetailEventCompleted(ClientMessage.WriteEventsCompleted msg, Event eventToWrite, string streamId, int retryCount)
         {
-            string eventLinkTo = string.Format("{0}@{1}", msg.FirstEventNumber, streamId);
-            var linkToIndexEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, eventLinkTo, null);
-            _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.Any, linkToIndexEvent, SystemAccount.Principal, n => { });
+            if(msg.Result != OperationResult.Success){
+                if(retryCount > 0){
+                    Log.Error("Failed to write an event to the {0} stream. Retrying {1}/{2}. Reason: {3}", streamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount, msg.Result);
+                    WriteScavengeDetailEvent(streamId, eventToWrite, --retryCount);
+                }else{
+                    Log.Error("Failed to write an event to the {0} stream. Retry limit of {1} reached. Reason: {2}", streamId, MaxRetryCount, msg.Result);
+                }
+            }else{
+                string eventLinkTo = string.Format("{0}@{1}", msg.FirstEventNumber, streamId);
+                var linkToIndexEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, eventLinkTo, null);
+                WriteScavengeIndexEvent(linkToIndexEvent, MaxRetryCount);
+            }
         }
     }
 }
