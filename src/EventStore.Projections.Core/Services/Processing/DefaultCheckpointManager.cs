@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void BeginLoadPartitionStateAt(
             string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted)
         {
-            var stateEventType = ProjectionNamesBuilder.EventType_PartitionCheckpoint;
+            var stateEventType = ProjectionEventTypes.PartitionCheckpoint;
             var partitionCheckpointStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
             _readRequestsInProgress++;
             var requestId = _ioDispatcher.ReadBackward(

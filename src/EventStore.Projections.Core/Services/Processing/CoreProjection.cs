@@ -383,7 +383,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _publisher.Publish(
                             new ProjectionManagementMessage.Command.Delete(
                                 new NoopEnvelope(), channel.ManagedProjectionName,
-                                ProjectionManagementMessage.RunAs.System, true, true));
+                                ProjectionManagementMessage.RunAs.System, true, true, false));
                     }
                 }
 
@@ -502,6 +502,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache.Initialize();
             _projectionProcessingPhase = null;
             _checkpointManager = _projectionProcessingPhases[0].CheckpointManager;
+            var emittedStreamsTracker = _projectionProcessingPhases[0].EmittedStreamsTracker;
+            emittedStreamsTracker.Initialize();
             _checkpointManager.Initialize();
             _checkpointReader.Initialize();
             _tickPending = false;

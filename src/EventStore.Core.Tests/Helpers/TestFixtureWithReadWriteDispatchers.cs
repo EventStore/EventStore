@@ -62,6 +62,7 @@ namespace EventStore.Core.Tests.Helpers
             _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
             _readDispatcher = _ioDispatcher.BackwardReader;
             _writeDispatcher = _ioDispatcher.Writer;
+            _streamDispatcher = _ioDispatcher.StreamDeleter;
 
             _bus.Subscribe(_ioDispatcher.ForwardReader);
             _bus.Subscribe(_ioDispatcher.BackwardReader);

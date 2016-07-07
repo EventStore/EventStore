@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
                     new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(GetInputQueue()), ProjectionMode.Transient, _projectionName,
                         new ProjectionManagementMessage.RunAs(_testUserPrincipal), "JS", _projectionBody, enabled: true,
-                        checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
+                        checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true, enableRunAs: true);
             }
 
             [Test, Ignore]
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
                     new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
                         ProjectionManagementMessage.RunAs.Anonymous, "JS", _projectionBody, enabled: true,
-                        checkpointsEnabled: true, emitEnabled: true, enableRunAs: true);
+                        checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true, enableRunAs: true);
             }
 
             [Test]

@@ -45,6 +45,7 @@ fromStreamCatalog('catalog').foreachStream().when({
                     new PublishEnvelope(_bus), _projectionMode, _projectionName,
                     ProjectionManagementMessage.RunAs.System, "JS",
                     _projectionSource, enabled: false, checkpointsEnabled: false,
+                    trackEmittedStreams: false,
                     emitEnabled: false));
             yield return
                 new ProjectionManagementMessage.Command.Enable(

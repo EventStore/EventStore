@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
@@ -34,25 +32,22 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
                     ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().whenAny(function(s,e){return s;});",
-                    enabled: true, checkpointsEnabled: true, emitEnabled: true);
+                    enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
             yield return
                 new ProjectionManagementMessage.Command.Disable(
                     new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
             yield return
                 new ProjectionManagementMessage.Command.Delete(
                     new PublishEnvelope(_bus), _projectionName,
-                    ProjectionManagementMessage.RunAs.System, false, false);
+                    ProjectionManagementMessage.RunAs.System, false, false, false);
         }
 
         [Test, Category("v8")]
         public void a_projection_deleted_event_is_written()
         {
             Assert.AreEqual(
-                "$ProjectionDeleted",
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Last().Events[0].EventType);
-            Assert.AreEqual(
-                _projectionName,
-                Helper.UTF8NoBom.GetString(_consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Last().Events[0].Data));
+                true,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == "$ProjectionDeleted" && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _projectionName));
         }
 
         [Test, Category("v8")]

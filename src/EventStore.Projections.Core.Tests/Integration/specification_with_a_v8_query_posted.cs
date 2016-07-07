@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core.Tests.Integration
         protected string _projectionSource;
         protected ProjectionMode _projectionMode;
         protected bool _checkpointsEnabled;
+        protected bool _trackEmittedStreams;
         protected bool _emitEnabled;
         protected bool _startSystemProjections;
 
@@ -32,6 +33,7 @@ namespace EventStore.Projections.Core.Tests.Integration
             _projectionSource = GivenQuery();
             _projectionMode = ProjectionMode.Transient;
             _checkpointsEnabled = false;
+            _trackEmittedStreams = false;
             _emitEnabled = false;
             _startSystemProjections = GivenStartSystemProjections();
         }
@@ -72,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Integration
         {
             return new ProjectionManagementMessage.Command.Post(
                 new PublishEnvelope(_bus), ProjectionMode.Transient, name,
-                ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false,
+                ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false, trackEmittedStreams: false,
                 emitEnabled: false);
         }
 
@@ -80,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Integration
         {
             return new ProjectionManagementMessage.Command.Post(
                 new PublishEnvelope(_bus), ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
-                "JS", source, enabled: true, checkpointsEnabled: true, emitEnabled: true);
+                "JS", source, enabled: true, checkpointsEnabled: true, trackEmittedStreams: true, emitEnabled: true);
         }
 
         protected override IEnumerable<WhenStep> When()
@@ -113,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Integration
                 yield return
                     (new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), ProjectionMode.Continuous, "other_" + index,
-                        ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true,
+                        ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true, trackEmittedStreams: true,
                         emitEnabled: true));
                 index++;
             }
@@ -123,7 +125,7 @@ namespace EventStore.Projections.Core.Tests.Integration
                     (new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
                         ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
-                        checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
+                        checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled, trackEmittedStreams: _trackEmittedStreams));
             }
         }
 

@@ -9,6 +9,7 @@ namespace EventStore.Projections.Core.Messages.Persisted.Responses
         public SerializedRunAs RunAs;
 
         public bool CheckpointsEnabled;
+        public bool TrackEmittedStreams;
         public bool EmitEnabled;
         public bool EnableRunAs;
         public bool Enabled;

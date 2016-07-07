@@ -442,6 +442,12 @@ namespace EventStore.Core.Tests.Helpers
             }
             if (!_streams.TryGetValue(message.EventStreamId, out list) || list == null)
             {
+                if(message.ExpectedVersion == ExpectedVersion.Any)
+                {
+                    message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.StreamDeleted, string.Empty, -1, -1));
+                    _deletedStreams.Add(message.EventStreamId);
+                    return;
+                }
                 message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.WrongExpectedVersion, string.Empty));
                 return;
             }

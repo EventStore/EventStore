@@ -14,6 +14,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
     {
         private FakeCheckpointManager _phase1checkpointManager;
         private FakeCheckpointManager _phase2checkpointManager;
+        private IEmittedStreamsTracker _emittedStreamsTracker;
         private FakeProjectionProcessingPhase _phase1;
         private FakeProjectionProcessingPhase _phase2;
         private IReaderStrategy _phase1readerStrategy;
@@ -98,6 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             private readonly int _phase;
             private readonly specification_with_multi_phase_core_projection _specification;
             private readonly ICoreProjectionCheckpointManager _checkpointManager;
+            private readonly IEmittedStreamsTracker _emittedStreamsTracker;
             private readonly IReaderStrategy _readerStrategy;
 
             private bool _initializedFromCheckpoint;
@@ -107,12 +109,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             private int _subscribeInvoked;
 
             public FakeProjectionProcessingPhase(int phase, specification_with_multi_phase_core_projection specification,
-                ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy)
+                ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy, IEmittedStreamsTracker emittedStreamsTracker)
             {
                 _phase = phase;
                 _specification = specification;
                 _checkpointManager = checkpointManager;
                 _readerStrategy = readerStrategy;
+                _emittedStreamsTracker = emittedStreamsTracker;
             }
 
             public void Dispose()
@@ -175,6 +178,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             public ICoreProjectionCheckpointManager CheckpointManager
             {
                 get { return _checkpointManager; }
+            }
+
+            public IEmittedStreamsTracker EmittedStreamsTracker
+            {
+                get { return _emittedStreamsTracker; }
             }
 
             public IReaderStrategy ReaderStrategy
@@ -414,6 +422,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             }
         }
 
+        public class FakeEmittedStreamsTracker : IEmittedStreamsTracker
+        {
+            public void Initialize()
+            {
+            }
+
+            public void TrackEmittedStream(EmittedEvent[] emittedEvents)
+            {
+            }
+        }
+
         public FakeCheckpointManager Phase1CheckpointManager
         {
             get { return _phase1checkpointManager; }
@@ -438,10 +457,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
         {
             _phase1checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
             _phase2checkpointManager = new FakeCheckpointManager(_bus, _projectionCorrelationId);
+            _emittedStreamsTracker = new FakeEmittedStreamsTracker();
             _phase1readerStrategy = GivenPhase1ReaderStrategy();
             _phase2readerStrategy = GivenPhase2ReaderStrategy();
-            _phase1 = new FakeProjectionProcessingPhase(0, this, Phase1CheckpointManager, _phase1readerStrategy);
-            _phase2 = new FakeProjectionProcessingPhase(1, this, Phase2CheckpointManager, _phase2readerStrategy);
+            _phase1 = new FakeProjectionProcessingPhase(0, this, Phase1CheckpointManager, _phase1readerStrategy, _emittedStreamsTracker);
+            _phase2 = new FakeProjectionProcessingPhase(1, this, Phase2CheckpointManager, _phase2readerStrategy, _emittedStreamsTracker);
             return new FakeProjectionProcessingStrategy(
                 _projectionName, _version, new ConsoleLogger(), Phase1, Phase2);
         }

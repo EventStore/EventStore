@@ -4,7 +4,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -25,7 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-            null, 5, 10, 1000, 250, true, true, true, true, false);
+            null, 5, 10, 1000, 250, true, true, true, true, false, true);
 
         private IODispatcher _ioDispatcher;
 
@@ -40,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false, false);
+            var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false, false, true);
             new ContinuousProjectionProcessingStrategy(
                 "projection",
                 version,
@@ -64,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false, false);
+            var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false, false, true);
             new ContinuousProjectionProcessingStrategy(
                 "projection",
                 version,
@@ -249,7 +248,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var version = new ProjectionVersion(1, 0, 0);
-            var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false, false);
+            var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false, false, true);
             new ContinuousProjectionProcessingStrategy(
                 "projection",
                 version,

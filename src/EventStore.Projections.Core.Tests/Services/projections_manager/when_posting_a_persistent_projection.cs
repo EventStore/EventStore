@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 new ProjectionManagementMessage.Command.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
                     ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().whenAny(function(s,e){return s;});",
-                    enabled: true, checkpointsEnabled: true, emitEnabled: true);
+                    enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
             OneWriteCompletes();
         }
 
