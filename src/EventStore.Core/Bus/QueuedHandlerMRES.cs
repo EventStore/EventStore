@@ -18,15 +18,19 @@ namespace EventStore.Core.Bus
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerMRES>();
 
-        public int MessageCount { get { return _queue.Count; } }
-        public string Name { get { return _queueStats.Name; } }
+        public string Name
+        {
+            get { return _queueStats.Name; }
+        }
 
         private readonly IHandle<Message> _consumer;
 
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
+        private readonly MultiProducerSinglerConsumerConcurrentQueue _queue =
+            new MultiProducerSinglerConsumerConcurrentQueue(ushort.MaxValue + 1);
+
         private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false);
 
         private Thread _thread;
@@ -37,13 +41,13 @@ namespace EventStore.Core.Bus
 
         private readonly QueueMonitor _queueMonitor;
         private readonly QueueStatsCollector _queueStats;
-        
+
         public QueuedHandlerMRES(IHandle<Message> consumer,
-                                 string name,
-                                 bool watchSlowMsg = true,
-                                 TimeSpan? slowMsgThreshold = null,
-                                 TimeSpan? threadStopWaitTimeout = null,
-                                 string groupName = null)
+            string name,
+            bool watchSlowMsg = true,
+            TimeSpan? slowMsgThreshold = null,
+            TimeSpan? threadStopWaitTimeout = null,
+            string groupName = null)
         {
             Ensure.NotNull(consumer, "consumer");
             Ensure.NotNull(name, "name");
@@ -67,7 +71,7 @@ namespace EventStore.Core.Bus
 
             _stopped.Reset();
 
-            _thread = new Thread(ReadFromQueue) { IsBackground = true, Name = Name };
+            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = Name};
             _thread.Start();
         }
 
@@ -87,13 +91,15 @@ namespace EventStore.Core.Bus
         {
             _queueStats.Start();
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
-            
+
+            var batch = new Message[128];
             while (!_stop)
             {
                 Message msg = null;
                 try
                 {
-                    if (!_queue.TryDequeue(out msg))
+                    var retrieved = _queue.TryDequeue(batch);
+                    if (retrieved == 0)
                     {
                         _starving = true;
 
@@ -105,36 +111,43 @@ namespace EventStore.Core.Bus
                     }
                     else
                     {
-                        _queueStats.EnterBusy();
+                        for (int i = 0; i < retrieved; i++)
+                        {
+                            msg = batch[i];
+
+
+                            _queueStats.EnterBusy();
 #if DEBUG
                         _queueStats.Dequeued(msg);
 #endif
 
-                        var cnt = _queue.Count;
-                        _queueStats.ProcessingStarted(msg.GetType(), cnt);
+                            //var cnt = _queue.Count;
+                            var cnt = 1;
+                            _queueStats.ProcessingStarted(msg.GetType(), cnt);
 
-                        if (_watchSlowMsg)
-                        {
-                            var start = DateTime.UtcNow;
-
-                            _consumer.Handle(msg);
-
-                            var elapsed = DateTime.UtcNow - start;
-                            if (elapsed > _slowMsgThreshold)
+                            if (_watchSlowMsg)
                             {
-                                Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
-                                          Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
-                                if (elapsed > QueuedHandler.VerySlowMsgThreshold && !(msg is SystemMessage.SystemInit))
-                                    Log.Error("---!!! VERY SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
-                                              Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
-                            }
-                        }
-                        else
-                        {
-                            _consumer.Handle(msg);
-                        }
+                                var start = DateTime.UtcNow;
 
-                        _queueStats.ProcessingEnded(1);
+                                _consumer.Handle(msg);
+
+                                var elapsed = DateTime.UtcNow - start;
+                                if (elapsed > _slowMsgThreshold)
+                                {
+                                    //Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
+                                    //          Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
+                                    //if (elapsed > QueuedHandler.VerySlowMsgThreshold && !(msg is SystemMessage.SystemInit))
+                                    //    Log.Error("---!!! VERY SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
+                                    //              Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
+                                }
+                            }
+                            else
+                            {
+                                _consumer.Handle(msg);
+                            }
+
+                            _queueStats.ProcessingEnded(1);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -167,8 +180,8 @@ namespace EventStore.Core.Bus
 
         public QueueStats GetStatistics()
         {
-            return _queueStats.GetStatistics(_queue.Count);
+            //return _queueStats.GetStatistics(_queue.Count);
+            return _queueStats.GetStatistics(1);
         }
     }
 }
-
