@@ -16,39 +16,19 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var requestedUri =
                 HttpEntity.BuildRequestedUrl(inputUri,
-                                             new NameValueCollection(), null, 0);
+                                             new NameValueCollection(), null);
 
             Assert.AreEqual(inputUri, requestedUri);
         }
 
         [Test]
-        public void with_advertise_http_port_set_only_port_is_changed()
+        public void with_external_http_endpoint_set_external_http_is_used()
         {
             var requestedUri =
                 HttpEntity.BuildRequestedUrl(inputUri,
-                                             new NameValueCollection(), null, 2116);
+                                             new NameValueCollection(), new IPEndPoint(IPAddress.Parse("192.168.1.13"), 2117));
 
-            Assert.AreEqual(new Uri("http://www.example.com:2116/path/?key=value#anchor"), requestedUri);
-        }
-
-        [Test]
-        public void with_advertise_ip_set_only_host_is_changed()
-        {
-            var requestedUri =
-                HttpEntity.BuildRequestedUrl(inputUri,
-                                             new NameValueCollection(), IPAddress.Parse("192.168.1.13"), 0);
-
-            Assert.AreEqual(new Uri("http://192.168.1.13:1234/path/?key=value#anchor"), requestedUri);
-        }
-
-        [Test]
-        public void with_advertise_ip_and_http_port_set_both_host_and_port_is_changed()
-        {
-            var requestedUri =
-                HttpEntity.BuildRequestedUrl(inputUri,
-                                             new NameValueCollection(), IPAddress.Parse("192.168.1.13"), 2116);
-
-            Assert.AreEqual(new Uri("http://192.168.1.13:2116/path/?key=value#anchor"), requestedUri);
+            Assert.AreEqual(new Uri("http://192.168.1.13:2117/path/?key=value#anchor"), requestedUri);
         }
 
         [Test]
@@ -56,7 +36,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var headers = new NameValueCollection { { "X-Forwarded-Port", "4321" } };
             var requestedUri =
-                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null);
 
             Assert.AreEqual(new Uri("http://www.example.com:4321/path/?key=value#anchor"), requestedUri);
         }
@@ -66,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var headers = new NameValueCollection { { "X-Forwarded-Port", "abc" } };
             var requestedUri =
-                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null);
 
             Assert.AreEqual(inputUri, requestedUri);
         }
@@ -76,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             var headers = new NameValueCollection { { "X-Forwarded-Proto", "https" } };
             var requestedUri =
-                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null);
 
             Assert.AreEqual(new Uri("https://www.example.com:1234/path/?key=value#anchor"), requestedUri);
         }

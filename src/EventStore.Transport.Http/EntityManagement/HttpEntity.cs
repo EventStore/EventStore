@@ -16,31 +16,28 @@ namespace EventStore.Transport.Http.EntityManagement
         internal readonly HttpListenerResponse Response;
         public readonly IPrincipal User;
 
-        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort)
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, bool logHttpRequests, IPEndPoint externalHttpEndPoint)
         {
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
 
             _logHttpRequests = logHttpRequests;
-            RequestedUrl = BuildRequestedUrl(request.Url, request.Headers, advertiseAsAddress, advertiseAsPort);
+            RequestedUrl = BuildRequestedUrl(request.Url, request.Headers, externalHttpEndPoint);
             Request = request;
             Response = response;
             User = user;
         }
 
-        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders, IPAddress advertiseAsAddress, int advertiseAsPort)
+        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders, IPEndPoint externalHttpEndPoint)
         {
             var uriBuilder = new UriBuilder(requestUrl);
 
-            if(advertiseAsAddress != null)
+            if(externalHttpEndPoint != null)
             {
-                uriBuilder.Host = advertiseAsAddress.ToString();
+                uriBuilder.Host = externalHttpEndPoint.Address.ToString();
+                uriBuilder.Port = externalHttpEndPoint.Port;
             }
-            if(advertiseAsPort > 0)
-            {
-                uriBuilder.Port = advertiseAsPort;
-            }
-
+            
             var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
 
             if (!string.IsNullOrEmpty(forwardedPortHeaderValue))
