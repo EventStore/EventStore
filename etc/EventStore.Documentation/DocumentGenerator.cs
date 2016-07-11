@@ -38,7 +38,7 @@ namespace EventStore.Documentation
                             if (currentGroup != property.Attr<ArgDescriptionAttribute>().Group)
                             {
                                 currentGroup = property.Attr<ArgDescriptionAttribute>().Group;
-                                optionDocumentation += String.Format("{0}###{1}{0}", Environment.NewLine, currentGroup);
+                                optionDocumentation += String.Format("{0}### {1}{0}{0}", Environment.NewLine, currentGroup);
                                 optionDocumentation += String.Format("| Parameter | Environment *(all prefixed with EVENTSTORE_)* | Yaml | Description |{0}", Environment.NewLine);
                                 optionDocumentation += String.Format("| --------- | --------------------------------------------- | ---- | ----------- |{0}", Environment.NewLine);
                             }
