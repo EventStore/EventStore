@@ -132,20 +132,35 @@ namespace EventStore.Core.Tests.Bus
             var startEvent = new ManualResetEventSlim(false);
             var endEvent = new CountdownEvent(producingThreads);
             var msg = new SystemMessage.SystemStart();
+
+            const int batchSize = 100;
+
             for (int i = 0; i < producingThreads; ++i)
             {
                 threads[i] = new Thread(() =>
                 {
                     startEvent.Wait();
 
-                    while (Interlocked.Decrement(ref msgCnt) > 0)
+                    while (true)
                     {
-                        queue.Publish(msg);
+                        // get a batch to reduce the friction on the msgCnt
+                        var prevValue = Interlocked.Add(ref msgCnt, -batchSize) + batchSize;
+
+                        var toDispatch = Math.Min(prevValue, batchSize);
+                        if (toDispatch <= 0)
+                        {
+                            break;
+                        }
+
+                        while (toDispatch > 0)
+                        {
+                            queue.Publish(msg);
+                            toDispatch -= 1;
+                        }
                     }
 
                     endEvent.Signal();
-
-                }) { IsBackground = true, Name = "Producer #" + i};
+                }) {IsBackground = true, Name = "Producer #" + i};
                 threads[i].Start();
             }
 
@@ -156,12 +171,13 @@ namespace EventStore.Core.Tests.Bus
             endEvent.Wait();
             sw.Stop();
 
-            Console.WriteLine("Queue: {0},\nProducers: {1},\nTotal messages: {2},\nTotal time: {3},\nTicks per 1000 items: {4}",
-                              queue.GetType().Name,
-                              producingThreads,
-                              messageCnt,
-                              sw.Elapsed,
-                              sw.Elapsed.Ticks/(messageCnt/1000));
+            Console.WriteLine(
+                "Queue: {0},\nProducers: {1},\nTotal messages: {2},\nTotal time: {3},\nTicks per 1000 items: {4}",
+                queue.GetType().Name,
+                producingThreads,
+                messageCnt,
+                sw.Elapsed,
+                sw.Elapsed.Ticks/(messageCnt/1000));
         }
     }
 }
