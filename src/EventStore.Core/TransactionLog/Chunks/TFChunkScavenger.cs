@@ -250,13 +250,31 @@ namespace EventStore.Core.TransactionLog.Chunks
                          + "Scavenging of following chunks will be skipped:\n{0}\n"
                          + "Stopping scavenging and removing temp chunk '{1}'...\n"
                          + "Exception message: {2}.", oldChunksList, tmpChunkPath, exc.Message);
-                Helper.EatException(() =>
-                {
-                    File.SetAttributes(tmpChunkPath, FileAttributes.Normal);
-                    File.Delete(tmpChunkPath);
-                });
+                DeleteTempChunk(tmpChunkPath, MaxRetryCount);
                 PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
                 return false;
+            }
+        }
+
+        private void DeleteTempChunk(string tmpChunkPath, int retries)
+        {
+            try 
+            {
+                File.SetAttributes(tmpChunkPath, FileAttributes.Normal);
+                File.Delete(tmpChunkPath);
+            } 
+            catch(Exception ex) 
+            {
+                if (retries > 0) {
+                    Log.Error("Failed to delete the temp chunk. Retrying {0}/{1}. Reason: {2}", 
+                        MaxRetryCount - retries, MaxRetryCount, ex);
+                    DeleteTempChunk(tmpChunkPath, retries - 1);
+                } 
+                else 
+                {
+                    Log.Error("Failed to delete the temp chunk. Retry limit of {0} reached. Reason: {1}", MaxRetryCount, ex);
+                    throw;
+                }
             }
         }
 
