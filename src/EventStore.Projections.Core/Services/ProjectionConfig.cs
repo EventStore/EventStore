@@ -15,10 +15,11 @@ namespace EventStore.Projections.Core.Services
         private readonly bool _createTempStreams;
         private readonly bool _stopOnEof;
         private readonly bool _isSlaveProjection;
+        private readonly bool _trackEmittedStreams;
 
         public ProjectionConfig(IPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
             int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
-            bool createTempStreams, bool stopOnEof, bool isSlaveProjection)
+            bool createTempStreams, bool stopOnEof, bool isSlaveProjection, bool trackEmittedStreams)
         {
             if (checkpointsEnabled)
             {
@@ -44,6 +45,7 @@ namespace EventStore.Projections.Core.Services
             _createTempStreams = createTempStreams;
             _stopOnEof = stopOnEof;
             _isSlaveProjection = isSlaveProjection;
+            _trackEmittedStreams = trackEmittedStreams;
         }
 
         public int CheckpointHandledThreshold
@@ -96,16 +98,21 @@ namespace EventStore.Projections.Core.Services
             get { return _isSlaveProjection; }
         }
 
+        public bool TrackEmittedStreams
+        {
+            get { return _trackEmittedStreams; }
+        }
+
         public static ProjectionConfig GetTest()
         {
-            return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false, false);
+            return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false, false, true);
         }
 
         public ProjectionConfig SetIsSlave()
         {
             return new ProjectionConfig(
                 _runAs, CheckpointHandledThreshold, CheckpointUnhandledBytesThreshold, PendingEventsThreshold,
-                MaxWriteBatchLength, EmitEventEnabled, _checkpointsEnabled, CreateTempStreams, StopOnEof, true);
+                MaxWriteBatchLength, EmitEventEnabled, _checkpointsEnabled, CreateTempStreams, StopOnEof, true, true);
         }
     }
 }

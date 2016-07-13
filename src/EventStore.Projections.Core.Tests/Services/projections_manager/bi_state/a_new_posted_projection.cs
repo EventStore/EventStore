@@ -8,7 +8,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
@@ -23,6 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
             protected Type _fakeProjectionType;
             protected ProjectionMode _projectionMode;
             protected bool _checkpointsEnabled;
+            protected bool _trackEmittedStreams;
             protected bool _emitEnabled;
 
             protected override void Given()
@@ -36,6 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
                 _fakeProjectionType = typeof (FakeBiStateProjection);
                 _projectionMode = ProjectionMode.Continuous;
                 _checkpointsEnabled = true;
+                _trackEmittedStreams = true;
                 _emitEnabled = false;
             }
 
@@ -47,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
                     (new ProjectionManagementMessage.Command.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,
                         ProjectionManagementMessage.RunAs.System, "native:" + _fakeProjectionType.AssemblyQualifiedName,
-                        _projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
+                        _projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled, trackEmittedStreams: _trackEmittedStreams,
                         emitEnabled: _emitEnabled));
             }
         }

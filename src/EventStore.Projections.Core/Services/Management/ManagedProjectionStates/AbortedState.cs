@@ -1,6 +1,6 @@
 namespace EventStore.Projections.Core.Services.Management.ManagedProjectionStates
 {
-    class AbortedState : ManagedProjection.ManagedProjectionStateBase
+    class AbortedState : ManagedProjectionStateBase
     {
         public AbortedState(ManagedProjection managedProjection)
             : base(managedProjection)

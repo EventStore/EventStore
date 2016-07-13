@@ -52,11 +52,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 definesFold,
                 readerStrategy);
 
-
             var resultWriter = CreateFirstPhaseResultWriter(
                 checkpointManager as IEmittedEventWriter,
                 zeroCheckpointTag,
                 namingBuilder);
+
+            var emittedStreamsTracker = new EmittedStreamsTracker(ioDispatcher, _projectionConfig, namingBuilder);
 
             var firstPhase = CreateFirstProcessingPhase(
                 publisher,
@@ -69,7 +70,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 zeroCheckpointTag,
                 checkpointManager,
                 readerStrategy,
-                resultWriter);
+                resultWriter,
+                emittedStreamsTracker);
 
             return CreateProjectionProcessingPhases(
                 publisher,
@@ -93,7 +95,8 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointTag zeroCheckpointTag,
             ICoreProjectionCheckpointManager checkpointManager,
             IReaderStrategy readerStrategy,
-            IResultWriter resultWriter);
+            IResultWriter resultWriter,
+            IEmittedStreamsTracker emittedStreamsTracker);
 
         protected virtual IReaderStrategy CreateReaderStrategy(ITimeProvider timeProvider)
         {
@@ -195,12 +198,12 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointTag zeroCheckpointTag,
             ICoreProjectionCheckpointManager checkpointManager,
             IReaderStrategy readerStrategy,
-            IResultWriter resultWriter)
+            IResultWriter resultWriter,
+            IEmittedStreamsTracker emittedStreamsTracker)
         {
             var statePartitionSelector = CreateStatePartitionSelector();
 
             var orderedPartitionProcessing = _sourceDefinition.ByStreams && _sourceDefinition.IsBiState;
-
             return new EventProcessingProjectionProcessingPhase(
                 coreProjection,
                 projectionCorrelationId,
@@ -222,7 +225,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionConfig.CheckpointsEnabled,
                 this.GetStopOnEof(),
                 _sourceDefinition.IsBiState,
-                orderedPartitionProcessing: orderedPartitionProcessing);
+                orderedPartitionProcessing: orderedPartitionProcessing,
+                emittedStreamsTracker: emittedStreamsTracker);
         }
 
         protected virtual StatePartitionSelector CreateStatePartitionSelector()

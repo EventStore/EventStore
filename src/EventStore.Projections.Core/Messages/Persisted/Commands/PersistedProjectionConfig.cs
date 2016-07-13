@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands
         public bool CreateTempStreams;
         public bool StopOnEof;
         public bool IsSlaveProjection;
+        public bool TrackEmittedStreams;
 
         public PersistedProjectionConfig()
         {
@@ -39,6 +40,7 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands
             CreateTempStreams = config.CreateTempStreams;
             StopOnEof = config.StopOnEof;
             IsSlaveProjection = config.IsSlaveProjection;
+            TrackEmittedStreams = config.TrackEmittedStreams;
         }
 
         public ProjectionConfig ToConfig()
@@ -56,7 +58,8 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands
                     CheckpointsEnabled,
                     CreateTempStreams,
                     StopOnEof,
-                    IsSlaveProjection);
+                    IsSlaveProjection,
+                    TrackEmittedStreams);
         }
     }
 }

@@ -15,6 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly PartitionStateCache _stateCache;
         protected readonly ICoreProjectionCheckpointManager _checkpointManager;
         protected readonly IEmittedEventWriter _emittedEventWriter;
+        protected readonly IEmittedStreamsTracker _emittedStreamsTracker;
         private bool _subscribed;
         private PhaseState _projectionState;
 
@@ -25,13 +26,15 @@ namespace EventStore.Projections.Core.Services.Processing
             ICoreProjectionForProcessingPhase coreProjection,
             PartitionStateCache stateCache,
             ICoreProjectionCheckpointManager checkpointManager,
-            IEmittedEventWriter emittedEventWriter)
+            IEmittedEventWriter emittedEventWriter,
+            IEmittedStreamsTracker emittedStreamsTracker)
         {
             if (resultStream == null) throw new ArgumentNullException("resultStream");
             if (coreProjection == null) throw new ArgumentNullException("coreProjection");
             if (stateCache == null) throw new ArgumentNullException("stateCache");
             if (checkpointManager == null) throw new ArgumentNullException("checkpointManager");
             if (emittedEventWriter == null) throw new ArgumentNullException("emittedEventWriter");
+            if (emittedStreamsTracker == null) throw new ArgumentNullException("emittedStreamsTracker");
             if (string.IsNullOrEmpty(resultStream)) throw new ArgumentException("resultStream");
 
             _publisher = publisher;
@@ -41,11 +44,17 @@ namespace EventStore.Projections.Core.Services.Processing
             _stateCache = stateCache;
             _checkpointManager = checkpointManager;
             _emittedEventWriter = emittedEventWriter;
+            _emittedStreamsTracker = emittedStreamsTracker;
         }
 
         public ICoreProjectionCheckpointManager CheckpointManager
         {
             get { return _checkpointManager; }
+        }
+
+        public IEmittedStreamsTracker EmittedStreamsTracker
+        {
+            get { return _emittedStreamsTracker; }
         }
 
         public void Dispose()

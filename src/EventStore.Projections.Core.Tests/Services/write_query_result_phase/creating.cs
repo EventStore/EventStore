@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                 var stateCache = new PartitionStateCache();
                 var bus = new InMemoryBus("test");
                 var fakeCheckpointManager = new specification_with_multi_phase_core_projection.FakeCheckpointManager(bus, Guid.NewGuid());
+                var fakeEmittedStreamsTracker = new specification_with_multi_phase_core_projection.FakeEmittedStreamsTracker();
                 TestHelper.Consume(
                     new WriteQueryResultProjectionProcessingPhase(
                         bus,
@@ -30,7 +31,8 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                         coreProjection,
                         stateCache,
                         fakeCheckpointManager,
-                        fakeCheckpointManager));
+                        fakeCheckpointManager,
+                        fakeEmittedStreamsTracker));
             }
         }
 
@@ -38,6 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
         {
             protected WriteQueryResultProjectionProcessingPhase _phase;
             protected specification_with_multi_phase_core_projection.FakeCheckpointManager _checkpointManager;
+            protected specification_with_multi_phase_core_projection.FakeEmittedStreamsTracker _emittedStreamsTracker;
             protected InMemoryBus _publisher;
             protected PartitionStateCache _stateCache;
             protected string _resultStreamName;
@@ -51,6 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                 _coreProjection = new FakeCoreProjection();
                 _checkpointManager = new specification_with_multi_phase_core_projection.FakeCheckpointManager(
                     _publisher, Guid.NewGuid());
+                _emittedStreamsTracker = new specification_with_multi_phase_core_projection.FakeEmittedStreamsTracker();
                 _resultStreamName = "result-stream";
                 _phase = new WriteQueryResultProjectionProcessingPhase(
                     _publisher,
@@ -59,7 +63,8 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                     _coreProjection,
                     _stateCache,
                     _checkpointManager,
-                    _checkpointManager);
+                    _checkpointManager,
+                    _emittedStreamsTracker);
                 When();
             }
 

@@ -65,9 +65,9 @@ namespace EventStore.Projections.Core.Services.Http
                      HttpMethod.Get, OnProjectionsGetContinuous, Codec.NoCodecs, SupportedCodecs);
             Register(service, "/projections/transient?name={name}&type={type}&enabled={enabled}",
                      HttpMethod.Post, OnProjectionsPostTransient, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
-            Register(service, "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+            Register(service, "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}&trackemittedstreams={trackemittedstreams}",
                      HttpMethod.Post, OnProjectionsPostOneTime, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
-            Register(service, "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}",
+            Register(service, "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}&trackemittedstreams={trackemittedstreams}",
                      HttpMethod.Post, OnProjectionsPostContinuous, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
             Register(service, "/projection/{name}/query?config={config}",
                      HttpMethod.Get, OnProjectionQueryGet, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Http
                      HttpMethod.Put, OnProjectionQueryPut, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
             Register(service, "/projection/{name}",
                      HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs);
-            Register(service, "/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
+            Register(service, "/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}&deleteEmittedStreams={deleteEmittedStreams}",
                      HttpMethod.Delete, OnProjectionDelete, Codec.NoCodecs, SupportedCodecs);
             Register(service, "/projection/{name}/statistics",
                      HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs, SupportedCodecs);
@@ -246,7 +246,8 @@ namespace EventStore.Projections.Core.Services.Http
                 new ProjectionManagementMessage.Command.Delete(
                     envelope, match.BoundVariables["name"], GetRunAs(http, match),
                     IsOn(match, "deleteCheckpointStream", false),
-                    IsOn(match, "deleteStateStream", false)));
+                    IsOn(match, "deleteStateStream", false),
+                    IsOn(match, "deleteEmittedStreams", false)));
         }
 
         private void OnProjectionStatisticsGet(HttpEntityManager http, UriTemplateMatch match)
@@ -356,15 +357,19 @@ namespace EventStore.Projections.Core.Services.Http
                         bool emitEnabled = IsOn(match, "emit", false);
                         bool checkpointsEnabled = mode >= ProjectionMode.Continuous || IsOn(match, "checkpoints", false);
                         bool enabled = IsOn(match, "enabled", def: true);
+                        bool trackEmittedStreams = IsOn(match, "trackemittedstreams", def: false);
+                        if (!emitEnabled){
+                            trackEmittedStreams = false;
+                        }
                         var runAs = GetRunAs(http, match);
                         if (mode <= ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Command.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), runAs, handlerType, s, enabled: enabled,
-                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, enableRunAs: true);
+                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, trackEmittedStreams: trackEmittedStreams, enableRunAs: true);
                         else
                             postMessage = new ProjectionManagementMessage.Command.Post(
                                 envelope, mode, name, runAs, handlerType, s, enabled: enabled,
-                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, enableRunAs: true);
+                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled, trackEmittedStreams: trackEmittedStreams, enableRunAs: true);
                         Publish(postMessage);
                     }, x => Log.DebugException(x, "Reply Text Body Failed."));
         }

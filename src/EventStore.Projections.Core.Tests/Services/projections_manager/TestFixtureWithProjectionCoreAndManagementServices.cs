@@ -64,6 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 queues,
                 _timeProvider,
                 ProjectionType.All,
+                _ioDispatcher,
                 _initializeSystemProjections);
 
             _coordinator = new ProjectionCoreCoordinator(
@@ -99,6 +100,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
+            _bus.Subscribe<ClientMessage.DeleteStreamCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
             _bus.Subscribe<SystemMessage.SystemCoreReady>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);

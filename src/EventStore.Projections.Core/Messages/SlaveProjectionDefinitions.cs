@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core.Messages
         {
             public Definition(
                 string name, string handlerType, string query, SlaveProjectionRequestedNumber requestedNumber,
-                ProjectionMode mode, bool emitEnabled, bool checkpointsEnabled, bool enableRunAs,
+                ProjectionMode mode, bool emitEnabled, bool checkpointsEnabled, bool enableRunAs, bool trackEmittedStreams,
                 SerializedRunAs runAs1)
             {
                 Name = name;
@@ -28,6 +28,7 @@ namespace EventStore.Projections.Core.Messages
                 RunAs1 = runAs1;
                 EnableRunAs = enableRunAs;
                 CheckpointsEnabled = checkpointsEnabled;
+                TrackEmittedStreams = trackEmittedStreams;
                 EmitEnabled = emitEnabled;
                 Mode = mode;
             }
@@ -41,6 +42,8 @@ namespace EventStore.Projections.Core.Messages
             public bool EmitEnabled;
 
             public bool CheckpointsEnabled;
+
+            public bool TrackEmittedStreams;
 
             public bool EnableRunAs;
 

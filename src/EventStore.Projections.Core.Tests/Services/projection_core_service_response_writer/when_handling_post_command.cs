@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
         private bool _checkpointsEnabled;
         private bool _emitEnabled;
         private bool _enableRunAs;
+        private bool _trackEmittedStreams;
 
         protected override void Given()
         {
@@ -30,6 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             _checkpointsEnabled = true;
             _emitEnabled = true;
             _enableRunAs = true;
+            _trackEmittedStreams = true;
         }
 
         protected override void When()
@@ -45,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
                     _enabled,
                     _checkpointsEnabled,
                     _emitEnabled,
+                    _trackEmittedStreams,
                     _enableRunAs));
         }
 
@@ -60,6 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
             Assert.AreEqual(_enabled, command.Enabled);
             Assert.AreEqual(_checkpointsEnabled, command.CheckpointsEnabled);
             Assert.AreEqual(_emitEnabled, command.EmitEnabled);
+            Assert.AreEqual(_trackEmittedStreams, command.TrackEmittedStreams);
             Assert.AreEqual(_enableRunAs, command.EnableRunAs);
         }
     }

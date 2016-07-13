@@ -68,7 +68,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     coreProjection,
                     partitionStateCache,
                     checkpointManager2,
-                    checkpointManager2);
+                    checkpointManager2,
+                    firstPhase.EmittedStreamsTracker);
             else
                 writeResultsPhase = new WriteQueryResultProjectionProcessingPhase(
                     publisher,
@@ -77,7 +78,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     coreProjection,
                     partitionStateCache,
                     checkpointManager2,
-                    checkpointManager2);
+                    checkpointManager2,
+                    firstPhase.EmittedStreamsTracker);
 
             return new[] {firstPhase, writeResultsPhase};
         }

@@ -16,5 +16,6 @@ namespace EventStore.Projections.Core.Services.Management
         Completed,
         Aborted,
         Faulted,
+        Deleting,
     }
 }

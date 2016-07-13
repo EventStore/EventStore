@@ -36,6 +36,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         CheckpointTag MakeZeroCheckpointTag();
         ICoreProjectionCheckpointManager CheckpointManager { get; }
-
+        IEmittedStreamsTracker EmittedStreamsTracker { get; }
     }
 }

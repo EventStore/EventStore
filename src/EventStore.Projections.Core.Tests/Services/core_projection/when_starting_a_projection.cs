@@ -1,11 +1,8 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -57,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_ioDispatcher.Writer);
             _bus.Subscribe(_ioDispatcher);
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            _projectionConfig = new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, false);
+            _projectionConfig = new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, false, true);
             var version = new ProjectionVersion(1, 0, 0);
             var projectionProcessingStrategy = new ContinuousProjectionProcessingStrategy(
                 "projection", version, projectionStateHandler, _projectionConfig,

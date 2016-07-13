@@ -268,7 +268,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             _awaitingListEventsCompleted = false;
 
-            var newPhysicalStream = message.Events.Length == 0;
+            var newPhysicalStream = message.LastEventNumber == ExpectedVersion.NoStream;
             _retrievedNextEventNumber = newPhysicalStream
                 ? (message.StreamMetadata != null ? (message.StreamMetadata.TruncateBefore ?? 0) : 0)
                 : message.LastEventNumber + 1;
@@ -276,7 +276,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_lastCommittedOrSubmittedEventPosition == null)
             {
                 var parsed = default(CheckpointTagVersion);
-                if (!newPhysicalStream)
+                if (!newPhysicalStream && message.Events.Length > 0)
                 {
                     parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
                     if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId)
@@ -291,8 +291,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 var newLogicalStream = newPhysicalStream
                     || (_projectionVersion.ProjectionId != parsed.Version.ProjectionId || _projectionVersion.Epoch > parsed.Version.Version);
 
-                _lastKnownEventNumber = newPhysicalStream ? ExpectedVersion.NoStream : message.Events[0].Event.EventNumber;
-
+                _lastKnownEventNumber = newPhysicalStream ? ExpectedVersion.NoStream : message.LastEventNumber;
+                
                 //TODO: throw exception when _projectionVersion.ProjectionId != parsed.ProjectionId ?
 
                 if (newLogicalStream)

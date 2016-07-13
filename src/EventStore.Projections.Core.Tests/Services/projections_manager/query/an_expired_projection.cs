@@ -4,7 +4,6 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 
@@ -18,6 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
 
             protected override void Given()
             {
+                AllWritesSucceed();
                 base.Given();
             }
 

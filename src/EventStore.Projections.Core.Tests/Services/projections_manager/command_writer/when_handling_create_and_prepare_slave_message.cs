@@ -41,6 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
                 true,
                 true,
                 true,
+                true,
                 true);
 
         }

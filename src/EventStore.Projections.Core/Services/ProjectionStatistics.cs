@@ -1,5 +1,4 @@
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services
 {

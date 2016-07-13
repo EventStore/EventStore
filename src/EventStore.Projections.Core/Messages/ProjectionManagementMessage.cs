@@ -47,10 +47,11 @@ namespace EventStore.Projections.Core.Messages
                 private readonly bool _checkpointsEnabled;
                 private readonly bool _emitEnabled;
                 private readonly bool _enableRunAs;
+                private readonly bool _trackEmittedStreams;
 
                 public Post(
                     IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, string handlerType, string query,
-                    bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
+                    bool enabled, bool checkpointsEnabled, bool emitEnabled, bool trackEmittedStreams, bool enableRunAs = false)
                     : base(envelope, runAs)
                 {
                     _name = name;
@@ -60,12 +61,13 @@ namespace EventStore.Projections.Core.Messages
                     _enabled = enabled;
                     _checkpointsEnabled = checkpointsEnabled;
                     _emitEnabled = emitEnabled;
+                    _trackEmittedStreams = trackEmittedStreams;
                     _enableRunAs = enableRunAs;
                 }
 
                 public Post(
                     IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, Type handlerType, string query,
-                    bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs = false)
+                    bool enabled, bool checkpointsEnabled, bool emitEnabled, bool trackEmittedStreams, bool enableRunAs = false)
                     : base(envelope, runAs)
                 {
                     _name = name;
@@ -75,6 +77,7 @@ namespace EventStore.Projections.Core.Messages
                     _enabled = enabled;
                     _checkpointsEnabled = checkpointsEnabled;
                     _emitEnabled = emitEnabled;
+                    _trackEmittedStreams = trackEmittedStreams;
                     _enableRunAs = enableRunAs;
                 }
                 // shortcut for posting ad-hoc JS queries
@@ -88,6 +91,7 @@ namespace EventStore.Projections.Core.Messages
                     _enabled = enabled;
                     _checkpointsEnabled = false;
                     _emitEnabled = false;
+                    _trackEmittedStreams = false;
                 }
 
                 public ProjectionMode Mode
@@ -128,6 +132,11 @@ namespace EventStore.Projections.Core.Messages
                 public bool EnableRunAs
                 {
                     get { return _enableRunAs; }
+                }
+
+                public bool TrackEmittedStreams
+                {
+                    get { return _trackEmittedStreams; }
                 }
             }
 
@@ -288,14 +297,16 @@ namespace EventStore.Projections.Core.Messages
                 private readonly string _name;
                 private readonly bool _deleteCheckpointStream;
                 private readonly bool _deleteStateStream;
+                private readonly bool _deleteEmittedStreams;
 
                 public Delete(
-                    IEnvelope envelope, string name, RunAs runAs, bool deleteCheckpointStream, bool deleteStateStream)
+                    IEnvelope envelope, string name, RunAs runAs, bool deleteCheckpointStream, bool deleteStateStream, bool deleteEmittedStreams)
                     : base(envelope, runAs)
                 {
                     _name = name;
                     _deleteCheckpointStream = deleteCheckpointStream;
                     _deleteStateStream = deleteStateStream;
+                    _deleteEmittedStreams = deleteEmittedStreams;
                 }
 
                 public string Name
@@ -311,6 +322,11 @@ namespace EventStore.Projections.Core.Messages
                 public bool DeleteStateStream
                 {
                     get { return _deleteStateStream; }
+                }
+
+                public bool DeleteEmittedStreams
+                {
+                    get { return _deleteEmittedStreams; }
                 }
             }
 

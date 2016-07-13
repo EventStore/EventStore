@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Messages;
@@ -14,6 +12,8 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using TestFixtureWithExistingEvents =
     EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
+using EventStore.Core.Helpers;
+using EventStore.Core.Tests.Fakes;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection
 {
@@ -63,14 +63,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                         _bus, 
                         v => v.CorrelationId,
                         v => v.CorrelationId,
-                        new PublishEnvelope(_bus)));
+                        new PublishEnvelope(_bus)), _ioDispatcher);
         }
 
         protected override IEnumerable<WhenStep> When()
         {
             ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 Envelope, ProjectionMode.Transient, _projectionName, ProjectionManagementMessage.RunAs.System,
-                typeof(FakeForeachStreamProjection), "", true, false, false);
+                typeof(FakeForeachStreamProjection), "", true, false, false, false);
             _mp.InitializeNew(
                 new ManagedProjection.PersistedState
                 {

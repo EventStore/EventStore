@@ -11,6 +11,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
 
@@ -92,12 +93,15 @@ namespace EventStore.Projections.Core.Services.Management
                 <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
             _getResultDispatcher;
 
+        private readonly IODispatcher _ioDispatcher;
+
         public ProjectionManager(
             IPublisher inputQueue,
             IPublisher publisher,
             IDictionary<Guid, IPublisher> queueMap,
             ITimeProvider timeProvider,
             ProjectionType runProjections,
+            IODispatcher ioDispatcher,
             bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
@@ -113,6 +117,7 @@ namespace EventStore.Projections.Core.Services.Management
             _timeProvider = timeProvider;
             _runProjections = runProjections;
             _initializeSystemProjections = initializeSystemProjections;
+            _ioDispatcher = ioDispatcher;
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -234,7 +239,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
             {
-                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
                 try {
                     projection.Handle(message);
                 }
@@ -242,26 +247,6 @@ namespace EventStore.Projections.Core.Services.Management
                     message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed(ex.Message));
                     return;
                 }
-                _projections.Remove(message.Name);
-                _projectionsMap.Remove(projection.Id);
-                const string eventStreamId = "$projections-$all";
-                var corrId = Guid.NewGuid();
-                _writeDispatcher.Publish(
-                    new ClientMessage.WriteEvents(
-                        corrId,
-                        corrId,
-                        _writeDispatcher.Envelope,
-                        true,
-                        eventStreamId,
-                        ExpectedVersion.Any,
-                        new Event(
-                            Guid.NewGuid(),
-                            "$ProjectionDeleted",
-                            false,
-                            Helper.UTF8NoBom.GetBytes(message.Name),
-                            Empty.ByteArray),
-                        SystemAccount.Principal),
-                    m => { });
             }
         }
 
@@ -274,7 +259,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
             {
-                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Read, projection.RunAs, message)) return;
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Read, projection.RunAs, message)) return;
                 projection.Handle(message);
             }
         }
@@ -293,7 +278,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
             {
-                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message); // update query text
             }
         }
@@ -309,7 +294,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
             {
-                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
             }
         }
@@ -328,7 +313,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
             {
-                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
             }
         }
@@ -344,7 +329,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
             {
-                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
             }
         }
@@ -365,7 +350,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 if (
                     !ProjectionManagementMessage.RunAs.ValidateRunAs(
-                        projection.GetMode(), ReadWrite.Write, projection.RunAs, message,
+                        projection.Mode, ReadWrite.Write, projection.RunAs, message,
                         message.Action == ProjectionManagementMessage.Command.SetRunAs.SetRemove.Set)) return;
 
                 projection.Handle(message);
@@ -386,7 +371,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
             {
-                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.GetMode(), ReadWrite.Write, projection.RunAs, message)) return;
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
                 projection.Handle(message);
             }
         }
@@ -410,9 +395,9 @@ namespace EventStore.Projections.Core.Services.Management
                     let projection = projectionNameValue.Value
                     where !projection.Deleted
                     where
-                        message.Mode == null || message.Mode == projection.GetMode()
+                        message.Mode == null || message.Mode == projection.Mode
                         || (message.Mode.GetValueOrDefault() == ProjectionMode.AllNonTransient
-                            && projection.GetMode() != ProjectionMode.Transient)
+                            && projection.Mode != ProjectionMode.Transient)
                     let status = projection.GetStatistics()
                     select status).ToArray();
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.Statistics(statuses));
@@ -574,9 +559,29 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Internal.Deleted message)
         {
-            _awaitingSlaveProjections.Remove(message.Id); // if any disconnected in error
-            _projections.Remove(message.Name);
-            _projectionsMap.Remove(message.Id);
+            const string eventStreamId = "$projections-$all";
+            var corrId = Guid.NewGuid();
+            _writeDispatcher.Publish(
+                new ClientMessage.WriteEvents(
+                    corrId,
+                    corrId,
+                    _writeDispatcher.Envelope,
+                    true,
+                    eventStreamId,
+                    ExpectedVersion.Any,
+                    new Event(
+                        Guid.NewGuid(),
+                        "$ProjectionDeleted",
+                        false,
+                        Helper.UTF8NoBom.GetBytes(message.Name),
+                        Empty.ByteArray),
+                    SystemAccount.Principal),
+                m =>
+                {
+                    _awaitingSlaveProjections.Remove(message.Id); // if any disconnected in error
+                    _projections.Remove(message.Name);
+                    _projectionsMap.Remove(message.Id);
+                });
         }
 
         public void Handle(ProjectionManagementMessage.RegisterSystemProjection message)
@@ -591,6 +596,7 @@ namespace EventStore.Projections.Core.Services.Management
                         ProjectionManagementMessage.RunAs.System,
                         message.Handler,
                         message.Query,
+                        true,
                         true,
                         true,
                         true,
@@ -764,7 +770,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection,
-                    typeof (IndexStreams),
+                    typeof(IndexStreams),
                     "");
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
@@ -795,6 +801,7 @@ namespace EventStore.Projections.Core.Services.Management
                 enabled: false,
                 checkpointsEnabled: true,
                 emitEnabled: true,
+                trackEmittedStreams: false,
                 enableRunAs: true);
 
             _publisher.Publish(postMessage);
@@ -826,6 +833,7 @@ namespace EventStore.Projections.Core.Services.Management
                             message.EmitEnabled,
                             message.CheckpointsEnabled,
                             message.EnableRunAs,
+                            message.TrackEmittedStreams,
                             message.RunAs,
                             replyEnvelope);
 
@@ -849,6 +857,7 @@ namespace EventStore.Projections.Core.Services.Management
                     message.EmitEnabled,
                     message.CheckpointsEnabled,
                     message.EnableRunAs,
+                    message.TrackEmittedStreams,
                     message.RunAs,
                     replyEnvelope);
 
@@ -884,6 +893,7 @@ namespace EventStore.Projections.Core.Services.Management
             private readonly ProjectionMode _projectionMode;
             private readonly bool _emitEnabled;
             private readonly bool _checkpointsEnabled;
+            private readonly bool _trackEmittedStreams;
             private readonly bool _enableRunAs;
             private readonly ProjectionManagementMessage.RunAs _runAs;
             private readonly IEnvelope _replyEnvelope;
@@ -899,6 +909,7 @@ namespace EventStore.Projections.Core.Services.Management
                 bool emitEnabled,
                 bool checkpointsEnabled,
                 bool enableRunAs,
+                bool trackEmittedStreams,
                 ProjectionManagementMessage.RunAs runAs,
                 IEnvelope replyEnvelope)
             {
@@ -915,6 +926,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _projectionMode = projectionMode;
                 _emitEnabled = emitEnabled;
                 _checkpointsEnabled = checkpointsEnabled;
+                _trackEmittedStreams = trackEmittedStreams;
                 _enableRunAs = enableRunAs;
                 _runAs = runAs;
                 _replyEnvelope = replyEnvelope;
@@ -947,6 +959,7 @@ namespace EventStore.Projections.Core.Services.Management
                         Mode = _projectionMode,
                         EmitEnabled = _emitEnabled,
                         CheckpointsDisabled = !_checkpointsEnabled,
+                        TrackEmittedStreams = _trackEmittedStreams,
                         Epoch = -1,
                         Version = version,
                         RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null
@@ -980,6 +993,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _timeProvider,
                 _getStateDispatcher,
                 _getResultDispatcher,
+                _ioDispatcher,
                 isSlave,
                 slaveMasterWorkerId,
                 slaveMasterCorrelationId);
@@ -1152,6 +1166,7 @@ namespace EventStore.Projections.Core.Services.Management
                 @group.EmitEnabled,
                 @group.CheckpointsEnabled,
                 @group.EnableRunAs,
+                @group.TrackEmittedStreams,
                 @group.RunAs1,
                 replyEnvelope: null);
 

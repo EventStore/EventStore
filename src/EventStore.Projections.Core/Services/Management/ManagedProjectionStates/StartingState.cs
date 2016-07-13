@@ -2,7 +2,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Management.ManagedProjectionStates
 {
-    class StartingState : ManagedProjection.ManagedProjectionStateBase
+    class StartingState : ManagedProjectionStateBase
     {
         public StartingState(ManagedProjection managedProjection)
             : base(managedProjection)

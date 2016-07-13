@@ -34,6 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
                         true,
                         true,
                         true,
+                        true,
                         ProjectionManagementMessage.RunAs.System));
         }
 

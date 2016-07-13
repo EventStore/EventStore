@@ -41,9 +41,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void should_not_emit_events_but_write_the_new_state_snapshot()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(2, _writeEventHandler.HandledMessages.Count);
 
-            var data = Helper.UTF8NoBom.GetString(_writeEventHandler.HandledMessages[0].Events[0].Data);
+            var data = Helper.UTF8NoBom.GetString(_writeEventHandler.HandledMessages[1].Events[0].Data);
             Assert.AreEqual("data", data);
         }
     }
