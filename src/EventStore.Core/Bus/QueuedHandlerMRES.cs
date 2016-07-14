@@ -2,6 +2,7 @@
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 
@@ -95,8 +96,8 @@ namespace EventStore.Core.Bus
                 Message msg = null;
                 try
                 {
-                    var retrieved = _queue.TryDequeue(batch);
-                    if (retrieved == 0)
+                    MpscMessageQueue.DequeueResult dequeueResult;
+                    if (_queue.TryDequeue(batch, out dequeueResult) == false)
                     {
                         _starving = true;
 
@@ -108,7 +109,7 @@ namespace EventStore.Core.Bus
                     }
                     else
                     {
-                        for (int i = 0; i < retrieved; i++)
+                        for (int i = 0; i < dequeueResult.DequeueCount; i++)
                         {
                             msg = batch[i];
 
@@ -118,9 +119,8 @@ namespace EventStore.Core.Bus
                             _queueStats.Dequeued(msg);
 #endif
 
-                            //var cnt = _queue.Count;
-                            var cnt = 1;
-                            _queueStats.ProcessingStarted(msg.GetType(), cnt);
+                            var queueCount = dequeueResult.EstimatedNumberOfQueueItems - i;
+                            _queueStats.ProcessingStarted(msg.GetType(), queueCount);
 
                             if (_watchSlowMsg)
                             {

@@ -89,7 +89,13 @@ namespace EventStore.Core.Bus
             } while (true);
         }
 
-        public unsafe int TryDequeue(Message[] segment)
+        public struct DequeueResult
+        {
+            public int DequeueCount;
+            public int EstimatedNumberOfQueueItems;
+        }
+
+        public unsafe bool TryDequeue(Message[] segment, out DequeueResult result)
         {
             var i = 0;
             var length = segment.Length;
@@ -117,13 +123,28 @@ namespace EventStore.Core.Bus
                 }
             }
 
+            if (i == 0)
+            {
+                result = default(DequeueResult);
+                return false;
+            }
+
+            var currentSequence = Interlocked.CompareExchange(ref sequence, 0, 0);
+            var estimatedCount = currentSequence - current;
+
             sequenceReadToValue = current;
             var c = *(IntPtr*) &current;
 
             // Volatile.Write(ref sequenceReadTo, current -1);
             sequenceReadTo = c;
 
-            return i;
+            result = new DequeueResult
+            {
+                DequeueCount = i,
+                EstimatedNumberOfQueueItems = (int) estimatedCount
+            };
+
+            return true;
         }
 
         private static int Map(int s)
