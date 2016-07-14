@@ -113,19 +113,15 @@ namespace EventStore.Core.Bus
                 }
                 else
                 {
-                    sequenceReadToValue = current;
-                    var c = *(IntPtr*) &current;
-
-                    // Volatile.Write(ref sequenceReadTo, current -1);
-                    sequenceReadTo = c;
-
-                    return i;
+                    break;
                 }
             }
 
             sequenceReadToValue = current;
+            var c = *(IntPtr*) &current;
+
             // Volatile.Write(ref sequenceReadTo, current -1);
-            sequenceReadTo = (IntPtr) current;
+            sequenceReadTo = c;
 
             return i;
         }
