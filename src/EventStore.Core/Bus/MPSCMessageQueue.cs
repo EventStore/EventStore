@@ -9,7 +9,8 @@ namespace EventStore.Core.Bus
     /// A much better concurrent queue than <see cref="System.Collections.Concurrent.ConcurrentQueue{T}"/> for multi producer single consumer scenarios.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
-    public class MpscMessageQueue
+    // ReSharper disable once InconsistentNaming
+    public class MPSCMessageQueue
     {
         const int CacheLineSize = 64;
         const int Padding = CacheLineSize;
@@ -37,8 +38,14 @@ namespace EventStore.Core.Bus
         [FieldOffset(Padding + CacheLineSize*5)] private long sequenceReadToValue;
         [FieldOffset(Padding + CacheLineSize*6)] public long padding;
 
-        public MpscMessageQueue(int size)
+        public MPSCMessageQueue(int size)
         {
+            if (IntPtr.Size != 8)
+            {
+                throw new NotSupportedException(
+                    "This queue is supported only on architectures having IntPtr.Size equal to 8");
+            }
+
             if (IsPowerOf2(size) == false)
             {
                 throw new ArgumentException("Use only sizes equal power of 2");
@@ -112,7 +119,7 @@ namespace EventStore.Core.Bus
                 {
                     segment[i] = stored;
 
-                    // if Volatile.Write was available, nulls could be assigned without it as the sequenceReadTo is writtent with it ;
+                    // if Volatile.Write was available, nulls could be assigned without it as the sequenceReadTo is writtent with volatile;
                     array[index].Item = null;
                     i += 1;
                     current += 1;
@@ -135,7 +142,7 @@ namespace EventStore.Core.Bus
             sequenceReadToValue = current;
             var c = *(IntPtr*) &current;
 
-            // Volatile.Write(ref sequenceReadTo, current -1);
+            // Volatile.Write(ref sequenceReadTo, current);
             sequenceReadTo = c;
 
             result = new DequeueResult

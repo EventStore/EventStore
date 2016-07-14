@@ -2,7 +2,6 @@
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 
@@ -27,7 +26,8 @@ namespace EventStore.Core.Bus
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly MpscMessageQueue _queue = new MpscMessageQueue((ushort.MaxValue + 1)*4);
+        // assuming 8bytes per object ref its ~1MB.
+        private readonly MPSCMessageQueue _queue = new MPSCMessageQueue(128*1024);
 
         private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false);
 
@@ -96,7 +96,7 @@ namespace EventStore.Core.Bus
                 Message msg = null;
                 try
                 {
-                    MpscMessageQueue.DequeueResult dequeueResult;
+                    MPSCMessageQueue.DequeueResult dequeueResult;
                     if (_queue.TryDequeue(batch, out dequeueResult) == false)
                     {
                         _starving = true;
