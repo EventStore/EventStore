@@ -2,10 +2,8 @@
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
-using System.Collections.Concurrent;
 
 namespace EventStore.Core.Bus
 {
@@ -28,8 +26,7 @@ namespace EventStore.Core.Bus
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly MultiProducerSinglerConsumerConcurrentQueue _queue =
-            new MultiProducerSinglerConsumerConcurrentQueue(ushort.MaxValue + 1);
+        private readonly MPSCMessageQueue _queue = new MPSCMessageQueue((ushort.MaxValue + 1)*4);
 
         private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false);
 
@@ -118,7 +115,7 @@ namespace EventStore.Core.Bus
 
                             _queueStats.EnterBusy();
 #if DEBUG
-                        _queueStats.Dequeued(msg);
+                            _queueStats.Dequeued(msg);
 #endif
 
                             //var cnt = _queue.Count;
