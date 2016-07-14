@@ -26,7 +26,7 @@ namespace EventStore.Core.Bus
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly MPSCMessageQueue _queue = new MPSCMessageQueue((ushort.MaxValue + 1)*4);
+        private readonly MpscMessageQueue _queue = new MpscMessageQueue((ushort.MaxValue + 1)*4);
 
         private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false);
 

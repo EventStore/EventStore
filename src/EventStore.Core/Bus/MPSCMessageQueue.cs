@@ -9,7 +9,7 @@ namespace EventStore.Core.Bus
     /// A much better concurrent queue than <see cref="System.Collections.Concurrent.ConcurrentQueue{T}"/> for multi producer single consumer scenarios.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
-    public class MPSCMessageQueue
+    public class MpscMessageQueue
     {
         const int CacheLineSize = 64;
         const int Padding = CacheLineSize;
@@ -31,14 +31,13 @@ namespace EventStore.Core.Bus
 
         [FieldOffset(Padding + CacheLineSize*2)] private long sequence;
 
-        [FieldOffset(Padding + CacheLineSize*3)] private long sequenceReadTo;
-        [FieldOffset(Padding + CacheLineSize*4)] private long sequenceReadToCache;
+        [FieldOffset(Padding + CacheLineSize*3)] private volatile IntPtr sequenceReadTo;
+        [FieldOffset(Padding + CacheLineSize*4)] private volatile IntPtr sequenceReadToCache;
 
-#pragma warning disable 414
-        [FieldOffset(Padding + CacheLineSize*5)] private readonly long padding;
-#pragma warning restore 414
+        [FieldOffset(Padding + CacheLineSize*5)] private long sequenceReadToValue;
+        [FieldOffset(Padding + CacheLineSize*6)] public long padding;
 
-        public MPSCMessageQueue(int size)
+        public MpscMessageQueue(int size)
         {
             if (IsPowerOf2(size) == false)
             {
@@ -52,12 +51,12 @@ namespace EventStore.Core.Bus
             array = new MessageItem[size];
             count = size;
             sequence = 0;
-            sequenceReadTo = 0;
-            sequenceReadToCache = 0;
-            padding = 0;
+            sequenceReadTo = IntPtr.Zero;
+            sequenceReadToCache = IntPtr.Zero;
+            sequenceReadToValue = 0;
         }
 
-        public void Enqueue(Message item)
+        public unsafe void Enqueue(Message item)
         {
             var next = Interlocked.Increment(ref sequence) - 1;
             var index = Map((int) (next & (count - 1)));
@@ -65,8 +64,8 @@ namespace EventStore.Core.Bus
             do
             {
                 // Volatile.Read(ref sequenceReadToCache);
-                var readTo = sequenceReadToCache;
-                Thread.MemoryBarrier();
+                var srtc = sequenceReadToCache;
+                var readTo = *(long*) &srtc;
 
                 if (next - readTo < count)
                 {
@@ -75,11 +74,11 @@ namespace EventStore.Core.Bus
                 }
 
                 // Volatile.Read(ref sequenceReadTo);
-                readTo = sequenceReadTo;
+                var srt = sequenceReadTo;
+                readTo = *(long*) &srt;
 
                 // Volatile.Write(ref sequenceReadToCache, readTo);
-                Thread.MemoryBarrier();
-                sequenceReadToCache = readTo;
+                sequenceReadToCache = srt;
 
                 if (next - readTo < count)
                 {
@@ -90,13 +89,14 @@ namespace EventStore.Core.Bus
             } while (true);
         }
 
-        public int TryDequeue(Message[] segment)
+        public unsafe int TryDequeue(Message[] segment)
         {
             var i = 0;
             var length = segment.Length;
 
             // only one reader, no need to Volatile.Read(ref sequenceReadTo);
-            var current = sequenceReadTo;
+            // To do not get volatile read, the value is stored in a separate field and then persisted in both the sequenceReadToValue and sequenceRead.
+            var current = sequenceReadToValue;
 
             while (i < length)
             {
@@ -113,17 +113,19 @@ namespace EventStore.Core.Bus
                 }
                 else
                 {
+                    sequenceReadToValue = current;
+                    var c = *(IntPtr*) &current;
+
                     // Volatile.Write(ref sequenceReadTo, current -1);
-                    Thread.MemoryBarrier();
-                    sequenceReadTo = current;
+                    sequenceReadTo = c;
 
                     return i;
                 }
             }
 
+            sequenceReadToValue = current;
             // Volatile.Write(ref sequenceReadTo, current -1);
-            Thread.MemoryBarrier();
-            sequenceReadTo = current;
+            sequenceReadTo = (IntPtr) current;
 
             return i;
         }
