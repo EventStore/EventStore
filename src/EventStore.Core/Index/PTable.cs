@@ -349,7 +349,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber)
+        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber, int? limit = null)
         {
             Ensure.Nonnegative(startNumber, "startNumber");
             Ensure.Nonnegative(endNumber, "endNumber");
@@ -383,10 +383,11 @@ namespace EventStore.Core.Index
                 {
                     IndexEntry entry = ReadNextNoSeek(workItem);
                     if (entry.Key > endKey)
-                        throw new Exception(string.Format("enty.Key {0} > endKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", entry.Key, endKey, stream, startNumber, endNumber, Filename));
+                        throw new Exception(string.Format("entry.Key {0} > endKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", entry.Key, endKey, stream, startNumber, endNumber, Filename));
                     if (entry.Key < startKey)
                         return result;
                     result.Add(entry);
+                    if (result.Count == limit) break;
                 }
                 return result;
             }

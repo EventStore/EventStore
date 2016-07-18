@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 {
@@ -69,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                             maxSizeForMemory: 100,
                                             maxTablesPerLevel: 2);
             var hasher = new XXHashUnsafe();
-            ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, hasher, 100, true, _metastreamMaxCount);
+            ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, hasher, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault);
             ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
             //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);

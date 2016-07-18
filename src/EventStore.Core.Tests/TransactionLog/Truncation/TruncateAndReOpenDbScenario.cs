@@ -8,6 +8,7 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation
 {
@@ -49,7 +50,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                       new ByLengthHasher(),
                                       0,
                                       additionalCommitChecks: true,
-                                      metastreamMaxCount: MetastreamMaxCount);
+                                      metastreamMaxCount: MetastreamMaxCount,
+                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault);
             ReadIndex.Init(ChaserCheckpoint.Read());
         }
     }

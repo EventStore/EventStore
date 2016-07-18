@@ -8,6 +8,7 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Util;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage
@@ -66,7 +67,8 @@ namespace EventStore.Core.Tests.Services.Storage
                                       new ByLengthHasher(),
                                       0,
                                       additionalCommitChecks: true,
-                                      metastreamMaxCount: _metastreamMaxCount);
+                                      metastreamMaxCount: _metastreamMaxCount,
+                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault);
 
             ReadIndex.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
         }
