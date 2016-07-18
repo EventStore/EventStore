@@ -101,6 +101,9 @@ namespace EventStore.Core.Util
         public const string MaxMemTableSizeDescr = "Adjusts the maximum size of a mem table.";
         public const int MaxMemtableSizeDefault = 1000000;
 
+        public const string HashCollisionReadLimitDescr = "The number of events to read per candidate in the case of a hash collision";
+        public const int HashCollisionReadLimitDefault = 100;
+
         public const string SkipDbVerifyDescr = "Bypasses the checking of file hashes of database during startup (allows for faster startup).";
         public const bool SkipDbVerifyDefault = false;
 

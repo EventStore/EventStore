@@ -3,6 +3,7 @@ using System.Linq;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -35,6 +36,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
     public class IndexReader : IIndexReader
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<IndexReader>();
+
         public long CachedStreamInfo { get { return Interlocked.Read(ref _cachedStreamInfo); } }
         public long NotCachedStreamInfo { get { return Interlocked.Read(ref _notCachedStreamInfo); } }
         public long HashCollisions { get { return Interlocked.Read(ref _hashCollisions); } }
@@ -47,8 +50,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _hashCollisions;
         private long _cachedStreamInfo;
         private long _notCachedStreamInfo;
+        private int _hashCollisionReadLimit;
 
-        public IndexReader(IIndexBackend backend, IHasher hasher, ITableIndex tableIndex, StreamMetadata metastreamMetadata)
+        public IndexReader(IIndexBackend backend, IHasher hasher, ITableIndex tableIndex, StreamMetadata metastreamMetadata, int hashCollisionReadLimit)
         {
             Ensure.NotNull(backend, "backend");
             Ensure.NotNull(hasher, "hasher");
@@ -59,6 +63,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _hasher = hasher;
             _tableIndex = tableIndex;
             _metastreamMetadata = metastreamMetadata;
+            _hashCollisionReadLimit = hashCollisionReadLimit;
         }
 
 
@@ -396,13 +401,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (rec.EventStreamId == streamId) // LUCKY!!!
                 return latestEntry.Version;
 
-            // TODO AN here lies the problem of out of memory if the stream has A LOT of events in them
-            foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue))
+            int count = 0;
+            foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue, limit: _hashCollisionReadLimit))
             {
                 var r = ReadPrepareInternal(reader, indexEntry.Position);
                 if (r != null && r.EventStreamId == streamId)
                     return indexEntry.Version; // AT LAST!!!
+                count++;
                 Interlocked.Increment(ref _hashCollisions);
+                if(count > _hashCollisionReadLimit)
+                {
+                    Log.Error("A hash collision resulted in not finding the last event number for the stream {0}", streamId);
+                    return ExpectedVersion.NoStream;
+                }
             }
             return ExpectedVersion.NoStream; // no such event stream
         }

@@ -115,6 +115,8 @@ namespace EventStore.ClusterNode
         public long ChunksCacheSize { get; set; }
         [ArgDescription(Opts.MaxMemTableSizeDescr, Opts.DbGroup)]
         public int MaxMemTableSize { get; set; }
+        [ArgDescription(Opts.HashCollisionReadLimitDescr, Opts.DbGroup)]
+        public int HashCollisionReadLimit { get; set; }
 
         [ArgDescription(Opts.DbPathDescr, Opts.DbGroup)]
         public string Db { get; set; }
@@ -222,6 +224,7 @@ namespace EventStore.ClusterNode
             CommitCount = Opts.CommitCountDefault;
             PrepareCount = Opts.PrepareCountDefault;
             MaxMemTableSize = Opts.MaxMemtableSizeDefault;
+            HashCollisionReadLimit = Opts.HashCollisionReadLimitDefault;
 
             DiscoverViaDns = Opts.DiscoverViaDnsDefault;
             ClusterDns = Opts.ClusterDnsDefault;

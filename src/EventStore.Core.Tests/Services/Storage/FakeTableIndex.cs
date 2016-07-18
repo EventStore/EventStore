@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage
             return false;
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
+        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion, int? limit = null)
         {
             yield break;
         }

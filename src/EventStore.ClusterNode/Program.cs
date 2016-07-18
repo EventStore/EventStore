@@ -172,6 +172,7 @@ namespace EventStore.ClusterNode
                         .WithExternalHeartbeatTimeout(TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatTimeout))
                         .WithExternalHeartbeatInterval(TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatInterval))
                         .MaximumMemoryTableSizeOf(options.MaxMemTableSize)
+                        .WithHashCollisionReadLimitOf(options.HashCollisionReadLimit)
                         .WithGossipInterval(TimeSpan.FromMilliseconds(options.GossipIntervalMs))
                         .WithGossipAllowedTimeDifference(TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs))
                         .WithGossipTimeout(TimeSpan.FromMilliseconds(options.GossipTimeoutMs))

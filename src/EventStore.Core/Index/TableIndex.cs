@@ -438,7 +438,7 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
+        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion, int? limit = null)
         {
             var counter = 0;
             while (counter < 5)
@@ -446,7 +446,7 @@ namespace EventStore.Core.Index
                 counter++;
                 try
                 {
-                    return GetRangeInternal(stream, startVersion, endVersion);
+                    return GetRangeInternal(stream, startVersion, endVersion, limit);
                 }
                 catch (FileBeingDeletedException)
                 {
@@ -456,7 +456,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private IEnumerable<IndexEntry> GetRangeInternal(uint stream, int startVersion, int endVersion)
+        private IEnumerable<IndexEntry> GetRangeInternal(uint stream, int startVersion, int endVersion, int? limit = null)
         {
             if (startVersion < 0)
                 throw new ArgumentOutOfRangeException("startVersion");
@@ -468,7 +468,7 @@ namespace EventStore.Core.Index
             var awaiting = _awaitingMemTables;
             for (int index = 0; index < awaiting.Count; index++)
             {
-                var range = awaiting[index].Table.GetRange(stream, startVersion, endVersion).GetEnumerator();
+                var range = awaiting[index].Table.GetRange(stream, startVersion, endVersion, limit).GetEnumerator();
                 if (range.MoveNext())
                     candidates.Add(range);
             }
@@ -476,7 +476,7 @@ namespace EventStore.Core.Index
             var map = _indexMap;
             foreach (var table in map.InOrder())
             {
-                var range = table.GetRange(stream, startVersion, endVersion).GetEnumerator();
+                var range = table.GetRange(stream, startVersion, endVersion, limit).GetEnumerator();
                 if (range.MoveNext())
                     candidates.Add(range);
             }
