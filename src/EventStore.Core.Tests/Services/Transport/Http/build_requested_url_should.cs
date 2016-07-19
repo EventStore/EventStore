@@ -80,5 +80,45 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
             Assert.AreEqual(new Uri("https://www.example.com:1234/path/?key=value#anchor"), requestedUri);
         }
+
+        [Test]
+        public void with_proto_forward_host_only_host_is_changed()
+        {
+            string host = "www.my-host.com";
+            var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
+            var requestedUri = 
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+            Assert.AreEqual(new Uri("http://www.my-host.com:1234/path/?key=value#anchor"), requestedUri);
+        }
+
+        [Test]
+        public void with_proto_forward_host_and_advertised_ip_forwarded_host_is_used()
+        {
+            string host = "www.my-host.com";
+            var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
+            var requestedUri = 
+                HttpEntity.BuildRequestedUrl(inputUri, headers, IPAddress.Parse("192.168.10.13"), 0);
+            Assert.AreEqual(new Uri("http://www.my-host.com:1234/path/?key=value#anchor"), requestedUri);
+        }
+
+        [Test]
+        public void with_proto_forward_host_containing_comma_delimited_list_first_forwarded_host_is_used()
+        {
+            string host = "www.my-first-host.com, www.my-second-host.com";
+            var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
+            var requestedUri = 
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+            Assert.AreEqual(new Uri("http://www.my-first-host.com:1234/path/?key=value#anchor"), requestedUri);
+        }
+
+        [Test]
+        public void with_proto_forward_host_containing_hosts_with_ports_host_and_port_is_used()
+        {
+            string host = "192.168.10.13:2231";
+            var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
+            var requestedUri = 
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+            Assert.AreEqual(new Uri("http://192.168.10.13:2231/path/?key=value#anchor"), requestedUri);
+        }
     }
 }
