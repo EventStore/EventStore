@@ -4,6 +4,7 @@ using System.Net;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Codecs;
+using System.Linq;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
@@ -39,7 +40,6 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             
             var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
-
             if (!string.IsNullOrEmpty(forwardedPortHeaderValue))
             {
                 int requestPort;
@@ -53,6 +53,21 @@ namespace EventStore.Transport.Http.EntityManagement
             if (!string.IsNullOrEmpty(forwardedProtoHeaderValue))
             {
                 uriBuilder.Scheme = forwardedProtoHeaderValue;
+            }
+
+            var forwardedHostHeaderValue = requestHeaders[ProxyHeaders.XForwardedHost];
+            if (!string.IsNullOrEmpty(forwardedHostHeaderValue))
+            {
+                var host = forwardedHostHeaderValue.Split(new []{","}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if(!string.IsNullOrEmpty(host)) 
+                {
+                    var parts = host.Split(new []{":"}, StringSplitOptions.RemoveEmptyEntries);
+                    uriBuilder.Host = parts.First();
+                    int port;
+                    if(parts.Count() > 1 && int.TryParse(parts[1], out port)) {
+                        uriBuilder.Port = port;
+                    }
+                }
             }
 
             return uriBuilder.Uri;
