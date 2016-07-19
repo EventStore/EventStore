@@ -4,6 +4,7 @@ using System.Net;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Codecs;
+using System.Linq;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
@@ -16,30 +17,32 @@ namespace EventStore.Transport.Http.EntityManagement
         internal readonly HttpListenerResponse Response;
         public readonly IPrincipal User;
 
-        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, bool logHttpRequests, IPEndPoint externalHttpEndPoint)
+        public HttpEntity(HttpListenerRequest request, HttpListenerResponse response, IPrincipal user, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort)
         {
             Ensure.NotNull(request, "request");
             Ensure.NotNull(response, "response");
 
             _logHttpRequests = logHttpRequests;
-            RequestedUrl = BuildRequestedUrl(request.Url, request.Headers, externalHttpEndPoint);
+            RequestedUrl = BuildRequestedUrl(request.Url, request.Headers, advertiseAsAddress, advertiseAsPort);
             Request = request;
             Response = response;
             User = user;
         }
 
-        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders, IPEndPoint externalHttpEndPoint)
+        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders, IPAddress advertiseAsAddress, int advertiseAsPort)
         {
             var uriBuilder = new UriBuilder(requestUrl);
 
-            if(externalHttpEndPoint != null)
+            if(advertiseAsAddress != null)
             {
-                uriBuilder.Host = externalHttpEndPoint.Address.ToString();
-                uriBuilder.Port = externalHttpEndPoint.Port;
+                uriBuilder.Host = advertiseAsAddress.ToString();
             }
-            
-            var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
+            if(advertiseAsPort > 0)
+            {
+                uriBuilder.Port = advertiseAsPort;
+            }
 
+            var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
             if (!string.IsNullOrEmpty(forwardedPortHeaderValue))
             {
                 int requestPort;
@@ -53,6 +56,21 @@ namespace EventStore.Transport.Http.EntityManagement
             if (!string.IsNullOrEmpty(forwardedProtoHeaderValue))
             {
                 uriBuilder.Scheme = forwardedProtoHeaderValue;
+            }
+
+            var forwardedHostHeaderValue = requestHeaders[ProxyHeaders.XForwardedHost];
+            if (!string.IsNullOrEmpty(forwardedHostHeaderValue))
+            {
+                var host = forwardedHostHeaderValue.Split(new []{","}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if(!string.IsNullOrEmpty(host)) 
+                {
+                    var parts = host.Split(new []{":"}, StringSplitOptions.RemoveEmptyEntries);
+                    uriBuilder.Host = parts.First();
+                    int port;
+                    if(parts.Count() > 1 && int.TryParse(parts[1], out port)) {
+                        uriBuilder.Port = port;
+                    }
+                }
             }
 
             return uriBuilder.Uri;

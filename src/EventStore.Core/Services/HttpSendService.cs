@@ -190,8 +190,7 @@ namespace EventStore.Core.Services
                     case "content-length":    break;
                     case "date":              request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "expect":            break;
-                    case "host":              request.Headers.Add("X-Forwarded-Host", srcReq.Headers[headerKey]);
-                                              request.Headers.Host = forwardUri.Host; break;
+                    case "host":              request.Headers.Host = forwardUri.Host; break;
                     case "if-modified-since": request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
                     case "proxy-connection":  break;
                     case "range":             break;
@@ -204,6 +203,12 @@ namespace EventStore.Core.Services
                         break;
                 }
             }
+
+            if(!request.Headers.Contains(ProxyHeaders.XForwardedHost)) {
+                request.Headers.Add(ProxyHeaders.XForwardedHost, string.Format("{0}:{1}", 
+                    manager.RequestedUrl.Host, manager.RequestedUrl.Port));
+            }
+
             // Copy content (if content body is allowed)
             if (!string.Equals(srcReq.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)

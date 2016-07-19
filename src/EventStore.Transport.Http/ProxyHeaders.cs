@@ -4,6 +4,7 @@
     {
         public const string XForwardedPort = "X-Forwarded-Port";
         public const string XForwardedProto = "X-Forwarded-Proto";
+        public const string XForwardedHost = "X-Forwarded-Host";
     }
 
     public static class ProxyHeaderValues
