@@ -34,10 +34,11 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpAsyncServer _server;
         private readonly MultiQueuedHandler _requestsMultiHandler;
 
-        private readonly IPEndPoint _externalHttpEndPoint;
+        private IPAddress _advertiseAsAddress;
+        private int _advertiseAsPort;
 
         public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
-                           MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, IPEndPoint externalHttpEndPoint, params string[] prefixes)
+                           MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort, params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(uriRouter, "uriRouter");
@@ -54,7 +55,8 @@ namespace EventStore.Core.Services.Transport.Http
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
 
-            _externalHttpEndPoint = externalHttpEndPoint;
+            _advertiseAsAddress = advertiseAsAddress;
+            _advertiseAsPort = advertiseAsPort;
         }
 
         public static void CreateAndSubscribePipeline(IBus bus, HttpAuthenticationProvider[] httpAuthenticationProviders)
@@ -99,7 +101,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
-            var entity = new HttpEntity(context.Request, context.Response, context.User, _logHttpRequests, _externalHttpEndPoint);
+            var entity = new HttpEntity(context.Request, context.Response, context.User, _logHttpRequests, _advertiseAsAddress, _advertiseAsPort);
             _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(this, entity, _requestsMultiHandler));
         }
 
