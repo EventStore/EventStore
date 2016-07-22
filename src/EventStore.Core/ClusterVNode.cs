@@ -179,7 +179,8 @@ namespace EventStore.Core
                                           hash,
                                           ESConsts.StreamInfoCacheCapacity,
                                           Application.IsDefined(Application.AdditionalCommitChecks),
-                                          Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1);
+                                          Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1,
+                                          vNodeSettings.HashCollisionReadLimit);
             var writer = new TFChunkWriter(db);
             var epochManager = new EpochManager(ESConsts.CachedEpochCount,
                                                 db.Config.EpochCheckpoint,

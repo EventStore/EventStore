@@ -61,6 +61,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool UnsafeIgnoreHardDeletes;
         public readonly bool VerifyDbHash;
         public readonly int MaxMemtableEntryCount;
+        public readonly int HashCollisionReadLimit;
         public readonly int IndexCacheDepth;
 
         public readonly bool BetterOrdering;
@@ -111,6 +112,7 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan extTcpHeartbeatInterval,
 				                    bool verifyDbHash,
 				                    int maxMemtableEntryCount,
+                                    int hashCollisionReadLimit,
                                     bool startStandardProjections,
                                     bool disableHTTPCaching,
                                     bool logHttpRequests,
@@ -194,6 +196,7 @@ namespace EventStore.Core.Cluster.Settings
 
             VerifyDbHash = verifyDbHash;
             MaxMemtableEntryCount = maxMemtableEntryCount;
+            HashCollisionReadLimit = hashCollisionReadLimit;
 
             EnableHistograms = enableHistograms;
             IndexCacheDepth = indexCacheDepth;

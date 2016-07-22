@@ -282,6 +282,21 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
     }
 
     [TestFixture]
+    public class with_custom_hash_collision_read_limit : SingleNodeScenario
+    {
+        public override void Given()
+        {
+            _builder.WithHashCollisionReadLimitOf(200);
+        }
+
+        [Test]
+        public void should_set_the_hash_collision_read_limit()
+        {
+            Assert.AreEqual(200, _settings.HashCollisionReadLimit);
+        }
+    }
+
+    [TestFixture]
     public class with_standard_projections_started : SingleNodeScenario
     {
         public override void Given()

@@ -93,6 +93,7 @@ namespace EventStore.Core
 
         protected bool _skipVerifyDbHashes;
         protected int _maxMemtableSize;
+        protected int _hashCollisionReadLimit;
         protected List<ISubsystem> _subsystems;
         protected int _clusterGossipPort;
 
@@ -504,6 +505,18 @@ namespace EventStore.Core
             _maxMemtableSize = size;
             return this;
         }
+
+        /// <summary>
+        /// Sets the maximum number of events to read in case of a stream Id hash collision
+        /// </summary>
+        /// <param name="hashCollisionReadLimit">The maximum count</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithHashCollisionReadLimitOf(int hashCollisionReadLimit)
+        {
+            _hashCollisionReadLimit = hashCollisionReadLimit;
+            return this;
+        }
+
 
         /// <summary>
         /// Marks that the existing database files should not be checked for checksums on startup.
@@ -1221,6 +1234,7 @@ namespace EventStore.Core
                     _extTcpHeartbeatInterval,
                     !_skipVerifyDbHashes,
                     _maxMemtableSize,
+                    _hashCollisionReadLimit,
                     _startStandardProjections,
                     _disableHTTPCaching,
                     _logHttpRequests,

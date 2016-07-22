@@ -174,7 +174,7 @@ namespace EventStore.Core.Index
             _hash.Clear();
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber)
+        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber, int? limit = null)
         {
             if (startNumber < 0)
                 throw new ArgumentOutOfRangeException("startNumber");
@@ -193,7 +193,7 @@ namespace EventStore.Core.Index
                     for (int i = endIdx; i >= 0; i--)
                     {
                         var key = list.Keys[i];
-                        if (key.EvNum < startNumber)
+                        if (key.EvNum < startNumber || ret.Count == limit)
                             break;
                         ret.Add(new IndexEntry(stream, version: key.EvNum, position: key.LogPos));
                     }
