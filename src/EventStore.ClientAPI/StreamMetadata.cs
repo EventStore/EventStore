@@ -88,12 +88,38 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Builds a <see cref="StreamMetadata"/> from a <see cref="StreamMetadataBuilder" />.
+        /// Creates a <see cref="StreamMetadataBuilder" /> for building a new <see cref="StreamMetadata"/>.
         /// </summary>
-        /// <returns>An instance of <see cref="StreamMetadata"/>.</returns>
+        /// <returns>An instance of <see cref="StreamMetadataBuilder"/>.</returns>
         public static StreamMetadataBuilder Build()
         {
             return new StreamMetadataBuilder();
+        }
+
+        /// <summary>
+        /// Creates a <see cref="StreamMetadataBuilder" /> initialized with the values of this <see cref="StreamMetadata"/>
+        /// </summary>
+        /// <returns>An instance of <see cref="StreamMetadataBuilder"/>.</returns>
+        public StreamMetadataBuilder Copy()
+        {
+            if(Acl == null)
+                return new StreamMetadataBuilder(
+                    MaxCount, 
+                    MaxAge, 
+                    TruncateBefore, 
+                    CacheControl, 
+                    customMetadata: _customMetadata);
+            return new StreamMetadataBuilder(
+                MaxCount,
+                MaxAge,
+                TruncateBefore,
+                CacheControl,
+                Acl.ReadRoles,
+                Acl.WriteRoles,
+                Acl.DeleteRoles,
+                Acl.MetaReadRoles,
+                Acl.MetaWriteRoles,
+                _customMetadata);
         }
 
         /// <summary>
