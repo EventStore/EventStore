@@ -211,6 +211,7 @@
     <Compile Include="Common\VNodeBuilderTests\when_building\with_single_node_and_custom_settings.cs" />
     <Compile Include="Common\VNodeBuilderTests\when_building\with_cluster_node_and_custom_settings.cs" />
     <Compile Include="Common\VNodeBuilderTests\TestAuthentictaionProviderFactory.cs" />
+    <Compile Include="copying_metadata.cs" />
     <Compile Include="DefaultData.cs" />
     <Compile Include="Fakes\FakeTfReader.cs" />
     <Compile Include="Helpers\CollectionsExtensions.cs" />
