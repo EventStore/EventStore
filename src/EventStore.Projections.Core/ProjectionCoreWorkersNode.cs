@@ -19,19 +19,18 @@ namespace EventStore.Projections.Core
 {
     public static class ProjectionCoreWorkersNode
     {
-        public static Dictionary<Guid, QueuedHandler> CreateCoreWorkers(
+        public static Dictionary<Guid, IQueuedHandler> CreateCoreWorkers(
             StandardComponents standardComponents,
             ProjectionsStandardComponents projectionsStandardComponents)
         {
             var coreTimeoutSchedulers =
                 CreateTimeoutSchedulers(projectionsStandardComponents.ProjectionWorkerThreadCount);
 
-            var coreQueues = new Dictionary<Guid, QueuedHandler>();
+            var coreQueues = new Dictionary<Guid, IQueuedHandler>();
             while (coreQueues.Count < projectionsStandardComponents.ProjectionWorkerThreadCount)
             {
                 var coreInputBus = new InMemoryBus("bus");
-                var coreQueue = new QueuedHandler(
-                    coreInputBus,
+                var coreQueue = QueuedHandler.CreateQueuedHandler(coreInputBus,
                     "Projection Core #" + coreQueues.Count,
                     groupName: "Projection Core");
                 var workerId = Guid.NewGuid();

@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.VNode
         private Guid _stateCorrelationId = Guid.NewGuid();
         private Guid _subscriptionId = Guid.Empty;
 
-        private QueuedHandler _mainQueue;
+        private IQueuedHandler _mainQueue;
         private IEnvelope _publishEnvelope;
         private readonly VNodeFSM _fsm;
 
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.VNode
             _fsm = CreateFSM();
         }
 
-        public void SetMainQueue(QueuedHandler mainQueue)
+        public void SetMainQueue(IQueuedHandler mainQueue)
         {
             Ensure.NotNull(mainQueue, "mainQueue");
 
