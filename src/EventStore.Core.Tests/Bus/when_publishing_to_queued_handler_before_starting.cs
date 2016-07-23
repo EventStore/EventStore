@@ -10,8 +10,9 @@ namespace EventStore.Core.Tests.Bus
     [TestFixture]
     public abstract class when_publishing_to_queued_handler_before_starting : QueuedHandlerTestWithWaitingConsumer
     {
-        protected when_publishing_to_queued_handler_before_starting(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
-                : base(queuedHandlerFactory)
+        protected when_publishing_to_queued_handler_before_starting(
+            Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+            : base(queuedHandlerFactory)
         {
         }
 
@@ -78,25 +79,29 @@ namespace EventStore.Core.Tests.Bus
     }
 
     [TestFixture]
-    public class when_publishing_to_queued_handler_mres_before_starting : when_publishing_to_queued_handler_before_starting
+    public class when_publishing_to_queued_handler_mres_before_starting :
+        when_publishing_to_queued_handler_before_starting
     {
         public when_publishing_to_queued_handler_mres_before_starting()
-            : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout))
         {
         }
     }
 
     [TestFixture]
-    public class when_publishing_to_queued_handler_autoreset_before_starting : when_publishing_to_queued_handler_before_starting
+    public class when_publishing_to_queued_handler_autoreset_before_starting :
+        when_publishing_to_queued_handler_before_starting
     {
         public when_publishing_to_queued_handler_autoreset_before_starting()
-            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout)
+                )
         {
         }
     }
 
     [TestFixture]
-    public class when_publishing_to_queued_handler_sleep_before_starting : when_publishing_to_queued_handler_before_starting
+    public class when_publishing_to_queued_handler_sleep_before_starting :
+        when_publishing_to_queued_handler_before_starting
     {
         public when_publishing_to_queued_handler_sleep_before_starting()
             : base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, false, null, timeout))
@@ -105,7 +110,8 @@ namespace EventStore.Core.Tests.Bus
     }
 
     [TestFixture]
-    public class when_publishing_to_queued_handler_pulse_before_starting : when_publishing_to_queued_handler_before_starting
+    public class when_publishing_to_queued_handler_pulse_before_starting :
+        when_publishing_to_queued_handler_before_starting
     {
         public when_publishing_to_queued_handler_pulse_before_starting()
             : base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, false, null, timeout))

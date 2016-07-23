@@ -12,8 +12,9 @@ namespace EventStore.Core.Tests.Bus
     [TestFixture, Category("LongRunning")]
     public abstract class when_publishing_to_queued_handler : QueuedHandlerTestWithWaitingConsumer
     {
-        protected when_publishing_to_queued_handler(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
-                : base(queuedHandlerFactory)
+        protected when_publishing_to_queued_handler(
+            Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+            : base(queuedHandlerFactory)
         {
         }
 
@@ -90,7 +91,7 @@ namespace EventStore.Core.Tests.Bus
     public class when_publishing_to_queued_handler_mres : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_mres()
-            : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout))
         {
         }
     }
@@ -99,7 +100,8 @@ namespace EventStore.Core.Tests.Bus
     public class when_publishing_to_queued_handler_autoreset : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_autoreset()
-            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout)
+                )
         {
         }
     }
