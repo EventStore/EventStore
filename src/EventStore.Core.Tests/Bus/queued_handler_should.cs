@@ -10,28 +10,30 @@ namespace EventStore.Core.Tests.Bus
     public abstract class queued_handler_should : QueuedHandlerTestWithNoopConsumer
     {
         protected queued_handler_should(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
-                : base(queuedHandlerFactory)
+            : base(queuedHandlerFactory)
         {
         }
 
         [Test]
         public void throw_if_handler_is_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new QueuedHandler(null, "throwing", watchSlowMsg: false));
+            Assert.Throws<ArgumentNullException>(
+                () => QueuedHandler.CreateQueuedHandler(null, "throwing", watchSlowMsg: false));
         }
 
         [Test]
         public void throw_if_name_is_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new QueuedHandler(Consumer, null, watchSlowMsg: false));
+            Assert.Throws<ArgumentNullException>(
+                () => QueuedHandler.CreateQueuedHandler(Consumer, null, watchSlowMsg: false));
         }
     }
 
     [TestFixture]
-    public class queued_handler_mres_should: queued_handler_should
+    public class queued_handler_mres_should : queued_handler_should
     {
         public queued_handler_mres_should()
-                : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout))
         {
         }
     }
@@ -40,7 +42,8 @@ namespace EventStore.Core.Tests.Bus
     public class queued_handler_autoreset_should : queued_handler_should
     {
         public queued_handler_autoreset_should()
-            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout)
+                )
         {
         }
     }

@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core
         public ProjectionWorkerNode(
             Guid workerId,
             TFChunkDb db,
-            QueuedHandler inputQueue,
+            IQueuedHandler inputQueue,
             ITimeProvider timeProvider,
             ISingletonTimeoutScheduler timeoutScheduler,
             ProjectionType runProjections)

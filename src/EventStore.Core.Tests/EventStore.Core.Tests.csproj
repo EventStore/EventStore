@@ -78,6 +78,7 @@
     <Compile Include="Bus\Helpers\WaitingConsumer.cs" />
     <Compile Include="Bus\Helpers\Messages.cs" />
     <Compile Include="Bus\Helpers\QueuedHandlerTestWithNoopConsumer.cs" />
+    <Compile Include="Bus\when_using_single_consumer_queue.cs" />
     <Compile Include="Bus\queued_handler_should.cs" />
     <Compile Include="Bus\QueueSpeedTest.cs" />
     <Compile Include="Bus\when_publishing_to_queued_handler.cs" />

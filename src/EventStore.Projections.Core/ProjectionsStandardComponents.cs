@@ -10,14 +10,14 @@ namespace EventStore.Projections.Core
         private readonly int _projectionWorkerThreadCount;
         private readonly ProjectionType _runProjections;
         private readonly InMemoryBus _masterOutputBus;
-        private readonly QueuedHandler _masterInputQueue;
+        private readonly IQueuedHandler _masterInputQueue;
         private readonly InMemoryBus _masterMainBus;
 
         public ProjectionsStandardComponents(
             int projectionWorkerThreadCount,
             ProjectionType runProjections,
             InMemoryBus masterOutputBus,
-            QueuedHandler masterInputQueue,
+            IQueuedHandler masterInputQueue,
             InMemoryBus masterMainBus)
         {
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core
             get { return _masterOutputBus; }
         }
 
-        public QueuedHandler MasterInputQueue
+        public IQueuedHandler MasterInputQueue
         {
             get { return _masterInputQueue; }
         }

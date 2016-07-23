@@ -10,8 +10,9 @@ namespace EventStore.Core.Tests.Bus
     [TestFixture]
     public abstract class when_stopping_queued_handler : QueuedHandlerTestWithNoopConsumer
     {
-        protected when_stopping_queued_handler(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
-                : base(queuedHandlerFactory)
+        protected when_stopping_queued_handler(
+            Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+            : base(queuedHandlerFactory)
         {
         }
 
@@ -27,7 +28,7 @@ namespace EventStore.Core.Tests.Bus
         public void gracefully_and_queue_is_not_busy_should_not_take_much_time()
         {
             Queue.Start();
-            
+
             var wait = new ManualResetEventSlim(false);
 
             ThreadPool.QueueUserWorkItem(_ =>
@@ -68,7 +69,8 @@ namespace EventStore.Core.Tests.Bus
         public void while_queue_is_busy_should_crash_with_timeout()
         {
             var consumer = new WaitingConsumer(1);
-            var busyQueue = new QueuedHandler(consumer, "busy_test_queue", watchSlowMsg: false, threadStopWaitTimeout: TimeSpan.FromMilliseconds(100));
+            var busyQueue = QueuedHandler.CreateQueuedHandler(consumer, "busy_test_queue", watchSlowMsg: false,
+                threadStopWaitTimeout: TimeSpan.FromMilliseconds(100));
             var waitHandle = new ManualResetEvent(false);
             var handledEvent = new ManualResetEvent(false);
             try
@@ -100,7 +102,7 @@ namespace EventStore.Core.Tests.Bus
     public class when_stopping_queued_handler_mres_should : when_stopping_queued_handler
     {
         public when_stopping_queued_handler_mres_should()
-            : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout))
         {
         }
     }
@@ -109,7 +111,8 @@ namespace EventStore.Core.Tests.Bus
     public class when_stopping_queued_handler_autoreset : when_stopping_queued_handler
     {
         public when_stopping_queued_handler_autoreset()
-            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+            : base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout)
+                )
         {
         }
     }

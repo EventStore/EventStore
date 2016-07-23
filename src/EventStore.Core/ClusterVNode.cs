@@ -45,7 +45,7 @@ namespace EventStore.Core
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
-        public QueuedHandler MainQueue { get { return _mainQueue; } }
+        public IQueuedHandler MainQueue { get { return _mainQueue; } }
         public ISubscriber MainBus { get { return _mainBus; } }
         public HttpService InternalHttpService { get { return _internalHttpService; } }
         public HttpService ExternalHttpService { get { return _externalHttpService; } }
@@ -56,7 +56,7 @@ namespace EventStore.Core
         internal MultiQueuedHandler WorkersHandler { get { return _workersHandler; } }
 
         private readonly VNodeInfo _nodeInfo;
-        private readonly QueuedHandler _mainQueue;
+        private readonly IQueuedHandler _mainQueue;
         private readonly ISubscriber _mainBus;
 
         private readonly ClusterVNodeController _controller;
@@ -117,7 +117,7 @@ namespace EventStore.Core
             _subsystems = subsystems;
 
             _controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy, _subsystems);
-            _mainQueue = new QueuedHandler(_controller, "MainQueue");
+            _mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue");
 
             _controller.SetMainQueue(_mainQueue);
 
