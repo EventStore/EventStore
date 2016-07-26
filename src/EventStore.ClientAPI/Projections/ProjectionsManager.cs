@@ -99,10 +99,22 @@ namespace EventStore.ClientAPI.Projections
         /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
         public Task CreateContinuousAsync(string name, string query, UserCredentials userCredentials = null)
         {
+            return CreateContinuousAsync(name, query, false, userCredentials);
+        }
+
+        /// <summary>
+        /// Asynchronously creates a continuous projection.
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="query">The JavaScript source code for the query.</param>
+        /// <param name="trackEmittedStreams">Whether the streams emitted by this projection should be tracked.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
+        public Task CreateContinuousAsync(string name, string query, bool trackEmittedStreams, UserCredentials userCredentials = null)
+        {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _client.CreateContinuous(_httpEndPoint, name, query, userCredentials);
+            return _client.CreateContinuous(_httpEndPoint, name, query, trackEmittedStreams, userCredentials);
         }
 
         /// <summary>
@@ -278,8 +290,20 @@ namespace EventStore.ClientAPI.Projections
         /// <returns>A task representing the operation.</returns>
         public Task DeleteAsync(string name, UserCredentials userCredentials = null)
         {
+            return DeleteAsync(name, false, userCredentials);
+        }
+
+        /// <summary>
+        /// Asynchronously deletes a projection 
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="deleteEmittedStreams">Whether to delete the streams that were emitted by this projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to delete a projection</param>
+        /// <returns>A task representing the operation.</returns>
+        public Task DeleteAsync(string name, bool deleteEmittedStreams, UserCredentials userCredentials = null)
+        {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Delete(_httpEndPoint, name, userCredentials);
+            return _client.Delete(_httpEndPoint, name, deleteEmittedStreams, userCredentials);
         }
     }
 }

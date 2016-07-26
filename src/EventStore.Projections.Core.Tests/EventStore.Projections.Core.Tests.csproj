@@ -507,6 +507,9 @@
     <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_reinitializing_transaction_file_postion_tracker.cs" />
     <Compile Include="Services\write_query_result_phase\creating.cs" />
     <Compile Include="TestsInitFixture.cs" />
+    <Compile Include="ClientAPI\projectionsManager\projectionsManagerTests.cs" />
+    <Compile Include="ClientAPI\projectionsManager\ProjectionsManagerTestSuiteMarkerBase.cs" />
+    <Compile Include="ClientAPI\projectionsManager\SpecificationWithNodeAndProjectionsManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">

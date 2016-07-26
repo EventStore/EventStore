@@ -50,9 +50,9 @@ namespace EventStore.ClientAPI.Projections
                 HttpStatusCode.Created);
         }
 
-        public Task CreateContinuous(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
+        public Task CreateContinuous(IPEndPoint endPoint, string name, string query, bool trackEmitted, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1", name),
+            return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1&trackemittedstreams={1}", name, trackEmitted),
                             query, userCredentials, HttpStatusCode.Created);
         }
 
@@ -147,9 +147,9 @@ namespace EventStore.ClientAPI.Projections
             return SendPut(endPoint.ToHttpUrl("/projection/{0}/query?type=JS", name), query, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task Delete(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task Delete(IPEndPoint endPoint, string name, bool deleteEmittedStreams, UserCredentials userCredentials = null)
         {
-            return SendDelete(endPoint.ToHttpUrl("/projection/{0}", name), userCredentials, HttpStatusCode.OK);
+            return SendDelete(endPoint.ToHttpUrl("/projection/{0}?deleteEmittedStreams={1}", name, deleteEmittedStreams), userCredentials, HttpStatusCode.OK);
         }
 
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
