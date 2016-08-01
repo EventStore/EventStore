@@ -142,7 +142,7 @@ namespace EventStore.Core.Bus
             result = new QueueBatchDequeueResult
             {
                 DequeueCount = i,
-                EstimatedNumberOfQueueItems = (int) estimatedCount
+                EstimateCurrentQueueCount = (int) estimatedCount
             };
 
             return true;

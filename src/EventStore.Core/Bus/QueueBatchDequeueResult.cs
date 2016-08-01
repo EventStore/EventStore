@@ -6,6 +6,6 @@
     public struct QueueBatchDequeueResult
     {
         public int DequeueCount;
-        public int EstimatedNumberOfQueueItems;
+        public int EstimateCurrentQueueCount;
     }
 }
