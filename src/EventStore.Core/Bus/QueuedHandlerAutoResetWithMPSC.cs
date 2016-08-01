@@ -112,7 +112,7 @@ namespace EventStore.Core.Bus
                     }
                     else
                     {
-                        var estimatedQueueCount = dequeueResult.EstimatedNumberOfQueueItems;
+                        var estimatedQueueCount = dequeueResult.EstimateCurrentQueueCount;
 
                         for (var i = 0; i < dequeueResult.DequeueCount; i++)
                         {
