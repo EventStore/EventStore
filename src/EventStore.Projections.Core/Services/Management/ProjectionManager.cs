@@ -823,32 +823,20 @@ namespace EventStore.Projections.Core.Services.Management
                     message.Name,
                     projectionId =>
                     {
-                        var initializer = new NewProjectionInitializer(
-                            projectionId,
-                            message.Name,
-                            message.Mode,
-                            message.HandlerType,
-                            message.Query,
-                            message.Enabled,
-                            message.EmitEnabled,
-                            message.CheckpointsEnabled,
-                            message.EnableRunAs,
-                            message.TrackEmittedStreams,
-                            message.RunAs,
-                            replyEnvelope);
-
-                        int queueIndex = GetNextWorkerIndex();
-                        initializer.CreateAndInitializeNewProjection(
-                            this,
-                            Guid.NewGuid(),
-                            _workers[queueIndex],
-                            version: version);
+                        InitializeNewProjection(projectionId, message, version, replyEnvelope);
                     });
             }
             else
             {
+                InitializeNewProjection(ProjectionQueryId, message, version, replyEnvelope);
+            }
+        }
+
+        private void InitializeNewProjection(int projectionId, ProjectionManagementMessage.Command.Post message, int version, IEnvelope replyEnvelope)
+        {
+            try{
                 var initializer = new NewProjectionInitializer(
-                    ProjectionQueryId,
+                    projectionId,
                     message.Name,
                     message.Mode,
                     message.HandlerType,
@@ -863,6 +851,8 @@ namespace EventStore.Projections.Core.Services.Management
 
                 int queueIndex = GetNextWorkerIndex();
                 initializer.CreateAndInitializeNewProjection(this, Guid.NewGuid(), _workers[queueIndex], version: version);
+            }catch(Exception ex){
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed(ex.Message));
             }
         }
 
