@@ -128,6 +128,7 @@
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_keep_emitted_streams_stream.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_not_authorised.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_running_persistent_projection.cs" />
+    <Compile Include="Services\projections_manager\when_deleting_a_faulted_persistent_projection.cs" />
     <Compile Include="Services\projections_manager\when_recreating_a_deleted_projection.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection_and_keep_checkpoint_stream.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_persistent_projection.cs" />

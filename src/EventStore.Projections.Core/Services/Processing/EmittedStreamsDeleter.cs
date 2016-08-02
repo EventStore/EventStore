@@ -18,16 +18,18 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<EmittedStreamsDeleter>();
         private readonly IODispatcher _ioDispatcher;
-        private readonly ProjectionNamesBuilder _projectionNamesBuilder;
         private readonly int _checkPointThreshold = 4000;
         private int _numberOfEventsProcessed = 0;
         private const int RetryLimit = 3;
         private int _retryCount = RetryLimit;
+        private readonly string _emittedStreamsId;
+        private readonly string _emittedStreamsCheckpointStreamId;
 
-        public EmittedStreamsDeleter(IODispatcher ioDispatcher, ProjectionNamesBuilder projectionNamesBuilder)
+        public EmittedStreamsDeleter(IODispatcher ioDispatcher, string emittedStreamsId, string emittedStreamsCheckpointStreamId)
         {
             _ioDispatcher = ioDispatcher;
-            _projectionNamesBuilder = projectionNamesBuilder;
+            _emittedStreamsId = emittedStreamsId;
+            _emittedStreamsCheckpointStreamId = emittedStreamsCheckpointStreamId;
         }
 
         public void DeleteEmittedStreams(Action onEmittedStreamsDeleted)
@@ -41,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ReadLastCheckpoint(Action<ClientMessage.ReadStreamEventsBackwardCompleted> onReadCompleted)
         {
-            _ioDispatcher.ReadBackward(_projectionNamesBuilder.GetEmittedStreamsCheckpointName(), -1, 1, false, SystemAccount.Principal, onReadCompleted);
+            _ioDispatcher.ReadBackward(_emittedStreamsCheckpointStreamId, -1, 1, false, SystemAccount.Principal, onReadCompleted);
         }
 
         private int GetPositionToDeleteFrom(ClientMessage.ReadStreamEventsBackwardCompleted onReadCompleted)
@@ -63,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeleteEmittedStreamsFrom(int fromPosition, Action onEmittedStreamsDeleted)
         {
-            _ioDispatcher.ReadForward(_projectionNamesBuilder.GetEmittedStreamsName(), fromPosition, 1, false, SystemAccount.Principal, x => ReadCompleted(x, onEmittedStreamsDeleted));
+            _ioDispatcher.ReadForward(_emittedStreamsId, fromPosition, 1, false, SystemAccount.Principal, x => ReadCompleted(x, onEmittedStreamsDeleted));
         }
 
         private void ReadCompleted(ClientMessage.ReadStreamEventsForwardCompleted onReadCompleted, Action onEmittedStreamsDeleted)
@@ -78,25 +80,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
                 if (onReadCompleted.Events.Length == 0)
                 {
-                    _ioDispatcher.DeleteStream(_projectionNamesBuilder.GetEmittedStreamsCheckpointName(), ExpectedVersion.Any, false, SystemAccount.Principal, x =>
+                    _ioDispatcher.DeleteStream(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, false, SystemAccount.Principal, x =>
                     {
                         if (x.Result == OperationResult.Success || x.Result == OperationResult.StreamDeleted)
                         {
-                            Log.Info("PROJECTIONS: Projection Stream '{0}' deleted", _projectionNamesBuilder.GetEmittedStreamsCheckpointName());
+                            Log.Info("PROJECTIONS: Projection Stream '{0}' deleted", _emittedStreamsCheckpointStreamId);
                         }
                         else
                         {
-                            Log.Error("PROJECTIONS: Failed to delete projection stream '{0}'. Reason: {1}", _projectionNamesBuilder.GetEmittedStreamsCheckpointName(), x.Result);
+                            Log.Error("PROJECTIONS: Failed to delete projection stream '{0}'. Reason: {1}", _emittedStreamsCheckpointStreamId, x.Result);
                         }
-                        _ioDispatcher.DeleteStream(_projectionNamesBuilder.GetEmittedStreamsName(), ExpectedVersion.Any, false, SystemAccount.Principal, y =>
+                        _ioDispatcher.DeleteStream(_emittedStreamsId, ExpectedVersion.Any, false, SystemAccount.Principal, y =>
                         {
                             if (y.Result == OperationResult.Success || y.Result == OperationResult.StreamDeleted)
                             {
-                                Log.Info("PROJECTIONS: Projection Stream '{0}' deleted", _projectionNamesBuilder.GetEmittedStreamsName());
+                                Log.Info("PROJECTIONS: Projection Stream '{0}' deleted", _emittedStreamsId);
                             }
                             else
                             {
-                                Log.Error("PROJECTIONS: Failed to delete projection stream '{0}'. Reason: {1}", _projectionNamesBuilder.GetEmittedStreamsName(), y.Result);
+                                Log.Error("PROJECTIONS: Failed to delete projection stream '{0}'. Reason: {1}", _emittedStreamsId, y.Result);
                             }
                             onEmittedStreamsDeleted();
                         });
@@ -140,7 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void TryMarkCheckpoint(int eventNumber)
         {
-            _ioDispatcher.WriteEvent(_projectionNamesBuilder.GetEmittedStreamsCheckpointName(), ExpectedVersion.Any, new Event(Guid.NewGuid(), "$Checkpoint", true, eventNumber.ToJson(), null), SystemAccount.Principal, x =>
+            _ioDispatcher.WriteEvent(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, new Event(Guid.NewGuid(), "$Checkpoint", true, eventNumber.ToJson(), null), SystemAccount.Principal, x =>
             {
                 if (x.Result == OperationResult.Success)
                 {
