@@ -34,7 +34,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
                              ""options"":{
                                  ""resultStreamName"":""ResultStreamName"",
                                  ""partitionResultStreamNamePattern"":""PartitionResultStreamNamePattern"",
-                                 ""forceProjectionName"":""ForceProjectionName"",
                                  ""reorderEvents"":false,
                                  ""processingLag"":0,
                                  ""isBiState"":false,
@@ -78,7 +77,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
             Assert.AreEqual(
                 "PartitionResultStreamNamePattern",
                 projectionSourceDefinition.PartitionResultStreamNamePatternOption);
-            Assert.AreEqual("ForceProjectionName", projectionSourceDefinition.ForceProjectionNameOption);
             Assert.AreEqual(false, projectionSourceDefinition.ReorderEventsOption);
             Assert.AreEqual(0, projectionSourceDefinition.ProcessingLagOption);
             Assert.AreEqual(false, projectionSourceDefinition.IsBiState);

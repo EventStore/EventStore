@@ -105,11 +105,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.PartitionResultStreamNamePattern = String.IsNullOrWhiteSpace(partitionResultStreamNamePattern) ? null : partitionResultStreamNamePattern;
         }
 
-        public void SetForceProjectionName(string forceProjectionName)
-        {
-            _options.ForceProjectionName = String.IsNullOrWhiteSpace(forceProjectionName) ? null : forceProjectionName;
-        }
-
         public void SetReorderEvents(bool reorderEvents)
         {
             _options.ReorderEvents = reorderEvents;
@@ -228,11 +223,6 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.PartitionResultStreamNamePattern; }
         }
 
-        public string ForceProjectionNameOption
-        {
-            get { return _options.ForceProjectionName; }
-        }
-
         public bool ReorderEventsOption
         {
             get { return _options.ReorderEvents; }
@@ -276,9 +266,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public string PartitionResultStreamNamePattern { get; set; }
 
         [DataMember]
-        public string ForceProjectionName { get; set; }
-
-        [DataMember]
         public bool ReorderEvents { get; set; }
 
         [DataMember]
@@ -312,7 +299,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return string.Equals(ResultStreamName, other.ResultStreamName)
                    && string.Equals(PartitionResultStreamNamePattern, other.PartitionResultStreamNamePattern)
-                   && string.Equals(ForceProjectionName, other.ForceProjectionName)
                    && ReorderEvents.Equals(other.ReorderEvents) && ProcessingLag == other.ProcessingLag
                    && IsBiState.Equals(other.IsBiState) && DefinesStateTransform.Equals(other.DefinesStateTransform)
                    && DefinesCatalogTransform.Equals(other.DefinesCatalogTransform)
@@ -335,7 +321,6 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 int hashCode = (ResultStreamName != null ? ResultStreamName.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ (PartitionResultStreamNamePattern != null ? PartitionResultStreamNamePattern.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (ForceProjectionName != null ? ForceProjectionName.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ ReorderEvents.GetHashCode();
                 hashCode = (hashCode*397) ^ ProcessingLag;
                 hashCode = (hashCode*397) ^ IsBiState.GetHashCode();

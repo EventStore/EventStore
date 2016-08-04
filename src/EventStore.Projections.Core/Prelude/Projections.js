@@ -61,7 +61,6 @@ var $projections = {
                 definesFold: false,
                 resultStreamName: null,
                 partitionResultStreamNamePattern: null,
-                $forceProjectionName: null,
                 $includeLinks: false,
                 disableParallelism: false,
                 reorderEvents: false,
