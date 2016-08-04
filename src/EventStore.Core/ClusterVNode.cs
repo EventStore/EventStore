@@ -195,7 +195,7 @@ namespace EventStore.Core
                                                                 () => readIndex.LastCommitPosition); // subscribes internally
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
-            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);
+            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);

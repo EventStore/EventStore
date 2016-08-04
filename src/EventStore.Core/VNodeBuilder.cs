@@ -96,6 +96,7 @@ namespace EventStore.Core
         protected int _hashCollisionReadLimit;
         protected List<ISubsystem> _subsystems;
         protected int _clusterGossipPort;
+        protected int _readerThreadsCount;
 
         protected string _index;
         protected int _indexCacheDepth;
@@ -142,6 +143,7 @@ namespace EventStore.Core
             _extHttpPrefixes = new List<string>();
             _addInterfacePrefixes = true;
             _enableTrustedAuth = Opts.EnableTrustedAuthDefault;
+            _readerThreadsCount = Opts.ReaderThreadsCountDefault;
             _certificate = null;
             _workerThreads = Opts.WorkerThreadsDefault;
 
@@ -322,6 +324,19 @@ namespace EventStore.Core
             _advertiseInternalHttpPortAs = intHttpPortAdvertiseAs;
             return this;
         }
+
+
+        /// <summary>
+        /// Sets the number of reader threads to process read requests.
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder HavingReaderThreads(int readerThreadsCount)
+        {
+            _readerThreadsCount = readerThreadsCount;
+            return this;
+        }
+
+
 
         /// <summary>
         /// Sets up the External Http Port that would be advertised 
@@ -1243,7 +1258,8 @@ namespace EventStore.Core
                     _indexCacheDepth,
                     consumerStrategies,
                     _unsafeIgnoreHardDelete,
-                    _betterOrdering);
+                    _betterOrdering,
+                    _readerThreadsCount);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);

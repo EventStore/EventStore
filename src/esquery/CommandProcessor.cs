@@ -280,7 +280,7 @@ namespace esquery
                 {
                     var last = GetLast(queryInformation.ResultStreamUrl, credential);
                     last = new Uri(last.OriginalString + "?embed=body");
-                    var next = ReadResults(last, credential);
+                    ReadResults(last, credential);
                     return new QueryResult() {Query = query};
                 }
                 else
