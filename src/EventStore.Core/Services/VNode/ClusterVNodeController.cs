@@ -134,6 +134,10 @@ namespace EventStore.Core.Services.VNode
                     .When<ClientMessage.TransactionWrite>().ForwardTo(_outputBus)
                     .When<ClientMessage.TransactionCommit>().ForwardTo(_outputBus)
                     .When<ClientMessage.DeleteStream>().ForwardTo(_outputBus)
+                    .When<ClientMessage.CreatePersistentSubscription>().ForwardTo(_outputBus)
+                    .When<ClientMessage.ConnectToPersistentSubscription>().ForwardTo(_outputBus)
+                    .When<ClientMessage.UpdatePersistentSubscription>().ForwardTo(_outputBus)
+                    .When<ClientMessage.DeletePersistentSubscription>().ForwardTo(_outputBus)
 
                 .InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
                           VNodeState.Unknown)
@@ -142,6 +146,10 @@ namespace EventStore.Core.Services.VNode
                     .When<ClientMessage.ReadStreamEventsBackward>().Do(HandleAsNonMaster)
                     .When<ClientMessage.ReadAllEventsForward>().Do(HandleAsNonMaster)
                     .When<ClientMessage.ReadAllEventsBackward>().Do(HandleAsNonMaster)
+                    .When<ClientMessage.CreatePersistentSubscription>().Do(HandleAsNonMaster)
+                    .When<ClientMessage.ConnectToPersistentSubscription>().Do(HandleAsNonMaster)
+                    .When<ClientMessage.UpdatePersistentSubscription>().Do(HandleAsNonMaster)
+                    .When<ClientMessage.DeletePersistentSubscription>().Do(HandleAsNonMaster)
 
                 .InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
                     .When<ClientMessage.WriteEvents>().Do(HandleAsNonMaster)
@@ -538,6 +546,38 @@ namespace EventStore.Core.Services.VNode
             {
                 _outputBus.Publish(message);
             }
+        }
+
+        private void HandleAsNonMaster(ClientMessage.CreatePersistentSubscription message)
+        {
+            if (_master == null)
+                DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+            else
+                DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+        }
+
+        private void HandleAsNonMaster(ClientMessage.ConnectToPersistentSubscription message)
+        {
+            if (_master == null)
+                DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+            else
+                DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+        }
+
+        private void HandleAsNonMaster(ClientMessage.UpdatePersistentSubscription message)
+        {
+            if (_master == null)
+                DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+            else
+                DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+        }
+
+        private void HandleAsNonMaster(ClientMessage.DeletePersistentSubscription message)
+        {
+            if (_master == null)
+                DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+            else
+                DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
         }
 
         private void HandleAsNonMaster(ClientMessage.WriteEvents message)
