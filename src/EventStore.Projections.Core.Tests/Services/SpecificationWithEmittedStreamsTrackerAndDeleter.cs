@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _node.Node.MainBus.Subscribe(_ioDispatcher);
             _projectionNamesBuilder = ProjectionNamesBuilder.CreateForTest(_projectionName);
             _emittedStreamsTracker = new EmittedStreamsTracker(_ioDispatcher, new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, false, _trackEmittedStreams), _projectionNamesBuilder);
-            _emittedStreamsDeleter = new EmittedStreamsDeleter(_ioDispatcher, _projectionNamesBuilder);
+            _emittedStreamsDeleter = new EmittedStreamsDeleter(_ioDispatcher, _projectionNamesBuilder.GetEmittedStreamsName(), _projectionNamesBuilder.GetEmittedStreamsCheckpointName());
         }
     }
 }
