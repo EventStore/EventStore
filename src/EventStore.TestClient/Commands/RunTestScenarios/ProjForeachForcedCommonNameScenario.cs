@@ -183,8 +183,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var fullProjectionName = string.Format("{0}_it{1}_{2}", projectionName, GetIterationCode(), suffix);
             var countItemsProjection = string.Format(@"
-                options({{$forceProjectionName: ""{0}_it{1}""}});
-
                 fromCategory('bank_account_it{1}').foreachStream().when({{
                     $init: function() {{ 
                         return {{credited:0, credsum:'', debited:0, debsum:''}}; 

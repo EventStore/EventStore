@@ -55,9 +55,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
                 command.SourceDefinition.Options.DefinesStateTransform);
             Assert.AreEqual(_definition.Options.DisableParallelism, command.SourceDefinition.Options.DisableParallelism);
             Assert.AreEqual(
-                _definition.Options.ForceProjectionName,
-                command.SourceDefinition.Options.ForceProjectionName);
-            Assert.AreEqual(
                 _definition.Options.HandlesDeletedNotifications,
                 command.SourceDefinition.Options.HandlesDeletedNotifications);
             Assert.AreEqual(_definition.Options.IncludeLinks, command.SourceDefinition.Options.IncludeLinks);

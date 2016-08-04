@@ -26,9 +26,6 @@ namespace EventStore.Projections.Core.Messages
         [DataMember(Name = "partitionResultStreamNamePattern")]
         public string PartitionResultStreamNamePattern { get; set; }
 
-        [DataMember(Name = "$forceProjectionName")]
-        public string ForceProjectionName { get; set; }
-
         [DataMember(Name = "$includeLinks")]
         public bool IncludeLinks { get; set; }
 

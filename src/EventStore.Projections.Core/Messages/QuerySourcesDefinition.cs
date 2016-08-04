@@ -78,11 +78,6 @@ namespace EventStore.Projections.Core.Messages
             get { return Options != null ? Options.PartitionResultStreamNamePattern : null; }
         }
 
-        string IQuerySources.ForceProjectionNameOption
-        {
-            get { return Options != null ? Options.ForceProjectionName : null; }
-        }
-
         bool IQuerySources.ReorderEventsOption
         {
             get
@@ -125,7 +120,6 @@ namespace EventStore.Projections.Core.Messages
                         ProducesResults = sources.ProducesResults,
                         DefinesFold = sources.DefinesFold,
                         HandlesDeletedNotifications = sources.HandlesDeletedNotifications,
-                        ForceProjectionName = sources.ForceProjectionNameOption,
                         IncludeLinks = sources.IncludeLinksOption,
                         DisableParallelism = sources.DisableParallelismOption,
                         PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,

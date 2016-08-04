@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string EffectiveProjectionName
         {
-            get { return _sources.ForceProjectionNameOption ?? _name; }
+            get { return _name; }
         }
 
 

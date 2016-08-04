@@ -38,8 +38,6 @@ namespace EventStore.Projections.Core.Messages
 
         string PartitionResultStreamNamePatternOption { get; }
 
-        string ForceProjectionNameOption { get; }
-
         bool ReorderEventsOption { get; }
 
         int? ProcessingLagOption { get; }
