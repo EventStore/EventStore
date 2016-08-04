@@ -66,7 +66,7 @@ namespace EventStore.Core.Cluster.Settings
 
         public readonly bool BetterOrdering;
         public readonly string Index;
-
+        public readonly int ReaderThreadsCount;
         public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
@@ -120,7 +120,8 @@ namespace EventStore.Core.Cluster.Settings
                                     int indexCacheDepth = 16,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
                                     bool unsafeIgnoreHardDeletes = false,
-                                    bool betterOrdering = false)
+                                    bool betterOrdering = false,
+                                    int readerThreadsCount = 4)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -203,6 +204,7 @@ namespace EventStore.Core.Cluster.Settings
             Index = index;
             UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
             BetterOrdering = betterOrdering;
+            ReaderThreadsCount = readerThreadsCount;
         }
 
 

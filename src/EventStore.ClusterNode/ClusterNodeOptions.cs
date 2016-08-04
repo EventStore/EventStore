@@ -111,6 +111,9 @@ namespace EventStore.ClusterNode
         public int StatsPeriodSec { get; set; }
         [ArgDescription(Opts.CachedChunksDescr, Opts.DbGroup)]
         public int CachedChunks { get; set; }
+
+        [ArgDescription(Opts.ReaderThreadsCountDescr, Opts.DbGroup)]
+        public int ReaderThreadsCount { get; set; }
         [ArgDescription(Opts.ChunksCacheSizeDescr, Opts.DbGroup)]
         public long ChunksCacheSize { get; set; }
         [ArgDescription(Opts.MaxMemTableSizeDescr, Opts.DbGroup)]
@@ -294,6 +297,7 @@ namespace EventStore.ClusterNode
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
             IndexCacheDepth = Opts.IndexCacheDepthDefault;
             EnableHistograms = Opts.HistogramEnabledDefault;
+            ReaderThreadsCount = Opts.ReaderThreadsCountDefault;
 
             StartStandardProjections = Opts.StartStandardProjectionsDefault;
             DisableHTTPCaching = Opts.DisableHttpCachingDefault;
