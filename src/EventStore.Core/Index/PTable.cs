@@ -39,6 +39,7 @@ namespace EventStore.Core.Index
         private readonly Guid _id;
         private readonly string _filename;
         private readonly long _count;
+        private readonly long _size;
         private readonly Midpoint[] _midpoints;
         private readonly ulong _minEntry, _maxEntry;
         private readonly ObjectPool<WorkItem> _workItems;
@@ -67,8 +68,9 @@ namespace EventStore.Core.Index
 
             Log.Trace("Loading and Verification of PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
+            _size = new FileInfo(_filename).Length;
+            _count = ((_size - PTableHeader.Size - MD5Size) / IndexEntrySize);
 
-            _count = ((new FileInfo(_filename).Length - PTableHeader.Size - MD5Size) / IndexEntrySize);
             File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
             _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
@@ -106,10 +108,11 @@ namespace EventStore.Core.Index
             {
                 ReturnWorkItem(readerWorkItem);
             }
-
+            int calcdepth = 0;
             try
             {
-                _midpoints = CacheMidpointsAndVerifyHash(depth);
+                calcdepth = GetDepth(_size, depth);
+                _midpoints = CacheMidpointsAndVerifyHash(calcdepth);
             }
             catch (PossibleToHandleOutOfMemoryException)
             {
@@ -117,7 +120,17 @@ namespace EventStore.Core.Index
                           + "Performance hit will occur. OOM Exception.", Path.GetFileName(Filename), Count, depth);
             }
             Log.Trace("Loading PTable '{0}' ({1} entries, cache depth {2}) done in {3}.",
-                      Path.GetFileName(Filename), Count, depth, sw.Elapsed);
+                      Path.GetFileName(Filename), Count, calcdepth, sw.Elapsed);
+        }
+
+        private int GetDepth(long fileSize, int minDepth) {
+            if((2L << 28) * 4096L < fileSize) return 28;
+            for(int i=27;i>minDepth;i--) {
+                if((2L << i) * 4096L < fileSize) {
+                    return i + 1;
+                }
+            }
+            return minDepth;
         }
 
         internal Midpoint[] CacheMidpointsAndVerifyHash(int depth)
