@@ -46,6 +46,8 @@ namespace EventStore.Core.Services.Replication
 
         private readonly InternalTcpDispatcher _tcpDispatcher = new InternalTcpDispatcher();
 
+        private bool _hasAttemptedToReconnect;
+        private VNodeInfo _masterNodeInfo;
         private VNodeState _state = VNodeState.Initializing;
         private TcpConnectionManager _connection;
 
@@ -130,12 +132,19 @@ namespace EventStore.Core.Services.Replication
 
         private void OnConnectionEstablished(TcpConnectionManager manager)
         {
+            _hasAttemptedToReconnect = false;
             _publisher.Publish(new SystemMessage.VNodeConnectionEstablished(manager.RemoteEndPoint, manager.ConnectionId));
         }
 
         private void OnConnectionClosed(TcpConnectionManager manager, SocketError socketError)
         {
-            _publisher.Publish(new SystemMessage.VNodeConnectionLost(manager.RemoteEndPoint, manager.ConnectionId));
+            if(!_hasAttemptedToReconnect && _masterNodeInfo != null) {
+                Log.Info("Attempting to reconnect to master");
+                _hasAttemptedToReconnect = true;
+                ConnectToMaster(_masterNodeInfo);
+            } else {
+                _publisher.Publish(new SystemMessage.VNodeConnectionLost(manager.RemoteEndPoint, manager.ConnectionId));
+            }
         }
 
         public void Handle(ReplicationMessage.ReconnectToMaster message)
@@ -146,6 +155,7 @@ namespace EventStore.Core.Services.Replication
         private void ConnectToMaster(VNodeInfo master)
         {
             Debug.Assert(_state == VNodeState.PreReplica);
+            _masterNodeInfo = master;
 
             var masterEndPoint = GetMasterEndPoint(master, _useSsl);
 
