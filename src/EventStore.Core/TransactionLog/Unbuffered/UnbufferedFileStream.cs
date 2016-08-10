@@ -16,7 +16,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private readonly IntPtr _writeBufferOriginal;
         private readonly IntPtr _readBufferOriginal;
         private readonly uint _blockSize;
-        private int _bufferedCount;
+        private long _bufferedCount;
         private bool _aligned;
         private long _lastPosition;
         private bool _needsFlush;
@@ -94,7 +94,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             _needsFlush = false;
         }
 
-        private static void MemCopy(byte[] src, int srcOffset, byte* dest, int destOffset, int count)
+        private static void MemCopy(byte[] src, long srcOffset, byte* dest, long destOffset, long count)
         {
             fixed (byte* p = src)
             {
@@ -102,7 +102,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
         }
 
-        private static void MemCopy(byte* src, int srcOffset, byte[] dest, int destOffset, int count)
+        private static void MemCopy(byte* src, long srcOffset, byte[] dest, long destOffset, long count)
         {
             fixed (byte* p = dest)
             {
@@ -110,7 +110,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
         }
 
-        private static void MemCopy(byte* src, int srcOffset, byte* dest, int destOffset, int count)
+        private static void MemCopy(byte* src, long srcOffset, byte* dest, long destOffset, long count)
         {
             byte* psrc = src + srcOffset;
             byte* pdest = dest + destOffset;
@@ -202,8 +202,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         {
             CheckDisposed();
             var done = false;
-            var left = count;
-            var current = offset;
+            long left = count;
+            long current = offset;
             while (!done)
             {
                 _needsFlush = true;
@@ -225,7 +225,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
         }
 
-        private void CopyBuffer(byte[] buffer, int offset, int count)
+        private void CopyBuffer(byte[] buffer, long offset, long count)
         {
             MemCopy(buffer, offset, _writeBuffer, _bufferedCount, count);
             _bufferedCount += count;
@@ -283,7 +283,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
         }
 
-        private void SetBuffer(int alignedbuffer, int left)
+        private void SetBuffer(long alignedbuffer, long left)
         {
             MemCopy(_writeBuffer, alignedbuffer, _writeBuffer, 0, left);
         }
