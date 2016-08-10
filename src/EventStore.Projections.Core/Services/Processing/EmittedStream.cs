@@ -279,6 +279,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (!newPhysicalStream && message.Events.Length > 0)
                 {
                     parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
+                    if(parsed.Tag == null){
+                        Failed(string.Format("The '{0}' stream managed by projection {1} has been written to from the outside.", _streamId, _projectionVersion.ProjectionId));
+                        return;
+                    }
                     if (_projectionVersion.ProjectionId != parsed.Version.ProjectionId)
                     {
                         Failed(
