@@ -212,7 +212,7 @@ namespace EventStore.Core.Services
             // Copy content (if content body is allowed)
             if (!string.Equals(srcReq.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
-                && srcReq.ContentLength64 > 0)
+                && srcReq.HasEntityBody)
             {
                 var streamContent = new StreamContent(srcReq.InputStream);
                 streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse(srcReq.ContentType);
