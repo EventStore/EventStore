@@ -134,7 +134,7 @@ namespace EventStore.Core.Services.Storage
             var indexInitializedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeIndexInitialized,
                     true, new Dictionary<string, object>{}.ToJsonBytes(), null);
             _ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.NoStream, indexInitializedEvent, SystemAccount.Principal, m => {
-                if(m.Result != OperationResult.Success){
+                if(m.Result != OperationResult.Success && m.Result != OperationResult.WrongExpectedVersion){
                     Log.Error("Failed to write the {0} event to the {1} stream. Reason: {2}", SystemEventTypes.ScavengeIndexInitialized, SystemStreams.ScavengesStream, m.Result);
                 }
              });
