@@ -1,4 +1,3 @@
-using System;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -10,7 +9,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void key_is_made_of_stream_and_version()
         {
-            var entry = new IndexEntry {Stream = 0x01, Version = 0x12};
+            var entry = new IndexEntry32 {Stream = 0x01, Version = 0x12};
             Assert.AreEqual(0x0000000100000012, entry.Key);
         }
         [Test]
@@ -18,7 +17,7 @@ namespace EventStore.Core.Tests.Index
         {
             unsafe
             {
-                var entry = new IndexEntry {Stream = 0x0101, Version = 0x1234, Position = 0xFFFF};
+                var entry = new IndexEntry32 {Stream = 0x0101, Version = 0x1234, Position = 0xFFFF};
                 Assert.AreEqual(0x34, entry.Bytes[0]);
                 Assert.AreEqual(0x12, entry.Bytes[1]);
                 Assert.AreEqual(0x00, entry.Bytes[2]);

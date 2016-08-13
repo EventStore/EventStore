@@ -19,35 +19,35 @@ namespace EventStore.Core.Tests.Services.Storage
         {
         }
 
-        public void Add(long commitPos, uint stream, int version, long position)
+        public void Add(long commitPos, string streamId, int version, long position)
         {
             throw new NotImplementedException();
         }
 
-        public void AddEntries(long commitPos, IList<IndexEntry> entries)
+        public void AddEntries(long commitPos, IList<IndexKey> entries)
         {
             throw new NotImplementedException();
         }
 
-        public bool TryGetOneValue(uint stream, int version, out long position)
+        public bool TryGetOneValue(string streamId, int version, out long position)
         {
             position = -1;
             return false;
         }
 
-        public bool TryGetLatestEntry(uint stream, out IndexEntry entry)
+        public bool TryGetLatestEntry(string streamId, out IndexEntry entry)
         {
             entry = InvalidIndexEntry;
             return false;
         }
 
-        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        public bool TryGetOldestEntry(string streamId, out IndexEntry entry)
         {
             entry = InvalidIndexEntry;
             return false;
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
         {
             yield break;
         }

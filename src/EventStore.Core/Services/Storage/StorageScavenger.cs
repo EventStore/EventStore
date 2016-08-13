@@ -24,7 +24,6 @@ namespace EventStore.Core.Services.Storage
         private readonly TFChunkDb _db;
         private readonly IODispatcher _ioDispatcher;
         private readonly ITableIndex _tableIndex;
-        private readonly IHasher _hasher;
         private readonly IReadIndex _readIndex;
         private readonly bool _alwaysKeepScavenged;
         private readonly bool _mergeChunks;
@@ -34,21 +33,19 @@ namespace EventStore.Core.Services.Storage
         private int _isScavengingRunning;
         private const int MaxRetryCount = 5;
 
-        public StorageScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IHasher hasher,
+        public StorageScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex,
                                 IReadIndex readIndex, bool alwaysKeepScavenged, string nodeEndpoint, bool mergeChunks,
                                 int scavengeHistoryMaxAge, bool unsafeIgnoreHardDeletes)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(ioDispatcher, "ioDispatcher");
             Ensure.NotNull(tableIndex, "tableIndex");
-            Ensure.NotNull(hasher, "hasher");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
 
             _db = db;
             _ioDispatcher = ioDispatcher;
             _tableIndex = tableIndex;
-            _hasher = hasher;
             _readIndex = readIndex;
             _alwaysKeepScavenged = alwaysKeepScavenged;
             _mergeChunks = mergeChunks;
@@ -97,9 +94,9 @@ namespace EventStore.Core.Services.Storage
                 {
                     WriteScavengeStartedEvent(streamName, scavengeId);
 
-                    var scavenger = new TFChunkScavenger(_db, _ioDispatcher, _tableIndex, _hasher, _readIndex, scavengeId,
+                    var scavenger = new TFChunkScavenger(_db, _ioDispatcher, _tableIndex, _readIndex, scavengeId,
                                                                                  _nodeEndpoint, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
-					spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
+                    spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
                     result = ClientMessage.ScavengeDatabase.ScavengeResult.Success;
                 }
             }

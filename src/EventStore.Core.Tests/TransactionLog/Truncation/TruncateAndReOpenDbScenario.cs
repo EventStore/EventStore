@@ -9,6 +9,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation
 {
@@ -40,14 +41,16 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             Db.Open();
 
             var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5, () => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
-                                        () => new HashListMemTable(MaxEntriesInMemTable * 2),
+            var lowHasher = new XXHashUnsafe();
+            var highHasher = new Murmur3AUnsafe();
+            TableIndex = new TableIndex(Path.Combine(PathName, "index"), lowHasher, highHasher,
+                                        () => new HashListMemTable(PTableVersions.Index64Bit, MaxEntriesInMemTable * 2),
                                         () => new TFReaderLease(readers),
+                                        PTableVersions.Index64Bit,
                                         MaxEntriesInMemTable);
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,
                                       TableIndex,
-                                      new ByLengthHasher(),
                                       0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount,

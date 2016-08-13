@@ -14,16 +14,19 @@ namespace EventStore.Core.Index
 
         public long Count { get { return _count; } }
         public Guid Id { get { return _id; } }
+        public byte Version { get { return _version; } }
 
-        private readonly ConcurrentDictionary<uint, SortedList<Entry, byte>> _hash;
+        private readonly ConcurrentDictionary<ulong, SortedList<Entry, byte>> _hash;
         private readonly Guid _id = Guid.NewGuid();
+        private readonly byte _version;
         private int _count;
 
         private int _isConverting;
 
-        public HashListMemTable(int maxSize)
+        public HashListMemTable(byte version, int maxSize)
         {
-            _hash = new ConcurrentDictionary<uint, SortedList<Entry, byte>>();
+            _version = version;
+            _hash = new ConcurrentDictionary<ulong, SortedList<Entry, byte>>();
         }
 
         public bool MarkForConversion()
@@ -31,7 +34,7 @@ namespace EventStore.Core.Index
             return Interlocked.CompareExchange(ref _isConverting, 1, 0) == 0;
         }
 
-        public void Add(uint stream, int version, long position)
+        public void Add(ulong stream, int version, long position)
         {
             AddEntries(new[] { new IndexEntry(stream, version, position) });
         }
@@ -41,10 +44,12 @@ namespace EventStore.Core.Index
             Ensure.NotNull(entries, "entries");
             Ensure.Positive(entries.Count, "entries.Count");
 
-            // only one thread at a time can write
-            Interlocked.Add(ref _count, entries.Count);
+            var collection = entries.Select(x => new IndexEntry(GetHash(x.Stream), x.Version, x.Position)).ToList();
 
-            var stream = entries[0].Stream; // NOTE: all entries should have the same stream
+            // only one thread at a time can write
+            Interlocked.Add(ref _count, collection.Count);
+
+            var stream = collection[0].Stream; // NOTE: all entries should have the same stream
             SortedList<Entry, byte> list;
             if (!_hash.TryGetValue(stream, out list))
             {
@@ -56,9 +61,9 @@ namespace EventStore.Core.Index
                 throw new UnableToAcquireLockInReasonableTimeException();
             try
             {
-                for (int i = 0, n = entries.Count; i < n; ++i)
+                for (int i = 0, n = collection.Count; i < n; ++i)
                 {
-                    var entry = entries[i];
+                    var entry = collection[i];
                     if (entry.Stream != stream)
                         throw new Exception("Not all index entries in a bulk have the same stream hash.");
                     Ensure.Nonnegative(entry.Version, "entry.Version");
@@ -72,15 +77,16 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(uint stream, int number, out long position)
+        public bool TryGetOneValue(ulong stream, int number, out long position)
         {
             if (number < 0)
                 throw new ArgumentOutOfRangeException("number");
+            ulong hash = GetHash(stream);
 
             position = 0;
 
             SortedList<Entry, byte> list;
-            if (_hash.TryGetValue(stream, out list))
+            if (_hash.TryGetValue(hash, out list))
             {
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
@@ -104,19 +110,20 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetLatestEntry(uint stream, out IndexEntry entry)
+        public bool TryGetLatestEntry(ulong stream, out IndexEntry entry)
         {
+            ulong hash = GetHash(stream);
             entry = TableIndex.InvalidIndexEntry;
 
             SortedList<Entry, byte> list;
-            if (_hash.TryGetValue(stream, out list))
+            if (_hash.TryGetValue(hash, out list))
             {
                 if (!Monitor.TryEnter(list, 10000))
                     throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
                     var latest = list.Keys[list.Count - 1];
-                    entry = new IndexEntry(stream, latest.EvNum, latest.LogPos);
+                    entry = new IndexEntry(hash, latest.EvNum, latest.LogPos);
                     return true;
                 }
                 finally
@@ -127,19 +134,20 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        public bool TryGetOldestEntry(ulong stream, out IndexEntry entry)
         {
+            ulong hash = GetHash(stream);
             entry = TableIndex.InvalidIndexEntry;
 
             SortedList<Entry, byte> list;
-            if (_hash.TryGetValue(stream, out list))
+            if (_hash.TryGetValue(hash, out list))
             {
                 if (!Monitor.TryEnter(list, 10000))
                     throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
                     var oldest = list.Keys[0];
-                    entry = new IndexEntry(stream, oldest.EvNum, oldest.LogPos);
+                    entry = new IndexEntry(hash, oldest.EvNum, oldest.LogPos);
                     return true;
                 }
                 finally
@@ -155,7 +163,7 @@ namespace EventStore.Core.Index
             //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder...");
 
             var keys = _hash.Keys.ToArray();
-            Array.Sort(keys, new ReverseComparer<uint>());
+            Array.Sort(keys, new ReverseComparer<ulong>());
 
             foreach (var key in keys)
             {
@@ -174,17 +182,18 @@ namespace EventStore.Core.Index
             _hash.Clear();
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(ulong stream, int startNumber, int endNumber, int? limit = null)
         {
             if (startNumber < 0)
                 throw new ArgumentOutOfRangeException("startNumber");
             if (endNumber < 0)
                 throw new ArgumentOutOfRangeException("endNumber");
 
+            ulong hash = GetHash(stream);
             var ret = new List<IndexEntry>();
 
             SortedList<Entry, byte> list;
-            if (_hash.TryGetValue(stream, out list))
+            if (_hash.TryGetValue(hash, out list))
             {
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
@@ -195,7 +204,7 @@ namespace EventStore.Core.Index
                         var key = list.Keys[i];
                         if (key.EvNum < startNumber || ret.Count == limit)
                             break;
-                        ret.Add(new IndexEntry(stream, version: key.EvNum, position: key.LogPos));
+                        ret.Add(new IndexEntry(hash, version: key.EvNum, position: key.LogPos));
                     }
                 }
                 finally
@@ -204,6 +213,10 @@ namespace EventStore.Core.Index
                 }
             }
             return ret;
+        }
+
+        private ulong GetHash(ulong hash){
+            return _version == PTableVersions.Index32Bit ? hash >> 32 : hash;
         }
 
         private struct Entry

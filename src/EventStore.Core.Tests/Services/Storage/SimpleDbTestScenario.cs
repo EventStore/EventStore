@@ -1,6 +1,7 @@
 ﻿using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -56,15 +57,17 @@ namespace EventStore.Core.Tests.Services.Storage
             var readers = new ObjectPool<ITransactionFileReader>(
                 "Readers", 2, 2, () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint));
 
-            TableIndex = new TableIndex(GetFilePathFor("index"),
-                                        () => new HashListMemTable(MaxEntriesInMemTable * 2),
+            var lowHasher = new XXHashUnsafe();
+            var highHasher = new Murmur3AUnsafe();
+            TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
+                                        () => new HashListMemTable(PTableVersions.Index64Bit, MaxEntriesInMemTable * 2),
                                         () => new TFReaderLease(readers),
+                                        PTableVersions.Index64Bit,
                                         MaxEntriesInMemTable);
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,
                                       TableIndex,
-                                      new ByLengthHasher(),
                                       0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: _metastreamMaxCount,

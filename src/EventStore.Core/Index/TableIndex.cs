@@ -9,6 +9,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Index
 {
@@ -28,6 +29,7 @@ namespace EventStore.Core.Index
         private readonly bool _additionalReclaim;
         private readonly bool _inMem;
         private readonly int _indexCacheDepth;
+        private readonly byte _ptableVersion;
         private readonly string _directory;
         private readonly Func<IMemTable> _memTableFactory;
         private readonly Func<TFReaderLease> _tfReaderFactory;
@@ -43,11 +45,17 @@ namespace EventStore.Core.Index
         private volatile bool _backgroundRunning;
         private readonly ManualResetEventSlim _backgroundRunningEvent = new ManualResetEventSlim(true);
 
+        private IHasher _lowHasher;
+        private IHasher _highHasher;
+
         private bool _initialized;
 
         public TableIndex(string directory,
+                          IHasher lowHasher,
+                          IHasher highHasher,
                           Func<IMemTable> memTableFactory,
                           Func<TFReaderLease> tfReaderFactory,
+                          byte ptableVersion,
                           int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false,
@@ -56,6 +64,8 @@ namespace EventStore.Core.Index
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
+            Ensure.NotNull(lowHasher, "lowHasher");
+            Ensure.NotNull(highHasher, "highHasher");
             Ensure.NotNull(tfReaderFactory, "tfReaderFactory");
             if (maxTablesPerLevel <= 1)
                 throw new ArgumentOutOfRangeException("maxTablesPerLevel");
@@ -70,7 +80,11 @@ namespace EventStore.Core.Index
             _additionalReclaim = additionalReclaim;
             _inMem = inMem;
             _indexCacheDepth = indexCacheDepth;
+            _ptableVersion = ptableVersion;
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
+
+            _lowHasher = lowHasher; 
+            _highHasher = highHasher;
         }
 
         public void Initialize(long chaserCheckpoint)
@@ -98,7 +112,7 @@ namespace EventStore.Core.Index
             // this can happen (very unlikely, though) on master crash
             try
             {
-                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
+                _indexMap = IndexMap.FromFile(indexmapFile, _ptableVersion, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -167,32 +181,29 @@ namespace EventStore.Core.Index
                 Directory.CreateDirectory(directory);
         }
 
-        public void Add(long commitPos, uint stream, int version, long position)
+        public void Add(long commitPos, string streamId, int version, long position)
         {
             Ensure.Nonnegative(commitPos, "commitPos");
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
-            AddEntries(commitPos, new[] { new IndexEntry(stream, version, position) });
+            AddEntries(commitPos, new[] { CreateIndexKey(streamId, version, position) });
         }
 
-        public void AddEntries(long commitPos, IList<IndexEntry> entries)
+        public void AddEntries(long commitPos, IList<IndexKey> entries)
         {
-            //Ensure.Nonnegative(commitPos, "commitPos");
-            //Ensure.NotNull(entries, "entries");
-            //Ensure.Positive(entries.Count, "entries.Count");
-
             //should only be called on a single thread.
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
 
-            table.AddEntries(entries);
+            var collection = entries.Select(x => CreateIndexEntry(x)).ToList();
+            table.AddEntries(collection);
 
             if (table.Count >= _maxSizeForMemory)
             {
-                long prepareCheckpoint = entries[0].Position;
-                for (int i = 1, n = entries.Count; i < n; ++i)
+                long prepareCheckpoint = collection[0].Position;
+                for (int i = 1, n = collection.Count; i < n; ++i)
                 {
-                    prepareCheckpoint = Math.Max(prepareCheckpoint, entries[i].Position);
+                    prepareCheckpoint = Math.Max(prepareCheckpoint, collection[i].Position);
                 }
 
                 lock (_awaitingTablesLock)
@@ -254,7 +265,8 @@ namespace EventStore.Core.Index
                     using (var reader = _tfReaderFactory())
                     {
                         mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint,
-                                                          entry => reader.ExistsAt(entry.Position), _fileNameProvider, _indexCacheDepth);
+                                                          (streamId, currentHash) => UpgradeHash(streamId, currentHash),
+                                                          entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion, _indexCacheDepth);
                     }
                     _indexMap = mergeResult.MergedMap;
                     _indexMap.SaveToFile(indexmapFile);
@@ -289,6 +301,17 @@ namespace EventStore.Core.Index
             }
         }
 
+        private static Tuple<string, bool> ReadEntry(TFReaderLease reader, long position)
+        {
+            RecordReadResult result = reader.TryReadAt(position);
+            if (!result.Success)
+                return new Tuple<string, bool>(String.Empty, false);
+            if (result.LogRecord.RecordType != TransactionLog.LogRecords.LogRecordType.Prepare)
+                throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
+                                                  result.LogRecord.RecordType));
+            return new Tuple<string, bool>(((TransactionLog.LogRecords.PrepareLogRecord)result.LogRecord).EventStreamId, true);
+        }
+
         private void ReclaimMemoryIfNeeded(List<TableItem> awaitingMemTables)
         {
             var toPutOnDisk = awaitingMemTables.OfType<IMemTable>().Count() - MaxMemoryTables;
@@ -321,8 +344,9 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(uint stream, int version, out long position)
+        public bool TryGetOneValue(string streamId, int version, out long position)
         {
+            ulong stream = CreateHash(streamId);
             int counter = 0;
             while (counter < 5)
             {
@@ -339,7 +363,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private bool TryGetOneValueInternal(uint stream, int version, out long position)
+        private bool TryGetOneValueInternal(ulong stream, int version, out long position)
         {
             if (version < 0)
                 throw new ArgumentOutOfRangeException("version");
@@ -362,8 +386,9 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetLatestEntry(uint stream, out IndexEntry entry)
+        public bool TryGetLatestEntry(string streamId, out IndexEntry entry)
         {
+            ulong stream = CreateHash(streamId);
             var counter = 0;
             while (counter < 5)
             {
@@ -380,7 +405,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private bool TryGetLatestEntryInternal(uint stream, out IndexEntry entry)
+        private bool TryGetLatestEntryInternal(ulong stream, out IndexEntry entry)
         {
             var awaiting = _awaitingMemTables;
             foreach (var t in awaiting)
@@ -400,8 +425,9 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetOldestEntry(uint stream, out IndexEntry entry)
+        public bool TryGetOldestEntry(string streamId, out IndexEntry entry)
         {
+            ulong stream = CreateHash(streamId);
             var counter = 0;
             while (counter < 5)
             {
@@ -418,7 +444,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private bool TryGetOldestEntryInternal(uint stream, out IndexEntry entry)
+        private bool TryGetOldestEntryInternal(ulong stream, out IndexEntry entry)
         {
             var map = _indexMap;
             foreach (var table in map.InReverseOrder())
@@ -438,15 +464,16 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
         {
+            ulong hash = CreateHash(streamId);
             var counter = 0;
             while (counter < 5)
             {
                 counter++;
                 try
                 {
-                    return GetRangeInternal(stream, startVersion, endVersion, limit);
+                    return GetRangeInternal(hash, startVersion, endVersion, limit);
                 }
                 catch (FileBeingDeletedException)
                 {
@@ -456,7 +483,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private IEnumerable<IndexEntry> GetRangeInternal(uint stream, int startVersion, int endVersion, int? limit = null)
+        private IEnumerable<IndexEntry> GetRangeInternal(ulong hash, int startVersion, int endVersion, int? limit = null)
         {
             if (startVersion < 0)
                 throw new ArgumentOutOfRangeException("startVersion");
@@ -468,7 +495,7 @@ namespace EventStore.Core.Index
             var awaiting = _awaitingMemTables;
             for (int index = 0; index < awaiting.Count; index++)
             {
-                var range = awaiting[index].Table.GetRange(stream, startVersion, endVersion, limit).GetEnumerator();
+                var range = awaiting[index].Table.GetRange(hash, startVersion, endVersion, limit).GetEnumerator();
                 if (range.MoveNext())
                     candidates.Add(range);
             }
@@ -476,7 +503,7 @@ namespace EventStore.Core.Index
             var map = _indexMap;
             foreach (var table in map.InOrder())
             {
-                var range = table.GetRange(stream, startVersion, endVersion, limit).GetEnumerator();
+                var range = table.GetRange(hash, startVersion, endVersion, limit).GetEnumerator();
                 if (range.MoveNext())
                     candidates.Add(range);
             }
@@ -489,7 +516,7 @@ namespace EventStore.Core.Index
                 var winner = candidates[maxIdx];
 
                 var best = winner.Current;
-                if (first || last.Key != best.Key || last.Position != best.Position)
+                if (first || ((last.Stream != best.Stream) && (last.Version != best.Version)) || last.Position != best.Position)
                 {
                     last = best;
                     yield return best;
@@ -503,7 +530,7 @@ namespace EventStore.Core.Index
 
         private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)
         {
-            var max = new IndexEntry(ulong.MinValue, long.MinValue);
+            var max = new IndexEntry(ulong.MinValue, 0, long.MinValue);
             int idx = 0;
             for (int i = 0; i < enumerators.Count; i++)
             {
@@ -534,6 +561,27 @@ namespace EventStore.Core.Index
                 _indexMap.InOrder().ToList().ForEach(x => x.Dispose());
             }
             _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
+        }
+
+        private IndexEntry CreateIndexEntry(IndexKey key)
+        {
+            key = CreateIndexKey(key.StreamId, key.Version, key.Position);
+            return new IndexEntry(key.Hash, key.Version, key.Position);
+        }
+
+        private ulong UpgradeHash(string streamId, ulong lowHash)
+        {
+            return lowHash << 32 | _highHasher.Hash(streamId);
+        }
+
+        private ulong CreateHash(string streamId)
+        {
+            return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
+        }
+
+        private IndexKey CreateIndexKey(string streamId, int version, long position)
+        {
+            return new IndexKey(streamId, version, position, CreateHash(streamId));
         }
 
         private class TableItem
