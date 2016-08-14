@@ -37,9 +37,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void StartMessage(OutstandingMessage message, DateTime expires)
         {
             var found = _outstandingRequests.ContainsKey(message.EventId);
-            _outstandingRequests[message.EventId] = message;
             if (!found)
             {
+                _outstandingRequests[message.EventId] = message;
                 _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
                 _byTime.Add(new RetryableMessage(message.EventId, expires));
             }

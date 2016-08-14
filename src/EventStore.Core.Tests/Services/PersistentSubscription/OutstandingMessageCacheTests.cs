@@ -38,9 +38,21 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var id = Guid.NewGuid();
             var cache = new OutstandingMessageCache();
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 1), 0), DateTime.Now);
             Assert.AreEqual(1, cache.Count);
             Assert.AreEqual(0, cache.GetLowestPosition());
+        }
+
+        [Test]
+        public void can_remove_duplicate()
+        {
+            var id = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 1), 0), DateTime.Now);
+            cache.Remove(id);
+            Assert.AreEqual(0, cache.Count);
+            Assert.AreEqual(int.MinValue, cache.GetLowestPosition());
         }
 
         [Test]
@@ -51,6 +63,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
             cache.Remove(id);
             Assert.AreEqual(0, cache.Count);
+            Assert.AreEqual(int.MinValue, cache.GetLowestPosition());
         }
 
         [Test]
