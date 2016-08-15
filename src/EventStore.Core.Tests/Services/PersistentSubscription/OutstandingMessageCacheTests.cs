@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var result2 = cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 1), 0), DateTime.Now);
             Assert.AreEqual(1, cache.Count);
             Assert.AreEqual(0, cache.GetLowestPosition());
-            Assert.AreEqual(StartMessageResult.Succeess, result1);
+            Assert.AreEqual(StartMessageResult.Success, result1);
             Assert.AreEqual(StartMessageResult.SkippedDuplicate, result2);
         }
 

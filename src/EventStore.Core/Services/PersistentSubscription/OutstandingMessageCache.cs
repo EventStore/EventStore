@@ -6,7 +6,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     public enum StartMessageResult
     {
-        Succeess,
+        Success,
         SkippedDuplicate
     }
 
@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
             _byTime.Add(new RetryableMessage(message.EventId, expires));
 
-            return StartMessageResult.Succeess;
+            return StartMessageResult.Success;
         }
 
         public IEnumerable<OutstandingMessage> GetMessagesExpiringBefore(DateTime time)
