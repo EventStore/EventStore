@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
             }
             
-            if(message.EventStreamId == null || message.EventStreamId == "")
+            if(message.EventStreamId == null || message.EventStreamId == "" || message.EventStreamId == "$all")
             {
                 message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(message.CorrelationId,
                     ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.Fail,
