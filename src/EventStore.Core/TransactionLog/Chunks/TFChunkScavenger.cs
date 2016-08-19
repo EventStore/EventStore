@@ -176,7 +176,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   commit =>
                                   {
                                       if (commit.TransactionPosition >= chunkStartPos)
-                                          commits.Add(commit.TransactionPosition, new CommitInfo(commit));
+                                          commits[commit.TransactionPosition] = new CommitInfo(commit);
                                   },
                                   system => { /* NOOP */ });
                 }
