@@ -251,7 +251,15 @@ namespace EventStore.Core.TransactionLog.Chunks
                          + "Stopping scavenging and removing temp chunk '{1}'...\n"
                          + "Exception message: {2}.", oldChunksList, tmpChunkPath, exc.Message);
                 DeleteTempChunk(tmpChunkPath, MaxRetryCount);
-                PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
+                PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved, exc.Message);
+                return false;
+            }
+            catch (Exception ex) 
+            {
+                Log.Info("Got exception while scavenging chunk: #{0}-{1}. This chunk will be skipped\n"
+                         + "Exception: {2}.", chunkStartNumber, chunkEndNumber, ex.ToString());
+                DeleteTempChunk(tmpChunkPath, MaxRetryCount);
+                PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, 0, ex.Message);
                 return false;
             }
         }
@@ -279,7 +287,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         }
 
         private void PublishChunksCompletedEvent(int chunkStartNumber, int chunkEndNumber,
-                                                 TimeSpan elapsed, bool wasScavenged, long spaceSaved)
+                                                 TimeSpan elapsed, bool wasScavenged, long spaceSaved, string errorMessage = "")
         {
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeChunksCompleted, true, new Dictionary<string, object>{
                     {"scavengeId", _scavengeId},
@@ -288,7 +296,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                     {"timeTaken", elapsed},
                     {"wasScavenged", wasScavenged},
                     {"spaceSaved", spaceSaved},
-                    {"nodeEndpoint", _nodeEndpoint}
+                    {"nodeEndpoint", _nodeEndpoint},
+                    {"errorMessage", errorMessage}
                 }.ToJsonBytes(), null);
 
             var streamName = string.Format("{0}-{1}", SystemStreams.ScavengesStream, _scavengeId);
