@@ -172,12 +172,13 @@ namespace EventStore.ClientAPI.Internal
 
         private ClusterMessages.ClusterInfoDto TryGetGossipFrom(GossipSeed endPoint)
         {
-            //_log.Debug("ClusterDnsEndPointDiscoverer: Trying to get gossip from [{0}].", endPoint);
+            _log.Debug("ClusterDnsEndPointDiscoverer: Trying to get gossip from [{0}].", endPoint);
 
             ClusterMessages.ClusterInfoDto result = null;
             var completed = new ManualResetEventSlim(false);
 
-            var url = endPoint.EndPoint.ToHttpUrl("/gossip?format=json");
+            var url = endPoint.UseHttps ? endPoint.EndPoint.ToHttpsUrl("/gossip?format=json") : endPoint.EndPoint.ToHttpUrl("/gossip?format=json");
+            _log.Debug("ClusterDnsEndPointDiscoverer: Using uri [{0}].", url);
             _client.Get(
                 url,
                 null,
@@ -185,24 +186,24 @@ namespace EventStore.ClientAPI.Internal
                 {
                     if (response.HttpStatusCode != HttpStatusCode.OK)
                     {
-                        //_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode, response.StatusDescription);
+                        _log.Debug("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode, response.StatusDescription);
                         completed.Set();
                         return;
                     }
                     try
                     {
                         result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
-                        //_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
+                        _log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        //_log.Info("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e.Message);
+                        _log.Debug("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e.Message);
                     }
                     completed.Set();
                 },
                 e =>
                 {
-                    //_log.Info("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e.Message);
+                    _log.Debug("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e.Message);
                     completed.Set();
                 }, endPoint.HostHeader);
 

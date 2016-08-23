@@ -20,13 +20,20 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly string HostHeader;
 
+        ///<summary>
+        /// Whether or not to use HTTPS for gossip.
+        /// </summary>
+        public readonly bool UseHttps;
+
         /// <summary>
         /// Creates a new <see cref="GossipSeed" />.
         /// </summary>
         /// <param name="endPoint">The <see cref="IPEndPoint"/> for the External HTTP endpoint of the gossip seed. The standard port is 2113.</param>
         /// <param name="hostHeader">The host header to be sent when requesting gossip. Defaults to String.Empty</param>
-        public GossipSeed(IPEndPoint endPoint, string hostHeader = "")
+        /// <param name="useHttps">Whether to gossip over https. Defaults to false</param>
+        public GossipSeed(IPEndPoint endPoint, string hostHeader = "", bool useHttps = false)
         {
+            UseHttps = useHttps;
             EndPoint = endPoint;
             HostHeader = hostHeader;
         }
