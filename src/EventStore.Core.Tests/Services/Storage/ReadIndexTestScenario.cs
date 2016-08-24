@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Services.Storage
 {
@@ -77,16 +78,17 @@ namespace EventStore.Core.Tests.Services.Storage
             ChaserCheckpoint.Flush();
 
             var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5, () => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
-            TableIndex = new TableIndex(GetFilePathFor("index"),
-                                        () => new HashListMemTable(MaxEntriesInMemTable * 2),
+            var lowHasher = new XXHashUnsafe();
+            var highHasher = new Murmur3AUnsafe();
+            TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
+                                        () => new HashListMemTable(PTableVersions.Index64Bit, MaxEntriesInMemTable * 2),
                                         () => new TFReaderLease(readers),
+                                        PTableVersions.Index64Bit,
                                         MaxEntriesInMemTable);
 
-            var hasher = new ByLengthHasher();
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,
                                       TableIndex,
-                                      hasher,
                                       0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount,
@@ -99,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Storage
             {
                 if (_completeLastChunkOnScavenge)
                     Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
-                _scavenger = new TFChunkScavenger(Db, IODispatcher, TableIndex, hasher, ReadIndex, Guid.NewGuid(), "fakeNodeIp");
+                _scavenger = new TFChunkScavenger(Db, IODispatcher, TableIndex, ReadIndex, Guid.NewGuid(), "fakeNodeIp");
                 _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
             }
         }

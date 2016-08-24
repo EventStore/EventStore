@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions
 {
@@ -32,14 +33,16 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             TableIndex.Close(removeFiles: false);
 
             var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, WriterCheckpoint));
-            TableIndex = new TableIndex(GetFilePathFor("index"),
-                                        () => new HashListMemTable(maxSize: MaxEntriesInMemTable*2),
+            var lowHasher = new XXHashUnsafe();
+            var highHasher = new Murmur3AUnsafe();
+            TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
+                                        () => new HashListMemTable(PTableVersions.Index64Bit, maxSize: MaxEntriesInMemTable*2),
                                         () => new TFReaderLease(readers),
+                                        PTableVersions.Index64Bit,
                                         maxSizeForMemory: MaxEntriesInMemTable);
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,
                                       TableIndex,
-                                      new ByLengthHasher(),
                                       0,
                                       additionalCommitChecks: true, 
                                       metastreamMaxCount: 1,

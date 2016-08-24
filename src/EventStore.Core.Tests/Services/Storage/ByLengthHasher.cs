@@ -1,3 +1,4 @@
+using System;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Services.Storage

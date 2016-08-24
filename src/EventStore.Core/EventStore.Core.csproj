@@ -149,6 +149,8 @@
     <Compile Include="Index\IIndexFilenameProvider.cs" />
     <Compile Include="Index\IMemTable.cs" />
     <Compile Include="Index\IndexEntry.cs" />
+    <Compile Include="Index\IndexEntry32.cs" />
+    <Compile Include="Index\IndexKey.cs" />
     <Compile Include="Index\IndexMap.cs" />
     <Compile Include="Index\ISearchTable.cs" />
     <Compile Include="Index\ITableIndex.cs" />

@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
             var bus = new InMemoryBus("Bus");
             var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
-            var scavenger = new TFChunkScavenger(_db, ioDispatcher, new FakeTableIndex(), new XXHashUnsafe(),
+            var scavenger = new TFChunkScavenger(_db, ioDispatcher, new FakeTableIndex(),
                                                  new FakeReadIndex(x => x == "es-to-scavenge"), Guid.NewGuid(), "fakeNodeIp");
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
