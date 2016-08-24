@@ -23,6 +23,7 @@ namespace EventStore.Projections.Core
         private InMemoryBus _masterOutputBus;
         private IDictionary<Guid, QueuedHandler> _coreQueues;
         private Dictionary<Guid, IPublisher> _queueMap;
+        private bool _subsystemStarted;
 
         public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections, bool startStandardProjections)
         {
@@ -68,18 +69,26 @@ namespace EventStore.Projections.Core
 
         public void Start()
         {
-            if (_masterInputQueue != null)
-                _masterInputQueue.Start();
-            foreach (var queue in _coreQueues)
-                queue.Value.Start();
+            if(_subsystemStarted == false)
+            {
+                if (_masterInputQueue != null)
+                    _masterInputQueue.Start();
+                foreach (var queue in _coreQueues)
+                    queue.Value.Start();
+            }
+            _subsystemStarted = true;
         }
 
         public void Stop()
         {
-            if (_masterInputQueue != null)
-                _masterInputQueue.Stop();
-            foreach (var queue in _coreQueues)
-                queue.Value.Stop();
+            if(_subsystemStarted)
+            {
+                if (_masterInputQueue != null)
+                    _masterInputQueue.Stop();
+                foreach (var queue in _coreQueues)
+                    queue.Value.Stop();
+            }
+            _subsystemStarted = false;
         }
 
         private List<string> _standardProjections = new List<string> { "$by_category", "$stream_by_category", "$streams", "$by_event_type" };
