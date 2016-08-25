@@ -341,7 +341,7 @@ namespace EventStore.Core.Index
                 }
             }
 
-            var indexMap = new IndexMap(version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel);
+            var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel);
             return new MergeResult(indexMap, toDelete);
         }
 

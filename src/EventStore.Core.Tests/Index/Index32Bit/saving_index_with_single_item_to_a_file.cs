@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
                 Assert.AreEqual(5, lines.Count());
                 Assert.AreEqual(md5String, lines[0]);
-                Assert.AreEqual(_ptableVersion.ToString(), lines[1]);
+                Assert.AreEqual(_map.Version.ToString(), lines[1]);
                 Assert.AreEqual("7/11", lines[2]);
                 Assert.AreEqual("0,0," + Path.GetFileName(_tablename), lines[3]);
                 Assert.AreEqual("", lines[4]);
