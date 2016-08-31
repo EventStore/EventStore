@@ -72,6 +72,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _state = PersistentSubscriptionState.NotReady;
             _lastCheckPoint = -1;
+            _lastKnownMessage = -1;
             _statistics.SetLastKnownEventNumber(-1);
             _settings.CheckpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
 
