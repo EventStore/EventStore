@@ -234,7 +234,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void MarkBeginProcessing(OutstandingMessage message)
         {
             _statistics.IncrementProcessed();
-            _outstandingMessages.StartMessage(message, DateTime.UtcNow + _settings.MessageTimeout);
+            StartMessage(message, DateTime.UtcNow + _settings.MessageTimeout);
         }
 
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
@@ -316,7 +316,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             lock (_lock)
             {
-                _outstandingMessages.StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0),
+                StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0),
                     DateTime.UtcNow + _settings.MessageTimeout);
             }
         }
@@ -463,6 +463,19 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     TryReadingParkedMessagesFrom(newposition, stopAt);                    
                 }
+            }
+        }
+
+        private void StartMessage(OutstandingMessage message, DateTime expires)
+        {
+            var result = _outstandingMessages.StartMessage(message, expires);
+
+            if (result == StartMessageResult.SkippedDuplicate)
+            {
+                Log.Warn("Skipping message {0}/{1} with duplicate eventId {2}", 
+                    message.ResolvedEvent.OriginalStreamId,
+                    message.ResolvedEvent.OriginalEventNumber, 
+                    message.EventId);
             }
         }
 

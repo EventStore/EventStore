@@ -4,6 +4,12 @@ using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
+    public enum StartMessageResult
+    {
+        Success,
+        SkippedDuplicate
+    }
+
     public class OutstandingMessageCache
     {
         private readonly Dictionary<Guid, OutstandingMessage> _outstandingRequests;
@@ -34,15 +40,16 @@ namespace EventStore.Core.Services.PersistentSubscription
             foreach(var m in messageIds) Remove(m);
         }
 
-        public void StartMessage(OutstandingMessage message, DateTime expires)
+        public StartMessageResult StartMessage(OutstandingMessage message, DateTime expires)
         {
-            var found = _outstandingRequests.ContainsKey(message.EventId);
+            if (_outstandingRequests.ContainsKey(message.EventId))
+                return StartMessageResult.SkippedDuplicate;
+
             _outstandingRequests[message.EventId] = message;
-            if (!found)
-            {
-                _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
-                _byTime.Add(new RetryableMessage(message.EventId, expires));
-            }
+            _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
+            _byTime.Add(new RetryableMessage(message.EventId, expires));
+
+            return StartMessageResult.Success;
         }
 
         public IEnumerable<OutstandingMessage> GetMessagesExpiringBefore(DateTime time)
