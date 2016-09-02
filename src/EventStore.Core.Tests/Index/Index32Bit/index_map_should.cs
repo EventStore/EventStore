@@ -43,13 +43,13 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         [Test]
         public void not_allow_negative_prepare_checkpoint_when_adding_ptable()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, -1, 0, (streamId, hash) => hash, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, -1, 0, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion));
         }
 
         [Test]
         public void not_allow_negative_commit_checkpoint_when_adding_ptable()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, 0, -1, (streamId, hash) => hash, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, 0, -1, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion));
         }
 
         [Test]
