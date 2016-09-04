@@ -59,7 +59,7 @@ namespace EventStore.Core.Index
             return new PTable(filename, table.Id, depth: cacheDepth);
         }
 
-        public static PTable MergeTo(IList<PTable> tables, string outputFile, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, Tuple<string, bool>> readRecord, byte version, int cacheDepth = 16)
+        public static PTable MergeTo(IList<PTable> tables, string outputFile, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord, byte version, int cacheDepth = 16)
         {
             Ensure.NotNull(tables, "tables");
             Ensure.NotNullOrEmpty(outputFile, "outputFile");
@@ -69,7 +69,7 @@ namespace EventStore.Core.Index
 
             var fileSize = GetFileSize(tables, indexEntrySize); // approximate file size
             if (tables.Count == 2)
-                return MergeTo2(tables, fileSize, indexEntrySize, outputFile, upgradeHash, readRecord, version, cacheDepth); // special case
+                return MergeTo2(tables, fileSize, indexEntrySize, outputFile, upgradeHash, existsAt, readRecord, version, cacheDepth); // special case
 
             Log.Trace("PTables merge started.");
             var watch = Stopwatch.StartNew();
@@ -106,13 +106,18 @@ namespace EventStore.Core.Index
                     {
                         var idx = GetMaxOf(enumerators, version, upgradeHash, readRecord);
                         var current = enumerators[idx].Current;
-                        var item = readRecord(current); //Possibly doing another read if the entry was read in GetMaxOf
-                        if (item.Item2)
+                        bool exists = false;
+                        if (version == PTableVersions.Index64Bit && enumerators[idx].Table.Version == PTableVersions.Index32Bit)
                         {
-                            if (version == PTableVersions.Index64Bit && enumerators[idx].Table.Version == PTableVersions.Index32Bit)
-                            {
-                                current.Stream = upgradeHash(item.Item1, current.Stream);
-                            }
+                            var item = readRecord(current); //Possibly doing another read if the entry was read in GetMaxOf
+                            exists = item.Item2;
+                            current.Stream = upgradeHash(item.Item1, current.Stream);
+                        }
+                        else
+                        {
+                            exists = existsAt(current);
+                        }
+                        if(exists){
                             AppendRecordTo(bs, buffer, version, current, indexEntrySize);
                             dumpedEntryCount += 1;
                         }
@@ -140,7 +145,7 @@ namespace EventStore.Core.Index
         }
 
         private static PTable MergeTo2(IList<PTable> tables, long fileSize, int indexEntrySize, string outputFile,
-                                       Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, Tuple<string, bool>> readRecord, 
+                                       Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord, 
                                        byte version, int cacheDepth)
         {
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
@@ -212,8 +217,7 @@ namespace EventStore.Core.Index
                             }
 
                             //Possibly doing another read if the record was read during the upgrade process
-                            var item = readRecord(current);
-                            if (item.Item2)
+                            if (existsAt(current))
                             {
                                 AppendRecordTo(bs, buffer, version, current, indexEntrySize);
                                 dumpedEntryCount += 1;

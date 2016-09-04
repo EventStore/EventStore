@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
             var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
             table.MarkForDestruction();
         }
 

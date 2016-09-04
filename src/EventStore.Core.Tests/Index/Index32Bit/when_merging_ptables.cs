@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             table.Add(0x010700000000, 0, 0x0107);
             table.Add(0x010800000000, 0, 0x0108);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index32Bit);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index32Bit);
         }
 
         [TestFixtureTearDown]
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             table.Add(0x010700000000, 0, 0x0107);
             table.Add(0x010800000000, 0, 0x0108);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index64Bit);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index64Bit);
         }
 
         [TestFixtureTearDown]
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             table.Add(0x111000000000, 0, 0x111000000000);
             table.Add(0x121000000000, 0, 0x121000000000);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index64Bit);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index64Bit);
         }
 
         [TestFixtureTearDown]
@@ -231,7 +231,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             table.Add(0x010500000000, 2, 13);
             table.Add(0x010500000000, 3, 14);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.Index64Bit);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.Index64Bit);
         }
 
         [TestFixtureTearDown]
@@ -305,7 +305,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             table.Add(0x010500000000, 2, 13);
             table.Add(0x010500000000, 3, 14);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.Index64Bit);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.Index64Bit);
         }
 
         [TestFixtureTearDown]

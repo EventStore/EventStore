@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
                 _tables.Add(PTable.FromMemtable(table, _files[i]));
             }
             _files.Add(GetTempFilePath());
-            _newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash << 32 | hasher.Hash(streamId), _ => new System.Tuple<string, bool>("", true), _ptableVersion);
+            _newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash << 32 | hasher.Hash(streamId), _ => true, _ => new System.Tuple<string, bool>("", true), _ptableVersion);
         }
 
         [TestFixtureTearDown]
