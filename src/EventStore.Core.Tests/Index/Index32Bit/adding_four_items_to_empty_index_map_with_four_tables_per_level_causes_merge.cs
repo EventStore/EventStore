@@ -28,22 +28,22 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
             _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 1, 2,
                                      (streamId, hash) => hash,
-                                     _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+                                     _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
             _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 3, 4,
                                                  (streamId, hash) => hash,
-                                                  _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
             _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 4, 5,
                                                  (streamId, hash) => hash,
-                                                  _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
             _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 0, 1,
                                                  (streamId, hash) => hash,
-                                                  _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

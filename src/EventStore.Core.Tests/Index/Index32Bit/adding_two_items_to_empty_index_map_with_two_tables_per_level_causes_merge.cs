@@ -27,10 +27,10 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             memtable.Add(0, 1, 0);
 
             _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                     123, 321, (streamId, hash) => hash, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+                                     123, 321, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
             _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                                  100, 400, (streamId, hash) => hash, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+                                                  100, 400, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

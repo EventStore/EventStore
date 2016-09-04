@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 2, 7);
             var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
             _result.MergedMap.SaveToFile(_filename);
             _result.ToDelete.ForEach(x => x.Dispose());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.Dispose());

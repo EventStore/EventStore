@@ -266,6 +266,7 @@ namespace EventStore.Core.Index
                     {
                         mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint,
                                                           (streamId, currentHash) => UpgradeHash(streamId, currentHash),
+                                                          entry => reader.ExistsAt(entry.Position),
                                                           entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion, _indexCacheDepth);
                     }
                     _indexMap = mergeResult.MergedMap;
