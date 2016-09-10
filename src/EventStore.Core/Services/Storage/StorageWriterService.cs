@@ -71,7 +71,8 @@ namespace EventStore.Core.Services.Storage
         private long _maxFlushDelay;
         private const string _writerFlushHistogram = "writer-flush";
         private bool _asyncFlush;
-        
+        private Thread _flushThread;
+
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
                                     TimeSpan minFlushDelay,
@@ -101,6 +102,11 @@ namespace EventStore.Core.Services.Storage
             Writer = writer;
             Writer.Open();
             _asyncFlush = asyncFlush;
+            if(asyncFlush) {
+                Log.Info("Starting async flush thread.");
+                _flushThread = GetAsyncFlushThread();
+                _flushThread.Start();
+            }
             _writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
             StorageWriterQueue = new QueuedHandler(new AdHocHandler<Message>(CommonHandle),
                                                    "StorageWriterQueue",
@@ -118,6 +124,12 @@ namespace EventStore.Core.Services.Storage
             SubscribeToMessage<StorageMessage.WriteTransactionData>();
             SubscribeToMessage<StorageMessage.WriteTransactionPrepare>();
             SubscribeToMessage<StorageMessage.WriteCommit>();
+        }
+
+        private Thread GetAsyncFlushThread() {
+            var flushThread = new Thread(AsyncFlushThread);
+            flushThread.IsBackground = true;
+            return flushThread;
         }
 
         protected void SubscribeToMessage<T>() where T: Message
@@ -138,6 +150,12 @@ namespace EventStore.Core.Services.Storage
                 StorageWriterQueue.Stop();
                 BlockWriter = true;
                 Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
+            }
+        }
+
+        private void AsyncFlushThread() {
+            while(true) {
+                Flush();
             }
         }
 
@@ -300,7 +318,8 @@ namespace EventStore.Core.Services.Storage
             }
             finally
             {
-                Flush();
+                if(!_asyncFlush)
+                    Flush();
             }
         }
 
@@ -407,7 +426,8 @@ namespace EventStore.Core.Services.Storage
             }
             finally
             {
-                Flush();
+                if(!_asyncFlush)
+                    Flush();
             }
         }
 
@@ -435,7 +455,8 @@ namespace EventStore.Core.Services.Storage
             }
             finally
             {
-                Flush();
+                if(!_asyncFlush)
+                    Flush();
             }
         }
 
@@ -481,7 +502,8 @@ namespace EventStore.Core.Services.Storage
             }
             finally
             {
-                Flush();
+                if(!_asyncFlush)
+                    Flush();
             }
         }
 
@@ -511,7 +533,8 @@ namespace EventStore.Core.Services.Storage
             }
             finally
             {
-                Flush();
+                if(!_asyncFlush)
+                    Flush();
             }
         }
 
@@ -565,7 +588,8 @@ namespace EventStore.Core.Services.Storage
             }
             finally
             {
-                Flush();
+                if(!_asyncFlush)
+                    Flush();
             }
         }
 

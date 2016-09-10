@@ -635,12 +635,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             
             // for non-scavenged chunk _physicalDataSize should be the same as _logicalDataSize
             // for scavenged chunk _logicalDataSize should be at least the same as _physicalDataSize
-            if ((!ChunkHeader.IsScavenged && _logicalDataSize != _physicalDataSize)
-                || (ChunkHeader.IsScavenged && _logicalDataSize < _physicalDataSize))
-            {
-                throw new Exception(string.Format("Data sizes violation. Chunk: {0}, IsScavenged: {1}, LogicalDataSize: {2}, PhysicalDataSize: {3}.",
-                                                  FileName, ChunkHeader.IsScavenged, _logicalDataSize, _physicalDataSize));
-            }
+
             
             return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
         }

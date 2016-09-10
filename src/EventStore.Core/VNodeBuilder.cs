@@ -278,6 +278,7 @@ namespace EventStore.Core
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder FlushAsynchronously()
         {
+            _unsafeDisableFlushToDisk = true;
             _asyncFlush = true;
             return this;
         }
