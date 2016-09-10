@@ -117,6 +117,7 @@ namespace EventStore.Core
         private int _advertiseExternalSecureTcpPortAs;
         private int _advertiseInternalTcpPortAs;
         private int _advertiseExternalTcpPortAs;
+        private bool _asyncFlush;
 
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -196,6 +197,7 @@ namespace EventStore.Core
             _unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
             _betterOrdering = Opts.BetterOrderingDefault;
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
+            _asyncFlush = Opts.AsyncFlushDefault;
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -269,6 +271,17 @@ namespace EventStore.Core
             _dbPath = Path.Combine(Path.GetTempPath(), "EmbeddedEventStore", string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-EmbeddedNode", DateTime.UtcNow));
             return this;
         }
+
+        /// <summary>
+        /// Returns a builder set to run with asynchronous flushing
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder FlushAsynchronously()
+        {
+            _asyncFlush = true;
+            return this;
+        }
+
 
         /// <summary>
         /// Returns a builder set to write database files to the specified path
@@ -1259,7 +1272,8 @@ namespace EventStore.Core
                     consumerStrategies,
                     _unsafeIgnoreHardDelete,
                     _betterOrdering,
-                    _readerThreadsCount);
+                    _readerThreadsCount,
+                    _asyncFlush);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);

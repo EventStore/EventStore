@@ -144,6 +144,10 @@ namespace EventStore.Core.Util
         public const string LogHttpRequestsDescr = "Log Http Requests and Responses before processing them.";
         public static readonly bool LogHttpRequestsDefault = false;
 
+        public const string AsyncFlushDescr = "Flush to disk asynchronously, effects durability.";
+        public static readonly bool AsyncFlushDefault = false;
+
+
         //Loading certificates from files
         public const string CertificateFileDescr = "The path to certificate file.";
         public static readonly string CertificateFileDefault = string.Empty;

@@ -120,6 +120,8 @@ namespace EventStore.ClusterNode
         public int MaxMemTableSize { get; set; }
         [ArgDescription(Opts.HashCollisionReadLimitDescr, Opts.DbGroup)]
         public int HashCollisionReadLimit { get; set; }
+        [ArgDescription(Opts.AsyncFlushDescr, Opts.DbGroup)]
+        public bool AsyncFlush { get; set; }
 
         [ArgDescription(Opts.DbPathDescr, Opts.DbGroup)]
         public string Db { get; set; }
@@ -302,6 +304,7 @@ namespace EventStore.ClusterNode
             StartStandardProjections = Opts.StartStandardProjectionsDefault;
             DisableHTTPCaching = Opts.DisableHttpCachingDefault;
             LogHttpRequests = Opts.LogHttpRequestsDefault;
+            AsyncFlush = Opts.AsyncFlushDefault;
         }
     }
 }
