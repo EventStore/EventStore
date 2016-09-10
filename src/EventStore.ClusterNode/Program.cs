@@ -251,7 +251,8 @@ namespace EventStore.ClusterNode
                 builder.NoGossipOnPublicInterface();
             if(options.SkipDbVerify)
                 builder.DoNotVerifyDbHashes();
-
+            if(options.AsyncFlush) 
+                builder.FlushAsynchronously();
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation))

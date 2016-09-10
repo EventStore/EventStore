@@ -191,9 +191,14 @@ namespace EventStore.Core
                                                 readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
 
-            var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus, vNodeSettings.MinFlushDelay,
-                                                                db, writer, readIndex.IndexWriter, epochManager,
-                                                                () => readIndex.LastCommitPosition); // subscribes internally
+            var storageWriter = new ClusterStorageWriterService(_mainQueue, 
+                                                                _mainBus, vNodeSettings.MinFlushDelay,
+                                                                db, 
+                                                                writer, 
+                                                                readIndex.IndexWriter, 
+                                                                epochManager,
+                                                                () => readIndex.LastCommitPosition,
+                                                                vNodeSettings.AsyncFlush); // subscribes internally
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint);

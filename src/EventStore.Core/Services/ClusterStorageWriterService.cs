@@ -40,14 +40,14 @@ namespace EventStore.Core.Services
                                            TFChunkWriter writer, 
                                            IIndexWriter indexWriter,
                                            IEpochManager epochManager,
-                                           Func<long> getLastCommitPosition) 
-            : base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, epochManager)
+                                           Func<long> getLastCommitPosition,
+                                           bool asyncFlush) 
+            : base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, epochManager, asyncFlush)
         {
             Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
 
             _getLastCommitPosition = getLastCommitPosition;
             _framer = new LengthPrefixSuffixFramer(OnLogRecordUnframed, TFConsts.MaxLogRecordSize);
-
             SubscribeToMessage<ReplicationMessage.ReplicaSubscribed>();
             SubscribeToMessage<ReplicationMessage.CreateChunk>();
             SubscribeToMessage<ReplicationMessage.RawChunkBulk>();

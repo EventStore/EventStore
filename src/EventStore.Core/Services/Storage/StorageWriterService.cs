@@ -70,14 +70,16 @@ namespace EventStore.Core.Services.Storage
         private long _maxFlushSize;
         private long _maxFlushDelay;
         private const string _writerFlushHistogram = "writer-flush";
-
+        private bool _asyncFlush;
+        
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
                                     TimeSpan minFlushDelay,
                                     TFChunkDb db,
                                     TFChunkWriter writer, 
                                     IIndexWriter indexWriter,
-                                    IEpochManager epochManager)
+                                    IEpochManager epochManager,
+                                    bool asyncFlush)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscribeToBus, "subscribeToBus");
@@ -98,7 +100,7 @@ namespace EventStore.Core.Services.Storage
 
             Writer = writer;
             Writer.Open();
-
+            _asyncFlush = asyncFlush;
             _writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
             StorageWriterQueue = new QueuedHandler(new AdHocHandler<Message>(CommonHandle),
                                                    "StorageWriterQueue",
