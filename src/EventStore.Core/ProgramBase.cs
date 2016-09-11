@@ -74,7 +74,8 @@ namespace EventStore.Core
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                Log.FatalException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
+                Log.FatalException(ex, "Unhandled exception while starting application:");
+                Log.FatalException(ex, "{0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             finally
@@ -130,18 +131,12 @@ namespace EventStore.Core
             string logsDirectory = Path.GetFullPath(options.Log.IsNotEmptyString() ? options.Log : GetLogsDirectory(options));
             LogManager.Init(componentName, logsDirectory, Locations.DefaultConfigurationDirectory);
 
-            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
-                     + "{5,-25} {6} ({7})\n"
-                     + "{8,-25} {9} ({10}-bit)\n"
-                     + "{11,-25} {12}\n"
-                     + "{13,-25} {14}\n\n"
-                     + "{15}",
-                     "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
-                     "OS:", OS.OsFlavor, Environment.OSVersion,
-                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
-                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
-                     "LOGS:", LogManager.LogsDirectory,
-                     EventStoreOptions.DumpOptions());
+            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})", "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+            Log.Info("{0,-25} {1} ({2})", "OS:", OS.OsFlavor, Environment.OSVersion);
+            Log.Info("{0,-25} {1} ({2}-bit)", "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8);
+            Log.Info("{0,-25} {1} ({2} max)", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+            Log.Info("{0,-25} {1}", "LOGS:", LogManager.LogsDirectory);
+            Log.Info("{0}", EventStoreOptions.DumpOptions());
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");

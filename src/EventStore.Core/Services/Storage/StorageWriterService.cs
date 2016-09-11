@@ -143,7 +143,8 @@ namespace EventStore.Core.Services.Storage
         {
             if (BlockWriter && !(message is SystemMessage.StateChangeMessage))
             {
-                Log.Trace("Blocking message {0} in StorageWriterService. Message:\n{1}", message.GetType().Name, message);
+                Log.Trace("Blocking message {0} in StorageWriterService. Message:", message.GetType().Name);
+                Log.Trace("{0}", message);
                 return;
             }
 
