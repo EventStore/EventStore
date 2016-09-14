@@ -290,13 +290,16 @@ namespace EventStore.Core.Services.PersistentSubscription
             lock (_lock)
             {
                 var lowest = _outstandingMessages.GetLowestPosition();
-                //TODO? COMPETING better to make -1? as of now we are inclusive of checkpoint.
                 var lowestBufferedRetry = _streamBuffer.GetLowestRetry();
+                Log.Debug("Lowest from outstanding is " + lowest);
+                Log.Debug("Lowest from streambuffer is " + lowestBufferedRetry);
                 lowest = Math.Min(lowest, lowestBufferedRetry);
                 if (lowest == int.MinValue) lowest = _lastKnownMessage;
                 //no outstanding messages. in this case we can say that the last known
                 //event would be our checkpoint place (we have already completed it)
                 var difference = lowest - _lastCheckPoint;
+                Log.Debug("lastCheckPoint is " + _lastCheckPoint);
+                Log.Debug("difference is " + difference);
                 var now = DateTime.UtcNow;
                 var timedifference = now - _lastCheckPointTime;
                 if (timedifference < _settings.CheckPointAfter && difference < _settings.MaxCheckPointCount) return;
