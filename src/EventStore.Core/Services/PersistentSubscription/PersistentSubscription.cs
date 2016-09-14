@@ -291,17 +291,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 var lowest = _outstandingMessages.GetLowestPosition();
                 var lowestBufferedRetry = _streamBuffer.GetLowestRetry();
-                Log.Debug("Lowest from outstanding is " + lowest);
-                Log.Debug("Lowest from streambuffer is " + lowestBufferedRetry);
                 lowest = Math.Min(lowest, lowestBufferedRetry);
-                Log.Debug("Lowest is " + lowest);
                 if (lowest == int.MinValue) lowest = _lastKnownMessage;
+                if (lowest == 0) return;
                 //no outstanding messages. in this case we can say that the last known
                 //event would be our checkpoint place (we have already completed it)
-                Log.Debug("Lowest is " + lowest);
                 var difference = lowest - _lastCheckPoint;
-                Log.Debug("lastCheckPoint is " + _lastCheckPoint);
-                Log.Debug("difference is " + difference);
                 var now = DateTime.UtcNow;
                 var timedifference = now - _lastCheckPointTime;
                 if (timedifference < _settings.CheckPointAfter && difference < _settings.MaxCheckPointCount) return;
