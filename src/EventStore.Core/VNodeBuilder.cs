@@ -1118,14 +1118,14 @@ namespace EventStore.Core
                 if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
                      _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes)
                 {
-                    IPAddress nonLoopbackAddress = GetNonLoopbackAddress();
+                    IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
                     IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
-                    if (_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))
+                    if (_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null)
                     {
                         intIpAddressToAdvertise = addressToAdvertise;
                     }
-                    if (_externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))
+                    if (_externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null)
                     {
                         extIpAddressToAdvertise = addressToAdvertise;
                     }
@@ -1154,26 +1154,7 @@ namespace EventStore.Core
             }
             return _gossipAdvertiseInfo;
         }
-
-
-        private static IPAddress GetNonLoopbackAddress()
-        {
-            foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
-                {
-                    if (address.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                    {
-                        if (!IPAddress.IsLoopback(address.Address))
-                        {
-                            return address.Address;
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
+        
         protected abstract void SetUpProjectionsIfNeeded();
 
         /// <summary>
