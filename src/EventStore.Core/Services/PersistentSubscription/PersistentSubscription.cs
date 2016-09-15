@@ -295,6 +295,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 var lowestBufferedRetry = _streamBuffer.GetLowestRetry();
                 lowest = Math.Min(lowest, lowestBufferedRetry);
                 if (lowest == int.MinValue) lowest = _lastKnownMessage;
+                if (lowest == 0) return;
                 //no outstanding messages. in this case we can say that the last known
                 //event would be our checkpoint place (we have already completed it)
                 var difference = lowest - _lastCheckPoint;
