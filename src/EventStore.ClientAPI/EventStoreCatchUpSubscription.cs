@@ -332,6 +332,7 @@ namespace EventStore.ClientAPI
                     }
                     catch (Exception exc)
                     {
+                        Log.Debug("Catch-up Subscription to {0} Exception occurred in subscription {1}",IsSubscribedToAll ? "<all>" : StreamId, exc);
                         DropSubscription(SubscriptionDropReason.EventHandlerException, exc);
                         return;
                     }
