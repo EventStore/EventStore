@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
     {
         private TFChunkDbConfig _config;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
             truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed());
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             using (var db = new TFChunkDb(_config))

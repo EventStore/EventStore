@@ -3,6 +3,8 @@ using System.Linq;
 using EventStore.Common.Utils;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
+using System.IO;
+using System.Reflection;
 
 namespace EventStore.Core.Tests.Helpers
 {
@@ -109,6 +111,15 @@ namespace EventStore.Core.Tests.Helpers
             var path = "/";
 
             AssertJObject(jobject, response, path);
+        }
+
+        public static string GetFilePathFromAssembly(string filePath) 
+        {
+            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            System.Console.WriteLine("Base dir: {0}", baseDir);
+            var result = Path.Combine(baseDir, filePath);
+            System.Console.WriteLine("Result: {0}", result);
+            return result;
         }
     }
 }

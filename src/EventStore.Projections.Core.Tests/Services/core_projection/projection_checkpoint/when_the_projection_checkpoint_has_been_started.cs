@@ -20,10 +20,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _checkpoint.Start();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void start_throws_invalid_operation_exception()
         {
-            _checkpoint.Start();
+            Assert.Throws<InvalidOperationException>(()=> { _checkpoint.Start(); });
         }
     }
 }

@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.Greater(_results.Sum(r => r.IsExternalConnection ? r.TotalBytesReceived : 0), 0);
         }
         
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _portableServer.TearDown();

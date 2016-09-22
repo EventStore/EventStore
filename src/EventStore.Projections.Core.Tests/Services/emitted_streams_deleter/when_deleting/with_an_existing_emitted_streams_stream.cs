@@ -13,15 +13,21 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
         protected Action _onDeleteStreamCompleted;
         protected ManualResetEvent _resetEvent = new ManualResetEvent(false);
         private string _testStreamName = "test_stream";
+        private ManualResetEvent _eventAppeared = new ManualResetEvent(false);
+        private EventStore.ClientAPI.SystemData.UserCredentials _credentials;
 
         protected override void Given()
         {
+            _credentials = new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit");
             _onDeleteStreamCompleted = () =>
             {
                 _resetEvent.Set();
             };
 
             base.Given();
+            var sub = _conn.SubscribeToStreamAsync(_projectionNamesBuilder.GetEmittedStreamsName(), true, (s, evnt) => {
+                _eventAppeared.Set();
+            }, userCredentials: _credentials).Result;
 
             _emittedStreamsTracker.TrackEmittedStream(new EmittedEvent[]
             {
@@ -30,7 +36,12 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
                     "data", null, CheckpointTag.FromPosition(0, 100, 50), null),
             });
 
-            var emittedStreamResult = _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 1, false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit")).Result;
+            if(!_eventAppeared.WaitOne(TimeSpan.FromSeconds(5))) {
+                Assert.Fail("Timed out waiting for emitted stream event");
+            }
+            sub.Unsubscribe();
+
+            var emittedStreamResult = _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 1, false, _credentials).Result;
             Assert.AreEqual(1, emittedStreamResult.Events.Length);
             Assert.AreEqual(SliceReadStatus.Success, emittedStreamResult.Status);
         }

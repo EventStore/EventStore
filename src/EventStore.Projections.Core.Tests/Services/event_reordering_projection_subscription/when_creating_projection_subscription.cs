@@ -24,9 +24,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 500);
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_publisher_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             new EventReorderingReaderSubscription(
                 null,
                 Guid.NewGuid(),
@@ -36,11 +37,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 1000,
                 2000,
                 500);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_describe_source_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             new EventReorderingReaderSubscription(
                 new FakePublisher(),
                 Guid.NewGuid(),
@@ -50,11 +53,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 1000,
                 2000,
                 500);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_time_provider_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             new EventReorderingReaderSubscription(
                 new FakePublisher(),
                 Guid.NewGuid(),
@@ -64,6 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 1000,
                 2000,
                 500);
+            });
         }
 
         private IReaderStrategy CreateReaderStrategy()

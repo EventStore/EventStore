@@ -34,10 +34,10 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             Assert.AreEqual("data", state.State);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_relocked_at_the_previous_position()
         {
-            _cache.TryGetAndLockPartitionState("partition", _cachedAtCheckpointTag);
+            Assert.Throws<InvalidOperationException>(()=> { _cache.TryGetAndLockPartitionState("partition", _cachedAtCheckpointTag); });
         }
 
         [Test]

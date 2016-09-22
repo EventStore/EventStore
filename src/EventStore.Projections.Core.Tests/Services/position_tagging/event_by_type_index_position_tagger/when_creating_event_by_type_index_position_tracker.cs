@@ -27,26 +27,28 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void it_cannot_be_updated_with_other_event_types()
         {
             var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type3", 20}});
-            _positionTracker.UpdateByCheckpointTagInitial(newTag);
+            Assert.Throws<InvalidOperationException>(()=> { _positionTracker.UpdateByCheckpointTagInitial(newTag); });
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void it_cannot_be_updated_forward()
         {
             var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type2", 20}});
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            Assert.Throws<InvalidOperationException>(()=> { _positionTracker.UpdateByCheckpointTagForward(newTag); });
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void initial_position_cannot_be_set_twice()
         {
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type2", 20}});
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            Assert.Throws<InvalidOperationException>(()=> { 
+                var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type2", 20}});
+                _positionTracker.UpdateByCheckpointTagForward(newTag);
+                _positionTracker.UpdateByCheckpointTagForward(newTag); 
+            });
         }
 
         [Test]

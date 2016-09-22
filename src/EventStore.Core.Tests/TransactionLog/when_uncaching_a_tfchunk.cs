@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private PrepareLogRecord _record;
         private TFChunk _uncachedChunk;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _uncachedChunk.UnCacheFromMemory();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _chunk.Dispose();

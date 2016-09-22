@@ -70,6 +70,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             HttpBootstrap.Unsubscribe(_bus, _service);
 
             _service.Shutdown();
+            _client.Dispose();
             _multiQueuedHandler.Stop();
         }
 

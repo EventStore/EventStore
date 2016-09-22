@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         private string _indexDir;
         protected byte _ptableVersion = PTableVersions.Index32Bit;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         }
 
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _tableIndex.Close();

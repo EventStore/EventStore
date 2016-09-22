@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.ClientAPI
         private CatchUpSubscriptionSettings _settings;
         private IEventStoreConnection _conn;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.ClientAPI
             return events.ToArray();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _conn.Dispose();

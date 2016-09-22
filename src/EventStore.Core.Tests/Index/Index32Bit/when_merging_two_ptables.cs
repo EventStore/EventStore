@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
         private PTable _newtable;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _newtable = PTable.MergeTo(_tables, _files[2], (streamId, hash) => hash, x => true, x => new System.Tuple<string, bool>("", true), _ptableVersion);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _newtable.Dispose();

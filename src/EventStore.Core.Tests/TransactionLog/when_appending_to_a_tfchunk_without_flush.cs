@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private RecordWriteResult _result;
         private PrepareLogRecord _record;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _result = _chunk.TryAppend(_record);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _chunk.Dispose();

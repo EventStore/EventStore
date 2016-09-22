@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
     {
         private Core.Services.PersistentSubscription.PersistentSubscription _sub;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void Setup()
         {
             _sub = new Core.Services.PersistentSubscription.PersistentSubscription(

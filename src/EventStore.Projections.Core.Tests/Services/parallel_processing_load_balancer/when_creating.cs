@@ -14,40 +14,40 @@ namespace EventStore.Projections.Core.Tests.Services.parallel_processing_load_ba
             TestHelper.Consume(new ParallelProcessingLoadBalancer(2, 10, 1));
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void zero_workers_throws_argument_exception()
         {
-            TestHelper.Consume(new ParallelProcessingLoadBalancer(0, 10, 1));
+            Assert.Throws<ArgumentException>(()=> { TestHelper.Consume(new ParallelProcessingLoadBalancer(0, 10, 1)); });
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void negative_workers_throws_argument_exception()
         {
-            TestHelper.Consume(new ParallelProcessingLoadBalancer(-1, 10, 1));
+            Assert.Throws<ArgumentException>(()=> { TestHelper.Consume(new ParallelProcessingLoadBalancer(-1, 10, 1)); });
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void zero_max_scheduled_size_throws_argument_exception()
         {
-            TestHelper.Consume(new ParallelProcessingLoadBalancer(2, 0, 1));
+            Assert.Throws<ArgumentException>(()=> { TestHelper.Consume(new ParallelProcessingLoadBalancer(2, 0, 1)); });
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void negative_max_scheduled_size_throws_argument_exception()
         {
-            TestHelper.Consume(new ParallelProcessingLoadBalancer(2, -1, 1));
+            Assert.Throws<ArgumentException>(()=> { TestHelper.Consume(new ParallelProcessingLoadBalancer(2, -1, 1)); });
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void zero_max_unmeasured_tasks_throws_argument_exception()
         {
-            TestHelper.Consume(new ParallelProcessingLoadBalancer(2, 10, 0));
+            Assert.Throws<ArgumentException>(()=> { TestHelper.Consume(new ParallelProcessingLoadBalancer(2, 10, 0)); });
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void negative_max_unmeasured_tasks_throws_argument_exception()
         {
-            TestHelper.Consume(new ParallelProcessingLoadBalancer(2, 10, -2));
+            Assert.Throws<ArgumentException>(()=> { TestHelper.Consume(new ParallelProcessingLoadBalancer(2, 10, -2)); });
         }
 
 

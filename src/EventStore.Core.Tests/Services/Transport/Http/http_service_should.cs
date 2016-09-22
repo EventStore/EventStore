@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _portableServer.TearDown();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TestFixtureTearDown()
         {
             PortsHelper.ReturnPort(_serverEndPoint.Port);            
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _portableServer.TearDown();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TestFixtureTearDown()
         {
             PortsHelper.ReturnPort(_serverEndPoint.Port);            
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             var result = _portableServer.StartServiceAndSendRequest(service => 
                     service.SetupController(new TestController(new FakePublisher())), url, verifier);
             Assert.IsFalse(result.Item1, "Should not have got a response"); // We should not have got a response
-            Assert.IsNotNullOrEmpty(result.Item2, "Error was empty");
+            Assert.That(!string.IsNullOrEmpty(result.Item2), "Error was empty");
         }
     }
 }

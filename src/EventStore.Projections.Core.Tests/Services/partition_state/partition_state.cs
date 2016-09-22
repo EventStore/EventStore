@@ -9,16 +9,16 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
         [TestFixture]
         public class when_creating
         {
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test]
             public void throws_argument_null_exception_if_state_is_null()
             {
-                new PartitionState(null, "result", CheckpointTag.FromPosition(0, 100, 50));
+                Assert.Throws<ArgumentNullException>(()=> { new PartitionState(null, "result", CheckpointTag.FromPosition(0, 100, 50)); });
             }
 
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test]
             public void throws_argument_null_exception_if_caused_by_is_null()
             {
-                new PartitionState("state", "result", null);
+                Assert.Throws<ArgumentNullException>(()=> { new PartitionState("state", "result", null); });
             }
 
             [Test]

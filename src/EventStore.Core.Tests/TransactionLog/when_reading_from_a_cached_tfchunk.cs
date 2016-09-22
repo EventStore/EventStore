@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private PrepareLogRecord _record;
         private RecordWriteResult _result;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _cachedChunk.CacheInMemory();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _chunk.Dispose();

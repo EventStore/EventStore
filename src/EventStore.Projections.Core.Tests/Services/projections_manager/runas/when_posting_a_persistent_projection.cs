@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
                         checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true, enableRunAs: true);
             }
 
-            [Test, Ignore]
+            [Test, Ignore("Persistent projections are admin only")]
             public void anonymous_cannot_retrieve_projection_query()
             {
                 GetInputQueue()

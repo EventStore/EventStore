@@ -31,10 +31,10 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             }
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void throws_invalid_operation_exception()
         {
-            if (_caughtException != null) throw _caughtException;
+            Assert.Throws<InvalidOperationException>(()=> { if (_caughtException != null) throw _caughtException; });
         }
     }
 }

@@ -495,7 +495,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void Teardown()
         {
             _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, DefaultData.AdminCredentials).Wait();

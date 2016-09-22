@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
@@ -17,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void name_is_set()
         {
-            var checksum = new FileCheckpoint("filename", "test");
+            var checksum = new FileCheckpoint(HelperExtensions.GetFilePathFromAssembly("filename"), "test");
             Assert.AreEqual("test", checksum.Name);
             checksum.Close();
         }

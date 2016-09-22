@@ -131,13 +131,13 @@ namespace EventStore.Core.Tests.Services.Transport.Http
 
     internal abstract class do_not_use_indentation_for_json
     {
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             JsonCodec.Formatting = Formatting.None;
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             JsonCodec.Formatting = Formatting.Indented;

@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.Index32Bit;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             table.MarkForDestruction();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             File.Delete(_filename);

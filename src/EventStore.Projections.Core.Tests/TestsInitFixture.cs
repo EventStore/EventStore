@@ -7,13 +7,13 @@ namespace EventStore.Projections.Core.Tests
     {
         private readonly EventStore.Core.Tests.TestsInitFixture _initFixture = new EventStore.Core.Tests.TestsInitFixture();
 
-        [SetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             _initFixture.SetUp();
         }
 
-        [TearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             _initFixture.TearDown();

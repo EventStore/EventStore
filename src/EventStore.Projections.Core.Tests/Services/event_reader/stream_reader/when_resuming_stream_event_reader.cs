@@ -28,10 +28,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void it_cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]

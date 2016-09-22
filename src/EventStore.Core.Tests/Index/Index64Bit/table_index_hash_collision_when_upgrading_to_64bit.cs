@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Index.Index64Bit
         private IHasher _highHasher;
         private string _indexDir;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Index.Index64Bit
             Thread.Sleep(500);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _tableIndex.Close();

@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests
     [SetUpFixture]
     public class TestsInitFixture
     {
-        [SetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             Console.WriteLine("Initializing tests (setting console loggers)...");
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
         }
 
-        [TearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             var runCount = Math.Max(1, MiniNode.RunCount);
