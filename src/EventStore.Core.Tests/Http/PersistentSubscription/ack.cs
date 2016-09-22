@@ -30,6 +30,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             _ackLink = ((JObject)json)["entries"].Children().First()["links"].Children().First(x => x.Value<string>("relation") == "ack").Value<string>("uri");
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _response.Close();
+        }
+
         protected override void When()
         {
             _response = MakePost(_ackLink, _admin);
@@ -55,6 +61,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                _admin);
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
             _ackAllLink = ((JObject)json)["links"].Children().First(x => x.Value<string>("relation") == "ackAll").Value<string>("uri");
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _response.Close();
         }
 
         protected override void When()

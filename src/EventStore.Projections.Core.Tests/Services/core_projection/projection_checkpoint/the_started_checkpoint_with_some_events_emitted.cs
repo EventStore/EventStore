@@ -42,10 +42,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                     });
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void requesting_checkpoints_with_position_before_the_last_known_throws_invalid_operation_exception()
         {
-            _checkpoint.Prepare(CheckpointTag.FromPosition(0, 140, 130));
+            Assert.Throws<InvalidOperationException>(()=> { _checkpoint.Prepare(CheckpointTag.FromPosition(0, 140, 130)); });
         }
     }
 }

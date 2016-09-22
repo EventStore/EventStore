@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
     [TestFixture, Category("LongRunning"), Category("Network")]
     public class multiple_role_security : AuthenticationTestBase
     {
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();

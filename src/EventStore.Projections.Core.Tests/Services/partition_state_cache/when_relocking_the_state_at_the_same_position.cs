@@ -19,10 +19,10 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             _cache.CacheAndLockPartitionState("partition", new PartitionState("data", null, _cachedAtCheckpointTag), _cachedAtCheckpointTag);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void thorws_invalid_operation_exception_if_not_allowed()
         {
-            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(0, 1000, 900));
+            Assert.Throws<InvalidOperationException>(()=> { _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(0, 1000, 900)); });
         }
 
         [Test]

@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
         protected MiniNode _node;
         protected UsersManager _manager;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
             _manager = new UsersManager(new NoopLogger(), _node.ExtHttpEndPoint, TimeSpan.FromSeconds(5));
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();

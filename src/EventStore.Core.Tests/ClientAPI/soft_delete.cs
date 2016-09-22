@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.ClientAPI
         private MiniNode _node;
         private IEventStoreConnection _conn;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn = BuildConnection(_node);
             _conn.ConnectAsync().Wait();
         }
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _conn.Close();

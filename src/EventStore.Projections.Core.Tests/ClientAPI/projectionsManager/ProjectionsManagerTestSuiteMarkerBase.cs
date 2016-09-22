@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
         public static string PathName;
         public static int Counter;
 
-        [SetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
             Connection.ConnectAsync().Wait();
         }
 
-        [TearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             Connection.Close();
@@ -50,7 +50,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
 		}
     }
 
-    [SetUpFixture]
     class SetUpFixture : ProjectionsManagerTestSuiteMarkerBase
     {
     }

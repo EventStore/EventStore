@@ -89,13 +89,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         protected override void When()
         {
-            _connection.ConnectToPersistentSubscription(TestStreamName, GroupName, (x, y) =>
+            _connection.ConnectToPersistentSubscriptionAsync(TestStreamName, GroupName, (x, y) =>
             {
                 replayedParkedEvent = y;
                 _eventParked.Set();
             },
             (x, y, z) => { },
-            DefaultData.AdminCredentials);
+            DefaultData.AdminCredentials).Wait();
 
             //Replayed parked messages
             var response = MakePost(SubscriptionPath + "/replayParked", _admin);
@@ -106,7 +106,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         [Test]
         public void should_have_replayed_the_parked_event()
         {
-            Assert.IsTrue(_eventParked.WaitOne(TimeSpan.FromSeconds(5)));
+            if(!_eventParked.WaitOne(TimeSpan.FromSeconds(5))) 
+            {
+                Assert.Fail("Timed out waiting for parked event");
+            }
             Assert.AreEqual(replayedParkedEvent.Event.EventId, _eventIdToPark);
         }
     }

@@ -44,12 +44,13 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     CheckpointTag.FromPosition(0, 0, -1), 10, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
 
-            [Test, ExpectedException(typeof (ArgumentNullException))]
+            [Test]
             public void null_subscription_dispatcher_throws_argument_null_exception()
             {
-                new FeedReader(
+                Assert.Throws<ArgumentNullException>(()=> { new FeedReader(
                     null, SystemAccount.Principal, _testQueryDefinition, CheckpointTag.FromPosition(0, 0, -1), 10,
                     Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
+                });
             }
 
             [Test]
@@ -60,44 +61,49 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader
                     Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
             }
 
-            [Test, ExpectedException(typeof(ArgumentNullException))]
+            [Test]
             public void null_query_definition_throws_argument_null_exception()
             {
-                new FeedReader(
+                Assert.Throws<ArgumentNullException>(()=> { new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, null, CheckpointTag.FromPosition(0, 0, -1), 10, Guid.NewGuid(),
                     new NoopEnvelope(), new RealTimeProvider());
+                });
             }
 
-            [Test, ExpectedException(typeof (ArgumentNullException))]
+            [Test]
             public void null_from_position_throws_argument_null_exception()
             {
-                new FeedReader(
+                Assert.Throws<ArgumentNullException>(()=> { new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition, null, 10, Guid.NewGuid(),
                     new NoopEnvelope(), new RealTimeProvider());
+                });
             }
 
-            [Test, ExpectedException(typeof (ArgumentNullException))]
+            [Test]
             public void null_envelope_throws_argument_null_exception()
             {
-                new FeedReader(
+                Assert.Throws<ArgumentNullException>(()=> { new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
                     CheckpointTag.FromPosition(0, 0, -1), 10, Guid.NewGuid(), null, new RealTimeProvider());
+                });
             }
 
-            [Test, ExpectedException(typeof (ArgumentException))]
+            [Test]
             public void zero_max_events_throws_argument_exception()
             {
-                new FeedReader(
+                Assert.Throws<ArgumentException>(()=> { new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
                     CheckpointTag.FromPosition(0, 0, -1), 0, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
+                });
             }
 
-            [Test, ExpectedException(typeof (ArgumentException))]
+            [Test]
             public void negative_max_events_throws_argument_exception()
             {
-                new FeedReader(
+                Assert.Throws<ArgumentException>(()=> { new FeedReader(
                     _subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
                     CheckpointTag.FromPosition(0, 0, -1), -1, Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
+                });
             }
         }
 

@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
     [TestFixture, Category("LongRunning"), Category("Network")]
     public class overriden_user_stream_security : AuthenticationTestBase
     {
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();

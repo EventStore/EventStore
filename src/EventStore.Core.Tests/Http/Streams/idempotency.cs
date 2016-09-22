@@ -2,7 +2,6 @@
 using System.Text;
 using System.Net;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
@@ -11,9 +10,33 @@ namespace EventStore.Core.Tests.Http.Streams
 {
     namespace idempotency
     {
+        [SetUpFixture]
         abstract class HttpBehaviorSpecificationOfSuccessfulCreateEvent : HttpBehaviorSpecification
         {
             protected HttpWebResponse _response;
+
+            [OneTimeSetUp]
+            public override void TestFixtureSetUp()
+            {
+                base.TestFixtureSetUp();
+            }
+
+            [OneTimeTearDown]
+            public override void TestFixtureTearDown()
+            {
+                if(_response != null)
+                {
+                    _response.Close();
+                }
+                base.TestFixtureTearDown();
+            }
+
+            [Test]
+            public void response_should_not_be_null ()
+            {
+                Assert.IsNotNull(_response);
+            }
+            
             [Test]
             public void returns_created_status_code()
             {
@@ -69,6 +92,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
                 _response = GetRequestResponse(request);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
             }
         }
 
@@ -97,6 +121,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
                 _response = GetRequestResponse(request);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
             }
         }
 
@@ -127,6 +152,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
                 _response = GetRequestResponse(request);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
             }
         }
 
@@ -159,6 +185,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
                 _response = GetRequestResponse(request);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
             }
         }
 
@@ -189,6 +216,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
                 _response = GetRequestResponse(request);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
             }
 
         }
@@ -220,6 +248,7 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.ContentLength = data.Length;
                 request.GetRequestStream().Write(bytes, 0, data.Length);
                 _response = GetRequestResponse(request);
+                Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
             }
 
         }

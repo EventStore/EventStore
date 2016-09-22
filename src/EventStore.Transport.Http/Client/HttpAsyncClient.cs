@@ -75,6 +75,11 @@ namespace EventStore.Transport.Http.Client
             Send(HttpMethod.Put, url, body, contentType, null, onSuccess, onException);
         }
 
+        public void Dispose()
+        {
+            _client.Dispose();
+        }
+
         private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers,
                              Action<HttpResponse> onSuccess, Action<Exception> onException)
         {

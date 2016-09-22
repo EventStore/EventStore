@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private TFChunk _chunk;
         private TFChunk _testChunk;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();

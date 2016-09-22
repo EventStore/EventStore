@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         protected UserCredentials _admin = DefaultData.AdminCredentials;
         protected ProjectionsManager _manager;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             _manager.DisableAsync(name, _admin).Wait();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             if (_conn != null)

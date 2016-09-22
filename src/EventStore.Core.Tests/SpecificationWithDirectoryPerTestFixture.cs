@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests
             return Path.Combine(PathName, fileName);
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public virtual void TestFixtureSetUp()
         {
             var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests
             Directory.CreateDirectory(PathName);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public virtual void TestFixtureTearDown()
         {
             //kill whole tree

@@ -106,19 +106,19 @@ namespace EventStore.BufferManagement.Tests
             Assert.AreEqual(10, manager.AvailableBuffers);
         }
 
-        [Test, ExpectedException(typeof(ArgumentNullException))]
+        [Test]
         public void should_throw_argumentnullexception_if_null_buffer()
         {
             BufferManager manager = new BufferManager(10, 1000, 0);
-            manager.CheckIn(null);
+            Assert.Throws<ArgumentNullException>(()=> { manager.CheckIn(null); });
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void should_throw_argumentexception_if_buffer_wrong_size()
         {
             BufferManager manager = new BufferManager(10, 1000, 0);
             byte[] data = new byte[10000];
-            manager.CheckIn(new ArraySegment<byte>(data));
+            Assert.Throws<ArgumentException>(()=> { manager.CheckIn(new ArraySegment<byte>(data)); });
         }
     }
 }

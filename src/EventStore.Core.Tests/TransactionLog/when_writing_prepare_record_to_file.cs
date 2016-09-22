@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private PrepareLogRecord _record;
         private TFChunkDb _db;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             _writerCheckpoint = new InMemoryCheckpoint();
@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _writer.Flush();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void Teardown()
         {
             _writer.Close();

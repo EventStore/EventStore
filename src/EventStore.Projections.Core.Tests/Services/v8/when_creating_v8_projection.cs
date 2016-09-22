@@ -51,104 +51,144 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             Assert.AreEqual("Message1", m);
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "SyntaxError:", MatchType = MessageMatch.StartsWith)]
+        [Test, Category("v8")]
         public void js_syntax_errors_are_reported()
         {
-            using (_stateHandlerFactory.Create("JS", @"log(1;", logger: (s, _) => { }))
+            try
             {
+                using (_stateHandlerFactory.Create("JS", @"log(1;", logger: (s, _) => { }))
+                {
+                }
+            }
+            catch(Exception ex)
+            {
+                Assert.IsInstanceOf<Js1Exception>(ex);
+                Assert.IsTrue(ex.Message.StartsWith("SyntaxError:"));
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "123")]
+        [Test, Category("v8")]
         public void js_exceptions_errors_are_reported()
         {
-            using (_stateHandlerFactory.Create("JS", @"throw 123;", logger: (s, _) => { }))
+            try 
             {
+                using (_stateHandlerFactory.Create("JS", @"throw 123;", logger: (s, _) => { }))
+                {
+                }
+            }
+            catch(Exception ex)
+            {
+                Assert.IsInstanceOf<Js1Exception>(ex);
+                Assert.AreEqual("123", ex.Message);
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "terminated", MatchType = MessageMatch.Contains)]
+        [Test, Category("v8")]
         public void long_compilation_times_out()
         {
-            using (_stateHandlerFactory.Create("JS",
-                @"
-                            var i = 0;
-                            while (true) i++;
-                ",
-                logger: (s, _) => { },
-                cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
+            try
+            {
+                using (_stateHandlerFactory.Create("JS",
+                    @"
+                                var i = 0;
+                                while (true) i++;
+                    ",
+                    logger: (s, _) => { },
+                    cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
+                        {
+                            Console.WriteLine("Calling a callback in " + timeout + "ms");
+                            Thread.Sleep(timeout);
+                            action();
+                        })))
+                {
+                }
+            }
+            catch(Exception ex)
+            {
+                Assert.IsInstanceOf<Js1Exception>(ex);
+                Assert.IsTrue(ex.Message.Contains("terminated"));
+            }
+        }
+
+        [Test, Category("v8")]
+        public void long_execution_times_out()
+        {
+            try 
+            {
+                //string m = null;
+                using (var h = _stateHandlerFactory.Create("JS",
+                    @"
+                        fromAll().when({
+                            $any: function (s, e) {
+                                log('1');
+                                var i = 0;
+                                while (true) i++;
+                            }
+                        });
+                    ",
+                    logger: Console.WriteLine,
+                    cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
                     {
                         Console.WriteLine("Calling a callback in " + timeout + "ms");
                         Thread.Sleep(timeout);
                         action();
                     })))
-            {
-            }
-        }
-
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "terminated", MatchType = MessageMatch.Contains)]
-        public void long_execution_times_out()
-        {
-            //string m = null;
-            using (var h = _stateHandlerFactory.Create("JS",
-                @"
-                    fromAll().when({
-                        $any: function (s, e) {
-                            log('1');
-                            var i = 0;
-                            while (true) i++;
-                        }
-                    });
-                ",
-                logger: Console.WriteLine,
-                cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
                 {
-                    Console.WriteLine("Calling a callback in " + timeout + "ms");
-                    Thread.Sleep(timeout);
-                    action();
-                })))
+                    h.Initialize();
+                    string newState;
+                    EmittedEventEnvelope[] emittedevents;
+                    h.ProcessEvent(
+                        "partition", CheckpointTag.FromPosition(0, 100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
+                        out newState, out emittedevents);
+                }
+            }
+            catch(Exception ex)
             {
-                h.Initialize();
-                string newState;
-                EmittedEventEnvelope[] emittedevents;
-                h.ProcessEvent(
-                    "partition", CheckpointTag.FromPosition(0, 100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
-                    out newState, out emittedevents);
+                Assert.IsInstanceOf<Js1Exception>(ex);
+                Assert.IsTrue(ex.Message.Contains("terminated"));
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "terminated", MatchType = MessageMatch.Contains)]
+        [Test, Category("v8")]
         public void long_post_processing_times_out()
         {
-            //string m = null;
-            using (var h = _stateHandlerFactory.Create("JS",
-                @"
-                    fromAll().when({
-                        $any: function (s, e) {
-                            return {};
-                        }
-                    })
-                    .transformBy(function(s){
-                            log('1');
-                            var i = 0;
-                            while (true) i++;
-                    });
-                ",
-                logger: Console.WriteLine,
-                cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
-                {
-                    Console.WriteLine("Calling a callback in " + timeout + "ms");
-                    Thread.Sleep(timeout);
-                    action();
-                })))
+            try
             {
-                h.Initialize();
-                string newState;
-                EmittedEventEnvelope[] emittedevents;
-                h.ProcessEvent(
-                    "partition", CheckpointTag.FromPosition(0, 100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
-                    out newState, out emittedevents);
-                h.TransformStateToResult();
+                //string m = null;
+                using (var h = _stateHandlerFactory.Create("JS",
+                    @"
+                        fromAll().when({
+                            $any: function (s, e) {
+                                return {};
+                            }
+                        })
+                        .transformBy(function(s){
+                                log('1');
+                                var i = 0;
+                                while (true) i++;
+                        });
+                    ",
+                    logger: Console.WriteLine,
+                    cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
+                    {
+                        Console.WriteLine("Calling a callback in " + timeout + "ms");
+                        Thread.Sleep(timeout);
+                        action();
+                    })))
+                {
+                    h.Initialize();
+                    string newState;
+                    EmittedEventEnvelope[] emittedevents;
+                    h.ProcessEvent(
+                        "partition", CheckpointTag.FromPosition(0, 100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}",
+                        out newState, out emittedevents);
+                    h.TransformStateToResult();
+                }
+            }
+            catch(Exception ex)
+            {
+                Assert.IsInstanceOf<Js1Exception>(ex);
+                Assert.IsTrue(ex.Message.Contains("terminated"));
             }
         }
 

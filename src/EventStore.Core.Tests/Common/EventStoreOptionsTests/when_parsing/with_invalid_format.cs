@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
 {
@@ -22,7 +23,8 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         [Test]
         public void with_config()
         {
-            var args = new string[] { "-config", "TestConfigs/invalid_format_config.yaml" };
+            var configFile = HelperExtensions.GetFilePathFromAssembly("TestConfigs/invalid_format_config.yaml");
+            var args = new string[] { "-config", configFile };
             Assert.Throws<OptionException>(() => { EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix); });
         }
         [Test]

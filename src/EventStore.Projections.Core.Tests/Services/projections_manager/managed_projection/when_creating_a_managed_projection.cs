@@ -45,9 +45,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         }
 
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_guid_throws_invali_argument_exception()
         {
+            Assert.Throws<ArgumentException>(() => {
             new ManagedProjection(
                 Guid.NewGuid(),
                 Guid.Empty,
@@ -63,11 +64,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _getStateDispatcher,
                 _getResultDispatcher,
                 _ioDispatcher);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_guid_throws_invali_argument_exception2()
         {
+            Assert.Throws<ArgumentException>(() => {
             new ManagedProjection(
                 Guid.NewGuid(),
                 Guid.Empty,
@@ -93,11 +96,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     v => v.CorrelationId,
                     new PublishEnvelope(_bus)),
                 _ioDispatcher);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_name_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             new ManagedProjection(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
@@ -123,11 +128,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     v => v.CorrelationId,
                     new PublishEnvelope(_bus)),
                 _ioDispatcher);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_name_throws_argument_null_exception2()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             new ManagedProjection(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
@@ -153,11 +160,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     v => v.CorrelationId,
                     new PublishEnvelope(_bus)),
                 _ioDispatcher);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_name_throws_argument_exception()
         {
+            Assert.Throws<ArgumentException>(() => {
             new ManagedProjection(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
@@ -183,11 +192,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     v => v.CorrelationId,
                     new PublishEnvelope(_bus)),
                 _ioDispatcher);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_name_throws_argument_exception2()
         {
+            Assert.Throws<ArgumentException>(() => {
             new ManagedProjection(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
@@ -213,6 +224,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     v => v.CorrelationId,
                     new PublishEnvelope(_bus)),
                 _ioDispatcher);
+            });
         }
     }
 }

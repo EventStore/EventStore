@@ -25,28 +25,34 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _ioDispatcher = new IODispatcher(_fakePublisher, new PublishEnvelope(_fakePublisher));
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_io_dispatcher_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             new ProjectionCheckpoint(
                 null, new ProjectionVersion(1, 0, 0), null, _readyHandler,
                 CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_ready_handler_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             new ProjectionCheckpoint(
                 _ioDispatcher, new ProjectionVersion(1, 0, 0), null, null,
                 CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void commit_position_less_than_or_equal_to_prepare_position_throws_argument_exception()
         {
+            Assert.Throws<ArgumentException>(() => {
             new ProjectionCheckpoint(
                 _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
                 CheckpointTag.FromPosition(0, 100, 101), new TransactionFilePositionTagger(0), 250);
+            });
         }
 
         [Test]

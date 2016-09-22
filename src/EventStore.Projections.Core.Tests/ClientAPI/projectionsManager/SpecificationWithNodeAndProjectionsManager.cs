@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
         protected TimeSpan _timeout;
         protected string _tag;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
             }
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             if (SetUpFixture.Connection == null || SetUpFixture.Node == null)

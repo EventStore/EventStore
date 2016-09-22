@@ -66,10 +66,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_paused()
         {
-            _edp.Pause();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Pause(); });
         }
 
         [Test]

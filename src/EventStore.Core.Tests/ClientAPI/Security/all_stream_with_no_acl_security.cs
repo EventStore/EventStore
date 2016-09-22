@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
     [TestFixture, Category("LongRunning"), Category("Network")]
     public class all_stream_with_no_acl_security : AuthenticationTestBase
     {
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();

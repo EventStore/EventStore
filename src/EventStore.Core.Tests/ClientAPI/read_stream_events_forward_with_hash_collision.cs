@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             return TestConnection.To(node, TcpType.Normal);
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             _node.Start();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();

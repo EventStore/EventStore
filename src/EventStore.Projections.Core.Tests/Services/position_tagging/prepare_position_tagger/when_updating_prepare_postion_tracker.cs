@@ -26,11 +26,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
             Assert.AreEqual(50, _positionTracker.LastTag.Position.PreparePosition);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_update_to_the_same_postion()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             var newTag = CheckpointTag.FromPreparePosition(0, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
+            });
         }
     }
 }
