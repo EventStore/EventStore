@@ -1285,7 +1285,7 @@ namespace EventStore.Core
                 if ((_gossipSeeds == null || _gossipSeeds.Count == 0) && _clusterNodeCount > 1)
                 {
                     throw new Exception("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-                            + "Specify gossip seeds");
+                                      + "Specify gossip seeds using the `GossipSeed` option.");
                 }
 
                 if (_gossipSeeds == null)
