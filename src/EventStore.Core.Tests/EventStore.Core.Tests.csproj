@@ -411,6 +411,7 @@
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_already_committed.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_completes_successfully.cs" />
+    <Compile Include="Services\Replication\WriteStream\when_master_has_not_acked.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
