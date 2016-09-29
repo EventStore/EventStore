@@ -124,7 +124,8 @@ namespace EventStore.Transport.Tcp
                 _sslStream = new SslStream(new NetworkStream(socket, true), false);
                 try
                 {
-                    _sslStream.BeginAuthenticateAsServer(certificate, false, SslProtocols.Default, true, OnEndAuthenticateAsServer, _sslStream);
+                    var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Default;
+                    _sslStream.BeginAuthenticateAsServer(certificate, false, enabledSslProtocols, true, OnEndAuthenticateAsServer, _sslStream);
                 }
                 catch (AuthenticationException exc)
                 {
