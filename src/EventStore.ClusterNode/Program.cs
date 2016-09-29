@@ -98,7 +98,7 @@ namespace EventStore.ClusterNode
                 {
                     Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since"
                             + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified"
-                            + "using the --gossip-seed command line option.");
+                            + "using the `GossipSeed` option.");
                 }
             }
 
