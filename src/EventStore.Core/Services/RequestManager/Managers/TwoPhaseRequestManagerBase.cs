@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected readonly TimeSpan PrepareTimeout;
         protected readonly TimeSpan CommitTimeout;
-
+        private bool _hadSelf = false;
         private IEnvelope _responseEnvelope;
         private Guid _internalCorrId;
         private Guid _clientCorrId;
@@ -172,7 +172,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 return;
 
             _awaitingCommit -= 1;
-            if (_awaitingCommit == 0)
+            if(message.IsSelf) _hadSelf = true;
+            if (_awaitingCommit == 0 && _hadSelf)
                 CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, message.LogPosition, message.LogPosition);
         }
 

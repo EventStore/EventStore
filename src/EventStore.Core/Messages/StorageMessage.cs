@@ -202,8 +202,8 @@ namespace EventStore.Core.Messages
             public readonly long TransactionPosition;
             public readonly int FirstEventNumber;
             public readonly int LastEventNumber;
-
-            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, int firstEventNumber, int lastEventNumber)
+            public readonly bool IsSelf;
+            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, int firstEventNumber, int lastEventNumber, bool isSelf = false)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.Nonnegative(logPosition, "logPosition");
@@ -218,6 +218,7 @@ namespace EventStore.Core.Messages
                 TransactionPosition = transactionPosition;
                 FirstEventNumber = firstEventNumber;
                 LastEventNumber = lastEventNumber;
+                IsSelf = isSelf;
             }
         }
 
