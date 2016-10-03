@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System;
 using System.Net;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
 {
@@ -225,6 +226,105 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         public void should_set_the_gossip_timeout()
         {
             Assert.AreEqual(1300, _settings.GossipTimeout.TotalMilliseconds);
+        }
+    }
+
+    [TestFixture]
+    public class with_custom_external_ip_address_as_advertise_info : ClusterMemberScenario
+    {
+        public override void Given()
+        {
+            _builder.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, 1113))
+                    .WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 1112))
+                    .AdvertiseExternalIPAs(IPAddress.Parse("196.168.1.1"));
+        }
+
+        [Test]
+        public void should_set_the_custom_advertise_info_for_external()
+        {
+            Assert.AreEqual(new IPEndPoint(IPAddress.Parse("196.168.1.1"), 1113), _settings.GossipAdvertiseInfo.ExternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPAddress.Parse("196.168.1.1"), 2113), _settings.GossipAdvertiseInfo.ExternalHttp);
+        }
+
+        [Test]
+        public void should_set_the_loopback_address_as_advertise_info_for_internal()
+        {
+            Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1112), _settings.GossipAdvertiseInfo.InternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2112), _settings.GossipAdvertiseInfo.InternalHttp);
+        }
+    }
+
+    [TestFixture]
+    public class with_0_0_0_0_as_external_ip_address_and_custom_advertise_info : ClusterMemberScenario
+    {
+        public override void Given()
+        {
+            _builder.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113))
+                    .WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 1112))
+                    .AdvertiseExternalIPAs(IPAddress.Parse("10.0.0.1"));
+        }
+
+        [Test]
+        public void should_set_the_custom_advertise_info_for_external()
+        {
+            Assert.AreEqual(new IPEndPoint(IPAddress.Parse("10.0.0.1"), 1113), _settings.GossipAdvertiseInfo.ExternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPAddress.Parse("10.0.0.1"), 2113), _settings.GossipAdvertiseInfo.ExternalHttp);
+        }
+
+        [Test]
+        public void should_set_the_loopback_address_as_advertise_info_for_internal()
+        {
+            Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1112), _settings.GossipAdvertiseInfo.InternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2112), _settings.GossipAdvertiseInfo.InternalHttp);
+        }
+    }
+
+    [TestFixture]
+    public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set : ClusterMemberScenario
+    {
+        public override void Given()
+        {
+            _builder.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113))
+                    .WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 1112));
+        }
+
+        [Test]
+        public void should_use_the_non_default_loopback_ip_as_advertise_info_for_external()
+        {
+            Assert.AreEqual(new IPEndPoint(IPFinder.GetNonLoopbackAddress(), 1113), _settings.GossipAdvertiseInfo.ExternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPFinder.GetNonLoopbackAddress(), 2113), _settings.GossipAdvertiseInfo.ExternalHttp);
+        }
+
+        [Test]
+        public void should_use_loopback_ip_as_advertise_info_for_internal()
+        {
+            Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1112), _settings.GossipAdvertiseInfo.InternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2112), _settings.GossipAdvertiseInfo.InternalHttp);
+        }
+    }
+
+    [TestFixture]
+    public class with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external : ClusterMemberScenario
+    {
+        public override void Given()
+        {
+            _builder.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113))
+                    .WithInternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1112))
+                    .AdvertiseExternalIPAs(IPAddress.Parse("10.0.0.1"));
+        }
+
+        [Test]
+        public void should_set_the_custom_advertise_info_for_external()
+        {
+            Assert.AreEqual(new IPEndPoint(IPAddress.Parse("10.0.0.1"), 1113), _settings.GossipAdvertiseInfo.ExternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPAddress.Parse("10.0.0.1"), 2113), _settings.GossipAdvertiseInfo.ExternalHttp);
+        }
+
+        [Test]
+        public void should_use_the_non_default_loopback_ip_as_advertise_info_for_internal()
+        {
+            Assert.AreEqual(new IPEndPoint(IPFinder.GetNonLoopbackAddress(), 1112), _settings.GossipAdvertiseInfo.InternalTcp);
+            Assert.AreEqual(new IPEndPoint(IPFinder.GetNonLoopbackAddress(), 2112), _settings.GossipAdvertiseInfo.InternalHttp);
         }
     }
 }
