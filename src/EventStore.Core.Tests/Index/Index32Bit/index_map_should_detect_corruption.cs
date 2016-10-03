@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _ptable = null;
             File.Delete(_ptableFileName);
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, lines.Skip(1));
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, lines.Where((x,i) => i != 1));
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         {
             File.WriteAllText(_indexMapFileName, "");
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         {
             File.WriteAllText(_indexMapFileName, "alkfjasd;lkf\nasdfasdf\n");
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -106,7 +106,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], string.Format("0,{0}", _ptableFileName)});
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], _ptableFileName });
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], "0,0" });
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -156,7 +156,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
                 fs.WriteByte(123);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -189,7 +189,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -207,7 +207,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
         }
     }
 }
