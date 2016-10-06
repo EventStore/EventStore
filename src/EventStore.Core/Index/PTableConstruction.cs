@@ -74,7 +74,8 @@ namespace EventStore.Core.Index
             Log.Trace("PTables merge started.");
             var watch = Stopwatch.StartNew();
 
-            var enumerators = tables.Select(table => new EnumerablePTable(table, table.IterateAllInOrder().GetEnumerator())).ToList();
+            var enumerators = tables.Select(table => new EnumerableTable(version, table, upgradeHash, existsAt, readRecord)).ToList();
+
             for (int i = 0; i < enumerators.Count; i++)
             {
                 if (!enumerators[i].MoveNext())
@@ -104,20 +105,10 @@ namespace EventStore.Core.Index
                     // WRITE INDEX ENTRIES
                     while (enumerators.Count > 0)
                     {
-                        var idx = GetMaxOf(enumerators, version, upgradeHash, readRecord);
+                        var idx = GetMaxOf(enumerators);
                         var current = enumerators[idx].Current;
-                        bool exists = false;
-                        if (version == PTableVersions.Index64Bit && enumerators[idx].Table.Version == PTableVersions.Index32Bit)
+                        if(existsAt(current))
                         {
-                            var item = readRecord(current); //Possibly doing another read if the entry was read in GetMaxOf
-                            exists = item.Item2;
-                            current.Stream = upgradeHash(item.Item1, current.Stream);
-                        }
-                        else
-                        {
-                            exists = existsAt(current);
-                        }
-                        if(exists){
                             AppendRecordTo(bs, buffer, version, current, indexEntrySize);
                             dumpedEntryCount += 1;
                         }
@@ -151,7 +142,7 @@ namespace EventStore.Core.Index
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
             var watch = Stopwatch.StartNew();
 
-            var enumerators = tables.Select(table => new EnumerablePTable(table, table.IterateAllInOrder().GetEnumerator())).ToList();
+            var enumerators = tables.Select(table => new EnumerableTable(version, table, upgradeHash, existsAt, readRecord)).ToList();
             long dumpedEntryCount = 0;
             using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
                                           DefaultSequentialBufferSize, FileOptions.SequentialScan))
@@ -174,56 +165,28 @@ namespace EventStore.Core.Index
                     bool available1 = enum1.MoveNext();
                     bool available2 = enum2.MoveNext();
                     IndexEntry current;
-                    bool restart;
-                    do
+                    while (available1 || available2)
                     {
-                        restart = false;
-                        while (available1 || available2)
+                        var entry1 = new IndexEntry(enum1.Current.Stream, enum1.Current.Version, enum1.Current.Position);
+                        var entry2 = new IndexEntry(enum2.Current.Stream, enum2.Current.Version, enum2.Current.Position);
+
+                        if (available1 && (!available2 || entry1.CompareTo(entry2) > 0))
                         {
-                            var entry1 = new IndexEntry(enum1.Current.Stream, enum1.Current.Version, enum1.Current.Position);
-                            var entry2 = new IndexEntry(enum2.Current.Stream, enum2.Current.Version, enum2.Current.Position);
-                            if (version == PTableVersions.Index64Bit && enumerators[0].Table.Version == PTableVersions.Index32Bit)
-                            {
-                                var res = readRecord(entry1);
-                                if (!res.Item2)
-                                {
-                                    available1 = enum1.MoveNext();
-                                    restart = true;
-                                    break;
-                                }
-                                entry1.Stream = upgradeHash(res.Item1, entry1.Stream);
-                            }
-                            if (version == PTableVersions.Index64Bit && enumerators[1].Table.Version == PTableVersions.Index32Bit)
-                            {
-                                var res = readRecord(entry2);
-                                if (!res.Item2)
-                                {
-                                    available2 = enum2.MoveNext();
-                                    restart = true;
-                                    break;
-                                }
-                                entry2.Stream = upgradeHash(res.Item1, entry2.Stream);
-                            }
-
-                            if (available1 && (!available2 || entry1.CompareTo(entry2) > 0))
-                            {
-                                current = entry1;
-                                available1 = enum1.MoveNext();
-                            }
-                            else
-                            {
-                                current = entry2;
-                                available2 = enum2.MoveNext();
-                            }
-
-                            //Possibly doing another read if the record was read during the upgrade process
-                            if (existsAt(current))
-                            {
-                                AppendRecordTo(bs, buffer, version, current, indexEntrySize);
-                                dumpedEntryCount += 1;
-                            }
+                            current = entry1;
+                            available1 = enum1.MoveNext();
                         }
-                    } while (restart);
+                        else
+                        {
+                            current = entry2;
+                            available2 = enum2.MoveNext();
+                        }
+
+                        if (existsAt(current))
+                        {
+                            AppendRecordTo(bs, buffer, version, current, indexEntrySize);
+                            dumpedEntryCount += 1;
+                        }
+                    }
                     bs.Flush();
                     cs.FlushFinalBlock();
 
@@ -250,42 +213,19 @@ namespace EventStore.Core.Index
             return PTableHeader.Size + indexEntrySize * count + MD5Size;
         }
 
-        private static int GetMaxOf(List<EnumerablePTable> enumerators, int version, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, Tuple<string, bool>> readRecord)
+        private static int GetMaxOf(List<EnumerableTable> enumerators)
         {
             var max = new IndexEntry(ulong.MinValue, 0, long.MinValue);
             int idx = 0;
-            bool restart;
-            do
+            for (int i = 0; i < enumerators.Count; i++)
             {
-                restart = false;
-                for (int i = 0; i < enumerators.Count; i++)
+                var cur = enumerators[i].Current;
+                if (cur.CompareTo(max) > 0)
                 {
-                    var cur = enumerators[i].Current;
-                    if (version == PTableVersions.Index64Bit && enumerators[i].Table.Version == PTableVersions.Index32Bit)
-                    {
-                        var res = readRecord(cur);
-                        if (!res.Item2)
-                        {
-                            if (!enumerators[i].MoveNext())
-                            {
-                                enumerators[i].Dispose();
-                                enumerators.RemoveAt(i);
-                            }
-                            restart = true;
-                            break;
-                        }
-                        if (res.Item2)
-                        {
-                            cur.Stream = upgradeHash(res.Item1, cur.Stream);
-                        }
-                    }
-                    if (cur.CompareTo(max) > 0)
-                    {
-                        max = cur;
-                        idx = i;
-                    }
+                    max = cur;
+                    idx = i;
                 }
-            } while (restart);
+            }
             return idx;
         }
 
@@ -300,10 +240,22 @@ namespace EventStore.Core.Index
             stream.Write(buffer, 0, indexEntrySize);
         }
 
-        internal class EnumerablePTable : IEnumerator<IndexEntry>
+        internal class EnumerableTable : IEnumerator<IndexEntry>
         {
-            public PTable Table;
-            readonly IEnumerator<IndexEntry> _enumerator;
+            private ISearchTable _ptable;
+            private List<IndexEntry> _list;
+            private IEnumerator<IndexEntry> _enumerator;
+            readonly IEnumerator<IndexEntry> _ptableEnumerator;
+            readonly Func<string, ulong, ulong> _upgradeHash;
+            readonly Func<IndexEntry, bool> _existsAt;
+            readonly Func<IndexEntry, Tuple<string, bool>> _readRecord;
+            readonly byte _mergedPTableVersion;
+            static readonly IComparer<IndexEntry> EntryComparer = new IndexEntryComparer();
+
+            public byte GetVersion()
+            {
+                return _ptable.Version;
+            }
 
             public IndexEntry Current
             {
@@ -321,10 +273,25 @@ namespace EventStore.Core.Index
                 }
             }
 
-            public EnumerablePTable(PTable table, IEnumerator<IndexEntry> enumerator)
+            public EnumerableTable(byte mergedPTableVersion, ISearchTable table, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord)
             {
-                Table = table;
-                _enumerator = enumerator;
+                _mergedPTableVersion = mergedPTableVersion;
+                _ptable = table;
+
+                _upgradeHash = upgradeHash;
+                _existsAt = existsAt;
+                _readRecord = readRecord;
+
+                if(table.Version == PTableVersions.Index32Bit && mergedPTableVersion == PTableVersions.Index64Bit)
+                {
+                    _list = new List<IndexEntry>();
+                    _enumerator = _list.GetEnumerator();
+                    _ptableEnumerator = _ptable.IterateAllInOrder().GetEnumerator();
+                }
+                else
+                {
+                    _enumerator = _ptable.IterateAllInOrder().GetEnumerator();
+                }
             }
 
             public IEnumerator<IndexEntry> GetEnumerator()
@@ -334,12 +301,49 @@ namespace EventStore.Core.Index
 
             public void Dispose()
             {
+                if (_ptableEnumerator != null)
+                {
+                    _ptableEnumerator.Dispose();
+                }
                 _enumerator.Dispose();
             }
 
             public bool MoveNext()
             {
+                var hasMovedToNext = _enumerator.MoveNext();
+                if (_list == null || hasMovedToNext) return hasMovedToNext;
+
+                _enumerator.Dispose();
+                _list = ReadUntilDifferentHash(_mergedPTableVersion, _ptableEnumerator, _upgradeHash, _existsAt, _readRecord);
+                _enumerator = _list.GetEnumerator();
+
                 return _enumerator.MoveNext();
+            }
+
+            private List<IndexEntry> ReadUntilDifferentHash(byte version, IEnumerator<IndexEntry> ptableEnumerator, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord)
+            {
+                var list = new List<IndexEntry>();
+                IndexEntry current = new IndexEntry(0, 0, 0); 
+                ulong hash = 0;
+                while (hash == current.Stream && ptableEnumerator.MoveNext())
+                {
+                    current = ptableEnumerator.Current;
+                    if (existsAt(current))
+                    {
+                        list.Add(new IndexEntry(upgradeHash(readRecord(current).Item1, current.Stream), current.Version, current.Position));
+                    }
+                    if (hash == 0) hash = current.Stream;
+                }
+                list.Sort(EntryComparer);
+                return list;
+            }
+
+            private class IndexEntryComparer : IComparer<IndexEntry>
+            {
+                public int Compare(IndexEntry x, IndexEntry y)
+                {
+                    return -x.CompareTo(y);
+                }
             }
 
             public void Reset()
