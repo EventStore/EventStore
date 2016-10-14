@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly OutstandingMessageCache _outstandingMessages;
         internal StreamBuffer _streamBuffer;
         private PersistentSubscriptionState _state = PersistentSubscriptionState.NotReady;
-        private int _lastPulledEvent;
+        private int _nextEventToPullFrom;
         private int _lastCheckPoint;
         private DateTime _lastCheckPointTime = DateTime.MinValue;
         private readonly PersistentSubscriptionParams _settings;
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
             Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
             Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
-            _lastPulledEvent = 0;            
+            _nextEventToPullFrom = 0;            
             _totalTimeWatch = new Stopwatch();
             _settings = persistentSubscriptionParams;
             _totalTimeWatch.Start();
@@ -89,14 +89,14 @@ namespace EventStore.Core.Services.PersistentSubscription
                     Log.Debug(string.Format("Subscription {0}: read no checksum.", _settings.SubscriptionId));
 
                     Log.Debug("strtfrom = " + _settings.StartFrom);
-                    _lastPulledEvent = _settings.StartFrom >= 0 ? _settings.StartFrom : 0;
+                    _nextEventToPullFrom = _settings.StartFrom >= 0 ? _settings.StartFrom : 0;
                     _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1,
                         _settings.StartFrom >= 0);
                     TryReadingNewBatch();
                 }
                 else
                 {
-                    _lastPulledEvent = checkpoint.Value;
+                    _nextEventToPullFrom = checkpoint.Value + 1;
                     Log.Debug(string.Format("Subscription {0}: read checksum {1}", _settings.SubscriptionId,
                         checkpoint.Value));
                     _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, true);
@@ -117,7 +117,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 }
                 if (!_streamBuffer.CanAccept(_settings.ReadBatchSize)) return;
                 _state |= PersistentSubscriptionState.OutstandingPageRequest;
-                _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _lastPulledEvent,
+                _settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _nextEventToPullFrom,
                     Math.Max(_settings.ReadBatchSize, 10), _settings.ReadBatchSize, _settings.ResolveLinkTos,
                     HandleReadCompleted);
             }
@@ -163,7 +163,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     _streamBuffer.MoveToLive();
                     return;
                 }
-                _lastPulledEvent = newposition;
+                _nextEventToPullFrom = newposition;
                 TryReadingNewBatch();
                 TryPushingMessagesToClients();
             }
@@ -211,7 +211,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 if (!_streamBuffer.Live)
                 {
                     SetBehind();
-                    if (waslive) _lastPulledEvent = resolvedEvent.OriginalEventNumber;
+                    if (waslive) _nextEventToPullFrom = resolvedEvent.OriginalEventNumber;
                 }
                 TryPushingMessagesToClients();
             }
