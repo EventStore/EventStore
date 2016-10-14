@@ -451,7 +451,6 @@ namespace EventStore.ClientAPI
             {
                 if (task.IsFaulted || task.IsCanceled)
                 {
-                    _completion.SetException(task.Exception);
                     task.Wait(); //force exception to be thrown
                 }
 
@@ -587,7 +586,6 @@ namespace EventStore.ClientAPI
             {
                 if (task.IsFaulted || task.IsCanceled)
                 {
-                    _completion.SetException(task.Exception);
                     task.Wait(); //force exception to be thrown
                 }
 
