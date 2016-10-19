@@ -388,6 +388,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             var eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
                                       ? prepare.ExpectedVersion + 1 // IsCommitted prepares always have explicit expected version
                                       : commitInfo.EventNumber + prepare.TransactionOffset;
+
+            if (!KeepOnlyFirstEventOfDuplicate(_tableIndex, prepare, eventNumber)){
+                commitInfo.TryNotToKeep();
+                return false;
+            }
+
             // We should always physically keep the very last prepare in the stream.
             // Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
             // That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
@@ -409,6 +415,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             else
                 commitInfo.ForciblyKeep();
             return !canRemove;
+        }
+
+        private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, PrepareLogRecord prepare, int eventNumber){
+            var result = _readIndex.ReadEvent(prepare.EventStreamId, eventNumber);
+            if(result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) return false;
+            return true;
         }
 
         private bool IsSoftDeletedTempStreamWithinSameChunk(string eventStreamId, long chunkStart, long chunkEnd)

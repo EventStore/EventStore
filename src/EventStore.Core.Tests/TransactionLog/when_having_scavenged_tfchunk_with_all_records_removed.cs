@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                     new InMemoryCheckpoint(-1),
                                                     new InMemoryCheckpoint(-1)));
             _db.Open();
-            
+
             var chunk = _db.Manager.GetChunkFor(0);
 
             _p1 = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
