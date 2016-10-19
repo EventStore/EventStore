@@ -24,6 +24,8 @@ namespace EventStore.Core.Tests.Services.Storage
     {
         protected readonly int MaxEntriesInMemTable;
         protected readonly int MetastreamMaxCount;
+        protected readonly bool PerformAdditionalCommitChecks;
+        protected readonly byte IndexBitnessVersion;
         protected TableIndex TableIndex;
         protected IReadIndex ReadIndex;
 
@@ -39,11 +41,13 @@ namespace EventStore.Core.Tests.Services.Storage
         private bool _completeLastChunkOnScavenge;
         private bool _mergeChunks;
 
-        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1)
+        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1, byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
             MaxEntriesInMemTable = maxEntriesInMemTable;
             MetastreamMaxCount = metastreamMaxCount;
+            IndexBitnessVersion = indexBitnessVersion;
+            PerformAdditionalCommitChecks = performAdditionalChecks;
         }
 
         public override void TestFixtureSetUp()
@@ -81,16 +85,16 @@ namespace EventStore.Core.Tests.Services.Storage
             var lowHasher = new XXHashUnsafe();
             var highHasher = new Murmur3AUnsafe();
             TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
-                                        () => new HashListMemTable(PTableVersions.Index64Bit, MaxEntriesInMemTable * 2),
+                                        () => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
                                         () => new TFReaderLease(readers),
-                                        PTableVersions.Index64Bit,
+                                        IndexBitnessVersion,
                                         MaxEntriesInMemTable);
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,
                                       TableIndex,
                                       0,
-                                      additionalCommitChecks: true,
+                                      additionalCommitChecks: PerformAdditionalCommitChecks,
                                       metastreamMaxCount: MetastreamMaxCount,
                                       hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault);
 

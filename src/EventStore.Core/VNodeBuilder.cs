@@ -117,6 +117,7 @@ namespace EventStore.Core
         private int _advertiseExternalSecureTcpPortAs;
         private int _advertiseInternalTcpPortAs;
         private int _advertiseExternalTcpPortAs;
+        protected byte _indexBitnessVersion;
 
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -193,6 +194,7 @@ namespace EventStore.Core
             _enableHistograms = Opts.LogHttpRequestsDefault;
             _index = null;
             _indexCacheDepth = Opts.IndexCacheDepthDefault;
+            _indexBitnessVersion = Opts.IndexBitnessVersionDefault;
             _unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
             _betterOrdering = Opts.BetterOrderingDefault;
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
@@ -1062,6 +1064,17 @@ namespace EventStore.Core
             return this;
         }
 
+        /// <summary>
+        /// The bitness version of the indexes
+        /// </summary>
+        /// <param name="indexBitnessVersion">The version of the bitness <see cref="PTableVersion"/></param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithIndexBitnessVersion(byte indexBitnessVersion){
+            _indexBitnessVersion = indexBitnessVersion;
+
+            return this;
+        }
+
         private void EnsureHttpPrefixes()
         {
             if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
@@ -1237,6 +1250,7 @@ namespace EventStore.Core
                     _index,
                     _enableHistograms,
                     _indexCacheDepth,
+                    _indexBitnessVersion,
                     consumerStrategies,
                     _unsafeIgnoreHardDelete,
                     _betterOrdering,
