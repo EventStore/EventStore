@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _finalmergefile = GetTempFilePath();
             _finalmergefile2 = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, _ptableVersion);
+            _map = IndexMap.FromFile(_filename);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
             var guidFilename = new GuidFilenameProvider(PathName);

@@ -274,7 +274,6 @@
     <Compile Include="Index\Index64Bit\adding_item_to_empty_index_map.cs" />
     <Compile Include="Index\Index64Bit\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\Index64Bit\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\Index64Bit\create_index_map_from_non_existing_file.cs" />
     <Compile Include="Index\Index64Bit\destroying_ptable.cs" />
     <Compile Include="Index\Index64Bit\index_map_should.cs" />
     <Compile Include="Index\Index64Bit\index_map_should_detect_corruption.cs" />
@@ -284,7 +283,6 @@
     <Compile Include="Index\Index64Bit\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
     <Compile Include="Index\Index64Bit\ptable_read_scenario_with_usual_items.cs" />
     <Compile Include="Index\Index64Bit\ptable_should.cs" />
-    <Compile Include="Index\Index64Bit\saving_empty_index_to_a_file.cs" />
     <Compile Include="Index\Index64Bit\saving_index_with_single_item_to_a_file.cs" />
     <Compile Include="Index\Index64Bit\saving_index_with_six_items_to_a_file.cs" />
     <Compile Include="Index\Index64Bit\table_index_on_range_query.cs" />
@@ -297,7 +295,6 @@
     <Compile Include="Index\Index64Bit\when_merging_four_ptables.cs" />
     <Compile Include="Index\Index64Bit\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
     <Compile Include="Index\Index64Bit\when_merging_two_ptables.cs" />
-    <Compile Include="Index\Index64Bit\when_opening_ptable_without_right_flag_in_header.cs" />
     <Compile Include="Index\Index64Bit\when_trying_to_get_latest_entry.cs" />
     <Compile Include="Index\Index64Bit\when_trying_to_get_oldest_entry.cs" />
     <Compile Include="Index\Index32Bit\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
