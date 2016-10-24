@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outputfile");
 
-            _map = IndexMap.FromFile(_filename, _ptableVersion);
+            _map = IndexMap.FromFile(_filename);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 2, 7);
             var table = PTable.FromMemtable(memtable, _tablename);
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename, _ptableVersion);
+            var map = IndexMap.FromFile(_filename);
             map.InOrder().ToList().ForEach(x => x.Dispose());
 
             Assert.AreEqual(7, map.PrepareCheckpoint);
