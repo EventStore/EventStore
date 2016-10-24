@@ -26,11 +26,11 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _indexMapFileName = GetFilePathFor("index.map");
             _ptableFileName = GetFilePathFor("ptable");
 
-            _emptyIndexMap = IndexMap.FromFile(_indexMapFileName, _ptableVersion);
+            _emptyIndexMap = IndexMap.FromFile(_indexMapFileName);
 
             var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memTable.Add(0, 1, 2);
-            _ptable = PTable.FromMemtable(memTable, _ptableFileName, _ptableVersion);
+            _ptable = PTable.FromMemtable(memTable, _ptableFileName);
         }
 
         [TearDown]
@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         public void throw_corruptedindexexception_when_prepare_checkpoint_is_less_than_minus_one()
         {
             CreateArtificialIndexMapFile(_indexMapFileName, -2, 0, null);
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             CreateArtificialIndexMapFile(_indexMapFileName, -1, 0, null);
             Assert.DoesNotThrow(() =>
             {
-                var indexMap = IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2);
+                var indexMap = IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2);
                 indexMap.InOrder().ToList().ForEach(x => x.Dispose());
             });
         }
@@ -74,14 +74,14 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         public void throw_corruptedindexexception_if_prepare_checkpoint_is_minus_one_and_there_are_ptables_in_indexmap()
         {
             CreateArtificialIndexMapFile(_indexMapFileName, -1, 0, _ptableFileName);
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
         public void throw_corruptedindexexception_when_commit_checkpoint_is_less_than_minus_one()
         {
             CreateArtificialIndexMapFile(_indexMapFileName, 0, -2, null);
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             CreateArtificialIndexMapFile(_indexMapFileName, 0, -1, null);
             Assert.DoesNotThrow(() =>
             {
-                var indexMap = IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2);
+                var indexMap = IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2);
                 indexMap.InOrder().ToList().ForEach(x => x.Dispose());
             });
         }
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         public void throw_corruptedindexexception_if_commit_checkpoint_is_minus_one_and_there_are_ptables_in_indexmap()
         {
             CreateArtificialIndexMapFile(_indexMapFileName, 0, -1, _ptableFileName);
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         private void CreateArtificialIndexMapFile(string filePath, long prepareCheckpoint, long commitCheckpoint, string ptablePath)

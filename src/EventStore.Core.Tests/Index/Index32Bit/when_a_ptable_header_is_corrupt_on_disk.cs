@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         [Test]
         public void the_hash_is_invalid()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => _table = PTable.FromFile(_copiedfilename, _ptableVersion, 16));
+            var exc = Assert.Throws<CorruptIndexException>(() => _table = PTable.FromFile(_copiedfilename, 16));
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
 

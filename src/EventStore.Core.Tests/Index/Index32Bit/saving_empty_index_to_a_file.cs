@@ -12,7 +12,6 @@ namespace EventStore.Core.Tests.Index.Index32Bit
     {
         private string _filename;
         private IndexMap _map;
-        protected byte _ptableVersion = PTableVersions.Index32Bit;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -20,7 +19,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             base.TestFixtureSetUp();
             
             _filename = GetFilePathFor("indexfile");
-            _map = IndexMap.FromFile(_filename, _ptableVersion);
+            _map = IndexMap.FromFile(_filename);
             _map.SaveToFile(_filename);
         }
 
@@ -54,7 +53,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename, _ptableVersion);
+            var map = IndexMap.FromFile(_filename);
 
             Assert.AreEqual(-1, map.PrepareCheckpoint);
             Assert.AreEqual(-1, map.CommitCheckpoint);

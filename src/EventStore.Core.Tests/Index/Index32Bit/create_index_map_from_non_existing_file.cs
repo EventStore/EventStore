@@ -8,12 +8,11 @@ namespace EventStore.Core.Tests.Index.Index32Bit
     public class create_index_map_from_non_existing_file
     {
         private IndexMap _map;
-        protected byte _ptableVersion = PTableVersions.Index32Bit;
 
         [SetUp]
         public void Setup()
         {
-            _map = IndexMap.FromFile("thisfiledoesnotexist", _ptableVersion);
+            _map = IndexMap.FromFile("thisfiledoesnotexist");
         }
 
         [Test]
