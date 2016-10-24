@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _filename = GetTempFilePath();
             _mergeFile = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, _ptableVersion, maxTablesPerLevel: 2);
+            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 2);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
 

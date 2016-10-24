@@ -20,7 +20,6 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         private long _ptableCount;
 
         protected int indexEntrySize = PTable.IndexEntry32Size;
-        protected byte _ptableVersion = PTableVersions.Index32Bit;
 
         public override void TestFixtureSetUp()
         {
@@ -29,7 +28,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _size = _ptableCount * (long)indexEntrySize + PTableHeader.Size + PTable.MD5Size;
             Console.WriteLine("Creating PTable at {0}. Size of PTable: {1}", Filename, _size);
             CreatePTableFile(Filename, _size, indexEntrySize);
-            _ptable = PTable.FromFile(Filename, _ptableVersion, 22);
+            _ptable = PTable.FromFile(Filename, 22);
         }
 
         public static void CreatePTableFile(string filename, long ptableSize, int indexEntrySize, int cacheDepth = 16)
