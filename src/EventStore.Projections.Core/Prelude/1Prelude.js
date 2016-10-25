@@ -54,10 +54,10 @@ function initializeProjections() {
 
 var modules = initializeModules();
 var projections = initializeProjections();
-
+var eventProcessor;
 function scope($on, $notify) {
-    var eventProcessor = projections.createEventProcessor(log, $notify);
-    eventProcessor.register_comand_handlers($on);
+    eventProcessor = projections.createEventProcessor(log, $notify);
+    eventProcessor.register_command_handlers($on);
     
     function queryLog(message) {
         if (typeof message === "string")
@@ -261,8 +261,8 @@ function scope($on, $notify) {
         eventProcessor.emit(message);
     }
 
-    function options(options_obejct) {
-        eventProcessor.options(options_obejct);
+    function options(options_object) {
+        eventProcessor.options(options_object);
     }
 
     return {
@@ -286,5 +286,4 @@ function scope($on, $notify) {
         require: modules.require,
     };
 };
-
 scope;

@@ -20,15 +20,13 @@ Binaries are available from https://geteventstore.com, however if you want to bu
 
 There are two stages to building Event Store. First, a native library used for projections, `libjs1` must be built. Following that, the main Event Store project can be built.
 
-If you are running on Mac OS X Yosemite, Ubuntu Linux 14.04 or Amazon Linux 2015.03, it is not necessary to build `libjs1` from source. Precompiled binaries are already included in this repository. If you are running a different distribution or version than those listed above, you will need to compile `libjs1` yourself.
+If you are running on Mac OS X (Yosemite or El Capitan), Ubuntu Linux 14.04, 16.04 or Amazon Linux 2015.03, it is not necessary to build `libjs1` from source. Precompiled binaries are already included in this repository. If you are running a different distribution or version than those listed above, you will need to compile `libjs1` yourself.
 
 #### Compiling libjs1
 
 #####Prerequisites
 
 - git on `PATH`
-- svn on `PATH`
-- gcc installed
 
 ##### Instructions (Mac OS X)
 
@@ -43,10 +41,16 @@ scripts/build-js1/build-js1-mac.sh
 From the root of the repository:
 
 ```bash
-scripts/build-js1/build-js1-linux.sh [werror=no]
+scripts/build-js1/build-js1-linux.sh
 ```
+If the scripts fails with `"Failed to download LLVM. You can supply the URL for the LLVM compiler for your OS as the first argument to this script."`, it is necessary to provide the script with the location where the LLVM compiler can be downloaded.
 
-It may be necessary to include `werror=no` as the only parameter to the script if you have a newer compiler which treats warnings appearing as a result of compiling the Google V8 codebase as errors.
+If the script fails with an gold linker error such as `"ld.gold: error: /usr/lib/gcc/x86_64-linux-gnu/5.4.0/../../../x86_64-linux-gnu/crti.o: unsupported reloc 42 against global symbol __gmon_start__"` you can let it use the system linker by specifying `-Dlinux_use_bundled_gold=0` as the second parameter to the script.
+
+e.g.
+```bash
+scripts/build-js1/build-js1-linux.sh "" "-Dlinux_use_bundled_gold=0" 
+```
 
 #### Compiling Event Store (Linux and Mac OS X)
 
@@ -81,7 +85,6 @@ Note that it is no longer possible to build x86 builds of Event Store.
 - .NET Framework v4.0+
 - Windows platform SDK with compilers (v7.1) or Visual C++ installed *(Only required for a full build)*
 - git on PATH
-- svn on PATH *(Only required for a full build)*
 
 #### Building the Event Store
 
@@ -95,7 +98,7 @@ Optional parameters (Specified using `-ParameterName value`)
 - `-Platform` — `x64` (default) or `x86`
 - `-Configuration` — `release` (default) or `debug`
 - `-Version` — the semantic version number to give to the release. Defaults to version `0.0.0.0`, which should be used for all non-released builds.
-- `-SpecificVisualStudioVersion` — `2010`, `2012`, `2013`, `Windows7.1SDK`. Default is to use whichever version is installed. This only needs to be overridden if you have multiple versions installed.
+- `-SpecificVisualStudioVersion` — `2010`, `2012`, `2013`, `2015`, `Windows7.1SDK`. Default is to use whichever version is installed. This only needs to be overridden if you have multiple versions installed.
 - `-ForceNetwork` — true if you want to force the script to get dependencies even if Windows thinks theres no network connection (otherwise we don’t try to avoid sometimes lengthy delays).
 - `-Defines` — any additional defines you want to pass to the compiler. Should be enclosed in single quotes
 

@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.v8
         public delegate void ReverseCommandHandlerDelegate(
             [MarshalAs(UnmanagedType.LPWStr)] string commandName, [MarshalAs(UnmanagedType.LPWStr)] string commandBody);
 
-        public delegate IntPtr LoadModuleDelegate([MarshalAs(UnmanagedType.LPWStr)] string moduleName);
+        public delegate IntPtr LoadModuleDelegate(IntPtr prelude, [MarshalAs(UnmanagedType.LPWStr)] string moduleName);
 
         public delegate void LogDelegate([MarshalAs(UnmanagedType.LPWStr)] string message);
 
