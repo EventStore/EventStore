@@ -516,7 +516,7 @@ var $projections = {
             emit: emit,
             options: options,
 
-            register_comand_handlers: registerCommandHandlers,
+            register_command_handlers: registerCommandHandlers,
         };
     }
 };

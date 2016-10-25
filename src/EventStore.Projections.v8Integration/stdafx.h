@@ -14,5 +14,6 @@
 #endif
 
 #include <v8.h>
+#include <libplatform/libplatform.h>
 
 // reference additional headers your program requires here
