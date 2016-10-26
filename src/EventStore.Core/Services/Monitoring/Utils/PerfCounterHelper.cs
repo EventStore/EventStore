@@ -57,7 +57,11 @@ namespace EventStore.Core.Services.Monitoring.Utils
             string processName = null;
             try
             {
+                #if __MonoCS__
+                processName = Process.GetCurrentProcess().Id.ToString();
+                #else
                 processName = Process.GetCurrentProcess().ProcessName;
+                #endif
                 return CreatePerfCounter(category, counter, processName);
             }
             catch (Exception ex)
