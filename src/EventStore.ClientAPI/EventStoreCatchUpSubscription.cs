@@ -151,7 +151,7 @@ namespace EventStore.ClientAPI
         {
             if (Verbose) Log.Debug("Catch-up Subscription to {0}: requesting stop...", IsSubscribedToAll ? "<all>" : StreamId);
 
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.");
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.", IsSubscribedToAll ? "<all>" : StreamId);
             _connection.Connected -= OnReconnect;
 
             ShouldStop = true;
@@ -160,8 +160,8 @@ namespace EventStore.ClientAPI
 
         private void OnReconnect(object sender, ClientConnectionEventArgs clientConnectionEventArgs)
         {
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: recovering after reconnection.");
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.");
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: recovering after reconnection.", IsSubscribedToAll ? "<all>" : StreamId);
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.", IsSubscribedToAll ? "<all>" : StreamId);
             _connection.Connected -= OnReconnect;
             RunSubscription();
         }
