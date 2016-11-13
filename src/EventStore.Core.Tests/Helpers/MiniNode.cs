@@ -54,7 +54,9 @@ namespace EventStore.Core.Tests.Helpers
                         int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true,
                         int memTableSize = 1000,
                         bool inMemDb = true, bool disableFlushToDisk = false,
-                        IPAddress advertisedExtIPAddress = null, int advertisedExtHttpPort = 0)
+                        IPAddress advertisedExtIPAddress = null, int advertisedExtHttpPort = 0,
+                        int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
+                        byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault)
         {
             if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -110,7 +112,9 @@ namespace EventStore.Core.Tests.Helpers
                    .DoNotVerifyDbHashes()
                    .WithStatsStorage(StatsStorage.None)
                    .AdvertiseExternalIPAs(advertisedExtIPAddress)
-                   .AdvertiseExternalHttpPortAs(advertisedExtHttpPort);
+                   .AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
+                   .WithHashCollisionReadLimitOf(hashCollisionReadLimit)
+                   .WithIndexBitnessVersion(indexBitnessVersion);
 
             if(enableTrustedAuth)
                 builder.EnableTrustedAuth();

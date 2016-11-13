@@ -63,6 +63,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly int MaxMemtableEntryCount;
         public readonly int HashCollisionReadLimit;
         public readonly int IndexCacheDepth;
+        public readonly byte IndexBitnessVersion;
 
         public readonly bool BetterOrdering;
         public readonly string Index;
@@ -118,6 +119,7 @@ namespace EventStore.Core.Cluster.Settings
                                     bool logHttpRequests,
                                     string index = null, bool enableHistograms = false,
                                     int indexCacheDepth = 16,
+                                    byte indexBitnessVersion = 2,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
                                     bool unsafeIgnoreHardDeletes = false,
                                     bool betterOrdering = false,
@@ -201,6 +203,7 @@ namespace EventStore.Core.Cluster.Settings
 
             EnableHistograms = enableHistograms;
             IndexCacheDepth = indexCacheDepth;
+            IndexBitnessVersion = indexBitnessVersion;
             Index = index;
             UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
             BetterOrdering = betterOrdering;

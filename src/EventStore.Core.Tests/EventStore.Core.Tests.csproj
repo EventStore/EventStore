@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -611,6 +611,12 @@
     <Compile Include="mono_filestream_bug.cs" />
     <Compile Include="ClientAPI\connecting_with_connection_string.cs" />
     <Compile Include="Common\VNodeBuilderTests\when_building\with_secure_tcp.cs" />
+    <Compile Include="Services\Storage\HashCollisions\with_hash_collisions.cs" />
+    <Compile Include="ClientAPI\append_to_stream_with_hash_collision.cs" />
+    <Compile Include="ClientAPI\read_event_with_hash_collision.cs" />
+    <Compile Include="ClientAPI\read_stream_events_backward_with_hash_collision.cs" />
+    <Compile Include="ClientAPI\read_stream_events_forward_with_hash_collision.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_deleting_duplicate_events.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
