@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -44,6 +45,21 @@ namespace EventStore.ClientAPI
                         throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
                     }
                 }).ToArray()
+                },
+                {typeof(UserCredentials), x =>
+                {
+                    try
+                    {
+                        var pieces = x.Trim().Split(':');
+                        if (pieces.Length != 2) throw new Exception("Could not split into username and password.");
+                        
+                        return new UserCredentials(pieces[0], pieces[1]);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception(string.Format("User credentials {0} is not in correct format. Expected format is username:password.", x), ex);
+                    }
+                }
                 }
             };
         }
