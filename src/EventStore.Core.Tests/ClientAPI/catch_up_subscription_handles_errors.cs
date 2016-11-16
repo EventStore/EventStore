@@ -485,6 +485,12 @@ namespace EventStore.Core.Tests.ClientAPI
             throw new NotImplementedException();
         }
 
+        public Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events,
+            UserCredentials userCredentials = null)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             throw new NotImplementedException();

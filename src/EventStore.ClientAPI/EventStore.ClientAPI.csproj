@@ -43,8 +43,8 @@
       <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http">
-        <SpecificVersion>False</SpecificVersion>
-        <HintPath>..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Xml.Linq" />
@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="ClientOperations\ConditionalAppendToStreamOperation.cs" />
     <Compile Include="ClientOperations\ConnectToPersistentSubscriptionOperation.cs" />
     <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />
     <Compile Include="ClientOperations\DeletePersistentSubscriptionOperation.cs" />
@@ -64,6 +65,8 @@
     <Compile Include="ClientOperations\VolatileSubscriptionOperation.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
     <Compile Include="Common\Utils\Threading\ManualResetEventSlimExtensions.cs" />
+    <Compile Include="ConditionalWriteFailureReason.cs" />
+    <Compile Include="ConditionalWriteResult.cs" />
     <Compile Include="ConnectionString.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="EventStorePersistentSubscriptionBase.cs" />

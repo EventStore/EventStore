@@ -57,6 +57,59 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
+        internal class ConditionalAppendToStream :
+            EmbeddedResponderBase<ConditionalWriteResult, ClientMessage.WriteEventsCompleted>
+        {
+            private readonly string _stream;
+
+            public ConditionalAppendToStream(TaskCompletionSource<ConditionalWriteResult> source, string stream)
+                : base(source)
+            {
+                _stream = stream;
+            }
+
+            protected override void InspectResponse(ClientMessage.WriteEventsCompleted response)
+            {
+                switch (response.Result)
+                {
+                    case OperationResult.Success:
+                        Succeed(response);
+                        break;
+                    case OperationResult.PrepareTimeout:
+                    case OperationResult.ForwardTimeout:
+                    case OperationResult.CommitTimeout:
+                        break;
+                    case OperationResult.WrongExpectedVersion:
+                        Succeed(response);
+                        break;
+                    case OperationResult.StreamDeleted:
+                        Succeed(response);
+                        break;
+                    case OperationResult.InvalidTransaction:
+                        Fail(new InvalidTransactionException());
+                        break;
+                    case OperationResult.AccessDenied:
+                        Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
+                        break;
+                    default:
+                        throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
+                }
+            }
+
+            protected override ConditionalWriteResult TransformResponse(ClientMessage.WriteEventsCompleted response)
+            {
+                if (response.Result == OperationResult.WrongExpectedVersion)
+                {
+                    return new ConditionalWriteResult(ConditionalWriteStatus.VersionMismatch);
+                }
+                if (response.Result == OperationResult.StreamDeleted)
+                {
+                    return new ConditionalWriteResult(ConditionalWriteStatus.StreamDeleted);
+                }
+                return new ConditionalWriteResult(response.LastEventNumber, new Position(response.PreparePosition, response.CommitPosition));
+            }
+        }
+
         internal class DeleteStream :
             EmbeddedResponderBase<DeleteResult, ClientMessage.DeleteStreamCompleted>
         {

@@ -184,6 +184,26 @@ namespace EventStore.ClientAPI.Embedded
             // ReSharper restore PossibleMultipleEnumeration
         }
 
+        public Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events,
+            UserCredentials userCredentials = null)
+        {
+            // ReSharper disable PossibleMultipleEnumeration
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var source = new TaskCompletionSource<ConditionalWriteResult>();
+
+            var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ConditionalAppendToStream(source, stream));
+
+            Guid corrId = Guid.NewGuid();
+
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.WriteEvents(corrId, corrId, envelope, false,
+                stream, expectedVersion, events.ConvertToEvents(), user));
+
+            return source.Task;
+            // ReSharper restore PossibleMultipleEnumeration
+        }
+
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");

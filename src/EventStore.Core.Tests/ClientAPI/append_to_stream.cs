@@ -375,6 +375,53 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(99, store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events).Result.NextExpectedVersion);
             }
         }
+
+        [Test, Category("Network")]
+        public void returns_failure_status_when_conditionally_appending_with_version_mismatch()
+        {
+            const string stream = "returns_failure_status_when_conditionally_appending_with_version_mismatch";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+
+                var result = store.ConditionalAppendToStreamAsync(stream, 7, new[] {TestEvent.NewTestEvent()}).Result;
+
+                Assert.AreEqual(ConditionalWriteStatus.VersionMismatch, result.Status);
+            }
+        }
+
+        [Test, Category("Network")]
+        public void returns_success_status_when_conditionally_appending_with_matching_version()
+        {
+            const string stream = "returns_success_status_when_conditionally_appending_with_matching_version";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+
+                var result = store.ConditionalAppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() }).Result;
+
+                Assert.AreEqual(ConditionalWriteStatus.Succeeded, result.Status);
+                Assert.IsNotNull(result.LogPosition);
+                Assert.IsNotNull(result.NextExpectedVersion);
+            }
+        }
+
+        [Test, Category("Network")]
+        public void returns_failure_status_when_conditionally_appending_to_a_deleted_stream()
+        {
+            const string stream = "returns_failure_status_when_conditionally_appending_to_a_deleted_stream";
+            using (var store = BuildConnection(_node))
+            {
+                store.ConnectAsync().Wait();
+
+                store.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).Wait();
+                store.DeleteStreamAsync(stream, ExpectedVersion.Any, true).Wait();
+
+                var result = store.ConditionalAppendToStreamAsync(stream, ExpectedVersion.Any, new[] { TestEvent.NewTestEvent() }).Result;
+
+                Assert.AreEqual(ConditionalWriteStatus.StreamDeleted, result.Status);
+            }
+        }
     }
 
     [TestFixture]
