@@ -130,6 +130,20 @@ namespace EventStore.ClientAPI.Internal
 // ReSharper restore PossibleMultipleEnumeration
         }
 
+        public Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events,
+            UserCredentials userCredentials = null)
+        {
+            // ReSharper disable PossibleMultipleEnumeration
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var source = new TaskCompletionSource<ConditionalWriteResult>();
+            EnqueueOperation(new ConditionalAppendToStreamOperation(_settings.Log, source, _settings.RequireMaster,
+                                                         stream, expectedVersion, events, userCredentials));
+            return source.Task;
+            // ReSharper restore PossibleMultipleEnumeration
+        }
+
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
