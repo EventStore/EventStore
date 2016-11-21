@@ -19,8 +19,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         long LastCommitPosition { get; }
         void Init(long buildToPosition);
         void Dispose();
-        int Commit(CommitLogRecord commit, bool isTfEof);
-        int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof);
+        int Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber);
+        int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool cacheLastEventNumber);
     }
 
     public class IndexCommitter : IIndexCommitter
@@ -87,16 +87,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted))
                                 {
                                     if (prepare.Flags.HasAnyOf(PrepareFlags.SingleWrite)) {
-                                        Commit(commitedPrepares, false);
+                                        Commit(commitedPrepares, false, false);
                                         commitedPrepares.Clear();
-                                        Commit(new[] {prepare}, result.Eof);
+                                        Commit(new[] {prepare}, result.Eof, false);
                                     } else {
 
                                         if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
                                             commitedPrepares.Add(prepare);
                                         if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                                         {
-                                            Commit(commitedPrepares, result.Eof);
+                                            Commit(commitedPrepares, result.Eof, false);
                                             commitedPrepares.Clear();
                                         }
                                     }
@@ -104,7 +104,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 break;
                             }
                         case LogRecordType.Commit:
-                            Commit((CommitLogRecord)result.LogRecord, result.Eof);
+                            Commit((CommitLogRecord)result.LogRecord, result.Eof, false);
                             break;
                         case LogRecordType.System:
                             break;
@@ -141,7 +141,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public int Commit(CommitLogRecord commit, bool isTfEof)
+        public int Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber)
         {
             int eventNumber = EventNumber.Invalid;
 
@@ -180,7 +180,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             if (indexEntries.Count > 0)
             {
-                if (_additionalCommitChecks)
+                if (_additionalCommitChecks && cacheLastEventNumber)
                 {
                     CheckStreamVersion(streamId, indexEntries[0].Version, commit);
                     CheckDuplicateEvents(streamId, commit, indexEntries, prepares);
@@ -192,7 +192,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
 
-                _backend.SetStreamLastEventNumber(streamId, eventNumber);
+                if(cacheLastEventNumber){
+                    _backend.SetStreamLastEventNumber(streamId, eventNumber);
+                }
                 if (SystemStreams.IsMetastream(streamId))
                     _backend.SetStreamMetadata(SystemStreams.OriginalStreamOf(streamId), null); // invalidate cached metadata
 
@@ -216,7 +218,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return eventNumber;
         }
 
-        public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof)
+        public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool cacheLastEventNumber)
         {
             int eventNumber = EventNumber.Invalid;
 
@@ -275,7 +277,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             if (indexEntries.Count > 0)
             {
-                if (_additionalCommitChecks)
+                if (_additionalCommitChecks && cacheLastEventNumber)
                 {
                     CheckStreamVersion(streamId, indexEntries[0].Version, null); // TODO AN: bad passing null commit
                     CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
@@ -287,7 +289,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
 
-                _backend.SetStreamLastEventNumber(streamId, eventNumber);
+                if(cacheLastEventNumber){
+                    _backend.SetStreamLastEventNumber(streamId, eventNumber);
+                }
                 if (SystemStreams.IsMetastream(streamId))
                     _backend.SetStreamMetadata(SystemStreams.OriginalStreamOf(streamId), null); // invalidate cached metadata
 
