@@ -176,6 +176,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
                                               .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId)
+                                              .OrderByDescending(x => x.Version)
                                               .GroupBy(x => x.Version).Select(x => x.Last());
 
                 if (metadata.MaxAge.HasValue)
@@ -233,6 +234,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
                                               .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId)
+                                              .OrderByDescending(x => x.Version)
                                               .GroupBy(x => x.Version).Select(x => x.Last());
 
                 if (metadata.MaxAge.HasValue)
@@ -388,15 +390,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             var rec = ReadPrepareInternal(reader, latestEntry.Position);
             if (rec == null) throw new Exception("Could not read latest stream's prepare. That should never happen.");
-            if (rec.EventStreamId == streamId) // LUCKY!!!
-                return latestEntry.Version;
 
             int count = 0;
+            var latestVersion = int.MinValue;
             foreach (var indexEntry in _tableIndex.GetRange(streamId, 0, int.MaxValue, limit: _hashCollisionReadLimit + 1))
             {
                 var r = ReadPrepareInternal(reader, indexEntry.Position);
-                if (r != null && r.EventStreamId == streamId)
-                    return indexEntry.Version; // AT LAST!!!
+                if (r != null && r.EventStreamId == streamId){
+                    if(latestVersion == int.MinValue){
+                        latestVersion = indexEntry.Version;
+                        continue;
+                    }
+                    return latestVersion < indexEntry.Version ? indexEntry.Version : latestVersion;
+                }
 
                 count++;
                 Interlocked.Increment(ref _hashCollisions);
@@ -406,7 +412,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return EventNumber.Invalid;
                 }
             }
-            return ExpectedVersion.NoStream; // no such event stream
+            return latestVersion == int.MinValue ? ExpectedVersion.NoStream : latestVersion;
         }
 
         private bool OriginalStreamExists(TFReaderLease reader, string metaStreamId)

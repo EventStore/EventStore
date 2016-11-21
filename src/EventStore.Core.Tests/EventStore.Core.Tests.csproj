@@ -617,6 +617,7 @@
     <Compile Include="ClientAPI\read_stream_events_backward_with_hash_collision.cs" />
     <Compile Include="ClientAPI\read_stream_events_forward_with_hash_collision.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_duplicate_events.cs" />
+    <Compile Include="Services\Storage\BuildingIndex\when_building_an_index_off_tfile_with_duplicate_events_in_a_stream.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
