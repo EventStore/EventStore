@@ -439,7 +439,7 @@ namespace EventStore.ClientAPI
             }
             catch (Exception ex)
             {
-                _completion.SetException(ex);
+                _completion.TrySetException(ex);
             }
         }
 
@@ -466,12 +466,12 @@ namespace EventStore.ClientAPI
                             "Catch-up Subscription to {0}: finished reading events, nextReadPosition = {1}.",
                             IsSubscribedToAll ? "<all>" : StreamId, _nextReadPosition);
                     }
-                    _completion.SetResult(true);
+                    _completion.TrySetResult(true);
                 }
             }
             catch (Exception e)
             {
-                _completion.SetException(e);
+                _completion.TrySetException(e);
             }
         }
 
@@ -574,7 +574,7 @@ namespace EventStore.ClientAPI
             }
             catch(Exception ex)
             {
-                _completion.SetException(ex);
+                _completion.TrySetException(ex);
             }
         }
 
@@ -600,12 +600,12 @@ namespace EventStore.ClientAPI
                             "Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",
                             IsSubscribedToAll ? "<all>" : StreamId, _nextReadEventNumber);
                     }
-                    _completion.SetResult(true);
+                    _completion.TrySetResult(true);
                 }
             }
             catch (Exception e)
             {
-                _completion.SetException(e);
+                _completion.TrySetException(e);
             }
         }
 
