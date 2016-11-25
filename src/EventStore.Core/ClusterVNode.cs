@@ -467,7 +467,7 @@ namespace EventStore.Core
                                                         ioDispatcher,
                                                         tableIndex,
                                                         readIndex,
-                                                        Application.IsDefined(Application.AlwaysKeepScavenged),
+                                                        vNodeSettings.AlwaysKeepScavenged,
                                                         _nodeInfo.ExternalHttp.ToString(),
                                                         !vNodeSettings.DisableScavengeMerging,
                                                         vNodeSettings.ScavengeHistoryMaxAge,
