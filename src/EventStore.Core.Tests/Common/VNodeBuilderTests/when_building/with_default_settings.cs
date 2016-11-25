@@ -167,6 +167,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
 
             Assert.AreEqual(TFConsts.ChunkSize, _dbConfig.ChunkSize, "ChunkSize");
             Assert.AreEqual(Opts.ChunksCacheSizeDefault, _dbConfig.MaxChunksCacheSize, "MaxChunksCacheSize");
+            Assert.AreEqual(Opts.AlwaysKeepScavengedDefault, _settings.AlwaysKeepScavenged, "AlwaysKeepScavenged");
         }
 
         [Test]

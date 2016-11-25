@@ -118,6 +118,7 @@ namespace EventStore.Core
         private int _advertiseInternalTcpPortAs;
         private int _advertiseExternalTcpPortAs;
         protected byte _indexBitnessVersion;
+        protected bool _alwaysKeepScavenged;
 
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -198,6 +199,7 @@ namespace EventStore.Core
             _unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
             _betterOrdering = Opts.BetterOrderingDefault;
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
+            _alwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -1075,6 +1077,16 @@ namespace EventStore.Core
             return this;
         }
 
+        /// <summary>
+        /// The newer chunks during a scavenge are always kept
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder AlwaysKeepScavenged(){
+            _alwaysKeepScavenged = true;
+
+            return this;
+        }
+
         private void EnsureHttpPrefixes()
         {
             if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
@@ -1254,7 +1266,8 @@ namespace EventStore.Core
                     consumerStrategies,
                     _unsafeIgnoreHardDelete,
                     _betterOrdering,
-                    _readerThreadsCount);
+                    _readerThreadsCount,
+                    _alwaysKeepScavenged);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);

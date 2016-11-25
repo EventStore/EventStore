@@ -69,6 +69,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly string Index;
         public readonly int ReaderThreadsCount;
         public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
+        public readonly bool AlwaysKeepScavenged;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
@@ -123,7 +124,8 @@ namespace EventStore.Core.Cluster.Settings
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
                                     bool unsafeIgnoreHardDeletes = false,
                                     bool betterOrdering = false,
-                                    int readerThreadsCount = 4)
+                                    int readerThreadsCount = 4,
+                                    bool alwaysKeepScavenged = false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -208,6 +210,7 @@ namespace EventStore.Core.Cluster.Settings
             UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
             BetterOrdering = betterOrdering;
             ReaderThreadsCount = readerThreadsCount;
+            AlwaysKeepScavenged = alwaysKeepScavenged;
         }
 
 
