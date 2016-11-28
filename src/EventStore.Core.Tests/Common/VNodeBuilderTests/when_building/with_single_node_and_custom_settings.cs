@@ -784,4 +784,18 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
             Assert.AreEqual(_advertiseInfo.AdvertiseExternalHttpPortAs, _settings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs);
         }
     }
+
+    public class with_always_keep_scavenged : SingleNodeScenario
+    {
+        public override void Given()
+        {
+            _builder.AlwaysKeepScavenged();
+        }
+
+        [Test]
+        public void should_always_keep_scavenged() 
+        {
+            Assert.AreEqual(true, _settings.AlwaysKeepScavenged);
+        }
+    }
 }
