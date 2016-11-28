@@ -251,6 +251,8 @@ namespace EventStore.ClusterNode
                 builder.NoGossipOnPublicInterface();
             if(options.SkipDbVerify)
                 builder.DoNotVerifyDbHashes();
+            if(options.AlwaysKeepScavenged)
+                builder.AlwaysKeepScavenged();
 
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
