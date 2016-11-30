@@ -20,7 +20,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
 {
-    [TestFixture, Category("test")]
+    [TestFixture]
     public class when_building_an_index_off_tfile_with_duplicate_events_in_a_stream : DuplicateReadIndexTestScenario
     {
         private Guid _id1;
