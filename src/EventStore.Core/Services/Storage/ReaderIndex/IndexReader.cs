@@ -392,8 +392,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (rec == null) throw new Exception("Could not read latest stream's prepare. That should never happen.");
 
             int count = 0;
-            var latestVersion = int.MinValue;
-            foreach (var indexEntry in _tableIndex.GetRange(streamId, 0, int.MaxValue, limit: _hashCollisionReadLimit + 1))
+            int startVersion = 0;
+            int latestVersion = int.MinValue;
+            if(rec.EventStreamId == streamId){
+               startVersion = Math.Max(latestEntry.Version, latestEntry.Version + 1);
+               latestVersion = latestEntry.Version;
+            }
+            foreach (var indexEntry in _tableIndex.GetRange(streamId, startVersion, int.MaxValue, limit: _hashCollisionReadLimit + 1))
             {
                 var r = ReadPrepareInternal(reader, indexEntry.Position);
                 if (r != null && r.EventStreamId == streamId){
