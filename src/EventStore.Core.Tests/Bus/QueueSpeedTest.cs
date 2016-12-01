@@ -14,6 +14,34 @@ namespace EventStore.Core.Tests.Bus
     {
         [Test, Category("LongRunning"), Explicit]
         [MightyMooseIgnore]
+        public void autoreset_mpsc_queued_handler_2_producers_50mln_messages()
+        {
+            QueuedHandlerAutoResetWithMpsc queue = null;
+            SpeedTest(consumer =>
+            {
+                queue = new QueuedHandlerAutoResetWithMpsc(consumer, "Queue", false);
+                queue.Start();
+                return queue;
+            }, 2, 50000000);
+            queue.Stop();
+        }
+
+        [Test, Category("LongRunning"), Explicit]
+        [MightyMooseIgnore]
+        public void autoreset_mpsc_queued_handler_10_producers_50mln_messages()
+        {
+            QueuedHandlerAutoResetWithMpsc queue = null;
+            SpeedTest(consumer =>
+            {
+                queue = new QueuedHandlerAutoResetWithMpsc(consumer, "Queue", false);
+                queue.Start();
+                return queue;
+            }, 10, 50000000);
+            queue.Stop();
+        }
+
+        [Test, Category("LongRunning"), Explicit]
+        [MightyMooseIgnore]
         public void autoreset_queued_handler_2_producers_50mln_messages()
         {
             QueuedHandlerAutoReset queue = null;
@@ -90,6 +118,34 @@ namespace EventStore.Core.Tests.Bus
             SpeedTest(consumer =>
             {
                 queue = new QueuedHandlerPulse(consumer, "Queue", false);
+                queue.Start();
+                return queue;
+            }, 10, 50000000);
+            queue.Stop();
+        }
+
+        [Test, Category("LongRunning"), Explicit]
+        [MightyMooseIgnore]
+        public void mres_mpsc_queued_handler_2_producers_50mln_messages()
+        {
+            QueuedHandlerMresWithMpsc queue = null;
+            SpeedTest(consumer =>
+            {
+                queue = new QueuedHandlerMresWithMpsc(consumer, "Queue", false);
+                queue.Start();
+                return queue;
+            }, 2, 50000000);
+            queue.Stop();
+        }
+
+        [Test, Category("LongRunning"), Explicit]
+        [MightyMooseIgnore]
+        public void mres_mpsc_queued_handler_10_producers_50mln_messages()
+        {
+            QueuedHandlerMresWithMpsc queue = null;
+            SpeedTest(consumer =>
+            {
+                queue = new QueuedHandlerMresWithMpsc(consumer, "Queue", false);
                 queue.Start();
                 return queue;
             }, 10, 50000000);
