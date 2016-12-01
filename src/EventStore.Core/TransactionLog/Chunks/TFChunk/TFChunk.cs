@@ -164,7 +164,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             _fileSize = (int)fileInfo.Length;
             _isReadOnly = true;
-            SetAttributes();
+            SetAttributes(_filename, true);
             CreateReaderStreams();
 
             var reader = GetReaderWorkItem();
@@ -222,7 +222,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             else
             {
                 CreateWriterWorkItemForNewChunk(chunkHeader, fileSize);
-                SetAttributes();
+                SetAttributes(_filename, false);
                 CreateReaderStreams();
             }
             _readSide = chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
@@ -240,7 +240,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _physicalDataSize = writePosition;
             _logicalDataSize = writePosition;
 
-            SetAttributes();
+            SetAttributes(_filename, false);
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
             if (_chunkHeader.Version != CurrentChunkVersion)
                 throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
@@ -259,6 +259,34 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 }
             }
             _readSide = new TFChunkReadSideUnscavenged(this);
+        }
+
+
+        private void Alignv2File(string filename)
+        {
+           //takes a v2 file and aligns it so it can be used with unbuffered
+           try
+           {
+               SetAttributes(filename, false);
+               using (var stream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+               {
+                   if (stream.Length%4096 == 0) return;
+                   var footerStart = stream.Length - ChunkFooter.Size;
+                   var alignedSize = (stream.Length/4096 + 1)*4096;
+                   var footer = new byte[ChunkFooter.Size];
+                   stream.SetLength(alignedSize);
+                   stream.Seek(footerStart, SeekOrigin.Begin);
+                   stream.Read(footer, 0, ChunkFooter.Size);
+                   stream.Seek(footerStart, SeekOrigin.Begin);
+                   var bytes = new byte[alignedSize - footerStart - ChunkFooter.Size];
+                   stream.Write(bytes, 0, bytes.Length);
+                   stream.Write(footer, 0, footer.Length);
+               }
+           }
+           finally
+           {
+               SetAttributes(filename, true);
+           }
         }
 
         private void CreateReaderStreams()
@@ -359,17 +387,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             stream.Write(chunkHeaderBytes, 0, ChunkHeader.Size);
         }
 
-        private void SetAttributes()
+        private void SetAttributes(string filename, bool isReadOnly)
         {
             if (_inMem)
                 return;
             // in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
             Helper.EatException(() =>
             {
-                if (_isReadOnly)
-                    File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
+                if (isReadOnly)
+                    File.SetAttributes(filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
                 else
-                    File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
+                    File.SetAttributes(filename, FileAttributes.NotContentIndexed);
             });
         }
 
@@ -704,7 +732,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             CleanUpWriterWorkItem(_writerWorkItem);
             _writerWorkItem = null;
-            SetAttributes();
+            SetAttributes(_filename, true);
         }
 
         public void CompleteRaw()
@@ -719,7 +747,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             CleanUpWriterWorkItem(_writerWorkItem);
             _writerWorkItem = null;
-            SetAttributes();
+            SetAttributes(_filename, true);
         }
 
         private ChunkFooter WriteFooter(ICollection<PosMap> mapping)
