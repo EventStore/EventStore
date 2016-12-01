@@ -32,7 +32,19 @@ namespace EventStore.ClientAPI
         /// <returns>a new <see cref="IEventStoreConnection"/></returns>
         public static IEventStoreConnection Create(string connectionString, string connectionName = null)
         {
-            var settings = ConnectionString.GetConnectionSettings(connectionString);
+            return Create(connectionString, null, connectionName);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/> provided via a connectionstring
+        /// </summary>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        /// <param name="builder">Pre-populated settings builder, optional. If not specified, a new builder will be created.</param>
+        /// <param name="connectionString">The connection string to for this connection.</param>
+        /// <returns>a new <see cref="IEventStoreConnection"/></returns>
+        public static IEventStoreConnection Create(string connectionString, ConnectionSettingsBuilder builder, string connectionName = null)
+        {
+            var settings = ConnectionString.GetConnectionSettings(connectionString, builder);
             var uri = GetUriFromConnectionString(connectionString);
             if(uri == null && (settings.GossipSeeds == null || settings.GossipSeeds.Length == 0))
             {
