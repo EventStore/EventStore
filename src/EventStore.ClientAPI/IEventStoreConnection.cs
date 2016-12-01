@@ -413,7 +413,7 @@ namespace EventStore.ClientAPI
         */
 
         /// <summary>
-        /// Subscribes to a all events. Existing events from lastCheckpoint
+        /// Subscribes to all events. Existing events from lastCheckpoint
         /// onwards are read from the Event Store and presented to the user of
         /// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
         ///
