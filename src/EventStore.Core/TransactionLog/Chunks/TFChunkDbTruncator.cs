@@ -131,6 +131,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, chunkFilename, truncateChk, chunkHeader));
             }
 
+            File.SetAttributes(chunkFilename, FileAttributes.Normal);
             using (var fs = new FileStream(chunkFilename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
             {
                 fs.SetLength(ChunkHeader.Size + chunkHeader.ChunkSize + ChunkFooter.Size);
