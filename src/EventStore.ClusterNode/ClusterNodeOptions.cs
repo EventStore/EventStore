@@ -129,6 +129,14 @@ namespace EventStore.ClusterNode
         public bool MemDb { get; set; }
         [ArgDescription(Opts.SkipDbVerifyDescr, Opts.DbGroup)]
         public bool SkipDbVerify { get; set; }
+
+        [ArgDescription(Opts.WriteThroughDescr, Opts.DbGroup)]
+        public bool WriteThrough { get; set; }
+
+        [ArgDescription(Opts.UnbufferedDescr, Opts.DbGroup)]
+        public bool Unbuffered { get; set; }
+
+
         [ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
         public ProjectionType RunProjections { get; set; }
         [ArgDescription(Opts.ProjectionThreadsDescr, Opts.ProjectionsGroup)]
@@ -306,6 +314,9 @@ namespace EventStore.ClusterNode
             StartStandardProjections = Opts.StartStandardProjectionsDefault;
             DisableHTTPCaching = Opts.DisableHttpCachingDefault;
             LogHttpRequests = Opts.LogHttpRequestsDefault;
+
+            Unbuffered = Opts.UnbufferedDefault;
+            WriteThrough = Opts.WriteThroughDefault;
 
             AlwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
         }

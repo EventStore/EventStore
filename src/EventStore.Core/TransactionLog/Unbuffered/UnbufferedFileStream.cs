@@ -21,7 +21,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private long _lastPosition;
         private bool _needsFlush;
         private SafeFileHandle _handle;
-        private long _readLocation;
+        private long _readLocation = -1;
+        private bool _needsRead;
 
         private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
         {
@@ -73,7 +74,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var positionAligned = GetLowestAlignment(_lastPosition);
             if (!_aligned)
             {
-                SeekInternal(positionAligned);
+                SeekInternal(positionAligned, SeekOrigin.Begin);
             }
             if (_bufferedCount == alignedbuffer)
             {
@@ -123,9 +124,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
         }
 
-        private void SeekInternal(long positionAligned)
+        private void SeekInternal(long positionAligned, SeekOrigin origin)
         {
-            NativeFile.Seek(_handle, positionAligned, SeekOrigin.Begin);
+            NativeFile.Seek(_handle, positionAligned, origin);
         }
 
         private void InternalWrite(byte* buffer, uint count)
@@ -136,18 +137,19 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override long Seek(long offset, SeekOrigin origin)
         {
+            long mungedOffset = offset;
             CheckDisposed();
             if (origin == SeekOrigin.Current) throw new NotImplementedException("only supports seek origin begin/end");
-            if (origin == SeekOrigin.End) offset = Length + offset;
-            var aligned = GetLowestAlignment(offset);
-            var left = (int)(offset - aligned);
+            if (origin == SeekOrigin.End) mungedOffset = Length + offset;
+            var aligned = GetLowestAlignment(mungedOffset);
+            var left = (int)(mungedOffset - aligned);
             Flush();
             _bufferedCount = left;
             _aligned = aligned == left;
             _lastPosition = aligned;
-            SeekInternal(aligned);
-            NativeFile.Read(_handle, _writeBuffer, 0, (int)_blockSize);
-            SeekInternal(aligned);
+            //TODO cant do two seeks + a read here.
+            SeekInternal(aligned, SeekOrigin.Begin);
+            _needsRead = true;
             return offset;
         }
 
@@ -176,10 +178,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var roffset = (int)(Position - position);
 
             var bytesRead = _readBufferSize;
-
-            if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == 0)
+            if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == -1)
             {
-                SeekInternal(position);
+                SeekInternal(position, SeekOrigin.Begin);
                 bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBufferSize);
                 _readLocation = position;
             }
@@ -204,6 +205,12 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var done = false;
             long left = count;
             long current = offset;
+            if(_needsRead) {
+                SeekInternal(_lastPosition, SeekOrigin.Begin);
+                NativeFile.Read(_handle, _writeBuffer, 0, (int)_blockSize);
+                SeekInternal(_lastPosition, SeekOrigin.Begin);
+                _needsRead = false;
+            }
             while (!done)
             {
                 _needsFlush = true;

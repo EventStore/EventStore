@@ -97,6 +97,8 @@ namespace EventStore.Core
         protected List<ISubsystem> _subsystems;
         protected int _clusterGossipPort;
         protected int _readerThreadsCount;
+        protected bool _unbuffered;
+        protected bool _writethrough;
 
         protected string _index;
         protected int _indexCacheDepth;
@@ -949,6 +951,27 @@ namespace EventStore.Core
         }
 
         /// <summary>
+        /// Sets whether or not to use unbuffered/directio
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder EnableUnbuffered()
+        {
+            _unbuffered = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets whether or not to set the write-through flag on writes to the filesystem
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder EnableWriteThrough()
+        {
+            _writethrough = true;
+            return this;
+        }
+
+
+        /// <summary>
         /// Sets the Server SSL Certificate
         /// </summary>
         /// <param name="sslCertificate">The server SSL certificate to use</param>
@@ -1205,8 +1228,14 @@ namespace EventStore.Core
             _gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
 
-            _dbConfig = CreateDbConfig(_chunkSize, _cachedChunks, _dbPath, _chunksCacheSize,
-                    _inMemoryDb, _log);
+            _dbConfig = CreateDbConfig(_chunkSize, 
+                                       _cachedChunks, 
+                                       _dbPath, 
+                                       _chunksCacheSize,
+                                       _inMemoryDb, 
+                                       _unbuffered,
+                                       _writethrough,
+                                       _log);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
 
             _db = new TFChunkDb(_dbConfig);
@@ -1303,7 +1332,14 @@ namespace EventStore.Core
             return gossipSeedSource;
         }
 
-        private static TFChunkDbConfig CreateDbConfig(int chunkSize, int cachedChunks, string dbPath, long chunksCacheSize, bool inMemDb, ILogger log)
+        private static TFChunkDbConfig CreateDbConfig(int chunkSize, 
+                                                      int cachedChunks, 
+                                                      string dbPath, 
+                                                      long chunksCacheSize, 
+                                                      bool inMemDb,
+                                                      bool unbuffered,
+                                                      bool writethrough,
+                                                      ILogger log)
         {
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
@@ -1363,14 +1399,16 @@ namespace EventStore.Core
                                 : chunksCacheSize;
 
             var nodeConfig = new TFChunkDbConfig(dbPath,
-                    new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                    chunkSize,
-                    cache,
-                    writerChk,
-                    chaserChk,
-                    epochChk,
-                    truncateChk,
-                    inMemDb);
+                                                 new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
+                                                 chunkSize,
+                                                 cache,
+                                                 writerChk,
+                                                 chaserChk,
+                                                 epochChk,
+                                                 truncateChk,
+                                                 inMemDb,
+                                                 unbuffered,
+                                                 writethrough);
 
             return nodeConfig;
         }

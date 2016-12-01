@@ -124,7 +124,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var recordsQuery = _tableIndex.GetRange(streamId, eventNumber, eventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
                                               .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId)
-                                              .GroupBy(x => x.Version).Select(x => x.Last());
+                                              .GroupBy(x => x.Version).Select(x => x.Last()).ToList();
             if(recordsQuery.Count() == 1){
                 return recordsQuery.First().Prepare;
             }
