@@ -20,7 +20,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
     public unsafe partial class TFChunk : IDisposable
     {
-        public const byte CurrentChunkVersion = 2;
+        enum ChunkVersions {
+            OriginalNotUsed = 1,
+            Unaligned = 1,
+            Aligned = 3
+        }
+        public const byte CurrentChunkVersion = 3;
         public const int WriteBufferSize = 8192;
         public const int ReadBufferSize = 8192;
 
@@ -884,6 +889,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
 
             _destroyEvent.Set();
+        }
+
+        private long GetAlignedSize(long size) {
+            if(size % 4096 == 0) return size;
+            return (size / 4096 + 1) * 4096;
         }
 
         private bool TryDestructMemStreams()
