@@ -16,4 +16,3 @@ build:
         code: |
           ./run_travis_tests.sh
           ./check-test-results.sh
-
