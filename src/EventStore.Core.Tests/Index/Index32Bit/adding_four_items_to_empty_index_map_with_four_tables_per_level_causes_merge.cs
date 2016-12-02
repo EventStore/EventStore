@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         [Test]
         public void the_prepare_checkpoint_is_taken_from_the_latest_added_table()
         {
-            Assert.AreEqual(0, _result.MergedMap.PrepareCheckpoint);
+            Assert.AreEqual(1, _result.MergedMap.PrepareCheckpoint);
         }
 
         [Test]

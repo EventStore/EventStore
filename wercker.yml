@@ -1,0 +1,18 @@
+build:
+  box:
+    id: quay.io/eventstore/build.ubuntu.14-04
+    username: $USERNAME
+    password: $PASSWORD
+    tag: latest
+    registry: quay.io
+  steps:
+    - script:
+        name: build
+        code: |
+          ./build.sh
+          
+    - script:
+        name: run tests
+        code: |
+          ./run_travis_tests.sh
+          ./check-test-results.sh
