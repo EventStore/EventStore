@@ -74,6 +74,7 @@
     <Compile Include="Authentication\IAuthenticationProviderFactory.cs" />
     <Compile Include="Authentication\InternalAuthenticationProviderFactory.cs" />
     <Compile Include="Bus\AdHocHandler.cs" />
+    <Compile Include="Bus\MPSCMessageQueue.cs" />
     <Compile Include="Bus\QueueStatsCollector.cs" />
     <Compile Include="Bus\IQueuedHandler.cs" />
     <Compile Include="Bus\QueuedHandlerThreadPool.cs" />
