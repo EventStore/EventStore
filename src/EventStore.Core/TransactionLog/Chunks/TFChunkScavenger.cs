@@ -152,8 +152,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             TFChunk.TFChunk newChunk;
             try
             {
-                newChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath, _db.Config.ChunkSize, chunkStartNumber, chunkEndNumber,
-                                                     isScavenged: true, inMem: _db.Config.InMemDb);
+                newChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath, 
+                                                     _db.Config.ChunkSize, 
+                                                     chunkStartNumber, 
+                                                     chunkEndNumber,
+                                                     isScavenged: true, 
+                                                     inMem: _db.Config.InMemDb,
+                                                     unbuffered: _db.Config.Unbuffered,
+                                                     writethrough: _db.Config.WriteThrough);
             }
             catch (IOException exc)
             {
