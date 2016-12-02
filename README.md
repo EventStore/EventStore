@@ -2,7 +2,7 @@
 # Event Store
 
 [![Build status](https://ci.appveyor.com/api/projects/status/rpg0xvt6facomw0b?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore-aasj1)
-[![Build status](https://travis-ci.org/EventStore/EventStore.svg)](https://travis-ci.org/EventStore/EventStore)
+[![Build status](https://app.wercker.com/status/efbd313efd4406243ca7b6688ddbc286/s/release-v4.0.0 "wercker status")](https://app.wercker.com/project/byKey/efbd313efd4406243ca7b6688ddbc286)
 
 **Documentation is available at http://docs.geteventstore.com.**
 
