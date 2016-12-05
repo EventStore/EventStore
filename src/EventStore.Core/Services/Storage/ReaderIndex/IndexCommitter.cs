@@ -258,7 +258,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         sb.Append("Data: " + Encoding.UTF8.GetString(p.Data));
                         sb.Append(Environment.NewLine);
                     }
-                    throw new Exception(sb.ToString());;
+                    throw new Exception(sb.ToString());
                 }
 
                 if (prepare.LogPosition < lastCommitPosition || (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
