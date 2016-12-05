@@ -73,7 +73,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var positionAligned = GetLowestAlignment(_lastPosition);
             if (!_aligned)
             {
-                SeekInternal(positionAligned);
+                SeekInternal(positionAligned, SeekOrigin.Begin);
             }
             if (_bufferedCount == alignedbuffer)
             {
@@ -123,9 +123,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
         }
 
-        private void SeekInternal(long positionAligned)
+        private void SeekInternal(long positionAligned, SeekOrigin origin)
         {
-            NativeFile.Seek(_handle, positionAligned, SeekOrigin.Begin);
+            NativeFile.Seek(_handle, positionAligned, origin);
         }
 
         private void InternalWrite(byte* buffer, uint count)
@@ -136,18 +136,20 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public override long Seek(long offset, SeekOrigin origin)
         {
+            long mungedOffset = offset;
             CheckDisposed();
             if (origin == SeekOrigin.Current) throw new NotImplementedException("only supports seek origin begin/end");
-            if (origin == SeekOrigin.End) offset = Length + offset;
-            var aligned = GetLowestAlignment(offset);
-            var left = (int)(offset - aligned);
+            if (origin == SeekOrigin.End) mungedOffset = Length + offset;
+            var aligned = GetLowestAlignment(mungedOffset);
+            var left = (int)(mungedOffset - aligned);
             Flush();
             _bufferedCount = left;
             _aligned = aligned == left;
             _lastPosition = aligned;
-            SeekInternal(aligned);
+            if(origin == SeekOrigin.End) Console.WriteLine("seeking to offset " + mungedOffset + " original is " + offset + " aligned to " + aligned + " left is " + left + " length is " + Length);
+            SeekInternal(aligned, SeekOrigin.Begin);
             NativeFile.Read(_handle, _writeBuffer, 0, (int)_blockSize);
-            SeekInternal(aligned);
+            SeekInternal(aligned, SeekOrigin.Begin);
             return offset;
         }
 
@@ -179,7 +181,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
             if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == 0)
             {
-                SeekInternal(position);
+                SeekInternal(position, SeekOrigin.Begin);
                 bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBufferSize);
                 _readLocation = position;
             }
