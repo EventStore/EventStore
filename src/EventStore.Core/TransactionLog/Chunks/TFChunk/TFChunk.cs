@@ -553,10 +553,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                   _filename,
                                   stream.Length)));
             }
-
-            stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
-            var footer = ChunkFooter.FromStream(stream);
-            return footer;
+            try {
+                stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
+                var footer = ChunkFooter.FromStream(stream);
+                return footer;
+            }
+            catch(Exception ex) {
+                throw new Exception("error in chunk file " + _filename, ex);
+            }
         }
 
         private static long GetRawPosition(long logicalPosition)
