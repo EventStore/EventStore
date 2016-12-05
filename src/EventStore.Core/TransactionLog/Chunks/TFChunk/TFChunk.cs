@@ -211,8 +211,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             try
             {
                 _chunkHeader = ReadHeader(reader.Stream);
-                if (_chunkHeader.Version != CurrentChunkVersion)
-                    throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
+                //TODO CHECK OLD VERSION
+//                if (_chunkHeader.Version != CurrentChunkVersion && false)
+//                    throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
                 _chunkFooter = ReadFooter(reader.Stream);
                 if (!_chunkFooter.IsCompleted)
@@ -283,8 +284,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             SetAttributes(_filename, false);
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
-            if (_chunkHeader.Version != CurrentChunkVersion)
-                throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
+            //TODO version
+//            if (_chunkHeader.Version != CurrentChunkVersion && false)
+//                throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
 
             if (checkSize)
