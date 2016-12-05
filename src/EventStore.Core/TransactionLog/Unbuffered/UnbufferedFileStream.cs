@@ -21,7 +21,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private long _lastPosition;
         private bool _needsFlush;
         private SafeFileHandle _handle;
-        private long _readLocation;
+        private long _readLocation = -1;
 
         private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
         {
@@ -146,8 +146,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             _bufferedCount = left;
             _aligned = aligned == left;
             _lastPosition = aligned;
-            if(origin == SeekOrigin.End) Console.WriteLine("seeking to offset " + mungedOffset + " original is " + offset + " aligned to " + aligned + " left is " + left + " length is " + Length);
+            //TODO cant do two seeks + a read here.
             SeekInternal(aligned, SeekOrigin.Begin);
+            Console.WriteLine("seek called offset " + offset);
             NativeFile.Read(_handle, _writeBuffer, 0, (int)_blockSize);
             SeekInternal(aligned, SeekOrigin.Begin);
             return offset;
@@ -178,9 +179,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var roffset = (int)(Position - position);
 
             var bytesRead = _readBufferSize;
-
-            if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == 0)
+            if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == -1)
             {
+                Console.WriteLine("Reading " + count + " bytes");
                 SeekInternal(position, SeekOrigin.Begin);
                 bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBufferSize);
                 _readLocation = position;
