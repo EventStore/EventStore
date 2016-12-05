@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         {
             get
             {
-                return new IPEndPoint(IPAddress.Loopback, 2); ;
+                return new IPEndPoint(IPAddress.Loopback, 2);
             }
         }
 

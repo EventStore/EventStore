@@ -80,11 +80,12 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Returns a <see cref="ConnectionSettings"></see> for a given connection string.
         /// </summary>
-        /// <param name="connectionString"></param>
+        /// <param name="connectionString">The connection string to parse</param>
+        /// <param name="builder">Pre-populated settings builder, optional. If not specified, a new builder will be created.</param>
         /// <returns>a <see cref="ConnectionSettings"/> from the connection string</returns>
-        public static ConnectionSettings GetConnectionSettings(string connectionString)
+        public static ConnectionSettings GetConnectionSettings(string connectionString, ConnectionSettingsBuilder builder = null)
         {
-            var settings = ConnectionSettings.Create().Build();
+            var settings = (builder ?? ConnectionSettings.Create()).Build();
             var items = GetConnectionStringInfo(connectionString).ToArray();
             return Apply(items, settings);
         }
