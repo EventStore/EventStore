@@ -27,7 +27,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public void Open(bool verifyHash = true, bool readOnly = false)
         {
             ValidateReaderChecksumsMustBeLess(Config);
-
+            Console.WriteLine("In ChunkDb unbuffered={0} writethrough={1}", Config.Unbuffered, Config.WriteThrough);
             var checkpoint = Config.WriterCheckpoint.Read();
 
             if (Config.InMemDb)

@@ -15,6 +15,8 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using System.Collections.Concurrent;
+using EventStore.Core.TransactionLog.Unbuffered;
+
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
@@ -337,8 +339,30 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private ReaderWorkItem CreateInternalReaderWorkItem()
         {
-            var stream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                        ReadBufferSize, FileOptions.RandomAccess);
+            Stream stream;
+            if (_unbuffered)
+            {
+                stream = UnbufferedFileStream.Create(
+                            _filename, 
+                            FileMode.Open, 
+                            FileAccess.Read, 
+                            FileShare.ReadWrite,
+                            false, 
+                            1024 * 1024, 
+                            4096,
+                            false, 
+                            4096);
+            }
+            else
+            {
+                stream = new FileStream(
+                            _filename, 
+                            FileMode.Open, 
+                            FileAccess.Read, 
+                            FileShare.ReadWrite,
+                            ReadBufferSize, 
+                            FileOptions.RandomAccess);
+            }
             var reader = new BinaryReader(stream);
             return new ReaderWorkItem(stream, reader, false);
         }
@@ -388,9 +412,31 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             tempFile.FlushToDisk();
             tempFile.Close();
             File.Move(tempFilename, _filename);
-
-            var stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
-                                        WriteBufferSize, FileOptions.SequentialScan);
+            Stream stream = null;
+            if (!_unbuffered)
+            {
+                stream = new FileStream(
+                                    _filename, 
+                                    FileMode.Open, 
+                                    FileAccess.ReadWrite, 
+                                    FileShare.Read,
+                                    WriteBufferSize, 
+                                    FileOptions.SequentialScan);
+            }
+            else
+            {
+                Log.Trace("Using unbuffered access for TFChunk '{0}'...", _filename);
+                stream = UnbufferedFileStream.Create(
+                                    _filename, 
+                                    FileMode.Open, 
+                                    FileAccess.ReadWrite, 
+                                    FileShare.Read,
+                                    false,
+                                    4096*1024,
+                                    4096,
+                                    _writeThrough,
+                                    4096);
+            }
             stream.Position = ChunkHeader.Size;
             _writerWorkItem = new WriterWorkItem(stream, null, md5);
             Flush(); // persist file move result
