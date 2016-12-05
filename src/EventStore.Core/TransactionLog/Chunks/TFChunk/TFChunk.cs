@@ -165,8 +165,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                         bool unbuffered, 
                                         bool writethrough)
         {
+            var size = GetAlignedSize(chunkSize + ChunkHeader.Size + ChunkFooter.Size);
             var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged, Guid.NewGuid());
-            return CreateWithHeader(filename, chunkHeader, chunkSize + ChunkHeader.Size + ChunkFooter.Size, inMem, unbuffered, writethrough);
+            return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough);
         }
 
         public static TFChunk CreateWithHeader(string filename, 
@@ -856,6 +857,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 if (_inMem)
                     ResizeMemStream(workItem, mapSize);
+                workItem.WorkingStream.Seek(-ChunkFooter.Size, SeekOrigin.End);
                 WriteRawData(workItem, workItem.Buffer);
             }
 
@@ -969,7 +971,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _destroyEvent.Set();
         }
 
-        private long GetAlignedSize(long size) {
+        private static int GetAlignedSize(int size) {
             if(size % 4096 == 0) return size;
             return (size / 4096 + 1) * 4096;
         }
