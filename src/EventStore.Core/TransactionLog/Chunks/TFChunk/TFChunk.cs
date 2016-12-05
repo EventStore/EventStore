@@ -861,20 +861,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 if (_inMem)
                     ResizeMemStream(workItem, mapSize);
-                workItem.WorkingStream.Seek(-ChunkFooter.Size, SeekOrigin.End);
                 WriteRawData(workItem, workItem.Buffer);
             }
-
+            workItem.WorkingStream.Seek(-ChunkFooter.Size, SeekOrigin.End);
             var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
             //MD5
             workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0, ChunkFooter.Size - ChunkFooter.ChecksumSize);
             //FILE
             var footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
+            workItem.WorkingStream.Seek(-ChunkFooter.Size, SeekOrigin.End);
             workItem.AppendData(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
 
             Flush(); // trying to prevent bug with resized file, but no data in it
 
-            var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
+            var fileSize = GetAlignedSize(ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size);
             if (workItem.StreamLength != fileSize)
             {
                 workItem.ResizeStream(fileSize);
