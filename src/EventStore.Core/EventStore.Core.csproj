@@ -344,6 +344,7 @@
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
     <Compile Include="TransactionLog\Unbuffered\NativeFile.cs" />
     <Compile Include="TransactionLog\Unbuffered\UnbufferedFileStream.cs" />
+    <Compile Include="TransactionLog\Unbuffered\ReadUnbufferedFileStream.cs" />
     <Compile Include="TransactionLog\Unbuffered\WinNative.cs" />
     <Compile Include="Util\FileUtil.cs" />
     <Compile Include="Util\MD5Hash.cs" />
@@ -448,7 +449,7 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
