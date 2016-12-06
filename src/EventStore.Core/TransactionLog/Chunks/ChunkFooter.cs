@@ -76,11 +76,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             var physicalDataSize = reader.ReadInt32();
             var logicalDataSize = isMap12Bytes ? reader.ReadInt64() : reader.ReadInt32();
             var mapSize = reader.ReadInt32();
-            Console.WriteLine("iscompleted " + isCompleted);
-            Console.WriteLine("is12bytes " + isMap12Bytes);
-            Console.WriteLine("phys size " + physicalDataSize);
-            Console.WriteLine("log size " + logicalDataSize);
-            Console.WriteLine("map size" + mapSize);
             stream.Seek(-ChecksumSize, SeekOrigin.End);
             var hash = reader.ReadBytes(ChecksumSize);
 

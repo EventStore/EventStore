@@ -27,7 +27,6 @@ namespace EventStore.Core.TransactionLog.Chunks
         public void Open(bool verifyHash = true, bool readOnly = false)
         {
             ValidateReaderChecksumsMustBeLess(Config);
-            Console.WriteLine("In ChunkDb unbuffered={0} writethrough={1}", Config.Unbuffered, Config.WriteThrough);
             var checkpoint = Config.WriterCheckpoint.Read();
 
             if (Config.InMemDb)
@@ -49,7 +48,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (lastChunkVersions.Length == 0 && (chunkNum + 1) * (long)Config.ChunkSize == checkpoint)
                 {
                     // The situation where the logical data size is exactly divisible by ChunkSize,
-                    // so it might happen that we have checkpoint indicating one more chunk should exist, 
+                    // so it might happen that we have checkpoint indicating one more chunk should exist,
                     // but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
                     var footer = ReadChunkFooter(versions[0]);
                     if (footer.IsCompleted)

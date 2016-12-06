@@ -111,7 +111,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _inMem = inMem;
             _unbuffered = unbuffered;
             _writeThrough = writethrough;
-            Console.WriteLine(_unbuffered + " " + _writeThrough);
         }
 
         ~TFChunk()
