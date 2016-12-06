@@ -22,9 +22,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
     public unsafe partial class TFChunk : IDisposable
     {
-        enum ChunkVersions {
+        enum ChunkVersions : byte {
             OriginalNotUsed = 1,
-            Unaligned = 1,
+            Unaligned = 2,
             Aligned = 3
         }
         public const byte CurrentChunkVersion = 3;
@@ -211,9 +211,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             try
             {
                 _chunkHeader = ReadHeader(reader.Stream);
-                //TODO CHECK OLD VERSION
-//                if (_chunkHeader.Version != CurrentChunkVersion && false)
-//                    throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
+
+                if (_chunkHeader.Version != (byte) ChunkVersions.Unaligned && _chunkHeader.Version != (byte) ChunkVersions.Aligned)
+                    throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
                 _chunkFooter = ReadFooter(reader.Stream);
                 if (!_chunkFooter.IsCompleted)
@@ -224,9 +224,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 _logicalDataSize = _chunkFooter.LogicalDataSize;
                 _physicalDataSize = _chunkFooter.PhysicalDataSize;
-//TODO CHECK FILE SIZES
- //               var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
-/*                if (reader.Stream.Length != expectedFileSize)
+                var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
+                if (_chunkHeader.Version == (byte) ChunkVersions.Unaligned && reader.Stream.Length != expectedFileSize)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
                         string.Format("Chunk file '{0}' should have a file size of {1} bytes, but it has a size of {2} bytes.",
@@ -234,7 +233,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                       expectedFileSize,
                                       reader.Stream.Length)));
                 }
-*/
             }
             finally
             {
@@ -284,9 +282,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             SetAttributes(_filename, false);
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
-            //TODO version
-//            if (_chunkHeader.Version != CurrentChunkVersion && false)
-//                throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
+            if (_chunkHeader.Version != (byte) ChunkVersions.Aligned && _chunkHeader.Version != (byte) ChunkVersions.Unaligned)
+                throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
 
             if (checkSize)
@@ -878,16 +875,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             Flush(); // trying to prevent bug with resized file, but no data in it
 
-            var fileSize = GetAlignedSize(ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size);
-            Console.WriteLine("workitem.StreamLength is " + workItem.StreamLength + " fileSize is " + fileSize + " physical size is " + _physicalDataSize);
-            //TODO pout check back
-/*
-            if (workItem.StreamLength != fileSize)
+            var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
+
+            if (_chunkHeader.Version == (byte) ChunkVersions.Unaligned && workItem.StreamLength != fileSize)
             {
                 workItem.ResizeStream(fileSize);
                 _fileSize = fileSize;
             }
-*/
+
             return footerWithHash;
         }
 
