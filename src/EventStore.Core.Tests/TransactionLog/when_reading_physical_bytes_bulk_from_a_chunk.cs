@@ -7,7 +7,7 @@ namespace EventStore.Core.Tests.TransactionLog
     [TestFixture]
     public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDirectory
     {
-        
+
         [Test]
         public void the_file_will_not_be_deleted_until_reader_released()
         {
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog
             {
                 var buffer = new byte[1024];
                 var result = reader.ReadNextRawBytes(1024, buffer);
-                Assert.IsTrue(result.IsEOF);
+                Assert.IsFalse(result.IsEOF);
                 Assert.AreEqual(ChunkHeader.Size + ChunkHeader.Size + 2 * PosMap.FullSize, result.BytesRead);
             }
             chunk.MarkForDeletion();
