@@ -102,3 +102,26 @@ Optional parameters (Specified using `-ParameterName value`)
 #### Building the Event Store from Visual Studio
 
 When building through Visual Studio, there are PowerShell scripts which run as pre- and post-build tasks on the EventStore.Common project, which set the informational version attribute of the EventStore.Common.dll assembly to the current commit hash on each build and then revert it.
+
+## Known Issues
+
+### Regressions with Mono 3.12.1 and some versions of the Linux Kernel
+
+There is a known issue with some versions of the Linux Kernel and Mono 3.12.1 which has been raised as an issue [https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1450584](here).
+The issue manifests itself as a `NullReferenceException` and the stack trace generally looks like the following.
+```
+System.NullReferenceException: Object reference not set to an instance of an object
+at EventStore.Core.Services.TimerService.ThreadBasedScheduler.DoTiming () [0x00000] in :0
+at System.Threading.Thread.StartInternal () [0x00000] in :0
+```
+Some known good versions of the Kernel are
+
+- 3.13.0-54
+- 3.13.0-63
+- 3.16.0-39
+- 3.19.0-20
+- 3.19.0-64
+- 3.19.0-66
+- >= 4.4.27
+
+*Note: Please feel free to contribute to this list if you are working on a known good version of the kernel that is not listed here.*
