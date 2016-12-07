@@ -28,10 +28,13 @@ namespace EventStore.ClusterNode
         private ExclusiveDbLock _dbLock;
         private ClusterNodeMutex _clusterNodeMutex;
 
-        public static int Main(string[] args)
+        public static void Main(string[] args)
         {
+            Console.CancelKeyPress += delegate {
+                Environment.Exit((int)ExitCode.Success);
+            };
             var p = new Program();
-            return p.Run(args);
+            p.Run(args);
         }
 
         protected override string GetLogsDirectory(ClusterNodeOptions options)

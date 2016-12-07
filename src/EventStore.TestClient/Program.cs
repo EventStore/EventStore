@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core;
 
@@ -8,10 +9,13 @@ namespace EventStore.TestClient
     {
         private Client _client;
 
-        public static int Main(string[] args)
+        public static void Main(string[] args)
         {
+            Console.CancelKeyPress += delegate {
+                Environment.Exit((int)ExitCode.Success);
+            };
             var p = new Program();
-            return p.Run(args);
+            p.Run(args);
         }
 
         protected override string GetLogsDirectory(ClientOptions options)
