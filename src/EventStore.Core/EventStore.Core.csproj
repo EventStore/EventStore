@@ -344,7 +344,6 @@
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
     <Compile Include="TransactionLog\Unbuffered\NativeFile.cs" />
     <Compile Include="TransactionLog\Unbuffered\UnbufferedFileStream.cs" />
-    <Compile Include="TransactionLog\Unbuffered\ReadUnbufferedFileStream.cs" />
     <Compile Include="TransactionLog\Unbuffered\WinNative.cs" />
     <Compile Include="Util\FileUtil.cs" />
     <Compile Include="Util\MD5Hash.cs" />
