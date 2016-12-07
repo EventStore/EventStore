@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.TransactionLog
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
         }
-
+/*
         [Test]
         public void a_read_on_scavenged_chunk_includes_map()
         {
@@ -69,6 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
         }
+*/
 
         [Test]
         public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size()
@@ -91,10 +92,10 @@ namespace EventStore.Core.Tests.TransactionLog
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0, isScavenged: false, inMem: false, unbuffered: false, writethrough: false);
             using (var reader = chunk.AcquireReader())
             {
-                var buffer = new byte[1024];
-                var result = reader.ReadNextRawBytes(1024, buffer);
+                var buffer = new byte[8092];
+                var result = reader.ReadNextRawBytes(8092, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(556, result.BytesRead); //does not includes header and footer space
+                Assert.AreEqual(4096, result.BytesRead); //does not includes header and footer space
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
