@@ -29,7 +29,7 @@ namespace EventStore.Core
         protected abstract void Start();
         public abstract void Stop();
 
-        public int Run(string[] args)
+        public void Run(string[] args)
         {
             try
             {
@@ -68,23 +68,35 @@ namespace EventStore.Core
             }
             catch (ApplicationInitializationException ex)
             {
-                Log.FatalException(ex, "Application initialization error: {0}", FormatExceptionMessage(ex));
-                Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
+                var msg = String.Format("Application initialization error: {0}", FormatExceptionMessage(ex));
+                if(LogManager.Initialized)
+                {
+                    Log.FatalException(ex, msg);
+                }
+                else 
+                {
+                    Console.Error.WriteLine(msg);
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                Log.FatalException(ex, "Unhandled exception while starting application:");
-                Log.FatalException(ex, "{0}", FormatExceptionMessage(ex));
-                Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
+                var msg = "Unhandled exception while starting application:";
+                if(LogManager.Initialized)
+                {
+                    Log.FatalException(ex, msg);
+                    Log.FatalException(ex, "{0}", FormatExceptionMessage(ex));
+                }
+                else
+                {
+                    Console.Error.WriteLine(msg);
+                    Console.Error.WriteLine(FormatExceptionMessage(ex));
+                }
             }
             finally
             {
                 Log.Flush();
             }
-
-            Application.ExitSilent(_exitCode, "Normal exit.");
-            return _exitCode;
+            Environment.Exit(_exitCode);
         }
 
         protected virtual void PreInit(TOptions options)
