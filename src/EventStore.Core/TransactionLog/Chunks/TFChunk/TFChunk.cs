@@ -413,10 +413,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             tempFile.FlushToDisk();
             tempFile.Close();
             File.Move(tempFilename, _filename);
-            Stream stream = null;
+            Stream stream = GetWriteStream(_filename);
+            stream.Position = ChunkHeader.Size;
+            _writerWorkItem = new WriterWorkItem(stream, null, md5);
+            Flush(); // persist file move result
+        }
+
+        private Stream GetWriteStream(string filename)
+        {
             if (!_unbuffered)
             {
-                stream = new FileStream(
+                return new FileStream(
                                     _filename,
                                     FileMode.Open,
                                     FileAccess.ReadWrite,
@@ -427,7 +434,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             else
             {
                 Log.Trace("Using unbuffered access for TFChunk '{0}'...", _filename);
-                stream = UnbufferedFileStream.Create(
+                return UnbufferedFileStream.Create(
                                     _filename,
                                     FileMode.Open,
                                     FileAccess.ReadWrite,
@@ -438,19 +445,30 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                     _writeThrough,
                                     4096);
             }
-            stream.Position = ChunkHeader.Size;
-            _writerWorkItem = new WriterWorkItem(stream, null, md5);
-            Flush(); // persist file move result
         }
 
         private void CreateWriterWorkItemForExistingChunk(int writePosition, out ChunkHeader chunkHeader)
         {
             var md5 = MD5.Create();
-            var stream = new FileStream(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read,
-                                        WriteBufferSize, FileOptions.SequentialScan);
+            var stream = GetWriteStream(_filename);
             try
             {
                 chunkHeader = ReadHeader(stream);
+                if(chunkHeader.Version == (byte) ChunkVersions.Unaligned) {
+                    Log.Trace("Upgrading ongoing file " + _filename + " to version 3");
+                    var newHeader = new ChunkHeader((byte) ChunkVersions.Aligned,
+                                                    chunkHeader.ChunkSize,
+                                                    chunkHeader.ChunkStartNumber,
+                                                    chunkHeader.ChunkEndNumber,
+                                                    false,
+                                                    chunkHeader.ChunkId);
+                    stream.Seek(0, SeekOrigin.Begin);
+                    chunkHeader = newHeader;
+                    var head = newHeader.AsByteArray();
+                    stream.Write(head,0,head.Length);
+                    stream.Flush();
+                    stream.Seek(0, SeekOrigin.Begin);
+                }
             }
             catch
             {
@@ -865,10 +883,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
             workItem.FlushToDisk();
             var bufferSize = workItem.StreamLength - workItem.StreamPosition - ChunkFooter.Size;
+            Log.Debug("Buffer size is " + bufferSize);
             if(bufferSize > 0) {
                 byte[] buffer = new byte[bufferSize];
                 WriteRawData(workItem, buffer, buffer.Length);
             }
+            Flush();
             var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
             //MD5
             workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0, ChunkFooter.Size - ChunkFooter.ChecksumSize);
@@ -880,6 +900,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
             if (_chunkHeader.Version == (byte) ChunkVersions.Unaligned && workItem.StreamLength != fileSize)
             {
+                Log.Debug("Resizing stream as header is unaligned");
                 workItem.ResizeStream(fileSize);
                 _fileSize = fileSize;
             }
