@@ -210,7 +210,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             try
             {
                 _chunkHeader = ReadHeader(reader.Stream);
-
+                Console.WriteLine("Opened completed " + _filename + " as version " + _chunkHeader.Version);
                 if (_chunkHeader.Version != (byte) ChunkVersions.Unaligned && _chunkHeader.Version != (byte) ChunkVersions.Aligned)
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
@@ -281,6 +281,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             SetAttributes(_filename, false);
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
+            Log.Trace("Opened ongoing " + _filename + " as version " + _chunkHeader.Version);
             if (_chunkHeader.Version != (byte) ChunkVersions.Aligned && _chunkHeader.Version != (byte) ChunkVersions.Unaligned)
                 throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
@@ -840,7 +841,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private ChunkFooter WriteFooter(ICollection<PosMap> mapping)
         {
             var workItem = _writerWorkItem;
-
             int mapSize = 0;
             if (mapping != null)
             {
@@ -861,10 +861,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (_inMem)
                     ResizeMemStream(workItem, mapSize);
                 WriteRawData(workItem, workItem.Buffer);
+
             }
-            byte[] buffer = new byte[workItem.StreamLength - workItem.StreamPosition - ChunkFooter.Size];
-            WriteRawData(workItem, buffer, buffer.Length);
-            //workItem.WorkingStream.Seek(-ChunkFooter.Size, SeekOrigin.End);
+            workItem.FlushToDisk();
+            var bufferSize = workItem.StreamLength - workItem.StreamPosition - ChunkFooter.Size;
+            if(bufferSize > 0) {
+                byte[] buffer = new byte[bufferSize];
+                WriteRawData(workItem, buffer, buffer.Length);
+            }
             var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
             //MD5
             workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0, ChunkFooter.Size - ChunkFooter.ChecksumSize);
@@ -873,9 +877,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             workItem.AppendData(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
 
             Flush(); // trying to prevent bug with resized file, but no data in it
-
             var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
-
             if (_chunkHeader.Version == (byte) ChunkVersions.Unaligned && workItem.StreamLength != fileSize)
             {
                 workItem.ResizeStream(fileSize);
