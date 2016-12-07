@@ -152,11 +152,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             TFChunk.TFChunk newChunk;
             try
             {
-                newChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath, 
-                                                     _db.Config.ChunkSize, 
-                                                     chunkStartNumber, 
+                newChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath,
+                                                     _db.Config.ChunkSize,
+                                                     chunkStartNumber,
                                                      chunkEndNumber,
-                                                     isScavenged: true, 
+                                                     isScavenged: true,
                                                      inMem: _db.Config.InMemDb,
                                                      unbuffered: _db.Config.Unbuffered,
                                                      writethrough: _db.Config.WriteThrough);
@@ -209,7 +209,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
                 }
 
-                if (oldSize <= newSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes)
+                var oldVersion = oldChunks.Any(x => x.ChunkHeader.Version != 3);
+                if(oldVersion) {
+                    Log.Trace("Forcing scavenged chunk to be kept as old chunk is a previous version.");
+                }
+
+                if (oldSize <= newSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes && !oldVersion)
                 {
                     Log.Trace("Scavenging of chunks:");
                     Log.Trace(oldChunksList);
@@ -257,7 +262,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved, exc.Message);
                 return false;
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 Log.Info("Got exception while scavenging chunk: #{0}-{1}. This chunk will be skipped\n"
                          + "Exception: {2}.", chunkStartNumber, chunkEndNumber, ex.ToString());
@@ -269,19 +274,19 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private void DeleteTempChunk(string tmpChunkPath, int retries)
         {
-            try 
+            try
             {
                 File.SetAttributes(tmpChunkPath, FileAttributes.Normal);
                 File.Delete(tmpChunkPath);
-            } 
-            catch(Exception ex) 
+            }
+            catch(Exception ex)
             {
                 if (retries > 0) {
-                    Log.Error("Failed to delete the temp chunk. Retrying {0}/{1}. Reason: {2}", 
+                    Log.Error("Failed to delete the temp chunk. Retrying {0}/{1}. Reason: {2}",
                         MaxRetryCount - retries, MaxRetryCount, ex);
                     DeleteTempChunk(tmpChunkPath, retries - 1);
-                } 
-                else 
+                }
+                else
                 {
                     Log.Error("Failed to delete the temp chunk. Retry limit of {0} reached. Reason: {1}", MaxRetryCount, ex);
                     throw;
