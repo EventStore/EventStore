@@ -214,6 +214,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (_chunkHeader.Version != (byte) ChunkVersions.Unaligned && _chunkHeader.Version != (byte) ChunkVersions.Aligned)
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
+                if(_chunkHeader.Version != (byte) ChunkVersions.Aligned && _unbuffered)
+                {
+                    throw new Exception("You can only run unbuffered mode on v3 or higher chunk files. Please run scavenge on your database to upgrade your transaction file to v3.");
+                }
+
                 _chunkFooter = ReadFooter(reader.Stream);
                 if (!_chunkFooter.IsCompleted)
                 {
@@ -900,6 +905,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
             if (_chunkHeader.Version == (byte) ChunkVersions.Unaligned && workItem.StreamLength != fileSize)
             {
+                //TODO GFY this is dead code as all chunks are now Aligned.
                 Log.Debug("Resizing stream as header is unaligned");
                 workItem.ResizeStream(fileSize);
                 _fileSize = fileSize;
