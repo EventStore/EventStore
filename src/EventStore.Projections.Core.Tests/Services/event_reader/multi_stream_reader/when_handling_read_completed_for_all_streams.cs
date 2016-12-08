@@ -46,9 +46,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _secondEventId = Guid.NewGuid();
             _thirdEventId = Guid.NewGuid();
             _fourthEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
+                    correlationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -62,9 +63,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 3, 2, true, 200));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "b").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success,
+                correlationId, "b", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -164,9 +166,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         [Test]
         public void can_handle_following_read_events_completed()
         {
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
+                correlationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(

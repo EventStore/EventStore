@@ -12,6 +12,7 @@ using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
+using EventStore.Core.Services.AwakeReaderService;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 {
@@ -41,9 +42,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -58,14 +60,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 12, 11, true, 200));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success,
                     new ResolvedEvent[] { }, null, false, "", 12, 11, true, 400));
             _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
+            correlationId = _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success,
                     new ResolvedEvent[] { }, null, false, "", 12, 11, true, 400));
         }
 
