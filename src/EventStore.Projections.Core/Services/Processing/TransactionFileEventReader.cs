@@ -2,6 +2,7 @@ using System;
 using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Settings;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
@@ -11,7 +12,9 @@ using EventStore.Projections.Core.Standard;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class TransactionFileEventReader : EventReader, IHandle<ClientMessage.ReadAllEventsForwardCompleted>
+    public class TransactionFileEventReader : EventReader,
+        IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
+        IHandle<ProjectionManagementMessage.Internal.ReadTimeout>
     {
         private bool _eventsRequested;
         private int _maxReadCount = 250;
@@ -21,6 +24,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ITimeProvider _timeProvider;
         private long _lastPosition;
         private bool _eof;
+        private Guid _pendingRequestCorrelationId;
 
         public TransactionFileEventReader(
             IPublisher publisher,
@@ -53,6 +57,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Read events has not been requested");
             if (Paused)
                 throw new InvalidOperationException("Paused");
+            if(message.CorrelationId != _pendingRequestCorrelationId){
+                return;
+            }
+
             _eventsRequested = false;
             _lastPosition = message.TfLastCommitPosition;
             if (message.Result == ReadAllResult.AccessDenied)
@@ -90,6 +98,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
         }
+        
+        public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message)
+        {
+            if(_disposed) return;
+            if(Paused) return;
+            if(message.CorrelationId != _pendingRequestCorrelationId) return;
+
+            _eventsRequested = false;
+            PauseOrContinueProcessing();
+        }
 
         private void SendIdle()
         {
@@ -106,21 +124,33 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
 
-
-            var readEventsForward = CreateReadEventsMessage();
-            if (_eof)
+            _pendingRequestCorrelationId = Guid.NewGuid();
+            var readEventsForward = CreateReadEventsMessage(_pendingRequestCorrelationId);
+            if (_eof){
                 _publisher.Publish(
                     new AwakeServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new PublishEnvelope(_publisher, crossThread: true), _pendingRequestCorrelationId, null,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
-            else
+            }
+            else{
                 _publisher.Publish(readEventsForward);
+                ScheduleReadTimeoutMessage(_pendingRequestCorrelationId, "$all");
+            }
         }
 
-        private Message CreateReadEventsMessage()
+        private void ScheduleReadTimeoutMessage(Guid readCorrelationId, string streamId)
+        {
+            _publisher.Publish(
+                TimerMessage.Schedule.Create(
+                    TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                    new SendToThisEnvelope(this),
+                    new ProjectionManagementMessage.Internal.ReadTimeout(readCorrelationId, streamId)));
+        }
+
+        private Message CreateReadEventsMessage(Guid readCorrelationId)
         {
             return new ClientMessage.ReadAllEventsForward(
-                Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
+                readCorrelationId, readCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
                 _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, 
                 _resolveLinkTos, false, null, ReadAs);
         }

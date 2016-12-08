@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Settings;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
@@ -82,7 +83,7 @@ namespace EventStore.Core.Messages
 
             public readonly IPrincipal User;
 
-            public DateTime Expires = DateTime.UtcNow.AddSeconds(10);
+            public DateTime Expires = DateTime.UtcNow.AddMilliseconds(ESConsts.ReadRequestTimeout);
 
             protected ReadRequestMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope, IPrincipal user)
             {

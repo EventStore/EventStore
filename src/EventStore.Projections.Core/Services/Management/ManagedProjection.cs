@@ -38,12 +38,6 @@ namespace EventStore.Projections.Core.Services.Management
             public int NumberOfPrequisitesMetForDeletion;
             public string Message { get; set; }
 
-            [Obsolete]
-            public ProjectionSourceDefinition SourceDefintion
-            {
-                set { SourceDefinition = value; }
-            }
-
             public ProjectionSourceDefinition SourceDefinition { get; set; }
             public bool? EmitEnabled { get; set; }
             public bool? CreateTempStreams { get; set; }

@@ -797,6 +797,31 @@ namespace EventStore.Projections.Core.Messages
                 public override int MsgTypeId { get { return TypeId; } }
             }
 
+            public class ReadTimeout : Message
+            {
+                private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly Guid _correlationId;
+                private readonly string _streamId;
+
+                public Guid CorrelationId
+                {
+                    get { return _correlationId; }
+                }
+
+                public string StreamId
+                {
+                    get { return _streamId; }
+                }
+
+                public ReadTimeout(Guid correlationId, string streamId)
+                {
+                    _correlationId = correlationId;
+                    _streamId = streamId;
+                }
+            }
+
             public class Deleted : Message
             {
                 private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

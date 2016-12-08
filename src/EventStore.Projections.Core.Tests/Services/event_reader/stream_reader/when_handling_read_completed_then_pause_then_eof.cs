@@ -34,9 +34,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -52,9 +53,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                                     "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 12, 11, true, 200));
             _edp.Pause();
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0]
+                correlationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0]
                     , null, false, "", 12, 11, true, 400));
         }
 
@@ -113,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void does_not_publish_schedule()
         {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Where(x=>x.ReplyMessage.GetType() != typeof(ProjectionManagementMessage.Internal.ReadTimeout)).Count());
         }
     }
 }

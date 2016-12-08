@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -44,9 +43,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
+                correlationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
                         ResolvedEvent.ForUnresolvedEvent( 
@@ -96,9 +96,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_handle_repeated_read_events_completed()
         {
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
+                    correlationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
                         ResolvedEvent.ForUnresolvedEvent( 
