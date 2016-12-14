@@ -161,7 +161,7 @@ namespace EventStore.Core.Services.Replication
                     if (subscription.Value != null)
                     {
                         var stats = new ReplicationMessage.ReplicationStats(subscription.Key, tcpConn.ConnectionId, subscription.Value.ReplicaEndPoint.ToString(), tcpConn.SendQueueSize,
-                                            (int)conn.TotalBytesSent, (int)conn.TotalBytesReceived, conn.PendingSendBytes, conn.PendingReceivedBytes);
+                                            conn.TotalBytesSent, conn.TotalBytesReceived, conn.PendingSendBytes, conn.PendingReceivedBytes);
                         replicaStats.Add(stats);
                     }
                 }
