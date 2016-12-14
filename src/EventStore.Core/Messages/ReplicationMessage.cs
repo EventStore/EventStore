@@ -430,14 +430,14 @@ namespace EventStore.Core.Messages
             public Guid SubscriptionId { get; private set; }
             public Guid ConnectionId { get; private set; }
             public string SubscriptionEndpoint { get; private set; }
-            public int TotalBytesSent { get; private set; }
-            public int TotalBytesReceived { get; private set; }
+            public long TotalBytesSent { get; private set; }
+            public long TotalBytesReceived { get; private set; }
             public int PendingSendBytes { get; private set; }
             public int PendingReceivedBytes { get; private set; }
             public int SendQueueSize { get; private set; }
 
             public ReplicationStats(Guid subscriptionId, Guid connectionId, string subscriptionEndpoint, int sendQueueSize,
-                                int totalBytesSent, int totalBytesReceived, int pendingSendBytes, int pendingReceivedBytes)
+                                long totalBytesSent, long totalBytesReceived, int pendingSendBytes, int pendingReceivedBytes)
             {
                 SubscriptionId = subscriptionId;
                 ConnectionId = connectionId;
