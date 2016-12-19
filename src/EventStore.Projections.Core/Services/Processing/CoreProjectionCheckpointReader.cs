@@ -33,8 +33,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public CoreProjectionCheckpointReader(
             IPublisher publisher, Guid projectionCorrelationId, IODispatcher ioDispatcher, string projectionCheckpointStreamId, ProjectionVersion projectionVersion, bool useCheckpoints)
         {
-
-
             _publisher = publisher;
             _projectionCorrelationId = projectionCorrelationId;
             _ioDispatcher = ioDispatcher;

@@ -39,9 +39,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadAllEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
-                    _distibutionPointCorrelationId, ReadAllResult.Success, null,
+                    correlationId, ReadAllResult.Success, null,
                     new[]
                     {
                         ResolvedEvent.ForUnresolvedEvent(

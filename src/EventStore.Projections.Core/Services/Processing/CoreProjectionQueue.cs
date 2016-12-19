@@ -79,7 +79,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _subscriptionPaused = false;
             _unsubscribed = false;
-            _unsubscribed = false;
             _subscriptionId = Guid.Empty;
 
             _queuePendingEvents.Initialize();

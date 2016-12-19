@@ -36,9 +36,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [SetUp]
         public new void When()
         {
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _streamEventReader.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, _streamId, 100, 100, ReadStreamResult.Success,
+                correlationId, _streamId, 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                         ResolvedEvent.ForUnresolvedEvent(

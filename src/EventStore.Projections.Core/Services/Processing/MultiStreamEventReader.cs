@@ -11,10 +11,13 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
+using EventStore.Core.Settings;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class MultiStreamEventReader : EventReader, IHandle<ClientMessage.ReadStreamEventsForwardCompleted>
+    public class MultiStreamEventReader : EventReader, 
+        IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
+        IHandle<ProjectionManagementMessage.Internal.ReadTimeout>
     {
         private readonly HashSet<string> _streams;
         private CheckpointTag _fromPositions;
@@ -35,6 +38,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _deliveredEvents;
         private long _lastPosition;
 
+        private readonly Dictionary<string, Guid> _pendingRequests;
+
         public MultiStreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
             string[] streams, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
@@ -51,8 +56,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _fromPositions = positions;
             _resolveLinkTos = resolveLinkTos;
             _timeProvider = timeProvider;
+            _pendingRequests = new Dictionary<string, Guid>();
             foreach (var stream in streams)
             {
+                _pendingRequests.Add(stream, Guid.Empty);
                 _preparePositions.Add(stream, null);
             }
         }
@@ -104,6 +111,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Read events has not been requested");
             if (Paused)
                 throw new InvalidOperationException("Paused");
+            if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+
             _lastPosition = message.TfLastCommitPosition;
             switch (message.Result)
             {
@@ -155,6 +164,16 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message)
+        {
+            if(_disposed) return;
+            if(Paused) return;
+            if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+
+            _eventsRequested.Remove(message.StreamId);
+            PauseOrContinueProcessing(); 
         }
 
         private void EnqueueItem(Tuple<EventStore.Core.Data.ResolvedEvent, float> itemToEnqueue, string streamId)
@@ -239,16 +258,29 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             _eventsRequested.Add(stream);
 
+            var pendingRequestCorrelationId = Guid.NewGuid();
+            _pendingRequests[stream] = pendingRequestCorrelationId;
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
-                Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
+                Guid.NewGuid(), pendingRequestCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
             if (delay)
                 _publisher.Publish(
                     new AwakeServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new PublishEnvelope(_publisher, crossThread: true), pendingRequestCorrelationId, stream,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
-            else
+            else{
                 _publisher.Publish(readEventsForward);
+                ScheduleReadTimeoutMessage(pendingRequestCorrelationId, stream);
+            }
+        }
+
+        private void ScheduleReadTimeoutMessage(Guid readCorrelationId, string streamId)
+        {
+            _publisher.Publish(
+                TimerMessage.Schedule.Create(
+                    TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                    new SendToThisEnvelope(this),
+                    new ProjectionManagementMessage.Internal.ReadTimeout(readCorrelationId, streamId)));
         }
 
         private void DeliverSafePositionToJoin()
