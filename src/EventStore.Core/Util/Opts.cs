@@ -30,7 +30,7 @@ namespace EventStore.Core.Util
         public const string WhatIfDescr = "Print effective configuration to console and then exit.";
         public const bool WhatIfDefault = false;
 
-        public const string StartStandardProjectionsDescr = "Enable development mode. This disables caching on events over HTTP.";
+        public const string StartStandardProjectionsDescr = "Start the built in system projections.";
         public const bool StartStandardProjectionsDefault = false;
         public const string DisableHttpCachingDescr = "Disable HTTP caching.";
         public const bool DisableHttpCachingDefault = false;
