@@ -6,9 +6,6 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class EventByTypeIndexEventFilter : EventFilter
     {
-        //NOTE: this filter will pass both events and links to these events from index streams resulting
-        //      in resolved events re-appearing in the event stream.  This must be filtered out by a 
-        //      reader subscription
         private readonly HashSet<string> _streams;
 
         public EventByTypeIndexEventFilter(HashSet<string> events)
@@ -24,9 +21,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType)
         {
-            //TODO: add tests to assure that resolved by link events are not passed twice into the subscription?!!
-            return !(resolvedFromLinkTo && !SystemStreams.IsSystemStream(positionStreamId))
-                   || _streams.Contains(positionStreamId);
+            if(_streams.Contains(positionStreamId)) return true;
+            return !resolvedFromLinkTo && !SystemStreams.IsSystemStream(positionStreamId);
         }
 
         public override string GetCategory(string positionStreamId)
