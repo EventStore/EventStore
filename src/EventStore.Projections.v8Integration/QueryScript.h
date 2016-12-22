@@ -2,6 +2,7 @@
 #include "js1.h"
 #include "CompiledScript.h"
 #include "PreludeScript.h"
+#include "V8Wrapper.h"
 
 namespace js1 {
 
@@ -14,20 +15,22 @@ namespace js1 {
 	public:
 		QueryScript(
 			PreludeScript *prelude_, 
+			v8::Isolate *isolate_,
 			REGISTER_COMMAND_HANDLER_CALLBACK register_command_handler_callback_, 
 			REVERSE_COMMAND_CALLBACK reverse_command_callback_) : 
 		
-			isolate(v8::Isolate::GetCurrent()),
+			isolate(isolate_),
 			prelude(prelude_), 
 			register_command_handler_callback(register_command_handler_callback_),
 			reverse_command_callback(reverse_command_callback_)
-
 		{
-			isolate_add_ref(isolate);
+			js1::V8Wrapper::Instance().isolate_add_ref(isolate);
 		};
 
 		virtual ~QueryScript();
-		virtual void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
+		virtual v8::Isolate *get_isolate();
+		virtual v8::Handle<v8::Context> get_context();
+		virtual void report_errors(v8::Isolate *isolate, v8::Handle<v8::Context> context, REPORT_ERROR_CALLBACK report_error_callback);
 
 		Status compile_script(const uint16_t *query_source, const uint16_t *file_name);
 		Status try_run();
@@ -35,7 +38,6 @@ namespace js1 {
 			const uint16_t *data_other[], int32_t other_length, v8::Handle<v8::String> &result,
 			v8::Handle<v8::String> &result2);
 	protected:
-		virtual v8::Isolate *get_isolate();
 		virtual Status create_global_template(v8::Handle<v8::ObjectTemplate> &result);
 
 	private:

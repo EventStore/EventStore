@@ -6,6 +6,10 @@ TestResult.xml
 /Data-logs
 /src/EventStore/v8
 /v8/
+.gclient
+.gclient_entries
+depot_tools/
+v8build/
 ipch/
 *.o
 *.ii

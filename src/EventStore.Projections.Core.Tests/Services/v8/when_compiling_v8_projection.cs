@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         [Test, Category("v8"), Category("Manual"), Explicit]
         public void can_compile_script_million_times()
         {
-            _loadModuleDelegate = name => IntPtr.Zero;
+            _loadModuleDelegate = (ptr, name) => IntPtr.Zero;
             for (var i = 0; i < 10000000; i++)
             {
                 IntPtr prelude = Js1.CompilePrelude("return {};", "test.js", _loadModuleDelegate, () => true, () => true, _logDelegate);

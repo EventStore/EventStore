@@ -2,19 +2,23 @@
 #include "js1.h"
 #include "CompiledScript.h"
 #include "PreludeScript.h"
+#include "V8Wrapper.h"
 
 namespace js1 {
 
 	class ModuleScript : public CompiledScript 
 	{
 	public:
-		ModuleScript(PreludeScript *prelude_) :
-			isolate(v8::Isolate::GetCurrent()), prelude(prelude_) 
+		ModuleScript(v8::Isolate *isolate_, PreludeScript *prelude_) :
+			isolate(isolate_), 
+			prelude(prelude_) 
 		{
-			isolate_add_ref(isolate);
+			js1::V8Wrapper::Instance().isolate_add_ref(isolate);
 		};
 
 		virtual ~ModuleScript();
+		virtual v8::Isolate *get_isolate();
+		virtual v8::Handle<v8::Context> get_context();
 
 		Status compile_script(const uint16_t *module_source, const uint16_t *module_file_name);
 		Status try_run();
@@ -23,7 +27,6 @@ namespace js1 {
 
 
 	protected:
-		virtual v8::Isolate *get_isolate();
 		virtual Status create_global_template(v8::Handle<v8::ObjectTemplate> &result);
 
 	private:
@@ -31,6 +34,4 @@ namespace js1 {
 		PreludeScript *prelude;
 		std::shared_ptr<v8::Persistent<v8::Object>> module_object;
 	};
-
-
 }

@@ -84,48 +84,6 @@ Function Test-SvnRepoIsAtRevision {
     }
 }
 
-Function Get-SvnRepoAtRevision
-{
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory=$true)][string]$DependencyName,
-        [Parameter(Mandatory=$true)][string]$RepositoryAddress,
-        [Parameter(Mandatory=$true)][string]$LocalPath,
-        [Parameter(Mandatory=$true)][string]$Revision
-    )
-    Process {
-        Write-Host "Getting dependency $dependencyName via Subversion"
-
-        $revisionString = "-r$revision"
-
-        $localPathSvnDirectory = Join-Path $localPath ".svn/"
-        Write-Verbose "Testing for existence of: $localPathSvnDirectory"
-        if ((Test-Path $localPathSvnDirectory -PathType Container) -eq $true)
-        {
-            Write-Verbose "$localPathSvnDirectory already exists"
-
-            Push-Location -ErrorAction Stop -Path $localPath
-            try {
-                if ((Test-SvnRepoIsAtRevision $localPath $revision) -eq $false) {
-                    Write-Verbose "Updating to revision $revision"
-                    $svnCommand = "$svnClientPath update --quiet $revisionString"
-                    Exec ([ScriptBlock]::Create($svnCommand))
-                } else {
-                    Write-Verbose "Already at revision $revision."
-                }
-            } finally {
-                Pop-Location -ErrorAction Stop
-            }
-        } else {
-            Write-Verbose "$localPathSvnDirectory not found"
-            Write-Verbose "Checking out svn repository from $repositoryAddress (revision $revision) to $localPath"
-
-            $svnCommand = "$svnClientPath checkout --quiet $revisionString $repositoryAddress $localPath"
-            Exec ([ScriptBlock]::Create($svnCommand))
-        }
-    }
-}
-
 # These utility functions have been extracted from the Pscx.Utility.psm1 module
 # of the Powershell Community Extensions, which is here: http://pscx.codeplex.com/
 Function Invoke-BatchFile
@@ -197,7 +155,7 @@ Function Import-VisualStudioVars
             
             '2015' {
                 Push-Environment
-                Invoke-BatchFile (Join-Path $env:VS140COMNTOOLS "VsMSBuildCmd.bat") -Parameters $Architecture -RedirectStdErrToNull $false
+                Invoke-BatchFile (Join-Path $env:VS140COMNTOOLS "VsDevCmd.bat") -Parameters $Architecture -RedirectStdErrToNull $false
             }
 
             'Windows7.1SDK' {
