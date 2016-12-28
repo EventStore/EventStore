@@ -6,19 +6,19 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 using EventStore.Projections.Core.Utils;
 using Newtonsoft.Json.Linq;
+using EventStore.Core.Settings;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class EventByTypeIndexEventReader : EventReader
     {
-        private const int _maxReadCount = 111;
+        public const int MaxReadCount = 50;
         private readonly HashSet<string> _eventTypes;
         private readonly bool _resolveLinkTos;
         private readonly bool _includeDeletedStreamNotification;
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _state.AreEventsRequested();
         }
 
-        private void PublishIORequest(bool delay, Message readEventsForward, Guid correlationId)
+        private void PublishIORequest(bool delay, Message readEventsForward, Message timeoutMessage, Guid correlationId)
         {
             if (delay)
             {
@@ -116,8 +116,10 @@ namespace EventStore.Projections.Core.Services.Processing
                         new PublishEnvelope(_publisher, crossThread: true), correlationId, null,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
             }
-            else
+            else{
                 _publisher.Publish(readEventsForward);
+                _publisher.Publish(timeoutMessage);
+            }
         }
 
         private void UpdateNextStreamPosition(string eventStreamId, int nextPosition)
@@ -190,7 +192,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private class IndexBased : State,
                                    IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
-                                   IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>
+                                   IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
+                                   IHandle<ProjectionManagementMessage.Internal.ReadTimeout> 
 
         {
             private readonly Dictionary<string, string> _streamToEventType;
@@ -208,6 +211,8 @@ namespace EventStore.Projections.Core.Services.Processing
             private bool _indexStreamEof = false; 
             private readonly IPublisher _publisher;
 
+            private readonly Dictionary<string, Guid> _pendingRequests;
+
             public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, IPrincipal readAs)
                 : base(reader, readAs)
             {
@@ -216,6 +221,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 // whatever the first event returned is (even if we start from the same position as the last processed event
                 // let subscription handle this 
                 _publisher = _reader._publisher;
+
+                _pendingRequests = new Dictionary<string, Guid>();
+                _pendingRequests.Add("$et", Guid.Empty);
+                foreach (var stream in _streamToEventType.Keys)
+                {
+                    _pendingRequests.Add(stream, Guid.Empty);
+                }
             }
 
 
@@ -246,6 +258,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (!_validRequests.Contains(message.CorrelationId))
                     return;
 
+                if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+
                 if (!_streamToEventType.ContainsKey(message.EventStreamId))
                     throw new InvalidOperationException(
                         String.Format("Invalid stream name: {0}", message.EventStreamId));
@@ -270,6 +284,19 @@ namespace EventStore.Projections.Core.Services.Processing
                         throw new NotSupportedException(
                             String.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
                 }
+            }
+
+            public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message)
+            {
+                if(_disposed) return;
+                if(_reader.Paused) return;
+                if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+
+                if(message.StreamId == "$et"){
+                    _indexCheckpointStreamRequested = false;
+                }
+                _eventsRequested.Remove(message.StreamId);
+                _reader.PauseOrContinueProcessing(); 
             }
 
             private void ProcessBuffersAndContinue(string eventStreamId)
@@ -461,20 +488,29 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 _indexCheckpointStreamRequested = true;
 
+                var pendingRequestCorrelationId = Guid.NewGuid();
+                _pendingRequests["$et"] = pendingRequestCorrelationId;
+
                 Message readRequest;
                 if (_lastKnownIndexCheckpointEventNumber == -1)
                 {
                     readRequest = new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, false, null,
+                        pendingRequestCorrelationId, pendingRequestCorrelationId, new SendToThisEnvelope(this), "$et", -1, 1, false, false, null,
                         _readAs);
                 }
                 else
                 {
                     readRequest = new ClientMessage.ReadStreamEventsForward(
-                        Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this), "$et",
+                        pendingRequestCorrelationId, pendingRequestCorrelationId, new SendToThisEnvelope(this), "$et",
                         _lastKnownIndexCheckpointEventNumber + 1, 100, false, false, null, _readAs);
                 }
-                _reader.PublishIORequest(delay, readRequest, Guid.NewGuid());
+
+                var timeoutMessage = TimerMessage.Schedule.Create(
+                        TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                        new SendToThisEnvelope(this),
+                        new ProjectionManagementMessage.Internal.ReadTimeout(pendingRequestCorrelationId, "$et"));
+
+                _reader.PublishIORequest(delay, readRequest, timeoutMessage, pendingRequestCorrelationId);
             }
 
             private void RequestEvents(string stream, bool delay)
@@ -494,11 +530,19 @@ namespace EventStore.Projections.Core.Services.Processing
                 var corrId = Guid.NewGuid();
                 _validRequests.Add(corrId);
 
+				_pendingRequests[stream] = corrId;
+
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                     corrId, corrId, new SendToThisEnvelope(this), stream,
-                    _reader._fromPositions[stream], _maxReadCount, _reader._resolveLinkTos, false, null,
+                    _reader._fromPositions[stream], EventByTypeIndexEventReader.MaxReadCount, _reader._resolveLinkTos, false, null,
                     _readAs);
-                _reader.PublishIORequest(delay, readEventsForward, corrId);
+
+                var timeoutMessage = TimerMessage.Schedule.Create(
+                        TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                        new SendToThisEnvelope(this),
+                        new ProjectionManagementMessage.Internal.ReadTimeout(corrId, stream));
+
+                _reader.PublishIORequest(delay, readEventsForward, timeoutMessage, corrId);
             }
 
             private void DeliverEventRetrievedByIndex(EventStore.Core.Data.ResolvedEvent pair, float progress, TFPos position)
@@ -542,7 +586,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private class TfBased : State, IHandle<ClientMessage.ReadAllEventsForwardCompleted>
+        private class TfBased : State, 
+                                IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
+                                IHandle<ProjectionManagementMessage.Internal.ReadTimeout> 
         {
             private readonly HashSet<string> _eventTypes;
             private readonly ITimeProvider _timeProvider;
@@ -552,6 +598,7 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly IPublisher _publisher;
             private TFPos _fromTfPosition;
             private bool _eof;
+            private Guid _pendingRequestCorrelationId;
 
             public TfBased(
                 ITimeProvider timeProvider, EventByTypeIndexEventReader reader, TFPos fromTfPosition,
@@ -569,6 +616,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_disposed)
                     return;
+                if(message.CorrelationId != _pendingRequestCorrelationId){
+                    return;
+                }
                 if (message.Result == ReadAllResult.AccessDenied)
                 {
                     SendNotAuthorized();
@@ -646,6 +696,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
+            public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message)
+            {
+                if(_disposed) return;
+                if(_reader.Paused) return;
+                if(message.CorrelationId != _pendingRequestCorrelationId) return;
+
+                _tfEventsRequested = false;
+                _reader.PauseOrContinueProcessing();
+            }
+
             private void RequestTfEvents(bool delay)
             {
                 if (_disposed)
@@ -656,13 +716,20 @@ namespace EventStore.Projections.Core.Services.Processing
                     return;
 
                 _tfEventsRequested = true;
+                _pendingRequestCorrelationId = Guid.NewGuid();
                 //TODO: we do not need resolve links, but lets check first with
                 var readRequest = new ClientMessage.ReadAllEventsForward(
-                    Guid.NewGuid(), _reader.EventReaderCorrelationId, new SendToThisEnvelope(this),
+                    _pendingRequestCorrelationId, _pendingRequestCorrelationId, new SendToThisEnvelope(this),
                     _fromTfPosition.CommitPosition,
-                    _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, 111,
+                    _fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition, EventByTypeIndexEventReader.MaxReadCount,
                     true, false, null, _readAs);
-                _reader.PublishIORequest(delay, readRequest, Guid.NewGuid());
+
+                var timeoutMessage = TimerMessage.Schedule.Create(
+                        TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                        new SendToThisEnvelope(this),
+                        new ProjectionManagementMessage.Internal.ReadTimeout(_pendingRequestCorrelationId, "$all"));
+
+                _reader.PublishIORequest(delay, readRequest, timeoutMessage, _pendingRequestCorrelationId);
             }
 
             private void DeliverLastCommitPosition(TFPos lastPosition)

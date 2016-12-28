@@ -519,6 +519,12 @@
     <Compile Include="Services\event_reader\multi_stream_reader\when_read_completes_before_timeout.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_read_for_one_stream_completes_but_times_out_for_another.cs" />
     <Compile Include="Services\event_filter\specific_events_event_filter.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_event_reader\when_tf_based_read_completes_before_timeout.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_event_reader\when_index_based_read_timeout_occurs.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_event_reader\when_index_based_read_completes_before_timeout.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_event_reader\when_index_based_checkpoint_read_timeout_occurs.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_event_reader\when_tf_based_read_timeout_occurs.cs" />
+    <Compile Include="Services\event_reader\event_by_type_index_event_reader\EventByTypeIndexEventReaderTestFixture.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
