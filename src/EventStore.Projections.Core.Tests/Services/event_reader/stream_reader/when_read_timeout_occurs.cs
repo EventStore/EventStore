@@ -19,6 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         private StreamEventReader _eventReader;
         private Guid _distributionCorrelationId;
         private FakeTimeProvider _fakeTimeProvider;
+        private Guid _readCorrelationId;
 
         protected override void Given()
         {
@@ -33,12 +34,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _eventReader = new StreamEventReader(_bus, _distributionCorrelationId, null, "stream", 10, _fakeTimeProvider,
                 resolveLinkTos: false, stopOnEof: true, produceStreamDeletes: false);
             _eventReader.Resume();
-			var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
+			_readCorrelationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _eventReader.Handle(
-				new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, "stream"));
+				new ProjectionManagementMessage.Internal.ReadTimeout(_readCorrelationId, "stream"));
             _eventReader.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-					correlationId, "stream", 100, 100, ReadStreamResult.Success, 
+					_readCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -59,6 +60,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         public void should_not_deliver_events()
         {
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
+        }
+
+        [Test]
+        public void should_attempt_another_read_for_the_timed_out_reads()
+        {
+            var reads = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
+                                                .Where(x => x.EventStreamId == "stream");
+
+            Assert.AreEqual(reads.First().CorrelationId, _readCorrelationId);
+            Assert.AreEqual(1, reads.Skip(1).Count());
         }
     }
 }
