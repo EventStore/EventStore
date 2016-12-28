@@ -4,9 +4,16 @@ set -e
 
 version=$1
 platform_override=$2
+config_prefix_override=$3
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CONFIGPREFIX="/usr/local/etc"
+
+if [[ "$config_prefix_override" == "" ]] ; then
+    CONFIGPREFIX="/usr/local/etc"
+else
+    CONFIGPREFIX="$config_prefix_override"
+fi
 
 if [[ "$platform_override" == "" ]] ; then
     # shellcheck source=../detect-system/detect-system.sh disable=SC1091
