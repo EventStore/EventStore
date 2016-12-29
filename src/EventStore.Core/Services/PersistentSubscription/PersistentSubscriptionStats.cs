@@ -91,7 +91,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 LiveBufferSize = _settings.LiveBufferSize,
                 MaxCheckPointCount = _settings.MaxCheckPointCount,
                 MaxRetryCount = _settings.MaxRetryCount,
-                MessageTimeoutMilliseconds = (int) _settings.MessageTimeout.TotalMilliseconds,
+                MessageTimeoutMilliseconds = (int) (_settings.MessageTimeout?.TotalMilliseconds ?? -1),
                 MinCheckPointCount = _settings.MinCheckPointCount,
                 ReadBatchSize = _settings.ReadBatchSize,
                 ResolveLinktos = _settings.ResolveLinkTos,
