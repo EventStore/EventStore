@@ -88,8 +88,17 @@ if [[ -d $PACKAGEDIRECTORY ]] ; then
 fi
 mkdir "$PACKAGEDIRECTORY"
 
-
 pushd "$SCRIPTDIR/../../bin/clusternode/"
+
+# There is an issue with mkbundled packages in mono
+# https://bugzilla.xamarin.com/show_bug.cgi?id=33483
+# https://bugzilla.xamarin.com/show_bug.cgi?id=42735
+# Solved with https://github.com/mono/mono/pull/3591
+
+# The fix for now would be to just remove this prefix path
+cp "$MONOCONFIG" "$MONOCONFIG.custom"
+sed -e 's/$mono_libdir\///g' -i "$MONOCONFIG.custom"
+MONOCONFIG="$MONOCONFIG.custom"
 
 mkbundle -c -o clusternode.c -oo clusternode.a \
 	EventStore.ClusterNode.exe \
