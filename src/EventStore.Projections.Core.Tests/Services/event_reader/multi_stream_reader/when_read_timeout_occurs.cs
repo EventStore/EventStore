@@ -18,6 +18,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     {
         private MultiStreamEventReader _eventReader;
         private Guid _distibutionPointCorrelationId;
+        private Guid _streamReadACorrelationId;
+        private Guid _streamReadBCorrelationId;
 
         protected override void Given()
         {
@@ -38,12 +40,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 _ioDispatcher, _bus, _distibutionPointCorrelationId, null, 0, _abStreams, _ab12Tag, false,
                 new RealTimeProvider());
             _eventReader.Resume();
-            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
+            _streamReadACorrelationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _eventReader.Handle(
-				new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, "a"));
+				new ProjectionManagementMessage.Internal.ReadTimeout(_streamReadACorrelationId, "a"));
             _eventReader.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-					correlationId, "a", 100, 100, ReadStreamResult.Success,
+					_streamReadACorrelationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -57,12 +59,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 3, 2, true, 200));
-            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "b").CorrelationId;
+            _streamReadBCorrelationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "b").CorrelationId;
             _eventReader.Handle(
-				new ProjectionManagementMessage.Internal.ReadTimeout(Guid.NewGuid(), "b"));
+				new ProjectionManagementMessage.Internal.ReadTimeout(_streamReadBCorrelationId, "b"));
             _eventReader.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-					correlationId, "b", 100, 100, ReadStreamResult.Success,
+					_streamReadBCorrelationId, "b", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -82,6 +84,22 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         public void should_not_deliver_events()
         {
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
+        }
+
+        [Test]
+        public void should_attempt_another_read_for_the_timed_out_reads()
+        {
+            var streamAReads = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
+                            .Where(x => x.EventStreamId == "a");
+
+            Assert.AreEqual(streamAReads.First().CorrelationId, _streamReadACorrelationId);
+            Assert.AreEqual(1, streamAReads.Skip(1).Count());
+
+            var streamBReads = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
+                .Where(x => x.EventStreamId == "b");
+
+            Assert.AreEqual(streamBReads.First().CorrelationId, _streamReadBCorrelationId);
+            Assert.AreEqual(1, streamBReads.Skip(1).Count());
         }
     }
 }
