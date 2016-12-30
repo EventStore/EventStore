@@ -877,7 +877,7 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly int StartFrom;
-            public readonly int MessageTimeoutMilliseconds;
+            public readonly int? MessageTimeoutMilliseconds;
             public readonly bool RecordStatistics;
 
             public readonly bool ResolveLinkTos;
@@ -896,7 +896,7 @@ namespace EventStore.Core.Messages
 
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                 string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
-                int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
+                int? messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
                 int liveBufferSize, int readbatchSize,
                 int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
                 int maxSubscriberCount, string namedConsumerStrategy,
@@ -953,7 +953,7 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly int StartFrom;
-            public readonly int MessageTimeoutMilliseconds;
+            public readonly int? MessageTimeoutMilliseconds;
             public readonly bool RecordStatistics;
 
             public readonly bool ResolveLinkTos;
@@ -973,7 +973,7 @@ namespace EventStore.Core.Messages
 
             public UpdatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                 string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
-                int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
+                int? messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
                 int liveBufferSize, int readbatchSize,
                 int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
                 int maxSubscriberCount, string namedConsumerStrategy,

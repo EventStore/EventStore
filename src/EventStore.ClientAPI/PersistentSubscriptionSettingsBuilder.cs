@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI
         private bool _resolveLinkTos;
         private int  _startFrom;
         private bool _timingStatistics;
-        private TimeSpan _timeout;
+        private TimeSpan? _timeout;
         private int _readBatchSize;
         private int _maxRetryCount;
         private int _liveBufferSize;
@@ -23,7 +23,7 @@ namespace EventStore.ClientAPI
         private int _maxSubscriberCount;
         private string _namedConsumerStrategies;
 
-        internal PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan timeout,
+        internal PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan? timeout,
                                                       int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize,
                                                       TimeSpan checkPointAfter, int minCheckPointCount,
                                                       int maxCheckPointCount, int maxSubscriberCount, string namedConsumerStrategies)
@@ -125,6 +125,15 @@ namespace EventStore.ClientAPI
         public PersistentSubscriptionSettingsBuilder WithMessageTimeoutOf(TimeSpan timeout)
         {
             _timeout = timeout;
+            return this;
+        }
+        /// <summary>
+        /// Disables message timeouts, event won't be retried unless explictly told to
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder DisableMessageTimeout()
+        {
+            _timeout = null;
             return this;
         }
 

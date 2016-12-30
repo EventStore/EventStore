@@ -15,7 +15,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _groupName;
         private readonly bool _resolveLinkTos;
         private readonly int _startFromBeginning;
-        private readonly int _messageTimeoutMilliseconds;
+        private readonly int? _messageTimeoutMilliseconds;
         private readonly bool _recordStatistics;
         private readonly int _maxRetryCount;
         private readonly int _liveBufferSize;
@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _readBatchSize = settings.ReadBatchSize;
             _bufferSize = settings.HistoryBufferSize;
             _recordStatistics = settings.ExtraStatistics;
-            _messageTimeoutMilliseconds = (int)settings.MessageTimeout.TotalMilliseconds;
+            _messageTimeoutMilliseconds = (int?)settings.MessageTimeout?.TotalMilliseconds;
             _checkPointAfter = (int)settings.CheckPointAfter.TotalMilliseconds;
             _minCheckPointCount = settings.MinCheckPointCount;
             _maxCheckPointCount = settings.MaxCheckPointCount;

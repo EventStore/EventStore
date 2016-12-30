@@ -702,7 +702,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             public bool ResolveLinktos { get; set; }
             public int StartFrom { get; set; }
-            public int MessageTimeoutMilliseconds { get; set; }
+            public int? MessageTimeoutMilliseconds { get; set; }
             public bool ExtraStatistics { get; set; }
             public int MaxRetryCount { get; set; }
             public int LiveBufferSize { get; set; }

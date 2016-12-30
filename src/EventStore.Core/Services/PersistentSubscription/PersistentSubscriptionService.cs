@@ -185,7 +185,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     message.MaxCheckPointCount,
                                     message.MaxSubscriberCount,
                                     message.NamedConsumerStrategy,
-                                    TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds)
+                                    message.MessageTimeoutMilliseconds.HasValue ? TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds.Value) : (TimeSpan?)null
                                     );
             Log.Debug("New persistent subscription {0}.", message.GroupName);
             _config.Updated = DateTime.Now;
@@ -259,7 +259,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     message.MaxCheckPointCount,
                                     message.MaxSubscriberCount,
                                     message.NamedConsumerStrategy,
-                                    TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds)
+                                    message.MessageTimeoutMilliseconds.HasValue ? TimeSpan.FromMilliseconds(message.MessageTimeoutMilliseconds.Value) : (TimeSpan?)null
                                     );
             _config.Updated = DateTime.Now;
             _config.UpdatedBy = message.User.Identity.Name;
@@ -299,7 +299,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                              int maxCheckPointCount,
                                              int maxSubscriberCount,
                                              string namedConsumerStrategy,
-                                             TimeSpan messageTimeout)
+                                             TimeSpan? messageTimeout)
         {
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
             List<PersistentSubscription> subscribers;
@@ -669,7 +669,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                                     entry.MaxCheckPointCount,
                                                     entry.MaxSubscriberCount,
                                                     entry.NamedConsumerStrategy,
-                                                    TimeSpan.FromMilliseconds(entry.MessageTimeout)); 
+                                                    entry.MessageTimeout.HasValue ? TimeSpan.FromMilliseconds(entry.MessageTimeout.Value) : (TimeSpan?)null); 
                         }
                         continueWith();
                     }
@@ -733,7 +733,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                         sub.MaxCheckPointCount,
                                         sub.MaxSubscriberCount,
                                         sub.NamedConsumerStrategy,
-                                        TimeSpan.FromMilliseconds(sub.MessageTimeout));
+                                        sub.MessageTimeout.HasValue ? TimeSpan.FromMilliseconds(sub.MessageTimeout.Value) : (TimeSpan?)null);
             }
         }
 
