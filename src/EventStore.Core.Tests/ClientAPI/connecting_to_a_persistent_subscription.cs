@@ -702,13 +702,18 @@ namespace EventStore.Core.Tests.ClientAPI
                 _group,
                 HandleEvent,
                 (sub, reason, ex) => { },
-                DefaultData.AdminCredentials);
+                DefaultData.AdminCredentials,
+                // Make sure the store sends us the message and its not buffered
+                //
+                // Note that bufferSize: 0 does not work no events will be delivered
+                // In effect theres no way to receive just 1 event, as while the event is delivered another will be buffered
+                bufferSize: 1);
 
         }
 
         protected override void When()
         {
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 var id = Guid.NewGuid();
                 _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
@@ -721,7 +726,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _received++;
 
-            if (_received == 2)
+            if (_received == 3)
             {
                 _resetEvent.Set();
                 return;
@@ -729,14 +734,14 @@ namespace EventStore.Core.Tests.ClientAPI
 
             // Default server timeout is 30s
             // Is there a way to fake a long timeout??
-            Thread.Sleep(TimeSpan.FromSeconds(30));
+            Thread.Sleep(TimeSpan.FromSeconds(40));
         }
 
         [Test]
         public void the_subscription_gets_all_messages()
         {
-            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromMinutes(1)));
-            Assert.AreEqual(2, _received);
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromMinutes(2)));
+            Assert.AreEqual(3, _received);
         }
     }
     [TestFixture, Category("LongRunning")]
