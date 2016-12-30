@@ -129,6 +129,17 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Sets the timeout timespan to about 30k years. If you need larger please let us know.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionSettingsBuilder DontTimeoutMessages()
+        {
+            _timeout = TimeSpan.MaxValue;
+            return this;
+        }
+
+
+        /// <summary>
         /// Sets that the backend should try to checkpoint the subscription after some
         /// period of time. Note that if the increment of the checkpoint would be below
         /// the minimum the stream will not be checkpointed at this time.
