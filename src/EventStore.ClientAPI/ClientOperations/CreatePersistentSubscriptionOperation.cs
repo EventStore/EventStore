@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _readBatchSize = settings.ReadBatchSize;
             _bufferSize = settings.HistoryBufferSize;
             _recordStatistics = settings.ExtraStatistics;
-            _messageTimeoutMilliseconds = (int?) settings.MessageTimeout?.TotalMilliseconds;
+            _messageTimeoutMilliseconds = (int?)(settings.MessageTimeout.HasValue ? settings.MessageTimeout.Value.TotalMilliseconds : (double?)null);
             _checkPointAfter = (int) settings.CheckPointAfter.TotalMilliseconds;
             _minCheckPointCount = settings.MinCheckPointCount;
             _maxCheckPointCount = settings.MaxCheckPointCount;
