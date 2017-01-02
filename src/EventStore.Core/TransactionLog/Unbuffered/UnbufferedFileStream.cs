@@ -126,13 +126,23 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void SeekInternal(long positionAligned, SeekOrigin origin)
         {
+            Console.WriteLine("seek " + positionAligned);
             NativeFile.Seek(_handle, positionAligned, origin);
         }
 
         private void InternalWrite(byte* buffer, uint count)
         {
             var written = 0;
+            Console.WriteLine("write " + count + "bytes");
+            //TODO GFY loop here
             NativeFile.Write(_handle, buffer, count, ref written);
+        }
+
+        private int ReadInternal(byte *dest, int offset, int count)
+        {
+            Console.WriteLine("read " + count + "bytes");
+            Console.WriteLine(Environment.StackTrace);
+            return NativeFile.Read(_handle, dest, 0, count);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -147,7 +157,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             _bufferedCount = left;
             _aligned = aligned == left;
             _lastPosition = aligned;
-            //TODO cant do two seeks + a read here.
             SeekInternal(aligned, SeekOrigin.Begin);
             _needsRead = true;
             return offset;
@@ -180,8 +189,14 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var bytesRead = _readBufferSize;
             if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == -1)
             {
-                SeekInternal(position, SeekOrigin.Begin);
-                bytesRead = NativeFile.Read(_handle, _readBuffer, 0, _readBufferSize);
+                if(_readLocation + _readBufferSize != position)
+                {
+                    SeekInternal(position, SeekOrigin.Begin);
+                }
+                var toRead = _readBufferSize;
+                if(count < _readBufferSize) toRead = (int) (GetLowestAlignment(count) + _blockSize);
+                if(count < _blockSize) toRead = (int)_blockSize;
+                bytesRead = ReadInternal(_readBuffer, 0, toRead);
                 _readLocation = position;
             }
             else if (_readLocation != position)
