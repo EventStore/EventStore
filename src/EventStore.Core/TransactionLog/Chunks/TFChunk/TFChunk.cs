@@ -1120,7 +1120,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                             FileShare.ReadWrite,
                             false,
                             4096,
-                            65536,
+                            65536 * 4,
                             false,
                             4096);
             return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan);

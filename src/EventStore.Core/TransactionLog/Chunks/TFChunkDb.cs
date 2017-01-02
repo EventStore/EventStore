@@ -52,7 +52,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     // but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
                     var footer = ReadChunkFooter(versions[0]);
                     if (footer.IsCompleted) {
-                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:fig.Unbuffered);
+                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:Config.Unbuffered);
                     }
                     else
                     {
