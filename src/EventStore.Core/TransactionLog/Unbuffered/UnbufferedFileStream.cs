@@ -127,14 +127,14 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void SeekInternal(long positionAligned, SeekOrigin origin)
         {
-            //Console.WriteLine("seek " + positionAligned);
+            Console.WriteLine("seek " + positionAligned);
             NativeFile.Seek(_handle, positionAligned, origin);
         }
 
         private void InternalWrite(byte* buffer, uint count)
         {
             var written = 0;
-            //Console.WriteLine("write " + count + "bytes");
+            Console.WriteLine("write " + count + "bytes");
             //TODO GFY loop here
             NativeFile.Write(_handle, buffer, count, ref written);
         }
@@ -195,7 +195,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                     SeekInternal(position, SeekOrigin.Begin);
                 }
                 var toRead = _readBufferSize;
-                if(count < _bytesRead) toRead = (int) (GetLowestAlignment(count) + _blockSize);
+                if(count < _readBufferSize) toRead = (int) (GetLowestAlignment(count) + _blockSize);
 
                 //Console.WriteLine("toRead = " + toRead + "count = " + count + " readbuffersize =" + _readBufferSize + " _blockSize = " + _blockSize);
                 bytesRead = ReadInternal(_readBuffer, 0, toRead);
@@ -225,7 +225,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             long current = offset;
             if(_needsRead) {
                 SeekInternal(_lastPosition, SeekOrigin.Begin);
-                NativeFile.Read(_handle, _writeBuffer, 0, (int)_blockSize);
+                ReadInternal(_writeBuffer, 0, (int)_blockSize);
                 SeekInternal(_lastPosition, SeekOrigin.Begin);
                 _needsRead = false;
             }

@@ -209,7 +209,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             try
             {
                 _chunkHeader = ReadHeader(reader.Stream);
-                Console.WriteLine("Opened completed " + _filename + " as version " + _chunkHeader.Version);
                 if (_chunkHeader.Version != (byte) ChunkVersions.Unaligned && _chunkHeader.Version != (byte) ChunkVersions.Aligned)
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
@@ -353,8 +352,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                             FileAccess.Read,
                             FileShare.ReadWrite,
                             false,
-                            1024 * 1024,
-                            4096 * 4,
+                            4096,
+                            4096,
                             false,
                             4096);
             }
@@ -1111,9 +1110,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private Stream GetSequentialReaderFileStream()
         {
-            return _inMem
-                ? (Stream) new UnmanagedMemoryStream((byte*) _cachedData, _fileSize)
-                : new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan);
+            if(_inMem)
+                return (Stream) new UnmanagedMemoryStream((byte*) _cachedData, _fileSize);
+            if(_unbuffered)
+                return (Stream) UnbufferedFileStream.Create(
+                            _filename,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.ReadWrite,
+                            false,
+                            4096,
+                            65536,
+                            false,
+                            4096);
+            return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan);
         }
 
         public void ReleaseReader(TFChunkBulkReader reader)

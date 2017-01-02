@@ -51,8 +51,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                     // so it might happen that we have checkpoint indicating one more chunk should exist,
                     // but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
                     var footer = ReadChunkFooter(versions[0]);
-                    if (footer.IsCompleted)
-                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:Config.Unbuffered);
+                    if (footer.IsCompleted) {
+                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:fig.Unbuffered);
+                    }
                     else
                     {
                         chunk = TFChunk.TFChunk.FromOngoingFile(versions[0], Config.ChunkSize, checkSize: false, unbuffered:Config.Unbuffered, writethrough:Config.WriteThrough);
