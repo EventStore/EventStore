@@ -513,16 +513,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
             Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
-#if  MONO
             using (var reader = AcquireReader())
             {
                 reader.Stream.Seek(0, SeekOrigin.Begin);
                 var stream = reader.Stream;
-#else
-            using (var reader = UnbufferedFileReadStream.Open(_filename))
-            {
-                var stream = reader;
-#endif
                 var footer = _chunkFooter;
 
                 byte[] hash;
