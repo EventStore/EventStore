@@ -23,6 +23,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private SafeFileHandle _handle;
         private long _readLocation = -1;
         private bool _needsRead;
+        private int _bytesRead;
 
         private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
         {
@@ -186,18 +187,19 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var position = GetLowestAlignment(Position);
             var roffset = (int)(Position - position);
 
-            var bytesRead = _readBufferSize;
-            if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == -1)
+            var bytesRead = _bytesRead;
+            if (_readLocation + _bytesRead <= position || _readLocation > position || _readLocation == -1)
             {
-                if(_readLocation + _readBufferSize != position)
+                if(_readLocation + _bytesRead != position)
                 {
                     SeekInternal(position, SeekOrigin.Begin);
                 }
                 var toRead = _readBufferSize;
-                if(count < _readBufferSize) toRead = (int) (GetLowestAlignment(count) + _blockSize);
+                if(count < _bytesRead) toRead = (int) (GetLowestAlignment(count) + _blockSize);
 
                 //Console.WriteLine("toRead = " + toRead + "count = " + count + " readbuffersize =" + _readBufferSize + " _blockSize = " + _blockSize);
                 bytesRead = ReadInternal(_readBuffer, 0, toRead);
+                _bytesRead = bytesRead;
                 _readLocation = position;
             }
             else if (_readLocation != position)
