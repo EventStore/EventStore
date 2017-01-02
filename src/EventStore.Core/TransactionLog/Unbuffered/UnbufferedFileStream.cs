@@ -140,7 +140,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private int ReadInternal(byte *dest, int offset, int count)
         {
-            //Console.WriteLine("read " + count + "bytes");
+            Console.WriteLine("read " + count + "bytes");
             //Console.WriteLine(Environment.StackTrace);
             return NativeFile.Read(_handle, dest, 0, count);
         }
@@ -195,8 +195,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
                 }
                 var toRead = _readBufferSize;
                 if(count < _readBufferSize) toRead = (int) (GetLowestAlignment(count) + _blockSize);
-                if(count < _blockSize) toRead = (int)_blockSize;
-                //Console.WriteLine("toRead = " + toRead + " readbuffersize =" + _readBufferSize + " _blockSize = " + _blockSize);
+
+                //Console.WriteLine("toRead = " + toRead + "count = " + count + " readbuffersize =" + _readBufferSize + " _blockSize = " + _blockSize);
                 bytesRead = ReadInternal(_readBuffer, 0, toRead);
                 _readLocation = position;
             }

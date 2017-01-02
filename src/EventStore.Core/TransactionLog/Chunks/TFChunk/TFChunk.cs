@@ -354,7 +354,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                             FileShare.ReadWrite,
                             false,
                             1024 * 1024,
-                            4096,
+                            4096 * 4,
                             false,
                             4096);
             }
