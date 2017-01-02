@@ -126,21 +126,21 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private void SeekInternal(long positionAligned, SeekOrigin origin)
         {
-            Console.WriteLine("seek " + positionAligned);
+            //Console.WriteLine("seek " + positionAligned);
             NativeFile.Seek(_handle, positionAligned, origin);
         }
 
         private void InternalWrite(byte* buffer, uint count)
         {
             var written = 0;
-            Console.WriteLine("write " + count + "bytes");
+            //Console.WriteLine("write " + count + "bytes");
             //TODO GFY loop here
             NativeFile.Write(_handle, buffer, count, ref written);
         }
 
         private int ReadInternal(byte *dest, int offset, int count)
         {
-            Console.WriteLine("read " + count + "bytes");
+            //Console.WriteLine("read " + count + "bytes");
             //Console.WriteLine(Environment.StackTrace);
             return NativeFile.Read(_handle, dest, 0, count);
         }
