@@ -34,7 +34,7 @@ namespace EventStore.Core.Util
             if (s.Position != startPosition)
                 s.Position = startPosition;
 
-            var buffer = new byte[1024 * 128];
+            var buffer = new byte[4096];
             long toRead = count;
             while (toRead > 0)
             {
