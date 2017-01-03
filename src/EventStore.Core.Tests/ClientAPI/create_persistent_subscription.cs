@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            
+
         }
 
         [Test]
@@ -60,13 +60,47 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 .StartFromCurrent();
         protected override void When()
         {
-            
+
         }
 
         [Test]
         public void the_completion_fails_with_invalid_stream()
         {
             Assert.Throws<AggregateException>(() => _conn.CreatePersistentSubscriptionAsync("$all", "shitbird", _settings, DefaultData.AdminCredentials).Wait());
+        }
+    }
+
+
+    [TestFixture, Category("LongRunning")]
+    public class create_persistent_subscription_with_too_big_message_timeout : SpecificationWithMiniNode
+    {
+
+        protected override void When()
+        {
+
+        }
+
+        [Test]
+        public void the_build_fails_with_argument_exception()
+        {
+            Assert.Throws<ArgumentException>(() => PersistentSubscriptionSettings.Create().WithMessageTimeoutOf(TimeSpan.FromDays(25 * 365)).Build());
+        }
+    }
+
+
+    [TestFixture, Category("LongRunning")]
+    public class create_persistent_subscription_with_too_big_retry_after : SpecificationWithMiniNode
+    {
+
+        protected override void When()
+        {
+
+        }
+
+        [Test]
+        public void the_build_fails_with_argument_exception()
+        {
+            Assert.Throws<ArgumentException>(() => PersistentSubscriptionSettings.Create().CheckPointAfter(TimeSpan.FromDays(25 * 365)).Build());
         }
     }
 
@@ -110,7 +144,7 @@ namespace EventStore.Core.Tests.ClientAPI
         protected override void When()
         {
             _conn.CreatePersistentSubscriptionAsync(_stream, "group3211", _settings, DefaultData.AdminCredentials).Wait();
-            
+
         }
 
         [Test]
@@ -162,7 +196,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
             _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait();
             _conn.DeletePersistentSubscriptionAsync(_stream, "existing", DefaultData.AdminCredentials).Wait();
-            
+
         }
 
         [Test]

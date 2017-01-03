@@ -129,6 +129,59 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
 
         [Test]
+        public void message_that_is_removed_does_not_show_up_in_expired_list()
+        {
+            var id = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0), DateTime.Now.AddSeconds(-11));
+            cache.Remove(id);
+            var expired = cache.WaitingTimeMessages();
+            Assert.AreEqual(0, expired.Count());
+        }
+
+        [Test]
+        public void can_remove_non_first_message_and_have_removed_from_time()
+        {
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            cache.StartMessage(new OutstandingMessage(id1, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0), DateTime.Now.AddSeconds(-12));
+            cache.StartMessage(new OutstandingMessage(id2, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 2), 0), DateTime.Now.AddSeconds(-11));
+            cache.Remove(id2);
+            var expired = cache.WaitingTimeMessages();
+            Assert.AreEqual(1, expired.Count());
+            Assert.AreEqual(id1, expired.FirstOrDefault().Item2.MessageId);
+        }
+
+        [Test]
+        public void can_add_multiple_messages_same_time_different_ids()
+        {
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            var time = DateTime.Now.AddSeconds(-12);
+            cache.StartMessage(new OutstandingMessage(id1, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0), time);
+            cache.StartMessage(new OutstandingMessage(id2, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 2), 0), time);
+            var expired = cache.WaitingTimeMessages();
+            Assert.AreEqual(2, expired.Count());
+        }
+
+        [Test]
+        public void can_remove_second_message_same_time_different_ids()
+        {
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            var cache = new OutstandingMessageCache();
+            var time = DateTime.Now.AddSeconds(-12);
+            cache.StartMessage(new OutstandingMessage(id1, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 1), 0), time);
+            cache.StartMessage(new OutstandingMessage(id2, null, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "name", 2), 0), time);
+            cache.Remove(id2);
+            var expired = cache.WaitingTimeMessages();
+            Assert.AreEqual(id1, expired.FirstOrDefault().Item2.MessageId);
+            Assert.AreEqual(1, expired.Count());
+        }
+
+        [Test]
         public void message_that_notexpired_is_not_included_in_expired_list()
         {
             var id = Guid.NewGuid();
