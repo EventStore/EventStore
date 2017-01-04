@@ -73,6 +73,11 @@ namespace EventStore.Transport.Http.EntityManagement
                 }
             }
 
+            var forwardedPrefixHeaderValue = requestHeaders[ProxyHeaders.XForwardedPrefix];
+            if (!string.IsNullOrEmpty(forwardedPrefixHeaderValue))
+            {
+                uriBuilder.Path = forwardedPrefixHeaderValue + uriBuilder.Path;
+            }
             return uriBuilder.Uri;
         }
 
