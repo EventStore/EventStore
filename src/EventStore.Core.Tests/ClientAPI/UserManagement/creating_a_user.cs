@@ -5,6 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class creating_a_user : TestWithNode 
     {
         [Test]

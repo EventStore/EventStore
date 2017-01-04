@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class when_connecting_with_connection_string: SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
@@ -26,7 +27,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_not_throw_when_connect_to_is_set()
         {
             string connectionString = string.Format("ConnectTo=tcp://{0};", _node.TcpEndPoint);

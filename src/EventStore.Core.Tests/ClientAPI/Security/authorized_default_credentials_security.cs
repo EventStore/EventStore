@@ -4,14 +4,14 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    [TestFixture, Category("LongRunning"), Category("Network")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
     public class authorized_default_credentials_security : AuthenticationTestBase
     {
         public authorized_default_credentials_security(): base(new UserCredentials("user1", "pa$$1"))
         {
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void all_operations_succeeds_when_passing_no_explicit_credentials()
         {
             ExpectNoException(() => ReadAllForward(null, null));
@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => SubscribeToAll(null, null));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void all_operations_are_not_authenticated_when_overriden_with_not_existing_credentials()
         {
             Expect<NotAuthenticatedException>(() => ReadAllForward("badlogin", "badpass"));
@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<NotAuthenticatedException>(() => SubscribeToAll("badlogin", "badpass"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void all_operations_are_not_authorized_when_overriden_with_not_authorized_credentials()
         {
             Expect<AccessDeniedException>(() => ReadAllForward("user2", "pa$$2"));

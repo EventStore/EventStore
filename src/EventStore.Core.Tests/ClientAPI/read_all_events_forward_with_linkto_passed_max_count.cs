@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class read_all_events_forward_with_linkto_passed_max_count : SpecificationWithLinkToToMaxCountDeletedEvents
     {
         private StreamEventsSlice _read;

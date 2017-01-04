@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class read_event_of_linkto_to_deleted_event : SpecificationWithLinkToToDeletedEvents
     {
         private EventReadResult _read;

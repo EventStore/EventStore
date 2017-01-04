@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.SystemData
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI")]
     public class clientapi_tcp_package
     {
         [Test]

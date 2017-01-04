@@ -5,10 +5,10 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    [TestFixture, Category("LongRunning"), Category("Network")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
     public class system_stream_security: AuthenticationTestBase
     {
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_no_acl_set_fail_for_non_admin()
         {
             Expect<AccessDeniedException>(() => ReadEvent("$system-no-acl", "user1", "pa$$1"));
@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => SubscribeToStream("$system-no-acl", "user1", "pa$$1"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_no_acl_set_succeed_for_admin()
         {
             ExpectNoException(() => ReadEvent("$system-no-acl", "adm", "admpa$$"));
@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => SubscribeToStream("$system-no-acl", "adm", "admpa$$"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_usual_user_fail_for_not_authorized_user()
         {
             Expect<AccessDeniedException>(() => ReadEvent("$system-acl", "user2", "pa$$2"));
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => SubscribeToStream("$system-acl", "user2", "pa$$2"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_usual_user_succeed_for_that_user()
         {
             ExpectNoException(() => ReadEvent("$system-acl", "user1", "pa$$1"));
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => SubscribeToStream("$system-acl", "user1", "pa$$1"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_usual_user_succeed_for_admin()
         {
             ExpectNoException(() => ReadEvent("$system-acl", "adm", "admpa$$"));
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_admins_fail_for_usual_user()
         {
             Expect<AccessDeniedException>(() => ReadEvent("$system-adm", "user1", "pa$$1"));
@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => SubscribeToStream("$system-adm", "user1", "pa$$1"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_admins_succeed_for_admin()
         {
             ExpectNoException(() => ReadEvent("$system-adm", "adm", "admpa$$"));
@@ -157,7 +157,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_all_succeed_for_not_authenticated_user()
         {
             ExpectNoException(() => ReadEvent("$system-all", null, null));
@@ -178,7 +178,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => SubscribeToStream("$system-all", null, null));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_all_succeed_for_usual_user()
         {
             ExpectNoException(() => ReadEvent("$system-all", "user1", "pa$$1"));
@@ -199,7 +199,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => SubscribeToStream("$system-all", "user1", "pa$$1"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_with_acl_set_to_all_succeed_for_admin()
         {
             ExpectNoException(() => ReadEvent("$system-all", "adm", "admpa$$"));

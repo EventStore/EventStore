@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class subscribe_to_stream_catching_up_should : SpecificationWithDirectoryPerTestFixture
     {
         private static readonly EventStore.Common.Log.ILogger Log = LogManager.GetLoggerFor<subscribe_to_stream_catching_up_should>();

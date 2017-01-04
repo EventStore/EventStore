@@ -11,7 +11,7 @@ using System.Threading;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Ignore("Very long running")]
-    [Category("LongRunning")]
+    [Category("LongRunning"), Category("ClientAPI")]
     public class catchup_subscription_handles_small_batch_sizes : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;

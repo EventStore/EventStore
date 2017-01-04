@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class deleting_a_user : TestWithNode
     {
         [Test]
