@@ -35,31 +35,33 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             Assert.IsNull(_exception, ((object) _exception ?? "").ToString());
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void stop_throws_invalid_operation_exception()
         {
-            _point.Stop();
+            Assert.Throws<InvalidOperationException>(()=> { _point.Stop(); });
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void try_subscribe_throws_invalid_operation_exception()
         {
-            _point.TrySubscribe(Guid.NewGuid(), new FakeReaderSubscription(), 10);
+            Assert.Throws<InvalidOperationException>(()=> { _point.TrySubscribe(Guid.NewGuid(), new FakeReaderSubscription(), 10); });
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void usubscribe_throws_invalid_operation_exception()
         {
-            _point.Unsubscribe(Guid.NewGuid());
+            Assert.Throws<InvalidOperationException>(()=> { _point.Unsubscribe(Guid.NewGuid()); });
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void handle_throws_invalid_operation_exception()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     Guid.NewGuid(), new TFPos(20, 10), "stream", 10, false, Guid.NewGuid(), "type", false,
                     new byte[0], new byte[0]));
+            });
         }
 
         [Test]

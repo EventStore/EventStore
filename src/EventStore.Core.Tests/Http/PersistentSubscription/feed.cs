@@ -106,21 +106,21 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         public void does_not_contain_ack_all_link()
         {
             var rel = GetLink(_feed, "ackAll");
-            Assert.IsNullOrEmpty(rel);
+            Assert.That(string.IsNullOrEmpty(rel));
         }
 
         [Test]
         public void does_not_contain_nack_all_link()
         {
             var rel = GetLink(_feed, "nackAll");
-            Assert.IsNullOrEmpty(rel);
+            Assert.That(string.IsNullOrEmpty(rel));
         }
 
         [Test]
         public void contains_a_link_rel_previous()
         {
             var rel = GetLink(_feed, "previous");
-            Assert.IsNotEmpty(rel);
+            Assert.That(!string.IsNullOrEmpty(rel));
         }
 
         [Test]

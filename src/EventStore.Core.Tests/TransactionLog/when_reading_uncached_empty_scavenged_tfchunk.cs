@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.TransactionLog
     {
         private TFChunk _chunk;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _chunk.CompleteScavenge(new PosMap[0]);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _chunk.Dispose();

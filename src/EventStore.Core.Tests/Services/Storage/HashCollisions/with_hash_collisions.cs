@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         protected virtual void given(){}
         protected virtual void when(){}
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void Setup(){
             given();
             _indexDir = PathName;

@@ -31,18 +31,20 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void it_cannot_be_paused()
         {
-            _edp.Pause();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Pause(); });
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void handle_read_events_completed_throws()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0], null, false, "", -1, 4, true, 100));
+            });
         }
     }
 }

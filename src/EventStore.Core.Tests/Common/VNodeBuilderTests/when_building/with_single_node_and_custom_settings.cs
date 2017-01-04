@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using System;
+using System.IO;
 using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
@@ -14,7 +15,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         private string _dbPath;
         public override void Given()
         {
-            _dbPath =string.Format("Test-{0}", Guid.NewGuid());
+            _dbPath = Path.Combine(Path.GetTempPath(), string.Format("Test-{0}", Guid.NewGuid()));
             _builder.RunOnDisk(_dbPath);
         }
 

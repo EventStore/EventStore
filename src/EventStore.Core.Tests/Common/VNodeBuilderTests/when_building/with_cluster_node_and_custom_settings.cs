@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         private Exception _caughtException;
         protected VNodeBuilder _builder;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void TestFixtureSetUp()
         {
             _builder = TestVNodeBuilder.AsClusterMember(3)

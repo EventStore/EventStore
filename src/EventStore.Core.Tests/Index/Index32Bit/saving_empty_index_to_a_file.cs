@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         private string _filename;
         private IndexMap _map;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();

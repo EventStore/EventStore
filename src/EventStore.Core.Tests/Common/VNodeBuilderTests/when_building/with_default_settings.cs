@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
             Assert.AreEqual(Opts.StartStandardProjectionsDefault, _settings.StartStandardProjections, "StartStandardProjections");
             Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _settings.UnsafeIgnoreHardDeletes, "UnsafeIgnoreHardDeletes");
             Assert.AreEqual(Opts.BetterOrderingDefault, _settings.BetterOrdering, "BetterOrdering");
-            Assert.IsNullOrEmpty(_settings.Index, "IndexPath");
+            Assert.That(string.IsNullOrEmpty(_settings.Index), "IndexPath");
             Assert.AreEqual(1, _settings.PrepareAckCount, "PrepareAckCount");
             Assert.AreEqual(1, _settings.CommitAckCount, "CommitAckCount");
             Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _settings.PrepareTimeout.TotalMilliseconds, "PrepareTimeout");
@@ -156,7 +156,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
             Assert.AreEqual(Opts.StartStandardProjectionsDefault, _settings.StartStandardProjections, "StartStandardProjections");
             Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _settings.UnsafeIgnoreHardDeletes, "UnsafeIgnoreHardDeletes");
             Assert.AreEqual(Opts.BetterOrderingDefault, _settings.BetterOrdering, "BetterOrdering");
-            Assert.IsNullOrEmpty(_settings.Index, "IndexPath");
+            Assert.That(string.IsNullOrEmpty(_settings.Index), "IndexPath");
             Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _settings.PrepareTimeout.TotalMilliseconds, "PrepareTimeout");
             Assert.AreEqual(Opts.CommitTimeoutMsDefault, _settings.CommitTimeout.TotalMilliseconds, "CommitTimeout");
 

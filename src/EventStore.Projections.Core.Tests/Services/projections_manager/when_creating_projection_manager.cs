@@ -53,9 +53,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_main_queue_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             using (
                 new ProjectionManager(
                     null,
@@ -66,11 +67,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _ioDispatcher))
             {
             }
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_publisher_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             using (
                 new ProjectionManager(
                     new FakePublisher(),
@@ -81,11 +84,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _ioDispatcher))
             {
             }
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_queues_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             using (
                 new ProjectionManager(
                     new FakePublisher(),
@@ -96,11 +101,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _ioDispatcher))
             {
             }
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_queues_throws_argument_exception()
         {
+            Assert.Throws<ArgumentException>(() => {
             using (
                 new ProjectionManager(
                     new FakePublisher(),
@@ -111,6 +118,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _ioDispatcher))
             {
             }
+            });
         }
 
     }

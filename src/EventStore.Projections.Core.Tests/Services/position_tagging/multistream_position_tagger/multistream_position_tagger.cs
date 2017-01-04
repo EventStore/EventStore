@@ -87,16 +87,16 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
         }
 
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_streams_throws_argument_null_exception()
         {
-            new MultiStreamPositionTagger(0, null);
+            Assert.Throws<ArgumentNullException>(()=> { new MultiStreamPositionTagger(0, null); });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_streams_throws_argument_exception()
         {
-            new MultiStreamPositionTagger(0, new string[] {});
+            Assert.Throws<ArgumentException>(()=> { new MultiStreamPositionTagger(0, new string[] {}); });
         }
 
         [Test]

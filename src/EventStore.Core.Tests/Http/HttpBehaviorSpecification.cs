@@ -37,8 +37,8 @@ namespace EventStore.Core.Tests.Http
         private Func<HttpWebRequest, byte[]> _dumpRequest2;
 #endif
         private string _tag;
+        private bool _createdMiniNode;
 
-        [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
 #if !__MonoCS__
@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Http
 
             base.TestFixtureSetUp();
 
-            bool createdMiniNode = false;
+            _createdMiniNode = false;
             if (SetUpFixture._connection != null && SetUpFixture._node != null)
             {
                 _tag = "_" + (++SetUpFixture._counter);
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Http
             }
             else
             {
-                createdMiniNode = true;
+                _createdMiniNode = true;
                 _tag = "_1";
                 _node = CreateMiniNode();
                 _node.Start();
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Http
             }
             catch
             {
-                if (createdMiniNode)
+                if (_createdMiniNode)
                 {
                     if (_connection != null)
                         try
@@ -128,15 +128,18 @@ namespace EventStore.Core.Tests.Http
             return false;
         }
 
-        [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-            if (SetUpFixture._connection == null || SetUpFixture._node == null)
+            if(_createdMiniNode)
             {
                 _connection.Close();
                 _node.Shutdown();
             }
             base.TestFixtureTearDown();
+            if(_lastResponse != null) 
+            {
+                _lastResponse.Close();
+            }
         }
 
         protected HttpWebRequest CreateRequest(

@@ -71,16 +71,16 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         }
 
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_stream_throws_argument_null_exception()
         {
-            new StreamPositionTagger(0, null);
+            Assert.Throws<ArgumentNullException>(()=> { new StreamPositionTagger(0, null); });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_stream_throws_argument_exception()
         {
-            new StreamPositionTagger(0, "");
+            Assert.Throws<ArgumentException>(()=> { new StreamPositionTagger(0, ""); });
         }
 
         [Test]

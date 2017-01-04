@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.TransactionLog
     [TestFixture]
     public class FlushTimeMeter: SpecificationWithFile
     {
-        [Test, Ignore]
+        [Test, Ignore("long running")]
         public void Test()
         {
             var rnd = new Random();

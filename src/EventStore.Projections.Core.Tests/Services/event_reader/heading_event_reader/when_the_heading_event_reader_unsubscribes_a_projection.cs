@@ -63,10 +63,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             Assert.AreEqual(count, _subscription.ReceivedEvents.Count);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void it_cannot_be_unsubscribed_twice()
         {
-            _point.Unsubscribe(_projectionSubscriptionId);
+            Assert.Throws<InvalidOperationException>(()=> { _point.Unsubscribe(_projectionSubscriptionId); });
         }
 
         [Test]

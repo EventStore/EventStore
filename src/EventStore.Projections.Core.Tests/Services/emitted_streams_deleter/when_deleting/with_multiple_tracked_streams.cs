@@ -12,16 +12,24 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
     {
         protected Action _onDeleteStreamCompleted;
         protected ManualResetEvent _resetEvent = new ManualResetEvent(false);
+        protected CountdownEvent _eventAppeared;
         private int _numberOfTrackedEvents = 200;
         private string _testStreamFormat = "test_stream_{0}";
+        private EventStore.ClientAPI.SystemData.UserCredentials _credentials;
 
         protected override void Given()
         {
+            _credentials = new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit");
+            _eventAppeared = new CountdownEvent(_numberOfTrackedEvents);
             _onDeleteStreamCompleted = () =>
             {
                 _resetEvent.Set();
             };
             base.Given();
+
+            var sub = _conn.SubscribeToStreamAsync(_projectionNamesBuilder.GetEmittedStreamsName(), true, (s, evnt) => {
+                _eventAppeared.Signal();
+            }, userCredentials: _credentials).Result;
 
             for (int i = 0; i < _numberOfTrackedEvents; i++)
             {
@@ -34,7 +42,12 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
                 });
             }
 
-            var emittedStreamResult = _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, _numberOfTrackedEvents, false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit")).Result;
+            if(!_eventAppeared.Wait(TimeSpan.FromSeconds(10)))
+            {
+                Assert.Fail("Timed out waiting for emitted streams");
+            }
+
+            var emittedStreamResult = _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, _numberOfTrackedEvents, false, _credentials).Result;
             Assert.AreEqual(_numberOfTrackedEvents, emittedStreamResult.Events.Length);
             Assert.AreEqual(SliceReadStatus.Success, emittedStreamResult.Status);
         }

@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Http
         public static int _counter;
         private SpecificationWithDirectoryPerTestFixture _directory;
 
-        [SetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             WebRequest.DefaultWebProxy = new WebProxy();
@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Http
             _connection.ConnectAsync().Wait();
         }
 
-        [TearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             _connection.Close();

@@ -1,4 +1,3 @@
-
 # Event Store
 
 [![Build status](https://ci.appveyor.com/api/projects/status/rpg0xvt6facomw0b?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore-aasj1)

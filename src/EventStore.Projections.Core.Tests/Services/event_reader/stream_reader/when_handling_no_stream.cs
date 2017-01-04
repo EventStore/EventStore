@@ -39,10 +39,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                     ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", -1, ExpectedVersion.NoStream, true, 200));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]

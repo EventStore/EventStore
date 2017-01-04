@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
     [TestFixture]
     public class speed_test
     {
-        [Test, MightyMooseIgnore, Ignore]
+        [Test, MightyMooseIgnore, Ignore("speed test")]
         public void of_http_requests_routing()
         {
             const int iterations = 100000;
@@ -184,7 +184,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             multiQueuedHandler.Stop();
         }
 
-        [Test, MightyMooseIgnore, Ignore]
+        [Test, MightyMooseIgnore, Ignore("speed test")]
         public void of_uri_router()
         {
             const int iterations = 100000;

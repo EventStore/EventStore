@@ -69,10 +69,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _point.Unsubscribe(_projectionSubscriptionId);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void no_other_projection_can_subscribe_with_the_same_projection_id()
         {
-            _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
+            Assert.Throws<InvalidOperationException>(()=> { _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30); });
         }
     }
 }

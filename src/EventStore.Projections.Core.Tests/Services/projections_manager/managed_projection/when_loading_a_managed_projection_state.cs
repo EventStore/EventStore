@@ -46,9 +46,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                 _ioDispatcher);
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_handler_type_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 new NoopEnvelope(), ProjectionMode.OneTime, "name", ProjectionManagementMessage.RunAs.Anonymous,
                 (string)null, @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: false);
@@ -66,11 +67,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     RunAs = message.EnableRunAs ? SerializedRunAs.SerializePrincipal(message.RunAs) : null,
                 },
                 null);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_handler_type_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentException>(() => {
             ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 new NoopEnvelope(), ProjectionMode.OneTime, "name", ProjectionManagementMessage.RunAs.Anonymous, "",
                 @"log(1);", enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: false);
@@ -88,11 +91,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     RunAs = message.EnableRunAs ? SerializedRunAs.SerializePrincipal(message.RunAs) : null,
                 },
                 null);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_query_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
                 new NoopEnvelope(), ProjectionMode.OneTime, "name", ProjectionManagementMessage.RunAs.Anonymous,
                 "JS", query: null, enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: false);
@@ -110,6 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     RunAs = message.EnableRunAs ? SerializedRunAs.SerializePrincipal(message.RunAs) : null,
                 },
                 null);
+            });
         }
     }
 }

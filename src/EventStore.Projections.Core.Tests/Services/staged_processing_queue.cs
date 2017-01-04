@@ -482,11 +482,11 @@ namespace EventStore.Projections.Core.Tests.Services
                 _q.Enqueue(_t1);
             }
 
-            [Test, ExpectedException(typeof(InvalidOperationException))]
+            [Test]
             public void first_task_starts_on_second_stage_on_first_stage_completion()
             {
                 _q.Process();
-                _t1.Complete();
+                Assert.Throws<InvalidOperationException>(()=> { _t1.Complete(); });
             }
 
         }

@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Core.Tests.Helpers;
+
 
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
 {
@@ -19,13 +21,16 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
             var optionException = Assert.Throws<OptionException>(() => { EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix); });
             Assert.True(optionException.Message.Contains("unknownoption"));
         }
+
         [Test]
         public void should_warn_the_user_about_unknown_argument_when_from_config_file()
         {
-            var args = new string[] { "-config", "TestConfigs/test_config_with_unknown_option.yaml" };
+            var configFile = HelperExtensions.GetFilePathFromAssembly("TestConfigs/test_config_with_unknown_option.yaml");
+            var args = new string[] { "-config", configFile };
             var optionException = Assert.Throws<OptionException>(() => { EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix); });
             Assert.True(optionException.Message.Contains("UnknownOption"));
         }
+
         [Test]
         public void should_not_contain_the_unknown_option_in_the_dumping_of_the_options_environment_variable()
         {

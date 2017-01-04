@@ -122,16 +122,16 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         }
 
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_streams_throws_argument_null_exception()
         {
-            new EventByTypeIndexPositionTagger(0, null);
+            Assert.Throws<ArgumentNullException>(()=> { new EventByTypeIndexPositionTagger(0, null); });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_streams_throws_argument_exception()
         {
-            new EventByTypeIndexPositionTagger(0, new string[] {});
+            Assert.Throws<ArgumentException>(()=> { new EventByTypeIndexPositionTagger(0, new string[] {}); });
         }
 
         [Test]
@@ -210,7 +210,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             Assert.AreEqual(2, updated.Streams["type2"]);
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void cannot_update_by_prior_tf_position()
         {
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
@@ -218,7 +218,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
                 Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
                 Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
             var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(270, 260), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
-            t.MakeCheckpointTag(tag, linkEvent);
+            Assert.Throws<InvalidOperationException>(() => { t.MakeCheckpointTag(tag, linkEvent); });
         }
 
         [Test]

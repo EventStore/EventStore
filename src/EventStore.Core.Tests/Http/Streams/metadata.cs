@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Http.Streams
         [Test]
         public void returns_empty_etag()
         {
-            Assert.IsNullOrEmpty(_lastResponse.Headers["ETag"]);
+            Assert.That(string.IsNullOrEmpty(_lastResponse.Headers["ETag"]));
         }
 
         [Test]

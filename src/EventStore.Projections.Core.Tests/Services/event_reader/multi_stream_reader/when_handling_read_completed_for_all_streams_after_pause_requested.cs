@@ -88,10 +88,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _edp.Resume();
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void cannot_be_paused()
         {
-            _edp.Pause();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Pause(); });
         }
 
         [Test]
@@ -101,11 +101,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 3, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void cannot_handle_following_read_events_completed() 
         {
             var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
-            _edp.Handle(
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                 correlationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
@@ -116,6 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type", new byte[0], new byte[0]))
                     }, null, false, "", 4, 4, false, 300));
+            });
         }
 
     }
