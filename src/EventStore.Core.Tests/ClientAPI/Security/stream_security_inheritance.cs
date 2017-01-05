@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    [TestFixture, Category("LongRunning"), Category("Network")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
     public class stream_security_inheritance: AuthenticationTestBase
     {
         [OneTimeSetUp]
@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
                                          StreamMetadata.Build().SetWriteRole(SystemRoles.All), new UserCredentials("adm", "admpa$$")).Wait();
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void acl_inheritance_is_working_properly_on_user_streams()
         {
             Expect<AccessDeniedException>(() => WriteStream("user-no-acl", null, null));
@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadEvent("user-r-restricted", "adm", "admpa$$"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void acl_inheritance_is_working_properly_on_system_streams()
         {
             Expect<AccessDeniedException>(() => WriteStream("$sys-no-acl", null, null));

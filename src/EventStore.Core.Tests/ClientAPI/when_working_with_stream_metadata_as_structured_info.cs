@@ -11,7 +11,7 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class when_working_with_stream_metadata_as_structured_info : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;

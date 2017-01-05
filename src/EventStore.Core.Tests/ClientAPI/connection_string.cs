@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI")]
     public class connection_string
     {
         [Test]

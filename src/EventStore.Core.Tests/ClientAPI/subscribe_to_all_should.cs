@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class subscribe_to_all_should : SpecificationWithDirectory
     {
         private const int Timeout = 10000;

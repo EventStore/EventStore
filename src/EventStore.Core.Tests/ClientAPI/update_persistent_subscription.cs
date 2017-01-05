@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class update_existing_persistent_subscription : SpecificationWithMiniNode
     {
         private readonly string _stream = Guid.NewGuid().ToString();

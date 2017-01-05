@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class when_working_with_metadata : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;

@@ -11,7 +11,7 @@ using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class with_unknown_options
     {
         [Test]

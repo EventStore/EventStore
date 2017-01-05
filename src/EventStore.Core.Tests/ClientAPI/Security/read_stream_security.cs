@@ -3,10 +3,10 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    [TestFixture, Category("LongRunning"), Category("Network")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
     public class read_stream_security: AuthenticationTestBase
     {
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_stream_with_not_existing_credentials_is_not_authenticated()
         {
             Expect<NotAuthenticatedException>(() => ReadEvent("read-stream", "badlogin", "badpass"));
@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<NotAuthenticatedException>(() => ReadStreamBackward("read-stream", "badlogin", "badpass"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_stream_with_no_credentials_is_denied()
         {
             Expect<AccessDeniedException>(() => ReadEvent("read-stream", null, null));
@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => ReadStreamBackward("read-stream", null, null));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_stream_with_not_authorized_user_credentials_is_denied()
         {
             Expect<AccessDeniedException>(() => ReadEvent("read-stream", "user2", "pa$$2"));
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => ReadStreamBackward("read-stream", "user2", "pa$$2"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_stream_with_authorized_user_credentials_succeeds()
         {
             ExpectNoException(() => ReadEvent("read-stream", "user1", "pa$$1"));
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadStreamBackward("read-stream", "user1", "pa$$1"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_stream_with_admin_user_credentials_succeeds()
         {
             ExpectNoException(() => ReadEvent("read-stream", "adm", "admpa$$"));
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_no_acl_stream_succeeds_when_no_credentials_are_passed()
         {
             ExpectNoException(() => ReadEvent("noacl-stream", null, null));
@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadStreamBackward("noacl-stream", null, null));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
         {
             Expect<NotAuthenticatedException>(() => ReadEvent("noacl-stream", "badlogin", "badpass"));
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<NotAuthenticatedException>(() => ReadStreamBackward("noacl-stream", "badlogin", "badpass"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_no_acl_stream_succeeds_when_any_existing_user_credentials_are_passed()
         {
             ExpectNoException(() => ReadEvent("noacl-stream", "user1", "pa$$1"));
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadStreamBackward("noacl-stream", "user2", "pa$$2"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_no_acl_stream_succeeds_when_admin_user_credentials_are_passed()
         {
             ExpectNoException(() => ReadEvent("noacl-stream", "adm", "admpa$$"));
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
         }
 
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_all_access_normal_stream_succeeds_when_no_credentials_are_passed()
         {
             ExpectNoException(() => ReadEvent("normal-all", null, null));
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadStreamBackward("normal-all", null, null));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed()
         {
             Expect<NotAuthenticatedException>(() => ReadEvent("normal-all", "badlogin", "badpass"));
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<NotAuthenticatedException>(() => ReadStreamBackward("normal-all", "badlogin", "badpass"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_all_access_normal_stream_succeeds_when_any_existing_user_credentials_are_passed()
         {
             ExpectNoException(() => ReadEvent("normal-all", "user1", "pa$$1"));
@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => ReadStreamBackward("normal-all", "user2", "pa$$2"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void reading_all_access_normal_stream_succeeds_when_admin_user_credentials_are_passed()
         {
             ExpectNoException(() => ReadEvent("normal-all", "adm", "admpa$$"));

@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class append_to_stream_with_hash_collision : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;

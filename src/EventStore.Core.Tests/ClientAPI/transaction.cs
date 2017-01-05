@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class transaction : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
