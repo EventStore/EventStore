@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          ITableIndex tableIndex,
                          int streamInfoCacheCapacity,
                          bool additionalCommitChecks,
-                         int metastreamMaxCount,
+                         long metastreamMaxCount,
                          int hashCollisionReadLimit)
         {
             Ensure.NotNull(bus, "bus");
@@ -51,17 +51,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _indexCommitter.Init(buildToPosition);
         }
 
-        IndexReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)
+        IndexReadEventResult IReadIndex.ReadEvent(string streamId, long eventNumber)
         {
             return _indexReader.ReadEvent(streamId, eventNumber);
         }
 
-        IndexReadStreamResult IReadIndex.ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
+        IndexReadStreamResult IReadIndex.ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount)
         {
             return _indexReader.ReadStreamEventsForward(streamId, fromEventNumber, maxCount);
         }
 
-        IndexReadStreamResult IReadIndex.ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
+        IndexReadStreamResult IReadIndex.ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount)
         {
             return _indexReader.ReadStreamEventsBackward(streamId, fromEventNumber, maxCount);
         }
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return _indexReader.GetStreamLastEventNumber(streamId) == EventNumber.DeletedStream;
         }
 
-        int IReadIndex.GetStreamLastEventNumber(string streamId)
+        long IReadIndex.GetStreamLastEventNumber(string streamId)
         {
             return _indexReader.GetStreamLastEventNumber(streamId);
         }

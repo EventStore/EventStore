@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
@@ -17,6 +18,8 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
+
+using System.Text;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 {
@@ -67,9 +70,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             var lowHasher = new XXHashUnsafe();
             var highHasher = new Murmur3AUnsafe();
             var tableIndex = new TableIndex(indexPath, lowHasher, highHasher,
-                                            () => new HashListMemTable(PTableVersions.Index64Bit, maxSize: 200),
+                                            () => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
                                             () => new TFReaderLease(readerPool),
-                                            PTableVersions.Index64Bit,
+                                            PTableVersions.IndexV3,
                                             maxSizeForMemory: 100,
                                             maxTablesPerLevel: 2);
             ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault);
@@ -120,6 +123,57 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                 for (int j = 0; j < _keptRecords[i].Length; ++j)
                 {
                     Assert.AreEqual(_keptRecords[i][j], chunkRecords[j], "Wrong log record #{0} read from chunk #{1}", j, i);
+                }
+            }
+        }
+
+        protected void CheckRecordsV0()
+        {
+            _checked = true;
+            Assert.AreEqual(_keptRecords.Length, _dbResult.Db.Manager.ChunksCount, "Wrong chunks count.");
+
+            for (int i = 0; i < _keptRecords.Length; ++i)
+            {
+                var chunk = _dbResult.Db.Manager.GetChunk(i);
+
+                var chunkRecords = new List<LogRecord>();
+                RecordReadResult result = chunk.TryReadFirst();
+                while (result.Success)
+                {
+                    chunkRecords.Add(result.LogRecord);
+                    result = chunk.TryReadClosestForward(result.NextPosition);
+                }
+
+                Assert.AreEqual(_keptRecords[i].Length, chunkRecords.Count, "Wrong number of records in chunk #{0}", i);
+                for (int j = 0; j < _keptRecords[i].Length; ++j)
+                {
+                    var keptRecord = _keptRecords[i][j];
+                    var chunkRecord = chunkRecords[j];
+
+                    Assert.AreEqual(keptRecord.RecordType, chunkRecord.RecordType, "Wrong log record #{0} read from chunk #{1}", j, i);
+                    switch(keptRecord.RecordType) {
+                        case LogRecordType.Prepare:
+                            var keptPrepare = (PrepareLogRecord)keptRecord;
+                            var chunkPrepare = (PrepareLogRecord)chunkRecord;
+                            Assert.AreEqual(keptPrepare.EventId, chunkPrepare.EventId);
+                            break;
+                        case LogRecordType.Commit:
+                            var keptCommit = (CommitLogRecord)keptRecord;
+                            var chunkCommit = (CommitLogRecord)chunkRecord;
+                            Assert.IsTrue(keptCommit.CorrelationId == chunkCommit.CorrelationId &&
+                                          keptCommit.FirstEventNumber == chunkCommit.FirstEventNumber &&
+                                          keptCommit.TransactionPosition == chunkCommit.TransactionPosition);
+                            break;
+                        case LogRecordType.System:
+                            var keptSystem = (SystemLogRecord)keptRecord;
+                            var chunkSystem = (SystemLogRecord)chunkRecord;
+                            Assert.IsTrue(keptSystem.Data == chunkSystem.Data &&
+                                          keptSystem.SystemRecordType == chunkSystem.SystemRecordType);
+                            break;
+                        default:
+                            Assert.Fail("Unknown record type {0}", keptRecord.RecordType);
+                            break;
+                    }
                 }
             }
         }

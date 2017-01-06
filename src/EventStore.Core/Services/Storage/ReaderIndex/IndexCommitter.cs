@@ -19,8 +19,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         long LastCommitPosition { get; }
         void Init(long buildToPosition);
         void Dispose();
-        int Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber);
-        int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool cacheLastEventNumber);
+        long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber);
+        long Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool cacheLastEventNumber);
     }
 
     public class IndexCommitter : IIndexCommitter
@@ -141,9 +141,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public int Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber)
+        public long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber)
         {
-            int eventNumber = EventNumber.Invalid;
+            long eventNumber = EventNumber.Invalid;
 
             var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
             if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
@@ -218,9 +218,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return eventNumber;
         }
 
-        public int Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool cacheLastEventNumber)
+        public long Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool cacheLastEventNumber)
         {
-            int eventNumber = EventNumber.Invalid;
+            long eventNumber = EventNumber.Invalid;
 
             if (commitedPrepares.Count == 0)
                 return eventNumber;
@@ -339,12 +339,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private void CheckStreamVersion(string streamId, int newEventNumber, CommitLogRecord commit)
+        private void CheckStreamVersion(string streamId, long newEventNumber, CommitLogRecord commit)
         {
             if (newEventNumber == EventNumber.DeletedStream)
                 return;
 
-            int lastEventNumber = _indexReader.GetStreamLastEventNumber(streamId);
+            long lastEventNumber = _indexReader.GetStreamLastEventNumber(streamId);
             if (newEventNumber != lastEventNumber + 1)
             {
                 if (Debugger.IsAttached)
@@ -363,7 +363,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var entries = _tableIndex.GetRange(streamId, indexEntries[0].Version, indexEntries[indexEntries.Count - 1].Version);
                 foreach (var indexEntry in entries)
                 {
-                    var prepare = prepares[indexEntry.Version - indexEntries[0].Version];
+                    int prepareIndex = (int)(indexEntry.Version - indexEntries[0].Version);
+                    var prepare = prepares[prepareIndex];
                     PrepareLogRecord indexedPrepare = GetPrepare(reader, indexEntry.Position);
                     if (indexedPrepare != null && indexedPrepare.EventStreamId == prepare.EventStreamId)
                     {

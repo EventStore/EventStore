@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage
     public abstract class ReadIndexTestScenario : SpecificationWithDirectoryPerTestFixture
     {
         protected readonly int MaxEntriesInMemTable;
-        protected readonly int MetastreamMaxCount;
+        protected readonly long MetastreamMaxCount;
         protected readonly bool PerformAdditionalCommitChecks;
         protected readonly byte IndexBitnessVersion;
         protected TableIndex TableIndex;
@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Storage
         private bool _completeLastChunkOnScavenge;
         private bool _mergeChunks;
 
-        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1, byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true)
+        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, long metastreamMaxCount = 1, byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
             MaxEntriesInMemTable = maxEntriesInMemTable;
@@ -126,7 +126,7 @@ namespace EventStore.Core.Tests.Services.Storage
         protected abstract void WriteTestScenario();
 
         protected EventRecord WriteSingleEvent(string eventStreamId,
-                                               int eventNumber,
+                                               long eventNumber,
                                                string data,
                                                DateTime? timestamp = null,
                                                Guid eventId = default(Guid),
@@ -173,7 +173,7 @@ namespace EventStore.Core.Tests.Services.Storage
             return eventRecord;
         }
 
-        protected EventRecord WriteStreamMetadata(string eventStreamId, int eventNumber, string metadata, DateTime? timestamp = null)
+        protected EventRecord WriteStreamMetadata(string eventStreamId, long eventNumber, string metadata, DateTime? timestamp = null)
         {
             var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
                                                 Guid.NewGuid(),
@@ -195,7 +195,7 @@ namespace EventStore.Core.Tests.Services.Storage
             return eventRecord;
         }
 
-        protected EventRecord WriteTransactionBegin(string eventStreamId, int expectedVersion, int eventNumber, string eventData)
+        protected EventRecord WriteTransactionBegin(string eventStreamId, long expectedVersion, long eventNumber, string eventData)
         {
             var prepare = LogRecord.Prepare(WriterCheckpoint.ReadNonFlushed(),
                                             Guid.NewGuid(),
@@ -213,7 +213,7 @@ namespace EventStore.Core.Tests.Services.Storage
             return new EventRecord(eventNumber, prepare);
         }
 
-        protected PrepareLogRecord WriteTransactionBegin(string eventStreamId, int expectedVersion)
+        protected PrepareLogRecord WriteTransactionBegin(string eventStreamId, long expectedVersion)
         {
             var prepare = LogRecord.TransactionBegin(WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), eventStreamId, expectedVersion);
             long pos;
@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                                     long transactionPos,
                                                     int transactionOffset,
                                                     string eventStreamId,
-                                                    int eventNumber,
+                                                    long eventNumber,
                                                     string eventData,
                                                     PrepareFlags flags,
                                                     bool retryOnFail = false)
@@ -285,7 +285,7 @@ namespace EventStore.Core.Tests.Services.Storage
         }
 
         protected PrepareLogRecord WritePrepare(string streamId,
-                                                int expectedVersion,
+                                                long expectedVersion,
                                                 Guid eventId = default(Guid),
                                                 string eventType = null,
                                                 string data = null)
@@ -305,7 +305,7 @@ namespace EventStore.Core.Tests.Services.Storage
             return prepare;
         }
 
-        protected CommitLogRecord WriteCommit(long preparePos, string eventStreamId, int eventNumber)
+        protected CommitLogRecord WriteCommit(long preparePos, string eventStreamId, long eventNumber)
         {
             var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), preparePos, eventNumber);
             long pos;
@@ -313,7 +313,7 @@ namespace EventStore.Core.Tests.Services.Storage
             return commit;
         }
 
-        protected long WriteCommit(Guid correlationId, long transactionId, string eventStreamId, int eventNumber)
+        protected long WriteCommit(Guid correlationId, long transactionId, string eventStreamId, long eventNumber)
         {
             var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), correlationId, transactionId, eventNumber);
             long pos;
@@ -356,6 +356,19 @@ namespace EventStore.Core.Tests.Services.Storage
             Assert.IsTrue(Writer.Write(commit, out pos));
 
             return commit;
+        }
+
+        protected PrepareLogRecord WriteSingleEventWithLogVersion0(Guid id, string streamId, long position, long expectedVersion, PrepareFlags? flags = null)
+        {
+            if(!flags.HasValue) {
+                flags = PrepareFlags.SingleWrite;
+            }
+            long pos;
+            var record = new PrepareLogRecord(position, id, id, position, 0, streamId, expectedVersion, DateTime.UtcNow,
+                                              flags.Value, "type", new byte[10], new byte[0], LogRecordVersion.LogRecordV0);
+            Writer.Write(record, out pos);
+            Writer.Write(new CommitLogRecord(pos, id, position, DateTime.UtcNow, expectedVersion, LogRecordVersion.LogRecordV0), out pos);
+            return record;
         }
 
         protected TFPos GetBackwardReadPos()

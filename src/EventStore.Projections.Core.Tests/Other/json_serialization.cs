@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void streams_based_checkpoint_tag()
         {
-            CheckpointTag tag = CheckpointTag.FromStreamPositions(1, new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+            CheckpointTag tag = CheckpointTag.FromStreamPositions(1, new Dictionary<string, long> {{"a", 1}, {"b", 2}});
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Other
         public void event_by_type_index_based_checkpoint_tag()
         {
             CheckpointTag tag = CheckpointTag.FromEventTypeIndexPositions(
-                0, new TFPos(100, 50), new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+                0, new TFPos(100, 50), new Dictionary<string, long> {{"a", 1}, {"b", 2}});
             byte[] bytes = tag.ToJsonBytes(_version);
             string instring = Helper.UTF8NoBom.GetString(bytes);
             Console.WriteLine(instring);

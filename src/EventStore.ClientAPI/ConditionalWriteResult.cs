@@ -15,7 +15,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The next expected version for the stream.
         /// </summary>
-        public readonly int? NextExpectedVersion;
+        public readonly long? NextExpectedVersion;
 
         /// <summary>
         /// The <see cref="LogPosition"/> of the write.
@@ -27,7 +27,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="nextExpectedVersion">The next expected version for the stream.</param>
         /// <param name="logPosition">The position of the write in the log</param>
-        public ConditionalWriteResult(int nextExpectedVersion, Position logPosition)
+        public ConditionalWriteResult(long nextExpectedVersion, Position logPosition)
         {
             LogPosition = logPosition;
             NextExpectedVersion = nextExpectedVersion;

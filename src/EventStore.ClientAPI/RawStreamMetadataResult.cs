@@ -20,7 +20,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The version of the metadata format.
         /// </summary>
-        public readonly int MetastreamVersion;
+        public readonly long MetastreamVersion;
         /// <summary>
         /// A byte array containing user-specified metadata.
         /// </summary>
@@ -33,7 +33,7 @@ namespace EventStore.ClientAPI
         /// <param name="isStreamDeleted">True if the stream is soft-deleted.</param>
         /// <param name="metastreamVersion">The version of the metadata format.</param>
         /// <param name="streamMetadata">A byte array containing user-specified metadata.</param>
-        public RawStreamMetadataResult(string stream, bool isStreamDeleted, int metastreamVersion, byte[] streamMetadata)
+        public RawStreamMetadataResult(string stream, bool isStreamDeleted, long metastreamVersion, byte[] streamMetadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 

@@ -6,7 +6,7 @@ namespace EventStore.ClientAPI.Embedded
     {
         private readonly Action _unsubscribe;
 
-        public EmbeddedVolatileEventStoreSubscription(Action unsubscribe, string streamId, long lastCommitPosition, int? lastEventNumber) : base(streamId, lastCommitPosition, lastEventNumber)
+        public EmbeddedVolatileEventStoreSubscription(Action unsubscribe, string streamId, long lastCommitPosition, long? lastEventNumber) : base(streamId, lastCommitPosition, lastEventNumber)
         {
             _unsubscribe = unsubscribe;
         }

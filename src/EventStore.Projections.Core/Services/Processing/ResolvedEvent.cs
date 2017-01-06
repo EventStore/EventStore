@@ -12,11 +12,11 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ResolvedEvent
     {
         private readonly string _eventStreamId;
-        private readonly int _eventSequenceNumber;
+        private readonly long _eventSequenceNumber;
         private readonly bool _resolvedLinkTo;
 
         private readonly string _positionStreamId;
-        private readonly int _positionSequenceNumber;
+        private readonly long _positionSequenceNumber;
         private readonly TFPos _position;
         private readonly TFPos _eventOrLinkTargetPosition;
         private readonly TFPos _linkOrEventPosition;
@@ -126,7 +126,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public ResolvedEvent(
-            string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
+            string positionStreamId, long positionSequenceNumber, string eventStreamId, long eventSequenceNumber,
             bool resolvedLinkTo, TFPos position, TFPos eventOrLinkTargetPosition, Guid eventId, string eventType, bool isJson, byte[] data,
             byte[] metadata, byte[] positionMetadata, byte[] streamMetadata, DateTime timestamp)
         {
@@ -184,7 +184,7 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _eventStreamId; }
         }
 
-        public int EventSequenceNumber
+        public long EventSequenceNumber
         {
             get { return _eventSequenceNumber; }
         }
@@ -199,7 +199,7 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _positionStreamId; }
         }
 
-        public int PositionSequenceNumber
+        public long PositionSequenceNumber
         {
             get { return _positionSequenceNumber; }
         }

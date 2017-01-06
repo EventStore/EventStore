@@ -225,7 +225,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb, "Temporary Redirect", "text/plain", header, e => { });
                 return;
             }
-            int expectedVersion;
+            long expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
@@ -263,7 +263,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.EventType));
                 return;
             }
-            int expectedVersion;
+            long expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
@@ -288,7 +288,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
-            int expectedVersion;
+            long expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
@@ -318,7 +318,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var stream = match.BoundVariables["stream"];
             var evNum = match.BoundVariables["event"];
 
-            int eventNumber = -1;
+            long eventNumber = -1;
             var embed = GetEmbedLevel(manager, match, EmbedLevel.TryHarder);
 
             if (stream.IsEmptyString())
@@ -326,7 +326,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
-            if (evNum != "head" && (!int.TryParse(evNum, out eventNumber) || eventNumber < 0))
+            if (evNum != "head" && (!long.TryParse(evNum, out eventNumber) || eventNumber < 0))
             {
                 SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
                 return;
@@ -355,7 +355,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var evNum = match.BoundVariables["event"];
             var cnt = match.BoundVariables["count"];
 
-            int eventNumber = -1;
+            long eventNumber = -1;
             int count = AtomSpecs.FeedPageSize;
             var embed = GetEmbedLevel(manager, match);
 
@@ -364,7 +364,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
-            if (evNum != null && evNum != "head" && (!int.TryParse(evNum, out eventNumber) || eventNumber < 0))
+            if (evNum != null && evNum != "head" && (!long.TryParse(evNum, out eventNumber) || eventNumber < 0))
             {
                 SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
                 return;
@@ -397,13 +397,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var evNum = match.BoundVariables["event"];
             var cnt = match.BoundVariables["count"];
 
-            int eventNumber;
+            long eventNumber;
             int count;
             var embed = GetEmbedLevel(manager, match);
 
             if (stream.IsEmptyString())
                 return SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
-            if (evNum.IsEmptyString() || !int.TryParse(evNum, out eventNumber) || eventNumber < 0)
+            if (evNum.IsEmptyString() || !long.TryParse(evNum, out eventNumber) || eventNumber < 0)
                 return SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
             if (cnt.IsEmptyString() || !int.TryParse(cnt, out count) || count <= 0)
                 return SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
@@ -445,7 +445,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
             const string includedType = SystemEventTypes.StreamMetadata;
-            int expectedVersion;
+            long expectedVersion;
             if (!GetExpectedVersion(manager, out expectedVersion))
             {
                 SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ExpectedVersion));
@@ -642,7 +642,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
 
         // HELPERS
-        private bool GetExpectedVersion(HttpEntityManager manager, out int expectedVersion)
+        private bool GetExpectedVersion(HttpEntityManager manager, out long expectedVersion)
         {
             var expVer = manager.HttpEntity.Request.Headers[SystemHeaders.ExpectedVersion];
             if (expVer == null)
@@ -650,7 +650,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 expectedVersion = ExpectedVersion.Any;
                 return true;
             }
-            return int.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.StreamExists;
+            return long.TryParse(expVer, out expectedVersion) && expectedVersion >= ExpectedVersion.StreamExists;
         }
 
         private bool GetIncludedId(HttpEntityManager manager, out Guid includedId)
@@ -739,7 +739,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return false;
         }
 
-        public void PostEntry(HttpEntityManager manager, int expectedVersion, bool requireMaster, string stream, Guid idIncluded, string typeIncluded)
+        public void PostEntry(HttpEntityManager manager, long expectedVersion, bool requireMaster, string stream, Guid idIncluded, string typeIncluded)
         {
             //TODO GFY SHOULD WE MAKE THIS READ BYTE[] FOR RAW THEN CONVERT? AS OF NOW ITS ALL NO BOM UTF8
             manager.ReadRequestAsync(
@@ -779,7 +779,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 e => Log.Debug("Error while reading request (POST entry): {0}.", e.Message));
         }
 
-        private void GetStreamEvent(HttpEntityManager manager, string stream, int eventNumber,
+        private void GetStreamEvent(HttpEntityManager manager, string stream, long eventNumber,
                                     bool resolveLinkTos, bool requireMaster, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
@@ -790,7 +790,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(new ClientMessage.ReadEvent(corrId, corrId, envelope, stream, eventNumber, resolveLinkTos, requireMaster, manager.User));
         }
 
-        private void GetStreamEventsBackward(HttpEntityManager manager, string stream, int eventNumber, int count,
+        private void GetStreamEventsBackward(HttpEntityManager manager, string stream, long eventNumber, int count,
                                              bool resolveLinkTos, bool requireMaster, bool headOfStream, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
@@ -803,7 +803,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                resolveLinkTos, requireMaster, GetETagStreamVersion(manager), manager.User));
         }
 
-        private void GetStreamEventsForward(HttpEntityManager manager, string stream, int eventNumber, int count,
+        private void GetStreamEventsForward(HttpEntityManager manager, string stream, long eventNumber, int count,
                                             bool resolveLinkTos, bool requireMaster, int? etag, TimeSpan? longPollTimeout, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,

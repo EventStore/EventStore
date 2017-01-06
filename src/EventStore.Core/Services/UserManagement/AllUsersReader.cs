@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.UserManagement
             BeginReadForward(0);
         }
 
-        private void BeginReadForward(int fromEventNumber)
+        private void BeginReadForward(long fromEventNumber)
         {
             _activeRequests++;
             _ioDispatcher.ReadForward(

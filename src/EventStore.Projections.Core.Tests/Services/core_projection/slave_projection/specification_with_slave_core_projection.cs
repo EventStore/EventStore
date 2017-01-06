@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
                     _subscriptionId, 1));
             _bus.Publish(
                 new EventReaderSubscriptionMessage.PartitionEofReached(
-                    _subscriptionId, CheckpointTag.FromByStreamPosition(0, "", 0, "account-01", int.MaxValue, 500),
+                    _subscriptionId, CheckpointTag.FromByStreamPosition(0, "", 0, "account-01", long.MaxValue, 500),
                     "account-01", 2));
         }
 
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
                     _subscriptionId, 1));
             _bus.Publish(
                 new EventReaderSubscriptionMessage.PartitionEofReached(
-                    _subscriptionId, CheckpointTag.FromByStreamPosition(0, "", 0, "account-01", int.MaxValue, 500),
+                    _subscriptionId, CheckpointTag.FromByStreamPosition(0, "", 0, "account-01", long.MaxValue, 500),
                     "account-01", 2));
             _bus.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.Sample(
@@ -138,7 +138,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.slave_proje
                     _subscriptionId, 3));
             _bus.Publish(
                 new EventReaderSubscriptionMessage.PartitionEofReached(
-                    _subscriptionId, CheckpointTag.FromByStreamPosition(0, "", 1, "account-02", int.MaxValue, 500),
+                    _subscriptionId, CheckpointTag.FromByStreamPosition(0, "", 1, "account-02", long.MaxValue, 500),
                     "account-01", 4));
         }
 

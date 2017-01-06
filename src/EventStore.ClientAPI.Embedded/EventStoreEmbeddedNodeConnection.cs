@@ -128,12 +128,12 @@ namespace EventStore.ClientAPI.Embedded
             Closed(this, new ClientClosedEventArgs(this, "Connection close requested by client."));
         }
 
-        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
+        public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null)
         {
             return DeleteStreamAsync(stream, expectedVersion, false, GetUserCredentials(_settings, userCredentials));
         }
 
-        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
+        public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
@@ -149,7 +149,7 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
-        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
+        public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events)
         {
             // ReSharper disable RedundantArgumentDefaultValue
             // ReSharper disable RedundantCast
@@ -158,14 +158,14 @@ namespace EventStore.ClientAPI.Embedded
             // ReSharper restore RedundantArgumentDefaultValue
         }
 
-        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events)
+        public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials, params EventData[] events)
         {
             // ReSharper disable RedundantCast
             return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, GetUserCredentials(_settings, userCredentials));
             // ReSharper restore RedundantCast
         }
 
-        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
             // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -184,7 +184,7 @@ namespace EventStore.ClientAPI.Embedded
             // ReSharper restore PossibleMultipleEnumeration
         }
 
-        public Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events,
+        public Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
             UserCredentials userCredentials = null)
         {
             // ReSharper disable PossibleMultipleEnumeration
@@ -204,7 +204,7 @@ namespace EventStore.ClientAPI.Embedded
             // ReSharper restore PossibleMultipleEnumeration
         }
 
-        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null)
+        public Task<EventStoreTransaction> StartTransactionAsync(string stream, long expectedVersion, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
@@ -262,7 +262,7 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
-        public Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
@@ -279,7 +279,7 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
-        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
@@ -297,7 +297,7 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
-        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
@@ -367,7 +367,7 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
-                                                                         int? lastCheckpoint,
+                                                                         long? lastCheckpoint,
                                                                          bool resolveLinkTos,
                                                                          Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
@@ -382,7 +382,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
             string stream,
-            int? lastCheckpoint,
+            long? lastCheckpoint,
             CatchUpSubscriptionSettings settings,
             Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
@@ -584,12 +584,12 @@ namespace EventStore.ClientAPI.Embedded
             return source.Task;
         }
 
-        public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
+        public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null)
         {
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), GetUserCredentials(_settings, userCredentials));
         }
 
-        public Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
+        public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (SystemStreams.IsMetastream(stream))
@@ -644,7 +644,7 @@ namespace EventStore.ClientAPI.Embedded
                     case EventReadStatus.NoStream:
                         return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
                     case EventReadStatus.StreamDeleted:
-                        return new RawStreamMetadataResult(stream, true, int.MaxValue, Empty.ByteArray);
+                        return new RawStreamMetadataResult(stream, true, long.MaxValue, Empty.ByteArray);
                     default:
                         throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.", res.Status));
                 }

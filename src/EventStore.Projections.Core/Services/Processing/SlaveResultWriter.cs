@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     resultBody));
         }
 
-        public void WritePartitionMeasured(Guid subscriptionId, string partition, int size)
+        public void WritePartitionMeasured(Guid subscriptionId, string partition, long size)
         {
             _resultsPublisher.Publish(
                 new PartitionMeasuredOutput(_workerId, _masterCoreProjectionId, subscriptionId, partition, size));

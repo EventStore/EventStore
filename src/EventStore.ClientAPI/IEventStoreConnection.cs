@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
-        Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
+        Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Deletes a stream from the Event Store asynchronously
@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI
         /// can be written to again, but the EventNumber sequence will not start from 0.</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
-        Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
+        Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -75,7 +75,7 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append events to</param>
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
-        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events);
+        Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -94,7 +94,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <param name="events">The events to append to the stream</param>
-        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, UserCredentials userCredentials, params EventData[] events);
+        Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials, params EventData[] events);
 
         /// <summary>
         /// Appends Events asynchronously to a stream.
@@ -113,7 +113,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-        Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
+        Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Appends Events asynchronously to a stream if the stream version matches the <paramref name="expectedVersion"/>.
@@ -133,7 +133,7 @@ namespace EventStore.ClientAPI
         /// <param name="events">The events to append to the stream</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>If the operation succeeded and, if not, the reason for failure (which can be either stream version mismatch or trying to write to a deleted stream)</returns>
-        Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
+        Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Starts a transaction in the event store on a given stream asynchronously
@@ -147,7 +147,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The expected version of the stream at the time of starting the transaction</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A task the caller can use to control the operation.</returns>
-        Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion, UserCredentials userCredentials = null);
+        Task<EventStoreTransaction> StartTransactionAsync(string stream, long expectedVersion, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Continues transaction by provided transaction ID.
@@ -170,7 +170,7 @@ namespace EventStore.ClientAPI
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task&lt;EventReadResult&gt;"/> containing the results of the read operation</returns>
-        Task<EventReadResult> ReadEventAsync(string stream, int eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null);
+        Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start
@@ -181,7 +181,7 @@ namespace EventStore.ClientAPI
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
-        Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
+        Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads count events from an Event Stream backwards (e.g. newest to oldest) from position asynchronously
@@ -192,7 +192,7 @@ namespace EventStore.ClientAPI
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>An <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
-        Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
+        Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Reads All Events in the node forward asynchronously (e.g. beginning to end)
@@ -266,7 +266,7 @@ namespace EventStore.ClientAPI
         [Obsolete("This method will be obsoleted in the next major version please switch to the overload with a settings object")]
         EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
                 string stream,
-                int? lastCheckpoint,
+                long? lastCheckpoint,
                 bool resolveLinkTos,
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
@@ -306,7 +306,7 @@ namespace EventStore.ClientAPI
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
                 string stream,
-                int? lastCheckpoint,
+                long? lastCheckpoint,
                 CatchUpSubscriptionSettings settings,
                 Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
@@ -549,7 +549,7 @@ namespace EventStore.ClientAPI
         /// <param name="metadata">A <see cref="StreamMetadata"/> representing the new metadata.</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <returns>A <see cref="WriteResult"/>.</returns>
-        Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
+        Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Asynchronously sets the metadata for a stream.
@@ -559,7 +559,7 @@ namespace EventStore.ClientAPI
         /// <param name="metadata">A byte array representing the new metadata.</param>
         /// <param name="userCredentials">User credentials to use for the operation.</param>
         /// <returns>A <see cref="WriteResult"/>.</returns>
-        Task<WriteResult> SetStreamMetadataAsync(string stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
+        Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null);
 
         /// <summary>
         /// Asynchronously reads the metadata for a stream and converts the metadata into a <see cref="StreamMetadata"/>.

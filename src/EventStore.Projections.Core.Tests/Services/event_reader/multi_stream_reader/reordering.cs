@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition =
-                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"stream-a", -1}, {"stream-b", -1}});
+                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"stream-a", -1}, {"stream-b", -1}});
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);

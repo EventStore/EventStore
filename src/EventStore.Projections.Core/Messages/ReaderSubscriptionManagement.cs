@@ -115,14 +115,14 @@ namespace EventStore.Projections.Core.Messages
             private readonly Guid _workerId;
             public readonly Guid SubscriptionId;
             public readonly string StreamId;
-            public readonly int CatalogSequenceNumber;
+            public readonly long CatalogSequenceNumber;
             private readonly long _limitingCommitPosition;
 
             public SpoolStreamReading(
                 Guid workerId,
                 Guid subscriptionId,
                 string streamId,
-                int catalogSequenceNumber,
+                long catalogSequenceNumber,
                 long limitingCommitPosition)
             {
                 _workerId = workerId;
@@ -158,13 +158,13 @@ namespace EventStore.Projections.Core.Messages
 
             public readonly Guid SubscriptionId;
             public readonly string StreamId;
-            public readonly int CatalogSequenceNumber;
+            public readonly long CatalogSequenceNumber;
             private readonly long _limitingCommitPosition;
 
             public SpoolStreamReadingCore(
                 Guid subscriptionId,
                 string streamId,
-                int catalogSequenceNumber,
+                long catalogSequenceNumber,
                 long limitingCommitPosition)
             {
                 SubscriptionId = subscriptionId;

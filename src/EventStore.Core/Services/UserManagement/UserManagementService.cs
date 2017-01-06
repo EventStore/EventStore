@@ -402,14 +402,14 @@ namespace EventStore.Core.Services.UserManagement
 
         private void WriteUserEvent(
             UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
-            int expectedVersion, Action after)
+            long expectedVersion, Action after)
         {
             WriteUserEvent(
                 userData, eventType, expectedVersion, completed => WriteUserCreatedCompleted(completed, message, after));
         }
 
         private void WriteUserEvent(
-            UserData userData, string eventType, int expectedVersion,
+            UserData userData, string eventType, long expectedVersion,
             Action<ClientMessage.WriteEventsCompleted> onCompleted)
         {
             var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);

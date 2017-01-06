@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ReadEmittedStreamStreamIdsIntoCache(0); //start from the beginning
         }
 
-        private void ReadEmittedStreamStreamIdsIntoCache(int position)
+        private void ReadEmittedStreamStreamIdsIntoCache(long position)
         {
             _ioDispatcher.ReadForward(_projectionNamesBuilder.GetEmittedStreamsName(), position, 1, false, SystemAccount.Principal, x =>
             {

@@ -35,16 +35,16 @@ namespace EventStore.Core.Messages
             public long TransactionPosition { get; set; }
 
             [ProtoMember(3)]
-            public int FirstEventNumber { get; set; }
+            public long FirstEventNumber { get; set; }
 
             [ProtoMember(4)]
-            public int LastEventNumber { get; set; }
+            public long LastEventNumber { get; set; }
 
             public CommitAck()
             {
             }
 
-            public CommitAck(long logPosition, long transactionPosition, int firstEventNumber, int lastEventNumber)
+            public CommitAck(long logPosition, long transactionPosition, long firstEventNumber, long lastEventNumber)
             {
                 LogPosition = logPosition;
                 TransactionPosition = transactionPosition;

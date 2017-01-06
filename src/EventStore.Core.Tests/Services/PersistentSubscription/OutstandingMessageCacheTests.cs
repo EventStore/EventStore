@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 1), 0), DateTime.Now);
             cache.Remove(id);
             Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(int.MinValue, cache.GetLowestPosition());
+            Assert.AreEqual(long.MinValue, cache.GetLowestPosition());
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
             cache.Remove(id);
             Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(int.MinValue, cache.GetLowestPosition());
+            Assert.AreEqual(long.MinValue, cache.GetLowestPosition());
         }
 
         [Test]
@@ -95,14 +95,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         public void lowest_on_empty_cache_returns_min()
         {
             var cache = new OutstandingMessageCache();
-            Assert.AreEqual(int.MinValue, cache.GetLowestPosition());
+            Assert.AreEqual(long.MinValue, cache.GetLowestPosition());
         }
         [Test]
         public void get_expired_messages_returns_min_value_on_empty_cache()
         {
             var cache = new OutstandingMessageCache();
             Assert.AreEqual(0, cache.GetMessagesExpiringBefore(DateTime.Now).Count());
-            Assert.AreEqual(int.MinValue, cache.GetLowestPosition());
+            Assert.AreEqual(long.MinValue, cache.GetLowestPosition());
         }
 
         [Test]

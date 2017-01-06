@@ -10,9 +10,9 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class StreamMetadataBuilder
     {
-        private int? _maxCount;
+        private long? _maxCount;
         private TimeSpan? _maxAge;
-        private int? _truncateBefore;
+        private long? _truncateBefore;
         private TimeSpan? _cacheControl;
         private string[] _aclRead;
         private string[] _aclWrite;
@@ -23,9 +23,9 @@ namespace EventStore.ClientAPI
         private readonly IDictionary<string, JToken> _customMetadata = new Dictionary<string, JToken>();
 
         internal StreamMetadataBuilder(
-            int? maxCount = null,
+            long? maxCount = null,
             TimeSpan? maxAge = null,
-            int? truncateBefore = null,
+            long? truncateBefore = null,
             TimeSpan? cacheControl = null,
             string[] aclRead = null,
             string[] aclWrite = null,
@@ -75,7 +75,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="maxCount">The maximum number of events allowed in the stream.</param>
         /// <returns>The builder.</returns>
-        public StreamMetadataBuilder SetMaxCount(int maxCount)
+        public StreamMetadataBuilder SetMaxCount(long maxCount)
         {
             Ensure.Positive(maxCount, "maxCount");
             _maxCount = maxCount;
@@ -99,7 +99,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="truncateBefore">The event number from which previous events can be scavenged.</param>
         /// <returns>The builder.</returns>
-        public StreamMetadataBuilder SetTruncateBefore(int truncateBefore)
+        public StreamMetadataBuilder SetTruncateBefore(long truncateBefore)
         {
             Ensure.Nonnegative(truncateBefore, "truncateBefore");
             _truncateBefore = truncateBefore;

@@ -33,7 +33,7 @@ namespace EventStore.ClientAPI.Embedded
             _bufferSize = bufferSize;
         }
 
-        protected override PersistentEventStoreSubscription CreateVolatileSubscription(long lastCommitPosition, int? lastEventNumber)
+        protected override PersistentEventStoreSubscription CreateVolatileSubscription(long lastCommitPosition, long? lastEventNumber)
         {
             return new PersistentEventStoreSubscription(this, StreamId, lastCommitPosition, lastEventNumber);
         }

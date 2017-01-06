@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
             protected override IEnumerable<WhenStep> When()
             {
                 var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
-                    0, new TFPos(0, -1), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}});
+                    0, new TFPos(0, -1), new Dictionary<string, long> {{"type1", -1}, {"type2", -1}});
                 yield return
                     new ReaderSubscriptionManagement.Subscribe(
                         _subscriptionId, fromZeroPosition, _readerStrategy, _readerSubscriptionOptions);

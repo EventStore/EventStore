@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ProjectionManagementMessage.Internal.ReadTimeout>
     {
         private readonly string _streamName;
-        private int _fromSequenceNumber;
+        private long _fromSequenceNumber;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
         private readonly bool _produceStreamDeletes;
@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid eventReaderCorrelationId,
             IPrincipal readAs,
             string streamName,
-            int fromSequenceNumber,
+            long fromSequenceNumber,
             ITimeProvider timeProvider,
             bool resolveLinkTos,
             bool produceStreamDeletes,
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Services.Processing
             PauseOrContinueProcessing();
         }
 
-        private int StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, int fromSequenceNumber)
+        private long StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, long fromSequenceNumber)
         {
             if (fromSequenceNumber != 0) return fromSequenceNumber;
             if(message.Events.Length > 0)
@@ -205,7 +205,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId, null, safeJoinPosition, 100.0f, source: this.GetType()));
         }
 
-        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref int sequenceNumber)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref long sequenceNumber)
         {
             EventRecord positionEvent = pair.OriginalEvent;
             if (positionEvent.EventNumber != sequenceNumber)

@@ -79,10 +79,10 @@ public static class CoreProjectionProcessingMessage
 
         private readonly CheckpointTag _checkpointTag;
         private readonly string _checkpointData;
-        private readonly int _checkpointEventNumber;
+        private readonly long _checkpointEventNumber;
 
         public CheckpointLoaded(
-            Guid projectionId, CheckpointTag checkpointTag, string checkpointData, int checkpointEventNumber)
+            Guid projectionId, CheckpointTag checkpointTag, string checkpointData, long checkpointEventNumber)
             : base(projectionId)
         {
             _checkpointTag = checkpointTag;
@@ -100,7 +100,7 @@ public static class CoreProjectionProcessingMessage
             get { return _checkpointData; }
         }
 
-        public int CheckpointEventNumber
+        public long CheckpointEventNumber
         {
             get { return _checkpointEventNumber; }
         }

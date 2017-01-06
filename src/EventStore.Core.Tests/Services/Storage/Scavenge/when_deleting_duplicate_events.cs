@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         private EventRecord _event7;
         private EventRecord _event8;
 
-        public when_deleting_duplicate_events() : base(indexBitnessVersion: EventStore.Core.Index.PTableVersions.Index32Bit, performAdditionalChecks: false){}
+        public when_deleting_duplicate_events() : base(indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1, performAdditionalChecks: false){}
 
         protected override void WriteTestScenario()
         {

@@ -85,7 +85,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return false;
         }
 
-        protected override PersistentEventStoreSubscription CreateSubscriptionObject(long lastCommitPosition, int? lastEventNumber)
+        protected override PersistentEventStoreSubscription CreateSubscriptionObject(long lastCommitPosition, long? lastEventNumber)
         {
             return new PersistentEventStoreSubscription(this, _streamId, lastCommitPosition, lastEventNumber);
         }

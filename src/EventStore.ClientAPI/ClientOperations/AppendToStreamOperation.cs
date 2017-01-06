@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly bool _requireMaster;
         private readonly string _stream;
-        private readonly int _expectedVersion;
+        private readonly long _expectedVersion;
         private readonly IEnumerable<EventData> _events;
 
         private bool _wasCommitTimeout;
@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                        TaskCompletionSource<WriteResult> source,
                                        bool requireMaster,
                                        string stream,
-                                       int expectedVersion,
+                                       long expectedVersion,
                                        IEnumerable<EventData> events,
                                        UserCredentials userCredentials)
             : base(log, source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted, userCredentials)

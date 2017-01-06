@@ -9,10 +9,10 @@ namespace EventStore.Core.Index
         long Count { get; }
         byte Version { get; }
 
-        bool TryGetOneValue(ulong stream, int number, out long position);
+        bool TryGetOneValue(ulong stream, long number, out long position);
         bool TryGetLatestEntry(ulong stream, out IndexEntry entry);
         bool TryGetOldestEntry(ulong stream, out IndexEntry entry);
-        IEnumerable<IndexEntry> GetRange(ulong stream, int startNumber, int endNumber, int? limit = null);
+        IEnumerable<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null);
         IEnumerable<IndexEntry> IterateAllInOrder();
     }
 }

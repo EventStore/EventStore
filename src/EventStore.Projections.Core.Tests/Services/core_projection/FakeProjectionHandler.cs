@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public string _lastProcessedStreamId;
         public string _lastProcessedEventType;
         public Guid _lastProcessedEventId;
-        public int _lastProcessedSequencenumber;
+        public long _lastProcessedSequencenumber;
         public string _lastProcessedMetadata;
         public string _lastProcessedData;
         public string _lastPartition;
