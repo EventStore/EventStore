@@ -64,6 +64,8 @@ namespace EventStore.Core.Util
         public const string IntTcpHeartbeatIntervalDescr = "Heartbeat interval for internal TCP sockets";
         public const int IntTcpHeartbeatIntervalDefault = 700;
 
+        public const string GossipOnSingleNodeDescr = "When enabled tells a single node to run gossip as if it is a cluster";
+        public const bool GossipOnSingleNodeDefault = false;
 
         public const string StatsPeriodDescr = "The number of seconds between statistics gathers.";
         public const int    StatsPeriodDefault = 30;

@@ -216,7 +216,10 @@ namespace EventStore.ClusterNode
             if (!options.AddInterfacePrefixes){
                 builder.DontAddInterfacePrefixes();
             }
-
+            if (options.GossipOnSingleNode)
+            {
+                builder.GossipAsSingleNode();
+            }
             foreach(var prefix in options.IntHttpPrefixes) {
                 builder.AddInternalHttpPrefix(prefix);
             }

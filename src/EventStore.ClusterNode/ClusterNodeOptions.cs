@@ -71,6 +71,8 @@ namespace EventStore.ClusterNode
         public int IntTcpHeartbeatInterval { get; set; }
         [ArgDescription(Opts.ExtTcpHeartbeatIntervalDescr, Opts.InterfacesGroup)]
         public int ExtTcpHeartbeatInterval { get; set; }
+        [ArgDescription(Opts.GossipOnSingleNodeDescr, Opts.InterfacesGroup)]
+        public bool GossipOnSingleNode { get; set; }
 
 
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
@@ -227,6 +229,7 @@ namespace EventStore.ClusterNode
             ClusterSize = Opts.ClusterSizeDefault;
             MinFlushDelayMs = Opts.MinFlushDelayMsDefault;
             NodePriority = Opts.NodePriorityDefault;
+            GossipOnSingleNode = Opts.GossipOnSingleNodeDefault;
 
             CommitCount = Opts.CommitCountDefault;
             PrepareCount = Opts.PrepareCountDefault;
