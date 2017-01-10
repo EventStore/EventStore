@@ -521,7 +521,7 @@ namespace EventStore.Core
                                                         db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
                                                         epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
             electionsService.SubscribeMessages(_mainBus);
-            if(!isSingleNode) {
+            if(!isSingleNode || vNodeSettings.GossipOnSingleNode) {
             // GOSSIP
 
                 var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,

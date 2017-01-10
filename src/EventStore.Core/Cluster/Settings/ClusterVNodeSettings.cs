@@ -71,6 +71,8 @@ namespace EventStore.Core.Cluster.Settings
         public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
         public readonly bool AlwaysKeepScavenged;
 
+        public readonly bool GossipOnSingleNode;
+
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
                                     IPEndPoint internalSecureTcpEndPoint,
@@ -125,7 +127,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool unsafeIgnoreHardDeletes = false,
                                     bool betterOrdering = false,
                                     int readerThreadsCount = 4,
-                                    bool alwaysKeepScavenged = false)
+                                    bool alwaysKeepScavenged = false,
+                                    bool gossipOnSingleNode = false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -168,6 +171,7 @@ namespace EventStore.Core.Cluster.Settings
             DiscoverViaDns = discoverViaDns;
             ClusterDns = clusterDns;
             GossipSeeds = gossipSeeds;
+            GossipOnSingleNode = gossipOnSingleNode;
 
             ClusterNodeCount = clusterNodeCount;
             MinFlushDelay = minFlushDelay;
@@ -212,7 +216,6 @@ namespace EventStore.Core.Cluster.Settings
             ReaderThreadsCount = readerThreadsCount;
             AlwaysKeepScavenged = alwaysKeepScavenged;
         }
-
 
 
         public override string ToString()

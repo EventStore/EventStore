@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class happy_case_writing_and_subscribing_to_normal_events_manual_ack : SpecificationWithMiniNode
     {
         private readonly string StreamName = Guid.NewGuid().ToString();

@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class append_to_stream : SpecificationWithDirectoryPerTestFixture
     {
         private readonly TcpType _tcpType = TcpType.Normal;
@@ -424,7 +424,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class ssl_append_to_stream : SpecificationWithDirectoryPerTestFixture
     {
         private readonly TcpType _tcpType = TcpType.Ssl;
@@ -451,7 +451,7 @@ namespace EventStore.Core.Tests.ClientAPI
             base.TestFixtureTearDown();
         }
 
-        [Test, Category("Network")]
+        [Test]
         public void should_allow_appending_zero_events_to_stream_with_no_problems()
         {
             const string stream = "should_allow_appending_zero_events_to_stream_with_no_problems";
@@ -465,7 +465,7 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
-        [Test, Category("Network")]
+        [Test]
         public void should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist()
         {
             const string stream = "should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist";
@@ -480,7 +480,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_create_stream_with_any_exp_ver_on_first_write_if_does_not_exist()
         {
             const string stream = "should_create_stream_with_any_exp_ver_on_first_write_if_does_not_exist";
@@ -495,7 +494,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_fail_writing_with_correct_exp_ver_to_deleted_stream()
         {
             const string stream = "should_fail_writing_with_correct_exp_ver_to_deleted_stream";
@@ -512,7 +510,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_fail_writing_with_any_exp_ver_to_deleted_stream()
         {
             const string stream = "should_fail_writing_with_any_exp_ver_to_deleted_stream";
@@ -529,7 +526,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_fail_writing_with_invalid_exp_ver_to_deleted_stream()
         {
             const string stream = "should_fail_writing_with_invalid_exp_ver_to_deleted_stream";
@@ -546,7 +542,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_append_with_correct_exp_ver_to_existing_stream()
         {
             const string stream = "should_append_with_correct_exp_ver_to_existing_stream";
@@ -559,7 +554,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_append_with_any_exp_ver_to_existing_stream()
         {
             const string stream = "should_append_with_any_exp_ver_to_existing_stream";
@@ -572,7 +566,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_return_log_position_when_writing()
         {
             const string stream = "should_return_log_position_when_writing";
@@ -586,7 +579,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_fail_appending_with_wrong_exp_ver_to_existing_stream()
         {
             const string stream = "should_fail_appending_with_wrong_exp_ver_to_existing_stream";
@@ -601,7 +593,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void can_append_multiple_events_at_once()
         {
             const string stream = "can_append_multiple_events_at_once";

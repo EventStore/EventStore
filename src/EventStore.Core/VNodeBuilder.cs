@@ -120,6 +120,7 @@ namespace EventStore.Core
         protected byte _indexBitnessVersion;
         protected bool _alwaysKeepScavenged;
 
+        private bool _gossipOnSingleNode;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         protected VNodeBuilder()
@@ -381,6 +382,17 @@ namespace EventStore.Core
             _advertiseInternalTcpPortAs = intTcpPortAdvertiseAs;
             return this;
         }
+
+        /// <summary>
+        /// Enables gossip when running on a single node for testing purposes
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder GossipAsSingleNode()
+        {
+            _gossipOnSingleNode = true;
+            return this;
+        }
+
 
         /// <summary>
         /// Sets up the External TCP Port that would be advertised 
@@ -1267,7 +1279,8 @@ namespace EventStore.Core
                     _unsafeIgnoreHardDelete,
                     _betterOrdering,
                     _readerThreadsCount,
-                    _alwaysKeepScavenged);
+                    _alwaysKeepScavenged,
+                    _gossipOnSingleNode);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);

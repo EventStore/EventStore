@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests
         public abstract void Given();
     }
 
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public abstract class ClusterMemberScenario
     {
         protected VNodeBuilder _builder;

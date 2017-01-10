@@ -17,7 +17,7 @@ using SystemSettings = EventStore.ClientAPI.SystemSettings;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class catch_up_subscription_handles_errors
     {
         private static int TimeoutMs = 2000;

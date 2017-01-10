@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("LongRunning")]
+    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("ClientAPI"), Category("LongRunning")]
     public class connect : SpecificationWithDirectoryPerTestFixture
     {
         private readonly TcpType _tcpType;
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
     }
     
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class not_connected_tests
     {
         private readonly TcpType _tcpType = TcpType.Normal;

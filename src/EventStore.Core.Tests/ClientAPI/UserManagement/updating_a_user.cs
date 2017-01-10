@@ -8,7 +8,7 @@ using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class updating_a_user : TestWithNode
     {
         [Test]

@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class appending_to_implicitly_created_stream : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;

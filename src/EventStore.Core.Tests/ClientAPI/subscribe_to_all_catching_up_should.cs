@@ -13,7 +13,7 @@ using ILogger = EventStore.Common.Log.ILogger;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class subscribe_to_all_catching_up_should : SpecificationWithDirectory
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<subscribe_to_all_catching_up_should>();

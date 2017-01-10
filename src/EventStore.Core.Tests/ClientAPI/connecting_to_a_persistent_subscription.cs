@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("LongRunning"), Category("ClientAPI")]
     public class connect_to_non_existing_persistent_subscription_with_permissions : SpecificationWithMiniNode
     {
         private Exception _caught;

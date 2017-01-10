@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    [TestFixture, Category("LongRunning"), Category("Network")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
     public class multiple_role_security : AuthenticationTestBase
     {
         [OneTimeSetUp]
@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Connection.SetSystemSettingsAsync(settings, new UserCredentials("adm", "admpa$$")).Wait();
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void multiple_roles_are_handled_correctly()
         {
             Expect<AccessDeniedException>(() => ReadEvent("usr-stream", null, null));

@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class read_stream_events_backward_with_hash_collision : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
