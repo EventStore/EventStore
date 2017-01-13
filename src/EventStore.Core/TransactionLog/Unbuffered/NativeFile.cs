@@ -5,7 +5,7 @@ using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
-#if __MonoCS__ || USE_UNIX_IO
+#if USE_UNIX_IO
 using Mono.Unix.Native;
 using Mono.Unix;
 #endif
@@ -27,7 +27,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public static uint GetDriveSectorSize(string path)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             uint size;
             uint dontcare;
             WinNative.GetDiskFreeSpace(Path.GetPathRoot(path), out dontcare, out size, out dontcare, out dontcare);
@@ -39,7 +39,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public static long GetPageSize(string path)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             return GetDriveSectorSize(path);
 #else
             int r =0;
@@ -53,7 +53,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public static void SetFileSize(SafeFileHandle handle, long count)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             var low = (int)(count & 0xffffffff);
             var high = (int)(count >> 32);
             WinNative.SetFilePointer(handle, low, out high, WinNative.EMoveMethod.Begin);
@@ -73,7 +73,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         private static void FSync(SafeFileHandle handle)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             WinNative.FlushFileBuffers(handle);
 #else
             Syscall.fsync(handle.DangerousGetHandle().ToInt32());
@@ -82,7 +82,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public static void Write(SafeFileHandle handle, byte* buffer, uint count, ref int written)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             if (!WinNative.WriteFile(handle, buffer, count, ref written, IntPtr.Zero))
             {
                 throw new Win32Exception();
@@ -100,7 +100,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public static int Read(SafeFileHandle handle, byte* buffer, int offset, int count)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             var read = 0;
 
             if (!WinNative.ReadFile(handle, buffer, count, ref read, 0))
@@ -121,7 +121,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public static long GetFileSize(SafeFileHandle handle)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             long size = 0;
             if (!WinNative.GetFileSizeEx(handle, out size))
             {
@@ -142,7 +142,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         //TODO UNBUFF use FileAccess etc or do custom?
         public static SafeFileHandle Create(string path, FileAccess acc, FileShare readWrite, FileMode mode, int flags)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             var handle = WinNative.CreateFile(path,
                 acc,
                 FileShare.ReadWrite,
@@ -164,7 +164,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 
         public static SafeFileHandle CreateUnbufferedRW(string path, FileAccess acc, FileShare share, FileMode mode, bool writeThrough)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             var flags = ExtendedFileOptions.NoBuffering;
             if (writeThrough) flags = flags | ExtendedFileOptions.WriteThrough;
             var handle = WinNative.CreateFile(path,
@@ -195,7 +195,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 #endif
         }
 
-#if __MonoCS__ || USE_UNIX_IO
+#if USE_UNIX_IO
         private static OpenFlags GetFlags(FileAccess acc, FileMode mode)
         {
             OpenFlags flags = OpenFlags.O_RDONLY; //RDONLY is 0 
@@ -211,7 +211,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             return flags;
         }
 #endif
-#if __MonoCS__ || USE_UNIX_IO
+#if USE_UNIX_IO
 [DllImport("libc")]
 static extern int fcntl(int fd, uint command, int arg);
 #endif
@@ -220,7 +220,7 @@ static extern int fcntl(int fd, uint command, int arg);
         {
 
             if (OS.OsFlavor != OsFlavor.MacOS) return;
-#if __MonoCS__ || USE_UNIX_IO
+#if USE_UNIX_IO
             long r = 0;
             do {
                 r = fcntl (handle.DangerousGetHandle().ToInt32(), MAC_F_NOCACHE, 1);
@@ -233,7 +233,7 @@ static extern int fcntl(int fd, uint command, int arg);
 
         public static void Seek(SafeFileHandle handle, long position, SeekOrigin origin)
         {
-#if !__MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
             var low = (int)(position & 0xffffffff);
             var high = (int)(position >> 32);
             var f = WinNative.SetFilePointer(handle, low, out high, WinNative.EMoveMethod.Begin);

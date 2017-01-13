@@ -5,7 +5,8 @@ namespace EventStore.Core.Bus
 {
     // on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
     public class QueuedHandler :
-#if __MonoCS__
+//MONOCHECK is this still worthwhile or should we use MPMC?
+#if MONO
         QueuedHandlerAutoReset,
 #else
         QueuedHandlerMRES,
@@ -41,7 +42,7 @@ namespace EventStore.Core.Bus
         }
 
         class QueueHandlerUsingMpsc :
-#if __MonoCS__
+#if MONO
         QueuedHandlerAutoResetWithMpsc,
 #else
             QueuedHandlerMresWithMpsc,

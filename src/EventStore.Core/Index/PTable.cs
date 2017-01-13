@@ -166,7 +166,7 @@ namespace EventStore.Core.Index
             var count = Count;
             if (count == 0 || depth == 0)
                 return null;
-#if  __MonoCS__
+#if  MONO
             var workItem = GetWorkItem();
             var stream = workItem.Stream;
             try {
@@ -232,7 +232,7 @@ namespace EventStore.Core.Index
                     throw;
                 }
             }
-#if __MonoCS__
+#if MONO
             finally
             {
                 ReturnWorkItem(workItem);

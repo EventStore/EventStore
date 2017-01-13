@@ -426,11 +426,7 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
-#if __MonoCS__
-        [TestFixture, Category("LongRunning"), Ignore("https://bugzilla.xamarin.com/show_bug.cgi?id=16960")]
-#else
         [TestFixture, Category("LongRunning")]
-#endif
         public class when_getting_from_encoded_all_stream_with_slash : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;

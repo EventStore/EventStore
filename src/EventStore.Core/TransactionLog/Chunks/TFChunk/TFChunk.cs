@@ -379,7 +379,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
             Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
-#if  __MonoCS__
+#if  MONO
             using (var reader = AcquireReader())
             {
                 reader.Stream.Seek(0, SeekOrigin.Begin);
