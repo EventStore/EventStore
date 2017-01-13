@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
             string processName = null;
             try
             {
-                #if __MonoCS__
+                #if MONO
                 processName = Process.GetCurrentProcess().Id.ToString();
                 #else
                 processName = Process.GetCurrentProcess().ProcessName;

@@ -39,6 +39,7 @@ EOF
 }
 
 CONFIGURATION="Release"
+DEFINES="USE_UNIX_IO MONO"
 
 function checkParams() {
     version=$1
@@ -199,7 +200,7 @@ function buildEventStore {
     patchVersionFiles
     patchVersionInfo
     rm -rf bin/
-    xbuild src/EventStore.sln /p:Platform="Any CPU" /p:Configuration="$CONFIGURATION" || err
+    xbuild src/EventStore.sln /p:Platform="Any CPU" /p:DefineConstants="$DEFINES" /p:Configuration="$CONFIGURATION" || err
     revertVersionFiles
     revertVersionInfo
 }

@@ -137,8 +137,8 @@ namespace esquery
             }
         }
 
-
-#if __MonoCS__
+//MONOCHECK
+#if MONO
         //mono apparently doesnt work with secure strings.
         //TODO delete me when its no longer broken
         private static string ReadPassword()

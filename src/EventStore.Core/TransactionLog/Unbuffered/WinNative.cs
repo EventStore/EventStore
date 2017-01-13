@@ -5,7 +5,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-#if ! __MonoCS__ && !USE_UNIX_IO
+#if !USE_UNIX_IO
     internal unsafe static class WinNative
     {
         [DllImport("KERNEL32", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
