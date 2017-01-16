@@ -1,33 +1,3 @@
-build:
-  box:
-    id: quay.io/eventstore/build.ubuntu.14-04
-    username: $USERNAME
-    password: $PASSWORD
-    tag: latest
-    registry: quay.io
-  steps:
-    - script:
-        name: Prerequisites
-        code: |
-          apt-get update --fix-missing
-          apt-get install curl -y
-
-    - script:
-        name: Build
-        code: |
-          ./build.sh
-          
-    - script:
-        name: Run Tests
-        code: |
-          ./run_suppressed_output_tests.sh
-          ./check-test-results.sh
-  after-steps:
-    - wantedly/pretty-slack-notify:
-            webhook_url: $SLACK_URL
-            channel: event-store
-            username: Event Store (Linux CI - Mono 3.12.1)
-
 build-mono4:
   box:
     id: quay.io/eventstore/build.ubuntu.14-04-mono4
