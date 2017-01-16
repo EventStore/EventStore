@@ -15,9 +15,9 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             _projection = @"
                 fromAll().partitionBy(function(event){
                     return event.body.region;
-                }).whenAny(function(event, state) {
+                }).when({$any:function(event, state) {
                     return {};
-                });
+                }});
             ";
         }
 

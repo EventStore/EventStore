@@ -141,22 +141,10 @@ function scope($on, $notify) {
         };
     }
 
-    function whenAny(handler) {
-        eventProcessor.on_any(handler);
-        return {
-            $defines_state_transform: $defines_state_transform,
-            transformBy: transformBy,
-            filterBy: filterBy,
-            outputState: outputState,
-            outputTo: outputTo,
-        };
-    }
-
     function foreachStream() {
         eventProcessor.byStream();
         return {
             when: when,
-            whenAny: whenAny,
         };
     }
 
@@ -164,7 +152,6 @@ function scope($on, $notify) {
         eventProcessor.partitionBy(byHandler);
         return {
             when: when,
-            whenAny: whenAny,
         };
     }
 
@@ -174,7 +161,6 @@ function scope($on, $notify) {
             partitionBy: partitionBy,
             foreachStream: foreachStream,
             when: when,
-            whenAny: whenAny,
             outputState: outputState,
         };
     }
@@ -184,7 +170,6 @@ function scope($on, $notify) {
         return {
             partitionBy: partitionBy,
             when: when,
-            whenAny: whenAny,
             foreachStream: foreachStream,
             outputState: outputState,
         };
@@ -195,7 +180,6 @@ function scope($on, $notify) {
         return {
             partitionBy: partitionBy,
             when: when,
-            whenAny: whenAny,
             outputState: outputState,
         };
     }
@@ -211,7 +195,6 @@ function scope($on, $notify) {
         eventProcessor.fromStreamsMatching(filter);
         return {
             when: when,
-            whenAny: whenAny,
         };
     }
 
@@ -223,7 +206,6 @@ function scope($on, $notify) {
         return {
             partitionBy: partitionBy,
             when: when,
-            whenAny: whenAny,
             outputState: outputState,
         };
     }

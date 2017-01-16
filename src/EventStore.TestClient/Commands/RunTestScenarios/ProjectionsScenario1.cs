@@ -55,13 +55,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var projectionManager = GetProjectionsManager();
 
             const string countItemsProjection = @"
-                fromAll().whenAny(
-                    function(state, event) {
+                fromAll().when({
+                    $any:function(state, event) {
                         if (event.streamId.indexOf('projections-test-stream-') != 0) return state;
                         if (state.count == undefined) state.count = 0;
                         state.count += 1;
                         return state;
-                    });
+                    }});
 ";
             projectionManager.CreateContinuous(countItemsProjectionName, countItemsProjection);
 
