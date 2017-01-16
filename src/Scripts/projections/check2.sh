@@ -8,8 +8,8 @@ if (typeof String.prototype.startsWith != "function") {
   };
 };
 
-fromAll().whenAny(
-  function (state, ev) {
+fromAll().when({
+  $any:function (state, ev) {
     if (state.c === undefined) state.c = 0;
     if (ev.streamId == "account-2") {
       if (state.c != ev.sequenceNumber)
@@ -17,7 +17,7 @@ fromAll().whenAny(
       state.c++;
     }
     return state;
-  }
+  }}
 );     
 
 ' http://127.0.0.1:2113/projections/persistent?name=check2\&type=JS

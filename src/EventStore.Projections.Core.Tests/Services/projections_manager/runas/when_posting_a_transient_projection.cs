@@ -20,12 +20,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
             private string _projectionName;
             private OpenGenericPrincipal _testUserPrincipal;
 
-            private string _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
+            private string _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
 
             protected override void Given()
             {
                 _projectionName = "test-projection";
-                _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
+                _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
                 _testUserPrincipal = new OpenGenericPrincipal(
                     new GenericIdentity("test-user"), new[] {"test-role1", "test-role2"});
 
@@ -77,12 +77,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
         {
             private string _projectionName;
 
-            private string _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
+            private string _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
 
             protected override void Given()
             {
                 _projectionName = "test-projection";
-                _projectionBody = @"fromAll().whenAny(function(s,e){return s;});";
+                _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
 
                 AllWritesSucceed();
                 NoOtherStreams();

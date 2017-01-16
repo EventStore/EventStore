@@ -16,10 +16,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromAll().whenAny(
-                        function(state, event) {
+                   fromAll().when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -40,10 +40,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromStream('stream1').whenAny(
-                        function(state, event) {
+                    fromStream('stream1').when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -66,10 +66,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromStreams(['stream1', 'stream2', 'stream3']).whenAny(
-                        function(state, event) {
+                    fromStreams(['stream1', 'stream2', 'stream3']).when({
+                    $any: function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -94,10 +94,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromStreams('stream1', 'stream2', 'stream3').whenAny(
-                        function(state, event) {
+                    fromStreams('stream1', 'stream2', 'stream3').when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -122,10 +122,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromCategory('category1').whenAny(
-                        function(state, event) {
+                    fromCategory('category1').when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -148,10 +148,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromCategory('category1').foreachStream().whenAny(
-                        function(state, event) {
+                    fromCategory('category1').foreachStream().when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -262,10 +262,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                 _projection = @"
                     fromAll().partitionBy(function(event){
                         return event.eventType;
-                    }).whenAny(
-                        function(state, event) {
+                    }).when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -288,10 +288,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             {
                 _projection = @"
                     fromAll()
-                    .whenAny(
-                        function(state, event) {
+                    .when({
+                        $any:function(state, event) {
                             return state;
-                        })
+                        }})
                     .$defines_state_transform();
                 ";
                 _state = @"{""count"": 0}";
@@ -310,10 +310,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
             protected override void Given()
             {
                 _projection = @"
-                    fromAll().whenAny(
-                        function(state, event) {
+                    fromAll().when({
+                        $any:function(state, event) {
                             return state;
-                        }).transformBy(function(s) {return s;});
+                        }}).transformBy(function(s) {return s;});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -405,10 +405,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                     options({
                         resultStreamName: 'state-stream',
                     });
-                    fromAll().whenAny(
-                        function(state, event) {
+                    fromAll().when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -429,10 +429,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                     options({
                         $includeLinks: true,
                     });
-                    fromAll().whenAny(
-                        function(state, event) {
+                    fromAll().when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -453,10 +453,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                     options({
                         biState: true,
                     });
-                    fromAll().whenAny(
-                        function(state, sharedState, event) {
+                    fromAll().when({
+                        $any:function(state, sharedState, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -478,10 +478,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                         reorderEvents: true,
                         processingLag: 500,
                     });
-                    fromAll().whenAny(
-                        function(state, event) {
+                    fromAll().when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -507,10 +507,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                     options({
                         reorderEvents: true,
                     });
-                    fromAll().whenAny(
-                        function(state, event) {
+                    fromAll().when({
+                        $any:function(state, event) {
                             return state;
-                        });
+                        }});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -609,9 +609,9 @@ namespace EventStore.Projections.Core.Tests.Services.v8
     {
         protected override void Given()
         {
-            _projection = @"fromAll().whenAny(function(s,e){
+            _projection = @"fromAll().when({$any:function(s,e){
                 return e.linkMetadata;
-            })";
+            }})";
             _state = @"{}";
             _handledEvent = CreateSampleEvent("stream", 0, "event_type", "{\"data\":1}", new TFPos(100, 50));
         }
