@@ -1,3 +1,4 @@
+using EventStore.ClientAPI.Common.Utils;
 namespace EventStore.ClientAPI
 {
     /// <summary>
@@ -5,6 +6,11 @@ namespace EventStore.ClientAPI
     /// </summary>
     public struct WriteResult
     {
+        /// <summary>
+        /// The stream to which this <see cref="WriteResult"/> pertains.
+        /// </summary>
+        public readonly string StreamName;
+
         /// <summary>
         /// The next expected version for the stream.
         /// </summary>
@@ -14,16 +20,18 @@ namespace EventStore.ClientAPI
         /// The <see cref="LogPosition"/> of the write.
         /// </summary>
         public readonly Position LogPosition;
-
+    
         /// <summary>
         /// Constructs a new <see cref="WriteResult"/>.
         /// </summary>
         /// <param name="nextExpectedVersion">The next expected version for the stream.</param>
         /// <param name="logPosition">The position of the write in the log</param>
-        public WriteResult(int nextExpectedVersion, Position logPosition)
+        /// <param name="streamName">The name of the stream to which this <see cref="WriteResult"/> pertains.</param>
+        public WriteResult(int nextExpectedVersion, Position logPosition, string streamName =null)
         {
-            LogPosition = logPosition;
-            NextExpectedVersion = nextExpectedVersion;
+            this.StreamName = streamName;
+            this.NextExpectedVersion = nextExpectedVersion;
+            this.LogPosition = logPosition;
         }
     }
 }
