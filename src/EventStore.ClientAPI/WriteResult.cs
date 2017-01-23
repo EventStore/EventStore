@@ -29,9 +29,9 @@ namespace EventStore.ClientAPI
         /// <param name="streamName">The name of the stream to which this <see cref="WriteResult"/> pertains.</param>
         public WriteResult(int nextExpectedVersion, Position logPosition, string streamName =null)
         {
-            this.StreamName = streamName;
-            this.NextExpectedVersion = nextExpectedVersion;
-            this.LogPosition = logPosition;
+            StreamName = streamName;
+            NextExpectedVersion = nextExpectedVersion;
+            LogPosition = logPosition;
         }
     }
 }
