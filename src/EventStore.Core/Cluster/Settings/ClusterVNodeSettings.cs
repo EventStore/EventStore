@@ -39,6 +39,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly int NodePriority;
 
         public readonly bool UseSsl;
+        public readonly bool DisableInsecureTCP;
         public readonly string SslTargetHost;
         public readonly bool SslValidateServer;
 
@@ -94,6 +95,7 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan prepareTimeout,
                                     TimeSpan commitTimeout,
                                     bool useSsl,
+                                    bool disableInsecureTCP,
                                     string sslTargetHost,
                                     bool sslValidateServer,
                                     TimeSpan statsPeriod,
@@ -177,6 +179,7 @@ namespace EventStore.Core.Cluster.Settings
             CommitTimeout = commitTimeout;
 
             UseSsl = useSsl;
+            DisableInsecureTCP = disableInsecureTCP;
             SslTargetHost = sslTargetHost;
             SslValidateServer = sslValidateServer;
 
