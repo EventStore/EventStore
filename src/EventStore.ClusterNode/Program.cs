@@ -145,6 +145,15 @@ namespace EventStore.ClusterNode
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);
+            if(options.DisableInsecureTCP)
+            {
+                if (!options.UseInternalSsl) {
+                    throw new Exception("You have chosen to disable the insecure TCP ports and haven't set 'UseInternalSsl'. The nodes in the cluster will not be able to communicate properly.");
+                }
+                if(extSecTcp == null || intSecTcp == null){
+                    throw new Exception("You have chosen to disable the insecure TCP ports and haven't setup the External or Internal Secure TCP Ports.");
+                }
+            }
             if (options.UseInternalSsl)
             {
                 if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
@@ -249,6 +258,8 @@ namespace EventStore.ClusterNode
                 builder.ValidateSslServer();
             if(options.UseInternalSsl)
                 builder.EnableSsl();
+            if(options.DisableInsecureTCP)
+                builder.DisableInsecureTCP();
             if(!options.AdminOnExt)
                 builder.NoAdminOnPublicInterface();
             if(!options.StatsOnExt)

@@ -163,6 +163,8 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.UseInternalSslDescr, Opts.InterfacesGroup)]
         public bool UseInternalSsl { get; set; }
+        [ArgDescription(Opts.DisableInsecureTCPDescr, Opts.InterfacesGroup)]
+        public bool DisableInsecureTCP { get; set; }
         [ArgDescription(Opts.SslTargetHostDescr, Opts.InterfacesGroup)]
         public string SslTargetHost { get; set; }
         [ArgDescription(Opts.SslValidateServerDescr, Opts.InterfacesGroup)]
@@ -205,7 +207,7 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.AlwaysKeepScavengedDescr, Opts.DbGroup)]
         public bool AlwaysKeepScavenged { get; set; }
-        
+
         public ClusterNodeOptions()
         {
             Config = "";
@@ -284,6 +286,7 @@ namespace EventStore.ClusterNode
             CertificatePassword = Opts.CertificatePasswordDefault;
 
             UseInternalSsl = Opts.UseInternalSslDefault;
+            DisableInsecureTCP = Opts.DisableInsecureTCPDefault;
             SslTargetHost = Opts.SslTargetHostDefault;
             SslValidateServer = Opts.SslValidateServerDefault;
 

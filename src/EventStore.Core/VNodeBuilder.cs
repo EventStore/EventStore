@@ -69,6 +69,7 @@ namespace EventStore.Core
         protected int _nodePriority;
 
         protected bool _useSsl;
+        protected bool _disableInsecureTCP;
         protected string _sslTargetHost;
         protected bool _sslValidateServer;
 
@@ -165,6 +166,7 @@ namespace EventStore.Core
             _nodePriority = Opts.NodePriorityDefault;
 
             _useSsl = Opts.UseInternalSslDefault;
+            _disableInsecureTCP = Opts.DisableInsecureTCPDefault;
             _sslTargetHost = Opts.SslTargetHostDefault;
             _sslValidateServer = Opts.SslValidateServerDefault;
 
@@ -489,6 +491,16 @@ namespace EventStore.Core
         public VNodeBuilder EnableSsl()
         {
             _useSsl = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Disable Insecure TCP Communication
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder DisableInsecureTCP()
+        {
+            _disableInsecureTCP = true;
             return this;
         }
 
@@ -1247,6 +1259,7 @@ namespace EventStore.Core
                     _prepareTimeout,
                     _commitTimeout,
                     _useSsl,
+                    _disableInsecureTCP,
                     _sslTargetHost,
                     _sslValidateServer,
                     _statsPeriod,
