@@ -23,6 +23,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly ILogger _logger;
         private readonly string _streamId;
+        private readonly string _metadataStreamId;
         private readonly WriterConfiguration _writerConfiguration;
         private readonly ProjectionVersion _projectionVersion;
         private readonly IPrincipal _writeAs;
@@ -54,6 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _disposed;
         private bool _recoveryCompleted;
         private Event _submittedWriteMetaStreamEvent;
+        private const int MaxRetryCount = 5;
 
 
         public class WriterConfiguration
@@ -139,6 +141,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
+            _metadataStreamId = SystemStreams.MetastreamOf(streamId);
             _writerConfiguration = writerConfiguration;
             _projectionVersion = projectionVersion;
             _writeAs = writerConfiguration.WriteAs;
@@ -211,7 +214,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _awaitingListEventsCompleted ? 1 : 0;
         }
 
-        public void Handle(ClientMessage.WriteEventsCompleted message)
+        private void HandleWriteEventsCompleted(ClientMessage.WriteEventsCompleted message, int retryCount)
         {
             if (!_awaitingWriteCompleted)
                 throw new InvalidOperationException("WriteEvents has not been submitted");
@@ -239,8 +242,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 case OperationResult.PrepareTimeout:
                 case OperationResult.ForwardTimeout:
                 case OperationResult.CommitTimeout:
-                    if (_logger != null) _logger.Info("Retrying write to {0}", _streamId);
-                    PublishWriteEvents();
+                    if(retryCount > 0)
+                    {
+                        if (_logger != null) _logger.Info("Retrying write to {0} (Retry {1} of {2})", _streamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount);
+                        PublishWriteEvents(--retryCount);
+                    }
+                    else
+                    {
+                        Failed(string.Format("Failed to write an events to {0}. Retry limit of {1} reached. Reason: {2}", _streamId, MaxRetryCount, message.Result));
+                    }
                     break;
                 default:
                     throw new NotSupportedException("Unsupported error code received");
@@ -416,17 +426,28 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _awaitingMetadataWriteCompleted = true;
 
-            PublishWriteMetaStream();
+            PublishWriteMetaStream(MaxRetryCount);
         }
 
-        private void PublishWriteMetaStream()
+        private void PublishWriteMetaStream(int retryCount)
         {
-            _ioDispatcher.WriteEvent(
-                SystemStreams.MetastreamOf(_streamId), ExpectedVersion.Any, _submittedWriteMetaStreamEvent, _writeAs,
-                HandleMetadataWriteCompleted);
+            var delayInSeconds = MaxRetryCount - retryCount;
+            if (delayInSeconds == 0)
+            {
+                _ioDispatcher.WriteEvent(
+                    _metadataStreamId, ExpectedVersion.Any, _submittedWriteMetaStreamEvent, _writeAs,
+                    m => HandleMetadataWriteCompleted(m, retryCount));
+            }
+            else
+            {
+                _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
+                    () => _ioDispatcher.WriteEvent(
+                            _metadataStreamId, ExpectedVersion.Any, _submittedWriteMetaStreamEvent, _writeAs,
+                            m => HandleMetadataWriteCompleted(m, retryCount)));
+            }
         }
 
-        private void HandleMetadataWriteCompleted(ClientMessage.WriteEventsCompleted message)
+        private void HandleMetadataWriteCompleted(ClientMessage.WriteEventsCompleted message, int retryCount)
         {
             if (!_awaitingMetadataWriteCompleted)
                 throw new InvalidOperationException("WriteEvents to metadata stream has not been submitted");
@@ -436,25 +457,32 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _metadataStreamCreated = true;
                 _awaitingMetadataWriteCompleted = false;
-                PublishWriteEvents();
+                PublishWriteEvents(MaxRetryCount);
                 return;
             }
             if (_logger != null)
             {
                 _logger.Info("Failed to write events to stream {0}. Error: {1}",
-                             SystemStreams.MetastreamOf(_streamId),
+                             _metadataStreamId,
                              Enum.GetName(typeof(OperationResult), message.Result));
             }
             switch (message.Result)
             {
                 case OperationResult.WrongExpectedVersion:
-                    RequestRestart(string.Format("The '{0}' stream has been written to from the outside", _streamId));
+                    RequestRestart(string.Format("The '{0}' stream has been written to from the outside", _metadataStreamId));
                     break;
                 case OperationResult.PrepareTimeout:
                 case OperationResult.ForwardTimeout:
                 case OperationResult.CommitTimeout:
-                    if (_logger != null) _logger.Info("Retrying write to {0}", _streamId);
-                    PublishWriteMetaStream();
+                    if (retryCount > 0)
+                    {
+                        if (_logger != null) _logger.Info("Retrying write to {0} (Retry {1} of {2})", _metadataStreamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount);
+                        PublishWriteMetaStream(--retryCount);
+                    }
+                    else
+                    {
+                        Failed(string.Format("Failed to write an events to {0}. Retry limit of {1} reached. Reason: {2}", _metadataStreamId, MaxRetryCount, message.Result));
+                    }
                     break;
                 default:
                     throw new NotSupportedException("Unsupported error code received");
@@ -505,7 +533,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _submittedToWriteEmittedEvents = emittedEvents.ToArray();
 
             if (_submittedToWriteEvents.Length > 0)
-                PublishWriteEvents();
+                PublishWriteEvents(MaxRetryCount);
         }
 
         private IEnumerable<KeyValuePair<string, JToken>> MetadataWithCausedByAndCorrelationId(
@@ -546,7 +574,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return expectedTag != _lastCommittedOrSubmittedEventPosition;
         }
 
-        private void PublishWriteEvents()
+        private void PublishWriteEvents(int retryCount)
         {
             if (!_metadataStreamCreated)
             {
@@ -554,8 +582,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _awaitingWriteCompleted = true;
-            _ioDispatcher.WriteEvents(_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs, Handle);
-
+            var delayInSeconds = MaxRetryCount - retryCount;
+            if (delayInSeconds == 0)
+            {
+                _ioDispatcher.WriteEvents(
+                    _streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
+                    m => HandleWriteEventsCompleted(m, retryCount));
+            }
+            else
+            {
+                _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds), 
+                    () => _ioDispatcher.WriteEvents(
+                        _streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
+                        m => HandleWriteEventsCompleted(m, retryCount)));
+            }
         }
 
         private void EnsureCheckpointNotRequested()
