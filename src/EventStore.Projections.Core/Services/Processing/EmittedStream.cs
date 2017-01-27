@@ -269,9 +269,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag lastCheckpointPosition)
         {
-//            if (lastCheckpointPosition == _zeroPosition)
-//                throw new ArgumentException("lastCheckpointPosition cannot be equal to zero position");
-
             if (!_awaitingListEventsCompleted)
                 throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
             if (_disposed)
@@ -307,8 +304,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 _lastKnownEventNumber = newPhysicalStream ? ExpectedVersion.NoStream : message.LastEventNumber;
                 
-                //TODO: throw exception when _projectionVersion.ProjectionId != parsed.ProjectionId ?
-
                 if (newLogicalStream)
                 {
                     _lastCommittedOrSubmittedEventPosition = _zeroPosition;
@@ -317,8 +312,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     //TODO: verify order - as we are reading backward
-                    _lastCommittedOrSubmittedEventPosition = parsed.AdjustBy(_positionTagger, _projectionVersion);
-                    _metadataStreamCreated = true; // should exist or no need to create
+                    try
+                    {
+                        _lastCommittedOrSubmittedEventPosition = parsed.AdjustBy(_positionTagger, _projectionVersion);
+                        _metadataStreamCreated = true; // should exist or no need to create
+                    }catch(NotSupportedException ex) {
+                        Failed(ex.Message);
+                    }
                 }
             }
 
