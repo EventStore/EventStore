@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 case CheckpointTag.Mode.Position:
                     throw new NotSupportedException("Conversion from Position to Stream position tag is not supported");
                 default:
-                    throw new Exception();
+                    throw new NotSupportedException(string.Format("The given checkpoint is invalid. Possible causes might include having written an event to the projection's managed stream. The bad checkpoint: {0}", tag.ToString()));
             }
         }
     }
