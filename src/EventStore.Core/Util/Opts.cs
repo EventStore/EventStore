@@ -282,6 +282,9 @@ namespace EventStore.Core.Util
         public const string UseInternalSslDescr = "Whether to use secure internal communication.";
         public const bool   UseInternalSslDefault = false;
 
+        public const string DisableInsecureTCPDescr = "Whether to disable insecure TCP communication";
+        public const bool   DisableInsecureTCPDefault = false;
+
         public const string SslTargetHostDescr = "Target host of server's SSL certificate.";
         public static readonly string SslTargetHostDefault = "n/a";
 
