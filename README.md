@@ -102,3 +102,28 @@ e.g.
 Development is on the branch aimed at the next release (usually prefixed with `release-v0.0.0`). The `master` branch always contains the code for the latest stable release.
 
 We attempt to do our best to ensure that the history remains clean and to do so, we generally ask contributors to squash their commits into a set or single logical commit.
+
+## Known Issues
+
+### Regressions with Mono 3.12.1 and some versions of the Linux Kernel
+
+*Note: Event Store 4.0.0 onwards is using a more recent version of Mono (4.6.2 at the time of writing). The information below only applies to Event Store <= 3.9.3.*
+
+There is a known issue with some versions of the Linux Kernel and Mono 3.12.1 which has been raised as an issue [https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1450584](here).
+The issue manifests itself as a `NullReferenceException` and the stack trace generally looks like the following.
+```
+System.NullReferenceException: Object reference not set to an instance of an object
+at EventStore.Core.Services.TimerService.ThreadBasedScheduler.DoTiming () [0x00000] in :0
+at System.Threading.Thread.StartInternal () [0x00000] in :0
+```
+Some known good versions of the Kernel are
+
+- 3.13.0-54
+- 3.13.0-63
+- 3.16.0-39
+- 3.19.0-20
+- 3.19.0-64
+- 3.19.0-66
+- >= 4.4.27
+
+*Note: Please feel free to contribute to this list if you are working on a known good version of the kernel that is not listed here.*
