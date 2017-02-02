@@ -672,8 +672,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (failed)
                 throw new InvalidEmittedEventSequenceExceptioin(
                     string.Format(
-                        "An event emitted in recovery differs from the originally emitted event.  Existing('{0}', '{1}'). New('{2}', '{3}')",
-                        topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType, eventsToWrite.CausedByTag));
+                        "An event emitted in recovery for stream {0} differs from the originally emitted event. Existing('{1}', '{2}'). New('{3}', '{4}')",
+                        _streamId, topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType, eventsToWrite.CausedByTag));
             return topAlreadyCommitted;
         }
 
