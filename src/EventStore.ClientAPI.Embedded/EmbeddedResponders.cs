@@ -338,7 +338,8 @@ namespace EventStore.ClientAPI.Embedded
                     response.Events.ConvertToClientResolvedIndexEvents(),
                     response.NextEventNumber,
                     response.LastEventNumber,
-                    response.IsEndOfStream);
+                    response.IsEndOfStream,
+                    response.TfLastCommitPosition);
 
             }
 
@@ -399,7 +400,8 @@ namespace EventStore.ClientAPI.Embedded
                     response.Events.ConvertToClientResolvedIndexEvents(),
                     response.NextEventNumber,
                     response.LastEventNumber,
-                    response.IsEndOfStream);
+                    response.IsEndOfStream,
+                    response.TfLastCommitPosition);
 
             }
 

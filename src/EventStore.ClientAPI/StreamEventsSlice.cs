@@ -49,6 +49,11 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly bool IsEndOfStream;
 
+        /// <summary>
+        /// The last commit position of the index used to satisfy the read.
+        /// </summary>
+        public readonly long IndexLastCommitPosition;
+
         internal StreamEventsSlice(SliceReadStatus status, 
                                    string stream, 
                                    int fromEventNumber, 
@@ -56,7 +61,8 @@ namespace EventStore.ClientAPI
                                    ClientMessage.ResolvedIndexedEvent[] events,
                                    int nextEventNumber,
                                    int lastEventNumber,
-                                   bool isEndOfStream)
+                                   bool isEndOfStream,
+                                   long indexLastCommitPosition)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
@@ -77,6 +83,7 @@ namespace EventStore.ClientAPI
             NextEventNumber = nextEventNumber;
             LastEventNumber = lastEventNumber;
             IsEndOfStream = isEndOfStream;
+            IndexLastCommitPosition = indexLastCommitPosition;
         }
     }
 }

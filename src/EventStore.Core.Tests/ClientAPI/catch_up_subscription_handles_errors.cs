@@ -432,7 +432,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                 null, null, null), null))
                 .ToArray();
 
-            return new StreamEventsSlice(SliceReadStatus.Success, StreamId, fromEvent, ReadDirection.Forward, events, fromEvent + count, 100, isEnd);
+            return new StreamEventsSlice(SliceReadStatus.Success, StreamId, fromEvent, ReadDirection.Forward, events, fromEvent + count, 100, isEnd, 1024L);
         }
     }
 

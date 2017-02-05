@@ -64,7 +64,8 @@ namespace EventStore.ClientAPI.ClientOperations
                                          response.Events,
                                          response.NextEventNumber,
                                          response.LastEventNumber,
-                                         response.IsEndOfStream);
+                                         response.IsEndOfStream,
+                                         response.LastCommitPosition);
         }
 
         public override string ToString()
