@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _exception = null;
             try
             {
-                _point = new HeadingEventReader(10);
+                _point = new HeadingEventReader(10, _bus);
             }
             catch (Exception ex)
             {

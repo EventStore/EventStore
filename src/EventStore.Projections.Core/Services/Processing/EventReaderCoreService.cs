@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             if (runHeadingReader)
-                _headingEventReader = new HeadingEventReader(eventCacheSize);
+                _headingEventReader = new HeadingEventReader(eventCacheSize, _publisher);
             _writerCheckpoint = writerCheckpoint;
             _runHeadingReader = runHeadingReader;
         }
@@ -133,15 +133,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptionEventReaders.TryGetValue(message.SubscriptionId, out eventReaderId);
             if(eventReaderId != Guid.Empty)
             {
-                //TODO: test it
                 _eventReaders[eventReaderId].Dispose();
                 _eventReaders.Remove(eventReaderId);
                 _eventReaderSubscriptions.Remove(eventReaderId);
                 _publisher.Publish(
                     new EventReaderSubscriptionMessage.ReaderAssignedReader(message.SubscriptionId, Guid.Empty));
-//                _logger.Trace(
-//                    "The '{0}' subscription has unsubscribed (reader: {1})", message.SubscriptionId,
-//                    eventReaderId);
             }
 
             _pausedSubscriptions.Remove(message.SubscriptionId);
@@ -161,8 +157,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (TrySubscribeHeadingEventReader(message, projectionId))
                 return;
-            if (message.Data != null) // means notification about the end of the stream/source
-                _subscriptions[projectionId].Handle(message);
+            if (message.Data != null)
+            {
+                try
+                {
+                    _subscriptions[projectionId].Handle(message);
+                }
+                catch(Exception ex)
+                {
+                    var subscription = _subscriptions[projectionId];
+                    Handle(new ReaderSubscriptionManagement.Unsubscribe(subscription.SubscriptionId));
+                    _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId,
+                        string.Format("The subscription failed to handle an event {0}:{1}@{2} because {3}", message.Data.EventStreamId, message.Data.EventType, message.Data.EventSequenceNumber, ex.Message)));
+                }
+            }
         }
 
         public void Handle(ReaderSubscriptionMessage.EventReaderIdle message)
@@ -315,13 +323,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
                 return false;
 
-//            if (message.Data == null)
-//            {
-//                _logger.Trace(
-//                    "The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'",
-//                    projectionId, message.SafeTransactionFileReaderJoinPosition);
-//            }
-                
             Guid eventReaderId = message.CorrelationId;
             _eventReaders[eventReaderId].Dispose();
             _eventReaders.Remove(eventReaderId);

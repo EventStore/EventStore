@@ -361,7 +361,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void EnsureUnsubscribed()
         {
-
             if (_projectionProcessingPhase != null)
                 _projectionProcessingPhase.EnsureUnsubscribed();
         }

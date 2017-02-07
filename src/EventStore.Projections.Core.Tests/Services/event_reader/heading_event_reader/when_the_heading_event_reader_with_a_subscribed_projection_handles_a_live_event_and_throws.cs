@@ -1,36 +1,26 @@
 using System;
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     [TestFixture]
-    public class when_the_heading_event_reader_unsubscribes_a_projection : TestFixtureWithReadWriteDispatchers
+    public class when_the_heading_event_reader_with_a_subscribed_projection_handles_a_live_event_and_throws :
+        TestFixtureWithReadWriteDispatchers
     {
         private HeadingEventReader _point;
-        private Exception _exception;
         private Guid _distibutionPointCorrelationId;
-        private FakeReaderSubscription _subscription;
         private Guid _projectionSubscriptionId;
 
         [SetUp]
         public void setup()
         {
-            _exception = null;
-            try
-            {
-                _point = new HeadingEventReader(10, _bus);
-            }
-            catch (Exception ex)
-            {
-                _exception = ex;
-            }
-            Assume.That(_exception == null);
+            _point = new HeadingEventReader(10, _bus);
 
             _distibutionPointCorrelationId = Guid.NewGuid();
             _point.Start(
@@ -44,36 +34,18 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _distibutionPointCorrelationId, new TFPos(40, 30), "stream", 11, false, Guid.NewGuid(),
                     "type", false, new byte[0], new byte[0]));
-            _subscription = new FakeReaderSubscription();
             _projectionSubscriptionId = Guid.NewGuid();
-            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
-            Assert.IsTrue(subscribed); // ensure we really unsubscribing.. even if it is tested elsewhere
-            _point.Unsubscribe(_projectionSubscriptionId);
-        }
-
-
-        [Test]
-        public void projection_does_not_receive_any_events_after_unsubscribing()
-        {
-            var count = _subscription.ReceivedEvents.Count;
+            _point.TrySubscribe(_projectionSubscriptionId, new FakeReaderSubscription(), 30);
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
-                    _distibutionPointCorrelationId, new TFPos(60, 50), "stream", 12, false, Guid.NewGuid(),
+                    _distibutionPointCorrelationId, new TFPos(60, 50), "throws", 12, false, Guid.NewGuid(),
                     "type", false, new byte[0], new byte[0]));
-            Assert.AreEqual(count, _subscription.ReceivedEvents.Count);
         }
 
         [Test]
-        public void it_cannot_be_unsubscribed_twice()
+        public void projection_is_notified_that_it_is_to_fault()
         {
-            Assert.Throws<InvalidOperationException>(()=> { _point.Unsubscribe(_projectionSubscriptionId); });
-        }
-
-        [Test]
-        public void projection_can_resubscribe_with()
-        {
-            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
-            Assert.AreEqual(true, subscribed);
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.Failed>().Count());
         }
     }
 }

@@ -119,7 +119,10 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
+    <Compile Include="Services\core_service\when_a_subscribed_projection_handler_throws.cs" />
     <Compile Include="Services\emitted_stream\when_handling_a_timeout.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_cached_event_and_throws.cs" />
+    <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_live_event_and_throws.cs" />
     <Compile Include="Services\SpecificationWithEmittedStreamsTrackerAndDeleter.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\with_multiple_tracked_streams.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\with_an_existing_emitted_streams_stream.cs" />

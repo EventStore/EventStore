@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<EventReaderSubscriptionMessage.EofReached>,
         IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
         IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>,
+        IHandle<EventReaderSubscriptionMessage.Failed>,
         IProjectionProcessingPhase,
         IProjectionPhaseStateManager
     {
@@ -297,6 +298,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         message.CorrelationId, _projectionCorrelationId, message.Partition, result: null, position: null));
                 _coreProjection.SetFaulted(ex);
             }
+        }
+
+        public void Handle(EventReaderSubscriptionMessage.Failed message)
+        {
+            _coreProjection.SetFaulted(message.Reason);
         }
 
         protected void UnsubscribeFromPreRecordedOrderEvents()
@@ -621,7 +627,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message)
         {
-            // this is possible hen aborting
             if (_state != PhaseState.Starting)
                 return;
             if (_wasReaderAssigned)
