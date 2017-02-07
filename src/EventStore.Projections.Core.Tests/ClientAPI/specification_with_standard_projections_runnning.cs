@@ -25,6 +25,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         protected ProjectionsSubsystem _projections;
         protected UserCredentials _admin = DefaultData.AdminCredentials;
         protected ProjectionsManager _manager;
+        protected QueryManager _queryManager;
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -44,9 +45,18 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                     new ConsoleLogger(),
                     _node.ExtHttpEndPoint,
                     TimeSpan.FromMilliseconds(10000));
+
+                _queryManager = new QueryManager(
+                    new ConsoleLogger(), 
+                    _node.ExtHttpEndPoint,
+                    TimeSpan.FromMilliseconds(10000),
+                    TimeSpan.FromMilliseconds(10000));
+
                 WaitIdle();
+
                 if (GivenStandardProjectionsRunning())
                     EnableStandardProjections();
+
                 QueueStatsCollector.WaitIdle();
                 Given();
                 When();

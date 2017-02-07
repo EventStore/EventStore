@@ -65,6 +65,7 @@
     <Compile Include="ClientOperations\VolatileSubscriptionOperation.cs" />
     <Compile Include="Common\Log\FileLogger.cs" />
     <Compile Include="Common\Utils\Threading\ManualResetEventSlimExtensions.cs" />
+    <Compile Include="Common\Utils\Threading\TaskExtensions.cs" />
     <Compile Include="ConditionalWriteFailureReason.cs" />
     <Compile Include="ConditionalWriteResult.cs" />
     <Compile Include="ConnectionString.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="PersistentSubscriptionSettings.cs" />
     <Compile Include="PersistentSubscriptionSettingsBuilder.cs" />
     <Compile Include="Projections\ProjectionDetails.cs" />
+    <Compile Include="Projections\QueryManager.cs" />
     <Compile Include="StreamCheckpoint.cs" />
     <Compile Include="ClientAuthenticationFailedEventArgs.cs" />
     <Compile Include="ClientErrorEventArgs.cs" />
