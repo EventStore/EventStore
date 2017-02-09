@@ -139,7 +139,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-
         public string TransformCatalogEvent(EventReaderSubscriptionMessage.CommittedEventReceived message)
         {
             switch (_state)

@@ -73,6 +73,24 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public sealed class Failed : EventReaderSubscriptionMessageBase
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            private readonly string _reason;
+            public string Reason
+            {
+                get { return _reason; }
+            }
+
+            public Failed(Guid subscriptionId, string reason)
+                : base(subscriptionId, CheckpointTag.Empty, 100.0f, -1, null)
+            {
+                _reason = reason;
+            }
+        }
+
         public class EofReached : EventReaderSubscriptionMessageBase
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
