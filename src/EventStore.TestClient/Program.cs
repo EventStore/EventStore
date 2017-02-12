@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using EventStore.ClientAPI.Embedded;
 using EventStore.Common.Utils;
 using EventStore.Core;
 
@@ -7,6 +8,7 @@ namespace EventStore.TestClient
 {
     public class Program: ProgramBase<ClientOptions>
     {
+        private ClusterVNode _node;
         private Client _client;
 
         public static void Main(string[] args)
@@ -28,6 +30,19 @@ namespace EventStore.TestClient
             return "client";
         }
 
+        protected override void PreInit(ClientOptions options)
+        {
+            if (options.UseEmbeddedNode)
+            {
+                var runInMemory = string.IsNullOrWhiteSpace(options.EmbeddedNodeDataPath);
+                var builder = (VNodeBuilder)EmbeddedVNodeBuilder.AsSingleNode();
+                builder = runInMemory ? builder.RunInMemory() : builder.RunOnDisk(options.EmbeddedNodeDataPath);
+
+                _node = builder.Build(options);
+                _node.StartAndWaitUntilReady().GetAwaiter().GetResult();
+            }
+        }
+
         protected override void Create(ClientOptions options)
         {
             _client = new Client(options);
@@ -45,6 +60,10 @@ namespace EventStore.TestClient
 
         public override void Stop()
         {
+            if (_node != null)
+            {
+                _node.Stop();
+            }
         }
     }
 }
