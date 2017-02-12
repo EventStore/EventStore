@@ -234,7 +234,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void MarkBeginProcessing(OutstandingMessage message)
         {
             _statistics.IncrementProcessed();
-            StartMessage(message, DateTime.UtcNow + _settings.MessageTimeout);
+            StartMessage(message, _settings.MessageTimeout.HasValue ? DateTime.UtcNow + _settings.MessageTimeout : null);
         }
 
         public void AddClient(Guid correlationId, Guid connectionId, IEnvelope envelope, int maxInFlight, string user, string @from)
@@ -318,7 +318,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             lock (_lock)
             {
                 StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0),
-                    DateTime.UtcNow + _settings.MessageTimeout);
+                    _settings.MessageTimeout.HasValue ? DateTime.UtcNow + _settings.MessageTimeout : null);
             }
         }
 
@@ -467,7 +467,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        private void StartMessage(OutstandingMessage message, DateTime expires)
+        private void StartMessage(OutstandingMessage message, DateTime? expires = null)
         {
             var result = _outstandingMessages.StartMessage(message, expires);
 

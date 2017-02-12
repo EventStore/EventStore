@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public string Group;
         public bool ResolveLinkTos;
         public bool ExtraStatistics;
-        public int MessageTimeout;
+        public int? MessageTimeout;
         public int StartFrom;
         public int LiveBufferSize;
         public int HistoryBufferSize;

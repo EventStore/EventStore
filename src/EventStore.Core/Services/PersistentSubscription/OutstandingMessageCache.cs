@@ -40,14 +40,15 @@ namespace EventStore.Core.Services.PersistentSubscription
             foreach(var m in messageIds) Remove(m);
         }
 
-        public StartMessageResult StartMessage(OutstandingMessage message, DateTime expires)
+        public StartMessageResult StartMessage(OutstandingMessage message, DateTime? expires)
         {
             if (_outstandingRequests.ContainsKey(message.EventId))
                 return StartMessageResult.SkippedDuplicate;
 
             _outstandingRequests[message.EventId] = message;
             _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
-            _byTime.Add(new RetryableMessage(message.EventId, expires));
+            if(expires.HasValue)
+                _byTime.Add(new RetryableMessage(message.EventId, expires.Value));
 
             return StartMessageResult.Success;
         }

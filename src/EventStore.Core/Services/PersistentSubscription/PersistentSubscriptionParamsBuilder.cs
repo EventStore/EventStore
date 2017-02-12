@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private bool _resolveLinkTos;
         private int _startFrom;
         private bool _recordStatistics;
-        private TimeSpan _timeout;
+        private TimeSpan? _timeout;
         private int _readBatchSize;
         private int _maxRetryCount;
         private int _liveBufferSize;
@@ -246,6 +246,12 @@ namespace EventStore.Core.Services.PersistentSubscription
         public PersistentSubscriptionParamsBuilder WithMessageTimeoutOf(TimeSpan timeout)
         {
             _timeout = timeout;
+            return this;
+        }
+
+        public PersistentSubscriptionParamsBuilder DisableMessageTimeout()
+        {
+            _timeout = null;
             return this;
         }
 
