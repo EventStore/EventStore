@@ -136,7 +136,8 @@ namespace EventStore.Core
                                                    vNodeSettings.StatsPeriod,
                                                    _nodeInfo.ExternalHttp,
                                                    vNodeSettings.StatsStorage,
-                                                   _nodeInfo.ExternalTcp);
+                                                   _nodeInfo.ExternalTcp,
+                                                   _nodeInfo.ExternalSecureTcp);
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());

@@ -206,6 +206,7 @@ namespace EventStore.Core.Messages
             public int PendingSendBytes { get; set; }
             public int PendingReceivedBytes { get; set; }
             public bool IsExternalConnection { get; set; }
+            public bool IsSslConnection { get; set; }
         }
 
         public class InternalStatsRequest : Message
