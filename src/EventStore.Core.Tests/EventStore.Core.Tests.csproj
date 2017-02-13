@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -415,6 +415,8 @@
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Services\Storage\AllReader\when_a_single_write_before_the_transaction_is_present.cs" />
+    <Compile Include="Services\Storage\AllReader\when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present.cs" />
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_few_prepares_with_same_expected_version_and_committing_one_of_them.cs" />
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_few_prepares_with_same_expected_version_and_not_committing_them.cs" />
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_prepares_in_wrong_order_and_committing_in_right_order.cs" />
@@ -440,9 +442,11 @@
     <Compile Include="Services\Storage\Metastreams\when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_just_last.cs" />
     <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_and_no_metastream_metastream_is_declared_deleted_as_well.cs" />
     <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_its_metastream_is_deleted_as_well.cs" />
+    <Compile Include="Services\Storage\AllReader\when_a_single_write_is_after_transaction_end_but_before_commit_is_present.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_but_some_metaevents_are_in_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_but_some_events_are_in_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_and_all_events_and_metaevents_are_in_one_chunk.cs" />
+    <Compile Include="Services\Storage\RepeatableDbTestScenario.cs" />
     <Compile Include="Services\Storage\SimpleDbTestScenario.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commit_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commits_spanning_multiple_chunks.cs" />

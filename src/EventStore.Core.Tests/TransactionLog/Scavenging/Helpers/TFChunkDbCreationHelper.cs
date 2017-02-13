@@ -140,7 +140,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                        transOffset,
                                                        rec.StreamId,
                                                        expectedVersion,
-                                                       PrepareFlags.Data
+                                                       rec.PrepareFlags
                                                        | (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
                                                        | (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
                                                        | (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
@@ -302,8 +302,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public readonly string EventType;
         public readonly DateTime TimeStamp;
         public readonly StreamMetadata Metadata;
+        public readonly PrepareFlags PrepareFlags;
 
-        public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, StreamMetadata metadata = null)
+        public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Nonnegative(transaction, "transaction");
@@ -315,6 +316,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             EventType = eventType ?? string.Empty;
             TimeStamp = timestamp ?? DateTime.UtcNow;
             Metadata = metadata;
+            PrepareFlags = prepareFlags;
         }
 
         public static Rec Delete(int transaction, string stream, DateTime? timestamp = null)
@@ -327,9 +329,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             return new Rec(RecType.TransStart, transaction, stream, null, timestamp);
         }
 
-        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null, StreamMetadata metadata = null)
+        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null, StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data)
         {
-            return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, metadata);
+            return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, metadata, prepareFlags);
         }
 
         public static Rec TransEnd(int transaction, string stream, DateTime? timestamp = null)

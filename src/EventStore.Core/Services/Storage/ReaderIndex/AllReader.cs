@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
                                     records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
                                     count++;
-                                    nextPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);
+                                    nextPos = new TFPos(result.RecordPostPosition, 0);
                                 }
                                 break;
                             }
