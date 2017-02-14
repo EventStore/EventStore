@@ -27,14 +27,14 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
         private IPersistentSubscriptionMessageParker _messageParker;
 
-        public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
-                                           int startFrom, bool extraStatistics, TimeSpan messageTimeout, 
+        public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName,
+                                           int startFrom, bool extraStatistics, TimeSpan messageTimeout,
                                            int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
                                            TimeSpan checkPointAfter, int minCheckPointCount,
-                                           int maxCheckPointCount, int maxSubscriberCount, 
+                                           int maxCheckPointCount, int maxSubscriberCount,
                                            IPersistentSubscriptionConsumerStrategy consumerStrategy,
-                                           IPersistentSubscriptionStreamReader streamReader, 
-                                           IPersistentSubscriptionCheckpointReader checkpointReader, 
+                                           IPersistentSubscriptionStreamReader streamReader,
+                                           IPersistentSubscriptionCheckpointReader checkpointReader,
                                            IPersistentSubscriptionCheckpointWriter checkpointWriter,
                                            IPersistentSubscriptionMessageParker messageParker)
         {
