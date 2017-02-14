@@ -31,19 +31,23 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
         }
 
         
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_update_to_the_same_postion()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             var newTag = CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 3 } });
             _positionTracker.UpdateByCheckpointTagForward(newTag);
+            });
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void it_cannot_be_updated_with_other_stream()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             // even not initialized (UpdateToZero can be removed)
             var newTag = CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> { { "stream1", 3 }, { "stream3", 2 } });
             _positionTracker.UpdateByCheckpointTagForward(newTag);
+            });
         }
 
         //TODO: write tests on updating with incompatible snapshot loaded

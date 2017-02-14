@@ -66,6 +66,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _tag; }
         }
 
+        public Guid SubscriptionId
+        {
+            get { return _subscriptionId; }
+        }
+
         protected void ProcessOne(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             if (_eofReached)
@@ -75,6 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // and they may not pass out source filter.  Discard them first
             var roundedProgress = (float) Math.Round(message.Progress, 1);
             bool progressChanged = _progress != roundedProgress;
+
             if (
                 !_eventFilter.PassesSource(
                     message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType))

@@ -76,7 +76,8 @@ namespace EventStore.ClientAPI.Transport.Http
                              Action<HttpResponse> onSuccess, Action<Exception> onException, string hostHeader = "")
         {
             var request = new HttpRequestMessage();
-#if __MonoCS__
+//MONOCHECK IS THIS STILL NEEDED?
+#if MONO
             request.Headers.Add("Keep-alive", "false");
 #endif
             request.RequestUri = new Uri(url);

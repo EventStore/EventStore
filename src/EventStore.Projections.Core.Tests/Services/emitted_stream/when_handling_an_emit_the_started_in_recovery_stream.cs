@@ -30,15 +30,17 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             _stream.Start();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void throws_if_position_is_prior_to_from_position()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             _stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 20, 10), null)
                 });
+            });
         }
 
         [Test]

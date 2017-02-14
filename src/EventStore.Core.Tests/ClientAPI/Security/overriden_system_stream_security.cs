@@ -5,10 +5,10 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    [TestFixture, Category("LongRunning"), Category("Network")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
     public class overriden_system_stream_security : AuthenticationTestBase
     {
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Connection.SetSystemSettingsAsync(settings, new UserCredentials("adm", "admpa$$")).Wait();
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_succeed_for_authorized_user()
         {
             const string stream = "$sys-authorized-user";
@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => DeleteStream(stream, "user1", "pa$$1"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_fail_for_not_authorized_user()
         {
             const string stream = "$sys-not-authorized-user";
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => DeleteStream(stream, "user2", "pa$$2"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_fail_for_anonymous_user()
         {
             const string stream = "$sys-anonymous-user";
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => DeleteStream(stream, null, null));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_system_stream_succeed_for_admin()
         {
             const string stream = "$sys-admin";

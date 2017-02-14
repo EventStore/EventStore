@@ -62,10 +62,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     }, null, false, "", 3, 4, false, 200));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]
@@ -93,21 +93,23 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                          .FromEventNumber);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_handle_repeated_read_events_completed()
         {
             var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
-            _edp.Handle(
-                new ClientMessage.ReadStreamEventsForwardCompleted(
-                    correlationId, "a", 100, 100, ReadStreamResult.Success, 
-                    new[]
-                    {
-                        ResolvedEvent.ForUnresolvedEvent( 
-                            new EventRecord(
-                        2, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type", new byte[0], new byte[0]))
-                    }, null, false, "", 3, 4, false, 100));
+            Assert.Throws<InvalidOperationException>(()=> {
+                _edp.Handle(
+                    new ClientMessage.ReadStreamEventsForwardCompleted(
+                        correlationId, "a", 100, 100, ReadStreamResult.Success, 
+                        new[]
+                        {
+                            ResolvedEvent.ForUnresolvedEvent( 
+                                new EventRecord(
+                            2, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type", new byte[0], new byte[0]))
+                        }, null, false, "", 3, 4, false, 100));
+            });
         }
 
     }

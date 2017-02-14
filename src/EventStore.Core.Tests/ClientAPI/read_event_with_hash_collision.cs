@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class read_event_with_hash_collision : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             return TestConnection.To(node, TcpType.Normal);
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             _node.Start();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();

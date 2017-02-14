@@ -14,10 +14,10 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             new PartitionStateUpdateManager(ProjectionNamesBuilder.CreateForTest("projection"));
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_naming_builder_throws_argument_null_exception()
         {
-            new PartitionStateUpdateManager(null);
+            Assert.Throws<ArgumentNullException>(()=> { new PartitionStateUpdateManager(null); });
         }
     }
 }

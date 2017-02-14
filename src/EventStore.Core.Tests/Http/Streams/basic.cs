@@ -165,7 +165,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header()
             {
-                Assert.IsNotNullOrEmpty(_response.Headers[HttpResponseHeader.Location]);
+                Assert.That(!string.IsNullOrEmpty(_response.Headers[HttpResponseHeader.Location]));
             }
 
             [Test]
@@ -206,7 +206,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header()
             {
-                Assert.IsNotNullOrEmpty(_response.Headers[HttpResponseHeader.Location]);
+                Assert.That(!string.IsNullOrEmpty(_response.Headers[HttpResponseHeader.Location]));
             }
 
             [Test]
@@ -426,11 +426,7 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
-#if __MonoCS__
-        [TestFixture, Category("LongRunning"), Ignore("https://bugzilla.xamarin.com/show_bug.cgi?id=16960")]
-#else
         [TestFixture, Category("LongRunning")]
-#endif
         public class when_getting_from_encoded_all_stream_with_slash : HttpBehaviorSpecification
         {
             private HttpWebResponse _response;
@@ -834,7 +830,8 @@ namespace EventStore.Core.Tests.Http.Streams
                 request.Headers.Add("ES-EventID", Guid.NewGuid().ToString());
                 if (_data == null)
                 {
-                    _data = File.ReadAllBytes("Resources/es-tile.png");
+                    var fileData = HelperExtensions.GetFilePathFromAssembly("Resources/es-tile.png");
+                    _data = File.ReadAllBytes(fileData);
                 }
                 request.ContentLength = _data.Length;
                 request.GetRequestStream().Write(_data, 0, _data.Length);

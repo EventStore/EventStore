@@ -202,7 +202,7 @@ namespace EventStore.Core.Services.Transport.Http
                         var codec = entity.ResponseCodec;
                         var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
                         var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-                        if (msg.LastEventNumber >= msg.FromEventNumber + msg.MaxCount)
+                        if (msg.LastEventNumber + 1 >= msg.FromEventNumber + msg.MaxCount)
                             return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
                         return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
                     case ReadStreamResult.NoStream:

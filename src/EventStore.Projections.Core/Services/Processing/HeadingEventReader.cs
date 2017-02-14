@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using EventStore.Core.Bus;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -24,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private class CommittedEventItem : Item
         {
-            private readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
+            public readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
 
             public CommittedEventItem(ReaderSubscriptionMessage.CommittedEventDistributed message)
                 : base(message.Data.Position)
@@ -77,9 +78,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private TFPos _lastEventPosition = new TFPos(0, -1);
         private TFPos _lastDeletePosition = new TFPos(0, -1);
 
-        public HeadingEventReader(int eventCacheSize)
+        private IPublisher _publisher;
+
+        public HeadingEventReader(int eventCacheSize, IPublisher publisher)
         {
             _eventCacheSize = eventCacheSize;
+            _publisher = publisher;
         }
 
         public bool Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
@@ -167,13 +171,12 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_headSubscribers.ContainsKey(projectionId))
                 throw new InvalidOperationException(
                     string.Format("Projection '{0}' has been already subscribed", projectionId));
-            // if first available event commit position is before the safe TF (prepare) position - join
             if (_subscribeFromPosition.CommitPosition <= fromTransactionFilePosition)
             {
-//                _logger.Trace(
-//                    "The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId,
-//                    fromTransactionFilePosition);
-                DispatchRecentMessagesTo(readerSubscription, fromTransactionFilePosition);
+                if(!DispatchRecentMessagesTo(readerSubscription, fromTransactionFilePosition))
+                {
+                    return false;
+                }
                 AddSubscriber(projectionId, readerSubscription);
                 return true;
             }
@@ -186,23 +189,52 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_headSubscribers.ContainsKey(projectionId))
                 throw new InvalidOperationException(
                     string.Format("Projection '{0}' has not been subscribed", projectionId));
-//            _logger.Trace(
-//                "The '{0}' subscription has unsubscribed from the '{1}' heading distribution point", projectionId,
-//                _eventReaderId);
             _headSubscribers.Remove(projectionId);
         }
 
-        private void DispatchRecentMessagesTo(IReaderSubscription subscription, long fromTransactionFilePosition)
+        private bool DispatchRecentMessagesTo(IReaderSubscription subscription, long fromTransactionFilePosition)
         {
             foreach (var m in _lastMessages)
+            {
                 if (m.Position.CommitPosition >= fromTransactionFilePosition)
-                    m.Handle(subscription);
+                {
+                    try
+                    {
+                        m.Handle(subscription);
+                    }
+                    catch (Exception ex)
+                    {
+                        var item = m as CommittedEventItem;
+                        string message;
+                        if (item != null) {
+                            message = string.Format("The heading subscription failed to handle a recently cached event {0}:{1}@{2} because {3}",
+                                                        item.Message.Data.EventStreamId, item.Message.Data.EventType, item.Message.Data.PositionSequenceNumber, ex.Message);
+                        }else{
+                            message = string.Format("The heading subscription failed to handle a recently cached deleted event at position {0} because {1}",
+                                                        m.Position, ex.Message);
+                        }
+                        _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId, message));
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         private void DistributeMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
             foreach (var subscriber in _headSubscribers.Values)
-                subscriber.Handle(message);
+            {
+                try
+                {
+                    subscriber.Handle(message);
+                }
+                catch (Exception ex)
+                {
+                    _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscriber.SubscriptionId,
+                        string.Format("The heading subscription failed to handle an event {0}:{1}@{2} because {3}", message.Data.EventStreamId, message.Data.EventType, message.Data.PositionSequenceNumber, ex.Message)));
+                }
+            }
         }
 
         private void DistributeMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
@@ -245,9 +277,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription)
         {
-//            _logger.Trace(
-//                "The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId,
-//                _eventReaderId);
             _headSubscribers.Add(publishWithCorrelationId, subscription);
         }
 

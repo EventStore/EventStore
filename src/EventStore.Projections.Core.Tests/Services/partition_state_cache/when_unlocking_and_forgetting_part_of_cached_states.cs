@@ -30,10 +30,10 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             _cache.Unlock(_cachedAtCheckpointTag2, forgetUnlocked: true);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void partitions_locked_before_the_unlock_position_cannot_be_retrieved_as_locked()
         {
-            _cache.GetLockedPartitionState("partition1");
+            Assert.Throws<InvalidOperationException>(()=> { _cache.GetLockedPartitionState("partition1"); });
         }
 
         [Test]

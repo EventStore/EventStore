@@ -12,7 +12,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class isjson_flag_on_event : SpecificationWithDirectory
     {
         private MiniNode _node;

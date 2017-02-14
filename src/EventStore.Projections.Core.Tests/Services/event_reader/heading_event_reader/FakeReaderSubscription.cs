@@ -7,7 +7,7 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
-    class FakeReaderSubscription : IReaderSubscription
+    public class FakeReaderSubscription : IReaderSubscription
     {
         private readonly List<ReaderSubscriptionMessage.CommittedEventDistributed> _receivedEvents =
             new List<ReaderSubscriptionMessage.CommittedEventDistributed>();
@@ -35,6 +35,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 
         public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
+            if(message.Data != null && message.Data.PositionStreamId == "throws")
+            {
+                throw new Exception("Bad Handler");
+            }
             _receivedEvents.Add(message);
         }
 
@@ -113,10 +117,63 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             get { return "FakeReaderSubscription"; }
         }
 
+        public Guid SubscriptionId
+        {
+            get { return Guid.Empty; }
+        }
+
+        private FakeEventReader _eventReader;
+        public FakeEventReader EventReader { get { return _eventReader; } }
+
         public IEventReader CreatePausedEventReader(
             IPublisher publisher, IODispatcher ioDispatcher, Guid forkedEventReaderId)
         {
+            _eventReader = new FakeEventReader(forkedEventReaderId);
+            return _eventReader;
+        }
+    }
+
+    public class FakeEventReader : IEventReader
+    {
+        public Guid EventReaderId { get; private set; }
+        public FakeEventReader(Guid eventReaderId)
+        {
+            EventReaderId = eventReaderId;
+        }
+        public void Dispose()
+        {
+        }
+
+        public void Pause()
+        {
+        }
+
+        public void Resume()
+        {
+        }
+
+        public void SendNotAuthorized()
+        {
+        }
+    }
+
+    public class FakeReaderStrategy : IReaderStrategy
+    {
+        public EventFilter EventFilter { get; set; }
+        public bool IsReadingOrderRepeatable { get; set; }
+        public PositionTagger PositionTagger { get; set; }
+        private FakeReaderSubscription _subscription;
+        public Guid EventReaderId { get { return _subscription.EventReader.EventReaderId; } }
+
+        public IEventReader CreatePausedEventReader(Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents)
+        {
             throw new NotImplementedException();
+        }
+
+        public IReaderSubscription CreateReaderSubscription(IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId, ReaderSubscriptionOptions readerSubscriptionOptions)
+        {
+            _subscription = new FakeReaderSubscription();
+            return _subscription;
         }
     }
 }

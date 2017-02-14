@@ -105,6 +105,27 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Acknowledge a message by event id (this will tell the server it has been processed)
+        /// </summary>
+        /// <remarks>There is no need to ack a message if you have Auto Ack enabled</remarks>
+        /// <param name="eventId">The <see cref="ResolvedEvent"></see> OriginalEvent.EventId to acknowledge</param>
+        public void Acknowledge(Guid eventId)
+        {
+            _subscription.NotifyEventsProcessed(new[] { eventId });
+        }
+
+        /// <summary>
+        /// Acknowledge a group of messages by event id (this will tell the server it has been processed)
+        /// </summary>
+        /// <remarks>There is no need to ack a message if you have Auto Ack enabled</remarks>
+        /// <param name="events">The <see cref="ResolvedEvent"></see> OriginalEvent.EventIds to acknowledge there should be less than 2000 to ack at a time.</param>
+        public void Acknowledge(IEnumerable<Guid> events)
+        {
+            var ids = events.ToArray();
+            if (ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
+            _subscription.NotifyEventsProcessed(ids);
+        }
+        /// <summary>
         /// Mark a message failed processing. The server will be take action based upon the action paramter
         /// </summary>
         /// <param name="event">The event to mark as failed</param>

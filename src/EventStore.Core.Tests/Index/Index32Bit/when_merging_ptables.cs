@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
         private PTable _newtable;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index32Bit);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _newtable.Dispose();
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
         private PTable _newtable;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index64Bit);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _newtable.Dispose();
@@ -136,7 +136,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
         private PTable _newtable;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -162,7 +162,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.Index64Bit);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _newtable.Dispose();
@@ -211,7 +211,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
         private PTable _newtable;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             hasher = new Murmur3AUnsafe();
@@ -234,7 +234,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.Index64Bit);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _newtable.Dispose();
@@ -279,7 +279,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
 
         private PTable _newtable;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             hasher = new Murmur3AUnsafe();
@@ -308,7 +308,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.Index64Bit);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _newtable.Dispose();

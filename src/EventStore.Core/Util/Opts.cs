@@ -64,6 +64,8 @@ namespace EventStore.Core.Util
         public const string IntTcpHeartbeatIntervalDescr = "Heartbeat interval for internal TCP sockets";
         public const int IntTcpHeartbeatIntervalDefault = 700;
 
+        public const string GossipOnSingleNodeDescr = "When enabled tells a single node to run gossip as if it is a cluster";
+        public const bool GossipOnSingleNodeDefault = false;
 
         public const string StatsPeriodDescr = "The number of seconds between statistics gathers.";
         public const int    StatsPeriodDefault = 30;
@@ -107,6 +109,11 @@ namespace EventStore.Core.Util
         public const string SkipDbVerifyDescr = "Bypasses the checking of file hashes of database during startup (allows for faster startup).";
         public const bool SkipDbVerifyDefault = false;
 
+        public const string WriteThroughDescr = "Enables Write Through when writing to the file system, this bypasses filesystem caches.";
+        public const bool WriteThroughDefault = false;
+
+        public const string UnbufferedDescr = "Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem caches.";
+        public const bool UnbufferedDefault = false;
 
         public const string ReaderThreadsCountDescr = "The number of reader threads to use for processing reads.";
         public const int ReaderThreadsCountDefault = 4;
@@ -274,6 +281,9 @@ namespace EventStore.Core.Util
 
         public const string UseInternalSslDescr = "Whether to use secure internal communication.";
         public const bool   UseInternalSslDefault = false;
+
+        public const string DisableInsecureTCPDescr = "Whether to disable insecure TCP communication";
+        public const bool   DisableInsecureTCPDefault = false;
 
         public const string SslTargetHostDescr = "Target host of server's SSL certificate.";
         public static readonly string SslTargetHostDefault = "n/a";

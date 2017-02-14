@@ -19,11 +19,11 @@ namespace EventStore.Core.Tests.TransactionLog
         private PrepareLogRecord _prepare1;
         private PrepareLogRecord _prepare2;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, false);
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, isScavenged: false, inMem: false, unbuffered: false, writethrough: false);
 
             _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _chunk.Flush();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _chunk.Dispose();

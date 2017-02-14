@@ -33,15 +33,16 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                 });
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void throws_if_position_is_prior_to_the_last_event_position()
         {
-            _stream.EmitEvents(
+            Assert.Throws<InvalidOperationException>(()=> {_stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 80, 70), null)
                 });
+            });
         }
     }
 }

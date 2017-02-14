@@ -11,7 +11,7 @@ using System.Threading;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Ignore("Very long running")]
-    [Category("LongRunning")]
+    [Category("LongRunning"), Category("ClientAPI")]
     public class catchup_subscription_handles_small_batch_sizes : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.ClientAPI
         private CatchUpSubscriptionSettings _settings;
         private IEventStoreConnection _conn;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.ClientAPI
             return events.ToArray();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _conn.Dispose();

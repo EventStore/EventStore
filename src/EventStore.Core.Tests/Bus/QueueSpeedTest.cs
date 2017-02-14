@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
 {
-    [TestFixture, Ignore]
+    [TestFixture, Ignore("Long running")]
     public class QueueSpeedTest
     {
         [Test, Category("LongRunning"), Explicit]

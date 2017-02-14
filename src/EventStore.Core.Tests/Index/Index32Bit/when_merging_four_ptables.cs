@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
         protected byte _ptableVersion = PTableVersions.Index32Bit;
         private IHasher hasher;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             hasher = new Murmur3AUnsafe();
@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Index.Index32Bit
             _newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash << 32 | hasher.Hash(streamId), _ => true, _ => new System.Tuple<string, bool>("", true), _ptableVersion);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _newtable.Dispose();

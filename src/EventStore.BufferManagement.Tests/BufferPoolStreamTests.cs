@@ -118,19 +118,19 @@ namespace EventStore.BufferManagement.Tests
             Assert.AreEqual(499, stream.Position);
         }
 
-        [Test, ExpectedException(typeof(ArgumentOutOfRangeException))]
+        [Test]
         public void a_negative_position_throws_an_argumentexception()
         {
             BufferPoolStream stream = new BufferPoolStream(BufferPool);
-            stream.Seek(-1, SeekOrigin.Begin);
+            Assert.Throws<ArgumentOutOfRangeException>(()=> { stream.Seek(-1, SeekOrigin.Begin); });
         }
 
-        [Test, ExpectedException(typeof(ArgumentOutOfRangeException))]
+        [Test]
         public void seeking_past_end_of_stream_throws_an_argumentexception()
         {
             BufferPoolStream stream = new BufferPoolStream(BufferPool);
             stream.Write(new byte[500], 0, 500);
-            stream.Seek(501, SeekOrigin.Begin);
+            Assert.Throws<ArgumentOutOfRangeException>(()=> { stream.Seek(501, SeekOrigin.Begin); });
         }
     }
 

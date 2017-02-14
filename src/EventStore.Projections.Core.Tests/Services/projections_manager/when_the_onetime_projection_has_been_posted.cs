@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test, Category("v8")]
         public void it_has_been_posted()
         {
-            Assert.IsNotNullOrEmpty(_projectionName);
+            Assert.IsFalse(string.IsNullOrEmpty(_projectionName));
         }
 
         [Test, Category("v8")]

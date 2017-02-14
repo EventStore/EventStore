@@ -3,6 +3,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class list_users: TestWithNode
     {
         [Test]

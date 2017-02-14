@@ -161,6 +161,16 @@ namespace EventStore.Core.Tests.Helpers
                     message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
         }
 
+        protected void CompleteWriteWithResult(OperationResult result)
+        {
+            var message = _writesQueue.Dequeue();
+            ProcessWrite(
+                message.Envelope, message.CorrelationId, message.EventStreamId, ExpectedVersion.Any, message.Events,
+                (firstEventNumber, lastEventNumber) => new ClientMessage.WriteEventsCompleted(message.CorrelationId, result, String.Empty),
+                new ClientMessage.WriteEventsCompleted(
+                    message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
+        }
+
         protected void AllWriteComplete()
         {
             while (_writesQueue.Count > 0)

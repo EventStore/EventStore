@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             return TestConnection.Create(node.TcpEndPoint, TcpType.Normal, _userCredentials);
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             }
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();

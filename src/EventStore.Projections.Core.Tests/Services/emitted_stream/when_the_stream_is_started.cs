@@ -22,10 +22,10 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             _stream.Start();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void start_throws_invalid_operation_exception()
         {
-            _stream.Start();
+            Assert.Throws<InvalidOperationException>(()=> { _stream.Start(); });
         }
     }
 }

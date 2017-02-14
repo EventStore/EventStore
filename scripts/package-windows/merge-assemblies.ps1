@@ -37,7 +37,7 @@ Function Merge-ClusterNode
                        % {[string] (Join-Path $relativeBuildDirectory $_ )}) -join " "
 
     # Find the path of the .NET Framework DLLs
-    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
+    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6')
 
     $outputName = "EventStore.ClusterNode.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
@@ -78,7 +78,7 @@ Function Merge-TestClient
                        % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
-    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
+    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6')
 
     $outputName = "EventStore.TestClient.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
@@ -119,7 +119,7 @@ Function Merge-PAdmin
                        % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
-    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
+    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6')
 
     $outputName = "EventStore.PAdmin.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
@@ -160,7 +160,7 @@ Function Merge-EsQuery
                        % { Join-Path $relativeBuildDirectory $_ } ) -join " "
 
     # Find the path of the .NET Framework DLLs
-    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
+    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6')
 
     $outputName = "EventStore.Query.exe"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
@@ -201,7 +201,7 @@ Function Merge-ClientAPI
                        % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
-    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
+    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6')
 
     $outputName = "EventStore.ClientAPI.dll"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName
@@ -237,7 +237,7 @@ Function Merge-ClientAPIEmbedded
                        % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
-    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
+    $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6')
 
     $outputName = "EventStore.ClientAPI.Embedded.dll"
     $outputPath = Join-Path (Resolve-Path -Relative $OutputDirectory) $outputName

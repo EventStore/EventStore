@@ -10,35 +10,35 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
     [TestFixture]
     public class when_a_core_projection_checkpoint_manager_has_been_created : TestFixtureWithCoreProjectionCheckpointManager
     {
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void stopping_throws_invalid_operation_exception()
         {
-            _manager.Stopping();
+            Assert.Throws<InvalidOperationException>(()=> { _manager.Stopping(); });
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void stopped_throws_invalid_operation_exception()
         {
-            _manager.Stopped();
+            Assert.Throws<InvalidOperationException>(()=> { _manager.Stopped(); });
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void event_processed_throws_invalid_operation_exception()
         {
 //            _manager.StateUpdated("", @"{""state"":""state""}");
-            _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f);
+            Assert.Throws<InvalidOperationException>(()=> { _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f); });
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void checkpoint_suggested_throws_invalid_operation_exception()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f);
+            Assert.Throws<InvalidOperationException>(()=> { _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f); });
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void ready_for_checkpoint_throws_invalid_operation_exception()
         {
-            _manager.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(null));
+            Assert.Throws<InvalidOperationException>(()=> { _manager.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(null)); });
         }
 
         [Test]

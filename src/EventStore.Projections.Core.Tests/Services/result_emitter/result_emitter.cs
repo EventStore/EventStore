@@ -25,10 +25,10 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
                 new ResultEventEmitter(_namesBuilder);
             }
 
-            [Test, ExpectedException(typeof (ArgumentNullException))]
+            [Test]
             public void null_names_builder_throws_argument_null_exception()
             {
-                new ResultEventEmitter(null);
+                Assert.Throws<ArgumentNullException>(()=> { new ResultEventEmitter(null); });
             }
         }
 

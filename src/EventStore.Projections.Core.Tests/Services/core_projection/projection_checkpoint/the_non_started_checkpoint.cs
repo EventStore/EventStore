@@ -19,10 +19,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                 CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void prepare_throws_invalid_operation_exception()
         {
-            _checkpoint.Prepare(CheckpointTag.FromPosition(0, 200, 150));
+            Assert.Throws<InvalidOperationException>(()=> { _checkpoint.Prepare(CheckpointTag.FromPosition(0, 200, 150)); });
         }
     }
 }

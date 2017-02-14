@@ -91,6 +91,28 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.AreEqual(new Uri("http://www.my-host.com:1234/path/?key=value#anchor"), requestedUri);
         }
 
+        [Test, Category("prefix")]
+        public void with_forward_prefix_adds_prefix_when_already_prefix()
+        {
+            string prefix = "prefix";
+            var headers = new NameValueCollection { { "X-Forwarded-Prefix", prefix } };
+            var requestedUri = 
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+            Assert.AreEqual(new Uri("http://www.example.com:1234/prefix/path/?key=value#anchor"), requestedUri);
+        }
+
+
+        [Test, Category("prefix")]
+        public void with_forward_prefix_adds_prefix_when_not_prefix()
+        {
+            var start = new Uri("http://www.my-host.com:1234/?key=value#anchor");
+            string prefix = "prefix";
+            var headers = new NameValueCollection { { "X-Forwarded-Prefix", prefix } };
+            var requestedUri = 
+                HttpEntity.BuildRequestedUrl(start, headers, null, 0);
+            Assert.AreEqual(new Uri("http://www.my-host.com:1234/prefix/?key=value#anchor"), requestedUri);
+        }
+
         [Test]
         public void with_proto_forward_host_and_advertised_ip_forwarded_host_is_used()
         {

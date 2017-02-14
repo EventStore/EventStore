@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Net;
 using EventStore.ClientAPI;
-using EventStore.Core.Services;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 
@@ -22,6 +22,11 @@ namespace EventStore.Core.Tests.Http.StreamSecurity
         protected override bool GivenSkipInitializeStandardUsersCheck()
         {
             return false;
+        }
+
+        protected override MiniNode CreateMiniNode()
+        {
+            return new MiniNode(PathName, skipInitializeStandardUsersCheck: GivenSkipInitializeStandardUsersCheck(), enableTrustedAuth: true);
         }
 
         protected void PostUser(string login, string userFullName, string password, params string[] groups)

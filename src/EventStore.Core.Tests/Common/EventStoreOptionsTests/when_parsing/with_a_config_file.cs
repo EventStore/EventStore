@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
 {
@@ -15,7 +16,8 @@ namespace EventStore.Core.Tests.Common.EventStoreOptionsTests.when_parsing
         [Test]
         public void should_use_the_config_file_value()
         {
-            var args = new string[] { "-Config", "TestConfigs/test_config.yaml" };
+            var configFile = HelperExtensions.GetFilePathFromAssembly("TestConfigs/test_config.yaml");
+            var args = new string[] { "-config", configFile };
             var testArgs = EventStoreOptions.Parse<TestArgs>(args, Opts.EnvPrefix);
             Assert.AreEqual("~/logDirectoryFromConfigFile", testArgs.Log);
         }

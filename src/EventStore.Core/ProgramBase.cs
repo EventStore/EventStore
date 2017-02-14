@@ -112,9 +112,9 @@ namespace EventStore.Core
                     Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
                         "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
                 }
-                if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
+                if(OS.IsUnix && !(OS.GetRuntimeVersion().StartsWith("4.6.2")))
                 {
-                    Log.Warn("You appear to be running a version of Mono which is untested and unsupported. Only Mono 3 is supported at this time.");
+                    Log.Warn("You appear to be running a version of Mono which is untested and not supported. Only Mono 4.6.2 is supported at this time.");
                 }
             }
         }
@@ -146,7 +146,7 @@ namespace EventStore.Core
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})", "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
             Log.Info("{0,-25} {1} ({2})", "OS:", OS.OsFlavor, Environment.OSVersion);
             Log.Info("{0,-25} {1} ({2}-bit)", "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8);
-            Log.Info("{0,-25} {1} ({2} max)", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+            Log.Info("{0,-25} {1}", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
             Log.Info("{0,-25} {1}", "LOGS:", LogManager.LogsDirectory);
             Log.Info("{0}", EventStoreOptions.DumpOptions());
 

@@ -12,8 +12,8 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         protected override void Given()
         {
             _projection = @"
-                fromAll().when({$any: 
-                    function(state, event) {
+                fromAll().when({
+                    $any: function(state, event) {
                         state.a = '1';
                         return state;
                     }

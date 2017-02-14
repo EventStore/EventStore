@@ -12,7 +12,7 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class read_stream_events_with_unresolved_linkto : SpecificationWithMiniNode
     {
         private EventData[] _testEvents;
