@@ -46,6 +46,12 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             //wait for the mem table to be dumped
             System.Threading.Thread.Sleep(500);
         }
+
+        public override void TestFixtureTearDown()
+        {
+            _tableIndex.Close();
+            base.TestFixtureTearDown();
+        }
     }
 
     [TestFixture]
@@ -197,6 +203,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             _tableIndex.Add(1, streamId, 1, 4);
             _tableIndex.Add(1, streamId, 2, 6);
             System.Threading.Thread.Sleep(500);
+            _tableIndex.Close(false);
             _tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
                                          () => new HashListMemTable(PTableVersions.Index64Bit, maxSize: _maxMemTableSize),
                                          () => _fakeReader,
