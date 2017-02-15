@@ -318,7 +318,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             lock (_lock)
             {
                 StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0),
-                    DateTime.UtcNow + _settings.MessageTimeout);
+                    _settings.MessageTimeout == TimeSpan.MaxValue ? DateTime.MaxValue : DateTime.UtcNow + _settings.MessageTimeout);
             }
         }
 

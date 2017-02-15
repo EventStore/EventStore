@@ -909,6 +909,37 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             Assert.AreEqual(4, envelope1.Replies.Count);
         }
 
+        [Test]
+        public void disable_timeout_doesnt_timeout()
+        {
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var parker = new FakeMessageParker();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(parker)
+                    .WithMaxRetriesOf(0)
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .DontTimeoutMessages());
+            reader.Load(null);
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1)
+            }, 1, false);
+            envelope1.Replies.Clear();
+            // Default timeout is 30s
+            sub.NotifyClockTick(DateTime.UtcNow.AddMinutes(1));
+            Assert.AreEqual(0, envelope1.Replies.Count);
+            Assert.AreEqual(0, parker.ParkedEvents.Count);
+        }
     }
 
     [TestFixture]
