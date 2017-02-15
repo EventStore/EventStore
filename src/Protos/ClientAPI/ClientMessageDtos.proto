@@ -60,6 +60,7 @@ message WriteEventsCompleted {
 	required int32 last_event_number = 4;
 	optional int64 prepare_position = 5;
 	optional int64 commit_position = 6;
+	optional int32 current_version  = 7;
 }
 
 message DeleteStream {

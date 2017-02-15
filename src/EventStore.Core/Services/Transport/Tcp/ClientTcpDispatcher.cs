@@ -165,7 +165,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                                    msg.FirstEventNumber,
                                                                    msg.LastEventNumber,
                                                                    msg.PreparePosition,
-                                                                   msg.CommitPosition);
+                                                                   msg.CommitPosition,
+                                                                   msg.CurrentVersion);
             return new TcpPackage(TcpCommand.WriteEventsCompleted, msg.CorrelationId, dto.Serialize());
         }
 
