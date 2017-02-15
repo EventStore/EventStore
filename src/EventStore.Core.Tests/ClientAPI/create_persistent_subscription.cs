@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
 
     [TestFixture, Category("LongRunning")]
-    public class create_persistent_subscription_with_too_big_retry_after : SpecificationWithMiniNode
+    public class create_persistent_subscription_with_too_big_checkpoint_after : SpecificationWithMiniNode
     {
 
         protected override void When()
@@ -101,6 +101,34 @@ namespace EventStore.Core.Tests.ClientAPI
         public void the_build_fails_with_argument_exception()
         {
             Assert.Throws<ArgumentException>(() => PersistentSubscriptionSettings.Create().CheckPointAfter(TimeSpan.FromDays(25 * 365)).Build());
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
+    public class create_persistent_subscription_with_dont_timeout : SpecificationWithMiniNode
+    {
+        private readonly string _stream = Guid.NewGuid().ToString();
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent()
+                                                                .DontTimeoutMessages();
+        protected override void When()
+        {
+        } 
+
+        [Test]
+        public void the_message_timeout_should_be_zero()
+        {
+            Assert.That(_settings.MessageTimeout == TimeSpan.Zero);
+        }
+
+        [Test]
+        public void the_subscription_is_created_without_error()
+        {
+            Assert.DoesNotThrow(
+                () => 
+                    _conn.CreatePersistentSubscriptionAsync(_stream, "dont-timeout", _settings, DefaultData.AdminCredentials).Wait()
+            );
         }
     }
 
