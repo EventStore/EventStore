@@ -155,7 +155,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                              dto.CommitPosition ?? -1);
             return new ClientMessage.WriteEventsCompleted(package.CorrelationId,
                                                           (OperationResult)dto.Result,
-                                                          dto.Message);
+                                                          dto.Message,
+                                                          dto.CurrentVersion ?? -1);
         }
 
         private static TcpPackage WrapWriteEventsCompleted(ClientMessage.WriteEventsCompleted msg)
