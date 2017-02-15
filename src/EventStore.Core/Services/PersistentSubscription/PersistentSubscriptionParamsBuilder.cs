@@ -250,6 +250,16 @@ namespace EventStore.Core.Services.PersistentSubscription
         }
 
         /// <summary>
+        /// Sets the timeout timespan to about 30k years. If you need larger please let us know.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
+        public PersistentSubscriptionParamsBuilder DontTimeoutMessages()
+        {
+            _timeout = TimeSpan.MaxValue;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the number of times a message should be retried before being considered a bad message
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>

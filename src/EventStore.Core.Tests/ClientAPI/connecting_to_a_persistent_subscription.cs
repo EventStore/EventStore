@@ -677,98 +677,223 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_disable_timeout_get_all : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
+            .DoNotResolveLinkTos()
+            .WithMaxRetriesOf(0)
+            .DontTimeoutMessages()
+            .StartFromBeginning();
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+
+        private const string _group = "disabletimeout";
+        private int _received = 0;
+
+        protected override void Given()
+        {
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                DefaultData.AdminCredentials).Wait();
+            _conn.ConnectToPersistentSubscription(
+                _stream,
+                _group,
+                HandleEvent,
+                (sub, reason, ex) => { },
+                DefaultData.AdminCredentials,
+                // Make sure the store sends us the message and its not buffered
+                //
+                // Note that bufferSize: 0 does not work no events will be delivered
+                // In effect theres no way to receive just 1 event, as while the event is delivered another will be buffered
+                bufferSize: 1);
+
+        }
+
+        protected override void When()
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                var id = Guid.NewGuid();
+                _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
+                    new EventData(id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+            }
+
+        }
+        
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        {
+            _received++;
+
+            if (_received == 3)
+            {
+                _resetEvent.Set();
+                return;
+            }
+
+            // Default server timeout is 30s
+            // Is there a way to fake a long timeout??
+            Thread.Sleep(TimeSpan.FromSeconds(40));
+        }
+
+        [Test]
+        public void the_subscription_gets_all_messages()
+        {
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromMinutes(2)));
+            Assert.AreEqual(3, _received);
+        }
+    }
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_with_timeout_get_two : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
+            .DoNotResolveLinkTos()
+            .WithMaxRetriesOf(0)
+            .WithMessageTimeoutOf(TimeSpan.FromSeconds(1))
+            .StartFromBeginning();
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+
+        private const string _group = "withtimeout";
+        private int _received = 0;
+
+        protected override void Given()
+        {
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                DefaultData.AdminCredentials).Wait();
+            _conn.ConnectToPersistentSubscription(
+                _stream,
+                _group,
+                HandleEvent,
+                (sub, reason, ex) => { },
+                DefaultData.AdminCredentials,
+                // Note that bufferSize: 0 does not work no events will be delivered
+                // In effect theres no way to receive just 1 event, as while the event is delivered another will be buffered
+                bufferSize: 1);
+
+        }
+
+        protected override void When()
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                var id = Guid.NewGuid();
+                _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
+                    new EventData(id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+            }
+
+        }
+
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        {
+            _received++;
+
+            // Is there a way to fake a long timeout??
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+        }
+
+        [Test]
+        public void the_subscription_gets_two_messages()
+        {
+            Assert.IsFalse(_resetEvent.WaitOne(TimeSpan.FromSeconds(5)));
+            Assert.AreEqual(2, _received);
+        }
+    }
     //ALL
 
-/*
+    /*
 
-    [TestFixture, Category("LongRunning")]
-    public class connect_to_non_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
-    {
-        private Exception _caught;
-
-        protected override void When()
+        [TestFixture, Category("LongRunning")]
+        public class connect_to_non_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
         {
-            try
+            private Exception _caught;
+
+            protected override void When()
             {
-                _conn.ConnectToPersistentSubscriptionForAll("nonexisting2",
+                try
+                {
+                    _conn.ConnectToPersistentSubscriptionForAll("nonexisting2",
+                        (sub, e) => Console.Write("appeared"),
+                        (sub, reason, ex) =>
+                        {
+                        }, 
+                        DefaultData.AdminCredentials);
+                    throw new Exception("should have thrown");
+                }
+                catch (Exception ex)
+                {
+                    _caught = ex;
+                }
+            }
+
+            [Test]
+            public void the_completion_fails()
+            {
+                Assert.IsNotNull(_caught);
+            }
+
+            [Test]
+            public void the_exception_is_an_argument_exception()
+            {
+                Assert.IsInstanceOf<ArgumentException>(_caught.InnerException);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class connect_to_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
+        {
+            private EventStorePersistentSubscription _sub;
+            private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                    .DoNotResolveLinkTos()
+                                                                    .StartFromCurrent();
+            protected override void When()
+            {
+                _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", _settings, DefaultData.AdminCredentials).Wait();
+                _sub = _conn.ConnectToPersistentSubscriptionForAll("agroupname17",
                     (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) =>
-                    {
-                    }, 
-                    DefaultData.AdminCredentials);
-                throw new Exception("should have thrown");
+                    (sub, reason, ex) => { }, DefaultData.AdminCredentials);
             }
-            catch (Exception ex)
+
+            [Test]
+            public void the_subscription_suceeds()
             {
-                _caught = ex;
+                Assert.IsNotNull(_sub);
             }
         }
 
-        [Test]
-        public void the_completion_fails()
+        [TestFixture, Category("LongRunning")]
+        public class connect_to_existing_persistent_all_subscription_without_permissions : SpecificationWithMiniNode
         {
-            Assert.IsNotNull(_caught);
-        }
+            private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                    .DoNotResolveLinkTos()
+                                                                    .StartFromCurrent();
 
-        [Test]
-        public void the_exception_is_an_argument_exception()
-        {
-            Assert.IsInstanceOf<ArgumentException>(_caught.InnerException);
-        }
-    }
-
-    [TestFixture, Category("LongRunning")]
-    public class connect_to_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
-    {
-        private EventStorePersistentSubscription _sub;
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
-                                                                .DoNotResolveLinkTos()
-                                                                .StartFromCurrent();
-        protected override void When()
-        {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", _settings, DefaultData.AdminCredentials).Wait();
-            _sub = _conn.ConnectToPersistentSubscriptionForAll("agroupname17",
-                (sub, e) => Console.Write("appeared"),
-                (sub, reason, ex) => { }, DefaultData.AdminCredentials);
-        }
-
-        [Test]
-        public void the_subscription_suceeds()
-        {
-            Assert.IsNotNull(_sub);
-        }
-    }
-
-    [TestFixture, Category("LongRunning")]
-    public class connect_to_existing_persistent_all_subscription_without_permissions : SpecificationWithMiniNode
-    {
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
-                                                                .DoNotResolveLinkTos()
-                                                                .StartFromCurrent();
-
-        protected override void When()
-        {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", _settings,
-                DefaultData.AdminCredentials).Wait();
-        }
-
-        [Test]
-        public void the_subscription_fails_to_connect()
-        {
-            try
+            protected override void When()
             {
-                _conn.ConnectToPersistentSubscriptionForAll("agroupname55",
-                    (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) => { });
-                throw new Exception("should have thrown.");
+                _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", _settings,
+                    DefaultData.AdminCredentials).Wait();
             }
-            catch (Exception ex)
+
+            [Test]
+            public void the_subscription_fails_to_connect()
             {
-                Assert.IsInstanceOf<AggregateException>(ex);
-                Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
+                try
+                {
+                    _conn.ConnectToPersistentSubscriptionForAll("agroupname55",
+                        (sub, e) => Console.Write("appeared"),
+                        (sub, reason, ex) => { });
+                    throw new Exception("should have thrown.");
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsInstanceOf<AggregateException>(ex);
+                    Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
+                }
             }
         }
-    }
-*/
+    */
 
 }
