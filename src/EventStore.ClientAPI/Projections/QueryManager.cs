@@ -9,39 +9,42 @@ using Newtonsoft.Json.Linq;
 namespace EventStore.ClientAPI.Projections
 {
     /// <summary>
-    /// TODO
+    /// API for executinmg queries in the Event Store through C# code. Communicates
+    /// with the Event Store over the RESTful API.
     /// </summary>
     public class QueryManager
     {
-        private readonly TimeSpan _queryResultTimeout;
+        private readonly TimeSpan _queryTimeout;
         private readonly ProjectionsManager _projectionsManager;
 
         /// <summary>
-        /// TODO
+        /// Creates a new instance of <see cref="QueryManager"/>.
         /// </summary>
-        /// <param name="log"></param>
-        /// <param name="httpEndPoint"></param>
-        /// <param name="operationTimeout"></param>
-        /// <param name="queryResultTimeout"></param>
-        public QueryManager(ILogger log, IPEndPoint httpEndPoint, TimeSpan operationTimeout, TimeSpan queryResultTimeout)
+        /// <param name="log">An instance of <see cref="ILogger"/> to use for logging.</param>
+        /// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
+        /// <param name="projectionOperationTimeout">Timeout of projection API operations</param>
+        /// <param name="queryTimeout">Timeout of query execution</param>
+        public QueryManager(ILogger log, IPEndPoint httpEndPoint, TimeSpan projectionOperationTimeout, TimeSpan queryTimeout)
         {
-            _queryResultTimeout = queryResultTimeout;
-            _projectionsManager = new ProjectionsManager(log, httpEndPoint, operationTimeout);
+            _queryTimeout = queryTimeout;
+            _projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout);
         }
 
         /// <summary>
-        /// TODO
+        /// Asynchronously executes a query
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="userCredentials"></param>
-        /// <returns></returns>
-        public async Task<string> GetResultAsync(string name, UserCredentials userCredentials = null)
+        /// <param name="name">A name for the query.</param>
+        /// <param name="query">The JavaScript source code for the query.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
+        /// <returns>String of JSON containing query result.</returns>
+        public async Task<string> ExecuteAsync(string name, string query, UserCredentials userCredentials = null)
         {
             return await Task.Run(async () =>
             {
+                await _projectionsManager.CreateTransientAsync(name, query, userCredentials);
                 await WaitForCompletedAsync(name, userCredentials);
                 return await _projectionsManager.GetStateAsync(name, userCredentials);
-            }).WithTimeout(_queryResultTimeout).ConfigureAwait(false);
+            }).WithTimeout(_queryTimeout).ConfigureAwait(false);
         }
 
         private async Task WaitForCompletedAsync(string name, UserCredentials userCredentials)

@@ -66,8 +66,8 @@
     <Compile Include="ClientAPI\event_by_type_index.cs" />
     <Compile Include="ClientAPI\event_by_type_index\when_reverting_after_index_catches_up.cs" />
     <Compile Include="ClientAPI\list_projections.cs" />
-    <Compile Include="ClientAPI\query_result\with_long_from_all_query\when_getting_result.cs" />
-    <Compile Include="ClientAPI\query_result\with_long_from_all_query\when_getting_result_and_timeout_exceeded.cs" />
+    <Compile Include="ClientAPI\when_executing_query\with_long_from_all_query\when_getting_result.cs" />
+    <Compile Include="ClientAPI\when_executing_query\with_long_from_all_query\when_getting_result_and_timeout_exceeded.cs" />
     <Compile Include="ClientAPI\specification_with_standard_projections_runnning.cs" />
     <Compile Include="ClientAPI\when_handling_created\with_from_all_any_foreach_projection\when_running_and_events_are_posted.cs" />
     <Compile Include="ClientAPI\when_handling_created\with_from_all_foreach_projection\when_running_and_events_are_indexed.cs" />

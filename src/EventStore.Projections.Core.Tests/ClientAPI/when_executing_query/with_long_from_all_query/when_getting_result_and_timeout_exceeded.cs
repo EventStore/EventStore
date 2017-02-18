@@ -1,7 +1,7 @@
 ﻿using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.ClientAPI.query_result.with_long_from_all_query
+namespace EventStore.Projections.Core.Tests.ClientAPI.when_executing_query.with_long_from_all_query
 {
     [TestFixture, Category("LongRunning")]
     public class when_getting_result_and_timeout_exceeded : specification_with_standard_projections_runnning
@@ -18,22 +18,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.query_result.with_long_fro
             WaitIdle();
         }
 
-        protected override void When()
+        [Test, Category("Network")]
+        public void throws_exception()
         {
-            base.When();
-
-            PostQuery(@"
+            const string query = @"
 fromAll().when({
     $init: function(){return {count:0}},
     type1: function(s,e){s.count++},
 });
-");
-        }
-
-        [Test, Category("Network")]
-        public void throws_exception()
-        {
-            Assert.ThrowsAsync<OperationTimedOutException>(() => _queryManager.GetResultAsync("query", _admin));
+";
+            Assert.ThrowsAsync<OperationTimedOutException>(() => _queryManager.ExecuteAsync("query", query, _admin));
         }
     }
 }

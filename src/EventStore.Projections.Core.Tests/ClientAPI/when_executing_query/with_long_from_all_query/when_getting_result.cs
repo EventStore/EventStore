@@ -17,22 +17,17 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.query_result.with_long_fro
             WaitIdle();
         }
 
-        protected override void When()
+        [Test, Category("Network")]
+        public void waits_for_results()
         {
-            base.When();
-
-            PostQuery(@"
+            const string query = @"
 fromAll().when({
     $init: function(){return {count:0}},
     type1: function(s,e){s.count++},
 });
-");
-        }
+";
 
-        [Test, Category("Network")]
-        public void waits_for_results()
-        {
-            var result = _queryManager.GetResultAsync("query", _admin).Result;
+            var result = _queryManager.ExecuteAsync("query", query, _admin).GetAwaiter().GetResult();
             Assert.AreEqual("{\"count\":10000}", result);
         }
     }
