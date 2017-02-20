@@ -39,6 +39,9 @@ namespace EventStore.TestClient
         public bool Force { get; set; }
         public string[] Command { get; set; }
 
+        public bool UseEmbeddedNode { get; set; }
+        public string EmbeddedNodeDataPath { get; set; }
+
         public ClientOptions()
         {
             Config = "";
@@ -56,6 +59,8 @@ namespace EventStore.TestClient
             WriteWindow = 2000;
             PingWindow = 2000;
             Force = false;
+            UseEmbeddedNode = false;
+            EmbeddedNodeDataPath = null;
         }
     }
 }
