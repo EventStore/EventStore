@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using ClientMessage = EventStore.ClientAPI.Messages.ClientMessage;
 
 namespace EventStore.ClientAPI.Embedded
@@ -59,7 +60,7 @@ namespace EventStore.ClientAPI.Embedded
         {
             if (eventRecord == null) return null;
             return new ClientMessage.EventRecord(
-                eventRecord.EventStreamId, eventRecord.EventNumber,
+                eventRecord.EventStreamId, ExpectedVersionConverter.ConvertTo32Bit(eventRecord.EventNumber),
                 eventRecord.EventId.ToByteArray(), eventRecord.EventType, eventRecord.IsJson ? 1 : 0,
                 eventRecord.IsJson ? 1 : 0,
                 eventRecord.Data,

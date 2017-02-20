@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Helpers
             int intHttpPort = PortsHelper.GetAvailablePort(ip);
 
             _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
-    
+
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             IntTcpEndPoint = new IPEndPoint(ip,intTcpPort);

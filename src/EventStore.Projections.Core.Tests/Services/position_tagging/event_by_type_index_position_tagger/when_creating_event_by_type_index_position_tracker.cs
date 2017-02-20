@@ -23,28 +23,28 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         public void it_can_be_updated_with_correct_event_types()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type2", 20}});
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 10}, {"type2", 20}});
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void it_cannot_be_updated_with_other_event_types()
         {
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type3", 20}});
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 10}, {"type3", 20}});
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void it_cannot_be_updated_forward()
         {
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type2", 20}});
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 10}, {"type2", 20}});
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void initial_position_cannot_be_set_twice()
         {
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 10}, {"type2", 20}});
+             var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 10}, {"type2", 20}});
             _positionTracker.UpdateByCheckpointTagForward(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }

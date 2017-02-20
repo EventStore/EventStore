@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                     spoolRequests[1].SubscriptionId,
                     "account-01",
                     Guid.Empty,
-                    CheckpointTag.FromByStreamPosition(0, "", 1, "account-01", int.MaxValue, 10000),
+                    CheckpointTag.FromByStreamPosition(0, "", 1, "account-01", long.MaxValue, 10000),
                     "{\"data\":2}"));
             _bus.Publish(
                 new PartitionProcessingResult(
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
                     spoolRequests[0].SubscriptionId,
                     "account-00",
                     Guid.Empty,
-                    CheckpointTag.FromByStreamPosition(0, "", 0, "account-00", int.MaxValue, 10000),
+                    CheckpointTag.FromByStreamPosition(0, "", 0, "account-00", long.MaxValue, 10000),
                     "{\"data\":1}"));
         }
 

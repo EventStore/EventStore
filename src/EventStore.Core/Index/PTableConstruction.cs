@@ -23,7 +23,7 @@ namespace EventStore.Core.Index
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.Nonnegative(cacheDepth, "cacheDepth");
 
-            var indexEntrySize = table.Version == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : PTable.IndexEntry64Size;
+            int indexEntrySize = GetIndexEntrySize(table.Version);
 
             var sw = Stopwatch.StartNew();
             using (var fs = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None,
@@ -65,7 +65,7 @@ namespace EventStore.Core.Index
             Ensure.NotNullOrEmpty(outputFile, "outputFile");
             Ensure.Nonnegative(cacheDepth, "cacheDepth");
 
-            var indexEntrySize = version == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : IndexEntry64Size;
+            var indexEntrySize = GetIndexEntrySize(version);
 
             var fileSize = GetFileSize(tables, indexEntrySize); // approximate file size
             if (tables.Count == 2)
@@ -133,6 +133,19 @@ namespace EventStore.Core.Index
             Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
                       watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
+        }
+
+        private static int GetIndexEntrySize(byte version)
+        {
+            if (version == PTableVersions.IndexV1)
+            {
+                return PTable.IndexEntryV1Size;
+            }
+            if (version == PTableVersions.IndexV2)
+            {
+                return PTable.IndexEntryV2Size;
+            }
+            return PTable.IndexEntryV3Size;
         }
 
         private static PTable MergeTo2(IList<PTable> tables, long fileSize, int indexEntrySize, string outputFile,
@@ -232,9 +245,15 @@ namespace EventStore.Core.Index
         private static void AppendRecordTo(Stream stream, byte[] buffer, byte version, IndexEntry entry, int indexEntrySize)
         {
             var bytes = entry.Bytes;
-            if (version == PTableVersions.Index32Bit){
-                var entry32 = new IndexEntry32((uint)entry.Stream, entry.Version, entry.Position);
-                 bytes = entry32.Bytes;
+            if (version == PTableVersions.IndexV1)
+            {
+                var entryV1 = new IndexEntryV1((uint)entry.Stream, (int)entry.Version, entry.Position);
+                bytes = entryV1.Bytes;
+            }
+            else if (version == PTableVersions.IndexV2)
+            {
+                var entryV2 = new IndexEntryV2(entry.Stream, (int)entry.Version, entry.Position);
+                bytes = entryV2.Bytes;
             }
             Marshal.Copy((IntPtr)bytes, buffer, 0, indexEntrySize);
             stream.Write(buffer, 0, indexEntrySize);
@@ -282,7 +301,7 @@ namespace EventStore.Core.Index
                 _existsAt = existsAt;
                 _readRecord = readRecord;
 
-                if(table.Version == PTableVersions.Index32Bit && mergedPTableVersion == PTableVersions.Index64Bit)
+                if(table.Version == PTableVersions.IndexV1 && mergedPTableVersion != PTableVersions.IndexV1)
                 {
                     _list = new List<IndexEntry>();
                     _enumerator = _list.GetEnumerator();

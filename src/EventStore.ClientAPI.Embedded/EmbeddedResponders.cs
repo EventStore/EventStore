@@ -4,6 +4,7 @@ using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Helpers;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -53,7 +54,7 @@ namespace EventStore.ClientAPI.Embedded
 
             protected override WriteResult TransformResponse(ClientMessage.WriteEventsCompleted response)
             {
-                return new WriteResult(response.LastEventNumber, new Position(response.PreparePosition, response.CommitPosition));
+                return new WriteResult(ExpectedVersionConverter.ConvertTo32Bit(response.LastEventNumber), new Position(response.PreparePosition, response.CommitPosition));
             }
         }
 
@@ -283,8 +284,8 @@ namespace EventStore.ClientAPI.Embedded
                     _fromEventNumber,
                     ReadDirection.Backward,
                     response.Events.ConvertToClientResolvedIndexEvents(),
-                    response.NextEventNumber,
-                    response.LastEventNumber,
+                    ExpectedVersionConverter.ConvertTo32Bit(response.NextEventNumber),
+                    ExpectedVersionConverter.ConvertTo32Bit(response.LastEventNumber),
                     response.IsEndOfStream);
 
             }
@@ -344,8 +345,8 @@ namespace EventStore.ClientAPI.Embedded
                     _fromEventNumber,
                     ReadDirection.Forward,
                     response.Events.ConvertToClientResolvedIndexEvents(),
-                    response.NextEventNumber,
-                    response.LastEventNumber,
+                    ExpectedVersionConverter.ConvertTo32Bit(response.NextEventNumber),
+                    ExpectedVersionConverter.ConvertTo32Bit(response.LastEventNumber),
                     response.IsEndOfStream);
 
             }
@@ -406,7 +407,7 @@ namespace EventStore.ClientAPI.Embedded
 
             protected override WriteResult TransformResponse(ClientMessage.TransactionCommitCompleted response)
             {
-                return new WriteResult(response.LastEventNumber, new Position(response.PreparePosition, response.CommitPosition));
+                return new WriteResult(ExpectedVersionConverter.ConvertTo32Bit(response.LastEventNumber), new Position(response.PreparePosition, response.CommitPosition));
             }
         }
 

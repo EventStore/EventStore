@@ -11,7 +11,7 @@ namespace EventStore.Core.Services.PersistentSubscription
     public class PersistentSubscriptionCheckpointWriter : IPersistentSubscriptionCheckpointWriter
     {
         private readonly IODispatcher _ioDispatcher;
-        private int _version = ExpectedVersion.Any;
+        private long _version = ExpectedVersion.Any;
         private bool _outstandingWrite;
         private readonly string _subscriptionStateStream;
         private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionCheckpointWriter>();
@@ -22,12 +22,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
         }
 
-        public void StartFrom(int version)
+        public void StartFrom(long version)
         {
             _version = version;
         }
 
-        public void BeginWriteState(int state)
+        public void BeginWriteState(long state)
         {
             if (_outstandingWrite)
             {
@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher.DeleteStream(_subscriptionStateStream, ExpectedVersion.Any, false, SystemAccount.Principal, x=>completed(this));
         }
 
-        private void PublishCheckpoint(int state)
+        private void PublishCheckpoint(long state)
         {
             Log.Debug("Publishing checkpoint for {0}: {1}", _subscriptionStateStream, state);
             _outstandingWrite = true;
@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher.WriteEvent(_subscriptionStateStream, _version, evnt, SystemAccount.Principal, WriteStateCompleted);
         }
 
-        private void PublishMetadata(int state)
+        private void PublishMetadata(long state)
         {
             _outstandingWrite = true;
             var metaStreamId = SystemStreams.MetastreamOf(_subscriptionStateStream);

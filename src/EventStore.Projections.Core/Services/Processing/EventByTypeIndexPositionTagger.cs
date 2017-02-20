@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromEventTypeIndexPositions(
-                Phase, new TFPos(0, -1), _eventTypes.ToDictionary(v => v, v => ExpectedVersion.NoStream));
+                Phase, new TFPos(0, -1), _eventTypes.ToDictionary(v => v, v => (long)ExpectedVersion.NoStream));
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (tag.Mode_ == CheckpointTag.Mode.EventTypeIndex)
             {
-                int p;
+                long p;
                 return CheckpointTag.FromEventTypeIndexPositions(
                     tag.Phase, tag.Position,
                     _eventTypes.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         "Conversion from PreparePosition to EventTypeIndex position tag is not supported");
                 case CheckpointTag.Mode.Position:
                     return CheckpointTag.FromEventTypeIndexPositions(
-                        tag.Phase, tag.Position, _eventTypes.ToDictionary(v => v, v => -1));
+                        tag.Phase, tag.Position, _eventTypes.ToDictionary(v => v, v => (long)-1));
                 default:
                     throw new Exception();
             }

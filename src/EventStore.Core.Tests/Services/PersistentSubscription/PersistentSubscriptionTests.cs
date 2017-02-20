@@ -463,7 +463,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         [Test]
         public void subscription_does_not_write_checkpoint_when_max_not_hit()
         {
-            int cp = -1;
+            long cp = -1;
             var envelope1 = new FakeEnvelope();
             var reader = new FakeCheckpointReader();
             var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -493,7 +493,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         [Test]
         public void subscription_does_not_write_checkpoint_when_min_hit()
         {
-            int cp = -1;
+            long cp = -1;
             var envelope1 = new FakeEnvelope();
             var reader = new FakeCheckpointReader();
             var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -523,7 +523,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         [Test]
         public void subscription_does_write_checkpoint_when_max_is_hit()
         {
-            int cp = -1;
+            long cp = -1;
             var envelope1 = new FakeEnvelope();
             var reader = new FakeCheckpointReader();
             var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -552,7 +552,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         [Test]
         public void subscription_does_not_include_not_acked_messages_when_max_is_hit()
         {
-            int cp = -1;
+            long cp = -1;
             var envelope1 = new FakeEnvelope();
             var reader = new FakeCheckpointReader();
             var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -584,7 +584,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         [Test]
         public void subscription_does_write_checkpoint_on_time_when_min_is_hit()
         {
-            int cp = -1;
+            long cp = -1;
             var envelope1 = new FakeEnvelope();
             var reader = new FakeCheckpointReader();
             var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -615,7 +615,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         [Test]
         public void subscription_does_not_write_checkpoint_on_time_when_min_is_not_hit()
         {
-            int cp = -1;
+            long cp = -1;
             var envelope1 = new FakeEnvelope();
             var reader = new FakeCheckpointReader();
             var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -646,7 +646,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         [Test]
         public void subscription_does_write_checkpoint_for_disconnected_clients_on_time_when_min_is_hit()
         {
-            int cp = -1;
+            long cp = -1;
             var reader = new FakeCheckpointReader();
             var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
                 PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
@@ -1275,15 +1275,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeStreamReader : IPersistentSubscriptionStreamReader
     {
-        private readonly Action<int> _action;
+        private readonly Action<long> _action;
 
-        public FakeStreamReader(Action<int> action)
+        public FakeStreamReader(Action<long> action)
         {
             _action = action;
         }
 
-        public void BeginReadEvents(string stream, int startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
-            Action<ResolvedEvent[], int, bool> onEventsFound)
+        public void BeginReadEvents(string stream, long startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
+            Action<ResolvedEvent[], long, bool> onEventsFound)
         {
             _action(startEventNumber);
         }
@@ -1306,7 +1306,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeMessageParker : IPersistentSubscriptionMessageParker
     {
-        private Action<int?> _readEndSequenceCompleted;
+        private Action<long?> _readEndSequenceCompleted;
         private Action<ResolvedEvent, OperationResult> _parkMessageCompleted;
         public List<ResolvedEvent> ParkedEvents = new List<ResolvedEvent>();
         private readonly Action _deleteAction;
@@ -1318,7 +1318,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             _deleteAction = deleteAction;
         }
 
-        public int MarkedAsProcessed { get; private set; }
+        public long MarkedAsProcessed { get; private set; }
 
         public void ReadEndSequenceCompleted(int sequence)
         {
@@ -1336,12 +1336,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             _parkMessageCompleted = completed;
         }
 
-        public void BeginReadEndSequence(Action<int?> completed)
+        public void BeginReadEndSequence(Action<long?> completed)
         {
             _readEndSequenceCompleted = completed;
         }
 
-        public void BeginMarkParkedMessagesReprocessed(int sequence)
+        public void BeginMarkParkedMessagesReprocessed(long sequence)
         {
             MarkedAsProcessed = sequence;
         }
@@ -1357,16 +1357,16 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeCheckpointWriter : IPersistentSubscriptionCheckpointWriter
     {
-        private readonly Action<int> _action;
+        private readonly Action<long> _action;
         private readonly Action _deleteAction;
 
-        public FakeCheckpointWriter(Action<int> action, Action deleteAction = null)
+        public FakeCheckpointWriter(Action<long> action, Action deleteAction = null)
         {
             _action = action;
             _deleteAction = deleteAction;
         }
 
-        public void BeginWriteState(int state)
+        public void BeginWriteState(long state)
         {
             _action(state);
         }

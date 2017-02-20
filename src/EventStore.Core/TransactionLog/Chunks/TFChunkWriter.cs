@@ -33,7 +33,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public bool Write(LogRecord record, out long newPos)
         {
-            var result = _currentChunk.TryAppend(record);
+            var result = _currentChunk.TryAppend(record, false);
             if (result.Success)
                 _writerCheckpoint.Write(result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition);
             else

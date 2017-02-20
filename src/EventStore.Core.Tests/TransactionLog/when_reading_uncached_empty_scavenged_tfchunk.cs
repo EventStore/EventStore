@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             base.TestFixtureSetUp();
             _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, isScavenged: true);
-            _chunk.CompleteScavenge(new PosMap[0]);
+            _chunk.CompleteScavenge(new PosMap[0], false);
         }
 
         [TestFixtureTearDown]

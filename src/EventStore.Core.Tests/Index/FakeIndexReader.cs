@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Fakes
         public RecordReadResult TryReadAt(long position)
         {
             var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0, position.ToString(), -1, DateTime.UtcNow, PrepareFlags.None, "type", new byte[0], null);
-            return new RecordReadResult(true, position + 1, record, 1);
+            return new RecordReadResult(true, position + 1, record, 1, 0);
         }
 
         public bool ExistsAt(long position)

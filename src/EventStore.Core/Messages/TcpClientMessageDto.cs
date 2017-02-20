@@ -58,7 +58,7 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             [ProtoMember(2, IsRequired = true, Name = @"event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int EventNumber;
+            public readonly long EventNumber;
 
             [ProtoMember(3, IsRequired = true, Name = @"event_id", DataFormat = DataFormat.Default)]
             public readonly byte[] EventId;
@@ -86,7 +86,7 @@ namespace EventStore.Core.Messages
 
             private EventRecord() { }
 
-            public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created, long? createdEpoch)
+            public EventRecord(string eventStreamId, long eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created, long? createdEpoch)
             {
                 EventStreamId = eventStreamId;
                 EventNumber = eventNumber;
@@ -152,7 +152,7 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             [ProtoMember(2, IsRequired = true, Name = @"expected_version", DataFormat = DataFormat.TwosComplement)]
-            public readonly int ExpectedVersion;
+            public readonly long ExpectedVersion;
 
             [ProtoMember(3, Name = @"events", DataFormat = DataFormat.Default)]
             public readonly NewEvent[] Events;
@@ -162,7 +162,7 @@ namespace EventStore.Core.Messages
 
             private WriteEvents() { }
 
-            public WriteEvents(string eventStreamId, int expectedVersion, NewEvent[] events, bool requireMaster)
+            public WriteEvents(string eventStreamId, long expectedVersion, NewEvent[] events, bool requireMaster)
             {
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
@@ -181,10 +181,10 @@ namespace EventStore.Core.Messages
             public readonly string Message;
 
             [ProtoMember(3, IsRequired = true, Name = @"first_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int FirstEventNumber;
+            public readonly long FirstEventNumber;
 
             [ProtoMember(4, IsRequired = true, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int LastEventNumber;
+            public readonly long LastEventNumber;
 
             [ProtoMember(5, IsRequired = false, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
             public readonly long? PreparePosition;
@@ -194,7 +194,7 @@ namespace EventStore.Core.Messages
 
             private WriteEventsCompleted() { }
 
-            public WriteEventsCompleted(OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
+            public WriteEventsCompleted(OperationResult result, string message, long firstEventNumber, long lastEventNumber, long? preparePosition, long? commitPosition)
             {
                 Result = result;
                 Message = message;
@@ -212,7 +212,7 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             [ProtoMember(2, IsRequired = true, Name = @"expected_version", DataFormat = DataFormat.TwosComplement)]
-            public readonly int ExpectedVersion;
+            public readonly long ExpectedVersion;
 
             [ProtoMember(3, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
             public readonly bool RequireMaster;
@@ -222,7 +222,7 @@ namespace EventStore.Core.Messages
 
             private DeleteStream() { }
 
-            public DeleteStream(string eventStreamId, int expectedVersion, bool requireMaster, bool? hardDelete)
+            public DeleteStream(string eventStreamId, long expectedVersion, bool requireMaster, bool? hardDelete)
             {
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
@@ -264,14 +264,14 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             [ProtoMember(2, IsRequired = true, Name = @"expected_version", DataFormat = DataFormat.TwosComplement)]
-            public readonly int ExpectedVersion;
+            public readonly long ExpectedVersion;
 
             [ProtoMember(3, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
             public readonly bool RequireMaster;
 
             private TransactionStart() { }
 
-            public TransactionStart(string eventStreamId, int expectedVersion, bool requireMaster)
+            public TransactionStart(string eventStreamId, long expectedVersion, bool requireMaster)
             {
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
@@ -376,10 +376,10 @@ namespace EventStore.Core.Messages
             public readonly string Message;
 
             [ProtoMember(4, IsRequired = true, Name = @"first_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int FirstEventNumber;
+            public readonly long FirstEventNumber;
 
             [ProtoMember(5, IsRequired = true, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int LastEventNumber;
+            public readonly long LastEventNumber;
 
             [ProtoMember(6, IsRequired = false, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
             public readonly long? PreparePosition;
@@ -389,7 +389,7 @@ namespace EventStore.Core.Messages
 
             private TransactionCommitCompleted() { }
 
-            public TransactionCommitCompleted(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
+            public TransactionCommitCompleted(long transactionId, OperationResult result, string message, long firstEventNumber, long lastEventNumber, long? preparePosition, long? commitPosition)
             {
                 TransactionId = transactionId;
                 Result = result;
@@ -408,7 +408,7 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             [ProtoMember(2, IsRequired = true, Name = @"event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int EventNumber;
+            public readonly long EventNumber;
 
             [ProtoMember(3, IsRequired = true, Name = @"resolve_link_tos", DataFormat = DataFormat.Default)]
             public readonly bool ResolveLinkTos;
@@ -418,7 +418,7 @@ namespace EventStore.Core.Messages
 
             private ReadEvent() { }
 
-            public ReadEvent(string eventStreamId, int eventNumber, bool resolveLinkTos, bool requireMaster)
+            public ReadEvent(string eventStreamId, long eventNumber, bool resolveLinkTos, bool requireMaster)
             {
                 EventStreamId = eventStreamId;
                 EventNumber = eventNumber;
@@ -479,7 +479,7 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
 
             [ProtoMember(2, IsRequired = true, Name = @"from_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int FromEventNumber;
+            public readonly long FromEventNumber;
 
             [ProtoMember(3, IsRequired = true, Name = @"max_count", DataFormat = DataFormat.TwosComplement)]
             public readonly int MaxCount;
@@ -492,7 +492,7 @@ namespace EventStore.Core.Messages
 
             private ReadStreamEvents() { }
 
-            public ReadStreamEvents(string eventStreamId, int fromEventNumber, int maxCount, bool resolveLinkTos, bool requireMaster)
+            public ReadStreamEvents(string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos, bool requireMaster)
             {
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
@@ -512,10 +512,10 @@ namespace EventStore.Core.Messages
             public readonly ReadStreamEventsCompleted.ReadStreamResult Result;
 
             [ProtoMember(3, IsRequired = true, Name = @"next_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int NextEventNumber;
+            public readonly long NextEventNumber;
 
             [ProtoMember(4, IsRequired = true, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int LastEventNumber;
+            public readonly long LastEventNumber;
 
             [ProtoMember(5, IsRequired = true, Name = @"is_end_of_stream", DataFormat = DataFormat.Default)]
             public readonly bool IsEndOfStream;
@@ -551,7 +551,7 @@ namespace EventStore.Core.Messages
 
             private ReadStreamEventsCompleted() { }
 
-            public ReadStreamEventsCompleted(ResolvedIndexedEvent[] events, ReadStreamEventsCompleted.ReadStreamResult result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long lastCommitPosition, string error)
+            public ReadStreamEventsCompleted(ResolvedIndexedEvent[] events, ReadStreamEventsCompleted.ReadStreamResult result, long nextEventNumber, long lastEventNumber, bool isEndOfStream, long lastCommitPosition, string error)
             {
                 Events = events;
                 Result = result;
@@ -661,7 +661,7 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
 
             [ProtoMember(4, IsRequired = true, Name = @"start_from", DataFormat = DataFormat.TwosComplement)]
-            public readonly int StartFrom;
+            public readonly long StartFrom;
 
             [ProtoMember(5, IsRequired = true, Name = @"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
             public readonly int MessageTimeoutMilliseconds;
@@ -701,7 +701,7 @@ namespace EventStore.Core.Messages
 
             private CreatePersistentSubscription() { }
 
-            public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
+            public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, long startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
             {
                 SubscriptionGroupName = subscriptionGroupName;
                 EventStreamId = eventStreamId;
@@ -753,7 +753,7 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
 
             [ProtoMember(4, IsRequired = true, Name = @"start_from", DataFormat = DataFormat.TwosComplement)]
-            public readonly int StartFrom;
+            public readonly long StartFrom;
 
             [ProtoMember(5, IsRequired = true, Name = @"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
             public readonly int MessageTimeoutMilliseconds;
@@ -793,7 +793,7 @@ namespace EventStore.Core.Messages
 
             private UpdatePersistentSubscription() { }
 
-            public UpdatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
+            public UpdatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, long startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
             {
                 SubscriptionGroupName = subscriptionGroupName;
                 EventStreamId = eventStreamId;
@@ -1015,11 +1015,11 @@ namespace EventStore.Core.Messages
             public readonly string SubscriptionId;
 
             [ProtoMember(3, IsRequired = false, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int? LastEventNumber;
+            public readonly long? LastEventNumber;
 
             private PersistentSubscriptionConfirmation() { }
 
-            public PersistentSubscriptionConfirmation(long lastCommitPosition, string subscriptionId, int? lastEventNumber)
+            public PersistentSubscriptionConfirmation(long lastCommitPosition, string subscriptionId, long? lastEventNumber)
             {
                 LastCommitPosition = lastCommitPosition;
                 SubscriptionId = subscriptionId;
@@ -1066,11 +1066,11 @@ namespace EventStore.Core.Messages
             public readonly long LastCommitPosition;
 
             [ProtoMember(2, IsRequired = false, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
-            public readonly int? LastEventNumber;
+            public readonly long? LastEventNumber;
 
             private SubscriptionConfirmation() { }
 
-            public SubscriptionConfirmation(long lastCommitPosition, int? lastEventNumber)
+            public SubscriptionConfirmation(long lastCommitPosition, long? lastEventNumber)
             {
                 LastCommitPosition = lastCommitPosition;
                 LastEventNumber = lastEventNumber;
@@ -1239,6 +1239,1236 @@ namespace EventStore.Core.Messages
             private ScavengeDatabaseCompleted() { }
 
             public ScavengeDatabaseCompleted(ScavengeDatabaseCompleted.ScavengeResult result, string error, int totalTimeMs, long totalSpaceSaved)
+            {
+                Result = result;
+                Error = error;
+                TotalTimeMs = totalTimeMs;
+                TotalSpaceSaved = totalSpaceSaved;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"NewEventV1")]
+        public partial class NewEventV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_id", DataFormat = DataFormat.Default)]
+            public readonly byte[] EventId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event_type", DataFormat = DataFormat.Default)]
+            public readonly string EventType;
+
+            [ProtoMember(3, IsRequired = true, Name = @"data_content_type", DataFormat = DataFormat.TwosComplement)]
+            public readonly int DataContentType;
+
+            [ProtoMember(4, IsRequired = true, Name = @"metadata_content_type", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MetadataContentType;
+
+            [ProtoMember(5, IsRequired = true, Name = @"data", DataFormat = DataFormat.Default)]
+            public readonly byte[] Data;
+
+            [ProtoMember(6, IsRequired = false, Name = @"metadata", DataFormat = DataFormat.Default)]
+            public readonly byte[] Metadata;
+
+            private NewEventV1() { }
+
+            public NewEventV1(byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata)
+            {
+                EventId = eventId;
+                EventType = eventType;
+                DataContentType = dataContentType;
+                MetadataContentType = metadataContentType;
+                Data = data;
+                Metadata = metadata;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"EventRecordV1")]
+        public partial class EventRecordV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int EventNumber;
+
+            [ProtoMember(3, IsRequired = true, Name = @"event_id", DataFormat = DataFormat.Default)]
+            public readonly byte[] EventId;
+
+            [ProtoMember(4, IsRequired = true, Name = @"event_type", DataFormat = DataFormat.Default)]
+            public readonly string EventType;
+
+            [ProtoMember(5, IsRequired = true, Name = @"data_content_type", DataFormat = DataFormat.TwosComplement)]
+            public readonly int DataContentType;
+
+            [ProtoMember(6, IsRequired = true, Name = @"metadata_content_type", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MetadataContentType;
+
+            [ProtoMember(7, IsRequired = true, Name = @"data", DataFormat = DataFormat.Default)]
+            public readonly byte[] Data;
+
+            [ProtoMember(8, IsRequired = false, Name = @"metadata", DataFormat = DataFormat.Default)]
+            public readonly byte[] Metadata;
+
+            [ProtoMember(9, IsRequired = false, Name = @"created", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? Created;
+
+            [ProtoMember(10, IsRequired = false, Name = @"created_epoch", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? CreatedEpoch;
+
+            private EventRecordV1() { }
+
+            public EventRecordV1(string eventStreamId, int eventNumber, byte[] eventId, string eventType, int dataContentType, int metadataContentType, byte[] data, byte[] metadata, long? created, long? createdEpoch)
+            {
+                EventStreamId = eventStreamId;
+                EventNumber = eventNumber;
+                EventId = eventId;
+                EventType = eventType;
+                DataContentType = dataContentType;
+                MetadataContentType = metadataContentType;
+                Data = data;
+                Metadata = metadata;
+                Created = created;
+                CreatedEpoch = createdEpoch;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ResolvedIndexedEventV1")]
+        public partial class ResolvedIndexedEventV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event", DataFormat = DataFormat.Default)]
+            public readonly EventRecordV1 Event;
+
+            [ProtoMember(2, IsRequired = false, Name = @"link", DataFormat = DataFormat.Default)]
+            public readonly EventRecordV1 Link;
+
+            private ResolvedIndexedEventV1() { }
+
+            public ResolvedIndexedEventV1(EventRecordV1 @event, EventRecordV1 link)
+            {
+                Event = @event;
+                Link = link;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ResolvedEventV1")]
+        public partial class ResolvedEventV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event", DataFormat = DataFormat.Default)]
+            public readonly EventRecordV1 Event;
+
+            [ProtoMember(2, IsRequired = false, Name = @"link", DataFormat = DataFormat.Default)]
+            public readonly EventRecordV1 Link;
+
+            [ProtoMember(3, IsRequired = true, Name = @"commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long CommitPosition;
+
+            [ProtoMember(4, IsRequired = true, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long PreparePosition;
+
+            private ResolvedEventV1() { }
+
+            public ResolvedEventV1(EventRecordV1 @event, EventRecordV1 link, long commitPosition, long preparePosition)
+            {
+                Event = @event;
+                Link = link;
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"WriteEventsV1")]
+        public partial class WriteEventsV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"expected_version", DataFormat = DataFormat.TwosComplement)]
+            public readonly int ExpectedVersion;
+
+            [ProtoMember(3, Name = @"events", DataFormat = DataFormat.Default)]
+            public readonly NewEventV1[] Events;
+
+            [ProtoMember(4, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            private WriteEventsV1() { }
+
+            public WriteEventsV1(string eventStreamId, int expectedVersion, NewEventV1[] events, bool requireMaster)
+            {
+                EventStreamId = eventStreamId;
+                ExpectedVersion = expectedVersion;
+                Events = events;
+                RequireMaster = requireMaster;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"WriteEventsCompletedV1")]
+        public partial class WriteEventsCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly OperationResult Result;
+
+            [ProtoMember(2, IsRequired = false, Name = @"message", DataFormat = DataFormat.Default)]
+            public readonly string Message;
+
+            [ProtoMember(3, IsRequired = true, Name = @"first_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int FirstEventNumber;
+
+            [ProtoMember(4, IsRequired = true, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int LastEventNumber;
+
+            [ProtoMember(5, IsRequired = false, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? PreparePosition;
+
+            [ProtoMember(6, IsRequired = false, Name = @"commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? CommitPosition;
+
+            private WriteEventsCompletedV1() { }
+
+            public WriteEventsCompletedV1(OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
+            {
+                Result = result;
+                Message = message;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"DeleteStreamV1")]
+        public partial class DeleteStreamV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"expected_version", DataFormat = DataFormat.TwosComplement)]
+            public readonly int ExpectedVersion;
+
+            [ProtoMember(3, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            [ProtoMember(4, IsRequired = false, Name = @"hard_delete", DataFormat = DataFormat.Default)]
+            public readonly bool? HardDelete;
+
+            private DeleteStreamV1() { }
+
+            public DeleteStreamV1(string eventStreamId, int expectedVersion, bool requireMaster, bool? hardDelete)
+            {
+                EventStreamId = eventStreamId;
+                ExpectedVersion = expectedVersion;
+                RequireMaster = requireMaster;
+                HardDelete = hardDelete;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"DeleteStreamCompletedV1")]
+        public partial class DeleteStreamCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly OperationResult Result;
+
+            [ProtoMember(2, IsRequired = false, Name = @"message", DataFormat = DataFormat.Default)]
+            public readonly string Message;
+
+            [ProtoMember(3, IsRequired = false, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? PreparePosition;
+
+            [ProtoMember(4, IsRequired = false, Name = @"commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? CommitPosition;
+
+            private DeleteStreamCompletedV1() { }
+
+            public DeleteStreamCompletedV1(OperationResult result, string message, long? preparePosition, long? commitPosition)
+            {
+                Result = result;
+                Message = message;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"TransactionStartV1")]
+        public partial class TransactionStartV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"expected_version", DataFormat = DataFormat.TwosComplement)]
+            public readonly int ExpectedVersion;
+
+            [ProtoMember(3, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            private TransactionStartV1() { }
+
+            public TransactionStartV1(string eventStreamId, int expectedVersion, bool requireMaster)
+            {
+                EventStreamId = eventStreamId;
+                ExpectedVersion = expectedVersion;
+                RequireMaster = requireMaster;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"TransactionStartCompletedV1")]
+        public partial class TransactionStartCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"transaction_id", DataFormat = DataFormat.TwosComplement)]
+            public readonly long TransactionId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly OperationResult Result;
+
+            [ProtoMember(3, IsRequired = false, Name = @"message", DataFormat = DataFormat.Default)]
+            public readonly string Message;
+
+            private TransactionStartCompletedV1() { }
+
+            public TransactionStartCompletedV1(long transactionId, OperationResult result, string message)
+            {
+                TransactionId = transactionId;
+                Result = result;
+                Message = message;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"TransactionWriteV1")]
+        public partial class TransactionWriteV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"transaction_id", DataFormat = DataFormat.TwosComplement)]
+            public readonly long TransactionId;
+
+            [ProtoMember(2, Name = @"events", DataFormat = DataFormat.Default)]
+            public readonly NewEventV1[] Events;
+
+            [ProtoMember(3, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            private TransactionWriteV1() { }
+
+            public TransactionWriteV1(long transactionId, NewEventV1[] events, bool requireMaster)
+            {
+                TransactionId = transactionId;
+                Events = events;
+                RequireMaster = requireMaster;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"TransactionWriteCompletedV1")]
+        public partial class TransactionWriteCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"transaction_id", DataFormat = DataFormat.TwosComplement)]
+            public readonly long TransactionId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly OperationResult Result;
+
+            [ProtoMember(3, IsRequired = false, Name = @"message", DataFormat = DataFormat.Default)]
+            public readonly string Message;
+
+            private TransactionWriteCompletedV1() { }
+
+            public TransactionWriteCompletedV1(long transactionId, OperationResult result, string message)
+            {
+                TransactionId = transactionId;
+                Result = result;
+                Message = message;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"TransactionCommitV1")]
+        public partial class TransactionCommitV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"transaction_id", DataFormat = DataFormat.TwosComplement)]
+            public readonly long TransactionId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            private TransactionCommitV1() { }
+
+            public TransactionCommitV1(long transactionId, bool requireMaster)
+            {
+                TransactionId = transactionId;
+                RequireMaster = requireMaster;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"TransactionCommitCompletedV1")]
+        public partial class TransactionCommitCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"transaction_id", DataFormat = DataFormat.TwosComplement)]
+            public readonly long TransactionId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly OperationResult Result;
+
+            [ProtoMember(3, IsRequired = false, Name = @"message", DataFormat = DataFormat.Default)]
+            public readonly string Message;
+
+            [ProtoMember(4, IsRequired = true, Name = @"first_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int FirstEventNumber;
+
+            [ProtoMember(5, IsRequired = true, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int LastEventNumber;
+
+            [ProtoMember(6, IsRequired = false, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? PreparePosition;
+
+            [ProtoMember(7, IsRequired = false, Name = @"commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long? CommitPosition;
+
+            private TransactionCommitCompletedV1() { }
+
+            public TransactionCommitCompletedV1(long transactionId, OperationResult result, string message, int firstEventNumber, int lastEventNumber, long? preparePosition, long? commitPosition)
+            {
+                TransactionId = transactionId;
+                Result = result;
+                Message = message;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
+                PreparePosition = preparePosition;
+                CommitPosition = commitPosition;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ReadEventV1")]
+        public partial class ReadEventV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int EventNumber;
+
+            [ProtoMember(3, IsRequired = true, Name = @"resolve_link_tos", DataFormat = DataFormat.Default)]
+            public readonly bool ResolveLinkTos;
+
+            [ProtoMember(4, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            private ReadEventV1() { }
+
+            public ReadEventV1(string eventStreamId, int eventNumber, bool resolveLinkTos, bool requireMaster)
+            {
+                EventStreamId = eventStreamId;
+                EventNumber = eventNumber;
+                ResolveLinkTos = resolveLinkTos;
+                RequireMaster = requireMaster;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ReadEventCompletedV1")]
+        public partial class ReadEventCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly ReadEventCompletedV1.ReadEventResultV1 Result;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event", DataFormat = DataFormat.Default)]
+            public readonly ResolvedIndexedEventV1 Event;
+
+            [ProtoMember(3, IsRequired = false, Name = @"error", DataFormat = DataFormat.Default)]
+            public readonly string Error;
+
+            [ProtoContract(Name = @"ReadEventResultV1")]
+            public enum ReadEventResultV1
+            {
+
+                [ProtoEnum(Name = @"Success", Value = 0)]
+                Success = 0,
+
+                [ProtoEnum(Name = @"NotFound", Value = 1)]
+                NotFound = 1,
+
+                [ProtoEnum(Name = @"NoStream", Value = 2)]
+                NoStream = 2,
+
+                [ProtoEnum(Name = @"StreamDeleted", Value = 3)]
+                StreamDeleted = 3,
+
+                [ProtoEnum(Name = @"Error", Value = 4)]
+                Error = 4,
+
+                [ProtoEnum(Name = @"AccessDenied", Value = 5)]
+                AccessDenied = 5
+            }
+
+            private ReadEventCompletedV1() { }
+
+            public ReadEventCompletedV1(ReadEventCompletedV1.ReadEventResultV1 result, ResolvedIndexedEventV1 @event, string error)
+            {
+                Result = result;
+                Event = @event;
+                Error = error;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ReadStreamEventsV1")]
+        public partial class ReadStreamEventsV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"from_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int FromEventNumber;
+
+            [ProtoMember(3, IsRequired = true, Name = @"max_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MaxCount;
+
+            [ProtoMember(4, IsRequired = true, Name = @"resolve_link_tos", DataFormat = DataFormat.Default)]
+            public readonly bool ResolveLinkTos;
+
+            [ProtoMember(5, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            private ReadStreamEventsV1() { }
+
+            public ReadStreamEventsV1(string eventStreamId, int fromEventNumber, int maxCount, bool resolveLinkTos, bool requireMaster)
+            {
+                EventStreamId = eventStreamId;
+                FromEventNumber = fromEventNumber;
+                MaxCount = maxCount;
+                ResolveLinkTos = resolveLinkTos;
+                RequireMaster = requireMaster;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ReadStreamEventsCompletedV1")]
+        public partial class ReadStreamEventsCompletedV1
+        {
+            [ProtoMember(1, Name = @"events", DataFormat = DataFormat.Default)]
+            public readonly ResolvedIndexedEventV1[] Events;
+
+            [ProtoMember(2, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly ReadStreamEventsCompletedV1.ReadStreamResultV1 Result;
+
+            [ProtoMember(3, IsRequired = true, Name = @"next_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int NextEventNumber;
+
+            [ProtoMember(4, IsRequired = true, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int LastEventNumber;
+
+            [ProtoMember(5, IsRequired = true, Name = @"is_end_of_stream", DataFormat = DataFormat.Default)]
+            public readonly bool IsEndOfStream;
+
+            [ProtoMember(6, IsRequired = true, Name = @"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long LastCommitPosition;
+
+            [ProtoMember(7, IsRequired = false, Name = @"error", DataFormat = DataFormat.Default)]
+            public readonly string Error;
+
+            [ProtoContract(Name = @"ReadStreamResultV1")]
+            public enum ReadStreamResultV1
+            {
+
+                [ProtoEnum(Name = @"Success", Value = 0)]
+                Success = 0,
+
+                [ProtoEnum(Name = @"NoStream", Value = 1)]
+                NoStream = 1,
+
+                [ProtoEnum(Name = @"StreamDeleted", Value = 2)]
+                StreamDeleted = 2,
+
+                [ProtoEnum(Name = @"NotModified", Value = 3)]
+                NotModified = 3,
+
+                [ProtoEnum(Name = @"Error", Value = 4)]
+                Error = 4,
+
+                [ProtoEnum(Name = @"AccessDenied", Value = 5)]
+                AccessDenied = 5
+            }
+
+            private ReadStreamEventsCompletedV1() { }
+
+            public ReadStreamEventsCompletedV1(ResolvedIndexedEventV1[] events, ReadStreamEventsCompletedV1.ReadStreamResultV1 result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long lastCommitPosition, string error)
+            {
+                Events = events;
+                Result = result;
+                NextEventNumber = nextEventNumber;
+                LastEventNumber = lastEventNumber;
+                IsEndOfStream = isEndOfStream;
+                LastCommitPosition = lastCommitPosition;
+                Error = error;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ReadAllEventsV1")]
+        public partial class ReadAllEventsV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long CommitPosition;
+
+            [ProtoMember(2, IsRequired = true, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long PreparePosition;
+
+            [ProtoMember(3, IsRequired = true, Name = @"max_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MaxCount;
+
+            [ProtoMember(4, IsRequired = true, Name = @"resolve_link_tos", DataFormat = DataFormat.Default)]
+            public readonly bool ResolveLinkTos;
+
+            [ProtoMember(5, IsRequired = true, Name = @"require_master", DataFormat = DataFormat.Default)]
+            public readonly bool RequireMaster;
+
+            private ReadAllEventsV1() { }
+
+            public ReadAllEventsV1(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster)
+            {
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                MaxCount = maxCount;
+                ResolveLinkTos = resolveLinkTos;
+                RequireMaster = requireMaster;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ReadAllEventsCompletedV1")]
+        public partial class ReadAllEventsCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long CommitPosition;
+
+            [ProtoMember(2, IsRequired = true, Name = @"prepare_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long PreparePosition;
+
+            [ProtoMember(3, Name = @"events", DataFormat = DataFormat.Default)]
+            public readonly ResolvedEventV1[] Events;
+
+            [ProtoMember(4, IsRequired = true, Name = @"next_commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long NextCommitPosition;
+
+            [ProtoMember(5, IsRequired = true, Name = @"next_prepare_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long NextPreparePosition;
+
+            [ProtoMember(6, IsRequired = false, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly ReadAllEventsCompletedV1.ReadAllResultV1 Result;
+
+            [ProtoMember(7, IsRequired = false, Name = @"error", DataFormat = DataFormat.Default)]
+            public readonly string Error;
+
+            [ProtoContract(Name = @"ReadAllResultV1")]
+            public enum ReadAllResultV1
+            {
+
+                [ProtoEnum(Name = @"Success", Value = 0)]
+                Success = 0,
+
+                [ProtoEnum(Name = @"NotModified", Value = 1)]
+                NotModified = 1,
+
+                [ProtoEnum(Name = @"Error", Value = 2)]
+                Error = 2,
+
+                [ProtoEnum(Name = @"AccessDenied", Value = 3)]
+                AccessDenied = 3
+            }
+
+            private ReadAllEventsCompletedV1() { }
+
+            public ReadAllEventsCompletedV1(long commitPosition, long preparePosition, ResolvedEventV1[] events, long nextCommitPosition, long nextPreparePosition, ReadAllEventsCompletedV1.ReadAllResultV1 result, string error)
+            {
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                Events = events;
+                NextCommitPosition = nextCommitPosition;
+                NextPreparePosition = nextPreparePosition;
+                Result = result;
+                Error = error;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"CreatePersistentSubscriptionV1")]
+        public partial class CreatePersistentSubscriptionV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"subscription_group_name", DataFormat = DataFormat.Default)]
+            public readonly string SubscriptionGroupName;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(3, IsRequired = true, Name = @"resolve_link_tos", DataFormat = DataFormat.Default)]
+            public readonly bool ResolveLinkTos;
+
+            [ProtoMember(4, IsRequired = true, Name = @"start_from", DataFormat = DataFormat.TwosComplement)]
+            public readonly int StartFrom;
+
+            [ProtoMember(5, IsRequired = true, Name = @"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MessageTimeoutMilliseconds;
+
+            [ProtoMember(6, IsRequired = true, Name = @"record_statistics", DataFormat = DataFormat.Default)]
+            public readonly bool RecordStatistics;
+
+            [ProtoMember(7, IsRequired = true, Name = @"live_buffer_size", DataFormat = DataFormat.TwosComplement)]
+            public readonly int LiveBufferSize;
+
+            [ProtoMember(8, IsRequired = true, Name = @"read_batch_size", DataFormat = DataFormat.TwosComplement)]
+            public readonly int ReadBatchSize;
+
+            [ProtoMember(9, IsRequired = true, Name = @"buffer_size", DataFormat = DataFormat.TwosComplement)]
+            public readonly int BufferSize;
+
+            [ProtoMember(10, IsRequired = true, Name = @"max_retry_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MaxRetryCount;
+
+            [ProtoMember(11, IsRequired = true, Name = @"prefer_round_robin", DataFormat = DataFormat.Default)]
+            public readonly bool PreferRoundRobin;
+
+            [ProtoMember(12, IsRequired = true, Name = @"checkpoint_after_time", DataFormat = DataFormat.TwosComplement)]
+            public readonly int CheckpointAfterTime;
+
+            [ProtoMember(13, IsRequired = true, Name = @"checkpoint_max_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int CheckpointMaxCount;
+
+            [ProtoMember(14, IsRequired = true, Name = @"checkpoint_min_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int CheckpointMinCount;
+
+            [ProtoMember(15, IsRequired = true, Name = @"subscriber_max_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int SubscriberMaxCount;
+
+            [ProtoMember(16, IsRequired = false, Name = @"named_consumer_strategy", DataFormat = DataFormat.Default)]
+            public readonly string NamedConsumerStrategy;
+
+            private CreatePersistentSubscriptionV1() { }
+
+            public CreatePersistentSubscriptionV1(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
+            {
+                SubscriptionGroupName = subscriptionGroupName;
+                EventStreamId = eventStreamId;
+                ResolveLinkTos = resolveLinkTos;
+                StartFrom = startFrom;
+                MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+                RecordStatistics = recordStatistics;
+                LiveBufferSize = liveBufferSize;
+                ReadBatchSize = readBatchSize;
+                BufferSize = bufferSize;
+                MaxRetryCount = maxRetryCount;
+                PreferRoundRobin = preferRoundRobin;
+                CheckpointAfterTime = checkpointAfterTime;
+                CheckpointMaxCount = checkpointMaxCount;
+                CheckpointMinCount = checkpointMinCount;
+                SubscriberMaxCount = subscriberMaxCount;
+                NamedConsumerStrategy = namedConsumerStrategy;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"DeletePersistentSubscriptionV1")]
+        public partial class DeletePersistentSubscriptionV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"subscription_group_name", DataFormat = DataFormat.Default)]
+            public readonly string SubscriptionGroupName;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            private DeletePersistentSubscriptionV1() { }
+
+            public DeletePersistentSubscriptionV1(string subscriptionGroupName, string eventStreamId)
+            {
+                SubscriptionGroupName = subscriptionGroupName;
+                EventStreamId = eventStreamId;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"UpdatePersistentSubscriptionV1")]
+        public partial class UpdatePersistentSubscriptionV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"subscription_group_name", DataFormat = DataFormat.Default)]
+            public readonly string SubscriptionGroupName;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(3, IsRequired = true, Name = @"resolve_link_tos", DataFormat = DataFormat.Default)]
+            public readonly bool ResolveLinkTos;
+
+            [ProtoMember(4, IsRequired = true, Name = @"start_from", DataFormat = DataFormat.TwosComplement)]
+            public readonly int StartFrom;
+
+            [ProtoMember(5, IsRequired = true, Name = @"message_timeout_milliseconds", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MessageTimeoutMilliseconds;
+
+            [ProtoMember(6, IsRequired = true, Name = @"record_statistics", DataFormat = DataFormat.Default)]
+            public readonly bool RecordStatistics;
+
+            [ProtoMember(7, IsRequired = true, Name = @"live_buffer_size", DataFormat = DataFormat.TwosComplement)]
+            public readonly int LiveBufferSize;
+
+            [ProtoMember(8, IsRequired = true, Name = @"read_batch_size", DataFormat = DataFormat.TwosComplement)]
+            public readonly int ReadBatchSize;
+
+            [ProtoMember(9, IsRequired = true, Name = @"buffer_size", DataFormat = DataFormat.TwosComplement)]
+            public readonly int BufferSize;
+
+            [ProtoMember(10, IsRequired = true, Name = @"max_retry_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int MaxRetryCount;
+
+            [ProtoMember(11, IsRequired = true, Name = @"prefer_round_robin", DataFormat = DataFormat.Default)]
+            public readonly bool PreferRoundRobin;
+
+            [ProtoMember(12, IsRequired = true, Name = @"checkpoint_after_time", DataFormat = DataFormat.TwosComplement)]
+            public readonly int CheckpointAfterTime;
+
+            [ProtoMember(13, IsRequired = true, Name = @"checkpoint_max_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int CheckpointMaxCount;
+
+            [ProtoMember(14, IsRequired = true, Name = @"checkpoint_min_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int CheckpointMinCount;
+
+            [ProtoMember(15, IsRequired = true, Name = @"subscriber_max_count", DataFormat = DataFormat.TwosComplement)]
+            public readonly int SubscriberMaxCount;
+
+            [ProtoMember(16, IsRequired = false, Name = @"named_consumer_strategy", DataFormat = DataFormat.Default)]
+            public readonly string NamedConsumerStrategy;
+
+            private UpdatePersistentSubscriptionV1() { }
+
+            public UpdatePersistentSubscriptionV1(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
+            {
+                SubscriptionGroupName = subscriptionGroupName;
+                EventStreamId = eventStreamId;
+                ResolveLinkTos = resolveLinkTos;
+                StartFrom = startFrom;
+                MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+                RecordStatistics = recordStatistics;
+                LiveBufferSize = liveBufferSize;
+                ReadBatchSize = readBatchSize;
+                BufferSize = bufferSize;
+                MaxRetryCount = maxRetryCount;
+                PreferRoundRobin = preferRoundRobin;
+                CheckpointAfterTime = checkpointAfterTime;
+                CheckpointMaxCount = checkpointMaxCount;
+                CheckpointMinCount = checkpointMinCount;
+                SubscriberMaxCount = subscriberMaxCount;
+                NamedConsumerStrategy = namedConsumerStrategy;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"UpdatePersistentSubscriptionCompletedV1")]
+        public partial class UpdatePersistentSubscriptionCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly UpdatePersistentSubscriptionCompletedV1.UpdatePersistentSubscriptionResultV1 Result;
+
+            [ProtoMember(2, IsRequired = false, Name = @"reason", DataFormat = DataFormat.Default)]
+            public readonly string Reason;
+
+            [ProtoContract(Name = @"UpdatePersistentSubscriptionResultV1")]
+            public enum UpdatePersistentSubscriptionResultV1
+            {
+
+                [ProtoEnum(Name = @"Success", Value = 0)]
+                Success = 0,
+
+                [ProtoEnum(Name = @"DoesNotExist", Value = 1)]
+                DoesNotExist = 1,
+
+                [ProtoEnum(Name = @"Fail", Value = 2)]
+                Fail = 2,
+
+                [ProtoEnum(Name = @"AccessDenied", Value = 3)]
+                AccessDenied = 3
+            }
+
+            private UpdatePersistentSubscriptionCompletedV1() { }
+
+            public UpdatePersistentSubscriptionCompletedV1(UpdatePersistentSubscriptionCompletedV1.UpdatePersistentSubscriptionResultV1 result, string reason)
+            {
+                Result = result;
+                Reason = reason;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"CreatePersistentSubscriptionCompletedV1")]
+        public partial class CreatePersistentSubscriptionCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly CreatePersistentSubscriptionCompletedV1.CreatePersistentSubscriptionResultV1 Result;
+
+            [ProtoMember(2, IsRequired = false, Name = @"reason", DataFormat = DataFormat.Default)]
+            public readonly string Reason;
+
+            [ProtoContract(Name = @"CreatePersistentSubscriptionResultV1")]
+            public enum CreatePersistentSubscriptionResultV1
+            {
+
+                [ProtoEnum(Name = @"Success", Value = 0)]
+                Success = 0,
+
+                [ProtoEnum(Name = @"AlreadyExists", Value = 1)]
+                AlreadyExists = 1,
+
+                [ProtoEnum(Name = @"Fail", Value = 2)]
+                Fail = 2,
+
+                [ProtoEnum(Name = @"AccessDenied", Value = 3)]
+                AccessDenied = 3
+            }
+
+            private CreatePersistentSubscriptionCompletedV1() { }
+
+            public CreatePersistentSubscriptionCompletedV1(CreatePersistentSubscriptionCompletedV1.CreatePersistentSubscriptionResultV1 result, string reason)
+            {
+                Result = result;
+                Reason = reason;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"DeletePersistentSubscriptionCompletedV1")]
+        public partial class DeletePersistentSubscriptionCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly DeletePersistentSubscriptionCompletedV1.DeletePersistentSubscriptionResultV1 Result;
+
+            [ProtoMember(2, IsRequired = false, Name = @"reason", DataFormat = DataFormat.Default)]
+            public readonly string Reason;
+
+            [ProtoContract(Name = @"DeletePersistentSubscriptionResultV1")]
+            public enum DeletePersistentSubscriptionResultV1
+            {
+
+                [ProtoEnum(Name = @"Success", Value = 0)]
+                Success = 0,
+
+                [ProtoEnum(Name = @"DoesNotExist", Value = 1)]
+                DoesNotExist = 1,
+
+                [ProtoEnum(Name = @"Fail", Value = 2)]
+                Fail = 2,
+
+                [ProtoEnum(Name = @"AccessDenied", Value = 3)]
+                AccessDenied = 3
+            }
+
+            private DeletePersistentSubscriptionCompletedV1() { }
+
+            public DeletePersistentSubscriptionCompletedV1(DeletePersistentSubscriptionCompletedV1.DeletePersistentSubscriptionResultV1 result, string reason)
+            {
+                Result = result;
+                Reason = reason;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ConnectToPersistentSubscriptionV1")]
+        public partial class ConnectToPersistentSubscriptionV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"subscription_id", DataFormat = DataFormat.Default)]
+            public readonly string SubscriptionId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(3, IsRequired = true, Name = @"allowed_in_flight_messages", DataFormat = DataFormat.TwosComplement)]
+            public readonly int AllowedInFlightMessages;
+
+            private ConnectToPersistentSubscriptionV1() { }
+
+            public ConnectToPersistentSubscriptionV1(string subscriptionId, string eventStreamId, int allowedInFlightMessages)
+            {
+                SubscriptionId = subscriptionId;
+                EventStreamId = eventStreamId;
+                AllowedInFlightMessages = allowedInFlightMessages;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"PersistentSubscriptionAckEventsV1")]
+        public partial class PersistentSubscriptionAckEventsV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"subscription_id", DataFormat = DataFormat.Default)]
+            public readonly string SubscriptionId;
+
+            [ProtoMember(2, Name = @"processed_event_ids", DataFormat = DataFormat.Default)]
+            public readonly byte[][] ProcessedEventIds;
+
+            private PersistentSubscriptionAckEventsV1() { }
+
+            public PersistentSubscriptionAckEventsV1(string subscriptionId, byte[][] processedEventIds)
+            {
+                SubscriptionId = subscriptionId;
+                ProcessedEventIds = processedEventIds;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"PersistentSubscriptionNakEventsV1")]
+        public partial class PersistentSubscriptionNakEventsV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"subscription_id", DataFormat = DataFormat.Default)]
+            public readonly string SubscriptionId;
+
+            [ProtoMember(2, Name = @"processed_event_ids", DataFormat = DataFormat.Default)]
+            public readonly byte[][] ProcessedEventIds;
+
+            [ProtoMember(3, IsRequired = false, Name = @"message", DataFormat = DataFormat.Default)]
+            public readonly string Message;
+
+            [ProtoMember(4, IsRequired = true, Name = @"action", DataFormat = DataFormat.TwosComplement)]
+            public readonly PersistentSubscriptionNakEventsV1.NakActionV1 Action;
+
+            [ProtoContract(Name = @"NakActionV1")]
+            public enum NakActionV1
+            {
+
+                [ProtoEnum(Name = @"Unknown", Value = 0)]
+                Unknown = 0,
+
+                [ProtoEnum(Name = @"Park", Value = 1)]
+                Park = 1,
+
+                [ProtoEnum(Name = @"Retry", Value = 2)]
+                Retry = 2,
+
+                [ProtoEnum(Name = @"Skip", Value = 3)]
+                Skip = 3,
+
+                [ProtoEnum(Name = @"Stop", Value = 4)]
+                Stop = 4
+            }
+
+            private PersistentSubscriptionNakEventsV1() { }
+
+            public PersistentSubscriptionNakEventsV1(string subscriptionId, byte[][] processedEventIds, string message, PersistentSubscriptionNakEventsV1.NakActionV1 action)
+            {
+                SubscriptionId = subscriptionId;
+                ProcessedEventIds = processedEventIds;
+                Message = message;
+                Action = action;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"PersistentSubscriptionConfirmationV1")]
+        public partial class PersistentSubscriptionConfirmationV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long LastCommitPosition;
+
+            [ProtoMember(2, IsRequired = true, Name = @"subscription_id", DataFormat = DataFormat.Default)]
+            public readonly string SubscriptionId;
+
+            [ProtoMember(3, IsRequired = false, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int? LastEventNumber;
+
+            private PersistentSubscriptionConfirmationV1() { }
+
+            public PersistentSubscriptionConfirmationV1(long lastCommitPosition, string subscriptionId, int? lastEventNumber)
+            {
+                LastCommitPosition = lastCommitPosition;
+                SubscriptionId = subscriptionId;
+                LastEventNumber = lastEventNumber;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"PersistentSubscriptionStreamEventAppearedV1")]
+        public partial class PersistentSubscriptionStreamEventAppearedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event", DataFormat = DataFormat.Default)]
+            public readonly ResolvedIndexedEventV1 Event;
+
+            private PersistentSubscriptionStreamEventAppearedV1() { }
+
+            public PersistentSubscriptionStreamEventAppearedV1(ResolvedIndexedEventV1 @event)
+            {
+                Event = @event;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"SubscribeToStreamV1")]
+        public partial class SubscribeToStreamV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event_stream_id", DataFormat = DataFormat.Default)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(2, IsRequired = true, Name = @"resolve_link_tos", DataFormat = DataFormat.Default)]
+            public readonly bool ResolveLinkTos;
+
+            private SubscribeToStreamV1() { }
+
+            public SubscribeToStreamV1(string eventStreamId, bool resolveLinkTos)
+            {
+                EventStreamId = eventStreamId;
+                ResolveLinkTos = resolveLinkTos;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"SubscriptionConfirmationV1")]
+        public partial class SubscriptionConfirmationV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+            public readonly long LastCommitPosition;
+
+            [ProtoMember(2, IsRequired = false, Name = @"last_event_number", DataFormat = DataFormat.TwosComplement)]
+            public readonly int? LastEventNumber;
+
+            private SubscriptionConfirmationV1() { }
+
+            public SubscriptionConfirmationV1(long lastCommitPosition, int? lastEventNumber)
+            {
+                LastCommitPosition = lastCommitPosition;
+                LastEventNumber = lastEventNumber;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"StreamEventAppearedV1")]
+        public partial class StreamEventAppearedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"event", DataFormat = DataFormat.Default)]
+            public readonly ResolvedEventV1 Event;
+
+            private StreamEventAppearedV1() { }
+
+            public StreamEventAppearedV1(ResolvedEventV1 @event)
+            {
+                Event = @event;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"UnsubscribeFromStreamV1")]
+        public partial class UnsubscribeFromStreamV1
+        {
+            public UnsubscribeFromStreamV1()
+            {
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"SubscriptionDroppedV1")]
+        public partial class SubscriptionDroppedV1
+        {
+            [ProtoMember(1, IsRequired = false, Name = @"reason", DataFormat = DataFormat.TwosComplement)]
+            public readonly SubscriptionDroppedV1.SubscriptionDropReasonV1 Reason;
+
+            [ProtoContract(Name = @"SubscriptionDropReasonV1")]
+            public enum SubscriptionDropReasonV1
+            {
+
+                [ProtoEnum(Name = @"Unsubscribed", Value = 0)]
+                Unsubscribed = 0,
+
+                [ProtoEnum(Name = @"AccessDenied", Value = 1)]
+                AccessDenied = 1,
+
+                [ProtoEnum(Name = @"NotFound", Value = 2)]
+                NotFound = 2,
+
+                [ProtoEnum(Name = @"PersistentSubscriptionDeleted", Value = 3)]
+                PersistentSubscriptionDeleted = 3,
+
+                [ProtoEnum(Name = @"SubscriberMaxCountReached", Value = 4)]
+                SubscriberMaxCountReached = 4
+            }
+
+            private SubscriptionDroppedV1() { }
+
+            public SubscriptionDroppedV1(SubscriptionDroppedV1.SubscriptionDropReasonV1 reason)
+            {
+                Reason = reason;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"NotHandledV1")]
+        public partial class NotHandledV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"reason", DataFormat = DataFormat.TwosComplement)]
+            public readonly NotHandledV1.NotHandledReasonV1 Reason;
+
+            [ProtoMember(2, IsRequired = false, Name = @"additional_info", DataFormat = DataFormat.Default)]
+            public readonly byte[] AdditionalInfo;
+
+            [Serializable, ProtoContract(Name = @"MasterInfoV1")]
+            public partial class MasterInfoV1
+            {
+                [ProtoMember(1, IsRequired = true, Name = @"external_tcp_address", DataFormat = DataFormat.Default)]
+                public readonly string ExternalTcpAddress;
+
+                [ProtoMember(2, IsRequired = true, Name = @"external_tcp_port", DataFormat = DataFormat.TwosComplement)]
+                public readonly int ExternalTcpPort;
+
+                [ProtoMember(3, IsRequired = true, Name = @"external_http_address", DataFormat = DataFormat.Default)]
+                public readonly string ExternalHttpAddress;
+
+                [ProtoMember(4, IsRequired = true, Name = @"external_http_port", DataFormat = DataFormat.TwosComplement)]
+                public readonly int ExternalHttpPort;
+
+                [ProtoMember(5, IsRequired = false, Name = @"external_secure_tcp_address", DataFormat = DataFormat.Default)]
+                public readonly string ExternalSecureTcpAddress;
+
+                [ProtoMember(6, IsRequired = false, Name = @"external_secure_tcp_port", DataFormat = DataFormat.TwosComplement)]
+                public readonly int? ExternalSecureTcpPort;
+
+                private MasterInfoV1() { }
+
+                public MasterInfoV1(string externalTcpAddress, int externalTcpPort, string externalHttpAddress, int externalHttpPort, string externalSecureTcpAddress, int? externalSecureTcpPort)
+                {
+                    ExternalTcpAddress = externalTcpAddress;
+                    ExternalTcpPort = externalTcpPort;
+                    ExternalHttpAddress = externalHttpAddress;
+                    ExternalHttpPort = externalHttpPort;
+                    ExternalSecureTcpAddress = externalSecureTcpAddress;
+                    ExternalSecureTcpPort = externalSecureTcpPort;
+                }
+            }
+
+            [ProtoContract(Name = @"NotHandledReasonV1")]
+            public enum NotHandledReasonV1
+            {
+
+                [ProtoEnum(Name = @"NotReady", Value = 0)]
+                NotReady = 0,
+
+                [ProtoEnum(Name = @"TooBusy", Value = 1)]
+                TooBusy = 1,
+
+                [ProtoEnum(Name = @"NotMaster", Value = 2)]
+                NotMaster = 2
+            }
+
+            private NotHandledV1() { }
+
+            public NotHandledV1(NotHandledV1.NotHandledReasonV1 reason, byte[] additionalInfo)
+            {
+                Reason = reason;
+                AdditionalInfo = additionalInfo;
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ScavengeDatabaseV1")]
+        public partial class ScavengeDatabaseV1
+        {
+            public ScavengeDatabaseV1()
+            {
+            }
+        }
+
+        [Serializable, ProtoContract(Name = @"ScavengeDatabaseCompletedV1")]
+        public partial class ScavengeDatabaseCompletedV1
+        {
+            [ProtoMember(1, IsRequired = true, Name = @"result", DataFormat = DataFormat.TwosComplement)]
+            public readonly ScavengeDatabaseCompletedV1.ScavengeResultV1 Result;
+
+            [ProtoMember(2, IsRequired = false, Name = @"error", DataFormat = DataFormat.Default)]
+            public readonly string Error;
+
+            [ProtoMember(3, IsRequired = true, Name = @"total_time_ms", DataFormat = DataFormat.TwosComplement)]
+            public readonly int TotalTimeMs;
+
+            [ProtoMember(4, IsRequired = true, Name = @"total_space_saved", DataFormat = DataFormat.TwosComplement)]
+            public readonly long TotalSpaceSaved;
+
+            [ProtoContract(Name = @"ScavengeResultV1")]
+            public enum ScavengeResultV1
+            {
+
+                [ProtoEnum(Name = @"Success", Value = 0)]
+                Success = 0,
+
+                [ProtoEnum(Name = @"InProgress", Value = 1)]
+                InProgress = 1,
+
+                [ProtoEnum(Name = @"Failed", Value = 2)]
+                Failed = 2
+            }
+
+            private ScavengeDatabaseCompletedV1() { }
+
+            public ScavengeDatabaseCompletedV1(ScavengeDatabaseCompletedV1.ScavengeResultV1 result, string error, int totalTimeMs, long totalSpaceSaved)
             {
                 Result = result;
                 Error = error;

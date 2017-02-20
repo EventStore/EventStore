@@ -336,7 +336,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new Tuple<string, int>(stream, position);
         }
 
-        private static void SetEntryProperties(string stream, int eventNumber, DateTime timestamp, Uri requestedUrl, EntryElement entry)
+        private static void SetEntryProperties(string stream, long eventNumber, DateTime timestamp, Uri requestedUrl, EntryElement entry)
         {
             var escapedStreamId = Uri.EscapeDataString(stream);
             entry.SetTitle(eventNumber + "@" + stream);

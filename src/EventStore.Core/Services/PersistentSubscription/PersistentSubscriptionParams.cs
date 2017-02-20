@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly string _subscriptionId;
         private readonly string _eventStreamId;
         private readonly string _groupName;
-        private readonly int _startFrom;
+        private readonly long _startFrom;
         private readonly bool _extraStatistics;
         private readonly TimeSpan _messageTimeout;
         private readonly TimeSpan _checkPointAfter;
@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private IPersistentSubscriptionMessageParker _messageParker;
 
         public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
-                                           int startFrom, bool extraStatistics, TimeSpan messageTimeout, 
+                                           long startFrom, bool extraStatistics, TimeSpan messageTimeout, 
                                            int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
                                            TimeSpan checkPointAfter, int minCheckPointCount,
                                            int maxCheckPointCount, int maxSubscriberCount, 
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _groupName; }
         }
 
-        public int StartFrom
+        public long StartFrom
         {
             get { return _startFrom; }
         }

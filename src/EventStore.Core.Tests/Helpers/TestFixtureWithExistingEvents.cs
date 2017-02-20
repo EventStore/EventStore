@@ -377,7 +377,7 @@ namespace EventStore.Core.Tests.Helpers
                 _writesQueue.Enqueue(message);
         }
 
-        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, int expectedVersion, Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, int? commitPosition = null) where T : Message
+        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, long expectedVersion, Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, int? commitPosition = null) where T : Message
         {
             if (positions == null)
             {

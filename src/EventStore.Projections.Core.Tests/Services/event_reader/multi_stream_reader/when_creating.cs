@@ -11,14 +11,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     public class when_creating : TestFixtureWithExistingEvents
     {
         private string[] _abStreams;
-        private Dictionary<string, int> _ab12Tag;
+        private Dictionary<string, long> _ab12Tag;
         private new RealTimeProvider _timeProvider;
 
         [SetUp]
         public void setup()
         {
             _timeProvider = new RealTimeProvider();
-            _ab12Tag = new Dictionary<string, int> { { "a", 1 }, { "b", 2 } };
+            _ab12Tag = new Dictionary<string, long> { { "a", 1 }, { "b", 2 } };
             _abStreams = new[] {"a", "b"};
         }
 
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         {
             new MultiStreamEventReader(
                 _ioDispatcher, _bus, Guid.NewGuid(), null, 0, _abStreams,
-                new Dictionary<string, int> {{"a", 1}, {"c", 2}}, false, _timeProvider);
+                new Dictionary<string, long> {{"a", 1}, {"c", 2}}, false, _timeProvider);
         }
     }
 }

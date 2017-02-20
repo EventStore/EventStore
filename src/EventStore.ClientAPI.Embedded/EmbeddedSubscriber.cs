@@ -4,6 +4,7 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Helpers;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -37,7 +38,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public void Handle(ClientMessage.SubscriptionConfirmation message)
         {
-            ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, message.LastEventNumber);
+            ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, ExpectedVersionConverter.ConvertTo32Bit(message.LastEventNumber));
         }
 
         public void Handle(ClientMessage.SubscriptionDropped message)
@@ -49,7 +50,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public void Handle(ClientMessage.PersistentSubscriptionConfirmation message)
         {
-            ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, message.LastEventNumber);
+            ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, ExpectedVersionConverter.ConvertTo32Bit(message.LastEventNumber));
         }
 
         public void Handle(ClientMessage.PersistentSubscriptionStreamEventAppeared message)

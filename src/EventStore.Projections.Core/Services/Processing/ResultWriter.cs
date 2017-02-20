@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 WriteResult(partition, resultBody, causedBy, causedByGuid, correlationId);
         }
 
-        public void WritePartitionMeasured(Guid subscriptionId, string partition, int size)
+        public void WritePartitionMeasured(Guid subscriptionId, string partition, long size)
         {
             // intentionally does nothing
         }

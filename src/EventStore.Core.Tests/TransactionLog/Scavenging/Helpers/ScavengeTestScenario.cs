@@ -67,9 +67,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             var lowHasher = new XXHashUnsafe();
             var highHasher = new Murmur3AUnsafe();
             var tableIndex = new TableIndex(indexPath, lowHasher, highHasher,
-                                            () => new HashListMemTable(PTableVersions.Index64Bit, maxSize: 200),
+                                            () => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
                                             () => new TFReaderLease(readerPool),
-                                            PTableVersions.Index64Bit,
+                                            PTableVersions.IndexV3,
                                             maxSizeForMemory: 100,
                                             maxTablesPerLevel: 2);
             ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault);

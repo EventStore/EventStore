@@ -25,9 +25,9 @@ namespace EventStore.Core.Tests.Services.Storage
 
         protected abstract DbResult CreateDb(TFChunkDbCreationHelper dbCreator);
 
-        private readonly int _metastreamMaxCount;
+        private readonly long _metastreamMaxCount;
 
-        protected SimpleDbTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1)
+        protected SimpleDbTestScenario(int maxEntriesInMemTable = 20, long metastreamMaxCount = 1)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
             MaxEntriesInMemTable = maxEntriesInMemTable;
@@ -60,9 +60,9 @@ namespace EventStore.Core.Tests.Services.Storage
             var lowHasher = new XXHashUnsafe();
             var highHasher = new Murmur3AUnsafe();
             TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
-                                        () => new HashListMemTable(PTableVersions.Index64Bit, MaxEntriesInMemTable * 2),
+                                        () => new HashListMemTable(PTableVersions.IndexV2, MaxEntriesInMemTable * 2),
                                         () => new TFReaderLease(readers),
-                                        PTableVersions.Index64Bit,
+                                        PTableVersions.IndexV2,
                                         MaxEntriesInMemTable);
 
             ReadIndex = new ReadIndex(new NoopPublisher(),

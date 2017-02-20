@@ -36,9 +36,9 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             var lowHasher = new XXHashUnsafe();
             var highHasher = new Murmur3AUnsafe();
             TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
-                                        () => new HashListMemTable(PTableVersions.Index64Bit, maxSize: MaxEntriesInMemTable*2),
+                                        () => new HashListMemTable(PTableVersions.IndexV2, maxSize: MaxEntriesInMemTable*2),
                                         () => new TFReaderLease(readers),
-                                        PTableVersions.Index64Bit,
+                                        PTableVersions.IndexV2,
                                         maxSizeForMemory: MaxEntriesInMemTable);
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,

@@ -42,13 +42,13 @@ namespace EventStore.Core.Tests.TransactionLog
         public void a_read_on_scavenged_chunk_includes_map()
         {
             var chunk = TFChunk.CreateNew(GetFilePathFor("afile"), 200, 0, 0, true);
-            chunk.CompleteScavenge(new [] {new PosMap(0, 0), new PosMap(1,1) });
+            chunk.CompleteScavenge(new [] {new PosMap(0, 0), new PosMap(1,1) }, false);
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
                 var result = reader.ReadNextRawBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(ChunkHeader.Size + ChunkHeader.Size + 2 * PosMap.FullSize, result.BytesRead);
+                Assert.AreEqual(ChunkHeader.Size + ChunkHeader.Size + 2 * PosMap.V2Size, result.BytesRead);
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
