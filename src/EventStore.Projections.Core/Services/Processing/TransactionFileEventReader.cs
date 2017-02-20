@@ -129,7 +129,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_eof){
                 _publisher.Publish(
                     new AwakeServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), _pendingRequestCorrelationId, null,
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+                        new TFPos(_lastPosition, _lastPosition), CreateReadTimeoutMessage(_pendingRequestCorrelationId, "$all")));
+                _publisher.Publish(
+                    new AwakeServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
             }
             else{
@@ -138,19 +142,23 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void ScheduleReadTimeoutMessage(Guid readCorrelationId, string streamId)
+        private void ScheduleReadTimeoutMessage(Guid correlationId, string streamId)
         {
-            _publisher.Publish(
-                TimerMessage.Schedule.Create(
-                    TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
-                    new SendToThisEnvelope(this),
-                    new ProjectionManagementMessage.Internal.ReadTimeout(readCorrelationId, streamId)));
+            _publisher.Publish(CreateReadTimeoutMessage(correlationId, streamId));
         }
 
-        private Message CreateReadEventsMessage(Guid readCorrelationId)
+        private Message CreateReadTimeoutMessage(Guid correlationId, string streamId)
+        {
+            return TimerMessage.Schedule.Create(
+                TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                new SendToThisEnvelope(this),
+                new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, streamId));
+        }
+
+        private Message CreateReadEventsMessage(Guid correlationId)
         {
             return new ClientMessage.ReadAllEventsForward(
-                readCorrelationId, readCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
+                correlationId, correlationId, new SendToThisEnvelope(this), _from.CommitPosition,
                 _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, 
                 _resolveLinkTos, false, null, ReadAs);
         }

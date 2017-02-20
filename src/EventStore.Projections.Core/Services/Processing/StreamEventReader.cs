@@ -171,7 +171,11 @@ namespace EventStore.Projections.Core.Services.Processing
 			if (_eof) {
 				_publisher.Publish (
 					new AwakeServiceMessage.SubscribeAwake (
-						new PublishEnvelope (_publisher, crossThread: true), _pendingRequestCorrelationId, null,
+						new PublishEnvelope (_publisher, crossThread: true), Guid.NewGuid(), null,
+						new TFPos (_lastPosition, _lastPosition), CreateReadTimeoutMessage(_pendingRequestCorrelationId, _streamName)));
+				_publisher.Publish (
+					new AwakeServiceMessage.SubscribeAwake (
+						new PublishEnvelope (_publisher, crossThread: true), Guid.NewGuid(), null,
 						new TFPos (_lastPosition, _lastPosition), readEventsForward));
 			}
             else{
@@ -180,13 +184,17 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void ScheduleReadTimeoutMessage(Guid readCorrelationId, string streamId)
+        private void ScheduleReadTimeoutMessage(Guid correlationId, string streamId)
         {
-            _publisher.Publish(
-                TimerMessage.Schedule.Create(
-                    TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
-                    new SendToThisEnvelope(this),
-                    new ProjectionManagementMessage.Internal.ReadTimeout(readCorrelationId, streamId)));
+            _publisher.Publish(CreateReadTimeoutMessage(correlationId, streamId));
+        }
+
+        private Message CreateReadTimeoutMessage(Guid correlationId, string streamId)
+        {
+            return TimerMessage.Schedule.Create(
+                TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                new SendToThisEnvelope(this),
+                new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, streamId));
         }
 
         private Message CreateReadEventsMessage(Guid readCorrelationId)

@@ -115,9 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
         }
-
-        
     }
 }

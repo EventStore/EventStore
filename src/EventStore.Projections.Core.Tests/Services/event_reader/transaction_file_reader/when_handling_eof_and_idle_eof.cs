@@ -31,7 +31,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
         [SetUp]
         public new void When()
         {
-
             _distibutionPointCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
             _edp = new TransactionFileEventReader(_bus, _distibutionPointCorrelationId, null, new TFPos(100, 50), _fakeTimeProvider,
@@ -65,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
 					correlationId, ReadAllResult.Success, null,
                     new EventStore.Core.Data.ResolvedEvent[0], null, false, 100, new TFPos(), new TFPos(), new TFPos(), 500));
             _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
-			correlationId = _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Last().CorrelationId;
+            correlationId = ((ClientMessage.ReadAllEventsForward)(_consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Last().ReplyWithMessage)).CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
 					correlationId, ReadAllResult.Success, null,
