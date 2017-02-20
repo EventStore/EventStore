@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                 correlationId, "b", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, null, false, "", 3, 2, true, 400));
             _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
-            correlationId = _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Last().CorrelationId;
+            correlationId = ((ClientMessage.ReadStreamEventsForward)(_consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Last().ReplyWithMessage)).CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                 correlationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, null, false, "", 2, 1, true, 600));

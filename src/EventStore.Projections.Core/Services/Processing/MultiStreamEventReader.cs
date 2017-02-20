@@ -263,24 +263,33 @@ namespace EventStore.Projections.Core.Services.Processing
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 Guid.NewGuid(), pendingRequestCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
-            if (delay)
+            if (delay){ 
                 _publisher.Publish(
                     new AwakeServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), pendingRequestCorrelationId, stream,
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), stream,
+                        new TFPos(_lastPosition, _lastPosition), CreateReadTimeoutMessage(pendingRequestCorrelationId, stream)));
+                _publisher.Publish(
+                    new AwakeServiceMessage.SubscribeAwake(
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), stream,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
+            }
             else{
                 _publisher.Publish(readEventsForward);
                 ScheduleReadTimeoutMessage(pendingRequestCorrelationId, stream);
             }
         }
 
-        private void ScheduleReadTimeoutMessage(Guid readCorrelationId, string streamId)
+        private void ScheduleReadTimeoutMessage(Guid correlationId, string streamId)
         {
-            _publisher.Publish(
-                TimerMessage.Schedule.Create(
-                    TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
-                    new SendToThisEnvelope(this),
-                    new ProjectionManagementMessage.Internal.ReadTimeout(readCorrelationId, streamId)));
+            _publisher.Publish(CreateReadTimeoutMessage(correlationId, streamId));
+        }
+
+        private Message CreateReadTimeoutMessage(Guid correlationId, string streamId)
+        {
+            return TimerMessage.Schedule.Create(
+                TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                new SendToThisEnvelope(this),
+                new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, streamId));
         }
 
         private void DeliverSafePositionToJoin()
