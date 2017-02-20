@@ -15,15 +15,15 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly IODispatcher _ioDispatcher;
         private readonly string _catalogStreamName;
-        private int _catalogCurrentSequenceNumber;
-        private int _catalogNextSequenceNumber;
+        private long _catalogCurrentSequenceNumber;
+        private long _catalogNextSequenceNumber;
         private long? _limitingCommitPosition;
         private readonly bool _resolveLinkTos;
 
         private int _maxReadCount = 111;
 
         private string _dataStreamName;
-        private int _dataNextSequenceNumber;
+        private long _dataNextSequenceNumber;
         private readonly Queue<string> _pendingStreams = new Queue<string>();
 
         private Guid _catalogReadRequestId;
@@ -37,9 +37,9 @@ namespace EventStore.Projections.Core.Services.Processing
             IPrincipal readAs,
             IODispatcher ioDispatcher,
             string catalogCatalogStreamName,
-            int catalogNextSequenceNumber,
+            long catalogNextSequenceNumber,
             string dataStreamName,
-            int dataNextSequenceNumber,
+            long dataNextSequenceNumber,
             long? limitingCommitPosition,
             bool resolveLinkTos)
             : base(publisher, eventReaderCorrelationId, readAs, true)
@@ -89,13 +89,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void TakeNextStreamIfRequired()
         {
-            if (_dataNextSequenceNumber == int.MaxValue || _dataStreamName == null)
+            if (_dataNextSequenceNumber == EventNumber.DeletedStream || _dataStreamName == null)
             {
                 if (_dataStreamName != null)
                     SendPartitionEof(
                         _dataStreamName,
                         CheckpointTag.FromByStreamPosition(
-                            0, _catalogStreamName, _catalogCurrentSequenceNumber, _dataStreamName, int.MaxValue,
+                            0, _catalogStreamName, _catalogCurrentSequenceNumber, _dataStreamName, EventNumber.DeletedStream,
                             _limitingCommitPosition.Value));
                 
                 if (_catalogEof && _pendingStreams.Count == 0)
@@ -123,13 +123,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendNotAuthorized();
                     return;
                 case ReadStreamResult.NoStream:
-                    _dataNextSequenceNumber = int.MaxValue;
+                    _dataNextSequenceNumber = EventNumber.DeletedStream;
                     if (completed.LastEventNumber >= 0)
                         SendPartitionDeleted_WhenReadingDataStream(_dataStreamName, -1, null, null, null, null);
                     PauseOrContinueProcessing();
                     break;
                 case ReadStreamResult.StreamDeleted:
-                    _dataNextSequenceNumber = int.MaxValue;
+                    _dataNextSequenceNumber = EventNumber.DeletedStream;
                     SendPartitionDeleted_WhenReadingDataStream(_dataStreamName, -1, null, null, null, null);
                     PauseOrContinueProcessing();
                     break;
@@ -137,7 +137,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     foreach (var e in completed.Events)
                         DeliverEvent(e, 17.7f);
                     if (completed.IsEndOfStream)
-                        _dataNextSequenceNumber = int.MaxValue;
+                        _dataNextSequenceNumber = EventNumber.DeletedStream;
                     PauseOrContinueProcessing();
                     break;
                 default:

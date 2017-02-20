@@ -43,7 +43,7 @@ namespace EventStore.ClientAPI.ClientOperations
             return false;
         }
 
-        protected override EventStoreSubscription CreateSubscriptionObject(long lastCommitPosition, int? lastEventNumber)
+        protected override EventStoreSubscription CreateSubscriptionObject(long lastCommitPosition, long? lastEventNumber)
         {
             return new VolatileEventStoreSubscription(this, _streamId, lastCommitPosition, lastEventNumber);
         }

@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
         {
 			_distributionCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
-            var fromPositions = new Dictionary<string, int>();
+            var fromPositions = new Dictionary<string, long>();
             fromPositions.Add("$et-eventTypeOne", 0);
             fromPositions.Add("$et-eventTypeTwo", 0);
             _eventReader = new EventByTypeIndexEventReader(_bus, _distributionCorrelationId, 

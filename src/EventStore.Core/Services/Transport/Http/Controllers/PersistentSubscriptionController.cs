@@ -701,7 +701,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public class SubscriptionConfigData
         {
             public bool ResolveLinktos { get; set; }
-            public int StartFrom { get; set; }
+            public long StartFrom { get; set; }
             public int MessageTimeoutMilliseconds { get; set; }
             public bool ExtraStatistics { get; set; }
             public int MaxRetryCount { get; set; }
@@ -741,8 +741,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string Status { get; set; }
             public decimal AverageItemsPerSecond { get; set; }
             public long TotalItemsProcessed { get; set; }
-            public int LastProcessedEventNumber { get; set; }
-            public int LastKnownEventNumber { get; set; }
+            public long LastProcessedEventNumber { get; set; }
+            public long LastKnownEventNumber { get; set; }
             public int ConnectionCount { get; set; }
             public int TotalInFlightMessages { get; set; }
         }
@@ -759,10 +759,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public string GetMessagesUri { get; set; }
             public long TotalItemsProcessed { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public int LastProcessedEventNumber { get; set; }
-            public int LastKnownEventNumber { get; set; }
+            public long LastProcessedEventNumber { get; set; }
+            public long LastKnownEventNumber { get; set; }
             public int ReadBufferCount { get; set; }
-            public int LiveBufferCount { get; set; }
+            public long LiveBufferCount { get; set; }
             public int RetryBufferCount { get; set; }
             public int TotalInFlightMessages { get; set; }
             public List<ConnectionInfo> Connections { get; set; }

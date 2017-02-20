@@ -9,12 +9,12 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class ReadEventOperation : OperationBase<EventReadResult, ClientMessage.ReadEventCompleted>
     {
         private readonly string _stream;
-        private readonly int _eventNumber;
+        private readonly long _eventNumber;
         private readonly bool _resolveLinkTo;
         private readonly bool _requireMaster;
 
         public ReadEventOperation(ILogger log, TaskCompletionSource<EventReadResult> source,
-                                  string stream, int eventNumber, bool resolveLinkTo, bool requireMaster, UserCredentials userCredentials)
+                                  string stream, long eventNumber, bool resolveLinkTo, bool requireMaster, UserCredentials userCredentials)
             : base(log, source, TcpCommand.ReadEvent, TcpCommand.ReadEventCompleted, userCredentials)
         {
             _stream = stream;

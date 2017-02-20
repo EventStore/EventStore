@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.PersistentSubscription
     {
         private readonly Dictionary<Guid, Tuple<DateTime, OutstandingMessage>> _outstandingRequests;
         private readonly SortedDictionary<Tuple<DateTime, RetryableMessage>, bool> _byTime;
-        private readonly SortedList<int, int> _bySequences;
+        private readonly SortedList<long, long> _bySequences;
 
         public class ByTypeComparer : IComparer<Tuple<DateTime, RetryableMessage>>
         {
@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _outstandingRequests = new Dictionary<Guid, Tuple<DateTime, OutstandingMessage>>();
             _byTime = new SortedDictionary<Tuple<DateTime, RetryableMessage>, bool>(new ByTypeComparer());
-            _bySequences = new SortedList<int, int>();
+            _bySequences = new SortedList<long, long>();
         }
 
         public int Count { get { return _outstandingRequests.Count; }}
@@ -88,10 +88,10 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _byTime.Keys;
         }
 
-        public int GetLowestPosition()
+        public long GetLowestPosition()
         {
             //TODO is there a better way of doing this?
-            if (_bySequences.Count == 0) return int.MinValue;
+            if (_bySequences.Count == 0) return long.MinValue;
             return _bySequences.Values[0];
         }
 

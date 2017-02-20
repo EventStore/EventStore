@@ -4,28 +4,31 @@ namespace EventStore.Core.TransactionLog
 {
     public struct RecordReadResult
     {
-        public static readonly RecordReadResult Failure = new RecordReadResult(false, -1, null, 0);
+        public static readonly RecordReadResult Failure = new RecordReadResult(false, -1, null, 0, 0);
 
         public readonly bool Success;
         public readonly long NextPosition;
         public readonly LogRecord LogRecord;
         public readonly int RecordLength;
+        public readonly int LengthOffset;
 
-        public RecordReadResult(bool success, long nextPosition, LogRecord logRecord, int recordLength)
+        public RecordReadResult(bool success, long nextPosition, LogRecord logRecord, int recordLength, int lengthOffset)
         {
             Success = success;
             LogRecord = logRecord;
             NextPosition = nextPosition;
             RecordLength = recordLength;
+            LengthOffset = lengthOffset;
         }
 
         public override string ToString()
         {
-            return string.Format("Success: {0}, NextPosition: {1}, RecordLength: {2}, LogRecord: {3}",
+            return string.Format("Success: {0}, NextPosition: {1}, RecordLength: {2}, LogRecord: {3}, LengthOffset: {4}",
                                  Success,
                                  NextPosition,
                                  RecordLength,
-                                 LogRecord);
+                                 LogRecord,
+                                 LengthOffset);
         }
     }
 

@@ -36,6 +36,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly TcpServiceType _serviceType;
         private readonly TcpSecurityType _securityType;
         private readonly Func<Guid, IPEndPoint, ITcpDispatcher> _dispatcherFactory;
+        private readonly Func<Guid, IPEndPoint, ITcpDispatcher> _deprecatedDispatcherFactory;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
         private readonly IAuthenticationProvider _authProvider;
@@ -47,11 +48,12 @@ namespace EventStore.Core.Services.Transport.Tcp
                           TcpServiceType serviceType,
                           TcpSecurityType securityType,
                           ITcpDispatcher dispatcher,
+                          ITcpDispatcher deprecatedDispatcher,
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
                           IAuthenticationProvider authProvider,
                           X509Certificate certificate)
-            : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, 
+            : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, (_, __) => deprecatedDispatcher,
                    heartbeatInterval, heartbeatTimeout, authProvider, certificate)
         {
         }
@@ -62,6 +64,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                           TcpServiceType serviceType,
                           TcpSecurityType securityType,
                           Func<Guid, IPEndPoint, ITcpDispatcher> dispatcherFactory,
+                          Func<Guid, IPEndPoint, ITcpDispatcher> deprecatedDispatcherFactory,
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
                           IAuthenticationProvider authProvider,
@@ -82,6 +85,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _serviceType = serviceType;
             _securityType = securityType;
             _dispatcherFactory = dispatcherFactory;
+            _deprecatedDispatcherFactory = deprecatedDispatcherFactory;
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
             _authProvider = authProvider;
@@ -118,10 +122,12 @@ namespace EventStore.Core.Services.Transport.Tcp
                      _serviceType, _securityType, conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
 
             var dispatcher = _dispatcherFactory(conn.ConnectionId, _serverEndPoint);
+            var deprecatedDispatcher = _deprecatedDispatcherFactory(conn.ConnectionId, _serverEndPoint);
             var manager = new TcpConnectionManager(
                     string.Format("{0}-{1}", _serviceType.ToString().ToLower(), _securityType.ToString().ToLower()),
                     _serviceType,
                     dispatcher,
+                    deprecatedDispatcher,
                     _publisher,
                     conn,
                     _networkSendQueue,

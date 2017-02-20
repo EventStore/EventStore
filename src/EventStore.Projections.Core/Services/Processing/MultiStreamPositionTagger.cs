@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromStreamPositions(Phase, _streams.ToDictionary(v => v, v => ExpectedVersion.NoStream));
+            return CheckpointTag.FromStreamPositions(Phase, _streams.ToDictionary(v => v, v => (long)ExpectedVersion.NoStream));
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (tag.Mode_ == CheckpointTag.Mode.MultiStream)
             {
-                int p;
+                long p;
                 return CheckpointTag.FromStreamPositions(
                     tag.Phase, _streams.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
             }
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         "Conversion from EventTypeIndex to MultiStream position tag is not supported");
                 case CheckpointTag.Mode.Stream:
-                    int p;
+                    long p;
                     return CheckpointTag.FromStreamPositions(
                         tag.Phase, _streams.ToDictionary(v => v, v => tag.Streams.TryGetValue(v, out p) ? p : -1));
                 case CheckpointTag.Mode.PreparePosition:

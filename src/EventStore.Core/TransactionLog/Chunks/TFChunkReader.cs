@@ -69,7 +69,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (result.Success)
                 {
                     _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
-                    var postPos = result.LogRecord.LogPosition + result.RecordLength + 2 * sizeof(int);
+                    var postPos = result.LogRecord.GetNextLogPosition(result.LogRecord.LogPosition, result.RecordLength, result.LengthOffset);
                     var eof = postPos == writerChk;
                     return new SeqReadResult(
                         true, eof, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
@@ -123,9 +123,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (result.Success)
                 {
                     _curPos = chunk.ChunkHeader.ChunkStartPosition + result.NextPosition;
-                    var postPos = result.LogRecord.LogPosition + result.RecordLength + 2 * sizeof(int);
+                    var postPos = result.LogRecord.GetNextLogPosition(result.LogRecord.LogPosition, result.RecordLength, result.LengthOffset);
                     var eof = postPos == writerChk;
-                    return new SeqReadResult(true, eof, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
+                    var res = new SeqReadResult(true, eof, result.LogRecord, result.RecordLength, result.LogRecord.LogPosition, postPos);
+                    return res;
                 }
 
                 // we are the beginning of chunk, so need to switch to previous one

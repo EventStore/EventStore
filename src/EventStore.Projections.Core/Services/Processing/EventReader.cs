@@ -102,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected void SendPartitionDeleted_WhenReadingDataStream(
-            string partition, int? lastEventNumber, TFPos? deletedLinkOrEventPosition, TFPos? deletedEventPosition, string positionStreamId,
+            string partition, long? lastEventNumber, TFPos? deletedLinkOrEventPosition, TFPos? deletedEventPosition, string positionStreamId,
             int? positionEventNumber, CheckpointTag preTagged = null)
         {
             if (_disposed)

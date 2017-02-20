@@ -25,10 +25,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool _stateRequested;
 
-        private int _nextStateIndexToRequest;
+        private long _nextStateIndexToRequest;
         private ProjectionVersion _projectionVersion;
         private Guid _readRequestId;
-        private int _lastWrittenCheckpointEventNumber;
+        private long _lastWrittenCheckpointEventNumber;
 
         public CoreProjectionCheckpointReader(
             IPublisher publisher, Guid projectionCorrelationId, IODispatcher ioDispatcher, string projectionCheckpointStreamId, ProjectionVersion projectionVersion, bool useCheckpoints)

@@ -95,10 +95,10 @@ namespace EventStore.Core.Messages
             public int AveragePerSecond { get; set; }
             public long TotalItems { get; set; }
             public long CountSinceLastMeasurement { get; set; }
-            public int LastProcessedEventNumber { get; set; }
-            public int LastKnownMessage { get; set; }
+            public long LastProcessedEventNumber { get; set; }
+            public long LastKnownMessage { get; set; }
             public bool ResolveLinktos { get; set; }
-            public int StartFrom { get; set; }
+            public long StartFrom { get; set; }
             public int MessageTimeoutMilliseconds { get; set; }
             public bool ExtraStatistics { get; set; }
             public int MaxRetryCount { get; set; }
@@ -109,7 +109,7 @@ namespace EventStore.Core.Messages
             public int MinCheckPointCount { get; set; }
             public int MaxCheckPointCount { get; set; }
             public int ReadBufferCount { get; set; }
-            public int LiveBufferCount { get; set; }
+            public long LiveBufferCount { get; set; }
             public int RetryBufferCount { get; set; }
             public int TotalInFlightMessages { get; set; }
             public string NamedConsumerStrategy { get; set; }

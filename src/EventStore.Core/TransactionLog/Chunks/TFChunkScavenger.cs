@@ -184,26 +184,42 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
 
                 var positionMapping = new List<PosMap>();
+                bool isUpgrade = false;
                 foreach (var oldChunk in oldChunks)
                 {
                     TraverseChunk(oldChunk,
                                   prepare =>
                                   {
                                       if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
-                                          positionMapping.Add(WriteRecord(newChunk, prepare));
+                                      {
+                                          var lengthOffset = 0;
+                                          var data = prepare.Data;
+                                          if(prepare.Version == LogRecordVersion.LogRecordV0) {
+                                              isUpgrade = true;
+                                              data = UpgradePrepareData(prepare);
+                                              lengthOffset = 4 + (data.Length - prepare.Data.Length);
+                                          }
+                                          var updatedPrepare = UpgradePrepareVersion(prepare, data);
+                                          positionMapping.Add(WriteRecord(newChunk, updatedPrepare, lengthOffset, isUpgrade));
+                                      }
                                   },
                                   commit =>
                                   {
                                       if (ShouldKeepCommit(commit, commits))
-                                          positionMapping.Add(WriteRecord(newChunk, commit));
+                                      {
+                                          isUpgrade = commit.Version == LogRecordVersion.LogRecordV0;
+                                          var updatedCommit = UpgradeCommitVersion(commit);
+                                          positionMapping.Add(WriteRecord(newChunk, updatedCommit, commit.Version == LogRecordVersion.LogRecordV0 ? 4 : 0, isUpgrade));
+                                      }
                                   },
                                   // we always keep system log records for now
-                                  system => positionMapping.Add(WriteRecord(newChunk, system)));
+                                  system => positionMapping.Add(WriteRecord(newChunk, system, 0, isUpgrade)));
                 }
-                newChunk.CompleteScavenge(positionMapping);
+                
+                newChunk.CompleteScavenge(positionMapping, isUpgrade);
 
                 var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
-                var newSize = (long)newChunk.PhysicalDataSize + PosMap.FullSize * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
+                var newSize = (long)newChunk.PhysicalDataSize + PosMap.V3Size * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
 
                 if(_unsafeIgnoreHardDeletes) {
                     Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
@@ -428,7 +444,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             return !canRemove;
         }
 
-        private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, PrepareLogRecord prepare, int eventNumber){
+        private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, PrepareLogRecord prepare, long eventNumber){
             var result = _readIndex.ReadEvent(prepare.EventStreamId, eventNumber);
             if(result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) return false;
             return true;
@@ -508,9 +524,33 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record)
+        private PrepareLogRecord UpgradePrepareVersion(PrepareLogRecord prepare, byte[] data)
         {
-            var writeResult = newChunk.TryAppend(record);
+            return new PrepareLogRecord(prepare.LogPosition, prepare.CorrelationId, prepare.EventId, prepare.TransactionPosition, 
+                                        prepare.TransactionOffset, prepare.EventStreamId, prepare.ExpectedVersion, prepare.TimeStamp, prepare.Flags, prepare.EventType,
+                                        data, prepare.Metadata);
+        }
+
+        private byte[] UpgradePrepareData(PrepareLogRecord prepare) 
+        {
+            if(!SystemStreams.IsMetastream(prepare.EventStreamId))
+                return prepare.Data;
+
+            var metadata = _readIndex.GetStreamMetadata(SystemStreams.OriginalStreamOf(prepare.EventStreamId));
+            if(metadata.TruncateBefore != EventNumber.DeletedStream)
+                return prepare.Data;
+
+            return metadata.ToJsonBytes();
+        }
+
+        private CommitLogRecord UpgradeCommitVersion(CommitLogRecord commit)
+        {
+            return new CommitLogRecord(commit.LogPosition, commit.CorrelationId, commit.TransactionPosition, commit.TimeStamp, commit.FirstEventNumber);
+        }
+
+        private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record, int lengthOffset, bool isUpgrade)
+        {
+            var writeResult = newChunk.TryAppend(record, isUpgrade);
             if (!writeResult.Success)
             {
                 throw new Exception(string.Format(
@@ -520,12 +560,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
             int actualPos = (int) writeResult.OldPosition;
-            return new PosMap(logPos, actualPos);
+            return new PosMap(logPos, actualPos, lengthOffset);
         }
 
         internal class CommitInfo
         {
-            public readonly int EventNumber;
+            public readonly long EventNumber;
 
             //public string StreamId;
             public bool? KeepCommit;

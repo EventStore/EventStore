@@ -13,10 +13,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IndexBackend.EventNumberCached TryGetStreamLastEventNumber(string streamId);
         IndexBackend.MetadataCached TryGetStreamMetadata(string streamId);
 
-        int? UpdateStreamLastEventNumber(int cacheVersion, string streamId, int? lastEventNumber);
+        long? UpdateStreamLastEventNumber(int cacheVersion, string streamId, long? lastEventNumber);
         StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId, StreamMetadata metadata);
 
-        int? SetStreamLastEventNumber(string streamId, int lastEventNumber);
+        long? SetStreamLastEventNumber(string streamId, long lastEventNumber);
         StreamMetadata SetStreamMetadata(string streamId, StreamMetadata metadata);
 
         void SetSystemSettings(SystemSettings systemSettings);
@@ -60,11 +60,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return cacheInfo;
         }
 
-        public int? UpdateStreamLastEventNumber(int cacheVersion, string streamId, int? lastEventNumber)
+        public long? UpdateStreamLastEventNumber(int cacheVersion, string streamId, long? lastEventNumber)
         {
             var res = _streamLastEventNumberCache.Put(
                 streamId,
-                new KeyValuePair<int, int?>(cacheVersion, lastEventNumber),
+                new KeyValuePair<int, long?>(cacheVersion, lastEventNumber),
                 (key, d) => d.Key == 0 ? new EventNumberCached(1, d.Value) : new EventNumberCached(1, null),
                 (key, old, d) => old.Version == d.Key ? new EventNumberCached(d.Key + 1, d.Value ?? old.LastEventNumber) : old);
             return res.LastEventNumber;
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return res.Metadata;
         }
 
-        int? IIndexBackend.SetStreamLastEventNumber(string streamId, int lastEventNumber)
+        long? IIndexBackend.SetStreamLastEventNumber(string streamId, long lastEventNumber)
         {
             var res = _streamLastEventNumberCache.Put(streamId,
                                                       lastEventNumber,
@@ -111,9 +111,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public struct EventNumberCached
         {
             public readonly int Version;
-            public readonly int? LastEventNumber;
+            public readonly long? LastEventNumber;
 
-            public EventNumberCached(int version, int? lastEventNumber)
+            public EventNumberCached(int version, long? lastEventNumber)
             {
                 Version = version;
                 LastEventNumber = lastEventNumber;

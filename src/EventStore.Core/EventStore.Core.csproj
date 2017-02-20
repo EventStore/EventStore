@@ -1,4 +1,3 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -156,7 +155,7 @@
     <Compile Include="Index\IIndexFilenameProvider.cs" />
     <Compile Include="Index\IMemTable.cs" />
     <Compile Include="Index\IndexEntry.cs" />
-    <Compile Include="Index\IndexEntry32.cs" />
+    <Compile Include="Index\IndexEntryV1.cs" />
     <Compile Include="Index\IndexKey.cs" />
     <Compile Include="Index\IndexMap.cs" />
     <Compile Include="Index\ISearchTable.cs" />
@@ -427,6 +426,9 @@
     <Compile Include="VNodeStatusChangeArgs.cs" />
     <Compile Include="Util\DefaultFiles.cs" />
     <Compile Include="VNodeBuilder.cs" />
+    <Compile Include="Index\IndexEntryV2.cs" />
+    <Compile Include="Helpers\ExpectedVersionConverter.cs" />
+    <Compile Include="Services\Transport\Tcp\V1ClientTcpDispatcher.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

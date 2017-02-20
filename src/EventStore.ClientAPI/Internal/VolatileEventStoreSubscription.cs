@@ -6,7 +6,7 @@ namespace EventStore.ClientAPI.Internal
     {
         private readonly VolatileSubscriptionOperation _subscriptionOperation;
 
-        internal VolatileEventStoreSubscription(VolatileSubscriptionOperation subscriptionOperation, string streamId, long lastCommitPosition, int? lastEventNumber)
+        internal VolatileEventStoreSubscription(VolatileSubscriptionOperation subscriptionOperation, string streamId, long lastCommitPosition, long? lastEventNumber)
             : base(streamId, lastCommitPosition, lastEventNumber)
         {
             _subscriptionOperation = subscriptionOperation;

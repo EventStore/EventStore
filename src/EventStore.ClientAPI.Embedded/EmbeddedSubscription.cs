@@ -31,7 +31,7 @@ namespace EventStore.ClientAPI.Embedded
             _resolveLinkTos = resolveLinkTos;
         }
 
-        override protected EventStoreSubscription CreateVolatileSubscription(long lastCommitPosition, int? lastEventNumber)
+        override protected EventStoreSubscription CreateVolatileSubscription(long lastCommitPosition, long? lastEventNumber)
         {
             return new EmbeddedVolatileEventStoreSubscription(Unsubscribe, StreamId, lastCommitPosition, lastEventNumber);
         }

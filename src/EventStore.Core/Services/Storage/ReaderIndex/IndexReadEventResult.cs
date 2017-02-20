@@ -8,10 +8,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public readonly ReadEventResult Result;
         public readonly EventRecord Record;
         public readonly StreamMetadata Metadata;
-        public readonly int LastEventNumber;
+        public readonly long LastEventNumber;
         public readonly bool OriginalStreamExists;
 
-        public IndexReadEventResult(ReadEventResult result, StreamMetadata metadata, int lastEventNumber, bool originalStreamExists)
+        public IndexReadEventResult(ReadEventResult result, StreamMetadata metadata, long lastEventNumber, bool originalStreamExists)
         {
             if (result == ReadEventResult.Success)
                 throw new ArgumentException(string.Format("Wrong ReadEventResult provided for failure constructor: {0}.", result), "result");
@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             OriginalStreamExists = originalStreamExists;
         }
 
-        public IndexReadEventResult(ReadEventResult result, EventRecord record, StreamMetadata metadata, int lastEventNumber, bool originalStreamExists)
+        public IndexReadEventResult(ReadEventResult result, EventRecord record, StreamMetadata metadata, long lastEventNumber, bool originalStreamExists)
         {
             Result = result;
             Record = record;

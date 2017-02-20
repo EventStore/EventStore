@@ -130,15 +130,15 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly string _partition;
-            private readonly int? _lastEventNumber;
+            private readonly long? _lastEventNumber;
             private readonly TFPos? _deleteLinkOrEventPosition;
             private readonly TFPos? _deleteEventOrLinkTargetPosition;
             private readonly string _positionStreamId;
-            private readonly int? _positionEventNumber;
+            private readonly long? _positionEventNumber;
 
             public EventReaderPartitionDeleted(
-                Guid correlationId, string partition, int? lastEventNumber, TFPos? deleteLinkOrEventPosition,
-                TFPos? deleteEventOrLinkTargetPosition, string positionStreamId, int? positionEventNumber,
+                Guid correlationId, string partition, long? lastEventNumber, TFPos? deleteLinkOrEventPosition,
+                TFPos? deleteEventOrLinkTargetPosition, string positionStreamId, long? positionEventNumber,
                 CheckpointTag preTagged = null, object source = null)
                 : base(correlationId, preTagged, source)
             {
@@ -155,7 +155,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _partition; }
             }
 
-            public int? LastEventNumber
+            public long? LastEventNumber
             {
                 get { return _lastEventNumber; }
             }
@@ -170,7 +170,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _positionStreamId; }
             }
 
-            public int? PositionEventNumber
+            public long? PositionEventNumber
             {
                 get { return _positionEventNumber; }
             }
@@ -191,10 +191,10 @@ namespace EventStore.Projections.Core.Messages
             }
 
             private readonly string _partition;
-            private readonly int _size;
+            private readonly long _size;
 
             public EventReaderPartitionMeasured(
-                Guid correlationId, string partition, int size, object source = null)
+                Guid correlationId, string partition, long size, object source = null)
                 : base(correlationId, null, source)
             {
                 _partition = partition;
@@ -206,7 +206,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _partition; }
             }
 
-            public int Size
+            public long Size
             {
                 get { return _size; }
             }

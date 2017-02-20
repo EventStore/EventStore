@@ -12,9 +12,9 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
-        private int _1;
-        private int _2;
-        private int _3;
+        private long _1;
+        private long _2;
+        private long _3;
 
         protected override void Given()
         {

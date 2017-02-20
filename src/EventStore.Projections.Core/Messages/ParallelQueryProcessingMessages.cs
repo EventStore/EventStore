@@ -107,21 +107,21 @@ namespace EventStore.Projections.Core.Messages
                 get { return TypeId; }
             }
 
-            private readonly int _size;
+            private readonly long _size;
 
             public PartitionMeasured(
                 Guid workerId,
                 Guid masterProjectionId,
                 Guid subscriptionId,
                 string partition,
-                int size)
+                long size)
                 : base(workerId, masterProjectionId, subscriptionId, partition)
             {
                 _size = size;
             }
 
 
-            public int Size
+            public long Size
             {
                 get { return _size; }
             }

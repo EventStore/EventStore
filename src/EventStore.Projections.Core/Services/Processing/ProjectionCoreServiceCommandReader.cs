@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     completed => readResult = completed);
 
 
-            int fromEventNumber;
+            long fromEventNumber;
 
             if (readResult.Result == ReadStreamResult.NoStream)
             {
@@ -166,7 +166,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     completed => readResult = completed);
 
 
-            var from = 0;
+            long from = 0;
 
             if (readResult.Result == ReadStreamResult.NoStream)
             {

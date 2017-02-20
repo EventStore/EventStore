@@ -229,8 +229,8 @@ namespace EventStore.Core.Services.Storage
                 {
                     CommitPendingTransaction(_transaction, isTfEof);
 
-                    int firstEventNumber;
-                    int lastEventNumber;
+                    long firstEventNumber;
+                    long lastEventNumber;
                     if (record.Flags.HasAnyOf(PrepareFlags.Data))
                     {
                         firstEventNumber = record.ExpectedVersion + 1 - record.TransactionOffset;

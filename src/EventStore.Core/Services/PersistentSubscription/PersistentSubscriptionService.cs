@@ -292,7 +292,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         private void CreateSubscriptionGroup(string eventStreamId,
                                              string groupName,
                                              bool resolveLinkTos,
-                                             int startFrom,
+                                             long startFrom,
                                              bool extraStatistics,
                                              int maxRetryCount,
                                              int liveBufferSize,

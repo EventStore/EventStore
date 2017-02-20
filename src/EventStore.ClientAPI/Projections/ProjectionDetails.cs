@@ -15,12 +15,12 @@ namespace EventStore.ClientAPI.Projections
         /// <summary>
         /// The projection version
         /// </summary>
-        public readonly int Version;
+        public readonly long Version;
 
         /// <summary>
         /// The Epoch
         /// </summary>
-        public readonly int Epoch;
+        public readonly long Epoch;
 
         /// <summary>
         /// The projection EffectiveName
@@ -80,7 +80,7 @@ namespace EventStore.ClientAPI.Projections
         /// <summary>
         /// The projection EventsProcessedAfterRestart
         /// </summary>
-        public readonly int EventsProcessedAfterRestart;
+        public readonly long EventsProcessedAfterRestart;
 
         /// <summary>
         /// The projection StatusUrl
@@ -120,7 +120,7 @@ namespace EventStore.ClientAPI.Projections
         /// <summary>
         /// The projection BufferedEvents
         /// </summary>
-        public readonly int BufferedEvents;
+        public readonly long BufferedEvents;
 
         /// <summary>
         /// The projection WritePendingEventsBeforeCheckpoint
@@ -162,8 +162,8 @@ namespace EventStore.ClientAPI.Projections
         /// <param name="writePendingEventsAfterCheckpoint"></param>
         public ProjectionDetails(
             long coreProcessingTime,
-            int version,
-            int epoch,
+            long version,
+            long epoch,
             string effectiveName,
             int writesInProgress,
             int readsInProgress,
@@ -175,7 +175,7 @@ namespace EventStore.ClientAPI.Projections
             string position,
             float progress,
             string lastCheckpoint,
-            int eventsProcessedAfterRestart,
+            long eventsProcessedAfterRestart,
             Uri statusUrl,
             Uri stateUrl,
             Uri resultUrl,
@@ -183,7 +183,7 @@ namespace EventStore.ClientAPI.Projections
             Uri enableCommandUrl,
             Uri disableCommandUrl,
             string checkpointStatus,
-            int bufferedEvents,
+            long bufferedEvents,
             int writePendingEventsBeforeCheckpoint,
             int writePendingEventsAfterCheckpoint)
         {

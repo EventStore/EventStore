@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
             var dataSize = actualDataSize ?? config.ChunkSize;
             var buf = new byte[ChunkHeader.Size + dataSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
-            var chunkFooter = new ChunkFooter(true, true, dataSize, dataSize, 0, new byte[ChunkFooter.ChecksumSize]);
+            var chunkFooter = new ChunkFooter(true, false, PosMap.CurrentPosMapVersion, dataSize, dataSize, 0, new byte[ChunkFooter.ChecksumSize]);
             chunkBytes = chunkFooter.AsByteArray();
             Buffer.BlockCopy(chunkBytes, 0, buf, buf.Length - ChunkFooter.Size, chunkBytes.Length);
 
@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
             var logicalDataSize = logicalSize ?? (chunkEndNum - chunkStartNum + 1) * config.ChunkSize;
             var buf = new byte[ChunkHeader.Size + physicalDataSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
-            var chunkFooter = new ChunkFooter(true, true, physicalDataSize, logicalDataSize, 0, new byte[ChunkFooter.ChecksumSize]);
+            var chunkFooter = new ChunkFooter(true, false, PosMap.CurrentPosMapVersion, physicalDataSize, logicalDataSize, 0, new byte[ChunkFooter.ChecksumSize]);
             chunkBytes = chunkFooter.AsByteArray();
             Buffer.BlockCopy(chunkBytes, 0, buf, buf.Length - ChunkFooter.Size, chunkBytes.Length);
             File.WriteAllBytes(filename, buf);

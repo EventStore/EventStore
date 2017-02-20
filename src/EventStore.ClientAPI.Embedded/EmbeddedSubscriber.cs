@@ -64,7 +64,7 @@ namespace EventStore.ClientAPI.Embedded
             subscription.EventAppeared(resolvedEvent);
         }
 
-        private void ConfirmSubscription(Guid correlationId, long lastCommitPosition, int? lastEventNumber)
+        private void ConfirmSubscription(Guid correlationId, long lastCommitPosition, long? lastEventNumber)
         {
             IEmbeddedSubscription subscription;
             _subscriptions.TryGetActiveSubscription(correlationId, out subscription);
