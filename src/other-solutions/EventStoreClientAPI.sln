@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI", "..\EventStore.ClientAPI\EventStore.ClientAPI.csproj", "{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}"
 EndProject
 Global
@@ -13,12 +15,10 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Debug|x86.ActiveCfg = Debug|x86
-		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Debug|x86.Build.0 = Debug|x86
+		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Release|x86.ActiveCfg = Release|x86
-		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Release|x86.Build.0 = Release|x86
+		{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
