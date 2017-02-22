@@ -123,6 +123,7 @@
     <Compile Include="Services\emitted_stream\when_handling_a_timeout.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_cached_event_and_throws.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_live_event_and_throws.cs" />
+    <Compile Include="Services\projections_manager\when_posting_a_persistent_projection_and_registration_write_fails.cs" />
     <Compile Include="Services\SpecificationWithEmittedStreamsTrackerAndDeleter.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\with_multiple_tracked_streams.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\with_an_existing_emitted_streams_stream.cs" />
@@ -401,7 +402,7 @@
     <Compile Include="Services\v8\when_running_bi_state_v8_projection.cs" />
     <Compile Include="Services\v8\when_running_body_reflecting_v8_projection.cs" />
     <Compile Include="Services\v8\when_running_emitting_v8_projection.cs" />
-    <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />
+    <Compile Include="Services\projections_manager\when_a_disabled_projection_has_been_loaded.cs" />
     <Compile Include="Services\projections_manager\when_handling_start_slave_projections_message.cs" />
     <Compile Include="Services\projections_manager\when_requesting_partition_state_from_a_stopped_foreach_projection.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_disabled_projection_query_text.cs" />
@@ -564,6 +565,9 @@
   <ItemGroup>
     <Folder Include="Services\checkpoint_strategy\" />
     <Folder Include="Services\projections_manager\parallel_query\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
