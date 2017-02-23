@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             // Stream that will be deleted
             WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, WriterCheckpoint.ReadNonFlushed(), 0);
             WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, WriterCheckpoint.ReadNonFlushed(), 1);
-            _deleted = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, WriterCheckpoint.ReadNonFlushed(), EventNumber.DeletedStream, PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd);
+            _deleted = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, WriterCheckpoint.ReadNonFlushed(), int.MaxValue - 1, PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd);
 
             // Stream that will be kept
             _event3 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, WriterCheckpoint.ReadNonFlushed(), 2);
@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             var deletedRecord = (PrepareLogRecord)chunkRecords.First(x=>x.RecordType == LogRecordType.Prepare 
                 && ((PrepareLogRecord)x).EventStreamId == _deletedEventStreamId);
             
-            Assert.AreEqual(EventNumber.DeletedStream, deletedRecord.ExpectedVersion);
+            Assert.AreEqual(EventNumber.DeletedStream - 1, deletedRecord.ExpectedVersion);
         }
 
         [Test]

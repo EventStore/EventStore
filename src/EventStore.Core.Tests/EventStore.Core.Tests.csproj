@@ -667,6 +667,7 @@
     <Compile Include="ClientAPI\ExpectedVersion64Bit\catchup_subscription_to_all_with_event_numbers_greater_than_2_billion.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\persistent_subscription_with_event_numbers_greater_than_2_billion.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\MiniNodeWithExistingRecords.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_hard_deleting_stream_with_log_version_0.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

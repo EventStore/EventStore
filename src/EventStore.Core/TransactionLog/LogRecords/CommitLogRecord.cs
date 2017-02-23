@@ -45,7 +45,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
             if (version == LogRecordVersion.LogRecordV0)
             {
-                FirstEventNumber = ExpectedVersionConverter.ConvertTo64Bit((int)FirstEventNumber);
+                FirstEventNumber = FirstEventNumber == int.MaxValue ? long.MaxValue : FirstEventNumber;
             }
 
             SortKey = reader.ReadInt64();
@@ -60,7 +60,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             writer.Write(TransactionPosition);
             if(Version == LogRecordVersion.LogRecordV0) 
             {
-                var firstEventNumber = ExpectedVersionConverter.ConvertTo32Bit(FirstEventNumber);
+                int firstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
                 writer.Write(firstEventNumber);
             } 
             else 
