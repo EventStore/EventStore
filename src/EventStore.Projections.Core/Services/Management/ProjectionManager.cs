@@ -623,7 +623,7 @@ namespace EventStore.Projections.Core.Services.Management
             BeginLoadProjectionList(completed);
         }
 
-        private void BeginLoadProjectionList(Action completedAction, int from = -1)
+        private void BeginLoadProjectionList(Action completedAction, long from = -1)
         {
             var corrId = Guid.NewGuid();
             _readDispatcher.Publish(
@@ -649,7 +649,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void LoadProjectionListCompleted(
             ClientMessage.ReadStreamEventsBackwardCompleted completed,
-            int requestedFrom,
+            long requestedFrom,
             Action completedAction)
         {
             var anyFound = false;
@@ -812,7 +812,7 @@ namespace EventStore.Projections.Core.Services.Management
             ProjectionManagementMessage.Command.Post message,
             IEnvelope replyEnvelope)
         {
-            int version = -1;
+            long version = -1;
             if (completed.Result == ReadStreamResult.Success)
             {
                 version = completed.LastEventNumber + 1;
@@ -832,7 +832,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        private void InitializeNewProjection(int projectionId, ProjectionManagementMessage.Command.Post message, int version, IEnvelope replyEnvelope)
+        private void InitializeNewProjection(long projectionId, ProjectionManagementMessage.Command.Post message, long version, IEnvelope replyEnvelope)
         {
             try{
                 var initializer = new NewProjectionInitializer(
@@ -876,7 +876,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public class NewProjectionInitializer
         {
-            private readonly int _projectionId;
+            private readonly long _projectionId;
             private readonly bool _enabled;
             private readonly string _handlerType;
             private readonly string _query;
@@ -890,7 +890,7 @@ namespace EventStore.Projections.Core.Services.Management
             private readonly string _name;
 
             public NewProjectionInitializer(
-                int projectionId,
+                long projectionId,
                 string name,
                 ProjectionMode projectionMode,
                 string handlerType,
@@ -930,7 +930,7 @@ namespace EventStore.Projections.Core.Services.Management
                 bool isSlave = false,
                 Guid slaveMasterWorkerId = default(Guid),
                 Guid slaveMasterCorrelationId = default(Guid),
-                int? version = -1)
+                long? version = -1)
             {
                 var projection = projectionManager.CreateManagedProjectionInstance(
                     _name,
@@ -960,7 +960,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private ManagedProjection CreateManagedProjectionInstance(
             string name,
-            int projectionId,
+            long projectionId,
             Guid projectionCorrelationId,
             Guid workerID,
             bool isSlave = false,
@@ -1003,7 +1003,7 @@ namespace EventStore.Projections.Core.Services.Management
             return queueIndex;
         }
 
-        private void BeginWriteProjectionRegistration(string name, Action<int> completed)
+        private void BeginWriteProjectionRegistration(string name, Action<long> completed)
         {
             const string eventStreamId = "$projections-$all";
             var corrId = Guid.NewGuid();
@@ -1027,7 +1027,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void WriteProjectionRegistrationCompleted(
             ClientMessage.WriteEventsCompleted message,
-            Action<int> completed,
+            Action<long> completed,
             string name,
             string eventStreamId)
         {

@@ -311,13 +311,13 @@ namespace EventStore.Core.Services.Storage
                                recreateFrom: _indexWriter.GetStreamLastEventNumber(origStreamId) + 1);
         }
 
-        private void SoftUndeleteStream(string streamId, int recreateFromEventNumber)
+        private void SoftUndeleteStream(string streamId, long recreateFromEventNumber)
         {
             var rawInfo = _indexWriter.GetStreamRawMeta(streamId);
             SoftUndeleteStream(streamId, rawInfo.MetaLastEventNumber, rawInfo.RawMeta, recreateFromEventNumber);
         }
 
-        private void SoftUndeleteStream(string streamId, int metaLastEventNumber, byte[] rawMeta, int recreateFrom)
+        private void SoftUndeleteStream(string streamId, long metaLastEventNumber, byte[] rawMeta, long recreateFrom)
         {
             byte[] modifiedMeta;
             if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out modifiedMeta))
@@ -333,7 +333,7 @@ namespace EventStore.Core.Services.Storage
             _indexWriter.PreCommit(new[] { res.Prepare });
         }
 
-        public bool SoftUndeleteRawMeta(byte[] rawMeta, int recreateFromEventNumber, out byte[] modifiedMeta)
+        public bool SoftUndeleteRawMeta(byte[] rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta)
         {
             try
             {
@@ -377,7 +377,7 @@ namespace EventStore.Core.Services.Storage
                 if (message.HardDelete)
                 {
                     // HARD DELETE
-                    const int expectedVersion = EventNumber.DeletedStream - 1;
+                    const long expectedVersion = EventNumber.DeletedStream - 1;
                     var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
                                                            eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted);
                     var res = WritePrepareWithRetry(record);

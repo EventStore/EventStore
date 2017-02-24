@@ -40,9 +40,9 @@ namespace EventStore.Projections.Core.Services.Http
 
         public long CoreProcessingTime { get; set; }
 
-        public int Version { get; set; }
+        public long Version { get; set; }
 
-        public int Epoch { get; set; }
+        public long Epoch { get; set; }
 
         public string EffectiveName { get; set; }
 

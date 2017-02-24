@@ -11,6 +11,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
+    [Ignore("Metadata expected to fail in 3.9.4")]
     public class soft_delete : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;

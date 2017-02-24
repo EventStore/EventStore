@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private State _state;
         private TFPos _lastEventPosition;
-        private readonly Dictionary<string, int> _fromPositions;
+        private readonly Dictionary<string, long> _fromPositions;
         private readonly Dictionary<string, string> _streamToEventType;
         private long _lastPosition;
 
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
             string[] eventTypes,
             bool includeDeletedStreamNotification,
             TFPos fromTfPosition,
-            Dictionary<string, int> fromPositions,
+            Dictionary<string, long> fromPositions,
             bool resolveLinkTos,
             ITimeProvider timeProvider,
             bool stopOnEof = false)
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _state = new IndexBased(_eventTypes, this, readAs);
         }
 
-        private void ValidateTag(Dictionary<string, int> fromPositions)
+        private void ValidateTag(Dictionary<string, long> fromPositions)
         {
             if (_eventTypes.Count != fromPositions.Count)
                 throw new ArgumentException("Number of streams does not match", "fromPositions");
@@ -120,9 +120,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(readEventsForward);
         }
 
-        private void UpdateNextStreamPosition(string eventStreamId, int nextPosition)
+        private void UpdateNextStreamPosition(string eventStreamId, long nextPosition)
         {
-            int streamPosition;
+            long streamPosition;
             if (!_fromPositions.TryGetValue(eventStreamId, out streamPosition))
                 streamPosition = -1;
             if (nextPosition > streamPosition)
@@ -197,7 +197,7 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly HashSet<string> _eventsRequested = new HashSet<string>();
             private readonly HashSet<Guid> _validRequests = new HashSet<Guid>();
             private bool _indexCheckpointStreamRequested;
-            private int _lastKnownIndexCheckpointEventNumber = -1;
+            private long _lastKnownIndexCheckpointEventNumber = -1;
             private TFPos? _lastKnownIndexCheckpointPosition = null;
 
             private readonly Dictionary<string, Queue<PendingEvent>> _buffers =

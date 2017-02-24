@@ -4,9 +4,9 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands
 {
     public struct PersistedProjectionVersion
     {
-        public int Id;
-        public int Epoch;
-        public int Version;
+        public long Id;
+        public long Epoch;
+        public long Version;
 
         public static implicit operator ProjectionVersion(PersistedProjectionVersion source)
         {

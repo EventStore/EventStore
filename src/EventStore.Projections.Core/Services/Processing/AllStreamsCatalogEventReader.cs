@@ -182,7 +182,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private int _fromSequenceNumber;
+        private long _fromSequenceNumber;
         private readonly ITimeProvider _timeProvider;
         private readonly Queue<OutItem> _queue = new Queue<OutItem>();
 
@@ -200,7 +200,7 @@ namespace EventStore.Projections.Core.Services.Processing
             IPublisher publisher,
             Guid eventReaderCorrelationId,
             IPrincipal readAs,
-            int fromSequenceNumber,
+            long fromSequenceNumber,
             ITimeProvider timeProvider,
             bool stopOnEof = false)
             : base(publisher, eventReaderCorrelationId, readAs, stopOnEof)
@@ -370,7 +370,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Enqueue(new DeliverSafePositionToJoinoutItem(this, safeJoinPosition));
         }
 
-        private void EnqueueDeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
+        private void EnqueueDeliverEvent(EventRecord @event, EventRecord link, float progress, ref long sequenceNumber)
         {
             if (link != null) throw new Exception();
             var positionEvent = @event;

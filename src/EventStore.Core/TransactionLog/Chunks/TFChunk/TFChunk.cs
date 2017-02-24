@@ -20,7 +20,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
     public unsafe partial class TFChunk : IDisposable
     {
-        public const byte CurrentChunkVersion = 2;
+        enum ChunkVersions : byte {
+              OriginalNotUsed = 1,
+              Unaligned = 2,
+              Aligned = 3
+        }
+        public const byte CurrentChunkVersion = (byte)ChunkVersions.Unaligned;
         public const int WriteBufferSize = 8192;
         public const int ReadBufferSize = 8192;
 
@@ -171,7 +176,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             try
             {
                 _chunkHeader = ReadHeader(reader.Stream);
-                if (_chunkHeader.Version != CurrentChunkVersion)
+                Log.Trace("Opened completed " + _filename + " as version " + _chunkHeader.Version);
+                if (_chunkHeader.Version != (byte) ChunkVersions.Unaligned && _chunkHeader.Version != (byte) ChunkVersions.Aligned)
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
                 _chunkFooter = ReadFooter(reader.Stream);
@@ -185,7 +191,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 _physicalDataSize = _chunkFooter.PhysicalDataSize;
 
                 var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
-                if (reader.Stream.Length != expectedFileSize)
+                if (_chunkHeader.Version == (byte) ChunkVersions.Unaligned && reader.Stream.Length != expectedFileSize)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
                         string.Format("Chunk file '{0}' should have a file size of {1} bytes, but it has a size of {2} bytes.",
@@ -242,7 +248,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             SetAttributes();
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
-            if (_chunkHeader.Version != CurrentChunkVersion)
+            if (_chunkHeader.Version != (byte) ChunkVersions.Unaligned && _chunkHeader.Version != (byte) ChunkVersions.Aligned)
                 throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
 
@@ -398,10 +404,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     // hash header and data
                     MD5Hash.ContinuousHashFor(md5, stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
                     // hash mapping and footer except MD5 hash sum which should always be last
-                    MD5Hash.ContinuousHashFor(md5, 
+                    MD5Hash.ContinuousHashFor(md5,
                                               stream,
                                               ChunkHeader.Size + footer.PhysicalDataSize,
-                                              footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
+                                              stream.Length - ChunkHeader.Size - footer.PhysicalDataSize- ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
                     hash = md5.Hash;
                 }

@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (tag.Mode_ == CheckpointTag.Mode.Stream)
             {
-                int p;
+                long p;
                 return CheckpointTag.FromStreamPosition(
                     tag.Phase, _stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
             }
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         "Conversion from PreparePosition to Stream position tag is not supported");
                 case CheckpointTag.Mode.MultiStream:
-                    int p;
+                    long p;
                     return CheckpointTag.FromStreamPosition(
                         tag.Phase, _stream, tag.Streams.TryGetValue(_stream, out p) ? p : -1);
                 case CheckpointTag.Mode.Position:

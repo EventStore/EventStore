@@ -149,7 +149,7 @@
     <Compile Include="Index\IIndexFilenameProvider.cs" />
     <Compile Include="Index\IMemTable.cs" />
     <Compile Include="Index\IndexEntry.cs" />
-    <Compile Include="Index\IndexEntry32.cs" />
+    <Compile Include="Index\IndexEntryV1.cs" />
     <Compile Include="Index\IndexKey.cs" />
     <Compile Include="Index\IndexMap.cs" />
     <Compile Include="Index\ISearchTable.cs" />
@@ -232,7 +232,6 @@
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="NodeSubsystems.cs" />
     <Compile Include="Services\Storage\ReaderIndex\AllReader.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\IIndexCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexBackend.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexCommitter.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReader.cs" />
@@ -420,6 +419,8 @@
     <Compile Include="VNodeStatusChangeArgs.cs" />
     <Compile Include="Util\DefaultFiles.cs" />
     <Compile Include="VNodeBuilder.cs" />
+    <Compile Include="Index\IndexEntryV2.cs" />
+    <Compile Include="Helpers\StreamVersionConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

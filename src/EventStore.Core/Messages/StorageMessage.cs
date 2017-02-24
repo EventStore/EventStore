@@ -15,7 +15,7 @@ namespace EventStore.Core.Messages
             Guid CorrelationId { get; }
             IEnvelope Envelope { get; }
             string EventStreamId { get; }
-            int ExpectedVersion { get; }
+            long ExpectedVersion { get; }
         }
 
         public interface IFlushableMessage
@@ -36,12 +36,12 @@ namespace EventStore.Core.Messages
             public IEnvelope Envelope { get; private set; }
 
             public string EventStreamId { get; private set; }
-            public int ExpectedVersion { get; private set; }
+            public long ExpectedVersion { get; private set; }
             public readonly Event[] Events;
 
             public readonly DateTime LiveUntil;
 
-            public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion,
+            public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
                                  Event[] events, DateTime liveUntil)
             {
                 CorrelationId = correlationId;
@@ -67,12 +67,12 @@ namespace EventStore.Core.Messages
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
             public string EventStreamId { get; private set; }
-            public int ExpectedVersion { get; private set; }
+            public long ExpectedVersion { get; private set; }
             public readonly bool HardDelete;
 
             public readonly DateTime LiveUntil;
 
-            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, bool hardDelete, DateTime liveUntil)
+            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion, bool hardDelete, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -113,11 +113,11 @@ namespace EventStore.Core.Messages
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
             public string EventStreamId { get; private set; }
-            public int ExpectedVersion { get; private set; }
+            public long ExpectedVersion { get; private set; }
 
             public readonly DateTime LiveUntil;
 
-            public WriteTransactionStart(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, DateTime liveUntil)
+            public WriteTransactionStart(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion, DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -200,10 +200,10 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly long LogPosition;
             public readonly long TransactionPosition;
-            public readonly int FirstEventNumber;
-            public readonly int LastEventNumber;
+            public readonly long FirstEventNumber;
+            public readonly long LastEventNumber;
             public readonly bool IsSelf;
-            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, int firstEventNumber, int lastEventNumber, bool isSelf = false)
+            public CommitAck(Guid correlationId, long logPosition, long transactionPosition, long firstEventNumber, long lastEventNumber, bool isSelf = false)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.Nonnegative(logPosition, "logPosition");
@@ -257,10 +257,10 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
 
             public readonly string EventStreamId;
-            public readonly int FirstEventNumber;
-            public readonly int LastEventNumber;
+            public readonly long FirstEventNumber;
+            public readonly long LastEventNumber;
 
-            public AlreadyCommitted(Guid correlationId, string eventStreamId, int firstEventNumber, int lastEventNumber)
+            public AlreadyCommitted(Guid correlationId, string eventStreamId, long firstEventNumber, long lastEventNumber)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
@@ -299,9 +299,9 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
-            public readonly int CurrentVersion;
+            public readonly long CurrentVersion;
 
-            public WrongExpectedVersion(Guid correlationId, int currentVersion)
+            public WrongExpectedVersion(Guid correlationId, long currentVersion)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 CorrelationId = correlationId;
@@ -330,9 +330,9 @@ namespace EventStore.Core.Messages
 
             public readonly Guid CorrelationId;
             public readonly bool Success;
-            public readonly int CurrentVersion;
+            public readonly long CurrentVersion;
 
-            public RequestCompleted(Guid correlationId, bool success, int currentVersion = -1)
+            public RequestCompleted(Guid correlationId, bool success, long currentVersion = -1)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 CorrelationId = correlationId;

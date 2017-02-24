@@ -8,6 +8,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
+using System.Linq;
 
 namespace EventStore.Core.Services
 {
@@ -66,7 +67,8 @@ namespace EventStore.Core.Services
         /* SUBSCRIPTION SECTION */
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
-            foreach (var subscription in _subscriptionsById.Values)
+            List<Subscription> subscriptions = _subscriptionsById.Values.ToList();
+            foreach (var subscription in subscriptions)
             {
                 DropSubscription(subscription, sendDropNotification: true);
             }
@@ -110,7 +112,7 @@ namespace EventStore.Core.Services
             if (streamAccess.Granted)
             {
                 var lastEventNumber = msg.EventStreamId.IsEmptyString()
-                                                ? (int?) null
+                                                ? (long?) null
                                                 : _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
                 var lastCommitPos = _readIndex.LastCommitPosition;
                 SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId, 
@@ -130,7 +132,7 @@ namespace EventStore.Core.Services
         }
 
         private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
-                                       string eventStreamId, bool resolveLinkTos, long lastCommitPosition, int? lastEventNumber)
+                                       string eventStreamId, bool resolveLinkTos, long lastCommitPosition, long? lastEventNumber)
         {
             List<Subscription> subscribers;
             if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers))
@@ -186,12 +188,12 @@ namespace EventStore.Core.Services
             SubscribePoller(message.StreamId, message.ExpireAt, message.LastCommitPosition, message.LastEventNumber, message.OriginalRequest);
         }
 
-        private bool MissedEvents(string streamId, long lastCommitPosition, int? lastEventNumber)
+        private bool MissedEvents(string streamId, long lastCommitPosition, long? lastEventNumber)
         {
             return _lastSeenCommitPosition > lastCommitPosition;
         }
 
-        private void SubscribePoller(string streamId, DateTime expireAt, long lastCommitPosition, int? lastEventNumber, Message originalRequest)
+        private void SubscribePoller(string streamId, DateTime expireAt, long lastCommitPosition, long? lastEventNumber, Message originalRequest)
         {
             List<PollSubscription> pollTopic;
             if (!_pollTopics.TryGetValue(streamId, out pollTopic))
@@ -316,7 +318,7 @@ namespace EventStore.Core.Services
             return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
         }
 
-        private void ReissueReadsFor(string streamId, long commitPosition, int eventNumber)
+        private void ReissueReadsFor(string streamId, long commitPosition, long eventNumber)
         {
             List<PollSubscription> pollTopic;
             if (_pollTopics.TryGetValue(streamId, out pollTopic))
@@ -350,7 +352,7 @@ namespace EventStore.Core.Services
             public readonly string EventStreamId;
             public readonly bool ResolveLinkTos;
             public readonly long LastCommitPosition;
-            public readonly int LastEventNumber;
+            public readonly long LastEventNumber;
 
             public Subscription(Guid correlationId, 
                                 IEnvelope envelope,
@@ -358,7 +360,7 @@ namespace EventStore.Core.Services
                                 string eventStreamId, 
                                 bool resolveLinkTos, 
                                 long lastCommitPosition, 
-                                int lastEventNumber)
+                                long lastEventNumber)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
@@ -375,11 +377,11 @@ namespace EventStore.Core.Services
         {
             public readonly DateTime ExpireAt;
             public readonly long LastCommitPosition;
-            public readonly int LastEventNumber;
+            public readonly long LastEventNumber;
 
             public readonly Message OriginalRequest;
 
-            public PollSubscription(DateTime expireAt, long lastCommitPosition, int lastEventNumber, Message originalRequest)
+            public PollSubscription(DateTime expireAt, long lastCommitPosition, long lastEventNumber, Message originalRequest)
             {
                 ExpireAt = expireAt;
                 LastCommitPosition = lastCommitPosition;

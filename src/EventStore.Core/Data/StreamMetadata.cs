@@ -12,17 +12,17 @@ namespace EventStore.Core.Data
     {
         public static readonly StreamMetadata Empty = new StreamMetadata();
 
-        public readonly int? MaxCount;
+        public readonly long? MaxCount;
         public readonly TimeSpan? MaxAge;
         
-        public readonly int? TruncateBefore;
+        public readonly long? TruncateBefore;
         public readonly bool? TempStream;
 
         public readonly TimeSpan? CacheControl;
         public readonly StreamAcl Acl;
 
-        public StreamMetadata(int? maxCount = null, TimeSpan? maxAge = null,
-                              int? truncateBefore = null, bool? tempStream = null,
+        public StreamMetadata(long? maxCount = null, TimeSpan? maxAge = null,
+                              long? truncateBefore = null, bool? tempStream = null,
                               TimeSpan? cacheControl = null, StreamAcl acl = null)
         {
             if (maxCount <= 0)
@@ -73,9 +73,9 @@ namespace EventStore.Core.Data
             Check(reader.Read(), reader);
             Check(JsonToken.StartObject, reader);
 
-            int? maxCount = null;
+            long? maxCount = null;
             TimeSpan? maxAge = null;
-            int? truncateBefore = null;
+            long? truncateBefore = null;
             bool? tempStream = null;
             TimeSpan? cacheControl = null;
             StreamAcl acl = null;
@@ -93,7 +93,7 @@ namespace EventStore.Core.Data
                     {
                         Check(reader.Read(), reader);
                         Check(JsonToken.Integer, reader);
-                        maxCount = (int) (long) reader.Value;
+                        maxCount = (long) reader.Value;
                         break;
                     }
                     case SystemMetadata.MaxAge:
@@ -107,7 +107,7 @@ namespace EventStore.Core.Data
                     {
                         Check(reader.Read(), reader);
                         Check(JsonToken.Integer, reader);
-                        truncateBefore = (int) (long) reader.Value;
+                        truncateBefore = (long) reader.Value;
                         break;
                     }
                     case SystemMetadata.TempStream:

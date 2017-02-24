@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -140,11 +141,14 @@ namespace EventStore.Core.Tests.Http
         }
 
         protected HttpWebRequest CreateRequest(
-            string path, string extra, string method, string contentType, ICredentials credentials = null)
+            string path, string extra, string method, string contentType, ICredentials credentials = null, NameValueCollection headers = null)
         {
 			var uri = MakeUrl (path, extra);
 			var request = WebRequest.Create (uri);
             var httpWebRequest = (HttpWebRequest)request;
+            if(headers != null) {
+                httpWebRequest.Headers.Add(headers);
+            }
             httpWebRequest.ConnectionGroupName = TestStream;
             httpWebRequest.Method = method;
             httpWebRequest.ContentType = contentType;
@@ -293,9 +297,9 @@ namespace EventStore.Core.Tests.Http
             return XDocument.Parse(_lastResponseBody);
         }
 
-        protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null)
+        protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null, NameValueCollection headers = null)
         {
-            Get(path, "", accept, credentials);
+            Get(path, "", accept, credentials, headers: headers);
             try
             {
                 return _lastResponseBody.ParseJson<T>();
@@ -340,9 +344,9 @@ namespace EventStore.Core.Tests.Http
             }
         }
 			
-		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null, bool setAcceptHeader = true)
+		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null, bool setAcceptHeader = true, NameValueCollection headers = null)
         {
-            var request = CreateRequest(path, extra, "GET", null, credentials);
+            var request = CreateRequest(path, extra, "GET", null, credentials, headers);
 			if (setAcceptHeader) {
 				request.Accept = accept ?? "application/json";
 			}

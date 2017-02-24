@@ -45,12 +45,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
     public class PrepareLogRecord: LogRecord, IEquatable<PrepareLogRecord>
     {
-        public const byte PrepareRecordVersion = 0;
+        public const byte PrepareRecordVersion = LogRecordVersion.LogRecordV0;
 
         public readonly PrepareFlags Flags;
         public readonly long TransactionPosition;
         public readonly int TransactionOffset;
-        public readonly int ExpectedVersion;            // if IsCommitted is set, this is final EventNumber
+        public readonly long ExpectedVersion;            // if IsCommitted is set, this is final EventNumber
         public readonly string EventStreamId;
 
         public readonly Guid EventId;
@@ -88,13 +88,14 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                 long transactionPosition,
                                 int transactionOffset,
                                 string eventStreamId,
-                                int expectedVersion,
+                                long expectedVersion,
                                 DateTime timeStamp, 
                                 PrepareFlags flags,
                                 string eventType, 
                                 byte[] data,
-                                byte[] metadata)
-            : base(LogRecordType.Prepare, PrepareRecordVersion, logPosition)
+                                byte[] metadata,
+                                byte prepareRecordVersion = PrepareRecordVersion)
+            : base(LogRecordType.Prepare, prepareRecordVersion, logPosition)
         {
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.NotEmptyGuid(eventId, "eventId");
@@ -123,14 +124,20 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         internal PrepareLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.Prepare, version, logPosition)
         {
-            if (version != PrepareRecordVersion)
+            if (version != LogRecordVersion.LogRecordV0 && version != LogRecordVersion.LogRecordV1)
                 throw new ArgumentException(string.Format(
                     "PrepareRecord version {0} is incorrect. Supported version: {1}.", version, PrepareRecordVersion));
 
             Flags = (PrepareFlags) reader.ReadUInt16();
             TransactionPosition = reader.ReadInt64();
             TransactionOffset = reader.ReadInt32();
-            ExpectedVersion = reader.ReadInt32();
+            ExpectedVersion = version == LogRecordVersion.LogRecordV0 ? reader.ReadInt32() : reader.ReadInt64();
+
+            if (version == LogRecordVersion.LogRecordV1)
+            {
+                ExpectedVersion = ExpectedVersion == long.MaxValue - 1 ? int.MaxValue - 1 : ExpectedVersion;
+            }
+
             EventStreamId = reader.ReadString();
             EventId = new Guid(reader.ReadBytes(16));
             CorrelationId = new Guid(reader.ReadBytes(16));
@@ -152,7 +159,15 @@ namespace EventStore.Core.TransactionLog.LogRecords
             writer.Write((ushort) Flags);
             writer.Write(TransactionPosition);
             writer.Write(TransactionOffset);
-            writer.Write(ExpectedVersion);
+            if(Version == LogRecordVersion.LogRecordV1) 
+            {
+                long expectedVersion = ExpectedVersion == int.MaxValue - 1 ? long.MaxValue - 1 : ExpectedVersion;
+                writer.Write(expectedVersion);
+            } 
+            else 
+            {
+                writer.Write((int)ExpectedVersion);
+            }
             writer.Write(EventStreamId);
 
             writer.Write(EventId.ToByteArray());
@@ -200,7 +215,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
                 result = (result * 397) ^ Flags.GetHashCode();
                 result = (result * 397) ^ TransactionPosition.GetHashCode();
                 result = (result * 397) ^ TransactionOffset;
-                result = (result * 397) ^ ExpectedVersion;
+                result = (result * 397) ^ ExpectedVersion.GetHashCode();
                 result = (result * 397) ^ EventStreamId.GetHashCode();
 
                 result = (result * 397) ^ EventId.GetHashCode();

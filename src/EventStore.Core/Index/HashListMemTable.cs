@@ -34,7 +34,7 @@ namespace EventStore.Core.Index
             return Interlocked.CompareExchange(ref _isConverting, 1, 0) == 0;
         }
 
-        public void Add(ulong stream, int version, long position)
+        public void Add(ulong stream, long version, long position)
         {
             AddEntries(new[] { new IndexEntry(stream, version, position) });
         }
@@ -77,7 +77,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(ulong stream, int number, out long position)
+        public bool TryGetOneValue(ulong stream, long number, out long position)
         {
             if (number < 0)
                 throw new ArgumentOutOfRangeException("number");
@@ -182,7 +182,7 @@ namespace EventStore.Core.Index
             _hash.Clear();
         }
 
-        public IEnumerable<IndexEntry> GetRange(ulong stream, int startNumber, int endNumber, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null)
         {
             if (startNumber < 0)
                 throw new ArgumentOutOfRangeException("startNumber");
@@ -216,15 +216,15 @@ namespace EventStore.Core.Index
         }
 
         private ulong GetHash(ulong hash){
-            return _version == PTableVersions.Index32Bit ? hash >> 32 : hash;
+            return _version == PTableVersions.IndexV1 ? hash >> 32 : hash;
         }
 
         private struct Entry
         {
-            public readonly int EvNum;
+            public readonly long EvNum;
             public readonly long LogPos;
 
-            public Entry(int evNum, long logPos)
+            public Entry(long evNum, long logPos)
             {
                 EvNum = evNum;
                 LogPos = logPos;
