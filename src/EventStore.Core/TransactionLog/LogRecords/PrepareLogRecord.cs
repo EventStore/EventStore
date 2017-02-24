@@ -136,7 +136,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
             if (version == LogRecordVersion.LogRecordV0)
             {
-                ExpectedVersion = ExpectedVersionConverter.ConvertTo64Bit((int)ExpectedVersion);
+                ExpectedVersion = ExpectedVersion == int.MaxValue - 1 ? long.MaxValue - 1 : ExpectedVersion;
             }
 
             EventStreamId = reader.ReadString();
@@ -162,7 +162,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             writer.Write(TransactionOffset);
             if(Version == LogRecordVersion.LogRecordV0) 
             {
-                var expectedVersion = ExpectedVersionConverter.ConvertTo32Bit(ExpectedVersion);
+                int expectedVersion = ExpectedVersion == long.MaxValue - 1 ? int.MaxValue - 1 : (int)ExpectedVersion;
                 writer.Write(expectedVersion);
             } 
             else 
