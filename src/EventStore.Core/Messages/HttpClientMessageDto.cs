@@ -74,7 +74,7 @@ namespace EventStore.Core.Messages
         public class ReadEventCompletedText
         {
             public string eventStreamId { get; set; }
-            public int eventNumber { get; set; }
+            public long eventNumber { get; set; }
             public string eventType { get; set; }
             public string eventId {get; set;}
             public object data { get; set; }

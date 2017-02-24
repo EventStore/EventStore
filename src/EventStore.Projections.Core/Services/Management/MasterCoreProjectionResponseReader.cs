@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Management
                     new StreamMetadata(maxAge: ProjectionNamesBuilder.SlaveProjectionControlStreamMaxAge),
                     completed => { });
 
-            var @from = 0;
+            long @from = 0;
 
             while (!_stopped)
             {

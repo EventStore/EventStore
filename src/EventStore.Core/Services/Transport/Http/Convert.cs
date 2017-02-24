@@ -326,17 +326,17 @@ namespace EventStore.Core.Services.Transport.Http
             return entry;
         }
 
-        private static Tuple<string, int> GetLinkData(string link)
+        private static Tuple<string, long> GetLinkData(string link)
         {
             Ensure.NotNull(link, "link data cannot be null");
             var loc = link.IndexOf("@", StringComparison.Ordinal);
             if (loc == -1) throw new Exception(String.Format("Unable to parse link {0}", link));
-            var position = int.Parse(link.Substring(0, loc));
+            var position = long.Parse(link.Substring(0, loc));
             var stream = link.Substring(loc + 1, link.Length - loc - 1);
-            return new Tuple<string, int>(stream, position);
+            return new Tuple<string, long>(stream, position);
         }
 
-        private static void SetEntryProperties(string stream, int eventNumber, DateTime timestamp, Uri requestedUrl, EntryElement entry)
+        private static void SetEntryProperties(string stream, long eventNumber, DateTime timestamp, Uri requestedUrl, EntryElement entry)
         {
             var escapedStreamId = Uri.EscapeDataString(stream);
             entry.SetTitle(eventNumber + "@" + stream);

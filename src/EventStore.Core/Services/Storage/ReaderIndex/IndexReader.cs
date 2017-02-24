@@ -17,20 +17,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         long NotCachedStreamInfo { get; }
         long HashCollisions { get; }
 
-        IndexReadEventResult ReadEvent(string streamId, int eventNumber);
-        IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
-        IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
+        IndexReadEventResult ReadEvent(string streamId, long eventNumber);
+        IndexReadStreamResult ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount);
+        IndexReadStreamResult ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount);
 
         /// <summary>
         /// Doesn't filter $maxAge, $maxCount, $tb(truncate before), doesn't check stream deletion, etc.
         /// </summary>
-        PrepareLogRecord ReadPrepare(string streamId, int eventNumber);
+        PrepareLogRecord ReadPrepare(string streamId, long eventNumber);
 
         string GetEventStreamIdByTransactionId(long transactionId);
         StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
 
         StreamMetadata GetStreamMetadata(string streamId);
-        int GetStreamLastEventNumber(string streamId);
+        long GetStreamLastEventNumber(string streamId);
     }
 
     public class IndexReader : IIndexReader
@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _hashCollisionReadLimit = hashCollisionReadLimit;
         }
 
-        IndexReadEventResult IIndexReader.ReadEvent(string streamId, int eventNumber)
+        IndexReadEventResult IIndexReader.ReadEvent(string streamId, long eventNumber)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
             if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private IndexReadEventResult ReadEventInternal(TFReaderLease reader, string streamId, int eventNumber)
+        private IndexReadEventResult ReadEventInternal(TFReaderLease reader, string streamId, long eventNumber)
         {
             var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
             var metadata = GetStreamMetadataCached(reader, streamId);
@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (eventNumber == -1)
                 eventNumber = lastEventNumber;
 
-            int minEventNumber = 0;
+            long minEventNumber = 0;
             if (metadata.MaxCount.HasValue)
                 minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
             if (metadata.TruncateBefore.HasValue)
@@ -107,7 +107,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber, originalStreamExists: originalStreamExists);
         }
 
-        PrepareLogRecord IIndexReader.ReadPrepare(string streamId, int eventNumber)
+        PrepareLogRecord IIndexReader.ReadPrepare(string streamId, long eventNumber)
         {
             using (var reader = _backend.BorrowReader())
             {
@@ -115,7 +115,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private PrepareLogRecord ReadPrepareInternal(TFReaderLease reader, string streamId, int eventNumber)
+        private PrepareLogRecord ReadPrepareInternal(TFReaderLease reader, string streamId, long eventNumber)
         {
             // we assume that you already did check for stream deletion
             Ensure.NotNullOrEmpty(streamId, "streamId");
@@ -143,7 +143,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return (PrepareLogRecord)result.LogRecord;
         }
 
-        IndexReadStreamResult IIndexReader.ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
+        IndexReadStreamResult IIndexReader.ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Nonnegative(fromEventNumber, "fromEventNumber");
@@ -160,10 +160,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (lastEventNumber == EventNumber.Invalid)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
-                int startEventNumber = fromEventNumber;
-                int endEventNumber = (int)Math.Min(int.MaxValue, (long)fromEventNumber + maxCount - 1);
+                long startEventNumber = fromEventNumber;
+                long endEventNumber = Math.Min(long.MaxValue, fromEventNumber + maxCount - 1);
 
-                int minEventNumber = 0;
+                long minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
                     minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
                 if (metadata.TruncateBefore.HasValue)
@@ -187,7 +187,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 var records = recordsQuery.Reverse().Select(x => new EventRecord(x.Version, x.Prepare)).ToArray();
 
-                int nextEventNumber = Math.Min(endEventNumber + 1, lastEventNumber + 1);
+                long nextEventNumber = Math.Min(endEventNumber + 1, lastEventNumber + 1);
                 if (records.Length > 0)
                     nextEventNumber = records[records.Length - 1].EventNumber + 1;
                 var isEndOfStream = endEventNumber >= lastEventNumber;
@@ -196,7 +196,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        IndexReadStreamResult IIndexReader.ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
+        IndexReadStreamResult IIndexReader.ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Positive(maxCount, "maxCount");
@@ -212,11 +212,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (lastEventNumber == EventNumber.Invalid)
                     return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata, lastEventNumber);
 
-                int endEventNumber = fromEventNumber < 0 ? lastEventNumber : fromEventNumber;
-                int startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
+                long endEventNumber = fromEventNumber < 0 ? lastEventNumber : fromEventNumber;
+                long startEventNumber = Math.Max(0L, endEventNumber - maxCount + 1);
                 bool isEndOfStream = false;
 
-                int minEventNumber = 0;
+                long minEventNumber = 0;
                 if (metadata.MaxCount.HasValue)
                     minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
                 if (metadata.TruncateBefore.HasValue)
@@ -249,7 +249,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 || startEventNumber == 0
                                 || (startEventNumber <= lastEventNumber
                                    && (records.Length == 0 || records[records.Length - 1].EventNumber != startEventNumber));
-                int nextEventNumber = isEndOfStream ? -1 : Math.Min(startEventNumber - 1, lastEventNumber);
+                long nextEventNumber = isEndOfStream ? -1 : Math.Min(startEventNumber - 1, lastEventNumber);
                 return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
                                                  nextEventNumber, lastEventNumber, isEndOfStream);
             }
@@ -339,7 +339,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new StreamAccess(false);
         }
 
-        int IIndexReader.GetStreamLastEventNumber(string streamId)
+        long IIndexReader.GetStreamLastEventNumber(string streamId)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
             using (var reader = _backend.BorrowReader())
@@ -357,7 +357,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private int GetStreamLastEventNumberCached(TFReaderLease reader, string streamId)
+        private long GetStreamLastEventNumberCached(TFReaderLease reader, string streamId)
         {
             // if this is metastream -- check if original stream was deleted, if yes -- metastream is deleted as well
             if (SystemStreams.IsMetastream(streamId)
@@ -382,7 +382,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return res ?? lastEventNumber;
         }
 
-        private int GetStreamLastEventNumberUncached(TFReaderLease reader, string streamId)
+        private long GetStreamLastEventNumberUncached(TFReaderLease reader, string streamId)
         {
             IndexEntry latestEntry;
             if (!_tableIndex.TryGetLatestEntry(streamId, out latestEntry))
@@ -392,17 +392,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (rec == null) throw new Exception("Could not read latest stream's prepare. That should never happen.");
 
             int count = 0;
-            int startVersion = 0;
-            int latestVersion = int.MinValue;
+            long startVersion = 0;
+            long latestVersion = long.MinValue;
             if(rec.EventStreamId == streamId){
                startVersion = Math.Max(latestEntry.Version, latestEntry.Version + 1);
                latestVersion = latestEntry.Version;
             }
-            foreach (var indexEntry in _tableIndex.GetRange(streamId, startVersion, int.MaxValue, limit: _hashCollisionReadLimit + 1))
+            foreach (var indexEntry in _tableIndex.GetRange(streamId, startVersion, long.MaxValue, limit: _hashCollisionReadLimit + 1))
             {
                 var r = ReadPrepareInternal(reader, indexEntry.Position);
                 if (r != null && r.EventStreamId == streamId){
-                    if(latestVersion == int.MinValue){
+                    if(latestVersion == long.MinValue){
                         latestVersion = indexEntry.Version;
                         continue;
                     }
@@ -417,7 +417,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return EventNumber.Invalid;
                 }
             }
-            return latestVersion == int.MinValue ? ExpectedVersion.NoStream : latestVersion;
+            return latestVersion == long.MinValue ? ExpectedVersion.NoStream : latestVersion;
         }
 
         private bool OriginalStreamExists(TFReaderLease reader, string metaStreamId)
@@ -474,7 +474,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             try
             {
-                return StreamMetadata.FromJsonBytes(prepare.Data);
+                var metadata = StreamMetadata.FromJsonBytes(prepare.Data);
+                if(prepare.Version == LogRecordVersion.LogRecordV1 && metadata.TruncateBefore == long.MaxValue)
+                {
+                    metadata = new StreamMetadata(metadata.MaxCount, metadata.MaxAge, EventNumber.DeletedStream,
+                                                        metadata.TempStream, metadata.CacheControl, metadata.Acl);
+                }
+                return metadata;
             }
             catch (Exception)
             {

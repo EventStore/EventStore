@@ -31,8 +31,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _fromCheckpointPosition;
         private readonly IEmittedStreamContainer _readyHandler;
 
-        private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents =
-            new Stack<Tuple<CheckpointTag, string, int>>();
+        private readonly Stack<Tuple<CheckpointTag, string, long>> _alreadyCommittedEvents =
+            new Stack<Tuple<CheckpointTag, string, long>>();
         private readonly Queue<EmittedEvent> _pendingWrites = new Queue<EmittedEvent>();
 
         private bool _checkpointRequested;
@@ -48,8 +48,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointTag _lastQueuedEventPosition;
         private Event[] _submittedToWriteEvents;
         private EmittedEvent[] _submittedToWriteEmittedEvents;
-        private int _lastKnownEventNumber = ExpectedVersion.Invalid;
-        private int _retrievedNextEventNumber = ExpectedVersion.Invalid;
+        private long _lastKnownEventNumber = ExpectedVersion.Invalid;
+        private long _retrievedNextEventNumber = ExpectedVersion.Invalid;
         private readonly bool _noCheckpoints;
         private bool _disposed;
         private bool _recoveryCompleted;
@@ -388,7 +388,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void SubmitListEvents(CheckpointTag upTo, int fromEventNumber = -1)
+        private void SubmitListEvents(CheckpointTag upTo, long fromEventNumber = -1)
         {
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
@@ -409,7 +409,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var streamMetadata = new StreamMetadata(
                 _writerConfiguration.MaxCount, _writerConfiguration.MaxAge, acl: streamAcl,
-                truncateBefore: _retrievedNextEventNumber == 0 ? (int?) null : _retrievedNextEventNumber);
+                truncateBefore: _retrievedNextEventNumber == 0 ? (long?) null : _retrievedNextEventNumber);
 
             _submittedWriteMetaStreamEvent = new Event(
                 Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, streamMetadata.ToJsonBytes(), null);
@@ -623,7 +623,7 @@ namespace EventStore.Projections.Core.Services.Processing
             OnWriteCompleted();
         }
 
-        private Tuple<CheckpointTag, string, int> ValidateEmittedEventInRecoveryMode(EmittedEvent eventsToWrite)
+        private Tuple<CheckpointTag, string, long> ValidateEmittedEventInRecoveryMode(EmittedEvent eventsToWrite)
         {
             var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
             if (topAlreadyCommitted.Item1 < eventsToWrite.CausedByTag)
@@ -642,14 +642,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _recoveryCompleted = true;
         }
 
-        private static void NotifyEventsCommitted(EmittedEvent[] events, int firstEventNumber)
+        private static void NotifyEventsCommitted(EmittedEvent[] events, long firstEventNumber)
         {
             var sequenceNumber = firstEventNumber;
             foreach (var e in events)
                 NotifyEventCommitted(e, sequenceNumber++);
         }
 
-        private static void NotifyEventCommitted(EmittedEvent @event, int eventNumber)
+        private static void NotifyEventCommitted(EmittedEvent @event, long eventNumber)
         {
             if (@event.OnCommitted != null)
                 @event.OnCommitted(eventNumber);

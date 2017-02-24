@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, int> {{"type1", 0}, {"type2", -1}}), _firstEvent);
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, long> {{"type1", 0}, {"type2", -1}}), _firstEvent);
             Assert.IsTrue(result);
         }
 
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}), _firstEvent);
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, long> {{"type1", 0}, {"type2", 0}}), _firstEvent);
             Assert.IsTrue(result);
         }
 
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(40, 35), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(40, 35), new Dictionary<string, long> {{"type1", 2}, {"type2", 2}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(40, 35), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(40, 35), new Dictionary<string, long> {{"type1", 0}, {"type2", 0}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, int> {{"type1", 0}, {"type2", 0}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, long> {{"type1", 0}, {"type2", 0}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -105,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, int> {{"type1", -1}, {"type2", -1}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, long> {{"type1", -1}, {"type2", -1}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             var result =
                 t.IsMessageAfterCheckpointTag(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, int> {{"type1", -1}, {"type3", -1}}),
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 20), new Dictionary<string, long> {{"type1", -1}, {"type3", -1}}),
                     _firstEvent);
             Assert.IsFalse(result);
         }
@@ -147,7 +147,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             Assert.IsFalse(
                 t.IsCompatible(
-                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"$et-type1", 100}, {"$et-type2", 150}})));
+                    CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"$et-type1", 100}, {"$et-type2", 150}})));
         }
 
         [Test]
@@ -156,7 +156,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             Assert.IsFalse(
                 t.IsCompatible(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 100}, {"type3", 150}})));
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 100}, {"type3", 150}})));
         }
 
         [Test]
@@ -165,14 +165,14 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             Assert.IsTrue(
                 t.IsCompatible(
-                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 100}, {"type2", 150}})));
+                    CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 100}, {"type2", 150}})));
         }
 
         [Test]
         public void adjust_compatible_tag_returns_the_same_tag()
         {
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
-            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 1}, {"type2", 2}});
             Assert.AreEqual(tag, t.AdjustTag(tag));
         }
 
@@ -180,7 +180,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
         public void can_adjust_tf_position_tag()
         {
             var t = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
-            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(100, 50), new Dictionary<string, long> {{"type1", 1}, {"type2", 2}});
             var original = CheckpointTag.FromPosition(0, 100, 50);
             Assert.AreEqual(tag, t.AdjustTag(original));
         }
@@ -203,7 +203,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
                 Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
-            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(70, 60), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(70, 60), new Dictionary<string, long> {{"type1", 2}, {"type2", 2}});
             var updated = t.MakeCheckpointTag(tag, linkEvent);
             Assert.AreEqual(new TFPos(180, 170), updated.Position);
             Assert.AreEqual(2, updated.Streams["type1"]);
@@ -217,7 +217,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             var linkEvent = ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                 Guid.NewGuid(), new TFPos(180, 170), "$et-type2", 1, false, Guid.NewGuid(), "$>", false,
                 Helper.UTF8NoBom.GetBytes("0@stream2"), new byte[0]);
-            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(270, 260), new Dictionary<string, int> {{"type1", 2}, {"type2", 2}});
+            var tag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(270, 260), new Dictionary<string, long> {{"type1", 2}, {"type2", 2}});
             t.MakeCheckpointTag(tag, linkEvent);
         }
 

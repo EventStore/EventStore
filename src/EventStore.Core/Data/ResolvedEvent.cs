@@ -17,7 +17,7 @@ namespace EventStore.Core.Data
         public readonly ReadEventResult ResolveResult;
 
         public string OriginalStreamId { get { return OriginalEvent.EventStreamId; } }
-        public int OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
+        public long OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
 
 
         private ResolvedEvent(EventRecord @event, EventRecord link, long? commitPosition,

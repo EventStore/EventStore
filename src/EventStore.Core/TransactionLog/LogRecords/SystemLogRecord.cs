@@ -20,7 +20,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
     public class SystemLogRecord: LogRecord, IEquatable<SystemLogRecord>
     {
-        public const byte SystemRecordVersion = 0;
+        public const byte SystemRecordVersion = LogRecordVersion.LogRecordV0;
 
         public readonly DateTime TimeStamp;
         public readonly SystemRecordType SystemRecordType;

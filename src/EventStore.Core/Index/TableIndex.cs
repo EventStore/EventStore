@@ -181,7 +181,7 @@ namespace EventStore.Core.Index
                 Directory.CreateDirectory(directory);
         }
 
-        public void Add(long commitPos, string streamId, int version, long position)
+        public void Add(long commitPos, string streamId, long version, long position)
         {
             Ensure.Nonnegative(commitPos, "commitPos");
             Ensure.Nonnegative(version, "version");
@@ -345,7 +345,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(string streamId, int version, out long position)
+        public bool TryGetOneValue(string streamId, long version, out long position)
         {
             ulong stream = CreateHash(streamId);
             int counter = 0;
@@ -364,7 +364,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private bool TryGetOneValueInternal(ulong stream, int version, out long position)
+        private bool TryGetOneValueInternal(ulong stream, long version, out long position)
         {
             if (version < 0)
                 throw new ArgumentOutOfRangeException("version");
@@ -465,7 +465,7 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public IEnumerable<IndexEntry> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null)
         {
             ulong hash = CreateHash(streamId);
             var counter = 0;
@@ -484,7 +484,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private IEnumerable<IndexEntry> GetRangeInternal(ulong hash, int startVersion, int endVersion, int? limit = null)
+        private IEnumerable<IndexEntry> GetRangeInternal(ulong hash, long startVersion, long endVersion, int? limit = null)
         {
             if (startVersion < 0)
                 throw new ArgumentOutOfRangeException("startVersion");
@@ -580,7 +580,7 @@ namespace EventStore.Core.Index
             return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
         }
 
-        private IndexKey CreateIndexKey(string streamId, int version, long position)
+        private IndexKey CreateIndexKey(string streamId, long version, long position)
         {
             return new IndexKey(streamId, version, position, CreateHash(streamId));
         }

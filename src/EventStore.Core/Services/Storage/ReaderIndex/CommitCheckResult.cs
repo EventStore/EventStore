@@ -4,16 +4,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     {
         public readonly CommitDecision Decision;
         public readonly string EventStreamId;
-        public readonly int CurrentVersion;
-        public readonly int StartEventNumber;
-        public readonly int EndEventNumber;
+        public readonly long CurrentVersion;
+        public readonly long StartEventNumber;
+        public readonly long EndEventNumber;
         public readonly bool IsSoftDeleted;
 
         public CommitCheckResult(CommitDecision decision, 
                                  string eventStreamId, 
-                                 int currentVersion, 
-                                 int startEventNumber, 
-                                 int endEventNumber,
+                                 long currentVersion, 
+                                 long startEventNumber, 
+                                 long endEventNumber,
                                  bool isSoftDeleted)
         {
             Decision = decision;

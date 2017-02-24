@@ -12,12 +12,12 @@ namespace EventStore.Core.Messages
 
             public readonly string StreamId;
             public readonly long LastCommitPosition;
-            public readonly int? LastEventNumber;
+            public readonly long? LastEventNumber;
             public readonly DateTime ExpireAt;
 
             public readonly Message OriginalRequest;
 
-            public PollStream(string streamId, long lastCommitPosition, int? lastEventNumber, DateTime expireAt, Message originalRequest)
+            public PollStream(string streamId, long lastCommitPosition, long? lastEventNumber, DateTime expireAt, Message originalRequest)
             {
                 StreamId = streamId;
                 LastCommitPosition = lastCommitPosition;

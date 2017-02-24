@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
             BeginLoadPrerecordedEventsChunk(checkpointTag, -1);
         }
 
-        private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, int fromEventNumber)
+        private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, long fromEventNumber)
         {
             _loadingPrerecordedEventsFrom = checkpointTag;
             _ioDispatcher.ReadBackward(
@@ -162,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //       ResolvedEvent when replaying from the -order stream
             var linkTo = Helper.UTF8NoBom.GetString(@event.Data);
             string[] parts = linkTo.Split(_linkToSeparator, 2);
-            int eventNumber = int.Parse(parts[0]);
+            long eventNumber = long.Parse(parts[0]);
             string streamId = parts[1];
 
 

@@ -177,13 +177,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, message.LogPosition, message.LogPosition);
         }
 
-        protected virtual void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
+        protected virtual void CompleteSuccessRequest(long firstEventNumber, long lastEventNumber, long preparePosition, long commitPosition)
         {
             _completed = true;
             Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true));
         }
 
-        protected virtual void CompleteFailedRequest(OperationResult result, string error, int currentVersion = -1)
+        protected virtual void CompleteFailedRequest(OperationResult result, string error, long currentVersion = -1)
         {
             Debug.Assert(result != OperationResult.Success);
             _completed = true;

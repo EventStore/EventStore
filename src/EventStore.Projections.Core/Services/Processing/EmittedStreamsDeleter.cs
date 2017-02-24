@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return deleteFromPosition;
         }
 
-        private void DeleteEmittedStreamsFrom(int fromPosition, Action onEmittedStreamsDeleted)
+        private void DeleteEmittedStreamsFrom(long fromPosition, Action onEmittedStreamsDeleted)
         {
             _ioDispatcher.ReadForward(_emittedStreamsId, fromPosition, 1, false, SystemAccount.Principal, x => ReadCompleted(x, onEmittedStreamsDeleted));
         }
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void DeleteStreamCompleted(ClientMessage.DeleteStreamCompleted deleteStreamCompleted, Action onEmittedStreamsDeleted, string streamId, int eventNumber)
+        private void DeleteStreamCompleted(ClientMessage.DeleteStreamCompleted deleteStreamCompleted, Action onEmittedStreamsDeleted, string streamId, long eventNumber)
         {
             if (deleteStreamCompleted.Result == OperationResult.Success || deleteStreamCompleted.Result == OperationResult.StreamDeleted)
             {
@@ -140,7 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void TryMarkCheckpoint(int eventNumber)
+        private void TryMarkCheckpoint(long eventNumber)
         {
             _ioDispatcher.WriteEvent(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, new Event(Guid.NewGuid(), "$Checkpoint", true, eventNumber.ToJson(), null), SystemAccount.Principal, x =>
             {

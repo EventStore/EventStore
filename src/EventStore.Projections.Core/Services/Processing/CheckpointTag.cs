@@ -16,12 +16,12 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly int Phase;
         public readonly TFPos Position;
         //TODO: rename to StreamsOrEventTypes or just Positions
-        public readonly Dictionary<string, int> Streams;
+        public readonly Dictionary<string, long> Streams;
 
         public readonly string CatalogStream;
         public readonly string DataStream;
-        public readonly int CatalogPosition;
-        public readonly int DataPosition;
+        public readonly long CatalogPosition;
+        public readonly long DataPosition;
 
         internal enum Mode
         {
@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Mode_ = CalculateMode();
         }
 
-        private CheckpointTag(int phase, TFPos position, Dictionary<string, int> streams)
+        private CheckpointTag(int phase, TFPos position, Dictionary<string, long> streams)
         {
             Phase = phase;
             Position = position;
@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Mode_ = CalculateMode();
         }
 
-        private CheckpointTag(int phase, IDictionary<string, int> streams)
+        private CheckpointTag(int phase, IDictionary<string, long> streams)
         {
             Phase = phase;
             foreach (var stream in streams)
@@ -72,12 +72,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (stream.Key == "") throw new ArgumentException("Empty stream name", "streams");
                 if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
             }
-            Streams = new Dictionary<string, int>(streams); // clone
+            Streams = new Dictionary<string, long>(streams); // clone
             Position = new TFPos(Int64.MinValue, Int64.MinValue);
             Mode_ = CalculateMode();
         }
 
-        private CheckpointTag(int phase, IDictionary<string, int> eventTypes, TFPos position)
+        private CheckpointTag(int phase, IDictionary<string, long> eventTypes, TFPos position)
         {
             Phase = phase;
             Position = position;
@@ -86,23 +86,23 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (stream.Key == "") throw new ArgumentException("Empty stream name", "eventTypes");
                 if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "eventTypes");
             }
-            Streams = new Dictionary<string, int>(eventTypes); // clone
+            Streams = new Dictionary<string, long>(eventTypes); // clone
             Mode_ = CalculateMode();
         }
 
-        private CheckpointTag(int phase, string stream, int sequenceNumber)
+        private CheckpointTag(int phase, string stream, long sequenceNumber)
         {
             Phase = phase;
             if (stream == null) throw new ArgumentNullException("stream");
             if (stream == "") throw new ArgumentException("stream");
             if (sequenceNumber < 0 && sequenceNumber != ExpectedVersion.NoStream) throw new ArgumentException("sequenceNumber");
             Position = new TFPos(Int64.MinValue, Int64.MinValue);
-            Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
+            Streams = new Dictionary<string, long> {{stream, sequenceNumber}};
             Mode_ = CalculateMode();
         }
 
         private CheckpointTag(
-            int phase, string catalogStream, int catalogPosition, string dataStream, int dataPosition,
+            int phase, string catalogStream, long catalogPosition, string dataStream, long dataPosition,
             long commitPosition)
         {
             Phase = phase;
@@ -168,10 +168,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     var result = left.Streams.Values.First() > right.Streams.Values.First();
                     return result;
                 case Mode.MultiStream:
-                    int rvalue;
+                    long rvalue;
                     bool anyLeftGreater = left.Streams.Any(l => !right.Streams.TryGetValue(l.Key, out rvalue) || l.Value > rvalue);
 
-                    int lvalue;
+                    long lvalue;
                     bool anyRightGreater = right.Streams.Any(r => !left.Streams.TryGetValue(r.Key, out lvalue) || r.Value > lvalue);
 
                     if (anyLeftGreater && anyRightGreater)
@@ -230,10 +230,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     var result = left.Streams.Values.First() >= right.Streams.Values.First();
                     return result;
                 case Mode.MultiStream:
-                    int rvalue;
+                    long rvalue;
                     bool anyLeftGreater = left.Streams.Any(l => !right.Streams.TryGetValue(l.Key, out rvalue) || l.Value > rvalue);
 
-                    int lvalue;
+                    long lvalue;
                     bool anyRightGreater = right.Streams.Any(r => !left.Streams.TryGetValue(r.Key, out lvalue) || r.Value > lvalue);
 
                     if (anyLeftGreater && anyRightGreater)
@@ -295,7 +295,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     var result = Streams.Values.First() == other.Streams.Values.First();
                     return result;
                 case Mode.MultiStream:
-                    int rvalue = 0;
+                    long rvalue = 0;
                     return Streams.Count == other.Streams.Count
                            && Streams.All(l => other.Streams.TryGetValue(l.Key, out rvalue) && l.Value == rvalue);
                 default:
@@ -378,25 +378,25 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CheckpointTag(phase, preparePosition);
         }
 
-        public static CheckpointTag FromStreamPosition(int phase, string stream, int sequenceNumber)
+        public static CheckpointTag FromStreamPosition(int phase, string stream, long sequenceNumber)
         {
             return new CheckpointTag(phase, stream, sequenceNumber);
         }
 
-        public static CheckpointTag FromStreamPositions(int phase, IDictionary<string, int> streams)
+        public static CheckpointTag FromStreamPositions(int phase, IDictionary<string, long> streams)
         {
             // streams cloned inside
             return new CheckpointTag(phase, streams);
         }
 
-        public static CheckpointTag FromEventTypeIndexPositions(int phase, TFPos position, IDictionary<string, int> streams)
+        public static CheckpointTag FromEventTypeIndexPositions(int phase, TFPos position, IDictionary<string, long> streams)
         {
             // streams cloned inside
             return new CheckpointTag(phase, streams, position);
         }
 
         public static CheckpointTag FromByStreamPosition(
-            int phase, string catalogStream, int catalogPosition, string dataStream, int dataPosition,
+            int phase, string catalogStream, long catalogPosition, string dataStream, long dataPosition,
             long commitPosition)
         {
             return new CheckpointTag(phase, catalogStream, catalogPosition, dataStream, dataPosition, commitPosition);
@@ -481,7 +481,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public CheckpointTag UpdateStreamPosition(string streamId, int eventSequenceNumber)
+        public CheckpointTag UpdateStreamPosition(string streamId, long eventSequenceNumber)
         {
             if (Mode_ != Mode.MultiStream)
                 throw new ArgumentException("Invalid tag mode", "tag");
@@ -489,7 +489,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return FromStreamPositions(Phase, resultDictionary);
         }
 
-        public CheckpointTag UpdateEventTypeIndexPosition(TFPos position, string eventType, int eventSequenceNumber)
+        public CheckpointTag UpdateEventTypeIndexPosition(TFPos position, string eventType, long eventSequenceNumber)
         {
             if (Mode_ != Mode.EventTypeIndex)
                 throw new ArgumentException("Invalid tag mode", "tag");
@@ -504,9 +504,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return FromEventTypeIndexPositions(Phase, position, Streams);
         }
 
-        private Dictionary<string, int> PatchStreamsDictionary(string streamId, int eventSequenceNumber)
+        private Dictionary<string, long> PatchStreamsDictionary(string streamId, long eventSequenceNumber)
         {
-            var resultDictionary = new Dictionary<string, int>();
+            var resultDictionary = new Dictionary<string, long>();
             var was = false;
             foreach (var stream in Streams)
             {
@@ -677,7 +677,7 @@ namespace EventStore.Projections.Core.Services.Processing
             int? catalogPosition = null;
             int? dataPosition = null;
             bool byStreamMode = false;
-            Dictionary<string, int> streams = null;
+            Dictionary<string, long> streams = null;
             Dictionary<string, JToken> extra = null;
             var projectionId = current.ProjectionId;
             var projectionEpoch = 0;
@@ -772,7 +772,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         else
                         {
                             Check(JsonToken.StartObject, reader);
-                            streams = new Dictionary<string, int>();
+                            streams = new Dictionary<string, long>();
                             while (true)
                             {
                                 Check(reader.Read(), reader);

@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Storage
         {
         }
 
-        public void Add(long commitPos, string streamId, int version, long position)
+        public void Add(long commitPos, string streamId, long version, long position)
         {
             throw new NotImplementedException();
         }
@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage
             throw new NotImplementedException();
         }
 
-        public bool TryGetOneValue(string streamId, int version, out long position)
+        public bool TryGetOneValue(string streamId, long version, out long position)
         {
             position = -1;
             return false;
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage
             return false;
         }
 
-        public IEnumerable<IndexEntry> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null)
         {
             yield break;
         }

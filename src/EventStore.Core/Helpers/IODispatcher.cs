@@ -74,7 +74,7 @@ namespace EventStore.Core.Helpers
 
         public Guid ReadBackward(
             string streamId,
-            int fromEventNumber,
+            long fromEventNumber,
             int maxCount,
             bool resolveLinks,
             IPrincipal principal,
@@ -99,7 +99,7 @@ namespace EventStore.Core.Helpers
 
         public Guid ReadForward(
             string streamId,
-            int fromEventNumber,
+            long fromEventNumber,
             int maxCount,
             bool resolveLinks,
             IPrincipal principal,
@@ -124,7 +124,7 @@ namespace EventStore.Core.Helpers
 
         public void ConfigureStreamAndWriteEvents(
             string streamId,
-            int expectedVersion,
+            long expectedVersion,
             Lazy<StreamMetadata> streamMetadata,
             Event[] events,
             IPrincipal principal,
@@ -178,7 +178,7 @@ namespace EventStore.Core.Helpers
 
         public Guid WriteEvents(
             string streamId,
-            int expectedVersion,
+            long expectedVersion,
             Event[] events,
             IPrincipal principal,
             Action<ClientMessage.WriteEventsCompleted> action)
@@ -200,7 +200,7 @@ namespace EventStore.Core.Helpers
 
         public Guid WriteEvent(
             string streamId,
-            int expectedVersion,
+            long expectedVersion,
             Event @event,
             IPrincipal principal,
             Action<ClientMessage.WriteEventsCompleted> action)
@@ -222,7 +222,7 @@ namespace EventStore.Core.Helpers
 
         public Guid DeleteStream(
             string streamId,
-            int expectedVersion,
+            long expectedVersion,
             bool hardDelete,
             IPrincipal principal,
             Action<ClientMessage.DeleteStreamCompleted> action)
@@ -265,7 +265,7 @@ namespace EventStore.Core.Helpers
 
         public void UpdateStreamAcl(
             string streamId,
-            int expectedVersion,
+            long expectedVersion,
             IPrincipal principal,
             StreamMetadata metadata,
             Action<ClientMessage.WriteEventsCompleted> completed)

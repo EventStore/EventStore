@@ -12,6 +12,7 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
+    [Ignore("Metadata expected to fail in 3.9.4")]
     public class read_all_events_forward_with_soft_deleted_stream_should : SpecificationWithMiniNode
     {
         private EventData[] _testEvents;

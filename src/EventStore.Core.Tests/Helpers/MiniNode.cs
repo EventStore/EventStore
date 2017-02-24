@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Helpers
         public IPEndPoint ExtHttpEndPoint { get; private set; }
         public readonly ClusterVNode Node;
         public readonly TFChunkDb Db;
-        private readonly string _dbPath;
+        public readonly string DbPath;
 
         public MiniNode(string pathname, 
                         int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null, 
@@ -56,7 +56,8 @@ namespace EventStore.Core.Tests.Helpers
                         bool inMemDb = true, bool disableFlushToDisk = false,
                         IPAddress advertisedExtIPAddress = null, int advertisedExtHttpPort = 0,
                         int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
-                        byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault)
+                        byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
+                        string dbPath = "")
         {
             if (_running) throw new Exception("Previous MiniNode is still running!!!");
             _running = true;
@@ -73,8 +74,14 @@ namespace EventStore.Core.Tests.Helpers
             int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
             int intHttpPort = PortsHelper.GetAvailablePort(ip);
 
-            _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
-    
+            if(String.IsNullOrEmpty(dbPath))
+            {
+                DbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
+            }
+            else 
+            {
+                DbPath = dbPath;
+            }
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
             IntTcpEndPoint = new IPEndPoint(ip,intTcpPort);
@@ -86,7 +93,7 @@ namespace EventStore.Core.Tests.Helpers
             if(inMemDb)
                 builder.RunInMemory();
             else 
-                builder.RunOnDisk(_dbPath);
+                builder.RunOnDisk(DbPath);
 
             builder.WithInternalTcpOn(IntTcpEndPoint)
                    .WithInternalSecureTcpOn(IntSecTcpEndPoint)
@@ -141,7 +148,7 @@ namespace EventStore.Core.Tests.Helpers
                      "OS:", OS.OsFlavor, Environment.OSVersion,
                      "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
                      "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
-                     "DBPATH:", _dbPath,
+                     "DBPATH:", DbPath,
                      "TCP ENDPOINT:", TcpEndPoint,
                      "TCP SECURE ENDPOINT:", TcpSecEndPoint,
                      "HTTP ENDPOINT:", ExtHttpEndPoint);
@@ -180,7 +187,7 @@ namespace EventStore.Core.Tests.Helpers
             }
             
             if (!keepDb)
-                TryDeleteDirectory(_dbPath);
+                TryDeleteDirectory(DbPath);
 
             StoppingTime.Stop();
             RunningTime.Stop();

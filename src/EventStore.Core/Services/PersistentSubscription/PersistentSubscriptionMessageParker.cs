@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
         }
 
-        private Event CreateStreamMetadataEvent(int? tb)
+        private Event CreateStreamMetadataEvent(long? tb)
         {
             var eventId = Guid.NewGuid();
             var acl = new StreamAcl(
@@ -69,10 +69,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                 x => completed(this));
         }
 
-        public void BeginReadEndSequence(Action<int?> completed)
+        public void BeginReadEndSequence(Action<long?> completed)
         {
             _ioDispatcher.ReadBackward(_parkedStreamId,
-                int.MaxValue,
+                long.MaxValue,
                 1,
                 false,
                 SystemAccount.Principal, comp =>
@@ -95,7 +95,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 });
         }
 
-        public void BeginMarkParkedMessagesReprocessed(int sequence)
+        public void BeginMarkParkedMessagesReprocessed(long sequence)
         {
             var metaStreamId = SystemStreams.MetastreamOf(_parkedStreamId);
             _ioDispatcher.WriteEvent(
@@ -120,7 +120,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             public DateTime Added { get; set; }
             public string Reason { get; set; }
-            public int SubscriptionEventNumber { get; set; }
+            public long SubscriptionEventNumber { get; set; }
         }
     }
 }

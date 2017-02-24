@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         [Test]
         public void retrieves_event_number_for_previously_written_events()
         {
-            int eventNumber = -1;
+            long eventNumber = -1;
             _stream.EmitEvents(
                 new[]
                 {
@@ -131,7 +131,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         [Test]
         public void reports_event_number_for_new_events()
         {
-            int eventNumber = -1;
+            long eventNumber = -1;
             _stream.EmitEvents(
                 new[]
                 {

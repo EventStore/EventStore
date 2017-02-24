@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         void Reset();
         CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
-        CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds);
+        CommitCheckResult CheckCommit(string streamId, long expectedVersion, IEnumerable<Guid> eventIds);
         void PreCommit(CommitLogRecord commit);
         void PreCommit(IList<PrepareLogRecord> commitedPrepares);
         void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo transactionInfo);
@@ -29,17 +29,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void PurgeNotProcessedTransactions(long checkpoint);
 
         bool IsSoftDeleted(string streamId);
-        int GetStreamLastEventNumber(string streamId);
+        long GetStreamLastEventNumber(string streamId);
         StreamMetadata GetStreamMetadata(string streamId);
         RawMetaInfo GetStreamRawMeta(string streamId);
     }
 
     public struct RawMetaInfo
     {
-        public readonly int MetaLastEventNumber;
+        public readonly long MetaLastEventNumber;
         public readonly byte[] RawMeta;
 
-        public RawMetaInfo(int metaLastEventNumber, byte[] rawMeta)
+        public RawMetaInfo(long metaLastEventNumber, byte[] rawMeta)
         {
             MetaLastEventNumber = metaLastEventNumber;
             RawMeta = rawMeta;
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IStickyLRUCache<long, TransactionInfo> _transactionInfoCache = new StickyLRUCache<long, TransactionInfo>(ESConsts.TransactionMetadataCacheCapacity);
         private readonly Queue<TransInfo> _notProcessedTrans = new Queue<TransInfo>();
         private readonly BoundedCache<Guid, EventInfo> _committedEvents = new BoundedCache<Guid, EventInfo>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + IntPtr.Size + 2 * x.StreamId.Length);
-        private readonly IStickyLRUCache<string, int> _streamVersions = new StickyLRUCache<string, int>(ESConsts.StreamInfoCacheCapacity);
+        private readonly IStickyLRUCache<string, long> _streamVersions = new StickyLRUCache<string, long>(ESConsts.StreamInfoCacheCapacity);
         private readonly IStickyLRUCache<string, StreamMeta> _streamRawMetas = new StickyLRUCache<string, StreamMeta>(0); // store nothing flushed, only sticky non-flushed stuff
         private readonly Queue<CommitInfo> _notProcessedCommits = new Queue<CommitInfo>();
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
         {
             string streamId;
-            int expectedVersion;
+            long expectedVersion;
             using (var reader = _indexBackend.BorrowReader())
             {
                 try
@@ -129,7 +129,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return (PrepareLogRecord)result.LogRecord;
         }
 
-        public CommitCheckResult CheckCommit(string streamId, int expectedVersion, IEnumerable<Guid> eventIds)
+        public CommitCheckResult CheckCommit(string streamId, long expectedVersion, IEnumerable<Guid> eventIds)
         {
             var curVersion = GetStreamLastEventNumber(streamId);
             if (curVersion == EventNumber.DeletedStream)
@@ -152,8 +152,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (expectedVersion == ExpectedVersion.Any || expectedVersion == ExpectedVersion.StreamExists)
             {
                 var first = true;
-                int startEventNumber = -1;
-                int endEventNumber = -1;
+                long startEventNumber = -1;
+                long endEventNumber = -1;
                 foreach (var eventId in eventIds)
                 {
                     EventInfo prepInfo;
@@ -211,7 +211,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public void PreCommit(CommitLogRecord commit)
         {
             string streamId = null;
-            int eventNumber = int.MinValue;
+            long eventNumber = EventNumber.Invalid;
             PrepareLogRecord lastPrepare = null;
 
             foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
@@ -232,7 +232,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 _committedEvents.PutRecord(prepare.EventId, new EventInfo(streamId, eventNumber), throwOnDuplicate: false);
             }
 
-            if (eventNumber != int.MinValue)
+            if (eventNumber != EventNumber.Invalid)
                 _streamVersions.Put(streamId, eventNumber, +1);
 
             if (lastPrepare != null && SystemStreams.IsMetastream(streamId))
@@ -249,7 +249,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
             string streamId = lastPrepare.EventStreamId;
-            int eventNumber = int.MinValue;
+            long eventNumber = EventNumber.Invalid;
             foreach (var prepare in commitedPrepares)
             {
                 if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
@@ -392,9 +392,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return GetStreamMetadata(streamId).TruncateBefore == EventNumber.DeletedStream;
         }
 
-        public int GetStreamLastEventNumber(string streamId)
+        public long GetStreamLastEventNumber(string streamId)
         {
-            int lastEventNumber;
+            long lastEventNumber;
             if (_streamVersions.TryGet(streamId, out lastEventNumber))
                 return lastEventNumber;
             return _indexReader.GetStreamLastEventNumber(streamId);
@@ -441,9 +441,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private struct EventInfo
         {
             public readonly string StreamId;
-            public readonly int EventNumber;
+            public readonly long EventNumber;
 
-            public EventInfo(string streamId, int eventNumber)
+            public EventInfo(string streamId, long eventNumber)
             {
                 StreamId = streamId;
                 EventNumber = eventNumber;

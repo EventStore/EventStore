@@ -373,14 +373,14 @@ namespace EventStore.Core.Services.Storage
             return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, ResolvedEvent.EmptyEvent, null, false, error);
         }
 
-        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
+        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, long lastEventNumber = -1, string error = null)
         {
             return new ClientMessage.ReadStreamEventsForwardCompleted(
                 msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result, 
                 EmptyRecords, null, false, error ?? string.Empty, -1, lastEventNumber, true, lastCommitPosition);
         }
 
-        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
+        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, long lastEventNumber = -1, string error = null)
         {
             return new ClientMessage.ReadStreamEventsBackwardCompleted(
                 msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result,

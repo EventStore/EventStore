@@ -4,6 +4,7 @@ using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Helpers;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -53,7 +54,7 @@ namespace EventStore.ClientAPI.Embedded
 
             protected override WriteResult TransformResponse(ClientMessage.WriteEventsCompleted response)
             {
-                return new WriteResult(response.LastEventNumber, new Position(response.PreparePosition, response.CommitPosition));
+                return new WriteResult(StreamVersionConverter.Downgrade(response.LastEventNumber), new Position(response.PreparePosition, response.CommitPosition));
             }
         }
 
@@ -280,11 +281,11 @@ namespace EventStore.ClientAPI.Embedded
             {
                 return new StreamEventsSlice(Convert(response.Result),
                     _stream,
-                    _fromEventNumber,
+                    StreamVersionConverter.Downgrade(_fromEventNumber),
                     ReadDirection.Backward,
                     response.Events.ConvertToClientResolvedIndexEvents(),
-                    response.NextEventNumber,
-                    response.LastEventNumber,
+                    StreamVersionConverter.Downgrade(response.NextEventNumber),
+                    StreamVersionConverter.Downgrade(response.LastEventNumber),
                     response.IsEndOfStream);
 
             }
@@ -341,11 +342,11 @@ namespace EventStore.ClientAPI.Embedded
             {
                 return new StreamEventsSlice(Convert(response.Result),
                     _stream,
-                    _fromEventNumber,
+                    StreamVersionConverter.Downgrade(_fromEventNumber),
                     ReadDirection.Forward,
                     response.Events.ConvertToClientResolvedIndexEvents(),
-                    response.NextEventNumber,
-                    response.LastEventNumber,
+                    StreamVersionConverter.Downgrade(response.NextEventNumber),
+                    StreamVersionConverter.Downgrade(response.LastEventNumber),
                     response.IsEndOfStream);
 
             }
@@ -406,7 +407,7 @@ namespace EventStore.ClientAPI.Embedded
 
             protected override WriteResult TransformResponse(ClientMessage.TransactionCommitCompleted response)
             {
-                return new WriteResult(response.LastEventNumber, new Position(response.PreparePosition, response.CommitPosition));
+                return new WriteResult(StreamVersionConverter.Downgrade(response.LastEventNumber), new Position(response.PreparePosition, response.CommitPosition));
             }
         }
 

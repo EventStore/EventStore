@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Messages
         public class PartitionMeasured : EventReaderSubscriptionMessageBase
         {
             private readonly string _partition;
-            private readonly int _size;
+            private readonly long _size;
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
@@ -118,13 +118,13 @@ namespace EventStore.Projections.Core.Messages
                 get { return _partition; }
             }
 
-            public int Size
+            public long Size
             {
                 get { return _size; }
             }
 
             public PartitionMeasured(
-                Guid subscriptionId, string partition, int size, long subscriptionMessageSequenceNumber,
+                Guid subscriptionId, string partition, long size, long subscriptionMessageSequenceNumber,
                 object source = null)
                 : base(subscriptionId, null, 100.0f, subscriptionMessageSequenceNumber, source)
             {
