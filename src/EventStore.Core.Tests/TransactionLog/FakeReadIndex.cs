@@ -42,17 +42,17 @@ namespace EventStore.Core.Tests.TransactionLog
             throw new NotImplementedException();
         }
 
-        public IndexReadEventResult ReadEvent(string streamId, int eventNumber)
+        public IndexReadEventResult ReadEvent(string streamId, long eventNumber)
         {
             throw new NotImplementedException();
         }
 
-        public IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }
 
-        public IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.TransactionLog
             return _isStreamDeleted(streamId);
         }
 
-        public int GetStreamLastEventNumber(string streamId)
+        public long GetStreamLastEventNumber(string streamId)
         {
             if (SystemStreams.IsMetastream(streamId))
                 return GetStreamLastEventNumber(SystemStreams.OriginalStreamOf(streamId));

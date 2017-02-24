@@ -16,11 +16,11 @@ namespace EventStore.Projections.Core.Services
 
         public string Name { get; set; }
 
-        public int ProjectionId { get; set; }
+        public long ProjectionId { get; set; }
 
-        public int Epoch { get; set; }
+        public long Epoch { get; set; }
 
-        public int Version { get; set; }
+        public long Version { get; set; }
 
         public ProjectionMode Mode { get; set; }
 
@@ -90,9 +90,9 @@ namespace EventStore.Projections.Core.Services
                 hashCode = (hashCode*397) ^ (int) MasterStatus;
                 hashCode = (hashCode*397) ^ (StateReason != null ? StateReason.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ (Name != null ? Name.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ ProjectionId;
-                hashCode = (hashCode*397) ^ Epoch;
-                hashCode = (hashCode*397) ^ Version;
+                hashCode = (hashCode*397) ^ (int)(ProjectionId >> 32);
+                hashCode = (hashCode*397) ^ (int)(Epoch >> 32);
+                hashCode = (hashCode*397) ^ (int)(Version >> 32);
                 hashCode = (hashCode*397) ^ (int) Mode;
                 hashCode = (hashCode*397) ^ (Position != null ? Position.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ Progress.GetHashCode();

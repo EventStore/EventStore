@@ -73,7 +73,7 @@ namespace EventStore.ClientAPI.Embedded
                 : new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()));
         }
 
-        public void ConfirmSubscription(long lastCommitPosition, int? lastEventNumber)
+        public void ConfirmSubscription(long lastCommitPosition, long? lastEventNumber)
         {
             if (lastCommitPosition < -1)
                 throw new ArgumentOutOfRangeException("lastCommitPosition", string.Format("Invalid lastCommitPosition {0} on subscription confirmation.", lastCommitPosition));
@@ -84,7 +84,7 @@ namespace EventStore.ClientAPI.Embedded
             _source.SetResult(_subscription);
         }
 
-        protected abstract TSubscription CreateVolatileSubscription(long lastCommitPosition, int? lastEventNumber);
+        protected abstract TSubscription CreateVolatileSubscription(long lastCommitPosition, long? lastEventNumber);
 
         public void Unsubscribe()
         {

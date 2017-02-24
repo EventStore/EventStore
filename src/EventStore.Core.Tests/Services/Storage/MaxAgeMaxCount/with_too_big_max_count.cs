@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var now = DateTime.UtcNow;
 
-            const string metadata = @"{""$maxCount"":2147483648}"; //int.maxValue + 1
+            const string metadata = @"{""$maxCount"":9223372036854775808}"; //long.maxValue + 1
 
             _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddSeconds(-100));
             _r2 = WriteSingleEvent("ES", 0, "bla1", now.AddSeconds(-50));

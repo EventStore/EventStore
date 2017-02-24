@@ -39,7 +39,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Where the subscription should start from (position)
         /// </summary>
-        public readonly int StartFrom;
+        public readonly long StartFrom;
 
         /// <summary>
         /// Whether or not in depth latency statistics should be tracked on this subscription.
@@ -99,7 +99,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
         /// </summary>
-        internal PersistentSubscriptionSettings(bool resolveLinkTos, int startFrom, bool extraStatistics, TimeSpan messageTimeout,
+        internal PersistentSubscriptionSettings(bool resolveLinkTos, long startFrom, bool extraStatistics, TimeSpan messageTimeout,
                                                 int maxRetryCount, int liveBufferSize, int readBatchSize, int historyBufferSize,
                                                 TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount, 
                                                 int maxSubscriberCount, string namedConsumerStrategy)

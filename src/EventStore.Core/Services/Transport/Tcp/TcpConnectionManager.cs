@@ -42,6 +42,8 @@ namespace EventStore.Core.Services.Transport.Tcp
         private int _messageNumber;
         private int _isClosed;
 
+        private byte _version;
+
         private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
         private readonly Action<TcpConnectionManager> _connectionEstablished;
 
@@ -242,6 +244,20 @@ namespace EventStore.Core.Services.Transport.Tcp
                 case TcpCommand.HeartbeatRequestCommand:
                     SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
                     break;
+                case TcpCommand.IdentifyClient:
+                {
+                    try 
+                    {
+                        var message = (ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope, null, null, null, this, _version);
+                        _version = (byte)message.Version;
+                        SendPackage(new TcpPackage(TcpCommand.ClientIdentified, package.CorrelationId, null));
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error identifying client: {0}", ex);
+                    }
+                    break;
+                }
                 case TcpCommand.BadRequest:
                 {
                     var reason = string.Empty;
@@ -297,7 +313,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             Message message = null;
             string error = "";
             try {
-                message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this);
+                message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this, _version);
             }
             catch(Exception ex) {
                 error = ex.Message;
@@ -353,7 +369,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void SendMessage(Message message)
         {
-            var package = _dispatcher.WrapMessage(message);
+            var package = _dispatcher.WrapMessage(message, _version);
             if (package != null)
                 SendPackage(package.Value);
         }

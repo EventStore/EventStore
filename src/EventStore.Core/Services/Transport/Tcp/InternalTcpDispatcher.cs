@@ -15,30 +15,30 @@ namespace EventStore.Core.Services.Transport.Tcp
     {
         public InternalTcpDispatcher()
         {
-            AddUnwrapper(TcpCommand.PrepareAck, UnwrapPrepareAck);
-            AddWrapper<StorageMessage.PrepareAck>(WrapPrepareAck);
-            AddUnwrapper(TcpCommand.CommitAck, UnwrapCommitAck);
-            AddWrapper<StorageMessage.CommitAck>(WrapCommitAck);
+            AddUnwrapper(TcpCommand.PrepareAck, UnwrapPrepareAck, ClientVersion.V2);
+            AddWrapper<StorageMessage.PrepareAck>(WrapPrepareAck, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.CommitAck, UnwrapCommitAck, ClientVersion.V2);
+            AddWrapper<StorageMessage.CommitAck>(WrapCommitAck, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.SubscribeReplica, UnwrapReplicaSubscriptionRequest);
-            AddWrapper<ReplicationMessage.SubscribeReplica>(WrapSubscribeReplica);
-            AddUnwrapper(TcpCommand.ReplicaLogPositionAck, UnwrapReplicaLogPositionAck);
-            AddWrapper<ReplicationMessage.AckLogPosition>(WrapAckLogPosition);
-            AddUnwrapper(TcpCommand.CreateChunk, UnwrapCreateChunk);
-            AddWrapper<ReplicationMessage.CreateChunk>(WrapCreateChunk);
-            AddUnwrapper(TcpCommand.RawChunkBulk, UnwrapRawChunkBulk);
-            AddWrapper<ReplicationMessage.RawChunkBulk>(WrapRawChunkBulk);
-            AddUnwrapper(TcpCommand.DataChunkBulk, UnwrapDataChunkBulk);
-            AddWrapper<ReplicationMessage.DataChunkBulk>(WrapDataChunkBulk);
-            AddUnwrapper(TcpCommand.ReplicaSubscriptionRetry, UnwrapReplicaSubscriptionRetry);
-            AddWrapper<ReplicationMessage.ReplicaSubscriptionRetry>(WrapReplicaSubscriptionRetry);
-            AddUnwrapper(TcpCommand.ReplicaSubscribed, UnwrapReplicaSubscribed);
-            AddWrapper<ReplicationMessage.ReplicaSubscribed>(WrapReplicaSubscribed);
+            AddUnwrapper(TcpCommand.SubscribeReplica, UnwrapReplicaSubscriptionRequest, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.SubscribeReplica>(WrapSubscribeReplica, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.ReplicaLogPositionAck, UnwrapReplicaLogPositionAck, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.AckLogPosition>(WrapAckLogPosition, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.CreateChunk, UnwrapCreateChunk, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.CreateChunk>(WrapCreateChunk, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.RawChunkBulk, UnwrapRawChunkBulk, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.RawChunkBulk>(WrapRawChunkBulk, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.DataChunkBulk, UnwrapDataChunkBulk, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.DataChunkBulk>(WrapDataChunkBulk, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.ReplicaSubscriptionRetry, UnwrapReplicaSubscriptionRetry, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.ReplicaSubscriptionRetry>(WrapReplicaSubscriptionRetry, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.ReplicaSubscribed, UnwrapReplicaSubscribed, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.ReplicaSubscribed>(WrapReplicaSubscribed, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.SlaveAssignment, UnwrapSlaveAssignment);
-            AddWrapper<ReplicationMessage.SlaveAssignment>(WrapSlaveAssignment);
-            AddUnwrapper(TcpCommand.CloneAssignment, UnwrapCloneAssignment);
-            AddWrapper<ReplicationMessage.CloneAssignment>(WrapCloneAssignment);
+            AddUnwrapper(TcpCommand.SlaveAssignment, UnwrapSlaveAssignment, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.SlaveAssignment>(WrapSlaveAssignment, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.CloneAssignment, UnwrapCloneAssignment, ClientVersion.V2);
+            AddWrapper<ReplicationMessage.CloneAssignment>(WrapCloneAssignment, ClientVersion.V2);
         }
 
         private TcpPackage WrapPrepareAck(StorageMessage.PrepareAck msg)

@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI
     public class PersistentSubscriptionSettingsBuilder
     {
         private bool _resolveLinkTos;
-        private int  _startFrom;
+        private long  _startFrom;
         private bool _timingStatistics;
         private TimeSpan _timeout;
         private int _readBatchSize;
@@ -23,7 +23,7 @@ namespace EventStore.ClientAPI
         private int _maxSubscriberCount;
         private string _namedConsumerStrategies;
 
-        internal PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, int startFrom, bool timingStatistics, TimeSpan timeout,
+        internal PersistentSubscriptionSettingsBuilder(bool resolveLinkTos, long startFrom, bool timingStatistics, TimeSpan timeout,
                                                       int bufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize,
                                                       TimeSpan checkPointAfter, int minCheckPointCount,
                                                       int maxCheckPointCount, int maxSubscriberCount, string namedConsumerStrategies)
@@ -112,7 +112,7 @@ namespace EventStore.ClientAPI
         /// Sets that the subscription should start from a specified location of the stream.
         /// </summary>
         /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
-        public PersistentSubscriptionSettingsBuilder StartFrom(int position)
+        public PersistentSubscriptionSettingsBuilder StartFrom(long position)
         {
             _startFrom = position;
             return this;

@@ -318,7 +318,7 @@ namespace EventStore.Projections.Core.Services.Processing
             bool includeStreamDeletedNotification)
         {
             //NOTE: just optimization - anyway if reading from TF events may reappear
-            int p;
+            long p;
             var nextPositions = eventTypes.ToDictionary(
                 v => "$et-" + v, v => checkpointTag.Streams.TryGetValue(v, out p) ? p + 1 : 0);
 

@@ -14,7 +14,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _stream;
         private readonly string _groupName;
         private readonly bool _resolveLinkTos;
-        private readonly int _startFromBeginning;
+        private readonly long _startFromBeginning;
         private readonly int _messageTimeoutMilliseconds;
         private readonly bool _recordStatistics;
         private readonly int _maxRetryCount;

@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private Guid _writeRequestId;
         private int _inCheckpointWriteAttempt;
-        private int _lastWrittenCheckpointEventNumber;
+        private long _lastWrittenCheckpointEventNumber;
         private Event _checkpointEventToBePublished;
         private CheckpointTag _requestedCheckpointPosition;
         private IEnvelope _envelope;
@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private void WriteCheckpointEventCompleted(
-            string eventStreamId, OperationResult operationResult, int firstWrittenEventNumber)
+            string eventStreamId, OperationResult operationResult, long firstWrittenEventNumber)
         {
             if (_inCheckpointWriteAttempt == 0)
                 throw new InvalidOperationException();
@@ -166,7 +166,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 : info.CheckpointStatus;
         }
 
-        public void StartFrom(CheckpointTag checkpointTag, int checkpointEventNumber)
+        public void StartFrom(CheckpointTag checkpointTag, long checkpointEventNumber)
         {
             _lastWrittenCheckpointEventNumber = checkpointEventNumber;
         }
