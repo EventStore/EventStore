@@ -220,7 +220,7 @@ namespace EventStore.Core
             {
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
-                                                   TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
+                                                   TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(), new V1ClientTcpDispatcher(),
                                                    vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
                                                    _internalAuthenticationProvider, null);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
@@ -231,7 +231,7 @@ namespace EventStore.Core
                 if (_nodeInfo.ExternalSecureTcp != null)
                 {
                     var extSecTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalSecureTcp, _workersHandler,
-                                                          TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
+                                                          TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(), new V1ClientTcpDispatcher(),
                                                           vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
                                                           _internalAuthenticationProvider, vNodeSettings.Certificate);
                     _mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
@@ -242,7 +242,7 @@ namespace EventStore.Core
                 // INTERNAL TCP
                     var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
                                                       TcpServiceType.Internal, TcpSecurityType.Normal,
-                                                    new InternalTcpDispatcher(),
+                                                    new InternalTcpDispatcher(), new V1ClientTcpDispatcher(),
                                                     vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
                                                     _internalAuthenticationProvider, null);
                     _mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
@@ -254,7 +254,7 @@ namespace EventStore.Core
                     {
                         var intSecTcpService = new TcpService(_mainQueue, _nodeInfo.InternalSecureTcp, _workersHandler,
                                                             TcpServiceType.Internal, TcpSecurityType.Secure,
-                                                            new InternalTcpDispatcher(),
+                                                            new InternalTcpDispatcher(), new V1ClientTcpDispatcher(),
                                                             vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
                                                             _internalAuthenticationProvider, vNodeSettings.Certificate);
                         _mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);

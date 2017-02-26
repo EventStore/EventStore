@@ -184,20 +184,25 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   prepare =>
                                   {
                                       if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
-                                          positionMapping.Add(WriteRecord(newChunk, prepare));
+                                      {
+                                          positionMapping.Add(WriteRecord(newChunk, prepare, 0, false));
+                                      }
                                   },
                                   commit =>
                                   {
                                       if (ShouldKeepCommit(commit, commits))
-                                          positionMapping.Add(WriteRecord(newChunk, commit));
+                                      {
+                                          positionMapping.Add(WriteRecord(newChunk, commit, 0, false));
+                                      }
                                   },
                                   // we always keep system log records for now
-                                  system => positionMapping.Add(WriteRecord(newChunk, system)));
+                                  system => positionMapping.Add(WriteRecord(newChunk, system, 0, false)));
                 }
-                newChunk.CompleteScavenge(positionMapping);
+                
+                newChunk.CompleteScavenge(positionMapping, false);
 
                 var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
-                var newSize = (long)newChunk.PhysicalDataSize + PosMap.FullSize * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
+                var newSize = (long)newChunk.PhysicalDataSize + PosMap.V3Size * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
 
                 if(_unsafeIgnoreHardDeletes) {
                     Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
@@ -416,7 +421,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             return !canRemove;
         }
 
-        private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, PrepareLogRecord prepare, int eventNumber){
+        private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, PrepareLogRecord prepare, long eventNumber){
             var result = _readIndex.ReadEvent(prepare.EventStreamId, eventNumber);
             if(result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) return false;
             return true;
@@ -496,9 +501,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record)
+        private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record, int lengthOffset, bool isUpgrade)
         {
-            var writeResult = newChunk.TryAppend(record);
+            var writeResult = newChunk.TryAppend(record, isUpgrade);
             if (!writeResult.Success)
             {
                 throw new Exception(string.Format(
@@ -508,12 +513,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
             int actualPos = (int) writeResult.OldPosition;
-            return new PosMap(logPos, actualPos);
+            return new PosMap(logPos, actualPos, lengthOffset);
         }
 
         internal class CommitInfo
         {
-            public readonly int EventNumber;
+            public readonly long EventNumber;
 
             //public string StreamId;
             public bool? KeepCommit;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -16,14 +16,14 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
             var map = new List<PosMap>();
             var chunk = TFChunk.CreateNew(Filename, 1024*1024, 0, 0, true);
             long logPos = 0;
-            for (int i = 0, n = ChunkFooter.Size/PosMap.FullSize + 1; i < n; ++i)
+            for (int i = 0, n = ChunkFooter.Size/PosMap.V3Size + 1; i < n; ++i)
             {
                 map.Add(new PosMap(logPos, (int)logPos));
                 var res = chunk.TryAppend(LogRecord.Commit(logPos, Guid.NewGuid(), logPos, 0));
                 Assert.IsTrue(res.Success);
                 logPos = res.NewPosition;
             }
-            chunk.CompleteScavenge(map);
+            chunk.CompleteScavenge(map, false);
 
             chunk.CacheInMemory();
 

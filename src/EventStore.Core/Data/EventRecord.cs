@@ -12,21 +12,21 @@ namespace EventStore.Core.Data
             get { return (Flags & PrepareFlags.IsJson) == PrepareFlags.IsJson; }
         }
 
-        public readonly int EventNumber;
+        public readonly long EventNumber;
         public readonly long LogPosition;
         public readonly Guid CorrelationId;
         public readonly Guid EventId;
         public readonly long TransactionPosition;
         public readonly int TransactionOffset;
         public readonly string EventStreamId;
-        public readonly int ExpectedVersion;
+        public readonly long ExpectedVersion;
         public readonly DateTime TimeStamp;
         public readonly PrepareFlags Flags;
         public readonly string EventType;
         public readonly byte[] Data;
         public readonly byte[] Metadata;
 
-        public EventRecord(int eventNumber, PrepareLogRecord prepare)
+        public EventRecord(long eventNumber, PrepareLogRecord prepare)
         {
             Ensure.Nonnegative(eventNumber, "eventNumber");
 
@@ -46,14 +46,14 @@ namespace EventStore.Core.Data
             Metadata = prepare.Metadata ?? Empty.ByteArray;
         }
 
-        public EventRecord(int eventNumber, 
+        public EventRecord(long eventNumber, 
                            long logPosition, 
                            Guid correlationId, 
                            Guid eventId, 
                            long transactionPosition,
                            int transactionOffset,
                            string eventStreamId, 
-                           int expectedVersion, 
+                           long expectedVersion, 
                            DateTime timeStamp, 
                            PrepareFlags flags, 
                            string eventType, 
@@ -115,14 +115,14 @@ namespace EventStore.Core.Data
         {
             unchecked
             {
-                int hashCode = EventNumber;
+                int hashCode = (int)(EventNumber >> 32);
                 hashCode = (hashCode*397) ^ LogPosition.GetHashCode();
                 hashCode = (hashCode*397) ^ CorrelationId.GetHashCode();
                 hashCode = (hashCode*397) ^ EventId.GetHashCode();
                 hashCode = (hashCode*397) ^ TransactionPosition.GetHashCode();
                 hashCode = (hashCode*397) ^ TransactionOffset;
                 hashCode = (hashCode*397) ^ EventStreamId.GetHashCode();
-                hashCode = (hashCode*397) ^ ExpectedVersion;
+                hashCode = (hashCode*397) ^ (int)(ExpectedVersion >> 32);
                 hashCode = (hashCode*397) ^ TimeStamp.GetHashCode();
                 hashCode = (hashCode*397) ^ Flags.GetHashCode();
                 hashCode = (hashCode*397) ^ EventType.GetHashCode();

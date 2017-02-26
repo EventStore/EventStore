@@ -34,9 +34,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             _lowHasher = new XXHashUnsafe();
             _highHasher = new Murmur3AUnsafe();
             _tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
-                                         () => new HashListMemTable(PTableVersions.Index32Bit, maxSize: _maxMemTableSize),
+                                         () => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
                                          () => _fakeReader,
-                                         PTableVersions.Index32Bit,
+                                         PTableVersions.IndexV1,
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
@@ -198,9 +198,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             _tableIndex.Add(1, streamId, 2, 6);
             System.Threading.Thread.Sleep(500);
             _tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
-                                         () => new HashListMemTable(PTableVersions.Index64Bit, maxSize: _maxMemTableSize),
+                                         () => new HashListMemTable(PTableVersions.IndexV2, maxSize: _maxMemTableSize),
                                          () => _fakeReader,
-                                         PTableVersions.Index64Bit,
+                                         PTableVersions.IndexV2,
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
@@ -277,14 +277,14 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             return new IndexBackend.MetadataCached();
         }
 
-        public int? UpdateStreamLastEventNumber(int cacheVersion, string streamId, int? lastEventNumber){
+        public long? UpdateStreamLastEventNumber(int cacheVersion, string streamId, long? lastEventNumber){
             return null;
         }
         public EventStore.Core.Data.StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId, EventStore.Core.Data.StreamMetadata metadata){
             return null;
         }
 
-        public int? SetStreamLastEventNumber(string streamId, int lastEventNumber){
+        public long? SetStreamLastEventNumber(string streamId, long lastEventNumber){
             return null;
         }
         public EventStore.Core.Data.StreamMetadata SetStreamMetadata(string streamId, EventStore.Core.Data.StreamMetadata metadata){
@@ -318,7 +318,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public RecordReadResult TryReadAt(long position)
         {
             var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0, position % 2 == 0 ? "account--696193173" : "LPN-FC002_LPK51001", -1, DateTime.UtcNow, PrepareFlags.None, "type", new byte[0], null);
-            return new RecordReadResult(true, position + 1, record, 1);
+            return new RecordReadResult(true, position + 1, record, 1, 0);
         }
 
         public bool ExistsAt(long position)

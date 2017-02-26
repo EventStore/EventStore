@@ -19,8 +19,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             _maxPullBatchSize = maxPullBatchSize;
         }
 
-        public void BeginReadEvents(string stream, int startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
-            Action<ResolvedEvent[], int, bool> onEventsFound)
+        public void BeginReadEvents(string stream, long startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
+            Action<ResolvedEvent[], long, bool> onEventsFound)
         {
             var actualBatchSize = GetBatchSize(batchSize);
             _ioDispatcher.ReadForward(
@@ -35,9 +35,9 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private class ResponseHandler
         {            
-            private readonly Action<ResolvedEvent[], int, bool> _onFetchCompleted;
+            private readonly Action<ResolvedEvent[], long, bool> _onFetchCompleted;
 
-            public ResponseHandler(Action<ResolvedEvent[], int, bool> onFetchCompleted)
+            public ResponseHandler(Action<ResolvedEvent[], long, bool> onFetchCompleted)
             {
                 _onFetchCompleted = onFetchCompleted;
             }

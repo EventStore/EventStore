@@ -7,11 +7,11 @@ namespace EventStore.Projections.Core.Services.Processing
     public class EmittedLinkTo : EmittedEvent
     {
         private readonly string _targetStreamId;
-        private int? _eventNumber;
+        private long? _eventNumber;
 
         public EmittedLinkTo(
             string streamId, Guid eventId,
-            string targetStreamId, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<int> onCommitted = null)
+            string targetStreamId, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<long> onCommitted = null)
             : base(streamId, eventId, "$>", causedByTag, expectedTag, onCommitted)
         {
             _targetStreamId = targetStreamId;
@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _eventNumber != null;
         }
 
-        public void SetTargetEventNumber(int eventNumber)
+        public void SetTargetEventNumber(long eventNumber)
         {
             if (_eventNumber != null)
                 throw new InvalidOperationException("Target event number has been already set");

@@ -2,11 +2,11 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public struct ProjectionVersion
     {
-        public readonly int ProjectionId;
-        public readonly int Epoch;
-        public readonly int Version;
+        public readonly long ProjectionId;
+        public readonly long Epoch;
+        public readonly long Version;
 
-        public ProjectionVersion(int projectionId, int epoch, int version)
+        public ProjectionVersion(long projectionId, long epoch, long version)
         {
             ProjectionId = projectionId;
             Epoch = epoch;
@@ -28,9 +28,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             unchecked
             {
-                var hashCode = ProjectionId;
-                hashCode = (hashCode*397) ^ Epoch;
-                hashCode = (hashCode*397) ^ Version;
+                var hashCode = (int)(ProjectionId >> 32);
+                hashCode = (hashCode*397) ^ (int)(Epoch >> 32);
+                hashCode = (hashCode*397) ^ (int)(Version >> 32);
                 return hashCode;
             }
         }

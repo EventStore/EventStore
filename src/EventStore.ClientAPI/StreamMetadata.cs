@@ -309,7 +309,7 @@ namespace EventStore.ClientAPI
 
                 int? maxCount = null;
                 TimeSpan? maxAge = null;
-                int? truncateBefore = null;
+                long? truncateBefore = null;
                 TimeSpan? cacheControl = null;
                 StreamAcl acl = null;
                 Dictionary<string, JToken> customMetadata = null;
@@ -341,7 +341,7 @@ namespace EventStore.ClientAPI
                         {
                             Check(reader.Read(), reader);
                             Check(JsonToken.Integer, reader);
-                            truncateBefore = (int)(long)reader.Value;
+                            truncateBefore = (long)reader.Value;
                             break;
                         }
                         case SystemMetadata.CacheControl:
@@ -367,7 +367,8 @@ namespace EventStore.ClientAPI
                         }
                     }
                 }
-                return new StreamMetadata(maxCount, maxAge, truncateBefore, cacheControl, acl, customMetadata);
+                int? tb = truncateBefore.HasValue && truncateBefore.Value == long.MaxValue ? (int?)int.MaxValue : (int?)truncateBefore;
+                return new StreamMetadata(maxCount, maxAge, tb, cacheControl, acl, customMetadata);
             }
         }
 

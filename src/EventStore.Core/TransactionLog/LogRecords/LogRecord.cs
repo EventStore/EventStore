@@ -13,6 +13,11 @@ namespace EventStore.Core.TransactionLog.LogRecords
         System = 2
     }
 
+    public class LogRecordVersion {
+        public const byte LogRecordV0 = 0;
+        public const byte LogRecordV1 = 1;
+    }
+
     public abstract class LogRecord
     {
         public static readonly byte[] NoData = Empty.ByteArray;
@@ -20,6 +25,16 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public readonly LogRecordType RecordType;
         public readonly byte Version;
         public readonly long LogPosition;
+
+        public long GetNextLogPosition(long logicalPosition, int length, int lengthOffset)
+        {
+            return logicalPosition + length - lengthOffset + 2*sizeof(int);
+        }
+
+        public long GetPrevLogPosition(long logicalPosition, int length, int lengthOffset)
+        {
+            return logicalPosition - length + lengthOffset - 2*sizeof(int);
+        }
 
         public static LogRecord ReadFrom(BinaryReader reader)
         {
@@ -43,7 +58,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         }
 
         public static PrepareLogRecord Prepare(long logPosition, Guid correlationId, Guid eventId, long transactionPos, int transactionOffset,
-                                               string eventStreamId, int expectedVersion, PrepareFlags flags, string eventType, 
+                                               string eventStreamId, long expectedVersion, PrepareFlags flags, string eventType, 
                                                byte[] data, byte[] metadata, DateTime? timeStamp = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, transactionOffset, 
@@ -51,13 +66,13 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         data, metadata);
         }
 
-        public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition, int eventNumber)
+        public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition, long eventNumber)
         {
             return new CommitLogRecord(logPosition, correlationId, startPosition, DateTime.UtcNow, eventNumber);
         }
 
         public static PrepareLogRecord SingleWrite(long logPosition, Guid correlationId, Guid eventId, string eventStreamId, 
-                                                   int expectedVersion, string eventType, byte[] data, byte[] metadata, 
+                                                   long expectedVersion, string eventType, byte[] data, byte[] metadata, 
                                                    DateTime? timestamp = null, PrepareFlags? additionalFlags = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, expectedVersion, 
@@ -66,7 +81,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         eventType, data, metadata);
         }
 
-        public static PrepareLogRecord TransactionBegin(long logPos, Guid correlationId, string eventStreamId, int expectedVersion)
+        public static PrepareLogRecord TransactionBegin(long logPos, Guid correlationId, string eventStreamId, long expectedVersion)
         {
             return new PrepareLogRecord(logPos, correlationId, Guid.NewGuid(), logPos, -1, eventStreamId, expectedVersion, 
                                         DateTime.UtcNow, PrepareFlags.TransactionBegin, null, NoData, NoData);
@@ -86,7 +101,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         }
 
         public static PrepareLogRecord DeleteTombstone(long logPosition, Guid correlationId, Guid eventId,
-                                                       string eventStreamId, int expectedVersion, PrepareFlags additionalFlags = PrepareFlags.None)
+                                                       string eventStreamId, long expectedVersion, PrepareFlags additionalFlags = PrepareFlags.None)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, 
                                         expectedVersion, DateTime.UtcNow, 

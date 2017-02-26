@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public MultiStreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
-            string[] streams, Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
+            string[] streams, Dictionary<string, long> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
             bool stopOnEof = false, int? stopAfterNEvents = null)
             : base(publisher, eventReaderCorrelationId, readAs, stopOnEof)
         {
@@ -273,7 +273,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _deliveredEvents ++;
             var positionEvent = pair.OriginalEvent;
             string streamId = positionEvent.EventStreamId;
-            int fromPosition = _fromPositions.Streams[streamId];
+            long fromPosition = _fromPositions.Streams[streamId];
             if (positionEvent.EventNumber != fromPosition)
                 throw new InvalidOperationException(
                     string.Format(

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.Helpers;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
@@ -9,7 +10,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public const byte CommitRecordVersion = 0;
 
         public readonly long TransactionPosition;
-        public readonly int FirstEventNumber;
+        public readonly long FirstEventNumber;
         public readonly long SortKey;
         public readonly Guid CorrelationId;
         public readonly DateTime TimeStamp;
@@ -18,8 +19,9 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                Guid correlationId,
                                long transactionPosition,
                                DateTime timeStamp,
-                               int firstEventNumber)
-            : base(LogRecordType.Commit, CommitRecordVersion, logPosition)
+                               long firstEventNumber,
+                               byte commitRecordVersion = CommitRecordVersion)
+            : base(LogRecordType.Commit, commitRecordVersion, logPosition)
         {
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.Nonnegative(transactionPosition, "TransactionPosition");
@@ -34,12 +36,18 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         internal CommitLogRecord(BinaryReader reader, byte version, long logPosition): base(LogRecordType.Commit, version, logPosition)
         {
-            if (version != CommitRecordVersion)
+            if (version != LogRecordVersion.LogRecordV0 && version != LogRecordVersion.LogRecordV1)
                 throw new ArgumentException(
                     string.Format("CommitRecord version {0} is incorrect. Supported version: {1}.", version, CommitRecordVersion));
 
             TransactionPosition = reader.ReadInt64();
-            FirstEventNumber = reader.ReadInt32();
+            FirstEventNumber = version == LogRecordVersion.LogRecordV0 ? reader.ReadInt32() : reader.ReadInt64();
+
+            if (version == LogRecordVersion.LogRecordV1)
+            {
+                FirstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : FirstEventNumber;
+            }
+
             SortKey = reader.ReadInt64();
             CorrelationId = new Guid(reader.ReadBytes(16));
             TimeStamp = new DateTime(reader.ReadInt64());
@@ -50,7 +58,14 @@ namespace EventStore.Core.TransactionLog.LogRecords
             base.WriteTo(writer);
 
             writer.Write(TransactionPosition);
-            writer.Write(FirstEventNumber);
+            if(Version == LogRecordVersion.LogRecordV0)
+            {
+                writer.Write((int)FirstEventNumber);
+            }
+            else
+            {
+                writer.Write(FirstEventNumber);
+            }
             writer.Write(SortKey);
             writer.Write(CorrelationId.ToByteArray());
             writer.Write(TimeStamp.Ticks);
@@ -82,7 +97,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             {
                 int result = LogPosition.GetHashCode();
                 result = (result * 397) ^ TransactionPosition.GetHashCode();
-                result = (result * 397) ^ FirstEventNumber.GetHashCode();
+                result = (result * 397) ^ (int)(FirstEventNumber.GetHashCode() >> 32);
                 result = (result * 397) ^ SortKey.GetHashCode();
                 result = (result * 397) ^ CorrelationId.GetHashCode();
                 result = (result * 397) ^ TimeStamp.GetHashCode();

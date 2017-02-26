@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var now = DateTime.UtcNow;
 
-            const string metadata = @"{""$tb"":2147483647}"; //int.maxValue
+            string metadata = @"{""$tb"":" + EventNumber.DeletedStream + "}";
 
             _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddSeconds(-100));
             _r2 = WriteSingleEvent("ES", 0, "bla1", now.AddSeconds(-50));

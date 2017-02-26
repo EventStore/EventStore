@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
             BeginLoadPrerecordedEventsChunk(checkpointTag, -1);
         }
 
-        private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, int fromEventNumber)
+        private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, long fromEventNumber)
         {
             _loadingPrerecordedEventsFrom = checkpointTag;
             _ioDispatcher.ReadBackward(

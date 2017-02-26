@@ -242,7 +242,7 @@ namespace EventStore.Transport.Http.Atom
     {
         public Guid EventId { get; set; }
         public string EventType { get; set; }
-        public int EventNumber { get; set; }
+        public long EventNumber { get; set; }
         public string Data { get; set; }
         public string MetaData { get; set; }
         public string LinkMetaData { get; set; }
@@ -254,7 +254,7 @@ namespace EventStore.Transport.Http.Atom
         public bool IsMetaData { get; set; }
         public bool IsLinkMetaData { get; set; }
 
-        public int PositionEventNumber { get; set; }
+        public long PositionEventNumber { get; set; }
 
         public string PositionStreamId { get; set; }
     }

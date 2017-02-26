@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                     });
         }
 
-        private void ReadNotificationsFrom(int fromEventNumber)
+        private void ReadNotificationsFrom(long fromEventNumber)
         {
             if (_stopped) return;
             _ioDispatcher.ReadForward(
