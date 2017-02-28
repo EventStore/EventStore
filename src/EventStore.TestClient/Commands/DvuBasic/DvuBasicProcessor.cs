@@ -208,7 +208,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
             var failed = 0;
 
-            var rnd = new Random();
+            var rnd = new Random(writerIdx);
 
             var streamIdx = -1;
             var head = -1;
@@ -254,9 +254,6 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 if (sent % 1000 == 0)
                     status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
                                                 wrongExpectedVersion, streamsDeleted, failed, requests);
-                if (sent == requests)
-                    finish.Set();
-
                 iteration.Set();
             };
 
@@ -296,6 +293,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                                         wrongExpectedVersion, streamsDeleted, failed, requests);
             status.FinilizeStatus(writerIdx, failed != sent);
             connection.Close();
+            finish.Set();
         }
 
         private void Read(Status status, int readerIdx, CommandProcessorContext context, ManualResetEventSlim finishedEvent)
@@ -306,7 +304,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             var successes = 0;
             var fails = 0;
 
-            var rnd = new Random();
+            var rnd = new Random(readerIdx);
 
             var streamIdx = -1;
             var eventidx = -1;
