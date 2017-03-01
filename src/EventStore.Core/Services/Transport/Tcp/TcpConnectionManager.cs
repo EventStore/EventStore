@@ -38,11 +38,11 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly IEnvelope _tcpEnvelope;
         private readonly IPublisher _publisher;
         private readonly ITcpDispatcher _dispatcher;
-        private readonly ITcpDispatcher _deprecatedDispatcher;
         private readonly IMessageFramer _framer;
         private int _messageNumber;
         private int _isClosed;
-        private bool _isOldVersion;
+
+        private byte _version;
 
         private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
         private readonly Action<TcpConnectionManager> _connectionEstablished;
@@ -58,7 +58,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         public TcpConnectionManager(string connectionName,
                                     TcpServiceType serviceType,
                                     ITcpDispatcher dispatcher, 
-                                    ITcpDispatcher deprecatedDispatcher,
                                     IPublisher publisher, 
                                     ITcpConnection openedConnection,
                                     IPublisher networkSendQueue,
@@ -80,7 +79,6 @@ namespace EventStore.Core.Services.Transport.Tcp
             _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
-            _deprecatedDispatcher = deprecatedDispatcher;
             _authProvider = authProvider;
 
             _framer = new LengthPrefixMessageFramer();
@@ -107,7 +105,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         public TcpConnectionManager(string connectionName, 
                                     Guid connectionId,
                                     ITcpDispatcher dispatcher,
-                                    ITcpDispatcher deprecatedDispatcher,
                                     IPublisher publisher,
                                     IPEndPoint remoteEndPoint, 
                                     TcpClientConnector connector,
@@ -135,7 +132,6 @@ namespace EventStore.Core.Services.Transport.Tcp
             _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
-            _deprecatedDispatcher = deprecatedDispatcher;
             _authProvider = authProvider;
 
             _framer = new LengthPrefixMessageFramer();
@@ -248,6 +244,20 @@ namespace EventStore.Core.Services.Transport.Tcp
                 case TcpCommand.HeartbeatRequestCommand:
                     SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
                     break;
+                case TcpCommand.IdentifyClient:
+                {
+                    try 
+                    {
+                        var message = (ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope, null, null, null, this, _version);
+                        _version = (byte)message.Version;
+                        SendPackage(new TcpPackage(TcpCommand.ClientIdentified, package.CorrelationId, null));
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error identifying client: {0}", ex);
+                    }
+                    break;
+                }
                 case TcpCommand.BadRequest:
                 {
                     var reason = string.Empty;
@@ -303,39 +313,16 @@ namespace EventStore.Core.Services.Transport.Tcp
             Message message = null;
             string error = "";
             try {
-                if(!_isOldVersion)
-                {
-                    message = UnwrapMessage(package, user, login, password);
-                    if(message == null) {
-                        message = UnwrapOldVersionMessage(package, user, login, password);
-                        _isOldVersion = true;
-                    }
-                } else {
-                    message = UnwrapOldVersionMessage(package, user, login, password);
-                    if(message == null) {
-                        message = UnwrapMessage(package, user, login, password);
-                    }
-                }
+                message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this, _version);
             }
             catch(Exception ex) {
                 error = ex.Message;
             }
-
-            if(message != null)
+            if (message != null)
                 _publisher.Publish(message);
             else
                 SendBadRequest(package.CorrelationId,
                                        string.Format("Could not unwrap network package for command {0}.\n{1}", package.Command, error));
-        }
-
-        private Message UnwrapMessage(TcpPackage package, IPrincipal user, string login, string password)
-        {
-            return _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this);
-        }
-
-        private Message UnwrapOldVersionMessage(TcpPackage package, IPrincipal user, string login, string password)
-        {
-            return _deprecatedDispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this);
         }
 
         private void ReplyNotAuthenticated(Guid correlationId, string description)
@@ -382,13 +369,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void SendMessage(Message message)
         {
-            TcpPackage? package = null;
-            if(_isOldVersion) {
-                package = _deprecatedDispatcher.WrapMessage(message);
-            }
-            if(package == null) {
-                package = _dispatcher.WrapMessage(message);
-            }
+            var package = _dispatcher.WrapMessage(message, _version);
             if (package != null)
                 SendPackage(package.Value);
         }

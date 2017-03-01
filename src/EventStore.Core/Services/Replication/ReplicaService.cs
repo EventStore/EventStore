@@ -45,7 +45,6 @@ namespace EventStore.Core.Services.Replication
         private readonly TimeSpan _heartbeatInterval;
 
         private readonly InternalTcpDispatcher _tcpDispatcher = new InternalTcpDispatcher();
-        private readonly V1ClientTcpDispatcher _deprecatedTcpDispatcher = new V1ClientTcpDispatcher();
 
         private VNodeState _state = VNodeState.Initializing;
         private TcpConnectionManager _connection;
@@ -157,7 +156,6 @@ namespace EventStore.Core.Services.Replication
             _connection = new TcpConnectionManager(_useSsl ? "master-secure" : "master-normal",
                                                    Guid.NewGuid(),
                                                    _tcpDispatcher,
-                                                   _deprecatedTcpDispatcher,
                                                    _publisher,
                                                    masterEndPoint,
                                                    _connector,

@@ -427,8 +427,7 @@
     <Compile Include="Util\DefaultFiles.cs" />
     <Compile Include="VNodeBuilder.cs" />
     <Compile Include="Index\IndexEntryV2.cs" />
-    <Compile Include="Helpers\ExpectedVersionConverter.cs" />
-    <Compile Include="Services\Transport\Tcp\V1ClientTcpDispatcher.cs" />
+    <Compile Include="Helpers\StreamVersionConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
