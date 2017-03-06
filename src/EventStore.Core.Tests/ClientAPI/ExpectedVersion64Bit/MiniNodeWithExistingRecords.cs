@@ -118,14 +118,15 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
                                                long eventNumber,
                                                string data,
                                                DateTime? timestamp = null,
-                                               Guid eventId = default(Guid))
+                                               Guid eventId = default(Guid),
+                                               string eventType = "some-type")
         {
             var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
                                                 eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                                 Guid.NewGuid(),
                                                 eventStreamId,
                                                 eventNumber - 1,
-                                                "some-type",
+                                                eventType,
                                                 Helper.UTF8NoBom.GetBytes(data),
                                                 null,
                                                 timestamp);
