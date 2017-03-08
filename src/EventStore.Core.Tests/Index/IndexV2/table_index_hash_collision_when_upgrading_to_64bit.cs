@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.Index.IndexV2
         public RecordReadResult TryReadAt(long position)
         {
             var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0, position % 2 == 0 ? "account--696193173" : "LPN-FC002_LPK51001", -1, DateTime.UtcNow, PrepareFlags.None, "type", new byte[0], null);
-            return new RecordReadResult(true, position + 1, record, 1, 0);
+            return new RecordReadResult(true, position + 1, record, 1);
         }
 
         public bool ExistsAt(long position)

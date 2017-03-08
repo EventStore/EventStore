@@ -12,8 +12,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
     [TestFixture]
     public class when_scavenging_tfchunk_with_version0_log_records_and_deleted_records : ReadIndexTestScenario
     {
-        private string _eventStreamId = "ES";
-        private string _deletedEventStreamId = "Deleted-ES";
+        private const string _eventStreamId = "ES";
+        private const string _deletedEventStreamId = "Deleted-ES";
         private PrepareLogRecord _event1, _event2, _event3, _event4, _deleted;
 
         protected override void WriteTestScenario()
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         }
 
         [Test]
-        public void the_new_log_records_are_version_1()
+        public void the_log_records_are_still_version_0()
         {
             var chunk = Db.Manager.GetChunk(0);
             var chunkRecords = new List<LogRecord>();
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
                 chunkRecords.Add(result.LogRecord);
                 result = chunk.TryReadClosestForward(result.NextPosition);
             }
-            Assert.IsTrue(chunkRecords.All(x=>x.Version == LogRecordVersion.LogRecordV1));
+            Assert.IsTrue(chunkRecords.All(x=>x.Version == LogRecordVersion.LogRecordV0));
             Assert.AreEqual(10, chunkRecords.Count);
         }
 

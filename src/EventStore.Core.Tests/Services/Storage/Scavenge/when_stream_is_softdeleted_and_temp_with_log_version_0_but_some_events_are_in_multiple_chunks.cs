@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         [Test]
         public void scavenging_goes_as_expected()
         {
-            CheckRecordsV0();
+            CheckRecords();
         }
 
         [Test]
