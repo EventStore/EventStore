@@ -82,14 +82,15 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
 
             var countdown = new CountdownEvent(3);
             _store.SubscribeToStreamFrom(_catchupStreamOne, 0, CatchUpSubscriptionSettings.Default, (s,e) => {
-                countdown.Signal();
                 receivedEvents.Add(e);
+                countdown.Signal();
             });
 
             _store.AppendToStreamAsync(_catchupStreamOne, intMaxValue + 2, evnt).Wait();
 
             Assert.That(countdown.Wait(TimeSpan.FromSeconds(5)), "Timed out waiting for events to appear");
 
+            Assert.AreEqual(3, receivedEvents.Count);
             Assert.AreEqual(_c1.EventId, receivedEvents[0].Event.EventId);
             Assert.AreEqual(_c2.EventId, receivedEvents[1].Event.EventId);
             Assert.AreEqual(evnt.EventId, receivedEvents[2].Event.EventId);

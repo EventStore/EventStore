@@ -1413,5 +1413,42 @@ namespace EventStore.Core.Messages
                 return String.Format("Result: {0}, Error: {1}, TotalTime: {2}, TotalSpaceSaved: {3}", Result, Error, TotalTime, TotalSpaceSaved);
             }
         }
+
+        public class IdentifyClient : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly int Version;
+            public readonly string ConnectionName;
+
+            public IdentifyClient(Guid correlationId,
+                                  int version,
+                                  string connectionName)
+            {
+                CorrelationId = correlationId;
+                Version = version;
+                ConnectionName = connectionName;
+            }
+
+            public override string ToString()
+            {
+                return String.Format("Version: {0}, Connection Name: {1}", Version, ConnectionName);
+            }
+        }
+
+        public class ClientIdentified : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+
+            public ClientIdentified(Guid correlationId)
+            {
+                CorrelationId = correlationId;
+            }
+        }
     }
 }

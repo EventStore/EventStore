@@ -3,83 +3,98 @@ using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
+    public enum ClientVersion : byte {
+        V1 = 0,
+        V2 = 1
+    }
+
     public class ClientTcpDispatcher : TcpDispatcher
     {
         public ClientTcpDispatcher()
         {
-            AddUnwrapper(TcpCommand.Ping, UnwrapPing);
-            AddWrapper<TcpMessage.PongMessage>(WrapPong);
+            AddUnwrapper(TcpCommand.Ping, UnwrapPing, ClientVersion.V2);
+            AddWrapper<TcpMessage.PongMessage>(WrapPong, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.WriteEvents, UnwrapWriteEvents);
-            AddWrapper<ClientMessage.WriteEvents>(WrapWriteEvents);
-            AddUnwrapper(TcpCommand.WriteEventsCompleted, UnwrapWriteEventsCompleted);
-            AddWrapper<ClientMessage.WriteEventsCompleted>(WrapWriteEventsCompleted);
+            AddUnwrapper(TcpCommand.IdentifyClient, UnwrapIdentifyClient, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.TransactionStart, UnwrapTransactionStart);
-            AddWrapper<ClientMessage.TransactionStart>(WrapTransactionStart);
-            AddUnwrapper(TcpCommand.TransactionStartCompleted, UnwrapTransactionStartCompleted);
-            AddWrapper<ClientMessage.TransactionStartCompleted>(WrapTransactionStartCompleted);
+            AddUnwrapper(TcpCommand.WriteEvents, UnwrapWriteEvents, ClientVersion.V2);
+            AddWrapper<ClientMessage.WriteEvents>(WrapWriteEvents, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.WriteEventsCompleted, UnwrapWriteEventsCompleted, ClientVersion.V2);
+            AddWrapper<ClientMessage.WriteEventsCompleted>(WrapWriteEventsCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.TransactionWrite, UnwrapTransactionWrite);
-            AddWrapper<ClientMessage.TransactionWrite>(WrapTransactionWrite);
-            AddUnwrapper(TcpCommand.TransactionWriteCompleted, UnwrapTransactionWriteCompleted);
-            AddWrapper<ClientMessage.TransactionWriteCompleted>(WrapTransactionWriteCompleted);
+            AddUnwrapper(TcpCommand.TransactionStart, UnwrapTransactionStart, ClientVersion.V2);
+            AddWrapper<ClientMessage.TransactionStart>(WrapTransactionStart, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.TransactionStartCompleted, UnwrapTransactionStartCompleted, ClientVersion.V2);
+            AddWrapper<ClientMessage.TransactionStartCompleted>(WrapTransactionStartCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.TransactionCommit, UnwrapTransactionCommit);
-            AddWrapper<ClientMessage.TransactionCommit>(WrapTransactionCommit);
-            AddUnwrapper(TcpCommand.TransactionCommitCompleted, UnwrapTransactionCommitCompleted);
-            AddWrapper<ClientMessage.TransactionCommitCompleted>(WrapTransactionCommitCompleted);
+            AddUnwrapper(TcpCommand.TransactionWrite, UnwrapTransactionWrite, ClientVersion.V2);
+            AddWrapper<ClientMessage.TransactionWrite>(WrapTransactionWrite, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.TransactionWriteCompleted, UnwrapTransactionWriteCompleted, ClientVersion.V2);
+            AddWrapper<ClientMessage.TransactionWriteCompleted>(WrapTransactionWriteCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.DeleteStream, UnwrapDeleteStream);
-            AddWrapper<ClientMessage.DeleteStream>(WrapDeleteStream);
-            AddUnwrapper(TcpCommand.DeleteStreamCompleted, UnwrapDeleteStreamCompleted);
-            AddWrapper<ClientMessage.DeleteStreamCompleted>(WrapDeleteStreamCompleted);
+            AddUnwrapper(TcpCommand.TransactionCommit, UnwrapTransactionCommit, ClientVersion.V2);
+            AddWrapper<ClientMessage.TransactionCommit>(WrapTransactionCommit, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.TransactionCommitCompleted, UnwrapTransactionCommitCompleted, ClientVersion.V2);
+            AddWrapper<ClientMessage.TransactionCommitCompleted>(WrapTransactionCommitCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.ReadEvent, UnwrapReadEvent);
-            AddWrapper<ClientMessage.ReadEventCompleted>(WrapReadEventCompleted);
+            AddUnwrapper(TcpCommand.DeleteStream, UnwrapDeleteStream, ClientVersion.V2);
+            AddWrapper<ClientMessage.DeleteStream>(WrapDeleteStream, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.DeleteStreamCompleted, UnwrapDeleteStreamCompleted, ClientVersion.V2);
+            AddWrapper<ClientMessage.DeleteStreamCompleted>(WrapDeleteStreamCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.ReadStreamEventsForward, UnwrapReadStreamEventsForward);
-            AddWrapper<ClientMessage.ReadStreamEventsForwardCompleted>(WrapReadStreamEventsForwardCompleted);
-            AddUnwrapper(TcpCommand.ReadStreamEventsBackward, UnwrapReadStreamEventsBackward);
-            AddWrapper<ClientMessage.ReadStreamEventsBackwardCompleted>(WrapReadStreamEventsBackwardCompleted);
+            AddUnwrapper(TcpCommand.ReadEvent, UnwrapReadEvent, ClientVersion.V2);
+            AddWrapper<ClientMessage.ReadEventCompleted>(WrapReadEventCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.ReadAllEventsForward, UnwrapReadAllEventsForward);
-            AddWrapper<ClientMessage.ReadAllEventsForwardCompleted>(WrapReadAllEventsForwardCompleted);
-            AddUnwrapper(TcpCommand.ReadAllEventsBackward, UnwrapReadAllEventsBackward);
-            AddWrapper<ClientMessage.ReadAllEventsBackwardCompleted>(WrapReadAllEventsBackwardCompleted);
+            AddUnwrapper(TcpCommand.ReadStreamEventsForward, UnwrapReadStreamEventsForward, ClientVersion.V2);
+            AddWrapper<ClientMessage.ReadStreamEventsForwardCompleted>(WrapReadStreamEventsForwardCompleted, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.ReadStreamEventsBackward, UnwrapReadStreamEventsBackward, ClientVersion.V2);
+            AddWrapper<ClientMessage.ReadStreamEventsBackwardCompleted>(WrapReadStreamEventsBackwardCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream);
-            AddUnwrapper(TcpCommand.UnsubscribeFromStream, UnwrapUnsubscribeFromStream);
+            AddUnwrapper(TcpCommand.ReadAllEventsForward, UnwrapReadAllEventsForward, ClientVersion.V2);
+            AddWrapper<ClientMessage.ReadAllEventsForwardCompleted>(WrapReadAllEventsForwardCompleted, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.ReadAllEventsBackward, UnwrapReadAllEventsBackward, ClientVersion.V2);
+            AddWrapper<ClientMessage.ReadAllEventsBackwardCompleted>(WrapReadAllEventsBackwardCompleted, ClientVersion.V2);
 
-            AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream);
-            AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared);
-            AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped);
-            AddUnwrapper(TcpCommand.CreatePersistentSubscription, UnwrapCreatePersistentSubscription);
-            AddUnwrapper(TcpCommand.DeletePersistentSubscription, UnwrapDeletePersistentSubscription);
-            AddWrapper<ClientMessage.CreatePersistentSubscriptionCompleted>(WrapCreatePersistentSubscriptionCompleted);
-            AddWrapper<ClientMessage.DeletePersistentSubscriptionCompleted>(WrapDeletePersistentSubscriptionCompleted);
-            AddUnwrapper(TcpCommand.UpdatePersistentSubscription, UnwrapUpdatePersistentSubscription);
-            AddWrapper<ClientMessage.UpdatePersistentSubscriptionCompleted>(WrapUpdatePersistentSubscriptionCompleted);
+            AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.UnsubscribeFromStream, UnwrapUnsubscribeFromStream, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.ConnectToPersistentSubscription, UnwrapConnectToPersistentSubscription);
-            AddUnwrapper(TcpCommand.PersistentSubscriptionAckEvents, UnwrapPersistentSubscriptionAckEvents);
-            AddUnwrapper(TcpCommand.PersistentSubscriptionNakEvents, UnwrapPersistentSubscriptionNackEvents);
-            AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmation);
-            AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppeared);
+            AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream, ClientVersion.V2);
+            AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared, ClientVersion.V2);
+            AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.CreatePersistentSubscription, UnwrapCreatePersistentSubscription, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.DeletePersistentSubscription, UnwrapDeletePersistentSubscription, ClientVersion.V2);
+            AddWrapper<ClientMessage.CreatePersistentSubscriptionCompleted>(WrapCreatePersistentSubscriptionCompleted, ClientVersion.V2);
+            AddWrapper<ClientMessage.DeletePersistentSubscriptionCompleted>(WrapDeletePersistentSubscriptionCompleted, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.UpdatePersistentSubscription, UnwrapUpdatePersistentSubscription, ClientVersion.V2);
+            AddWrapper<ClientMessage.UpdatePersistentSubscriptionCompleted>(WrapUpdatePersistentSubscriptionCompleted, ClientVersion.V2);
 
-            AddUnwrapper(TcpCommand.ScavengeDatabase, UnwrapScavengeDatabase);
-            AddWrapper<ClientMessage.ScavengeDatabaseCompleted>(WrapScavengeDatabaseResponse);
 
-            AddWrapper<ClientMessage.NotHandled>(WrapNotHandled);
-            AddUnwrapper(TcpCommand.NotHandled, UnwrapNotHandled);
+            AddUnwrapper(TcpCommand.ConnectToPersistentSubscription, UnwrapConnectToPersistentSubscription, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.PersistentSubscriptionAckEvents, UnwrapPersistentSubscriptionAckEvents, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.PersistentSubscriptionNakEvents, UnwrapPersistentSubscriptionNackEvents, ClientVersion.V2);
+            AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmation, ClientVersion.V2);
+            AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppeared, ClientVersion.V2);
 
-            AddWrapper<TcpMessage.NotAuthenticated>(WrapNotAuthenticated);
-            AddWrapper<TcpMessage.Authenticated>(WrapAuthenticated);
+            AddUnwrapper(TcpCommand.ScavengeDatabase, UnwrapScavengeDatabase, ClientVersion.V2);
+            AddWrapper<ClientMessage.ScavengeDatabaseCompleted>(WrapScavengeDatabaseResponse, ClientVersion.V2);
+
+            AddWrapper<ClientMessage.NotHandled>(WrapNotHandled, ClientVersion.V2);
+            AddUnwrapper(TcpCommand.NotHandled, UnwrapNotHandled, ClientVersion.V2);
+
+            AddWrapper<TcpMessage.NotAuthenticated>(WrapNotAuthenticated, ClientVersion.V2);
+            AddWrapper<TcpMessage.Authenticated>(WrapAuthenticated, ClientVersion.V2);
+
+            // Version 1
+            AddWrapper<ClientMessage.ReadAllEventsForwardCompleted>(WrapReadAllEventsForwardCompletedV1, ClientVersion.V1);
+            AddWrapper<ClientMessage.ReadAllEventsBackwardCompleted>(WrapReadAllEventsBackwardCompletedV1, ClientVersion.V1);
+            AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppearedV1, ClientVersion.V1);
+            AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppearedV1, ClientVersion.V1);
         }
 
         private static Message UnwrapPing(TcpPackage package, IEnvelope envelope)
@@ -89,6 +104,14 @@ namespace EventStore.Core.Services.Transport.Tcp
             var pongMessage = new TcpMessage.PongMessage(package.CorrelationId, data);
             envelope.ReplyWith(pongMessage);
             return pongMessage;
+        }
+
+        private static Message UnwrapIdentifyClient(TcpPackage package, IEnvelope envelope)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.IdentifyClient>();
+            if (dto == null) return null;
+
+            return new ClientMessage.IdentifyClient(package.CorrelationId, dto.Version, dto.ConnectionName);
         }
 
         private static TcpPackage WrapPong(TcpMessage.PongMessage message)
@@ -606,6 +629,83 @@ namespace EventStore.Core.Services.Transport.Tcp
         private TcpPackage WrapAuthenticated(TcpMessage.Authenticated msg)
         {
             return new TcpPackage(TcpCommand.Authenticated, msg.CorrelationId, Empty.ByteArray);
+        }
+
+
+        private static TcpPackage WrapReadAllEventsForwardCompletedV1(ClientMessage.ReadAllEventsForwardCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.ReadAllEventsCompleted(
+                msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition, ConvertToResolvedEventsV1(msg.Events),
+                msg.NextPos.CommitPosition, msg.NextPos.PreparePosition,
+                (TcpClientMessageDto.ReadAllEventsCompleted.ReadAllResult)msg.Result, msg.Error);
+            return new TcpPackage(TcpCommand.ReadAllEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+        private static TcpPackage WrapReadAllEventsBackwardCompletedV1(ClientMessage.ReadAllEventsBackwardCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.ReadAllEventsCompleted(
+                msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition, ConvertToResolvedEventsV1(msg.Events),
+                msg.NextPos.CommitPosition, msg.NextPos.PreparePosition,
+                (TcpClientMessageDto.ReadAllEventsCompleted.ReadAllResult)msg.Result, msg.Error);
+            return new TcpPackage(TcpCommand.ReadAllEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+        private TcpPackage WrapPersistentSubscriptionStreamEventAppearedV1(ClientMessage.PersistentSubscriptionStreamEventAppeared msg)
+        {
+            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(ConvertToResolvedIndexedEventV1(msg.Event));
+            return new TcpPackage(TcpCommand.PersistentSubscriptionStreamEventAppeared, msg.CorrelationId, dto.Serialize());
+        }
+
+        private TcpPackage WrapStreamEventAppearedV1(ClientMessage.StreamEventAppeared msg)
+        {
+            var dto = new TcpClientMessageDto.StreamEventAppeared(ConvertToResolvedEventV1(msg.Event));
+            return new TcpPackage(TcpCommand.StreamEventAppeared, msg.CorrelationId, dto.Serialize());
+        }
+
+        private static TcpClientMessageDto.ResolvedEvent[] ConvertToResolvedEventsV1(ResolvedEvent[] events)
+        {
+            var result = new TcpClientMessageDto.ResolvedEvent[events.Length];
+            for (int i = 0; i < events.Length; ++i)
+            {
+                result[i] = ConvertToResolvedEventV1(events[i]);
+            }
+            return result;
+        }
+
+        private static TcpClientMessageDto.ResolvedEvent ConvertToResolvedEventV1(ResolvedEvent evnt)
+        {
+            TcpClientMessageDto.EventRecord eventRecord = null;
+            TcpClientMessageDto.EventRecord linkRecord = null;
+            if(evnt.Event != null)
+            {
+                eventRecord = new TcpClientMessageDto.EventRecord(evnt.Event, 
+                    StreamVersionConverter.Downgrade(evnt.Event.EventNumber));
+            }
+            if(evnt.Link != null)
+            {
+                linkRecord = new TcpClientMessageDto.EventRecord(evnt.Link, 
+                    StreamVersionConverter.Downgrade(evnt.Link.EventNumber));
+            }
+            return new TcpClientMessageDto.ResolvedEvent(eventRecord, linkRecord, 
+                                                evnt.OriginalPosition.Value.CommitPosition, 
+                                                evnt.OriginalPosition.Value.PreparePosition);
+        }
+
+        private static TcpClientMessageDto.ResolvedIndexedEvent ConvertToResolvedIndexedEventV1(ResolvedEvent evnt)
+        {
+            TcpClientMessageDto.EventRecord eventRecord = null;
+            TcpClientMessageDto.EventRecord linkRecord = null;
+                if(evnt.Event != null)
+                {
+                    eventRecord = new TcpClientMessageDto.EventRecord(evnt.Event, 
+                        StreamVersionConverter.Downgrade(evnt.Event.EventNumber));
+                }
+                if(evnt.Link != null)
+                {
+                    linkRecord = new TcpClientMessageDto.EventRecord(evnt.Link, 
+                        StreamVersionConverter.Downgrade(evnt.Link.EventNumber));
+                }
+                return new TcpClientMessageDto.ResolvedIndexedEvent(eventRecord, linkRecord);
         }
     }
 }

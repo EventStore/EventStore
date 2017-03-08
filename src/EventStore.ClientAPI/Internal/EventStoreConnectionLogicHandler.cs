@@ -8,6 +8,7 @@ using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
+using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI.Internal
 {
@@ -19,6 +20,7 @@ namespace EventStore.ClientAPI.Internal
 
         private readonly IEventStoreConnection _esConnection;
         private readonly ConnectionSettings _settings;
+        private readonly byte ClientVersion = 1;
 
         private readonly SimpleQueuedHandler _queue = new SimpleQueuedHandler();
         private readonly Timer _timer;
@@ -28,6 +30,7 @@ namespace EventStore.ClientAPI.Internal
         private ReconnectionInfo _reconnInfo;
         private HeartbeatInfo _heartbeatInfo;
         private AuthInfo _authInfo;
+        private IdentifyInfo _identifyInfo;
         private TimeSpan _lastTimeoutsTimeStamp;
         private readonly OperationsManager _operations;
         private readonly SubscriptionsManager _subscriptions;
@@ -261,8 +264,18 @@ namespace EventStore.ClientAPI.Internal
             }
             else
             {
-                GoToConnectedState();
+                GoToIdentifyState();
             }
+        }
+
+        private void GoToIdentifyState()
+        {
+            Ensure.NotNull(_connection, "_connection");
+            _connectingPhase = ConnectingPhase.Identification;
+
+            _identifyInfo = new IdentifyInfo(Guid.NewGuid(), _stopwatch.Elapsed);
+            var dto = new ClientMessage.IdentifyClient(ClientVersion, _esConnection.ConnectionName);
+            _connection.EnqueueSend(new TcpPackage(TcpCommand.IdentifyClient, _identifyInfo.CorrelationId, dto.Serialize()));
         }
 
         private void GoToConnectedState()
@@ -307,7 +320,13 @@ namespace EventStore.ClientAPI.Internal
                     if (_connectingPhase == ConnectingPhase.Authentication && _stopwatch.Elapsed - _authInfo.TimeStamp >= _settings.OperationTimeout)
                     {
                         RaiseAuthenticationFailed("Authentication timed out.");
-                        GoToConnectedState();
+                        GoToIdentifyState();
+                    }
+                    if (_connectingPhase == ConnectingPhase.Identification && _stopwatch.Elapsed - _identifyInfo.TimeStamp >= _settings.OperationTimeout)
+                    {
+                        string msg = "Timed out waiting for client to be identified";
+                        LogDebug(msg);
+                        CloseTcpConnection(msg);
                     }
                     if (_connectingPhase > ConnectingPhase.ConnectionEstablishing)
                         ManageHeartbeats();
@@ -468,6 +487,16 @@ namespace EventStore.ClientAPI.Internal
                     if (package.Command == TcpCommand.NotAuthenticated)
                         RaiseAuthenticationFailed("Not authenticated");
 
+                    GoToIdentifyState();
+                    return;
+                }
+            }
+
+            if (package.Command == TcpCommand.ClientIdentified)
+            {
+                if (_state == ConnectionState.Connecting
+                    && _identifyInfo.CorrelationId == package.CorrelationId)
+                {
                     GoToConnectedState();
                     return;
                 }
@@ -644,6 +673,18 @@ namespace EventStore.ClientAPI.Internal
             }
         }
 
+        private struct IdentifyInfo
+        {
+            public readonly Guid CorrelationId;
+            public readonly TimeSpan TimeStamp;
+
+            public IdentifyInfo(Guid correlationId, TimeSpan timeStamp)
+            {
+                CorrelationId = correlationId;
+                TimeStamp = timeStamp;
+            }
+        }
+
         private enum ConnectionState
         {
             Init,
@@ -659,6 +700,7 @@ namespace EventStore.ClientAPI.Internal
             EndPointDiscovery,
             ConnectionEstablishing,
             Authentication,
+            Identification,
             Connected
         }
     }
