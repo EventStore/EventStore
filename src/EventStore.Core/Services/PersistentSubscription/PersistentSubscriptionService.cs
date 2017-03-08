@@ -496,7 +496,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 try
                 {
                     string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split('@');
-                    int eventNumber = int.Parse(parts[0]);
+                    long eventNumber = long.Parse(parts[0]);
                     string streamId = parts[1];
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);

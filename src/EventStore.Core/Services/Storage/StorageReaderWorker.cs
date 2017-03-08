@@ -484,7 +484,7 @@ namespace EventStore.Core.Services.Storage
                 try
                 {
                     var parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(LinkToSeparator, 2);
-                    var eventNumber = int.Parse(parts[0]);
+                    long eventNumber = long.Parse(parts[0]);
                     var streamId = parts[1];
 
                     if (!_readIndex.CheckStreamAccess(streamId, StreamAccessType.Read, user).Granted)
