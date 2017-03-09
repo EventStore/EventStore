@@ -15,8 +15,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
     [TestFixture]
     public class when_scavenging_tfchunk_with_version0_log_records_using_transactions : ReadIndexTestScenario
     {
-        private string _streamIdOne = "ES-1";
-        private string _streamIdTwo = "ES-2";
+        private const string _streamIdOne = "ES-1";
+        private const string _streamIdTwo = "ES-2";
         private PrepareLogRecord _p1, _p2, _p3, _p4, _p5, _random1;
         private long _t2CommitPos, _t1CommitPos, _postCommitPos;
 
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         }
 
         [Test]
-        public void the_new_log_records_are_version_1_in_first_chunk()
+        public void the_log_records_are_still_version_0_in_first_chunk()
         {
             var chunk = Db.Manager.GetChunk(0);
 
@@ -96,12 +96,12 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
                 chunkRecords.Add(result.LogRecord);
                 result = chunk.TryReadClosestForward(result.NextPosition);
             }
-            Assert.IsTrue(chunkRecords.All(x=>x.Version == LogRecordVersion.LogRecordV1));
+            Assert.IsTrue(chunkRecords.All(x=>x.Version == LogRecordVersion.LogRecordV0));
             Assert.AreEqual(7, chunkRecords.Count);
         }
 
         [Test]
-        public void the_new_log_records_are_unchanged_in_second_chunk()
+        public void the_log_records_are_unchanged_in_second_chunk()
         {
             var chunk = Db.Manager.GetChunk(1);
 
