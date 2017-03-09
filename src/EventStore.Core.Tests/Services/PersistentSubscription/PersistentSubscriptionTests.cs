@@ -1322,14 +1322,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeCheckpointReader : IPersistentSubscriptionCheckpointReader
     {
-        private Action<int?> _onStateLoaded;
+        private Action<long?> _onStateLoaded;
 
-        public void BeginLoadState(string subscriptionId, Action<int?> onStateLoaded)
+        public void BeginLoadState(string subscriptionId, Action<long?> onStateLoaded)
         {
             _onStateLoaded = onStateLoaded;
         }
 
-        public void Load(int? state)
+        public void Load(long? state)
         {
             _onStateLoaded(state);
         }

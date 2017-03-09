@@ -537,7 +537,7 @@ namespace EventStore.Core.Tests.Helpers
             }
         }
 
-        protected TFPos GetTfPos(string streamId, int eventNumber)
+        protected TFPos GetTfPos(string streamId, long eventNumber)
         {
             return _all.Last(v => v.Value.EventStreamId == streamId && v.Value.EventNumber == eventNumber).Key;
         }
@@ -638,7 +638,7 @@ namespace EventStore.Core.Tests.Helpers
             Assert.That(missing.Length == 0, string.Format("{0} does not contain: {1}", streamId, missing.Aggregate("", (a, v) => a + " " + v)));
         }
 
-        public void AssertEvent(string streamId, int eventNumber, string data)
+        public void AssertEvent(string streamId, long eventNumber, string data)
         {
             throw new NotImplementedException();
         }

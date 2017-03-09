@@ -79,7 +79,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _pushClients = new PersistentSubscriptionClientCollection(_settings.ConsumerStrategy);
         }
 
-        private void OnCheckpointLoaded(int? checkpoint)
+        private void OnCheckpointLoaded(long? checkpoint)
         {
             lock (_lock)
             {

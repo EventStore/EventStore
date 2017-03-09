@@ -229,8 +229,8 @@ namespace EventStore.Projections.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public static CommittedEventDistributed Sample(
-                Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId, int positionSequenceNumber,
-                string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Guid eventId, string eventType,
+                Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId, long positionSequenceNumber,
+                string eventStreamId, long eventSequenceNumber, bool resolvedLinkTo, Guid eventId, string eventType,
                 bool isJson, byte[] data, byte[] metadata, long? safeTransactionFileReaderJoinPosition, float progress)
             {
                 return new CommittedEventDistributed(
@@ -242,7 +242,7 @@ namespace EventStore.Projections.Core.Messages
             }
 
             public static CommittedEventDistributed Sample(
-                Guid correlationId, TFPos position, string eventStreamId, int eventSequenceNumber,
+                Guid correlationId, TFPos position, string eventStreamId, long eventSequenceNumber,
                 bool resolvedLinkTo, Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata,
                 DateTime? timestamp = null)
             {
