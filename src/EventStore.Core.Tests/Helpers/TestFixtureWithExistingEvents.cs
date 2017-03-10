@@ -387,7 +387,7 @@ namespace EventStore.Core.Tests.Helpers
                 _writesQueue.Enqueue(message);
         }
 
-        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, long expectedVersion, Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, int? commitPosition = null) where T : Message
+        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, long expectedVersion, Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, long? commitPosition = null) where T : Message
         {
             if (positions == null)
             {
@@ -620,8 +620,8 @@ namespace EventStore.Core.Tests.Helpers
         {
             var stream = SystemEventTypes.StreamReferenceEventToStreamId(SystemEventTypes.LinkTo, link);
             var eventNumber = SystemEventTypes.EventLinkToEventNumber(link);
-            return _streams[stream][eventNumber].EventType + ":"
-                   + Encoding.UTF8.GetString(_streams[stream][eventNumber].Data);
+            return _streams[stream][(int)eventNumber].EventType + ":"
+                   + Encoding.UTF8.GetString(_streams[stream][(int)eventNumber].Data);
         }
 
         public void AssertStreamContains(string streamId, params string[] data)

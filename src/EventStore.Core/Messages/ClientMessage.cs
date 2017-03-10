@@ -527,12 +527,12 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
 
-            public readonly int? ValidationStreamVersion;
+            public readonly long? ValidationStreamVersion;
             public readonly TimeSpan? LongPollTimeout;
 
             public ReadStreamEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                            string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
-                                           bool requireMaster, int? validationStreamVersion, IPrincipal user,
+                                           bool requireMaster, long? validationStreamVersion, IPrincipal user,
                                            TimeSpan? longPollTimeout = null)
                 : base(internalCorrId, correlationId, envelope, user)
             {
@@ -619,11 +619,11 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
 
-            public readonly int? ValidationStreamVersion;
+            public readonly long? ValidationStreamVersion;
 
             public ReadStreamEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                             string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
-                                            bool requireMaster, int? validationStreamVersion, IPrincipal user)
+                                            bool requireMaster, long? validationStreamVersion, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
