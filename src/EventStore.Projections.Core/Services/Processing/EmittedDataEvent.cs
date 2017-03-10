@@ -44,5 +44,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return _metadata == null ? null : _metadata.Metadata;
         }
+
+        public override string ToString()
+        {
+            return string.Format("Event Id: {0}, Event Type: {1}, Data: {2}", EventId, EventType, Data);
+        }
     }
 }
