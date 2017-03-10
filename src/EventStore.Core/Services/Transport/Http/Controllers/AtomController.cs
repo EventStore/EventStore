@@ -804,7 +804,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
 
         private void GetStreamEventsForward(HttpEntityManager manager, string stream, long eventNumber, int count,
-                                            bool resolveLinkTos, bool requireMaster, int? etag, TimeSpan? longPollTimeout, EmbedLevel embed)
+                                            bool resolveLinkTos, bool requireMaster, long? etag, TimeSpan? longPollTimeout, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -815,7 +815,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                               resolveLinkTos, requireMaster, etag, manager.User, longPollTimeout));
         }
 
-        private int? GetETagStreamVersion(HttpEntityManager manager)
+        private long? GetETagStreamVersion(HttpEntityManager manager)
         {
             var etag = manager.HttpEntity.Request.Headers["If-None-Match"];
             if (etag.IsNotEmptyString())
@@ -825,8 +825,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 if (splitted.Length == 2)
                 {
                     var typeHash = manager.ResponseCodec.ContentType.GetHashCode().ToString(CultureInfo.InvariantCulture);
-                    int streamVersion;
-                    return splitted[1] == typeHash && int.TryParse(splitted[0], out streamVersion) ? (int?)streamVersion : null;
+                    long streamVersion;
+                    var res = splitted[1] == typeHash && long.TryParse(splitted[0], out streamVersion) ? (long?)streamVersion : null;
+                    return res;
                 }
             }
             return null;
