@@ -152,7 +152,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
         public ResolvedEvent(
-            string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
+            string positionStreamId, long positionSequenceNumber, string eventStreamId, long eventSequenceNumber,
             bool resolvedLinkTo, TFPos position, Guid eventId, string eventType, bool isJson, string data,
             string metadata, string positionMetadata = null, string streamMetadata = null)
         {

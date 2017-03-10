@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Services
     {
         public static bool ProcessEvent(
             this IProjectionStateHandler self, string partition, CheckpointTag eventPosition, string streamId,
-            string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
+            string eventType, string category, Guid eventId, long eventSequenceNumber, string metadata, string data,
             out string state, out EmittedEventEnvelope[] emittedEvents, bool isJson = true)
         {
             string ignoredSharedState;
@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Services
 
         public static bool ProcessEvent(
             this IProjectionStateHandler self, string partition, CheckpointTag eventPosition, string streamId,
-            string eventType, string category, Guid eventId, int eventSequenceNumber, string metadata, string data,
+            string eventType, string category, Guid eventId, long eventSequenceNumber, string metadata, string data,
             out string state, out string sharedState, out EmittedEventEnvelope[] emittedEvents, bool isJson = true)
         {
             return self.ProcessEvent(
