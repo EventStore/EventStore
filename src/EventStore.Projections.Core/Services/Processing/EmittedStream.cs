@@ -133,13 +133,12 @@ namespace EventStore.Projections.Core.Services.Processing
             PositionTagger positionTagger, CheckpointTag fromCheckpointPosition, IODispatcher ioDispatcher,
             IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
-            if (streamId == null) throw new ArgumentNullException("streamId");
+            if (string.IsNullOrEmpty(streamId)) throw new ArgumentNullException("streamId");
             if (writerConfiguration == null) throw new ArgumentNullException("writerConfiguration");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (fromCheckpointPosition == null) throw new ArgumentNullException("fromCheckpointPosition");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
-            if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
             _metadataStreamId = SystemStreams.MetastreamOf(streamId);
             _writerConfiguration = writerConfiguration;
@@ -523,10 +522,18 @@ namespace EventStore.Projections.Core.Services.Processing
                         return;
                     }
                 _lastCommittedOrSubmittedEventPosition = causedByTag;
-                events.Add(
-                    new Event(
-                        e.EventId, e.EventType, e.IsJson, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
-                        e.CausedByTag.ToJsonBytes(_projectionVersion, MetadataWithCausedByAndCorrelationId(e))));
+                try
+                {
+                    events.Add(
+                        new Event(
+                            e.EventId, e.EventType, e.IsJson, e.Data != null ? Helper.UTF8NoBom.GetBytes(e.Data) : null,
+                            e.CausedByTag.ToJsonBytes(_projectionVersion, MetadataWithCausedByAndCorrelationId(e))));
+                }
+                catch (ArgumentException ex)
+                {
+                    Failed(string.Format("Failed to write the event: {0} to stream: {1} failed. Reason: {2}.", e, _streamId, ex.Message));
+                    return;
+                }
                 emittedEvents.Add(e);
             }
             _submittedToWriteEvents = events.ToArray();
