@@ -96,8 +96,11 @@ namespace EventStore.Core.Services.Storage
 
                     var scavenger = new TFChunkScavenger(_db, _ioDispatcher, _tableIndex, _readIndex, scavengeId,
                                                                                  _nodeEndpoint, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
-                    spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
-                    result = ClientMessage.ScavengeDatabase.ScavengeResult.Success;
+                    int failedCount;
+                    spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks, out failedCount);
+                    result = failedCount > 0
+                        ? ClientMessage.ScavengeDatabase.ScavengeResult.Warning
+                        : ClientMessage.ScavengeDatabase.ScavengeResult.Success;
                 }
             }
             catch (Exception exc)
