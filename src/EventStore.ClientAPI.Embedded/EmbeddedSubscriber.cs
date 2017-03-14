@@ -49,7 +49,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public void Handle(ClientMessage.PersistentSubscriptionConfirmation message)
         {
-            ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, message.LastEventNumber);
+            ConfirmSubscription(message.SubscriptionId, message.CorrelationId, message.LastCommitPosition, message.LastEventNumber);
         }
 
         public void Handle(ClientMessage.PersistentSubscriptionStreamEventAppeared message)
@@ -68,6 +68,14 @@ namespace EventStore.ClientAPI.Embedded
         {
             IEmbeddedSubscription subscription;
             _subscriptions.TryGetActiveSubscription(correlationId, out subscription);
+            subscription.ConfirmSubscription(lastCommitPosition, lastEventNumber);
+        }
+
+        private void ConfirmSubscription(string subscriptionId, Guid correlationId, long lastCommitPosition, long? lastEventNumber)
+        {
+            IEmbeddedSubscription subscription;
+            _subscriptions.TryGetActiveSubscription(correlationId, out subscription);
+            ((EmbeddedPersistentSubscription)subscription).UpdateSubscriptionId(subscriptionId);
             subscription.ConfirmSubscription(lastCommitPosition, lastEventNumber);
         }
 

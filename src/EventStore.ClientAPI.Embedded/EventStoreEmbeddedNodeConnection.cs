@@ -97,6 +97,8 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
             _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.ConnectToPersistentSubscription>(_publisher.Publish));
+            _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.PersistentSubscriptionAckEvents>(_publisher.Publish));
+            _subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.PersistentSubscriptionNackEvents>(_publisher.Publish));
 
             bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(_ => Disconnected(this, new ClientConnectionEventArgs(this, new IPEndPoint(IPAddress.None, 0)))));
         }
