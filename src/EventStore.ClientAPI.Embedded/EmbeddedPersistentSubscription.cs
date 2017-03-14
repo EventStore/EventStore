@@ -13,10 +13,10 @@ namespace EventStore.ClientAPI.Embedded
     internal class EmbeddedPersistentSubscription : EmbeddedSubscriptionBase<PersistentEventStoreSubscription>, 
         IConnectToPersistentSubscriptions
     {
-        private readonly string _subscriptionId;
         private readonly UserCredentials _userCredentials;
         private readonly IAuthenticationProvider _authenticationProvider;
         private readonly int _bufferSize;
+        private string _subscriptionId;
 
         public EmbeddedPersistentSubscription(
             ILogger log, IPublisher publisher, Guid connectionId,
@@ -48,6 +48,11 @@ namespace EventStore.ClientAPI.Embedded
                     new PublishEnvelope(Publisher, true), ConnectionId, _subscriptionId, StreamId, _bufferSize,
                     String.Empty,
                     user));
+        }
+
+        public void UpdateSubscriptionId(string subscriptionId)
+        {
+            _subscriptionId = subscriptionId;
         }
 
         public void NotifyEventsProcessed(Guid[] processedEvents)
