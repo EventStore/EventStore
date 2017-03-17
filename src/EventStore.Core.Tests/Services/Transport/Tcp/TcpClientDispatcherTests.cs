@@ -60,6 +60,40 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         }
 
         [Test]
+        public void when_wrapping_read_stream_events_forward_and_stream_was_deleted_should_downgrade_last_event_number()
+        {
+            var msg = new ClientMessage.ReadStreamEventsForwardCompleted(Guid.NewGuid(), "test-stream", 0, 100,
+                                                ReadStreamResult.StreamDeleted, new ResolvedEvent[0], new StreamMetadata(),
+                                                true, "", -1, long.MaxValue, true, 1000);
+
+            var package = _dispatcher.WrapMessage(msg, _version);
+            Assert.IsNotNull(package, "Package is null");
+            Assert.AreEqual(TcpCommand.ReadStreamEventsForwardCompleted, package.Value.Command, "TcpCommand");
+
+            var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadStreamEventsCompleted>();
+            Assert.IsNotNull(dto, "DTO is null");
+
+            Assert.AreEqual(int.MaxValue, dto.LastEventNumber, "Last Event Number");
+        }
+
+        [Test]
+        public void when_wrapping_read_stream_events_backward_and_stream_was_deleted_should_downgrade_last_event_number()
+        {
+            var msg = new ClientMessage.ReadStreamEventsBackwardCompleted(Guid.NewGuid(), "test-stream", 0, 100,
+                                                ReadStreamResult.StreamDeleted, new ResolvedEvent[0], new StreamMetadata(),
+                                                true, "", -1, long.MaxValue, true, 1000);
+
+            var package = _dispatcher.WrapMessage(msg, _version);
+            Assert.IsNotNull(package, "Package is null");
+            Assert.AreEqual(TcpCommand.ReadStreamEventsBackwardCompleted, package.Value.Command, "TcpCommand");
+
+            var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadStreamEventsCompleted>();
+            Assert.IsNotNull(dto, "DTO is null");
+
+            Assert.AreEqual(int.MaxValue, dto.LastEventNumber, "Last Event Number");
+        }
+
+        [Test]
         public void when_wrapping_read_all_events_forward_completed_with_deleted_event_should_downgrade_version()
         {
             var events = new ResolvedEvent[] {
@@ -161,6 +195,32 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         }
 
         [Test]
+        public void when_wrapping_subscribe_to_stream_confirmation_when_stream_deleted_should_downgrade_last_event_number()
+        {
+            var msg = new ClientMessage.SubscriptionConfirmation(Guid.NewGuid(), 100, long.MaxValue);
+            var package = _dispatcher.WrapMessage(msg, _version);
+            Assert.IsNotNull(package, "Package is null");
+            Assert.AreEqual(TcpCommand.SubscriptionConfirmation, package.Value.Command, "TcpCommand");
+
+            var dto = package.Value.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+            Assert.IsNotNull(dto, "DTO is null");
+            Assert.AreEqual(int.MaxValue, dto.LastEventNumber, "Last Event Number");
+        }
+
+        [Test]
+        public void when_wrapping_subscribe_to_stream_confirmation_with_null_last_event_number_should_not_change()
+        {
+            var msg = new ClientMessage.SubscriptionConfirmation(Guid.NewGuid(), 100, null);
+            var package = _dispatcher.WrapMessage(msg, _version);
+            Assert.IsNotNull(package, "Package is null");
+            Assert.AreEqual(TcpCommand.SubscriptionConfirmation, package.Value.Command, "TcpCommand");
+
+            var dto = package.Value.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+            Assert.IsNotNull(dto, "DTO is null");
+            Assert.IsNull(dto.LastEventNumber);
+        }
+
+        [Test]
         public void when_wrapping_stream_event_appeared_with_link_to_deleted_event_should_downgrade_version()
         {
             var msg = new ClientMessage.StreamEventAppeared(Guid.NewGuid(),
@@ -176,6 +236,31 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             Assert.AreEqual(int.MaxValue, dto.Event.Link.EventNumber, "Link Event Number");
         }
 
+        [Test]
+        public void when_wrapping_persistent_subscription_confirmation_when_stream_deleted_should_downgrade_last_event_number()
+        {
+            var msg = new ClientMessage.PersistentSubscriptionConfirmation("subscription", Guid.NewGuid(), 100, long.MaxValue);
+            var package = _dispatcher.WrapMessage(msg, _version);
+            Assert.IsNotNull(package, "Package is null");
+            Assert.AreEqual(TcpCommand.PersistentSubscriptionConfirmation, package.Value.Command, "TcpCommand");
+
+            var dto = package.Value.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionConfirmation>();
+            Assert.IsNotNull(dto, "DTO is null");
+            Assert.AreEqual(int.MaxValue, dto.LastEventNumber, "Last event number");
+        }
+
+        [Test]
+        public void when_wrapping_persistent_subscription_confirmation_with_null_last_event_number_should_not_change()
+        {
+            var msg = new ClientMessage.PersistentSubscriptionConfirmation("subscription", Guid.NewGuid(), 100, null);
+            var package = _dispatcher.WrapMessage(msg, _version);
+            Assert.IsNotNull(package, "Package is null");
+            Assert.AreEqual(TcpCommand.PersistentSubscriptionConfirmation, package.Value.Command, "TcpCommand");
+
+            var dto = package.Value.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionConfirmation>();
+            Assert.IsNotNull(dto, "DTO is null");
+            Assert.IsNull(dto.LastEventNumber, "Last event number");
+        }
 
         [Test]
         public void when_wrapping_persistent_subscription_stream_event_appeared_with_deleted_event_should_downgrade_version()

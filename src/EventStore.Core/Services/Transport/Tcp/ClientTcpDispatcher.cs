@@ -91,9 +91,13 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddWrapper<TcpMessage.Authenticated>(WrapAuthenticated, ClientVersion.V2);
 
             // Version 1
+            AddWrapper<ClientMessage.ReadStreamEventsForwardCompleted>(WrapReadStreamEventsForwardCompletedV1, ClientVersion.V1);
+            AddWrapper<ClientMessage.ReadStreamEventsBackwardCompleted>(WrapReadStreamEventsBackwardCompletedV1, ClientVersion.V1);
             AddWrapper<ClientMessage.ReadAllEventsForwardCompleted>(WrapReadAllEventsForwardCompletedV1, ClientVersion.V1);
             AddWrapper<ClientMessage.ReadAllEventsBackwardCompleted>(WrapReadAllEventsBackwardCompletedV1, ClientVersion.V1);
+            AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStreamV1, ClientVersion.V2);
             AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppearedV1, ClientVersion.V1);
+            AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmationV1, ClientVersion.V2);
             AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppearedV1, ClientVersion.V1);
         }
 
@@ -632,6 +636,22 @@ namespace EventStore.Core.Services.Transport.Tcp
         }
 
 
+        private static TcpPackage WrapReadStreamEventsForwardCompletedV1(ClientMessage.ReadStreamEventsForwardCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.ReadStreamEventsCompleted(
+                ConvertToResolvedIndexedEvents(msg.Events), (TcpClientMessageDto.ReadStreamEventsCompleted.ReadStreamResult)msg.Result,
+                msg.NextEventNumber, StreamVersionConverter.Downgrade(msg.LastEventNumber), msg.IsEndOfStream, msg.TfLastCommitPosition, msg.Error);
+            return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+        private static TcpPackage WrapReadStreamEventsBackwardCompletedV1(ClientMessage.ReadStreamEventsBackwardCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.ReadStreamEventsCompleted(
+                ConvertToResolvedIndexedEvents(msg.Events), (TcpClientMessageDto.ReadStreamEventsCompleted.ReadStreamResult)msg.Result,
+                msg.NextEventNumber, StreamVersionConverter.Downgrade(msg.LastEventNumber), msg.IsEndOfStream, msg.TfLastCommitPosition, msg.Error);
+            return new TcpPackage(TcpCommand.ReadStreamEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
         private static TcpPackage WrapReadAllEventsForwardCompletedV1(ClientMessage.ReadAllEventsForwardCompleted msg)
         {
             var dto = new TcpClientMessageDto.ReadAllEventsCompleted(
@@ -650,10 +670,24 @@ namespace EventStore.Core.Services.Transport.Tcp
             return new TcpPackage(TcpCommand.ReadAllEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
+        private TcpPackage WrapPersistentSubscriptionConfirmationV1(ClientMessage.PersistentSubscriptionConfirmation msg)
+        {
+            var dto = new TcpClientMessageDto.PersistentSubscriptionConfirmation(msg.LastCommitPosition, msg.SubscriptionId,
+                msg.LastEventNumber == null ? msg.LastEventNumber : StreamVersionConverter.Downgrade(msg.LastEventNumber.Value));
+            return new TcpPackage(TcpCommand.PersistentSubscriptionConfirmation, msg.CorrelationId, dto.Serialize());
+        }
+
         private TcpPackage WrapPersistentSubscriptionStreamEventAppearedV1(ClientMessage.PersistentSubscriptionStreamEventAppeared msg)
         {
             var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(ConvertToResolvedIndexedEventV1(msg.Event));
             return new TcpPackage(TcpCommand.PersistentSubscriptionStreamEventAppeared, msg.CorrelationId, dto.Serialize());
+        }
+
+        private TcpPackage WrapSubscribedToStreamV1(ClientMessage.SubscriptionConfirmation msg)
+        {
+            var dto = new TcpClientMessageDto.SubscriptionConfirmation(msg.LastCommitPosition,
+                msg.LastEventNumber == null ? msg.LastEventNumber : StreamVersionConverter.Downgrade(msg.LastEventNumber.Value));
+            return new TcpPackage(TcpCommand.SubscriptionConfirmation, msg.CorrelationId, dto.Serialize());
         }
 
         private TcpPackage WrapStreamEventAppearedV1(ClientMessage.StreamEventAppeared msg)
