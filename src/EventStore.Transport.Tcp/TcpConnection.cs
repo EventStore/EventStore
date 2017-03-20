@@ -57,9 +57,11 @@ namespace EventStore.Transport.Tcp
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
         public Guid ConnectionId { get { return _connectionId; } }
         public int SendQueueSize { get { return _sendQueue.Count; } }
+        public string ClientConnectionName { get { return _clientConnectionName; } }
 
         private readonly Guid _connectionId;
         private readonly bool _verbose;
+        private string _clientConnectionName;
 
         private Socket _socket;
         private SocketAsyncEventArgs _receiveSocketArgs;
@@ -390,6 +392,11 @@ namespace EventStore.Transport.Tcp
                 }
                 SocketArgsPool.Return(socketArgs);
             }
+        }
+
+        public void SetClientConnectionName(string clientConnectionName)
+        {
+            _clientConnectionName = clientConnectionName;
         }
         
         public override string ToString()

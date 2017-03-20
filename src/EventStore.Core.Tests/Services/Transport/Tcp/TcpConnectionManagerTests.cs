@@ -83,6 +83,14 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             }
         }
 
+        public string ClientConnectionName
+        {
+            get
+            {
+                return _clientConnectionName;
+            }
+        }
+
         public bool IsClosed
         {
             get
@@ -116,6 +124,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         }
 
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
+        private string _clientConnectionName;
 
         public void Close(string reason)
         {
@@ -133,6 +142,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         public void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback)
         {
             throw new NotImplementedException();
+        }
+
+        public void SetClientConnectionName(string clientConnectionName)
+        {
+            _clientConnectionName = clientConnectionName;
         }
     }
 }
