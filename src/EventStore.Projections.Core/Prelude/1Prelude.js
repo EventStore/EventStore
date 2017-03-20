@@ -210,6 +210,18 @@ function scope($on, $notify) {
         };
     }
 
+    function fromCategories(categories) {
+        var arr = Array.isArray(categories) ? categories : arguments;
+        for (var i = 0; i < arr.length; i++)
+            eventProcessor.fromCategory(arr[i]);
+
+        return {
+            partitionBy: partitionBy,
+            when: when,
+            outputState: outputState
+        };
+    }
+
     function emit(streamId, eventName, eventBody, metadata) {
         var message = { streamId: streamId, eventName: eventName , body: JSON.stringify(eventBody), metadata: metadata, isJson: true };
         eventProcessor.emit(message);
