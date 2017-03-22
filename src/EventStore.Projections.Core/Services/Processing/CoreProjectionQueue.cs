@@ -48,7 +48,13 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var processed = false;
             if (_queuePendingEvents.Count > 0)
+            {
                 processed = ProcessOneEventBatch();
+            }
+            else if (_queuePendingEvents.Count == 0 && _subscriptionPaused && !_unsubscribed)
+            {
+                ResumeSubscription();
+            }
             return processed;
         }
 
