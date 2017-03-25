@@ -1287,14 +1287,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     public class Helper
     {
-        public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, int version)
+        public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version)
         {
             return
                 ResolvedEvent.ForUnresolvedEvent(new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version,
                     DateTime.UtcNow, PrepareFlags.SingleWrite, type, new byte[0], new byte[0]));
         }
 
-        public static ResolvedEvent BuildLinkEvent(Guid id, string stream, int version, ResolvedEvent ev, bool resolved = true)
+        public static ResolvedEvent BuildLinkEvent(Guid id, string stream, long version, ResolvedEvent ev, bool resolved = true)
         {
             var link = new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234, stream, version, DateTime.UtcNow, PrepareFlags.SingleWrite, SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes(string.Format("{0}@{1}", ev.OriginalEventNumber, ev.OriginalStreamId)), new byte[0]);
             if (resolved)
@@ -1322,14 +1322,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeCheckpointReader : IPersistentSubscriptionCheckpointReader
     {
-        private Action<int?> _onStateLoaded;
+        private Action<long?> _onStateLoaded;
 
-        public void BeginLoadState(string subscriptionId, Action<int?> onStateLoaded)
+        public void BeginLoadState(string subscriptionId, Action<long?> onStateLoaded)
         {
             _onStateLoaded = onStateLoaded;
         }
 
-        public void Load(int? state)
+        public void Load(long? state)
         {
             _onStateLoaded(state);
         }

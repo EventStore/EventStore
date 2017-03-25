@@ -212,42 +212,26 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
 
                 var positionMapping = new List<PosMap>();
-                bool isUpgrade = false;
                 foreach (var oldChunk in oldChunks)
                 {
                     TraverseChunk(oldChunk,
                                   prepare =>
                                   {
                                       if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
-                                      {
-                                          var lengthOffset = 0;
-                                          var data = prepare.Data;
-                                          if(prepare.Version == LogRecordVersion.LogRecordV0) {
-                                              isUpgrade = true;
-                                              data = UpgradePrepareData(prepare);
-                                              lengthOffset = 4 + (data.Length - prepare.Data.Length);
-                                          }
-                                          var updatedPrepare = UpgradePrepareVersion(prepare, data);
-                                          positionMapping.Add(WriteRecord(newChunk, updatedPrepare, lengthOffset, isUpgrade));
-                                      }
+                                          positionMapping.Add(WriteRecord(newChunk, prepare));
                                   },
                                   commit =>
                                   {
                                       if (ShouldKeepCommit(commit, commits))
-                                      {
-                                          isUpgrade = commit.Version == LogRecordVersion.LogRecordV0;
-                                          var updatedCommit = UpgradeCommitVersion(commit);
-                                          positionMapping.Add(WriteRecord(newChunk, updatedCommit, commit.Version == LogRecordVersion.LogRecordV0 ? 4 : 0, isUpgrade));
-                                      }
+                                          positionMapping.Add(WriteRecord(newChunk, commit));
                                   },
                                   // we always keep system log records for now
-                                  system => positionMapping.Add(WriteRecord(newChunk, system, 0, isUpgrade)));
+                                  system => positionMapping.Add(WriteRecord(newChunk, system)));
                 }
-                
-                newChunk.CompleteScavenge(positionMapping, isUpgrade);
+                newChunk.CompleteScavenge(positionMapping);
 
                 var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
-                var newSize = (long)newChunk.PhysicalDataSize + PosMap.V3Size * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
+                var newSize = (long)newChunk.PhysicalDataSize + PosMap.FullSize * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
 
                 if(_unsafeIgnoreHardDeletes) {
                     Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
@@ -552,33 +536,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private PrepareLogRecord UpgradePrepareVersion(PrepareLogRecord prepare, byte[] data)
+        private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record)
         {
-            return new PrepareLogRecord(prepare.LogPosition, prepare.CorrelationId, prepare.EventId, prepare.TransactionPosition, 
-                                        prepare.TransactionOffset, prepare.EventStreamId, prepare.ExpectedVersion, prepare.TimeStamp, prepare.Flags, prepare.EventType,
-                                        data, prepare.Metadata);
-        }
-
-        private byte[] UpgradePrepareData(PrepareLogRecord prepare) 
-        {
-            if(!SystemStreams.IsMetastream(prepare.EventStreamId))
-                return prepare.Data;
-
-            var metadata = _readIndex.GetStreamMetadata(SystemStreams.OriginalStreamOf(prepare.EventStreamId));
-            if(metadata.TruncateBefore != EventNumber.DeletedStream)
-                return prepare.Data;
-
-            return metadata.ToJsonBytes();
-        }
-
-        private CommitLogRecord UpgradeCommitVersion(CommitLogRecord commit)
-        {
-            return new CommitLogRecord(commit.LogPosition, commit.CorrelationId, commit.TransactionPosition, commit.TimeStamp, commit.FirstEventNumber);
-        }
-
-        private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record, int lengthOffset, bool isUpgrade)
-        {
-            var writeResult = newChunk.TryAppend(record, isUpgrade);
+            var writeResult = newChunk.TryAppend(record);
             if (!writeResult.Success)
             {
                 throw new Exception(string.Format(
@@ -588,7 +548,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
             int actualPos = (int) writeResult.OldPosition;
-            return new PosMap(logPos, actualPos, lengthOffset);
+            return new PosMap(logPos, actualPos);
         }
 
         internal class CommitInfo

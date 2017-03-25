@@ -1,4 +1,4 @@
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -238,7 +238,6 @@
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="NodeSubsystems.cs" />
     <Compile Include="Services\Storage\ReaderIndex\AllReader.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\IIndexCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexBackend.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexCommitter.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReader.cs" />
@@ -427,8 +426,7 @@
     <Compile Include="Util\DefaultFiles.cs" />
     <Compile Include="VNodeBuilder.cs" />
     <Compile Include="Index\IndexEntryV2.cs" />
-    <Compile Include="Helpers\ExpectedVersionConverter.cs" />
-    <Compile Include="Services\Transport\Tcp\V1ClientTcpDispatcher.cs" />
+    <Compile Include="Helpers\StreamVersionConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

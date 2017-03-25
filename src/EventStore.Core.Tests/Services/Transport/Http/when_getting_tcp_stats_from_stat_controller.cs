@@ -11,6 +11,7 @@ using EventStore.Transport.Http.Codecs;
 using NUnit.Framework;
 using EventStore.Core.Tests.ClientAPI;
 using EventStore.Core.Tests.Helpers;
+using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
 {
@@ -21,8 +22,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         private IPEndPoint _serverEndPoint;
         private IEventStoreConnection _connection;
         private string _url;
+        private string _clientConnectionName = "test-connection";
         
         private List<MonitoringMessage.TcpConnectionStats> _results = new List<MonitoringMessage.TcpConnectionStats>();
+        private HttpResponse _response;
         
         protected override void Given()
         {
@@ -30,7 +33,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _url = _HttpEndPoint.ToHttpUrl("/stats/tcp");
             
             var settings = ConnectionSettings.Create();
-            _connection = EventStoreConnection.Create(settings, _node.TcpEndPoint);
+            _connection = EventStoreConnection.Create(settings, _node.TcpEndPoint, _clientConnectionName);
             _connection.ConnectAsync().Wait();
             
             var testEvent = new EventData(Guid.NewGuid(),"TestEvent",true,Encoding.ASCII.GetBytes("{'Test' : 'OneTwoThree'}"),null);
@@ -43,11 +46,19 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         protected override void When()
         {
             Func<HttpResponse, bool> verifier = response => {
-                _results = Codec.Json.From<List<MonitoringMessage.TcpConnectionStats>>(response.Body);
+                 _results = Codec.Json.From<List<MonitoringMessage.TcpConnectionStats>>(response.Body);
+                _response = response;
                 return true;
             };
             
-            _portableServer.StartServiceAndSendRequest(y => {}, _url, verifier);
+            var res = _portableServer.StartServiceAndSendRequest(y => {}, _url, verifier);
+            Assert.IsEmpty(res.Item2, "Http call failed");
+        }
+
+        [Test]
+        public void should_have_succeeded()
+        {
+            Assert.AreEqual((int)HttpStatusCode.OK, _response.HttpStatusCode);
         }
 
         [Test]
@@ -66,6 +77,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void should_return_the_total_number_of_bytes_received_from_external_connections()
         {
             Assert.Greater(_results.Sum(r => r.IsExternalConnection ? r.TotalBytesReceived : 0), 0);
+        }
+
+        [Test]
+        public void should_have_set_the_client_connection_name()
+        {
+            Assert.IsTrue(_results.Any(x=>x.ClientConnectionName == _clientConnectionName));
         }
         
         [OneTimeTearDown]

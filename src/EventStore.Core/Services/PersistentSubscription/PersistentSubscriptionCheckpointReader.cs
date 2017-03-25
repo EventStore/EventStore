@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _ioDispatcher = ioDispatcher;
         }
 
-        public void BeginLoadState(string subscriptionId, Action<int?> onStateLoaded)
+        public void BeginLoadState(string subscriptionId, Action<long?> onStateLoaded)
         {
             var subscriptionStateStream = "$persistentsubscription-"+subscriptionId+"-checkpoint";
             _ioDispatcher.ReadBackward(subscriptionStateStream, -1, 1, false, SystemAccount.Principal, new ResponseHandler(onStateLoaded).LoadStateCompleted);
@@ -24,9 +24,9 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private class ResponseHandler
         {
-            private readonly Action<int?> _onStateLoaded;
+            private readonly Action<long?> _onStateLoaded;
 
-            public ResponseHandler(Action<int?> onStateLoaded)
+            public ResponseHandler(Action<long?> onStateLoaded)
             {
                 _onStateLoaded = onStateLoaded;
             }
@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     var checkpoint = msg.Events.Where(v => v.Event.EventType == "SubscriptionCheckpoint").Select(x => x.Event).FirstOrDefault();
                     if (checkpoint != null)
                     {
-                        var lastEvent = checkpoint.Data.ParseJson<int>();
+                        long lastEvent = checkpoint.Data.ParseJson<long>();
                         _onStateLoaded(lastEvent);
                         return;
                     }

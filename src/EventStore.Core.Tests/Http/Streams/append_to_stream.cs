@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Http.Streams
             public string WrongExpectedVersionDesc {get {return "Wrong expected EventNumber";} }
             public string DeletedStreamDesc {get {return "Stream deleted"; } }
 
-            public HttpWebResponse PostEventWithExpectedVersion(int expectedVersion) 
+            public HttpWebResponse PostEventWithExpectedVersion(long expectedVersion) 
             {
                 var request = CreateRequest(TestStream, "", "POST", "application/json");
                 request.Headers.Add("ES-EventType", "SomeType");

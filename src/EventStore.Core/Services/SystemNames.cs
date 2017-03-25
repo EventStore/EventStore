@@ -133,10 +133,10 @@ namespace EventStore.Core.Services
             return streamId;
         }
 
-        public static int EventLinkToEventNumber(string link)
+        public static long EventLinkToEventNumber(string link)
         {
             string[] parts = link.Split(_linkToSeparator, 2);
-            return int.Parse(parts[0]);
+            return long.Parse(parts[0]);
         }
     }
 

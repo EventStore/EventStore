@@ -467,7 +467,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var stream = match.BoundVariables["stream"];
             var evNum = match.BoundVariables["event"];
 
-            int eventNumber = -1;
+            long eventNumber = -1;
             var embed = GetEmbedLevel(manager, match, EmbedLevel.TryHarder);
 
             if (stream.IsEmptyString() || SystemStreams.IsMetastream(stream))
@@ -475,7 +475,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, "Stream must be non-empty string and should not be metastream");
                 return;
             }
-            if (evNum != null && evNum != "head" && (!int.TryParse(evNum, out eventNumber) || eventNumber < 0))
+            if (evNum != null && evNum != "head" && (!long.TryParse(evNum, out eventNumber) || eventNumber < 0))
             {
                 SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
                 return;
@@ -502,7 +502,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var evNum = match.BoundVariables["event"];
             var cnt = match.BoundVariables["count"];
 
-            int eventNumber = -1;
+            long eventNumber = -1;
             int count = AtomSpecs.FeedPageSize;
             var embed = GetEmbedLevel(manager, match);
 
@@ -511,7 +511,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
-            if (evNum != null && evNum != "head" && (!int.TryParse(evNum, out eventNumber) || eventNumber < 0))
+            if (evNum != null && evNum != "head" && (!long.TryParse(evNum, out eventNumber) || eventNumber < 0))
             {
                 SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
                 return;
@@ -545,13 +545,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var evNum = match.BoundVariables["event"];
             var cnt = match.BoundVariables["count"];
 
-            int eventNumber;
+            long eventNumber;
             int count;
             var embed = GetEmbedLevel(manager, match);
 
             if (stream.IsEmptyString() || SystemStreams.IsMetastream(stream))
                 return SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
-            if (evNum.IsEmptyString() || !int.TryParse(evNum, out eventNumber) || eventNumber < 0)
+            if (evNum.IsEmptyString() || !long.TryParse(evNum, out eventNumber) || eventNumber < 0)
                 return SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
             if (cnt.IsEmptyString() || !int.TryParse(cnt, out count) || count <= 0)
                 return SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
@@ -804,7 +804,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
 
         private void GetStreamEventsForward(HttpEntityManager manager, string stream, long eventNumber, int count,
-                                            bool resolveLinkTos, bool requireMaster, int? etag, TimeSpan? longPollTimeout, EmbedLevel embed)
+                                            bool resolveLinkTos, bool requireMaster, long? etag, TimeSpan? longPollTimeout, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   manager,
@@ -815,7 +815,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                               resolveLinkTos, requireMaster, etag, manager.User, longPollTimeout));
         }
 
-        private int? GetETagStreamVersion(HttpEntityManager manager)
+        private long? GetETagStreamVersion(HttpEntityManager manager)
         {
             var etag = manager.HttpEntity.Request.Headers["If-None-Match"];
             if (etag.IsNotEmptyString())
@@ -825,8 +825,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 if (splitted.Length == 2)
                 {
                     var typeHash = manager.ResponseCodec.ContentType.GetHashCode().ToString(CultureInfo.InvariantCulture);
-                    int streamVersion;
-                    return splitted[1] == typeHash && int.TryParse(splitted[0], out streamVersion) ? (int?)streamVersion : null;
+                    long streamVersion;
+                    var res = splitted[1] == typeHash && long.TryParse(splitted[0], out streamVersion) ? (long?)streamVersion : null;
+                    return res;
                 }
             }
             return null;

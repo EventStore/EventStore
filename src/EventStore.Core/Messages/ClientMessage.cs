@@ -527,12 +527,12 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
 
-            public readonly int? ValidationStreamVersion;
+            public readonly long? ValidationStreamVersion;
             public readonly TimeSpan? LongPollTimeout;
 
             public ReadStreamEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                            string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
-                                           bool requireMaster, int? validationStreamVersion, IPrincipal user,
+                                           bool requireMaster, long? validationStreamVersion, IPrincipal user,
                                            TimeSpan? longPollTimeout = null)
                 : base(internalCorrId, correlationId, envelope, user)
             {
@@ -619,11 +619,11 @@ namespace EventStore.Core.Messages
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
 
-            public readonly int? ValidationStreamVersion;
+            public readonly long? ValidationStreamVersion;
 
             public ReadStreamEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                             string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
-                                            bool requireMaster, int? validationStreamVersion, IPrincipal user)
+                                            bool requireMaster, long? validationStreamVersion, IPrincipal user)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
@@ -1412,6 +1412,43 @@ namespace EventStore.Core.Messages
             public override string ToString()
             {
                 return String.Format("Result: {0}, Error: {1}, TotalTime: {2}, TotalSpaceSaved: {3}", Result, Error, TotalTime, TotalSpaceSaved);
+            }
+        }
+
+        public class IdentifyClient : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly int Version;
+            public readonly string ConnectionName;
+
+            public IdentifyClient(Guid correlationId,
+                                  int version,
+                                  string connectionName)
+            {
+                CorrelationId = correlationId;
+                Version = version;
+                ConnectionName = connectionName;
+            }
+
+            public override string ToString()
+            {
+                return String.Format("Version: {0}, Connection Name: {1}", Version, ConnectionName);
+            }
+        }
+
+        public class ClientIdentified : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+
+            public ClientIdentified(Guid correlationId)
+            {
+                CorrelationId = correlationId;
             }
         }
     }

@@ -200,6 +200,7 @@ namespace EventStore.Core.Messages
         {
             public string RemoteEndPoint { get; set; }
             public string LocalEndPoint { get; set; }
+            public string ClientConnectionName { get; set; }
             public Guid ConnectionId { get; set; }
             public long TotalBytesSent { get; set; }
             public long TotalBytesReceived { get; set; }

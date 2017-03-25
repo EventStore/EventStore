@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             WriteTransaction(-1 + 3 + 2, 4);
         }
 
-        private void WriteTransaction(int expectedVersion, int transactionLength)
+        private void WriteTransaction(long expectedVersion, int transactionLength)
         {
             var begin = WriteTransactionBegin("ES", expectedVersion);
             for (int i = 0; i < transactionLength; ++i)

@@ -391,14 +391,14 @@ namespace EventStore.Core.Services.Storage
             return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, ResolvedEvent.EmptyEvent, null, false, error);
         }
 
-        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
+        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, long lastEventNumber = -1, string error = null)
         {
             return new ClientMessage.ReadStreamEventsForwardCompleted(
                 msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result, 
                 EmptyRecords, null, false, error ?? string.Empty, -1, lastEventNumber, true, lastCommitPosition);
         }
 
-        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
+        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, long lastEventNumber = -1, string error = null)
         {
             return new ClientMessage.ReadStreamEventsBackwardCompleted(
                 msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result,
@@ -484,7 +484,7 @@ namespace EventStore.Core.Services.Storage
                 try
                 {
                     var parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(LinkToSeparator, 2);
-                    var eventNumber = int.Parse(parts[0]);
+                    long eventNumber = long.Parse(parts[0]);
                     var streamId = parts[1];
 
                     if (!_readIndex.CheckStreamAccess(streamId, StreamAccessType.Read, user).Granted)

@@ -126,7 +126,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EmitEventsToStream(string streamId, EmittedEventEnvelope[] emittedEvents)
         {
-            if (streamId == null)
+            if (string.IsNullOrEmpty(streamId))
                 throw new ArgumentNullException("streamId");
             EmittedStream stream;
             if (!_emittedStreams.TryGetValue(streamId, out stream))

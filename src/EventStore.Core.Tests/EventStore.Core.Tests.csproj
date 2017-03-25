@@ -101,6 +101,7 @@
     <Compile Include="ClientAPI\Embedded\deleting_persistent_subscription.cs" />
     <Compile Include="ClientAPI\Embedded\Security\authorized_default_credentials_security.cs" />
     <Compile Include="ClientAPI\Embedded\update_persistent_subscription.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\subscribe_to_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
     <Compile Include="ClientAPI\when_working_with_metadata.cs" />
     <Compile Include="ClientAPI\persistent_connect_integration_tests.cs" />
     <Compile Include="ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
@@ -668,6 +669,9 @@
     <Compile Include="ClientAPI\ExpectedVersion64Bit\persistent_subscription_with_event_numbers_greater_than_2_billion.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\MiniNodeWithExistingRecords.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_hard_deleting_stream_with_log_version_0.cs" />
+    <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
