@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class deleting_existing_persistent_subscription_group_with_permissions : SpecificationWithMiniNode
     {
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()

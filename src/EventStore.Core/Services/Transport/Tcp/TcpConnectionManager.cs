@@ -33,6 +33,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         public IPEndPoint LocalEndPoint { get { return _connection.LocalEndPoint; } }
         public bool IsClosed { get { return _isClosed != 0; } }
         public int SendQueueSize { get { return _connection.SendQueueSize; } }
+        public string ClientConnectionName { get { return _clientConnectionName; } }
 
         private readonly ITcpConnection _connection;
         private readonly IEnvelope _tcpEnvelope;
@@ -41,6 +42,9 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly IMessageFramer _framer;
         private int _messageNumber;
         private int _isClosed;
+        private string _clientConnectionName;
+
+        private byte _version;
 
         private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
         private readonly Action<TcpConnectionManager> _connectionEstablished;
@@ -174,7 +178,8 @@ namespace EventStore.Core.Services.Transport.Tcp
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
         {
             if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
-            Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", ConnectionName, connection.RemoteEndPoint, ConnectionId, socketError);
+            Log.Info("Connection '{0}{1}' [{2}, {3:B}] closed: {4}.", 
+                     ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, connection.RemoteEndPoint, ConnectionId, socketError);
             if (_connectionClosed != null)
                 _connectionClosed(this, socketError);
         }
@@ -242,14 +247,32 @@ namespace EventStore.Core.Services.Transport.Tcp
                 case TcpCommand.HeartbeatRequestCommand:
                     SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
                     break;
+                case TcpCommand.IdentifyClient:
+                {
+                    try 
+                    {
+                        var message = (ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope, null, null, null, this, _version);
+                        Log.Info("Connection '{0}' ({1:B}) identified by client. Client connection name: '{2}', Client version: {3}.",
+                            ConnectionName, ConnectionId, message.ConnectionName, (ClientVersion)message.Version);
+                        _version = (byte)message.Version;
+                        _clientConnectionName = message.ConnectionName;
+                        _connection.SetClientConnectionName(_clientConnectionName);
+                        SendPackage(new TcpPackage(TcpCommand.ClientIdentified, package.CorrelationId, null));
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error identifying client: {0}", ex);
+                    }
+                    break;
+                }
                 case TcpCommand.BadRequest:
                 {
                     var reason = string.Empty;
                     Helper.EatException(() => reason = Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                     var exitMessage = 
-                        string.Format("Bad request received from '{0}' [{1}, L{2}, {3:B}], will stop server. CorrelationId: {4:B}, Error: {5}.",
-                                      ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, package.CorrelationId,
-                                      reason.IsEmptyString() ? "<reason missing>" : reason);
+                        string.Format("Bad request received from '{0}{1}' [{2}, L{3}, {4:B}], will stop server. CorrelationId: {5:B}, Error: {6}.",
+                                      ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, RemoteEndPoint, 
+                                      LocalEndPoint, ConnectionId, package.CorrelationId, reason.IsEmptyString() ? "<reason missing>" : reason);
                     Log.Error(exitMessage);
                     break;
                 }
@@ -297,7 +320,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             Message message = null;
             string error = "";
             try {
-                message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this);
+                message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this, _version);
             }
             catch(Exception ex) {
                 error = ex.Message;
@@ -331,8 +354,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotNull(message, "message");
 
             SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Helper.UTF8NoBom.GetBytes(message)), checkQueueSize: false);
-            Log.Error("Closing connection '{0}' [{1}, L{2}, {3:B}] due to error. Reason: {4}",
-                      ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, message);
+            Log.Error("Closing connection '{0}{1}' [{2}, L{3}, {4:B}] due to error. Reason: {5}",
+                      ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, message);
             _connection.Close(message);
         }
 
@@ -345,15 +368,15 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void Stop(string reason = null)
         {
-            Log.Trace("Closing connection '{0}' [{1}, L{2}, {3:B}] cleanly.{4}",
-                      ConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId,
+            Log.Trace("Closing connection '{0}{1}' [{2}, L{3}, {4:B}] cleanly.{5}",
+                      ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId,
                       reason.IsEmpty() ? string.Empty : " Reason: " + reason);
             _connection.Close(reason);
         }
 
         public void SendMessage(Message message)
         {
-            var package = _dispatcher.WrapMessage(message);
+            var package = _dispatcher.WrapMessage(message, _version);
             if (package != null)
                 SendPackage(package.Value);
         }

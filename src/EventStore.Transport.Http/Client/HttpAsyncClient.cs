@@ -75,11 +75,17 @@ namespace EventStore.Transport.Http.Client
             Send(HttpMethod.Put, url, body, contentType, null, onSuccess, onException);
         }
 
+        public void Dispose()
+        {
+            _client.Dispose();
+        }
+
         private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers,
                              Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = new HttpRequestMessage();
-#if __MonoCS__
+//MONOCHECK is this still needed?
+#if MONO
             request.Headers.Add("Keep-alive", "false");
 #endif
             request.Method = new System.Net.Http.HttpMethod(method);

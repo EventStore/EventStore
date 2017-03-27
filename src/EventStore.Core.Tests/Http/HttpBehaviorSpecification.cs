@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -30,18 +31,19 @@ namespace EventStore.Core.Tests.Http
         protected string _lastResponseBody;
         protected byte[] _lastResponseBytes;
         protected JsonException _lastJsonException;
-#if !__MonoCS__
+//MONOCHECK Does this work now?
+#if !MONO
         private Func<HttpWebResponse, byte[]> _dumpResponse;
         private Func<HttpWebResponse, int> _dumpResponse2;
         private Func<HttpWebRequest, byte[]> _dumpRequest;
         private Func<HttpWebRequest, byte[]> _dumpRequest2;
 #endif
         private string _tag;
+        private bool _createdMiniNode;
 
-        [TestFixtureSetUp]
         public override void TestFixtureSetUp()
         {
-#if !__MonoCS__
+#if !MONO
             Helper.EatException(() => _dumpResponse = CreateDumpResponse());
             Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
             Helper.EatException(() => _dumpRequest = CreateDumpRequest());
@@ -50,7 +52,7 @@ namespace EventStore.Core.Tests.Http
 
             base.TestFixtureSetUp();
 
-            bool createdMiniNode = false;
+            _createdMiniNode = false;
             if (SetUpFixture._connection != null && SetUpFixture._node != null)
             {
                 _tag = "_" + (++SetUpFixture._counter);
@@ -59,7 +61,7 @@ namespace EventStore.Core.Tests.Http
             }
             else
             {
-                createdMiniNode = true;
+                _createdMiniNode = true;
                 _tag = "_1";
                 _node = CreateMiniNode();
                 _node.Start();
@@ -78,7 +80,7 @@ namespace EventStore.Core.Tests.Http
             }
             catch
             {
-                if (createdMiniNode)
+                if (_createdMiniNode)
                 {
                     if (_connection != null)
                         try
@@ -128,23 +130,29 @@ namespace EventStore.Core.Tests.Http
             return false;
         }
 
-        [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-            if (SetUpFixture._connection == null || SetUpFixture._node == null)
+            if(_createdMiniNode)
             {
                 _connection.Close();
                 _node.Shutdown();
             }
             base.TestFixtureTearDown();
+            if(_lastResponse != null) 
+            {
+                _lastResponse.Close();
+            }
         }
 
         protected HttpWebRequest CreateRequest(
-            string path, string extra, string method, string contentType, ICredentials credentials = null)
+            string path, string extra, string method, string contentType, ICredentials credentials = null, NameValueCollection headers = null)
         {
 			var uri = MakeUrl (path, extra);
 			var request = WebRequest.Create (uri);
             var httpWebRequest = (HttpWebRequest)request;
+            if(headers != null) {
+                httpWebRequest.Headers.Add(headers);
+            }
             httpWebRequest.ConnectionGroupName = TestStream;
             httpWebRequest.Method = method;
             httpWebRequest.ContentType = contentType;
@@ -293,9 +301,9 @@ namespace EventStore.Core.Tests.Http
             return XDocument.Parse(_lastResponseBody);
         }
 
-        protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null)
+        protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null, NameValueCollection headers = null)
         {
-            Get(path, "", accept, credentials);
+            Get(path, "", accept, credentials, headers: headers);
             try
             {
                 return _lastResponseBody.ParseJson<T>();
@@ -340,9 +348,9 @@ namespace EventStore.Core.Tests.Http
             }
         }
 			
-		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null, bool setAcceptHeader = true)
+		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null, bool setAcceptHeader = true, NameValueCollection headers = null)
         {
-            var request = CreateRequest(path, extra, "GET", null, credentials);
+            var request = CreateRequest(path, extra, "GET", null, credentials, headers);
 			if (setAcceptHeader) {
 				request.Accept = accept ?? "application/json";
 			}
@@ -365,7 +373,7 @@ namespace EventStore.Core.Tests.Http
             {
                 response = (HttpWebResponse) ex.Response;
             }
-#if !__MonoCS__
+#if !MONO
             if (_dumpRequest != null)
             {
                 var bytes = _dumpRequest(request);

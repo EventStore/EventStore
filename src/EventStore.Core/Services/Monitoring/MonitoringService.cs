@@ -59,6 +59,7 @@ namespace EventStore.Core.Services.Monitoring
         private IMonitoredTcpConnection[] _memoizedTcpConnections;
         private DateTime _lastTcpConnectionsRequestTime;
         private IPEndPoint _tcpEndpoint;
+        private IPEndPoint _tcpSecureEndpoint;
 
         public MonitoringService(IQueuedHandler monitoringQueue,
                                  IPublisher statsCollectionBus,
@@ -68,7 +69,8 @@ namespace EventStore.Core.Services.Monitoring
                                  TimeSpan statsCollectionPeriod,
                                  IPEndPoint nodeEndpoint,
                                  StatsStorage statsStorage,
-                                 IPEndPoint tcpEndpoint)
+                                 IPEndPoint tcpEndpoint,
+                                 IPEndPoint tcpSecureEndpoint)
         {
             Ensure.NotNull(monitoringQueue, "monitoringQueue");
             Ensure.NotNull(statsCollectionBus, "statsCollectionBus");
@@ -87,6 +89,7 @@ namespace EventStore.Core.Services.Monitoring
             _statsCollectionPeriodMs = statsCollectionPeriod > TimeSpan.Zero ? (long)statsCollectionPeriod.TotalMilliseconds : Timeout.Infinite;
             _nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
             _tcpEndpoint = tcpEndpoint;
+            _tcpSecureEndpoint = tcpSecureEndpoint;
             _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
         }
 
@@ -316,10 +319,31 @@ namespace EventStore.Core.Services.Monitoring
                             RemoteEndPoint = tcpConn.RemoteEndPoint.ToString(),
                             LocalEndPoint = tcpConn.LocalEndPoint.ToString(),
                             ConnectionId = tcpConn.ConnectionId,
+                            ClientConnectionName = tcpConn.ClientConnectionName,
                             TotalBytesSent = tcpConn.TotalBytesSent,
                             TotalBytesReceived = tcpConn.TotalBytesReceived,
                             PendingSendBytes = tcpConn.PendingSendBytes,
-                            PendingReceivedBytes = tcpConn.PendingReceivedBytes
+                            PendingReceivedBytes = tcpConn.PendingReceivedBytes,
+                            IsSslConnection = false
+                        });
+                    }
+
+                    var tcpConnSsl = conn as TcpConnectionSsl;
+                    if (tcpConnSsl != null)
+                    {
+                        var isExternalConnection = _tcpSecureEndpoint != null && _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.Port;
+                        connStats.Add(new MonitoringMessage.TcpConnectionStats
+                        {
+                            IsExternalConnection = isExternalConnection,
+                            RemoteEndPoint = tcpConnSsl.RemoteEndPoint.ToString(),
+                            LocalEndPoint = tcpConnSsl.LocalEndPoint.ToString(),
+                            ConnectionId = tcpConnSsl.ConnectionId,
+                            ClientConnectionName = tcpConnSsl.ClientConnectionName,
+                            TotalBytesSent = tcpConnSsl.TotalBytesSent,
+                            TotalBytesReceived = tcpConnSsl.TotalBytesReceived,
+                            PendingSendBytes = tcpConnSsl.PendingSendBytes,
+                            PendingReceivedBytes = tcpConnSsl.PendingReceivedBytes,
+                            IsSslConnection = true
                         });
                     }
                 }

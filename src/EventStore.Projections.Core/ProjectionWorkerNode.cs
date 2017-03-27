@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core
         public ProjectionWorkerNode(
             Guid workerId,
             TFChunkDb db,
-            QueuedHandler inputQueue,
+            IQueuedHandler inputQueue,
             ITimeProvider timeProvider,
             ISingletonTimeoutScheduler timeoutScheduler,
             ProjectionType runProjections)
@@ -107,6 +107,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscriptionStarted>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
             coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
+            coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.Failed>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionMeasured>());
             coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingProgress>());

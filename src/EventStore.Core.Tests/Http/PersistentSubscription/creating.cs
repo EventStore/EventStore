@@ -25,6 +25,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 }, _admin);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _response.Close();
+        }
+
         [Test]
         public void returns_created()
         {
@@ -57,6 +63,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 }, null);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _response.Close();
+        }
+
         [Test]
         public void returns_unauthorised()
         {
@@ -87,6 +99,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 {
                     ResolveLinkTos = true
                 }, _admin);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _response.Close();
         }
 
         [Test]
@@ -134,6 +152,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                     ReadBatchSize = 11
                 },
                 _admin);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Response.Close();
         }
 
         [Test]

@@ -133,12 +133,11 @@ namespace EventStore.ClientAPI.ClientOperations
             if (package.Command == expectedCommand)
                 throw new ArgumentException(string.Format("Command should not be {0}.", package.Command));
 
-            Log.Error("Unexpected TcpCommand received.\n"
-                      + "Expected: {0}, Actual: {1}, Flags: {2}, CorrelationId: {3}\n"
-                      + "Operation ({4}): {5}\n"
-                      +"TcpPackage Data Dump:\n{6}", 
-                      expectedCommand, package.Command, package.Flags, package.CorrelationId, 
-                      GetType().Name, this, Helper.FormatBinaryDump(package.Data));
+            Log.Error("Unexpected TcpCommand received.");
+            Log.Error("Expected: {0}, Actual: {1}, Flags: {2}, CorrelationId: {3}", expectedCommand, package.Command, package.Flags, package.CorrelationId);
+            Log.Error("Operation ({0}): {1}", GetType().Name, this);
+            Log.Error("TcpPackage Data Dump:");
+            Log.Error(Helper.FormatBinaryDump(package.Data));
 
             Fail(new CommandNotExpectedException(expectedCommand.ToString(), package.Command.ToString()));
             return new InspectionResult(InspectionDecision.EndOperation, string.Format("Unexpected command - {0}", package.Command.ToString()));

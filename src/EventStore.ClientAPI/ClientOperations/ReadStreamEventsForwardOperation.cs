@@ -9,13 +9,13 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class ReadStreamEventsForwardOperation : OperationBase<StreamEventsSlice, ClientMessage.ReadStreamEventsCompleted>
     {
         private readonly string _stream;
-        private readonly int _fromEventNumber;
+        private readonly long _fromEventNumber;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
         private readonly bool _requireMaster;
 
         public ReadStreamEventsForwardOperation(ILogger log, TaskCompletionSource<StreamEventsSlice> source,
-                                                string stream, int fromEventNumber, int maxCount, bool resolveLinkTos,
+                                                string stream, long fromEventNumber, int maxCount, bool resolveLinkTos,
                                                 bool requireMaster, UserCredentials userCredentials)
             : base(log, source, TcpCommand.ReadStreamEventsForward, TcpCommand.ReadStreamEventsForwardCompleted, userCredentials)
         {

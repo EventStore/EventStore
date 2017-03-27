@@ -55,7 +55,7 @@ else
     exit 1
 fi
 
-for SUBVER in 11 10 9 8
+for SUBVER in 12 11 10 9 8
 do
     sdkpath=`xcodebuild -sdk -version | grep "MacOSX10.$SUBVER" | tail -1`
     if [[ $sdkpath != "" ]] ; then

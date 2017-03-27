@@ -8,13 +8,16 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
+using EventStore.Core.Settings;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class StreamEventReader : EventReader, IHandle<ClientMessage.ReadStreamEventsForwardCompleted>
+    public class StreamEventReader : EventReader,
+        IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
+        IHandle<ProjectionManagementMessage.Internal.ReadTimeout>
     {
         private readonly string _streamName;
-        private int _fromSequenceNumber;
+        private long _fromSequenceNumber;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
         private readonly bool _produceStreamDeletes;
@@ -23,13 +26,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _maxReadCount = 111;
         private long _lastPosition;
         private bool _eof;
+        private Guid _pendingRequestCorrelationId;
 
         public StreamEventReader(
             IPublisher publisher,
             Guid eventReaderCorrelationId,
             IPrincipal readAs,
             string streamName,
-            int fromSequenceNumber,
+            long fromSequenceNumber,
             ITimeProvider timeProvider,
             bool resolveLinkTos,
             bool produceStreamDeletes,
@@ -62,6 +66,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format("Invalid stream name: {0}.  Expected: {1}", message.EventStreamId, _streamName));
             if (Paused)
                 throw new InvalidOperationException("Paused");
+            if(message.CorrelationId != _pendingRequestCorrelationId){
+                return;
+            }
+
             _eventsRequested = false;
             _lastPosition = message.TfLastCommitPosition;
             NotifyIfStarting(message.TfLastCommitPosition);
@@ -123,7 +131,17 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private int StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, int fromSequenceNumber)
+        public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message)
+        {
+            if(_disposed) return;
+            if(Paused) return;
+            if(message.CorrelationId != _pendingRequestCorrelationId) return;
+
+            _eventsRequested = false;
+            PauseOrContinueProcessing();
+        }
+
+        private long StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, long fromSequenceNumber)
         {
             if (fromSequenceNumber != 0) return fromSequenceNumber;
             if(message.Events.Length > 0)
@@ -148,21 +166,41 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
 
-
-            var readEventsForward = CreateReadEventsMessage();
-            if (_eof)
-                _publisher.Publish(
-                    new AwakeServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
-                        new TFPos(_lastPosition, _lastPosition), readEventsForward));
-            else
+            _pendingRequestCorrelationId = Guid.NewGuid();
+            var readEventsForward = CreateReadEventsMessage(_pendingRequestCorrelationId);
+			if (_eof) {
+				_publisher.Publish (
+					new AwakeServiceMessage.SubscribeAwake (
+						new PublishEnvelope (_publisher, crossThread: true), Guid.NewGuid(), null,
+						new TFPos (_lastPosition, _lastPosition), CreateReadTimeoutMessage(_pendingRequestCorrelationId, _streamName)));
+				_publisher.Publish (
+					new AwakeServiceMessage.SubscribeAwake (
+						new PublishEnvelope (_publisher, crossThread: true), Guid.NewGuid(), null,
+						new TFPos (_lastPosition, _lastPosition), readEventsForward));
+			}
+            else{
                 _publisher.Publish(readEventsForward);
+                ScheduleReadTimeoutMessage(_pendingRequestCorrelationId, _streamName);
+            }
         }
 
-        private Message CreateReadEventsMessage()
+        private void ScheduleReadTimeoutMessage(Guid correlationId, string streamId)
+        {
+            _publisher.Publish(CreateReadTimeoutMessage(correlationId, streamId));
+        }
+
+        private Message CreateReadTimeoutMessage(Guid correlationId, string streamId)
+        {
+            return TimerMessage.Schedule.Create(
+                TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                new SendToThisEnvelope(this),
+                new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, streamId));
+        }
+
+        private Message CreateReadEventsMessage(Guid readCorrelationId)
         {
             return new ClientMessage.ReadStreamEventsForward(
-                Guid.NewGuid(), EventReaderCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
+                readCorrelationId, readCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
         }
 
@@ -175,7 +213,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId, null, safeJoinPosition, 100.0f, source: this.GetType()));
         }
 
-        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref int sequenceNumber)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref long sequenceNumber)
         {
             EventRecord positionEvent = pair.OriginalEvent;
             if (positionEvent.EventNumber != sequenceNumber)

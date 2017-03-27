@@ -8,8 +8,8 @@ if (typeof String.prototype.startsWith != "function") {
   };
 };
 
-fromAll().foreachStream().whenAny(
-  function (state, ev) {
+fromAll().foreachStream().when({
+  $any:function (state, ev) {
     if (state.c === undefined) state.c = 0;
     if (ev.streamId.startsWith("account")) {
       if (state.c != ev.sequenceNumber)
@@ -17,7 +17,7 @@ fromAll().foreachStream().whenAny(
       state.c++;
     }
     return state;
-  }
+  }}
 );     
 
 ' http://127.0.0.1:2113/projections/persistent?name=forall-foreach2\&type=JS

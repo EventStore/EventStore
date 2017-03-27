@@ -34,9 +34,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -53,10 +54,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                         }, null, false, "", 12, 11, true, 200));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]
@@ -111,12 +112,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                 12, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().FromEventNumber);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_handle_repeated_read_events_completed()
         {
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
+            Assert.Throws<InvalidOperationException>(() => {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -126,14 +129,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]))
                         }, null, false, "", 11, 10, true, 100));
+            });
         }
 
         [Test]
         public void can_handle_following_read_events_completed()
         {
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(

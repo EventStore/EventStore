@@ -199,6 +199,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 foreach (var @event in scheduledWrites)
                 {
                     var emittedEvent = @event.Event;
+                    if (string.IsNullOrEmpty(@event.Event.StreamId))
+                    {
+                        Failed("Cannot write to a null stream id");
+                        return;
+                    }
                     emittedEvent.SetCausedBy(causedBy);
                     emittedEvent.SetCorrelationId(correlationId);
                 }

@@ -201,8 +201,8 @@ namespace EventStore.Transport.Http.Server
             if (handler != null)
                 handler(this, context);
         }
-
-#if __MonoCS__
+//MONOCHECK is this still needed?
+#if MONO
        private static Func<HttpListenerRequest, HttpListenerContext> CreateGetContext()
         {
             var r = System.Linq.Expressions.Expression.Parameter(typeof (HttpListenerRequest), "r");

@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly bool _requireMaster;
         private readonly string _stream;
-        private readonly int _expectedVersion;
+        private readonly long _expectedVersion;
         private readonly IEnumerable<EventData> _events;
 
         private bool _wasCommitTimeout;
@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                        TaskCompletionSource<WriteResult> source,
                                        bool requireMaster,
                                        string stream,
-                                       int expectedVersion,
+                                       long expectedVersion,
                                        IEnumerable<EventData> events,
                                        UserCredentials userCredentials)
             : base(log, source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted, userCredentials)
@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     _wasCommitTimeout = true;
                     return new InspectionResult(InspectionDecision.Retry, "CommitTimeout");
                 case ClientMessage.OperationResult.WrongExpectedVersion:
-                    var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}", _stream, _expectedVersion);
+                    var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, Current version: {2}", _stream, _expectedVersion, response.CurrentVersion);
                     Fail(new WrongExpectedVersionException(err));
                     return new InspectionResult(InspectionDecision.EndOperation, "WrongExpectedVersion");
                 case ClientMessage.OperationResult.StreamDeleted:

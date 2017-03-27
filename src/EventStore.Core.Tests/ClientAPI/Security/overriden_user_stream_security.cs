@@ -7,10 +7,10 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security
 {
-    [TestFixture, Category("LongRunning"), Category("Network")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
     public class overriden_user_stream_security : AuthenticationTestBase
     {
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Connection.SetSystemSettingsAsync(settings, new UserCredentials("adm", "admpa$$")).Wait();
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_user_stream_succeeds_for_authorized_user()
         {
             const string stream = "user-authorized-user";
@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             ExpectNoException(() => DeleteStream(stream, "user1", "pa$$1"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_user_stream_fail_for_not_authorized_user()
         {
             const string stream = "user-not-authorized";
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => DeleteStream(stream, "user2", "pa$$2"));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_user_stream_fail_for_anonymous_user()
         {
             const string stream = "user-anonymous-user";
@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             Expect<AccessDeniedException>(() => DeleteStream(stream, null, null));
         }
 
-        [Test, Category("LongRunning"), Category("Network")]
+        [Test]
         public void operations_on_user_stream_succeed_for_admin()
         {
             const string stream = "user-admin";

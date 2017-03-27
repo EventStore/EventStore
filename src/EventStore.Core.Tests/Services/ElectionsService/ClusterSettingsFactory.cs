@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService
                 new[] { GetLoopbackForPort(httpExtPort).ToHttpUrl() },
                 false, null, 1, false, "dns", new[] { GetLoopbackForPort(ManagerPort) },
                 TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
-                TimeSpan.FromSeconds(2), false, null, false, TimeSpan.FromHours(1),
+                TimeSpan.FromSeconds(2), false, false, null, false, TimeSpan.FromHours(1),
                 StatsStorage.StreamAndCsv, 0, new InternalAuthenticationProviderFactory(), false, 30, true, true, true,
                 TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
                 TimeSpan.FromSeconds(10),

@@ -29,7 +29,7 @@ namespace EventStore.Core
         protected abstract void Start();
         public abstract void Stop();
 
-        public int Run(string[] args)
+        public void Run(string[] args)
         {
             try
             {
@@ -68,22 +68,35 @@ namespace EventStore.Core
             }
             catch (ApplicationInitializationException ex)
             {
-                Log.FatalException(ex, "Application initialization error: {0}", FormatExceptionMessage(ex));
-                Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
+                var msg = String.Format("Application initialization error: {0}", FormatExceptionMessage(ex));
+                if(LogManager.Initialized)
+                {
+                    Log.FatalException(ex, msg);
+                }
+                else 
+                {
+                    Console.Error.WriteLine(msg);
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                Log.FatalException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
-                Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
+                var msg = "Unhandled exception while starting application:";
+                if(LogManager.Initialized)
+                {
+                    Log.FatalException(ex, msg);
+                    Log.FatalException(ex, "{0}", FormatExceptionMessage(ex));
+                }
+                else
+                {
+                    Console.Error.WriteLine(msg);
+                    Console.Error.WriteLine(FormatExceptionMessage(ex));
+                }
             }
             finally
             {
                 Log.Flush();
             }
-
-            Application.ExitSilent(_exitCode, "Normal exit.");
-            return _exitCode;
+            Environment.Exit(_exitCode);
         }
 
         protected virtual void PreInit(TOptions options)
@@ -99,9 +112,9 @@ namespace EventStore.Core
                     Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
                         "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
                 }
-                if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
+                if(OS.IsUnix && !(OS.GetRuntimeVersion().StartsWith("4.6.2")))
                 {
-                    Log.Warn("You appear to be running a version of Mono which is untested and unsupported. Only Mono 3 is supported at this time.");
+                    Log.Warn("You appear to be running a version of Mono which is untested and not supported. Only Mono 4.6.2 is supported at this time.");
                 }
             }
         }
@@ -130,18 +143,12 @@ namespace EventStore.Core
             string logsDirectory = Path.GetFullPath(options.Log.IsNotEmptyString() ? options.Log : GetLogsDirectory(options));
             LogManager.Init(componentName, logsDirectory, Locations.DefaultConfigurationDirectory);
 
-            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
-                     + "{5,-25} {6} ({7})\n"
-                     + "{8,-25} {9} ({10}-bit)\n"
-                     + "{11,-25} {12}\n"
-                     + "{13,-25} {14}\n\n"
-                     + "{15}",
-                     "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
-                     "OS:", OS.OsFlavor, Environment.OSVersion,
-                     "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
-                     "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
-                     "LOGS:", LogManager.LogsDirectory,
-                     EventStoreOptions.DumpOptions());
+            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})", "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+            Log.Info("{0,-25} {1} ({2})", "OS:", OS.OsFlavor, Environment.OSVersion);
+            Log.Info("{0,-25} {1} ({2}-bit)", "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8);
+            Log.Info("{0,-25} {1}", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+            Log.Info("{0,-25} {1}", "LOGS:", LogManager.LogsDirectory);
+            Log.Info("{0}", EventStoreOptions.DumpOptions());
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");

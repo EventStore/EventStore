@@ -7,10 +7,12 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
+using EventStore.ClientAPI.Common;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("LongRunning"), Category("ClientAPI")]
     public class connect_to_non_existing_persistent_subscription_with_permissions : SpecificationWithMiniNode
     {
         private Exception _caught;
@@ -677,98 +679,159 @@ namespace EventStore.Core.Tests.ClientAPI
         }
     }
 
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_persistent_subscription_with_link_to_event_with_event_number_greater_than_int_maxvalue : ExpectedVersion64Bit.MiniNodeWithExistingRecords
+    {
+        private const string StreamName = "connect_to_persistent_subscription_with_link_to_event_with_event_number_greater_than_int_maxvalue";
+        private const long intMaxValue = (long)int.MaxValue;
+
+        private string _linkedStreamName = "linked-" + StreamName;
+        private const string _group = "group-" + StreamName;
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
+                                                                .ResolveLinkTos()
+                                                                .StartFromBeginning();
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private ResolvedEvent _firstEvent;
+        private bool _set = false;
+        private Guid _event1Id;
+
+        public override void WriteTestScenario()
+        {
+            var event1 = WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000));
+            WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000));
+            _event1Id = event1.EventId;
+        }
+
+        public override void Given()
+        {
+            _store = BuildConnection(Node);
+            _store.ConnectAsync().Wait();
+
+            _store.CreatePersistentSubscriptionAsync(_linkedStreamName, _group, _settings,
+                DefaultData.AdminCredentials).Wait();
+            _store.ConnectToPersistentSubscription(
+                _linkedStreamName,
+                _group,
+                HandleEvent,
+                (sub, reason, ex) => { },
+                DefaultData.AdminCredentials);
+            _store.AppendToStreamAsync(_linkedStreamName, ExpectedVersion.Any, new EventData(Guid.NewGuid(), 
+                        SystemEventTypes.LinkTo, false, Helper.UTF8NoBom.GetBytes(
+                            string.Format("{0}@{1}", intMaxValue + 1, StreamName)), null));
+        }
+
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        {
+            if (!_set)
+            {
+                _set = true;
+                _firstEvent = resolvedEvent;
+                _resetEvent.Set();
+            }
+        }
+
+        [Test]
+        public void the_subscription_resolves_the_linked_event_correctly()
+        {
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
+            Assert.AreEqual(intMaxValue + 1, _firstEvent.Event.EventNumber);
+            Assert.AreEqual(_event1Id, _firstEvent.Event.EventId);
+        }
+    }
+
     //ALL
 
-/*
+    /*
 
-    [TestFixture, Category("LongRunning")]
-    public class connect_to_non_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
-    {
-        private Exception _caught;
-
-        protected override void When()
+        [TestFixture, Category("LongRunning")]
+        public class connect_to_non_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
         {
-            try
+            private Exception _caught;
+
+            protected override void When()
             {
-                _conn.ConnectToPersistentSubscriptionForAll("nonexisting2",
+                try
+                {
+                    _conn.ConnectToPersistentSubscriptionForAll("nonexisting2",
+                        (sub, e) => Console.Write("appeared"),
+                        (sub, reason, ex) =>
+                        {
+                        }, 
+                        DefaultData.AdminCredentials);
+                    throw new Exception("should have thrown");
+                }
+                catch (Exception ex)
+                {
+                    _caught = ex;
+                }
+            }
+
+            [Test]
+            public void the_completion_fails()
+            {
+                Assert.IsNotNull(_caught);
+            }
+
+            [Test]
+            public void the_exception_is_an_argument_exception()
+            {
+                Assert.IsInstanceOf<ArgumentException>(_caught.InnerException);
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class connect_to_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
+        {
+            private EventStorePersistentSubscription _sub;
+            private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                    .DoNotResolveLinkTos()
+                                                                    .StartFromCurrent();
+            protected override void When()
+            {
+                _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", _settings, DefaultData.AdminCredentials).Wait();
+                _sub = _conn.ConnectToPersistentSubscriptionForAll("agroupname17",
                     (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) =>
-                    {
-                    }, 
-                    DefaultData.AdminCredentials);
-                throw new Exception("should have thrown");
+                    (sub, reason, ex) => { }, DefaultData.AdminCredentials);
             }
-            catch (Exception ex)
+
+            [Test]
+            public void the_subscription_suceeds()
             {
-                _caught = ex;
+                Assert.IsNotNull(_sub);
             }
         }
 
-        [Test]
-        public void the_completion_fails()
+        [TestFixture, Category("LongRunning")]
+        public class connect_to_existing_persistent_all_subscription_without_permissions : SpecificationWithMiniNode
         {
-            Assert.IsNotNull(_caught);
-        }
+            private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
+                                                                    .DoNotResolveLinkTos()
+                                                                    .StartFromCurrent();
 
-        [Test]
-        public void the_exception_is_an_argument_exception()
-        {
-            Assert.IsInstanceOf<ArgumentException>(_caught.InnerException);
-        }
-    }
-
-    [TestFixture, Category("LongRunning")]
-    public class connect_to_existing_persistent_all_subscription_with_permissions : SpecificationWithMiniNode
-    {
-        private EventStorePersistentSubscription _sub;
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
-                                                                .DoNotResolveLinkTos()
-                                                                .StartFromCurrent();
-        protected override void When()
-        {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname17", _settings, DefaultData.AdminCredentials).Wait();
-            _sub = _conn.ConnectToPersistentSubscriptionForAll("agroupname17",
-                (sub, e) => Console.Write("appeared"),
-                (sub, reason, ex) => { }, DefaultData.AdminCredentials);
-        }
-
-        [Test]
-        public void the_subscription_suceeds()
-        {
-            Assert.IsNotNull(_sub);
-        }
-    }
-
-    [TestFixture, Category("LongRunning")]
-    public class connect_to_existing_persistent_all_subscription_without_permissions : SpecificationWithMiniNode
-    {
-        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettingsBuilder.Create()
-                                                                .DoNotResolveLinkTos()
-                                                                .StartFromCurrent();
-
-        protected override void When()
-        {
-            _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", _settings,
-                DefaultData.AdminCredentials).Wait();
-        }
-
-        [Test]
-        public void the_subscription_fails_to_connect()
-        {
-            try
+            protected override void When()
             {
-                _conn.ConnectToPersistentSubscriptionForAll("agroupname55",
-                    (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) => { });
-                throw new Exception("should have thrown.");
+                _conn.CreatePersistentSubscriptionForAllAsync("agroupname55", _settings,
+                    DefaultData.AdminCredentials).Wait();
             }
-            catch (Exception ex)
+
+            [Test]
+            public void the_subscription_fails_to_connect()
             {
-                Assert.IsInstanceOf<AggregateException>(ex);
-                Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
+                try
+                {
+                    _conn.ConnectToPersistentSubscriptionForAll("agroupname55",
+                        (sub, e) => Console.Write("appeared"),
+                        (sub, reason, ex) => { });
+                    throw new Exception("should have thrown.");
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsInstanceOf<AggregateException>(ex);
+                    Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
+                }
             }
         }
-    }
-*/
+    */
 
 }

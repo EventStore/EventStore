@@ -41,13 +41,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
             Assert.AreEqual(0, _committedeventHandler.HandledMessages.Count);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void the_projection_cannot_be_resumed()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             _readerService.Handle(new ReaderSubscriptionManagement.Resume(_projectionCorrelationId));
             _readerService.Handle(
                 new ReaderSubscriptionMessage.CommittedEventDistributed(_projectionCorrelationId, CreateEvent()));
             Assert.AreEqual(0, _committedeventHandler.HandledMessages.Count);
+            });
         }
     }
 }

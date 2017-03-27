@@ -28,10 +28,13 @@ namespace EventStore.ClusterNode
         private ExclusiveDbLock _dbLock;
         private ClusterNodeMutex _clusterNodeMutex;
 
-        public static int Main(string[] args)
+        public static void Main(string[] args)
         {
+            Console.CancelKeyPress += delegate {
+                Environment.Exit((int)ExitCode.Success);
+            };
             var p = new Program();
-            return p.Run(args);
+            p.Run(args);
         }
 
         protected override string GetLogsDirectory(ClusterNodeOptions options)
@@ -142,6 +145,15 @@ namespace EventStore.ClusterNode
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);
+            if(options.DisableInsecureTCP)
+            {
+                if (!options.UseInternalSsl) {
+                    throw new Exception("You have chosen to disable the insecure TCP ports and haven't set 'UseInternalSsl'. The nodes in the cluster will not be able to communicate properly.");
+                }
+                if(extSecTcp == null || intSecTcp == null){
+                    throw new Exception("You have chosen to disable the insecure TCP ports and haven't setup the External or Internal Secure TCP Ports.");
+                }
+            }
             if (options.UseInternalSsl)
             {
                 if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault)) throw new Exception("No SSL target host specified.");
@@ -213,7 +225,10 @@ namespace EventStore.ClusterNode
             if (!options.AddInterfacePrefixes){
                 builder.DontAddInterfacePrefixes();
             }
-
+            if (options.GossipOnSingleNode)
+            {
+                builder.GossipAsSingleNode();
+            }
             foreach(var prefix in options.IntHttpPrefixes) {
                 builder.AddInternalHttpPrefix(prefix);
             }
@@ -243,6 +258,8 @@ namespace EventStore.ClusterNode
                 builder.ValidateSslServer();
             if(options.UseInternalSsl)
                 builder.EnableSsl();
+            if(options.DisableInsecureTCP)
+                builder.DisableInsecureTCP();
             if(!options.AdminOnExt)
                 builder.NoAdminOnPublicInterface();
             if(!options.StatsOnExt)
@@ -253,7 +270,11 @@ namespace EventStore.ClusterNode
                 builder.DoNotVerifyDbHashes();
             if(options.AlwaysKeepScavenged)
                 builder.AlwaysKeepScavenged();
-
+            if(options.Unbuffered)
+                builder.EnableUnbuffered();
+            if(options.WriteThrough)
+                builder.EnableWriteThrough();
+                
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation))

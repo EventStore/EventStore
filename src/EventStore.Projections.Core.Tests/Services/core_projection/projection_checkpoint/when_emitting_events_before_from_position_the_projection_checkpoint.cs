@@ -34,10 +34,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             }
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void throws_invalid_operation_exception()
         {
-            if (_lastException != null) throw _lastException;
+            Assert.Throws<InvalidOperationException>(()=> { if (_lastException != null) throw _lastException; });
         }
     }
 }

@@ -122,6 +122,11 @@ namespace EventStore.ClientAPI
         public readonly TimeSpan GossipTimeout;
 
         /// <summary>
+        /// Whether to randomly choose a node that's alive from the known nodes. 
+        /// </summary>
+        public readonly bool PreferRandomNode;
+
+        /// <summary>
         /// The interval after which a client will time out during connection.
         /// </summary>
         public readonly TimeSpan ClientConnectionTimeout;
@@ -148,7 +153,8 @@ namespace EventStore.ClientAPI
                                     GossipSeed[] gossipSeeds,
                                     int maxDiscoverAttempts, 
                                     int externalGossipPort, 
-                                    TimeSpan gossipTimeout)
+                                    TimeSpan gossipTimeout,
+                                    bool preferRandomNode)
         {
             Ensure.NotNull(log, "log");
             Ensure.Positive(maxQueueSize, "maxQueueSize");
@@ -183,6 +189,7 @@ namespace EventStore.ClientAPI
             MaxDiscoverAttempts = maxDiscoverAttempts;
             ExternalGossipPort = externalGossipPort;
             GossipTimeout = gossipTimeout;
+            PreferRandomNode = preferRandomNode;
         }
     }
 }

@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private readonly BoundedQueue<OutstandingMessage> _liveBuffer;
 
-        public int LiveBufferCount { get { return _liveBuffer.Count; } }
+        public long LiveBufferCount { get { return _liveBuffer.Count; } }
         public int BufferCount { get { return _retry.Count + _buffer.Count; } }
         public int RetryBufferCount { get { return _retry.Count; } }
         public int ReadBufferCount { get { return _buffer.Count; } }
@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Live = true;
         }
         
-        private void DrainLiveTo(int eventNumber)
+        private void DrainLiveTo(long eventNumber)
         {
             while (_liveBuffer.Count > 0 && _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber < eventNumber)
             {
@@ -104,9 +104,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        private int TryPeekLive()
+        private long TryPeekLive()
         {
-            return _liveBuffer.Count == 0 ? int.MaxValue : _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber;
+            return _liveBuffer.Count == 0 ? long.MaxValue : _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber;
         }
 
         public IEnumerable<OutstandingMessagePointer> Scan()
@@ -138,9 +138,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_liveBuffer.Count == 0) Live = true;
         }
 
-        public int GetLowestRetry()
+        public long GetLowestRetry()
         {
-            if (_retry.Count == 0) return int.MaxValue;
+            if (_retry.Count == 0) return long.MaxValue;
             return _retry.Min(x => x.ResolvedEvent.OriginalEventNumber);
         }
 

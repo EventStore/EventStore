@@ -21,12 +21,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         private Guid _distibutionPointCorrelationId;
 
         private string[] _abStreams;
-        private Dictionary<string, int> _ab12Tag;
+        private Dictionary<string, long> _ab12Tag;
 
         [SetUp]
         public new void When()
         {
-            _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 2}};
+            _ab12Tag = new Dictionary<string, long> {{"a", 1}, {"b", 2}};
             _abStreams = new[] {"a", "b"};
 
             _distibutionPointCorrelationId = Guid.NewGuid();
@@ -37,10 +37,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _edp.Resume();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void it_cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]

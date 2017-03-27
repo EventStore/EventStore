@@ -71,6 +71,8 @@ namespace EventStore.ClusterNode
         public int IntTcpHeartbeatInterval { get; set; }
         [ArgDescription(Opts.ExtTcpHeartbeatIntervalDescr, Opts.InterfacesGroup)]
         public int ExtTcpHeartbeatInterval { get; set; }
+        [ArgDescription(Opts.GossipOnSingleNodeDescr, Opts.InterfacesGroup)]
+        public bool GossipOnSingleNode { get; set; }
 
 
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
@@ -129,6 +131,14 @@ namespace EventStore.ClusterNode
         public bool MemDb { get; set; }
         [ArgDescription(Opts.SkipDbVerifyDescr, Opts.DbGroup)]
         public bool SkipDbVerify { get; set; }
+
+        [ArgDescription(Opts.WriteThroughDescr, Opts.DbGroup)]
+        public bool WriteThrough { get; set; }
+
+        [ArgDescription(Opts.UnbufferedDescr, Opts.DbGroup)]
+        public bool Unbuffered { get; set; }
+
+
         [ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
         public ProjectionType RunProjections { get; set; }
         [ArgDescription(Opts.ProjectionThreadsDescr, Opts.ProjectionsGroup)]
@@ -161,6 +171,8 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.UseInternalSslDescr, Opts.InterfacesGroup)]
         public bool UseInternalSsl { get; set; }
+        [ArgDescription(Opts.DisableInsecureTCPDescr, Opts.InterfacesGroup)]
+        public bool DisableInsecureTCP { get; set; }
         [ArgDescription(Opts.SslTargetHostDescr, Opts.InterfacesGroup)]
         public string SslTargetHost { get; set; }
         [ArgDescription(Opts.SslValidateServerDescr, Opts.InterfacesGroup)]
@@ -203,7 +215,7 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.AlwaysKeepScavengedDescr, Opts.DbGroup)]
         public bool AlwaysKeepScavenged { get; set; }
-        
+
         public ClusterNodeOptions()
         {
             Config = "";
@@ -227,6 +239,7 @@ namespace EventStore.ClusterNode
             ClusterSize = Opts.ClusterSizeDefault;
             MinFlushDelayMs = Opts.MinFlushDelayMsDefault;
             NodePriority = Opts.NodePriorityDefault;
+            GossipOnSingleNode = Opts.GossipOnSingleNodeDefault;
 
             CommitCount = Opts.CommitCountDefault;
             PrepareCount = Opts.PrepareCountDefault;
@@ -281,6 +294,7 @@ namespace EventStore.ClusterNode
             CertificatePassword = Opts.CertificatePasswordDefault;
 
             UseInternalSsl = Opts.UseInternalSslDefault;
+            DisableInsecureTCP = Opts.DisableInsecureTCPDefault;
             SslTargetHost = Opts.SslTargetHostDefault;
             SslValidateServer = Opts.SslValidateServerDefault;
 
@@ -306,6 +320,9 @@ namespace EventStore.ClusterNode
             StartStandardProjections = Opts.StartStandardProjectionsDefault;
             DisableHTTPCaching = Opts.DisableHttpCachingDefault;
             LogHttpRequests = Opts.LogHttpRequestsDefault;
+
+            Unbuffered = Opts.UnbufferedDefault;
+            WriteThrough = Opts.WriteThroughDefault;
 
             AlwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
         }

@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
                                     records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
                                     count++;
-                                    nextPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);
+                                    nextPos = new TFPos(result.RecordPostPosition, 0);
                                 }
                                 break;
                             }
@@ -212,6 +212,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     result = reader.TryReadPrev();
                                     if (!result.Success) // no more records in TF
                                         break;
+                                    
                                     // prepare with TransactionBegin could be scavenged already
                                     // so we could reach beyond the start of transaction. In that case we have to stop.
                                     if (result.LogRecord.LogPosition < commit.TransactionPosition)

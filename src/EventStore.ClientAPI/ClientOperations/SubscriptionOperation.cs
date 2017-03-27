@@ -208,8 +208,8 @@ namespace EventStore.ClientAPI.ClientOperations
 
                 if (reason != SubscriptionDropReason.UserInitiated)
                 {
-                    if (exc == null) throw new Exception(string.Format("No exception provided for subscription drop reason '{0}", reason));
-                    _source.TrySetException(exc);
+                    var er = exc != null ? exc : new Exception(String.Format("Subscription dropped for {0}", reason));
+                    _source.TrySetException(er);
                 }
 
                 if (reason == SubscriptionDropReason.UserInitiated && _subscription != null && connection != null)
@@ -220,7 +220,7 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        protected void ConfirmSubscription(long lastCommitPosition, int? lastEventNumber)
+        protected void ConfirmSubscription(long lastCommitPosition, long? lastEventNumber)
         {
             if (lastCommitPosition < -1)
                 throw new ArgumentOutOfRangeException("lastCommitPosition", string.Format("Invalid lastCommitPosition {0} on subscription confirmation.", lastCommitPosition));
@@ -234,7 +234,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _source.SetResult(_subscription);
         }
 
-        protected abstract T CreateSubscriptionObject(long lastCommitPosition, int? lastEventNumber);
+        protected abstract T CreateSubscriptionObject(long lastCommitPosition, long? lastEventNumber);
 
         protected void EventAppeared(ResolvedEvent e)
         {

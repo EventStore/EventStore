@@ -8,7 +8,7 @@ namespace EventStore.Core
     public class StandardComponents
     {
         private readonly TFChunkDb _db;
-        private readonly QueuedHandler _mainQueue;
+        private readonly IQueuedHandler _mainQueue;
         private readonly ISubscriber _mainBus;
         private readonly TimerService _timerService;
         private readonly ITimeProvider _timeProvider;
@@ -18,7 +18,7 @@ namespace EventStore.Core
 
         public StandardComponents(
             TFChunkDb db,
-            QueuedHandler mainQueue,
+            IQueuedHandler mainQueue,
             ISubscriber mainBus,
             TimerService timerService,
             ITimeProvider timeProvider,
@@ -41,7 +41,7 @@ namespace EventStore.Core
             get { return _db; }
         }
 
-        public QueuedHandler MainQueue
+        public IQueuedHandler MainQueue
         {
             get { return _mainQueue; }
         }

@@ -27,67 +27,81 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
                 _producesResults, _definesFold, _coreProjectionCheckpointWriter);
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_publisher_throws_argument_null_exception()
         {
-            _manager = new DefaultCheckpointManager(
-                null, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher, _config,
-                "projection", new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled,
-                _producesResults, _definesFold, _coreProjectionCheckpointWriter);
+            Assert.Throws<ArgumentNullException>(() => {
+                _manager = new DefaultCheckpointManager(
+                    null, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher, _config,
+                    "projection", new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled,
+                    _producesResults, _definesFold, _coreProjectionCheckpointWriter);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_io_dispatcher_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             _manager = new DefaultCheckpointManager(
                 _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, null, _config, "projection",
                 new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults,
                 _definesFold, _coreProjectionCheckpointWriter);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_projection_config_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             _manager = new DefaultCheckpointManager(
                 _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher, null, "projection",
                 new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults,
                 _definesFold, _coreProjectionCheckpointWriter);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_projection_name_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             _manager = new DefaultCheckpointManager(
                 _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher, _config, null,
                 new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults,
                 _definesFold, _coreProjectionCheckpointWriter);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_position_tagger_throws_argument_null_exception()
         {
+            Assert.Throws<ArgumentNullException>(() => {
             _manager = new DefaultCheckpointManager(
                 _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher, _config,
                 "projection", null, _namingBuilder, _checkpointsEnabled, _producesResults,
                 _definesFold, _coreProjectionCheckpointWriter);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_projection_checkpoint_stream_id_throws_argument_exception()
         {
+            Assert.Throws<ArgumentException>(() => {
             _manager = new DefaultCheckpointManager(
                 _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher, _config, "",
                 new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults,
                 _definesFold, _coreProjectionCheckpointWriter);
+            });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_projection_name_throws_argument_exception()
         {
+            Assert.Throws<ArgumentException>(() => {
             _manager = new DefaultCheckpointManager(
                 _bus, _projectionCorrelationId, new ProjectionVersion(1, 0, 0), null, _ioDispatcher, _config, "",
                 new StreamPositionTagger(0, "stream"), _namingBuilder, _checkpointsEnabled, _producesResults,
                 _definesFold, _coreProjectionCheckpointWriter);
+            });
         }
     }
 }

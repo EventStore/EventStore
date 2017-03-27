@@ -8,14 +8,14 @@ namespace EventStore.Core.Tests
     {
         protected string Filename;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public virtual void TestFixtureSetUp()
         {
             var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
             Filename = Path.Combine(Path.GetTempPath(), string.Format("{0}-{1}", Guid.NewGuid(), typeName));
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public virtual void TestFixtureTearDown()
         {
             if (File.Exists(Filename))

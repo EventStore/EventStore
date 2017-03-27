@@ -11,13 +11,13 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class when_working_with_stream_metadata_as_structured_info : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
         private IEventStoreConnection _connection;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.ClientAPI
             return TestConnection.Create(node.TcpEndPoint);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _connection.Close();

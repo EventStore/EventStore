@@ -71,16 +71,16 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         }
 
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test]
         public void null_stream_throws_argument_null_exception()
         {
-            new StreamPositionTagger(0, null);
+            Assert.Throws<ArgumentNullException>(()=> { new StreamPositionTagger(0, null); });
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test]
         public void empty_stream_throws_argument_exception()
         {
-            new StreamPositionTagger(0, "");
+            Assert.Throws<ArgumentException>(()=> { new StreamPositionTagger(0, ""); });
         }
 
         [Test]
@@ -117,7 +117,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
         {
             var t = new StreamPositionTagger(0, "stream1");
             var tag = CheckpointTag.FromStreamPosition(0, "stream1", 1);
-            var original = CheckpointTag.FromStreamPositions(0, new Dictionary<string, int> {{"stream1", 1}, {"stream2", 2}});
+            var original = CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"stream1", 1}, {"stream2", 2}});
             Assert.AreEqual(tag, t.AdjustTag(original));
         }
 

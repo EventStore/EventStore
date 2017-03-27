@@ -141,7 +141,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         private VNodeBuilder _builder;
         private Exception _caughtException;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             var baseIpAddress = IPAddress.Parse("192.168.1.15");

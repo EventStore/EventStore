@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using System.Xml;
@@ -620,6 +621,26 @@ namespace EventStore.Core.Tests.Http.Streams
             public void the_head_of_stream_is_true()
             {
                 Assert.AreEqual(true, _feed.Value<bool>("headOfStream"));
+            }
+        }
+
+        [TestFixture, Category("LongRunning")]
+        public class when_reading_a_stream_forward_with_etag_in_header : SpecificationWithLongFeed
+        {
+            private JObject _feed;
+            protected override void When()
+            {
+                _feed = GetJson<JObject>(TestStream, accept: ContentType.AtomJson);
+                var etag = _feed.Value<string>("eTag");
+                var headers = new NameValueCollection();
+                headers.Add("If-None-Match", etag);
+                _feed = GetJson<JObject>(TestStream, accept: ContentType.AtomJson, headers: headers);
+            }
+
+            [Test]
+            public void should_return_not_modified()
+            {
+                Assert.AreEqual(HttpStatusCode.NotModified, _lastResponse.StatusCode);
             }
         }
     }

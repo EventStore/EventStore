@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "PreludeScope.h"
 #include "CompiledScript.h"
 #include "PreludeScript.h"
 #include "QueryScript.h"
@@ -19,19 +18,20 @@ namespace js1
 		{
 			delete *it;
 		}
-		isolate_release(isolate);
+		js1::V8Wrapper::Instance().isolate_release(isolate);
 	}
 
-	void QueryScript::report_errors(REPORT_ERROR_CALLBACK report_error_callback)
+	void QueryScript::report_errors(v8::Isolate *isolate, v8::Handle<v8::Context> context, REPORT_ERROR_CALLBACK report_error_callback)
 	{
-		CompiledScript::report_errors(report_error_callback);
-		prelude->report_errors(report_error_callback);
+		v8::Isolate::Scope isolate_scope(isolate);
+		v8::Context::Scope context_scope(context);
+		prelude->report_errors(isolate, context, report_error_callback);
+		CompiledScript::report_errors(isolate, context, report_error_callback);
 	}
 
 	Status QueryScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
 	{
-		//this->register_command_handler_callback = register_command_handler_callback;
-		return CompiledScript::compile_script(script_source, file_name);
+		return CompiledScript::compile_script(prelude->get_context(), prelude->get_object_template(), script_source, file_name);
 
 	}
 
@@ -39,8 +39,9 @@ namespace js1
 	{
 		if (!prelude->enter_cancellable_region())
 			return S_TERMINATED;
-
-		v8::Handle<v8::Value> result = run_script(get_context());
+		v8::Isolate::Scope isolate_scope(get_isolate());
+		v8::Context::Scope context_scope(prelude->get_context());
+		v8::Handle<v8::Value> result = run_script(get_isolate(), prelude->get_context());
 		if (!prelude->exit_cancellable_region())
 			return S_TERMINATED;
 
@@ -53,18 +54,18 @@ namespace js1
 	{
 		EventHandler *event_handler = reinterpret_cast<EventHandler *>(event_handler_handle);
 
-		v8::Context::Scope local(get_context());
+		v8::Context::Scope local(prelude->get_context());
 
-		v8::Handle<v8::String> data_json_handle = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), data_json);
+		v8::Handle<v8::String> data_json_handle = v8::String::NewFromTwoByte(get_isolate(), data_json);
 		v8::Handle<v8::Value> argv[10];
 		argv[0] = data_json_handle;
 
 		for (int i = 0; i < other_length; i++) {
-			v8::Handle<v8::String> data_other_handle = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), data_other[i]);
+			v8::Handle<v8::String> data_other_handle = v8::String::NewFromTwoByte(get_isolate(), data_other[i]);
 			argv[1 + i] = data_other_handle;
 		}
 
-		v8::Handle<v8::Object> global = get_context()->Global();
+		v8::Handle<v8::Object> global = prelude->get_context()->Global();
 
 		v8::TryCatch try_catch;
 
@@ -82,7 +83,7 @@ namespace js1
 
 		bool empty_result = call_result.IsEmpty();
 
-		if (set_last_error(empty_result, try_catch))
+		if (set_last_error(get_isolate(), empty_result, try_catch))
 			return S_ERROR;
 		v8::Handle<v8::String> empty;
 		if (!try_catch.Exception().IsEmpty())
@@ -111,16 +112,21 @@ namespace js1
 		return isolate;
 	}
 
+	v8::Handle<v8::Context> QueryScript::get_context()
+	{
+		return prelude->get_context();
+	}
+
 	Status QueryScript::create_global_template(v8::Handle<v8::ObjectTemplate> &result)
 	{
-		v8::Handle<v8::Context> temp_context = v8::Context::New(v8::Isolate::GetCurrent());
-		v8::Context::Scope temp_context_scope(temp_context);
+		v8::Isolate::Scope isolate_scope(get_isolate());
+		v8::Context::Scope context_scope(prelude->get_context());
 
-		v8::Handle<v8::Value> query_script_wrap = v8::External::New(v8::Isolate::GetCurrent(), this);
+		v8::Handle<v8::Value> query_script_wrap = v8::External::New(get_isolate(), this);
 
 		std::vector<v8::Handle<v8::Value> > arguments(2);
-		arguments[0] = v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), on_callback, query_script_wrap)->GetFunction();
-		arguments[1] = v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), notify_callback, query_script_wrap)->GetFunction();
+		arguments[0] = v8::FunctionTemplate::New(get_isolate(), on_callback, query_script_wrap)->GetFunction();
+		arguments[1] = v8::FunctionTemplate::New(get_isolate(), notify_callback, query_script_wrap)->GetFunction();
 
 		Status status = prelude->get_template(arguments, result);
 		if (status != S_OK)
@@ -137,7 +143,7 @@ namespace js1
 			return S_OK;
 		}
 		if (!call_result->IsString()) {
-			set_last_error("Handler must return string data or null");
+			set_last_error(get_isolate(), "Handler must return string data or null");
 			result = empty;
 			return S_ERROR;
 		}

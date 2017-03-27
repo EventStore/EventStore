@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 //projection subscribes here
                 _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
-                        _subscriptionId, CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int>{{"non-existing", -1}}), 55.5f, 0));
+                        _subscriptionId, CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, long>{{"non-existing", -1}}), 55.5f, 0));
             }
 
             [Test]
@@ -79,11 +79,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, long> {{"non-existing", -1}}), 55.5f, 0));
                 _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, long> {{"non-existing", -1}}), 55.6f, 1));
             }
 
             [Test]
@@ -122,11 +122,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, int> {{"non-existing", -1}}), 55.5f, 0));
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(140, 130), new Dictionary<string, long> {{"non-existing", -1}}), 55.5f, 0));
                 _bus.Publish(
                     new EventReaderSubscriptionMessage.CheckpointSuggested(
                         _subscriptionId,
-                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, int> {{"non-existing", -1}}), 55.6f, 1));
+                        CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(160, 150), new Dictionary<string, long> {{"non-existing", -1}}), 55.6f, 1));
             }
 
             [Test]

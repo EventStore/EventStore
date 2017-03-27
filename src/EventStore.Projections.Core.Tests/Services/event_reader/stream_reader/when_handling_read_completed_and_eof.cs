@@ -35,9 +35,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -52,16 +53,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 12, 11, true, 200));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0]
+                    correlationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0]
                     , null, false, "", 12, 11, true, 400));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]
@@ -113,9 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
         }
-
-        
     }
 }

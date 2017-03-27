@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "PreludeScope.h"
 #include "CompiledScript.h"
 #include "PreludeScript.h"
 #include "QueryScript.h"
@@ -7,47 +6,47 @@
 
 namespace js1 
 {
-
 	PreludeScript::~PreludeScript()
 	{
-		isolate_release(isolate);
+		js1::V8Wrapper::Instance().isolate_release(isolate);
 	}
-
 
 	Status PreludeScript::compile_script(const uint16_t *prelude_source, const uint16_t *prelude_file_name)
 	{
-		return CompiledScript::compile_script(prelude_source, prelude_file_name);
+		return CompiledScript::compile_script(get_context(), get_object_template(), prelude_source, prelude_file_name);
 	}
 
 	Status PreludeScript::try_run()
 	{
+		v8::Isolate::Scope isolate_scope(get_isolate());
 		v8::Context::Scope context_scope(get_context());
 		global_template_factory.reset();
 
 		if (!enter_cancellable_region()) 
 			return S_TERMINATED;
 
-		v8::Handle<v8::Value> prelude_result = run_script(get_context());
+		v8::Handle<v8::Value> prelude_result = run_script(get_isolate(), get_context());
 		if (!exit_cancellable_region())
 			return S_TERMINATED;
 
 		if (prelude_result.IsEmpty()) 
 		{
-			set_last_error("Prelude script did not return any value");
+			set_last_error(get_isolate(), "Prelude script did not return any value");
 			return S_ERROR;
 		}
 		if (!prelude_result->IsFunction()) 
 		{
-			set_last_error("Prelude script must return a function");
+			set_last_error(get_isolate(), "Prelude script must return a function");
 			return S_ERROR;
 		}
 		global_template_factory = std::shared_ptr<v8::Persistent<v8::Function>>(
-			new v8::Persistent<v8::Function>(v8::Isolate::GetCurrent(), prelude_result.As<v8::Function>()));
+			new v8::Persistent<v8::Function>(get_isolate(), prelude_result.As<v8::Function>()));
 		return S_OK;
 	}
 
 	Status PreludeScript::get_template(std::vector<v8::Handle<v8::Value> > &prelude_arguments, v8::Handle<v8::ObjectTemplate> &result)
 	{
+		v8::Isolate::Scope isolate_scope(get_isolate());
 		v8::Context::Scope context_scope(get_context());
 		v8::Handle<v8::Object> global = get_context()->Global();
 		v8::Handle<v8::Value> prelude_result;
@@ -56,36 +55,35 @@ namespace js1
 
 		if (!enter_cancellable_region()) 
 			return S_TERMINATED; // initialized with 0 by default
-		v8::Handle<v8::Function> global_template_factory_local = v8::Handle<v8::Function>::New(v8::Isolate::GetCurrent(), *global_template_factory);
+		v8::Handle<v8::Function> global_template_factory_local = v8::Handle<v8::Function>::New(get_isolate(), *global_template_factory);
 		prelude_result = global_template_factory_local->Call(global, (int)prelude_arguments.size(), prelude_arguments.data());
 		if (!exit_cancellable_region())
 			return S_TERMINATED; // initialized with 0 by default
 
-		if (set_last_error(prelude_result.IsEmpty(), try_catch))
+		if (set_last_error(get_isolate(), prelude_result.IsEmpty(), try_catch))
 			return S_ERROR;
 		if (prelude_result.IsEmpty())
 		{
-
-			set_last_error("Global template factory did not return any value");
+			set_last_error(get_isolate(), "Global template factory did not return any value");
 			return S_ERROR; // initialized with 0 by default
 		}
 		if (!prelude_result->IsObject()) 
 		{
-			set_last_error("Prelude script must return a function");
+			set_last_error(get_isolate(), "Prelude script must return a function");
 			return S_ERROR; // initialized with 0 by default
 		}
 
 		prelude_result_object = prelude_result.As<v8::Object>();
-		result = v8::ObjectTemplate::New();
 		v8::Handle<v8::Array> global_property_names = prelude_result_object->GetPropertyNames();
 
 		for (unsigned int i = 0; i < global_property_names->Length(); i++) 
 		{
-			//TODO: handle invalid keys in template object (non-string)
 			v8::Handle<v8::String> global_property_name = global_property_names->Get(i).As<v8::String>();
 			v8::Handle<v8::Value> global_property_value = prelude_result_object->Get(global_property_name);
 
-			result->Set(global_property_name, global_property_value);
+			v8::String::Utf8Value name(global_property_name);
+			v8::String::Utf8Value value(global_property_value);
+			global->Set(global_property_name, global_property_value);
 		}
 
 		return S_OK;
@@ -100,19 +98,23 @@ namespace js1
 		return exit_cancellable_region_callback(); 
 	}
 
+	v8::Handle<v8::ObjectTemplate> PreludeScript::get_object_template()
+	{
+		return v8::Handle<v8::ObjectTemplate>::New(isolate, *global);
+	}
+
 	v8::Isolate *PreludeScript::get_isolate()
 	{
 		return isolate;
 	}
 
-	Status PreludeScript::create_global_template(v8::Handle<v8::ObjectTemplate> &result) 
+	v8::Handle<v8::Context> PreludeScript::get_context()
 	{
-		//TODO: move actual callbacks out of this script into C# code
-		result = v8::ObjectTemplate::New();
-		result->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "$log"), 
-			v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), log_callback, v8::External::New(v8::Isolate::GetCurrent(), this)));
-		result->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "$load_module"), 
-			v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), load_module_callback, v8::External::New(v8::Isolate::GetCurrent(), this)));
+		return v8::Handle<v8::Context>::New(isolate, *context);
+	}
+
+	Status PreludeScript::create_global_template(v8::Handle<v8::ObjectTemplate> &result)
+	{
 		return S_OK;
 	}
 
@@ -122,7 +124,7 @@ namespace js1
 		// this double callback is required to avoid memory management for strings returned from the C# part
 		// string passed as arguments into C++ are much easy to handle
 
-		void *module_handle = load_module_handler(module_name);
+		void *module_handle = load_module_handler(this, module_name);
 		return reinterpret_cast<ModuleScript *>(module_handle);
 	}
 
@@ -194,5 +196,28 @@ namespace js1
 		args.GetReturnValue().Set(module->get_module_object());
 	};
 
+	void PreludeScript::init(v8::Isolate *isolate) {
+		v8::Isolate::Scope isolate_scope(isolate);
+
+		v8::HandleScope handle_scope(isolate);
+
+		// Create global template
+		global = std::shared_ptr<v8::Persistent<v8::ObjectTemplate>>(
+			new v8::Persistent<v8::ObjectTemplate>(isolate, 
+			v8::ObjectTemplate::New(isolate)));
+
+		v8::Handle<v8::ObjectTemplate> global_local = v8::Handle<v8::ObjectTemplate>::New(
+			isolate, *global);
+
+		global_local->Set(v8::String::NewFromUtf8(isolate, "$log"), 
+			v8::FunctionTemplate::New(isolate, log_callback, v8::External::New(isolate, this)));
+		global_local->Set(v8::String::NewFromUtf8(isolate, "$load_module"), 
+			v8::FunctionTemplate::New(isolate, load_module_callback, v8::External::New(isolate, this)));
+
+		// Create a new context.
+		context = std::shared_ptr<v8::Persistent<v8::Context>>(
+			new v8::Persistent<v8::Context>(isolate, 
+			v8::Context::New(isolate, NULL, global_local)));
+	};
 }
 

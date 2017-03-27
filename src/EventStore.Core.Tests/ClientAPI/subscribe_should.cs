@@ -6,14 +6,14 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class subscribe_should : SpecificationWithDirectoryPerTestFixture
     {
         private const int Timeout = 10000;
 
         private MiniNode _node;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();

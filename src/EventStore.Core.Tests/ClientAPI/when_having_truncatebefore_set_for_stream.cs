@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class when_having_truncatebefore_set_for_stream : SpecificationWithMiniNode
     {
         private EventData[] _testEvents;

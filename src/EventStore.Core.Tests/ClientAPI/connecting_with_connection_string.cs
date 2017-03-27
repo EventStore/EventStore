@@ -6,11 +6,12 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class when_connecting_with_connection_string: SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -18,7 +19,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();
@@ -26,7 +27,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
-        [Category("Network")]
         public void should_not_throw_when_connect_to_is_set()
         {
             string connectionString = string.Format("ConnectTo=tcp://{0};", _node.TcpEndPoint);

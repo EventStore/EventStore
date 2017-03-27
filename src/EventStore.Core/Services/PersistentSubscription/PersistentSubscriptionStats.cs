@@ -12,8 +12,8 @@ namespace EventStore.Core.Services.PersistentSubscription
         private long _totalItems;
         private TimeSpan _lastTotalTime;
         private long _lastTotalItems;
-        private int _lastEventNumber = -1;
-        private int _lastKnownEventNumber = -1;
+        private long _lastEventNumber = -1;
+        private long _lastKnownEventNumber = -1;
         private readonly PersistentSubscription _parent;
         private readonly Stopwatch _totalTimeWatch;
         private readonly PersistentSubscriptionParams _settings;
@@ -29,12 +29,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             Interlocked.Increment(ref _totalItems);
         }
 
-        public void SetLastCheckPoint(int lastEventNumber)
+        public void SetLastCheckPoint(long lastEventNumber)
         {
             _lastEventNumber = lastEventNumber;
         }
 
-        public void SetLastKnownEventNumber(int knownEventNumber)
+        public void SetLastKnownEventNumber(long knownEventNumber)
         {
             if (knownEventNumber > _lastKnownEventNumber)
                 _lastKnownEventNumber = knownEventNumber;

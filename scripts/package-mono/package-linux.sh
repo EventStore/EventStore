@@ -4,9 +4,16 @@ set -e
 
 version=$1
 platform_override=$2
+config_prefix_override=$3
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CONFIGPREFIX="/usr/local/etc"
+
+if [[ "$config_prefix_override" == "" ]] ; then
+    CONFIGPREFIX="/usr/local/etc"
+else
+    CONFIGPREFIX="$config_prefix_override"
+fi
 
 if [[ "$platform_override" == "" ]] ; then
     # shellcheck source=../detect-system/detect-system.sh disable=SC1091
@@ -81,9 +88,36 @@ if [[ -d $PACKAGEDIRECTORY ]] ; then
 fi
 mkdir "$PACKAGEDIRECTORY"
 
-
 pushd "$SCRIPTDIR/../../bin/clusternode/"
 
+# There is an issue with mkbundled packages in mono
+# https://bugzilla.xamarin.com/show_bug.cgi?id=33483
+# https://bugzilla.xamarin.com/show_bug.cgi?id=42735
+# Solved with https://github.com/mono/mono/pull/3591
+
+# The fix for now would be to just remove this prefix path
+cp "$MONOCONFIG" "$MONOCONFIG.custom"
+sed -e 's/$mono_libdir\///g' -i "$MONOCONFIG.custom"
+MONOCONFIG="$MONOCONFIG.custom"
+
+# mkbundle -c -o clusternode.c -oo clusternode.a \
+# 	EventStore.ClusterNode.exe \
+# 	EventStore.Rags.dll \
+# 	EventStore.Core.dll \
+# 	EventStore.BufferManagement.dll \
+# 	EventStore.Common.dll \
+# 	EventStore.Projections.Core.dll \
+# 	EventStore.ClusterNode.Web.dll \
+# 	EventStore.Transport.Http.dll \
+# 	EventStore.Transport.Tcp.dll \
+# 	HdrHistogram.NET.dll \
+# 	Newtonsoft.Json.dll \
+# 	NLog.dll protobuf-net.dll \
+# 	Mono.Security.dll \
+# 	./System.Net.Http.dll \
+# 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+
+#Removed System.Net.Http and Mono.Security.dll, preserved original command above.
 mkbundle -c -o clusternode.c -oo clusternode.a \
 	EventStore.ClusterNode.exe \
 	EventStore.Rags.dll \
@@ -97,8 +131,6 @@ mkbundle -c -o clusternode.c -oo clusternode.a \
 	HdrHistogram.NET.dll \
 	Newtonsoft.Json.dll \
 	NLog.dll protobuf-net.dll \
-	Mono.Security.dll \
-	./System.Net.Http.dll \
 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
 
 # mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.
@@ -131,6 +163,25 @@ popd
 
 pushd "$SCRIPTDIR/../../bin/testclient"
 
+# mkbundle -c \
+# 	-o testclient.c \
+# 	-oo testclient.a \
+# 	EventStore.TestClient.exe \
+# 	EventStore.Core.dll \
+# 	EventStore.Rags.dll \
+# 	EventStore.ClientAPI.dll \
+# 	EventStore.BufferManagement.dll \
+# 	EventStore.Common.dll \
+# 	EventStore.Transport.Http.dll \
+# 	EventStore.Transport.Tcp.dll \
+# 	HdrHistogram.NET.dll \
+# 	Newtonsoft.Json.dll \
+# 	NLog.dll \
+# 	protobuf-net.dll \
+# 	./System.Net.Http.dll \
+# 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
+
+#Removed System.Net.Http, preserved original command above.
 mkbundle -c \
 	-o testclient.c \
 	-oo testclient.a \
@@ -146,7 +197,6 @@ mkbundle -c \
 	Newtonsoft.Json.dll \
 	NLog.dll \
 	protobuf-net.dll \
-	./System.Net.Http.dll \
 	--static --deps --config $MONOCONFIG --machine-config $MACHINECONFIG
 
 # mkbundle appears to be doing it wrong, though maybe there's something I'm not seeing.

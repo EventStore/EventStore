@@ -208,6 +208,15 @@ namespace EventStore.Core.Services.PersistentSubscription
             _startFrom = position;
             return this;
         }
+        /// <summary>
+        /// Sets the timeout timespan to about 30k years.
+        /// </summary>
+        /// <returns>A new <see cref="PersistentSubscriptionSettingsBuilder"></see></returns>
+        public PersistentSubscriptionParamsBuilder DontTimeoutMessages()
+        {
+            _timeout = TimeSpan.MaxValue; 
+            return this;
+        }
 
         /// <summary>
         /// Sets the time after which the subscription should be checkpointed

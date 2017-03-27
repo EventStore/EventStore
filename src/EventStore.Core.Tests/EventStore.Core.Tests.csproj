@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -11,6 +10,8 @@
     <RootNamespace>EventStore.Core.Tests</RootNamespace>
     <AssemblyName>EventStore.Core.Tests</AssemblyName>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -23,8 +24,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DocumentationFile>
-    </DocumentationFile>
+    <DocumentationFile></DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -34,6 +35,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EventStore.Rags, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -49,10 +51,7 @@
       <HintPath>..\libs\nunit.framework.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
-    <Reference Include="System.Net.Http">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
-    </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ServiceModel" />
@@ -78,6 +77,7 @@
     <Compile Include="Bus\Helpers\WaitingConsumer.cs" />
     <Compile Include="Bus\Helpers\Messages.cs" />
     <Compile Include="Bus\Helpers\QueuedHandlerTestWithNoopConsumer.cs" />
+    <Compile Include="Bus\when_using_single_consumer_queue.cs" />
     <Compile Include="Bus\queued_handler_should.cs" />
     <Compile Include="Bus\QueueSpeedTest.cs" />
     <Compile Include="Bus\when_publishing_to_queued_handler.cs" />
@@ -101,6 +101,7 @@
     <Compile Include="ClientAPI\Embedded\deleting_persistent_subscription.cs" />
     <Compile Include="ClientAPI\Embedded\Security\authorized_default_credentials_security.cs" />
     <Compile Include="ClientAPI\Embedded\update_persistent_subscription.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\subscribe_to_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
     <Compile Include="ClientAPI\when_working_with_metadata.cs" />
     <Compile Include="ClientAPI\persistent_connect_integration_tests.cs" />
     <Compile Include="ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
@@ -266,72 +267,72 @@
     <Compile Include="Http\Users\users.cs" />
     <Compile Include="Index\FakeIndexHasher.cs" />
     <Compile Include="Index\FakeIndexReader.cs" />
-    <Compile Include="Index\Index32Bit\when_merging_ptables.cs" />
-    <Compile Include="Index\Index64Bit\table_index_hash_collision_when_upgrading_to_64bit.cs" />
+    <Compile Include="Index\IndexV1\when_merging_ptables.cs" />
+    <Compile Include="Index\IndexV2\table_index_hash_collision_when_upgrading_to_64bit.cs" />
     <Compile Include="Index\MemTableTests.cs" />
-    <Compile Include="Index\Index64Bit\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\Index64Bit\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\Index64Bit\adding_item_to_empty_index_map.cs" />
-    <Compile Include="Index\Index64Bit\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\Index64Bit\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\Index64Bit\destroying_ptable.cs" />
-    <Compile Include="Index\Index64Bit\index_map_should.cs" />
-    <Compile Include="Index\Index64Bit\index_map_should_detect_corruption.cs" />
-    <Compile Include="Index\Index64Bit\opening_a_ptable_with_more_than_32bits_of_records.cs" />
-    <Compile Include="Index\Index64Bit\ptable_midpoint_cache_should.cs" />
-    <Compile Include="Index\Index64Bit\ptable_range_query_tests.cs" />
-    <Compile Include="Index\Index64Bit\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
-    <Compile Include="Index\Index64Bit\ptable_read_scenario_with_usual_items.cs" />
-    <Compile Include="Index\Index64Bit\ptable_should.cs" />
-    <Compile Include="Index\Index64Bit\saving_index_with_single_item_to_a_file.cs" />
-    <Compile Include="Index\Index64Bit\saving_index_with_six_items_to_a_file.cs" />
-    <Compile Include="Index\Index64Bit\table_index_on_range_query.cs" />
-    <Compile Include="Index\Index64Bit\table_index_on_try_get_one_value_query.cs" />
-    <Compile Include="Index\Index64Bit\table_index_should.cs" />
-    <Compile Include="Index\Index64Bit\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
-    <Compile Include="Index\Index64Bit\when_a_ptable_header_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\Index64Bit\when_a_ptable_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\Index64Bit\when_creating_ptable_from_memtable.cs" />
-    <Compile Include="Index\Index64Bit\when_merging_four_ptables.cs" />
-    <Compile Include="Index\Index64Bit\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
-    <Compile Include="Index\Index64Bit\when_merging_two_ptables.cs" />
-    <Compile Include="Index\Index64Bit\when_trying_to_get_latest_entry.cs" />
-    <Compile Include="Index\Index64Bit\when_trying_to_get_oldest_entry.cs" />
-    <Compile Include="Index\Index32Bit\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\Index32Bit\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\Index32Bit\when_trying_to_get_oldest_entry.cs" />
-    <Compile Include="Index\Index32Bit\create_index_map_from_non_existing_file.cs" />
-    <Compile Include="Index\Index32Bit\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\Index32Bit\destroying_ptable.cs" />
-    <Compile Include="Index\Index32Bit\opening_a_ptable_with_more_than_32bits_of_records.cs" />
-    <Compile Include="Index\Index32Bit\index_map_should.cs" />
+    <Compile Include="Index\IndexV2\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\IndexV2\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\IndexV2\adding_item_to_empty_index_map.cs" />
+    <Compile Include="Index\IndexV2\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\IndexV2\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\IndexV2\destroying_ptable.cs" />
+    <Compile Include="Index\IndexV2\index_map_should.cs" />
+    <Compile Include="Index\IndexV2\index_map_should_detect_corruption.cs" />
+    <Compile Include="Index\IndexV2\opening_a_ptable_with_more_than_32bits_of_records.cs" />
+    <Compile Include="Index\IndexV2\ptable_midpoint_cache_should.cs" />
+    <Compile Include="Index\IndexV2\ptable_range_query_tests.cs" />
+    <Compile Include="Index\IndexV2\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
+    <Compile Include="Index\IndexV2\ptable_read_scenario_with_usual_items.cs" />
+    <Compile Include="Index\IndexV2\ptable_should.cs" />
+    <Compile Include="Index\IndexV2\saving_index_with_single_item_to_a_file.cs" />
+    <Compile Include="Index\IndexV2\saving_index_with_six_items_to_a_file.cs" />
+    <Compile Include="Index\IndexV2\table_index_on_range_query.cs" />
+    <Compile Include="Index\IndexV2\table_index_on_try_get_one_value_query.cs" />
+    <Compile Include="Index\IndexV2\table_index_should.cs" />
+    <Compile Include="Index\IndexV2\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
+    <Compile Include="Index\IndexV2\when_a_ptable_header_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\IndexV2\when_a_ptable_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\IndexV2\when_creating_ptable_from_memtable.cs" />
+    <Compile Include="Index\IndexV2\when_merging_four_ptables.cs" />
+    <Compile Include="Index\IndexV2\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
+    <Compile Include="Index\IndexV2\when_merging_two_ptables.cs" />
+    <Compile Include="Index\IndexV2\when_trying_to_get_latest_entry.cs" />
+    <Compile Include="Index\IndexV2\when_trying_to_get_oldest_entry.cs" />
+    <Compile Include="Index\IndexV1\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\IndexV1\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\IndexV1\when_trying_to_get_oldest_entry.cs" />
+    <Compile Include="Index\IndexV1\create_index_map_from_non_existing_file.cs" />
+    <Compile Include="Index\IndexV1\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\IndexV1\destroying_ptable.cs" />
+    <Compile Include="Index\IndexV1\opening_a_ptable_with_more_than_32bits_of_records.cs" />
+    <Compile Include="Index\IndexV1\index_map_should.cs" />
     <Compile Include="Index\FakeFilenameProvider.cs" />
     <Compile Include="Index\IndexEntryTests.cs" />
-    <Compile Include="Index\Index32Bit\ptable_midpoint_cache_should.cs" />
-    <Compile Include="Index\Index32Bit\ptable_read_scenario_with_usual_items.cs" />
-    <Compile Include="Index\Index32Bit\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
-    <Compile Include="Index\Index32Bit\ptable_should.cs" />
-    <Compile Include="Index\Index32Bit\index_map_should_detect_corruption.cs" />
-    <Compile Include="Index\Index32Bit\table_index_should.cs" />
-    <Compile Include="Index\Index32Bit\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
-    <Compile Include="Index\Index32Bit\saving_empty_index_to_a_file.cs" />
-    <Compile Include="Index\Index32Bit\saving_index_with_six_items_to_a_file.cs" />
-    <Compile Include="Index\Index32Bit\ptable_range_query_tests.cs" />
-    <Compile Include="Index\Index32Bit\PTableReadScenario.cs" />
-    <Compile Include="Index\Index32Bit\table_index_on_try_get_one_value_query.cs" />
-    <Compile Include="Index\Index32Bit\when_a_ptable_header_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\Index32Bit\when_a_ptable_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\Index32Bit\when_creating_ptable_from_memtable.cs" />
-    <Compile Include="Index\Index32Bit\when_merging_four_ptables.cs" />
+    <Compile Include="Index\IndexV1\ptable_midpoint_cache_should.cs" />
+    <Compile Include="Index\IndexV1\ptable_read_scenario_with_usual_items.cs" />
+    <Compile Include="Index\IndexV1\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
+    <Compile Include="Index\IndexV1\ptable_should.cs" />
+    <Compile Include="Index\IndexV1\index_map_should_detect_corruption.cs" />
+    <Compile Include="Index\IndexV1\table_index_should.cs" />
+    <Compile Include="Index\IndexV1\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
+    <Compile Include="Index\IndexV1\saving_empty_index_to_a_file.cs" />
+    <Compile Include="Index\IndexV1\saving_index_with_six_items_to_a_file.cs" />
+    <Compile Include="Index\IndexV1\ptable_range_query_tests.cs" />
+    <Compile Include="Index\IndexV1\PTableReadScenario.cs" />
+    <Compile Include="Index\IndexV1\table_index_on_try_get_one_value_query.cs" />
+    <Compile Include="Index\IndexV1\when_a_ptable_header_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\IndexV1\when_a_ptable_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\IndexV1\when_creating_ptable_from_memtable.cs" />
+    <Compile Include="Index\IndexV1\when_merging_four_ptables.cs" />
     <Compile Include="Index\ReverseComparerTests.cs" />
-    <Compile Include="Index\Index32Bit\saving_index_with_single_item_to_a_file.cs" />
-    <Compile Include="Index\Index32Bit\when_merging_two_ptables.cs" />
-    <Compile Include="Index\Index32Bit\when_trying_to_get_latest_entry.cs" />
-    <Compile Include="Index\Index32Bit\table_index_on_range_query.cs" />
-    <Compile Include="Index\Index32Bit\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
-    <Compile Include="Index\Index32Bit\when_opening_ptable_without_right_flag_in_header.cs" />
-    <Compile Include="Index\Index32Bit\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\Index32Bit\adding_item_to_empty_index_map.cs" />
+    <Compile Include="Index\IndexV1\saving_index_with_single_item_to_a_file.cs" />
+    <Compile Include="Index\IndexV1\when_merging_two_ptables.cs" />
+    <Compile Include="Index\IndexV1\when_trying_to_get_latest_entry.cs" />
+    <Compile Include="Index\IndexV1\table_index_on_range_query.cs" />
+    <Compile Include="Index\IndexV1\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
+    <Compile Include="Index\IndexV1\when_opening_ptable_without_right_flag_in_header.cs" />
+    <Compile Include="Index\IndexV1\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\IndexV1\adding_item_to_empty_index_map.cs" />
     <Compile Include="Infrastructure\RandTestQueueItem.cs" />
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
     <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
@@ -413,6 +414,8 @@
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Services\Storage\AllReader\when_a_single_write_before_the_transaction_is_present.cs" />
+    <Compile Include="Services\Storage\AllReader\when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present.cs" />
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_few_prepares_with_same_expected_version_and_committing_one_of_them.cs" />
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_few_prepares_with_same_expected_version_and_not_committing_them.cs" />
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_prepares_in_wrong_order_and_committing_in_right_order.cs" />
@@ -438,9 +441,11 @@
     <Compile Include="Services\Storage\Metastreams\when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_just_last.cs" />
     <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_and_no_metastream_metastream_is_declared_deleted_as_well.cs" />
     <Compile Include="Services\Storage\Metastreams\when_having_deleted_stream_its_metastream_is_deleted_as_well.cs" />
+    <Compile Include="Services\Storage\AllReader\when_a_single_write_is_after_transaction_end_but_before_commit_is_present.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_but_some_metaevents_are_in_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_but_some_events_are_in_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_and_all_events_and_metaevents_are_in_one_chunk.cs" />
+    <Compile Include="Services\Storage\RepeatableDbTestScenario.cs" />
     <Compile Include="Services\Storage\SimpleDbTestScenario.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commit_spanning_multiple_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_having_commits_spanning_multiple_chunks.cs" />
@@ -609,12 +614,64 @@
     <Compile Include="ClientAPI\connecting_with_connection_string.cs" />
     <Compile Include="Common\VNodeBuilderTests\when_building\with_secure_tcp.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_hash_collisions.cs" />
+    <Compile Include="Services\Transport\Http\when_getting_tcp_stats_from_stat_controller.cs" />
     <Compile Include="ClientAPI\append_to_stream_with_hash_collision.cs" />
     <Compile Include="ClientAPI\read_event_with_hash_collision.cs" />
     <Compile Include="ClientAPI\read_stream_events_backward_with_hash_collision.cs" />
     <Compile Include="ClientAPI\read_stream_events_forward_with_hash_collision.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_duplicate_events.cs" />
     <Compile Include="Services\Storage\BuildingIndex\when_building_an_index_off_tfile_with_duplicate_events_in_a_stream.cs" />
+    <Compile Include="Index\IndexV3\ptable_should.cs" />
+    <Compile Include="Index\IndexV3\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\IndexV3\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\IndexV3\adding_item_to_empty_index_map.cs" />
+    <Compile Include="Index\IndexV3\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\IndexV3\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\IndexV3\destroying_ptable.cs" />
+    <Compile Include="Index\IndexV3\opening_a_ptable_with_more_than_32bits_of_records.cs" />
+    <Compile Include="Index\IndexV3\when_trying_to_get_oldest_entry.cs" />
+    <Compile Include="Index\IndexV3\when_trying_to_get_latest_entry.cs" />
+    <Compile Include="Index\IndexV3\when_merging_two_ptables.cs" />
+    <Compile Include="Index\IndexV3\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
+    <Compile Include="Index\IndexV3\when_merging_four_ptables.cs" />
+    <Compile Include="Index\IndexV3\when_creating_ptable_from_memtable.cs" />
+    <Compile Include="Index\IndexV3\when_a_ptable_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\IndexV3\when_a_ptable_header_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\IndexV3\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
+    <Compile Include="Index\IndexV3\table_index_should.cs" />
+    <Compile Include="Index\IndexV3\table_index_on_try_get_one_value_query.cs" />
+    <Compile Include="Index\IndexV3\table_index_on_range_query.cs" />
+    <Compile Include="Index\IndexV3\table_index_hash_collision_when_upgrading_to_64bit.cs" />
+    <Compile Include="Index\IndexV3\saving_index_with_six_items_to_a_file.cs" />
+    <Compile Include="Index\IndexV3\saving_index_with_single_item_to_a_file.cs" />
+    <Compile Include="Index\IndexV3\ptable_read_scenario_with_usual_items.cs" />
+    <Compile Include="Index\IndexV3\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
+    <Compile Include="Index\IndexV3\ptable_range_query_tests.cs" />
+    <Compile Include="Index\IndexV3\ptable_midpoint_cache_should.cs" />
+    <Compile Include="Index\IndexV3\index_map_should_detect_corruption.cs" />
+    <Compile Include="Index\IndexV3\index_map_should.cs" />
+    <Compile Include="Services\Storage\BuildingIndex\when_building_an_index_off_tfile_with_prepares_and_commits_for_log_records_of_mixed_versions.cs" />
+    <Compile Include="Services\Storage\BuildingIndex\when_building_an_index_off_tfile_with_prepares_and_commits_for_events_with_version_numbers_greater_than_int_maxvalue.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_reading_deleted_stream_written_with_old_log_record_version.cs" />
+    <Compile Include="Index\IndexV3\when_upgrading_index_to_64bit_stream_version.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_log_record_version_0.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_scavenging_tfchunk_with_version0_log_records.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_scavenging_tfchunk_with_version0_log_records_and_deleted_records.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_scavenging_tfchunk_with_version0_log_records_using_transactions.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_with_log_version_0_but_some_events_are_in_multiple_chunks.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_with_version_numbers_greater_than_int_maxvalue.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\with_truncatebefore_greater_than_int_maxvalue.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\append_to_stream_with_event_numbers_greater_than_2_billion.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_event_numbers_greater_than_2_billion.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\transactions_on_stream_with_event_numbers_greater_than_2_billion.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\subscriptions_on_stream_with_event_numbers_greater_than_2_billion.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\catchup_subscription_to_all_with_event_numbers_greater_than_2_billion.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\persistent_subscription_with_event_numbers_greater_than_2_billion.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\MiniNodeWithExistingRecords.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_hard_deleting_stream_with_log_version_0.cs" />
+    <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
+    <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

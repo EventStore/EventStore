@@ -81,7 +81,7 @@ namespace EventStore.ClientAPI
                                                bool resolveLinkTos,
                                                UserCredentials userCredentials,
                                                long? lastCommitPosition,
-                                               int? lastEventNumber);
+                                               long? lastEventNumber);
         /// <summary>
         /// Try to process a single <see cref="ResolvedEvent"/>.
         /// </summary>
@@ -151,7 +151,7 @@ namespace EventStore.ClientAPI
         {
             if (Verbose) Log.Debug("Catch-up Subscription to {0}: requesting stop...", IsSubscribedToAll ? "<all>" : StreamId);
 
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.");
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.", IsSubscribedToAll ? "<all>" : StreamId);
             _connection.Connected -= OnReconnect;
 
             ShouldStop = true;
@@ -160,8 +160,8 @@ namespace EventStore.ClientAPI
 
         private void OnReconnect(object sender, ClientConnectionEventArgs clientConnectionEventArgs)
         {
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: recovering after reconnection.");
-            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.");
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: recovering after reconnection.", IsSubscribedToAll ? "<all>" : StreamId);
+            if (Verbose) Log.Debug("Catch-up Subscription to {0}: unhooking from connection.Connected.", IsSubscribedToAll ? "<all>" : StreamId);
             _connection.Connected -= OnReconnect;
             RunSubscription();
         }
@@ -332,6 +332,7 @@ namespace EventStore.ClientAPI
                     }
                     catch (Exception exc)
                     {
+                        Log.Debug("Catch-up Subscription to {0} Exception occurred in subscription {1}",IsSubscribedToAll ? "<all>" : StreamId, exc);
                         DropSubscription(SubscriptionDropReason.EventHandlerException, exc);
                         return;
                     }
@@ -420,7 +421,7 @@ namespace EventStore.ClientAPI
         /// <param name="lastEventNumber">The event number to read until.</param>
         /// <returns></returns>
         protected override Task ReadEventsTillAsync(IEventStoreConnection connection, bool resolveLinkTos,
-                        UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
+                        UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
         {
             _completion = new TaskCompletionSource<bool>();
             ReadEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber);
@@ -428,7 +429,7 @@ namespace EventStore.ClientAPI
         }
 
         private void ReadEventsInternal(IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
         {
             try { 
                 connection.ReadAllEventsForwardAsync(_nextReadPosition, ReadBatchSize, resolveLinkTos, userCredentials)
@@ -439,18 +440,17 @@ namespace EventStore.ClientAPI
             }
             catch (Exception ex)
             {
-                _completion.SetException(ex);
+                _completion.TrySetException(ex);
             }
         }
 
         private void ReadEventsCallback(Task<AllEventsSlice> task, IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
         {
             try
             {
                 if (task.IsFaulted || task.IsCanceled)
                 {
-                    _completion.SetException(task.Exception);
                     task.Wait(); //force exception to be thrown
                 }
 
@@ -467,12 +467,12 @@ namespace EventStore.ClientAPI
                             "Catch-up Subscription to {0}: finished reading events, nextReadPosition = {1}.",
                             IsSubscribedToAll ? "<all>" : StreamId, _nextReadPosition);
                     }
-                    _completion.SetResult(true);
+                    _completion.TrySetResult(true);
                 }
             }
             catch (Exception e)
             {
-                _completion.SetException(e);
+                _completion.TrySetException(e);
             }
         }
 
@@ -522,16 +522,16 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The last event number processed on the subscription.
         /// </summary>
-        public int LastProcessedEventNumber { get { return _lastProcessedEventNumber; } }
+        public long LastProcessedEventNumber { get { return _lastProcessedEventNumber; } }
 
-        private int _nextReadEventNumber;
-        private int _lastProcessedEventNumber;
+        private long _nextReadEventNumber;
+        private long _lastProcessedEventNumber;
         private TaskCompletionSource<bool> _completion;
 
         internal EventStoreStreamCatchUpSubscription(IEventStoreConnection connection,
                                                      ILogger log,
                                                      string streamId,
-                                                     int? fromEventNumberExclusive, /* if null -- from the very beginning */
+                                                     long? fromEventNumberExclusive, /* if null -- from the very beginning */
                                                      UserCredentials userCredentials,
                                                      Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                      Action<EventStoreCatchUpSubscription> liveProcessingStarted,
@@ -556,7 +556,7 @@ namespace EventStore.ClientAPI
         /// <param name="lastEventNumber">The event number to read until.</param>
         /// <returns></returns>
         protected override Task ReadEventsTillAsync(IEventStoreConnection connection, bool resolveLinkTos, UserCredentials userCredentials,
-            long? lastCommitPosition, int? lastEventNumber)
+            long? lastCommitPosition, long? lastEventNumber)
         {
             _completion = new TaskCompletionSource<bool>();
             ReadEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber);
@@ -564,7 +564,7 @@ namespace EventStore.ClientAPI
         }
 
         private void ReadEventsInternal(IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
         {
             try {
                 connection.ReadStreamEventsForwardAsync(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos, userCredentials)
@@ -575,18 +575,17 @@ namespace EventStore.ClientAPI
             }
             catch(Exception ex)
             {
-                _completion.SetException(ex);
+                _completion.TrySetException(ex);
             }
         }
 
         private void ReadEventsCallback(Task<StreamEventsSlice> task, IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
         {
             try
             {
                 if (task.IsFaulted || task.IsCanceled)
                 {
-                    _completion.SetException(task.Exception);
                     task.Wait(); //force exception to be thrown
                 }
 
@@ -602,16 +601,16 @@ namespace EventStore.ClientAPI
                             "Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",
                             IsSubscribedToAll ? "<all>" : StreamId, _nextReadEventNumber);
                     }
-                    _completion.SetResult(true);
+                    _completion.TrySetResult(true);
                 }
             }
             catch (Exception e)
             {
-                _completion.SetException(e);
+                _completion.TrySetException(e);
             }
         }
 
-        private bool ProcessEvents(int? lastEventNumber, StreamEventsSlice slice)
+        private bool ProcessEvents(long? lastEventNumber, StreamEventsSlice slice)
         {
             bool done;
             switch (slice.Status)

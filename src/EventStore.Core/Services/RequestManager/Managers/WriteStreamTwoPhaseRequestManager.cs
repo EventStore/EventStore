@@ -36,13 +36,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _request = null;
         }
 
-        protected override void CompleteSuccessRequest(int firstEventNumber, int lastEventNumber, long preparePosition, long commitPosition)
+        protected override void CompleteSuccessRequest(long firstEventNumber, long lastEventNumber, long preparePosition, long commitPosition)
         {
             base.CompleteSuccessRequest(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
             ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber, lastEventNumber, preparePosition, commitPosition));
         }
 
-        protected override void CompleteFailedRequest(OperationResult result, string error, int currentVersion = -1)
+        protected override void CompleteFailedRequest(OperationResult result, string error, long currentVersion = -1)
         {
             base.CompleteFailedRequest(result, error, currentVersion);
             ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, result, error, currentVersion));

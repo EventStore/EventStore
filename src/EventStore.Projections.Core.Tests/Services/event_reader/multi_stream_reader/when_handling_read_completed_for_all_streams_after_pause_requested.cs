@@ -16,7 +16,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     public class when_handling_read_completed_for_all_streams_after_pause_requested : TestFixtureWithExistingEvents
     {
         private MultiStreamEventReader _edp;
-        //private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
         private Guid _secondEventId;
@@ -29,15 +28,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         }
 
         private string[] _abStreams;
-        private Dictionary<string, int> _ab12Tag;
+        private Dictionary<string, long> _ab12Tag;
 
         [SetUp]
         public new void When()
         {
-            _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 2}};
+            _ab12Tag = new Dictionary<string, long> {{"a", 1}, {"b", 2}};
             _abStreams = new[] {"a", "b"};
 
-            //_publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new MultiStreamEventReader(
                 _ioDispatcher, _bus, _distibutionPointCorrelationId, null, 0, _abStreams, _ab12Tag, false,
@@ -48,9 +46,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _thirdEventId = Guid.NewGuid();
             _fourthEventId = Guid.NewGuid();
             _edp.Pause();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
+                correlationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                     {
                         EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
@@ -64,9 +63,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 3, 2, true, 200));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "b").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, 
+                correlationId, "b", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
                         EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
@@ -88,10 +88,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _edp.Resume();
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void cannot_be_paused()
         {
-            _edp.Pause();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Pause(); });
         }
 
         [Test]
@@ -101,12 +101,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 3, _consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void cannot_handle_following_read_events_completed() 
         {
-            _edp.Handle(
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
+                correlationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                     {
                         EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
@@ -115,6 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type", new byte[0], new byte[0]))
                     }, null, false, "", 4, 4, false, 300));
+            });
         }
 
     }

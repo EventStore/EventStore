@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Index
     public class HashListMemTableTests : MemTableTestsFixture
     {
         public HashListMemTableTests()
-            : base(() => new HashListMemTable(PTableVersions.Index64Bit, maxSize: 20))
+            : base(() => new HashListMemTable(PTableVersions.IndexV2, maxSize: 20))
         {
 
         }

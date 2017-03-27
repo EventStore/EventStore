@@ -1,4 +1,5 @@
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,6 +11,8 @@
     <RootNamespace>EventStore.Common</RootNamespace>
     <AssemblyName>EventStore.Common</AssemblyName>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,6 +24,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,6 +36,7 @@
     </DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EventStore.Rags, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -62,9 +67,6 @@
     <Compile Include="Options\IOptions.cs" />
     <Compile Include="Options\ProjectionType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Streams\DriveSectorSize.cs" />
-    <Compile Include="Streams\UnbufferedFileReadStream.cs" />
-    <Compile Include="Streams\WinApi.cs" />
     <Compile Include="Utils\Application.cs" />
     <Compile Include="Utils\BooleanTypeConverter.cs" />
     <Compile Include="Utils\FileStreamExtensions.cs" />
@@ -109,7 +111,7 @@
   <PropertyGroup>
     <PostBuildEvent />
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("LongRunning")]
+    [TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("ClientAPI"), Category("LongRunning")]
     public class event_store_connection_should: SpecificationWithDirectoryPerTestFixture
     {
         private readonly TcpType _tcpType;
@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _tcpType = tcpType;
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();

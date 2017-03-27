@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public class TaskState
         {
             internal int Worker;
-            public int Size;
+            public long Size;
             internal readonly Action<int> Scheduled;
             public bool Measured;
 
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         }
 
-        public void AccountMeasured(object task, int size)
+        public void AccountMeasured(object task, long size)
         {
             var taskState = _tasks[task];
             var workerState = _workerState[taskState.Worker];

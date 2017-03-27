@@ -9,6 +9,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
+using EventStore.Projections.Core.Messages;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
@@ -31,12 +32,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         }
 
         private string[] _abStreams;
-        private Dictionary<string, int> _ab12Tag;
+        private Dictionary<string, long> _ab12Tag;
 
         [SetUp]
         public new void When()
         {
-            _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 2}};
+            _ab12Tag = new Dictionary<string, long> {{"a", 1}, {"b", 2}};
             _abStreams = new[] {"a", "b"};
 
             _distibutionPointCorrelationId = Guid.NewGuid();
@@ -48,9 +49,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _secondEventId = Guid.NewGuid();
             _thirdEventId = Guid.NewGuid();
             _fourthEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
+                    correlationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -64,9 +66,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 3, 2, true, 200));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "b").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, 
+                    correlationId, "b", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -81,9 +84,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 4, 3, true, 200));
             _edp.Pause();
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, null, false, "", 3, 2, true, 400));
+                correlationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, null, false, "", 3, 2, true, 400));
         }
 
         [Test]
@@ -111,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         [Test]
         public void does_not_publish_schedule()
         {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Where(x=>x.ReplyMessage.GetType() != typeof(ProjectionManagementMessage.Internal.ReadTimeout)).Count());
         }
 
     }

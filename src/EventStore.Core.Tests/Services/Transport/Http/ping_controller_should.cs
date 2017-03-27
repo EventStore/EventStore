@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _portableServer.TearDown();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TestFixtureTearDown()
         {
             PortsHelper.ReturnPort(_serverEndPoint.Port);

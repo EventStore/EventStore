@@ -17,6 +17,14 @@ namespace EventStore.Common.Log
             }
         }
 
+        public static bool Initialized
+        {
+            get 
+            {
+                return _initialized;
+            }
+        }
+
         private const string EVENTSTORE_LOG_FILENAME = "log.config";
         private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
         private static bool _initialized;
@@ -63,9 +71,10 @@ namespace EventStore.Common.Log
             }
             else
             {
-                Console.Error.WriteLine("Event Store's Logging ({0}) configuration file was not found in:\n{1}.\nFalling back to NLog (NLog.config) defaults.", 
-                        EVENTSTORE_LOG_FILENAME, 
+                Console.Error.WriteLine("Event Store's Logging ({0}) configuration file was not found in:\n{1}.\nFalling back to defaults.",
+                        EVENTSTORE_LOG_FILENAME,
                         String.Join(",\n", potentialNLogConfigurationFilePaths));
+                SetDefaultLog();
             }
 
             _initialized = true;
@@ -81,6 +90,25 @@ namespace EventStore.Common.Log
                     GlobalLogger.Fatal("Global Unhandled Exception object: {0}.", e.ExceptionObject);
                 GlobalLogger.Flush(TimeSpan.FromMilliseconds(500));
             };
+        }
+
+        private static void SetDefaultLog()
+        {
+            NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();
+            NLog.LogManager.Configuration.LoggingRules.Add(new NLog.Config.LoggingRule("*", NLog.LogLevel.Trace,
+                new NLog.Targets.ColoredConsoleTarget
+                {
+                    UseDefaultRowHighlightingRules = true,
+                    RowHighlightingRules =
+                    {
+                        new NLog.Targets.ConsoleRowHighlightingRule
+                        {
+                            ForegroundColor = NLog.Targets.ConsoleOutputColor.Green,
+                            Condition = "level == LogLevel.Info"
+                        }
+                    }
+                }));
+            NLog.LogManager.ReconfigExistingLoggers();
         }
 
         public static void Finish()

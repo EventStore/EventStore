@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -29,12 +28,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         }
 
         private string[] _abStreams;
-        private Dictionary<string, int> _ab12Tag;
+        private Dictionary<string, long> _ab12Tag;
 
         [SetUp]
         public new void When()
         {
-            _ab12Tag = new Dictionary<string, int> { { "a", 1 }, { "b", 2 } };
+            _ab12Tag = new Dictionary<string, long> { { "a", 1 }, { "b", 2 } };
             _abStreams = new[] { "a", "b" };
 
             _distibutionPointCorrelationId = Guid.NewGuid();
@@ -44,9 +43,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
+                correlationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
                         ResolvedEvent.ForUnresolvedEvent( 
@@ -62,10 +62,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     }, null, false, "", 3, 4, false, 200));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]
@@ -93,20 +93,23 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                          .FromEventNumber);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_handle_repeated_read_events_completed()
         {
-            _edp.Handle(
-                new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
-                    new[]
-                    {
-                        ResolvedEvent.ForUnresolvedEvent( 
-                            new EventRecord(
-                        2, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type", new byte[0], new byte[0]))
-                    }, null, false, "", 3, 4, false, 100));
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
+            Assert.Throws<InvalidOperationException>(()=> {
+                _edp.Handle(
+                    new ClientMessage.ReadStreamEventsForwardCompleted(
+                        correlationId, "a", 100, 100, ReadStreamResult.Success, 
+                        new[]
+                        {
+                            ResolvedEvent.ForUnresolvedEvent( 
+                                new EventRecord(
+                            2, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type", new byte[0], new byte[0]))
+                        }, null, false, "", 3, 4, false, 100));
+            });
         }
 
     }

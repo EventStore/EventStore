@@ -11,9 +11,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void Init(long buildToPosition);
         ReadIndexStats GetStatistics();
 
-        IndexReadEventResult ReadEvent(string streamId, int eventNumber);
-        IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
-        IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
+        IndexReadEventResult ReadEvent(string streamId, long eventNumber);
+        IndexReadStreamResult ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount);
+        IndexReadStreamResult ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount);
         /// <summary>
         /// Returns event records in the sequence they were committed into TF.
         /// Positions is specified as pre-positions (pointer at the beginning of the record).
@@ -26,7 +26,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 
         bool IsStreamDeleted(string streamId);
-        int GetStreamLastEventNumber(string streamId);
+        long GetStreamLastEventNumber(string streamId);
         StreamMetadata GetStreamMetadata(string streamId);
 
         string GetEventStreamIdByTransactionId(long transactionId);

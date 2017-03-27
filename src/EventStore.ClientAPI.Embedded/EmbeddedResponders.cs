@@ -12,10 +12,10 @@ namespace EventStore.ClientAPI.Embedded
         internal class AppendToStream :
             EmbeddedResponderBase<WriteResult, ClientMessage.WriteEventsCompleted>
         {
-            private readonly int _expectedVersion;
+            private readonly long _expectedVersion;
             private readonly string _stream;
 
-            public AppendToStream(TaskCompletionSource<WriteResult> source, string stream, int expectedVersion)
+            public AppendToStream(TaskCompletionSource<WriteResult> source, string stream, long expectedVersion)
                 : base(source)
             {
                 _stream = stream;
@@ -57,13 +57,66 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
+        internal class ConditionalAppendToStream :
+            EmbeddedResponderBase<ConditionalWriteResult, ClientMessage.WriteEventsCompleted>
+        {
+            private readonly string _stream;
+
+            public ConditionalAppendToStream(TaskCompletionSource<ConditionalWriteResult> source, string stream)
+                : base(source)
+            {
+                _stream = stream;
+            }
+
+            protected override void InspectResponse(ClientMessage.WriteEventsCompleted response)
+            {
+                switch (response.Result)
+                {
+                    case OperationResult.Success:
+                        Succeed(response);
+                        break;
+                    case OperationResult.PrepareTimeout:
+                    case OperationResult.ForwardTimeout:
+                    case OperationResult.CommitTimeout:
+                        break;
+                    case OperationResult.WrongExpectedVersion:
+                        Succeed(response);
+                        break;
+                    case OperationResult.StreamDeleted:
+                        Succeed(response);
+                        break;
+                    case OperationResult.InvalidTransaction:
+                        Fail(new InvalidTransactionException());
+                        break;
+                    case OperationResult.AccessDenied:
+                        Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
+                        break;
+                    default:
+                        throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
+                }
+            }
+
+            protected override ConditionalWriteResult TransformResponse(ClientMessage.WriteEventsCompleted response)
+            {
+                if (response.Result == OperationResult.WrongExpectedVersion)
+                {
+                    return new ConditionalWriteResult(ConditionalWriteStatus.VersionMismatch);
+                }
+                if (response.Result == OperationResult.StreamDeleted)
+                {
+                    return new ConditionalWriteResult(ConditionalWriteStatus.StreamDeleted);
+                }
+                return new ConditionalWriteResult(response.LastEventNumber, new Position(response.PreparePosition, response.CommitPosition));
+            }
+        }
+
         internal class DeleteStream :
             EmbeddedResponderBase<DeleteResult, ClientMessage.DeleteStreamCompleted>
         {
-            private readonly int _expectedVersion;
+            private readonly long _expectedVersion;
             private readonly string _stream;
 
-            public DeleteStream(TaskCompletionSource<DeleteResult> source, string stream, int expectedVersion) : base(source)
+            public DeleteStream(TaskCompletionSource<DeleteResult> source, string stream, long expectedVersion) : base(source)
             {
                 _stream = stream;
                 _expectedVersion = expectedVersion;
@@ -188,10 +241,10 @@ namespace EventStore.ClientAPI.Embedded
         internal class ReadEvent : 
             EmbeddedResponderBase<EventReadResult, ClientMessage.ReadEventCompleted>
         {
-            private readonly int _eventNumber;
+            private readonly long _eventNumber;
             private readonly string _stream;
 
-            public ReadEvent(TaskCompletionSource<EventReadResult> source, string stream, int eventNumber)
+            public ReadEvent(TaskCompletionSource<EventReadResult> source, string stream, long eventNumber)
                 : base(source)
             {
                 _stream = stream;
@@ -246,10 +299,10 @@ namespace EventStore.ClientAPI.Embedded
         internal class ReadStreamEventsBackward : 
             EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsBackwardCompleted>
         {
-            private readonly int _fromEventNumber;
+            private readonly long _fromEventNumber;
             private readonly string _stream;
 
-            public ReadStreamEventsBackward(TaskCompletionSource<StreamEventsSlice> source, string stream, int fromEventNumber)
+            public ReadStreamEventsBackward(TaskCompletionSource<StreamEventsSlice> source, string stream, long fromEventNumber)
                 : base(source)
             {
                 _stream = stream;
@@ -308,10 +361,10 @@ namespace EventStore.ClientAPI.Embedded
         internal class ReadStreamForwardEvents : 
             EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsForwardCompleted>
         {
-            private readonly int _fromEventNumber;
+            private readonly long _fromEventNumber;
             private readonly string _stream;
 
-            public ReadStreamForwardEvents(TaskCompletionSource<StreamEventsSlice> source, string stream, int fromEventNumber) : base(source)
+            public ReadStreamForwardEvents(TaskCompletionSource<StreamEventsSlice> source, string stream, long fromEventNumber) : base(source)
             {
                 _stream = stream;
                 _fromEventNumber = fromEventNumber;
@@ -413,11 +466,11 @@ namespace EventStore.ClientAPI.Embedded
         internal class TransactionStart :
             EmbeddedResponderBase<EventStoreTransaction, ClientMessage.TransactionStartCompleted>
         {
-            private readonly int _expectedVersion;
+            private readonly long _expectedVersion;
             private readonly IEventStoreTransactionConnection _parentConnection;
             private readonly string _stream;
 
-            public TransactionStart(TaskCompletionSource<EventStoreTransaction> source, IEventStoreTransactionConnection parentConnection, string stream, int expectedVersion) : base(source)
+            public TransactionStart(TaskCompletionSource<EventStoreTransaction> source, IEventStoreTransactionConnection parentConnection, string stream, long expectedVersion) : base(source)
             {
                 _parentConnection = parentConnection;
                 _stream = stream;

@@ -30,12 +30,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         }
 
         private string[] _abStreams;
-        private Dictionary<string, int> _ab12Tag;
+        private Dictionary<string, long> _ab12Tag;
 
         [SetUp]
         public new void When()
         {
-            _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 2}};
+            _ab12Tag = new Dictionary<string, long> {{"a", 1}, {"b", 2}};
             _abStreams = new[] {"a", "b"};
 
             _distibutionPointCorrelationId = Guid.NewGuid();
@@ -47,9 +47,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _secondEventId = Guid.NewGuid();
             _thirdEventId = Guid.NewGuid();
             _fourthEventId = Guid.NewGuid();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success,
+                correlationId, "a", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -63,9 +64,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 3, 2, true, 200));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success,
+                correlationId, "b", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             ResolvedEvent.ForUnresolvedEvent(
@@ -79,13 +81,15 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}))
                         }, null, false, "", 4, 3, true, 200));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "a").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0], null, false, "", 3,
+                correlationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0], null, false, "", 3,
                     2, true, 400));
+            correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == "b").CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0], null, false, "", 4,
+                    correlationId, "b", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0], null, false, "", 4,
                     3, true, 400));
         }
 
@@ -148,7 +152,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         [Test]
         public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(2, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
+            Assert.AreEqual(4, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
         }
 
 

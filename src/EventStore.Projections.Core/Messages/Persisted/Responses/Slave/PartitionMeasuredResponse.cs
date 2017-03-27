@@ -4,6 +4,6 @@
     {
         public string SubscriptionId;
         public string Partition;
-        public int Size;
+        public long Size;
     }
 }

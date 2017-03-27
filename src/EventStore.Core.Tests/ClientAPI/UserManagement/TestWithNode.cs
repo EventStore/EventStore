@@ -8,13 +8,13 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement
 {
-    [Category("LongRunning")]
+    [Category("LongRunning"), Category("ClientAPI")]
     public class TestWithNode : SpecificationWithDirectoryPerTestFixture
     {
         protected MiniNode _node;
         protected UsersManager _manager;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement
             _manager = new UsersManager(new NoopLogger(), _node.ExtHttpEndPoint, TimeSpan.FromSeconds(5));
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();

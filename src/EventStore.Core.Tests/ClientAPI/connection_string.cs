@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("ClientAPI")]
     public class connection_string
     {
         [Test]
@@ -62,6 +62,14 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var settings = ConnectionString.GetConnectionSettings("gossipseeds=111.222.222.111:1111,111.222.222.111:1112,111.222.222.111:1113");
             Assert.AreEqual(3, settings.GossipSeeds.Length);
+        }
+
+        [Test]
+        public void can_set_default_user_credentials()
+        {
+            var settings = ConnectionString.GetConnectionSettings("DefaultUserCredentials=foo:bar");
+            Assert.AreEqual("foo", settings.DefaultUserCredentials.Username);
+            Assert.AreEqual("bar", settings.DefaultUserCredentials.Password);
         }
     }
 }

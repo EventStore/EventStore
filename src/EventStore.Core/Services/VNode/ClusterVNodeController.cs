@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.VNode
         private Guid _stateCorrelationId = Guid.NewGuid();
         private Guid _subscriptionId = Guid.Empty;
 
-        private QueuedHandler _mainQueue;
+        private IQueuedHandler _mainQueue;
         private IEnvelope _publishEnvelope;
         private readonly VNodeFSM _fsm;
 
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.VNode
             _fsm = CreateFSM();
         }
 
-        public void SetMainQueue(QueuedHandler mainQueue)
+        public void SetMainQueue(IQueuedHandler mainQueue)
         {
             Ensure.NotNull(mainQueue, "mainQueue");
 
@@ -679,8 +679,9 @@ namespace EventStore.Core.Services.VNode
             if (_master == null) throw new Exception("_master == null");
             if (message.ClusterInfo.Members.Count(x => x.IsAlive && x.State == VNodeState.Master) > 1)
             {
-                Log.Debug("There are FEW MASTERS according to gossip, need to start elections. MASTER: [{0}].\nGOSSIP:\n{1}", 
-                          _master, message.ClusterInfo);
+                Log.Debug("There are FEW MASTERS according to gossip, need to start elections. MASTER: [{0}]", _master);
+                Log.Debug("GOSSIP:");
+                Log.Debug("{0}", message.ClusterInfo);
                 _mainQueue.Publish(new ElectionMessage.StartElections());
             }
 

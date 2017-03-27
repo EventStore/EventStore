@@ -38,19 +38,13 @@ namespace EventStore.Projections.Core.Services.Management
             public int NumberOfPrequisitesMetForDeletion;
             public string Message { get; set; }
 
-            [Obsolete]
-            public ProjectionSourceDefinition SourceDefintion
-            {
-                set { SourceDefinition = value; }
-            }
-
             public ProjectionSourceDefinition SourceDefinition { get; set; }
             public bool? EmitEnabled { get; set; }
             public bool? CreateTempStreams { get; set; }
             public bool? CheckpointsDisabled { get; set; }
             public bool? TrackEmittedStreams { get; set; }
-            public int? Epoch { get; set; }
-            public int? Version { get; set; }
+            public long? Epoch { get; set; }
+            public long? Version { get; set; }
             public SerializedRunAs RunAs { get; set; }
         }
 
@@ -82,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly ITimeProvider _timeProvider;
         private readonly Guid _workerId;
         private readonly Guid _id;
-        private readonly int _projectionId;
+        private readonly long _projectionId;
         private readonly string _name;
         private readonly bool _enabledToRun;
         private ManagedProjectionState _state;
@@ -93,7 +87,7 @@ namespace EventStore.Projections.Core.Services.Management
         //private List<IEnvelope> _debugStateRequests;
         private ProjectionStatistics _lastReceivedStatistics;
         private DateTime _lastAccessed;
-        private int _lastWrittenVersion = -1;
+        private long _lastWrittenVersion = -1;
         private IPrincipal _runAs;
         //TODO: slave (extract into derived class)
 
@@ -113,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Management
         public ManagedProjection(
             Guid workerId,
             Guid id,
-            int projectionId,
+            long projectionId,
             string name,
             bool enabledToRun,
             ILogger logger,

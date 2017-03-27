@@ -32,9 +32,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                 produceStreamDeletes: false);
             _edp.Resume();
             _edp.Pause();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.NoStream, new ResolvedEvent[0]
+                correlationId, "stream", 100, 100, ReadStreamResult.NoStream, new ResolvedEvent[0]
                     , null, false, "", -1, ExpectedVersion.NoStream, true, 200));
         }
 
@@ -44,10 +45,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void cannot_be_paused()
         {
-            _edp.Pause();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Pause(); });
         }
 
         [Test]
@@ -74,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void does_not_publish_schedule()
         {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Where(x=>x.ReplyMessage.GetType() != typeof(ProjectionManagementMessage.Internal.ReadTimeout)).Count());
         }
 
     }

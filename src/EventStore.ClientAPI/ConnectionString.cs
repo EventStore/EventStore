@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -44,6 +45,21 @@ namespace EventStore.ClientAPI
                         throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
                     }
                 }).ToArray()
+                },
+                {typeof(UserCredentials), x =>
+                {
+                    try
+                    {
+                        var pieces = x.Trim().Split(':');
+                        if (pieces.Length != 2) throw new Exception("Could not split into username and password.");
+                        
+                        return new UserCredentials(pieces[0], pieces[1]);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception(string.Format("User credentials {0} is not in correct format. Expected format is username:password.", x), ex);
+                    }
+                }
                 }
             };
         }
@@ -64,11 +80,12 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Returns a <see cref="ConnectionSettings"></see> for a given connection string.
         /// </summary>
-        /// <param name="connectionString"></param>
+        /// <param name="connectionString">The connection string to parse</param>
+        /// <param name="builder">Pre-populated settings builder, optional. If not specified, a new builder will be created.</param>
         /// <returns>a <see cref="ConnectionSettings"/> from the connection string</returns>
-        public static ConnectionSettings GetConnectionSettings(string connectionString)
+        public static ConnectionSettings GetConnectionSettings(string connectionString, ConnectionSettingsBuilder builder = null)
         {
-            var settings = ConnectionSettings.Create().Build();
+            var settings = (builder ?? ConnectionSettings.Create()).Build();
             var items = GetConnectionStringInfo(connectionString).ToArray();
             return Apply(items, settings);
         }

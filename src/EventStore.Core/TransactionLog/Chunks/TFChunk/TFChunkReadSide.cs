@@ -82,7 +82,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     if (!TryReadForwardInternal(workItem, logicalPosition, out length, out record))
                         return RecordReadResult.Failure;
 
-                    long nextLogicalPos = logicalPosition + length + 2*sizeof(int);
+                    long nextLogicalPos = record.GetNextLogPosition(logicalPosition, length);
                     return new RecordReadResult(true, nextLogicalPos, record, length);
                 }
                 finally
@@ -110,7 +110,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     if (!TryReadBackwardInternal(workItem, logicalPosition, out length, out record))
                         return RecordReadResult.Failure;
 
-                    long nextLogicalPos = logicalPosition - length - 2 * sizeof(int);
+                    long nextLogicalPos = record.GetPrevLogPosition(logicalPosition, length);
                     return new RecordReadResult(true, nextLogicalPos, record, length);
                 }
                 finally
@@ -301,7 +301,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     if (!TryReadForwardInternal(workItem, actualPosition, out length, out record))
                         return RecordReadResult.Failure;
 
-                    long nextLogicalPos = Chunk.ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2*sizeof(int));
+                    long nextLogicalPos = Chunk.ChunkHeader.GetLocalLogPosition(record.GetNextLogPosition(record.LogPosition, length));
                     return new RecordReadResult(true, nextLogicalPos, record, length);
                 }
                 finally

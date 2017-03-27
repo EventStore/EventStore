@@ -27,7 +27,6 @@ namespace EventStore.Core.TransactionLog.Chunks
         public void Open(bool verifyHash = true, bool readOnly = false)
         {
             ValidateReaderChecksumsMustBeLess(Config);
-
             var checkpoint = Config.WriterCheckpoint.Read();
 
             if (Config.InMemDb)
@@ -49,14 +48,14 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (lastChunkVersions.Length == 0 && (chunkNum + 1) * (long)Config.ChunkSize == checkpoint)
                 {
                     // The situation where the logical data size is exactly divisible by ChunkSize,
-                    // so it might happen that we have checkpoint indicating one more chunk should exist, 
+                    // so it might happen that we have checkpoint indicating one more chunk should exist,
                     // but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
                     var footer = ReadChunkFooter(versions[0]);
                     if (footer.IsCompleted)
-                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false);
+                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:Config.Unbuffered);
                     else
                     {
-                        chunk = TFChunk.TFChunk.FromOngoingFile(versions[0], Config.ChunkSize, checkSize: false);
+                        chunk = TFChunk.TFChunk.FromOngoingFile(versions[0], Config.ChunkSize, checkSize: false, unbuffered:Config.Unbuffered, writethrough:Config.WriteThrough);
                         // chunk is full with data, we should complete it right here
                         if (!readOnly)
                             chunk.Complete();
@@ -64,7 +63,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else
                 {
-                    chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false);
+                    chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:Config.Unbuffered);
                 }
                 Manager.AddChunk(chunk);
                 chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
@@ -85,7 +84,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var chunkLocalPos = chunkHeader.GetLocalLogPosition(checkpoint);
                 if (chunkHeader.IsScavenged)
                 {
-                    var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false);
+                    var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false, unbufferedRead:Config.Unbuffered);
                     if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos)
                     {
                         lastChunk.Dispose();
@@ -107,7 +106,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else
                 {
-                    var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false);
+                    var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false, unbuffered:Config.Unbuffered, writethrough:Config.WriteThrough);
                     Manager.AddChunk(lastChunk);
                 }
             }
@@ -135,9 +134,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                         }
                         catch (FileBeingDeletedException exc)
                         {
-                            Log.Trace("{0} exception was thrown while doing background validation of chunk {1}.\n"
-                                      + "That's probably OK, especially if truncation was request at the same time: {2}.",
-                                      exc.GetType().Name, chunk, exc.Message);
+                            Log.Trace("{0} exception was thrown while doing background validation of chunk {1}.",
+                                      exc.GetType().Name, chunk);
+                            Log.Trace("That's probably OK, especially if truncation was request at the same time: {0}.",
+                                      exc.Message);
                         }
                         catch (Exception exc)
                         {

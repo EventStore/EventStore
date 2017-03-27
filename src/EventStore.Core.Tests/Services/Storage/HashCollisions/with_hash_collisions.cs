@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         protected virtual void given(){}
         protected virtual void when(){}
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void Setup(){
             given();
             _indexDir = PathName;
@@ -34,9 +34,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             _lowHasher = new XXHashUnsafe();
             _highHasher = new Murmur3AUnsafe();
             _tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
-                                         () => new HashListMemTable(PTableVersions.Index32Bit, maxSize: _maxMemTableSize),
+                                         () => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
                                          () => _fakeReader,
-                                         PTableVersions.Index32Bit,
+                                         PTableVersions.IndexV1,
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
@@ -45,6 +45,12 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             when();
             //wait for the mem table to be dumped
             System.Threading.Thread.Sleep(500);
+        }
+
+        public override void TestFixtureTearDown()
+        {
+            _tableIndex.Close();
+            base.TestFixtureTearDown();
         }
     }
 
@@ -197,10 +203,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             _tableIndex.Add(1, streamId, 1, 4);
             _tableIndex.Add(1, streamId, 2, 6);
             System.Threading.Thread.Sleep(500);
+            _tableIndex.Close(false);
             _tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
-                                         () => new HashListMemTable(PTableVersions.Index64Bit, maxSize: _maxMemTableSize),
+                                         () => new HashListMemTable(PTableVersions.IndexV2, maxSize: _maxMemTableSize),
                                          () => _fakeReader,
-                                         PTableVersions.Index64Bit,
+                                         PTableVersions.IndexV2,
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
@@ -277,14 +284,14 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             return new IndexBackend.MetadataCached();
         }
 
-        public int? UpdateStreamLastEventNumber(int cacheVersion, string streamId, int? lastEventNumber){
+        public long? UpdateStreamLastEventNumber(int cacheVersion, string streamId, long? lastEventNumber){
             return null;
         }
         public EventStore.Core.Data.StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId, EventStore.Core.Data.StreamMetadata metadata){
             return null;
         }
 
-        public int? SetStreamLastEventNumber(string streamId, int lastEventNumber){
+        public long? SetStreamLastEventNumber(string streamId, long lastEventNumber){
             return null;
         }
         public EventStore.Core.Data.StreamMetadata SetStreamMetadata(string streamId, EventStore.Core.Data.StreamMetadata metadata){

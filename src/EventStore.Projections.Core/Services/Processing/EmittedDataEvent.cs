@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public EmittedDataEvent(
             string streamId, Guid eventId,
             string eventType, bool isJson, string data, ExtraMetaData metadata, CheckpointTag causedByTag, CheckpointTag expectedTag,
-            Action<int> onCommitted = null)
+            Action<long> onCommitted = null)
             : base(streamId, eventId, eventType, causedByTag, expectedTag, onCommitted)
         {
             _isJson = isJson;
@@ -43,6 +43,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public override IEnumerable<KeyValuePair<string, string>> ExtraMetaData()
         {
             return _metadata == null ? null : _metadata.Metadata;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Event Id: {0}, Event Type: {1}, Data: {2}", EventId, EventType, Data);
         }
     }
 }

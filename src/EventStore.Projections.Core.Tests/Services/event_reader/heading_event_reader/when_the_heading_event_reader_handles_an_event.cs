@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _exception = null;
             try
             {
-                _point = new HeadingEventReader(10);
+                _point = new HeadingEventReader(10, _bus);
             }
             catch (Exception ex)
             {
@@ -60,13 +60,15 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         }
 */
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_handle_previous_event()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             _point.Handle(
                 ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
                     _distibutionPointCorrelationId, new TFPos(5, 0), "stream", 8, false, Guid.NewGuid(), "type",
                     false, new byte[0], new byte[0]));
+            });
         }
 
         [Test]

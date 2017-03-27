@@ -23,7 +23,7 @@ message NewEvent {
 
 message EventRecord {
 	required string event_stream_id = 1;
-	required int32 event_number = 2;
+	required int64 event_number = 2;
 	required bytes event_id = 3;
 	required string event_type = 4;
 	required int32 data_content_type = 5;
@@ -48,7 +48,7 @@ message ResolvedEvent {
 
 message WriteEvents {
 	required string event_stream_id = 1;
-	required int32 expected_version = 2;
+	required int64 expected_version = 2;
 	repeated NewEvent events = 3;
 	required bool require_master = 4;
 }
@@ -56,15 +56,16 @@ message WriteEvents {
 message WriteEventsCompleted {
 	required OperationResult result = 1;
 	optional string message = 2;
-	required int32 first_event_number = 3;
-	required int32 last_event_number = 4;
+	required int64 first_event_number = 3;
+	required int64 last_event_number = 4;
 	optional int64 prepare_position = 5;
 	optional int64 commit_position = 6;
+	optional int64 current_version  = 7;
 }
 
 message DeleteStream {
 	required string event_stream_id = 1;
-	required int32 expected_version = 2;
+	required int64 expected_version = 2;
 	required bool require_master = 3;
 	optional bool hard_delete = 4;
 }
@@ -78,7 +79,7 @@ message DeleteStreamCompleted {
 
 message TransactionStart {
 	required string event_stream_id = 1;
-	required int32 expected_version = 2;
+	required int64 expected_version = 2;
 	required bool require_master = 3;
 }
 
@@ -109,15 +110,15 @@ message TransactionCommitCompleted {
 	required int64 transaction_id = 1;
 	required OperationResult result = 2;
 	optional string message = 3;
-	required int32 first_event_number = 4;
-	required int32 last_event_number = 5;
+	required int64 first_event_number = 4;
+	required int64 last_event_number = 5;
 	optional int64 prepare_position = 6;
 	optional int64 commit_position = 7;
 }
 
 message ReadEvent {
 	required string event_stream_id = 1;
-	required int32 event_number = 2;
+	required int64 event_number = 2;
 	required bool resolve_link_tos = 3;
 	required bool require_master = 4;
 }
@@ -141,7 +142,7 @@ message ReadEventCompleted {
 
 message ReadStreamEvents {
 	required string event_stream_id = 1;
-	required int32 from_event_number = 2;
+	required int64 from_event_number = 2;
 	required int32 max_count = 3;
 	required bool resolve_link_tos = 4;
 	required bool require_master = 5;
@@ -160,8 +161,8 @@ message ReadStreamEventsCompleted {
 
 	repeated ResolvedIndexedEvent events = 1;
 	required ReadStreamResult result = 2;
-	required int32 next_event_number = 3;
-	required int32 last_event_number = 4;
+	required int64 next_event_number = 3;
+	required int64 last_event_number = 4;
 	required bool is_end_of_stream = 5;
 	required int64 last_commit_position = 6;
 
@@ -199,7 +200,7 @@ message CreatePersistentSubscription {
 	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
 	required bool resolve_link_tos = 3;
-	required int32 start_from = 4;
+	required int64 start_from = 4;
 	required int32 message_timeout_milliseconds = 5;
 	required bool record_statistics = 6;
 	required int32 live_buffer_size = 7;
@@ -223,7 +224,7 @@ message UpdatePersistentSubscription {
 	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
 	required bool resolve_link_tos = 3;
-	required int32 start_from = 4;
+	required int64 start_from = 4;
 	required int32 message_timeout_milliseconds = 5;
 	required bool record_statistics = 6;
 	required int32 live_buffer_size = 7;
@@ -301,7 +302,7 @@ message PersistentSubscriptionNakEvents {
 message PersistentSubscriptionConfirmation {
 	required int64 last_commit_position = 1;
 	required string subscription_id = 2;
-	optional int32 last_event_number = 3;
+	optional int64 last_event_number = 3;
 }
 
 message PersistentSubscriptionStreamEventAppeared {
@@ -315,7 +316,7 @@ message SubscribeToStream {
 
 message SubscriptionConfirmation {
 	required int64 last_commit_position = 1;
-	optional int32 last_event_number = 2;
+	optional int64 last_event_number = 2;
 }
 
 message StreamEventAppeared {
@@ -374,4 +375,12 @@ message ScavengeDatabaseCompleted {
 	optional string error = 2;
 	required int32 total_time_ms = 3;
 	required int64 total_space_saved = 4;
+}
+
+message IdentifyClient {
+	required int32 version = 1;
+	optional string connection_name = 2;
+}
+
+message ClientIdentified {
 }

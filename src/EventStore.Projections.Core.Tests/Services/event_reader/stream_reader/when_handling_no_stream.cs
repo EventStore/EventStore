@@ -32,16 +32,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, null, "stream", 0, new RealTimeProvider(), false,
                 produceStreamDeletes: false);
             _edp.Resume();
+            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100,
+                    correlationId, "stream", 100, 100,
                     ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", -1, ExpectedVersion.NoStream, true, 200));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_be_resumed()
         {
-            _edp.Resume();
+            Assert.Throws<InvalidOperationException>(()=> { _edp.Resume(); });
         }
 
         [Test]
@@ -74,8 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void publishes_subscribe_awake()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<AwakeServiceMessage.SubscribeAwake>().Count());
         }
-
     }
 }

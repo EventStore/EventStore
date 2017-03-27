@@ -38,12 +38,14 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void initial_position_cannot_be_set_twice()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             var newTag = CheckpointTag.FromPreparePosition(0, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
+            });
         }
 
         [Test]
@@ -52,11 +54,13 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
             _positionTracker.UpdateByCheckpointTagInitial(_tagger.MakeZeroCheckpointTag());
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void it_cannot_be_updated_forward()
         {
+            Assert.Throws<InvalidOperationException>(() => {
             var newTag = CheckpointTag.FromPreparePosition(0, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
+            });
         }
 
     }

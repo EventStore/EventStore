@@ -76,6 +76,7 @@ namespace EventStore.Projections.Core.v8
             }
             catch (DllNotFoundException ex)
             {
+                Log.Info("{0}\n{1}\n{2}",ex.ToString(), ex.Message, ex.StackTrace);
                 throw new ApplicationException(
                     "The projection subsystem failed to load a libjs1.so/js1.dll/... or one of its dependencies.  The original error message is: "
                     + ex.Message, ex);
@@ -90,7 +91,7 @@ namespace EventStore.Projections.Core.v8
                 Log.Debug(message);
         }
 
-        private IntPtr GetModule(string moduleName)
+        private IntPtr GetModule(IntPtr prelude, string moduleName)
         {
             try
             {
@@ -99,7 +100,7 @@ namespace EventStore.Projections.Core.v8
                 if (_cancelTokenOrStatus == NonScheduled)
                     throw new InvalidOperationException("Requires scheduled terminate execution");
                 var compiledModuleHandle = Js1.CompileModule(
-                    GetHandle(), moduleSourceAndFileName.Item1, moduleSourceAndFileName.Item2);
+                    prelude, moduleSourceAndFileName.Item1, moduleSourceAndFileName.Item2);
                 CompiledScript.CheckResult(compiledModuleHandle, terminated: false, disposeScriptOnException: true);
                 var compiledModule = new CompiledScript(compiledModuleHandle);
                 _modules.Add(compiledModule);

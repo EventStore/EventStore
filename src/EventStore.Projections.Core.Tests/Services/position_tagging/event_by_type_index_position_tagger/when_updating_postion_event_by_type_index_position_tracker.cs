@@ -18,8 +18,8 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             // given
             _tagger = new EventByTypeIndexPositionTagger(0, new[] {"type1", "type2"});
             _positionTracker = new PositionTracker(_tagger);
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, int> {{"type1", 1}, {"type2", 2}});
-            var newTag2 = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(20, 15), new Dictionary<string, int> {{"type1", 1}, {"type2", 3}});
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(10, 5), new Dictionary<string, long> {{"type1", 1}, {"type2", 2}});
+            var newTag2 = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(20, 15), new Dictionary<string, long> {{"type1", 1}, {"type2", 3}});
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag2);
         }
@@ -37,26 +37,26 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.event_by_t
             Assert.AreEqual(new TFPos(20, 15), _positionTracker.LastTag.Position);
         }
         
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
         public void cannot_update_to_the_same_position()
         {
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(20, 15), new Dictionary<string, int> {{"type1", 1}, {"type2", 3}});
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(20, 15), new Dictionary<string, long> {{"type1", 1}, {"type2", 3}});
+            Assert.Throws<InvalidOperationException>(()=> { _positionTracker.UpdateByCheckpointTagForward(newTag); });
         }
 
         [Test]
         public void can_update_to_the_same_index_position_but_tf()
         {
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 25), new Dictionary<string, int> {{"type1", 1}, {"type2", 3}});
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 25), new Dictionary<string, long> {{"type1", 1}, {"type2", 3}});
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
+        [Test]
         public void it_cannot_be_updated_with_other_stream()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 25), new Dictionary<string, int> {{"type1", 1}, {"type3", 3}});
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            var newTag = CheckpointTag.FromEventTypeIndexPositions(0, new TFPos(30, 25), new Dictionary<string, long> {{"type1", 1}, {"type3", 3}});
+            Assert.Throws<InvalidOperationException>(()=> { _positionTracker.UpdateByCheckpointTagForward(newTag); });
         }
 
         //TODO: write tests on updating with incompatible snapshot loaded

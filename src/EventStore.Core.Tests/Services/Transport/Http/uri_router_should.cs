@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.AreEqual(HttpMethod.Get, match[1].ControllerAction.HttpMethod);
         }
 
-        [Test, Ignore]
+        [Test, Ignore("ignore")]
         public void not_care_about_trailing_slash()
         {
             var match = _router.GetAllUriMatches(Uri("/streams/$all"));
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             Assert.AreEqual(HttpMethod.Get, match[0].ControllerAction.HttpMethod);
         }
 
-        [Test, Ignore]
+        [Test, Ignore("ignore")]
         public void not_care_about_trailing_slash2()
         {
             var match = _router.GetAllUriMatches(Uri("/streams/$$all"));

@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -11,6 +10,8 @@
     <RootNamespace>EventStore.Core</RootNamespace>
     <AssemblyName>EventStore.Core</AssemblyName>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,6 +33,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EventStore.Rags, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -49,10 +52,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
     </Reference>
-    <Reference Include="System.Net.Http">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\Microsoft.Net.Http\System.Net.Http.dll</HintPath>
-    </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -74,15 +74,21 @@
     <Compile Include="Authentication\IAuthenticationProviderFactory.cs" />
     <Compile Include="Authentication\InternalAuthenticationProviderFactory.cs" />
     <Compile Include="Bus\AdHocHandler.cs" />
+    <Compile Include="Bus\ISingleConsumerMessageQueue.cs" />
+    <Compile Include="Bus\MPSCMessageQueue.cs" />
+    <Compile Include="Bus\QueueBatchDequeueResult.cs" />
+    <Compile Include="Bus\QueuedHandlerAutoReset.cs" />
+    <Compile Include="Bus\QueuedHandlerMRES.cs" />
     <Compile Include="Bus\QueueStatsCollector.cs" />
     <Compile Include="Bus\IQueuedHandler.cs" />
     <Compile Include="Bus\QueuedHandlerThreadPool.cs" />
     <Compile Include="Bus\MultiQueuedHandler.cs" />
     <Compile Include="Bus\QueuedHandlerSleep.cs" />
-    <Compile Include="Bus\QueuedHandlerMRES.cs" />
+    <Compile Include="Bus\QueuedHandlerMRESWithMPSC.cs" />
     <Compile Include="Bus\QueuedHandler.cs" />
     <Compile Include="Bus\QueuedHandlerPulse.cs" />
     <Compile Include="Bus\NarrowingHandler.cs" />
+    <Compile Include="Bus\SPSCMessageQueue.cs" />
     <Compile Include="Bus\WideningHandler.cs" />
     <Compile Include="Bus\HandleExtensions.cs" />
     <Compile Include="Bus\IBus.cs" />
@@ -90,7 +96,7 @@
     <Compile Include="Bus\InMemoryBus.cs" />
     <Compile Include="Bus\ISubscriber.cs" />
     <Compile Include="Bus\MessageHandler.cs" />
-    <Compile Include="Bus\QueuedHandlerAutoReset.cs" />
+    <Compile Include="Bus\QueuedHandlerAutoResetWithMPSC.cs" />
     <Compile Include="Bus\IPublisher.cs" />
     <Compile Include="Bus\IHandle.cs" />
     <Compile Include="Bus\QueueMonitor.cs" />
@@ -149,7 +155,7 @@
     <Compile Include="Index\IIndexFilenameProvider.cs" />
     <Compile Include="Index\IMemTable.cs" />
     <Compile Include="Index\IndexEntry.cs" />
-    <Compile Include="Index\IndexEntry32.cs" />
+    <Compile Include="Index\IndexEntryV1.cs" />
     <Compile Include="Index\IndexKey.cs" />
     <Compile Include="Index\IndexMap.cs" />
     <Compile Include="Index\ISearchTable.cs" />
@@ -232,7 +238,6 @@
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="NodeSubsystems.cs" />
     <Compile Include="Services\Storage\ReaderIndex\AllReader.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\IIndexCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexBackend.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexCommitter.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReader.cs" />
@@ -420,6 +425,8 @@
     <Compile Include="VNodeStatusChangeArgs.cs" />
     <Compile Include="Util\DefaultFiles.cs" />
     <Compile Include="VNodeBuilder.cs" />
+    <Compile Include="Index\IndexEntryV2.cs" />
+    <Compile Include="Helpers\StreamVersionConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
@@ -441,7 +448,7 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

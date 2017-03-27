@@ -10,14 +10,14 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly string EventType;
         private readonly CheckpointTag _causedByTag;
         private readonly CheckpointTag _expectedTag;
-        private readonly Action<int> _onCommitted;
+        private readonly Action<long> _onCommitted;
         private Guid _causedBy;
         private string _correlationId;
 
         //TODO: stream metadata
         protected EmittedEvent(
             string streamId, Guid eventId,
-            string eventType, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<int> onCommitted = null)
+            string eventType, CheckpointTag causedByTag, CheckpointTag expectedTag, Action<long> onCommitted = null)
         {
             if (causedByTag == null) throw new ArgumentNullException("causedByTag");
             StreamId = streamId;
@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _expectedTag; }
         }
 
-        public Action<int> OnCommitted
+        public Action<long> OnCommitted
         {
             get { return _onCommitted; }
         }

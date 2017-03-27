@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The event number of the requested event.
         /// </summary>
-        public readonly int EventNumber;
+        public readonly long EventNumber;
 
         /// <summary>
         /// The event read represented as <see cref="ResolvedEvent"/>
@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI
 
         internal EventReadResult(EventReadStatus status, 
                                  string stream, 
-                                 int eventNumber, 
+                                 long eventNumber, 
                                  ClientMessage.ResolvedIndexedEvent @event)
         {
             Ensure.NotNullOrEmpty(stream, "stream");

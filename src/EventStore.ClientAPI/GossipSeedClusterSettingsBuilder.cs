@@ -13,6 +13,7 @@ namespace EventStore.ClientAPI
         private GossipSeed[] _gossipSeeds;
         private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
         private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
+        private bool _preferRandomNode = false;
 
         /// <summary>
         /// Sets gossip seed endpoints for the client.
@@ -77,6 +78,16 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Whether to randomly choose a node that's alive from the known nodes. 
+        /// </summary>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        public GossipSeedClusterSettingsBuilder PreferRandomNode()
+        {
+            _preferRandomNode = true;
+            return this;
+        }
+
+        /// <summary>
         /// Builds a <see cref="ClusterSettings"/> object from a <see cref="GossipSeedClusterSettingsBuilder"/>.
         /// </summary>
         /// <param name="builder"><see cref="GossipSeedClusterSettingsBuilder"/> from which to build a <see cref="ClusterSettings"/></param>
@@ -90,7 +101,7 @@ namespace EventStore.ClientAPI
         /// Builds a <see cref="ClusterSettings"/> object from a <see cref="GossipSeedClusterSettingsBuilder"/>.
         /// </summary>
         public ClusterSettings Build() {
-            return new ClusterSettings(this._gossipSeeds, this._maxDiscoverAttempts, this._gossipTimeout);
+            return new ClusterSettings(this._gossipSeeds, this._maxDiscoverAttempts, this._gossipTimeout, this._preferRandomNode);
         }
     }
 }

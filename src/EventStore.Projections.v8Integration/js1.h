@@ -4,7 +4,7 @@
 
 typedef void (STDCALL * REGISTER_COMMAND_HANDLER_CALLBACK)(const uint16_t *event_name, void *handler_handle);
 typedef void (STDCALL * REVERSE_COMMAND_CALLBACK)(const uint16_t *command_name, const uint16_t *command_arguments);
-typedef void * (STDCALL * LOAD_MODULE_CALLBACK)(const uint16_t *module_name);
+typedef void * (STDCALL * LOAD_MODULE_CALLBACK)(void *prelude, const uint16_t *module_name);
 typedef void (STDCALL * LOG_CALLBACK)(const uint16_t *message);
 typedef void (STDCALL * REPORT_ERROR_CALLBACK)(const int error_code, const uint16_t *error_message);
 typedef bool (STDCALL * ENTER_CANCELLABLE_REGION)();

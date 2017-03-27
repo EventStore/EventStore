@@ -45,7 +45,7 @@ namespace EventStore.Core
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 
-        public QueuedHandler MainQueue { get { return _mainQueue; } }
+        public IQueuedHandler MainQueue { get { return _mainQueue; } }
         public ISubscriber MainBus { get { return _mainBus; } }
         public HttpService InternalHttpService { get { return _internalHttpService; } }
         public HttpService ExternalHttpService { get { return _externalHttpService; } }
@@ -56,7 +56,7 @@ namespace EventStore.Core
         internal MultiQueuedHandler WorkersHandler { get { return _workersHandler; } }
 
         private readonly VNodeInfo _nodeInfo;
-        private readonly QueuedHandler _mainQueue;
+        private readonly IQueuedHandler _mainQueue;
         private readonly ISubscriber _mainBus;
 
         private readonly ClusterVNodeController _controller;
@@ -117,7 +117,7 @@ namespace EventStore.Core
             _subsystems = subsystems;
 
             _controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy, _subsystems);
-            _mainQueue = new QueuedHandler(_controller, "MainQueue");
+            _mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue");
 
             _controller.SetMainQueue(_mainQueue);
 
@@ -136,7 +136,8 @@ namespace EventStore.Core
                                                    vNodeSettings.StatsPeriod,
                                                    _nodeInfo.ExternalHttp,
                                                    vNodeSettings.StatsStorage,
-                                                   _nodeInfo.ExternalTcp);
+                                                   _nodeInfo.ExternalTcp,
+                                                   _nodeInfo.ExternalSecureTcp);
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
@@ -219,13 +220,15 @@ namespace EventStore.Core
 
             {
                 // EXTERNAL TCP
-                var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
-                                                   TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
-                                                   vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-                                                   _internalAuthenticationProvider, null);
-                _mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
-                _mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
-                _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
+                if(!vNodeSettings.DisableInsecureTCP){
+                    var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
+                                                       TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
+                                                       vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
+                                                       _internalAuthenticationProvider, null);
+                    _mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
+                    _mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
+                    _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
+                }
 
                 // EXTERNAL SECURE TCP
                 if (_nodeInfo.ExternalSecureTcp != null)
@@ -240,14 +243,16 @@ namespace EventStore.Core
                 }
                 if(!isSingleNode) {
                 // INTERNAL TCP
-                    var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
-                                                      TcpServiceType.Internal, TcpSecurityType.Normal,
-                                                    new InternalTcpDispatcher(),
-                                                    vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-                                                    _internalAuthenticationProvider, null);
-                    _mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
-                    _mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
-                    _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
+                    if(!vNodeSettings.DisableInsecureTCP){
+                        var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
+                                                          TcpServiceType.Internal, TcpSecurityType.Normal,
+                                                        new InternalTcpDispatcher(),
+                                                        vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
+                                                        _internalAuthenticationProvider, null);
+                        _mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
+                        _mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
+                        _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
+                    }
 
                 // INTERNAL SECURE TCP
                     if (_nodeInfo.InternalSecureTcp != null)
@@ -521,7 +526,7 @@ namespace EventStore.Core
                                                         db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
                                                         epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
             electionsService.SubscribeMessages(_mainBus);
-            if(!isSingleNode) {
+            if(!isSingleNode || vNodeSettings.GossipOnSingleNode) {
             // GOSSIP
 
                 var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,

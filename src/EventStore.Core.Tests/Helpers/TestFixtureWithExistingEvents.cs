@@ -161,6 +161,16 @@ namespace EventStore.Core.Tests.Helpers
                     message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
         }
 
+        protected void CompleteWriteWithResult(OperationResult result)
+        {
+            var message = _writesQueue.Dequeue();
+            ProcessWrite(
+                message.Envelope, message.CorrelationId, message.EventStreamId, ExpectedVersion.Any, message.Events,
+                (firstEventNumber, lastEventNumber) => new ClientMessage.WriteEventsCompleted(message.CorrelationId, result, String.Empty),
+                new ClientMessage.WriteEventsCompleted(
+                    message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
+        }
+
         protected void AllWriteComplete()
         {
             while (_writesQueue.Count > 0)
@@ -377,7 +387,7 @@ namespace EventStore.Core.Tests.Helpers
                 _writesQueue.Enqueue(message);
         }
 
-        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, int expectedVersion, Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, int? commitPosition = null) where T : Message
+        private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, long expectedVersion, Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse, long[] positions = null, long? commitPosition = null) where T : Message
         {
             if (positions == null)
             {
@@ -527,7 +537,7 @@ namespace EventStore.Core.Tests.Helpers
             }
         }
 
-        protected TFPos GetTfPos(string streamId, int eventNumber)
+        protected TFPos GetTfPos(string streamId, long eventNumber)
         {
             return _all.Last(v => v.Value.EventStreamId == streamId && v.Value.EventNumber == eventNumber).Key;
         }
@@ -610,8 +620,8 @@ namespace EventStore.Core.Tests.Helpers
         {
             var stream = SystemEventTypes.StreamReferenceEventToStreamId(SystemEventTypes.LinkTo, link);
             var eventNumber = SystemEventTypes.EventLinkToEventNumber(link);
-            return _streams[stream][eventNumber].EventType + ":"
-                   + Encoding.UTF8.GetString(_streams[stream][eventNumber].Data);
+            return _streams[stream][(int)eventNumber].EventType + ":"
+                   + Encoding.UTF8.GetString(_streams[stream][(int)eventNumber].Data);
         }
 
         public void AssertStreamContains(string streamId, params string[] data)
@@ -628,7 +638,7 @@ namespace EventStore.Core.Tests.Helpers
             Assert.That(missing.Length == 0, string.Format("{0} does not contain: {1}", streamId, missing.Aggregate("", (a, v) => a + " " + v)));
         }
 
-        public void AssertEvent(string streamId, int eventNumber, string data)
+        public void AssertEvent(string streamId, long eventNumber, string data)
         {
             throw new NotImplementedException();
         }

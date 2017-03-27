@@ -46,13 +46,19 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent msg)
         {
-            if (msg.Expires < DateTime.UtcNow) return;
+            if (msg.Expires < DateTime.UtcNow){
+                Log.Debug("Read Event operation has expired for Stream: {0}, Event Number: {1}. Operation Expired at {2}", msg.EventStreamId, msg.EventNumber, msg.Expires);
+                return;
+            }
             msg.Envelope.ReplyWith(ReadEvent(msg));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward msg)
         {
-            if (msg.Expires < DateTime.UtcNow) return;
+            if (msg.Expires < DateTime.UtcNow){
+                Log.Debug("Read Stream Events Forward operation has expired for Stream: {0}, From Event Number: {1}, Max Count: {2}. Operation Expired at {3}", msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.Expires);
+                return;
+            }
             using (HistogramService.Measure(_readerStreamRangeHistogram))
             {
                 var res = ReadStreamEventsForward(msg);
@@ -85,13 +91,19 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward msg)
         {
-            if (msg.Expires < DateTime.UtcNow) return;
+            if (msg.Expires < DateTime.UtcNow){
+                Log.Debug("Read Stream Events Backward operation has expired for Stream: {0}, From Event Number: {1}, Max Count: {2}. Operation Expired at {3}", msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.Expires);
+                return;
+            }
             msg.Envelope.ReplyWith(ReadStreamEventsBackward(msg));
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward msg)
         {
-            if (msg.Expires < DateTime.UtcNow) return;
+            if (msg.Expires < DateTime.UtcNow){
+                Log.Debug("Read All Stream Events Forward operation has expired for C:{0}/P:{1}. Operation Expired at {2}", msg.CommitPosition, msg.PreparePosition, msg.Expires);
+                return;
+            }
             using (HistogramService.Measure(_readerAllRangeHistogram))
             {
                 var res = ReadAllEventsForward(msg);
@@ -129,13 +141,19 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward msg)
         {
-            if (msg.Expires < DateTime.UtcNow) return;
+            if (msg.Expires < DateTime.UtcNow){
+                Log.Debug("Read All Stream Events Backward operation has expired for C:{0}/P:{1}. Operation Expired at {2}", msg.CommitPosition, msg.PreparePosition, msg.Expires);
+                return;
+            }
             msg.Envelope.ReplyWith(ReadAllEventsBackward(msg));
         }
 
         void IHandle<StorageMessage.CheckStreamAccess>.Handle(StorageMessage.CheckStreamAccess msg)
         {
-            if (msg.Expires < DateTime.UtcNow) return;
+            if (msg.Expires < DateTime.UtcNow){
+                Log.Debug("Check Stream Access operation has expired for Stream: {0}. Operation Expired at {1}", msg.EventStreamId, msg.Expires);
+                return;
+            }
             msg.Envelope.ReplyWith(CheckStreamAccess(msg));
         }
 
@@ -373,14 +391,14 @@ namespace EventStore.Core.Services.Storage
             return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result, ResolvedEvent.EmptyEvent, null, false, error);
         }
 
-        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
+        private static ClientMessage.ReadStreamEventsForwardCompleted NoData(ClientMessage.ReadStreamEventsForward msg, ReadStreamResult result, long lastCommitPosition, long lastEventNumber = -1, string error = null)
         {
             return new ClientMessage.ReadStreamEventsForwardCompleted(
                 msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result, 
                 EmptyRecords, null, false, error ?? string.Empty, -1, lastEventNumber, true, lastCommitPosition);
         }
 
-        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, int lastEventNumber = -1, string error = null)
+        private static ClientMessage.ReadStreamEventsBackwardCompleted NoData(ClientMessage.ReadStreamEventsBackward msg, ReadStreamResult result, long lastCommitPosition, long lastEventNumber = -1, string error = null)
         {
             return new ClientMessage.ReadStreamEventsBackwardCompleted(
                 msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result,
@@ -466,7 +484,7 @@ namespace EventStore.Core.Services.Storage
                 try
                 {
                     var parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(LinkToSeparator, 2);
-                    var eventNumber = int.Parse(parts[0]);
+                    long eventNumber = long.Parse(parts[0]);
                     var streamId = parts[1];
 
                     if (!_readIndex.CheckStreamAccess(streamId, StreamAccessType.Read, user).Granted)

@@ -103,10 +103,10 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase
                 _phase.InitializeFromCheckpoint(CheckpointTag.FromPhase(1, completed: false));
             }
 
-            [Test, ExpectedException(typeof (InvalidOperationException))]
+            [Test]
             public void process_event_throws_invalid_operation_exception()
             {
-                _phase.ProcessEvent();
+                Assert.Throws<InvalidOperationException>(()=> { _phase.ProcessEvent(); });
             }
         }
 

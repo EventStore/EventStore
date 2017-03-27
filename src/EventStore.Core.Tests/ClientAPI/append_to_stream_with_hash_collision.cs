@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning")]
     public class append_to_stream_with_hash_collision : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             return TestConnection.To(node, TcpType.Normal);
         }
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -26,11 +26,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
                 inMemDb: false,
                 memTableSize: 20,
                 hashCollisionReadLimit: 1,
-                indexBitnessVersion: EventStore.Core.Index.PTableVersions.Index32Bit);
+                indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1);
             _node.Start();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();
@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
                 tcpPort, tcpSecPort, httpPort, inMemDb: false,
                 memTableSize: 20,
                 hashCollisionReadLimit: 1,
-                indexBitnessVersion: EventStore.Core.Index.PTableVersions.Index32Bit);
+                indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1);
            _node.Start();
             using (var store = BuildConnection(_node))
             {

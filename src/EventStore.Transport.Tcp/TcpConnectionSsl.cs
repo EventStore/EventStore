@@ -73,9 +73,11 @@ namespace EventStore.Transport.Tcp
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
         public Guid ConnectionId { get { return _connectionId; } }
         public int SendQueueSize { get { return _sendQueue.Count; } }
+        public string ClientConnectionName { get { return _clientConnectionName; } }
 
         private readonly Guid _connectionId;
         private readonly bool _verbose;
+        public string _clientConnectionName;
 
         private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
         private readonly ConcurrentQueue<ReceivedData> _receiveQueue = new ConcurrentQueue<ReceivedData>();
@@ -124,7 +126,8 @@ namespace EventStore.Transport.Tcp
                 _sslStream = new SslStream(new NetworkStream(socket, true), false);
                 try
                 {
-                    _sslStream.BeginAuthenticateAsServer(certificate, false, SslProtocols.Default, true, OnEndAuthenticateAsServer, _sslStream);
+                    var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Default;
+                    _sslStream.BeginAuthenticateAsServer(certificate, false, enabledSslProtocols, true, OnEndAuthenticateAsServer, _sslStream);
                 }
                 catch (AuthenticationException exc)
                 {
@@ -539,6 +542,11 @@ namespace EventStore.Transport.Tcp
             var handler = ConnectionClosed;
             if (handler != null)
                 handler(this, socketError);
+        }
+
+        public void SetClientConnectionName(string clientConnectionName)
+        {
+            _clientConnectionName = clientConnectionName;
         }
 
         public override string ToString()

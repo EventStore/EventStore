@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class subscribe_to_stream_catching_up_should : SpecificationWithDirectoryPerTestFixture
     {
         private static readonly EventStore.Common.Log.ILogger Log = LogManager.GetLoggerFor<subscribe_to_stream_catching_up_should>();
@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private MiniNode _node;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _node.Start();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
             _node.Shutdown();
