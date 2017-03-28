@@ -124,6 +124,6 @@ Some known good versions of the Kernel are
 - 3.19.0-20
 - 3.19.0-64
 - 3.19.0-66
-- >= 4.4.27
+- `>= 4.4.27`
 
 *Note: Please feel free to contribute to this list if you are working on a known good version of the kernel that is not listed here.*
