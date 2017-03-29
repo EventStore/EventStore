@@ -43,6 +43,7 @@ namespace EventStore.Rags
             {
                 var yamlScalarNode = yamlElement.Value as YamlScalarNode;
                 var yamlSequenceNode = yamlElement.Value as YamlSequenceNode;
+                var yamlMappingNode = yamlElement.Value as YamlMappingNode;
                 if (yamlSequenceNode != null)
                 {
                     var values = yamlSequenceNode.Children.Select(x => ((YamlScalarNode)x).Value);
@@ -60,6 +61,10 @@ namespace EventStore.Rags
                 else if (yamlScalarNode != null)
                 {
                     options.Add(OptionSource.String("Config File", yamlElement.Key.ToString(), yamlElement.Value.ToString()));
+                }
+                else if (yamlMappingNode != null && !string.IsNullOrEmpty(sectionName))
+                {
+                    options.Add(OptionSource.Typed("Config File", yamlElement.Key.ToString(), yamlMappingNode.ToDictionary(x => x.Key.ToString(), x => x.Value.ToString())));
                 }
             }
             return options;

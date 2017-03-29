@@ -25,6 +25,8 @@ namespace RagsPlayground
         [ArgDescription("Config", "firstgroup")]
         public string Config { get; set; }
 
+        public Dictionary<string, string> Roles { get; set; }
+
         public SomeOptionType()
         {
             MyFirstCount = 5;
