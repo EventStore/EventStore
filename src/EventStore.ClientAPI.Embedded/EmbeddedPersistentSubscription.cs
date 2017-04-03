@@ -13,10 +13,10 @@ namespace EventStore.ClientAPI.Embedded
     internal class EmbeddedPersistentSubscription : EmbeddedSubscriptionBase<PersistentEventStoreSubscription>, 
         IConnectToPersistentSubscriptions
     {
-        private readonly string _subscriptionId;
         private readonly UserCredentials _userCredentials;
         private readonly IAuthenticationProvider _authenticationProvider;
         private readonly int _bufferSize;
+        private string _subscriptionId;
 
         public EmbeddedPersistentSubscription(
             ILogger log, IPublisher publisher, Guid connectionId,
@@ -50,12 +50,19 @@ namespace EventStore.ClientAPI.Embedded
                     user));
         }
 
+        public void UpdateSubscriptionId(string subscriptionId)
+        {
+            _subscriptionId = subscriptionId;
+        }
+
         public void NotifyEventsProcessed(Guid[] processedEvents)
         {
             Ensure.NotNull(processedEvents, "processedEvents");
 
-            Publisher.Publish(new ClientMessage.PersistentSubscriptionAckEvents(CorrelationId, CorrelationId,
-                new PublishEnvelope(Publisher, true), _subscriptionId, processedEvents, SystemAccount.Principal));
+            Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials,
+                ex => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied, ex),
+                user => new ClientMessage.PersistentSubscriptionAckEvents(CorrelationId, CorrelationId,
+                new PublishEnvelope(Publisher, true), _subscriptionId, processedEvents, user));
         }
 
         public void NotifyEventsFailed(
