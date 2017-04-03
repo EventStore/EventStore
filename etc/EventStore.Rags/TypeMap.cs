@@ -85,6 +85,5 @@ namespace EventStore.Rags
             Register(Rags.Translators.TranlateIPAddress);
             Register(Rags.Translators.TranslateIPEndPoint);
         }
-
     }
 }

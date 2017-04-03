@@ -14,6 +14,7 @@ namespace EventStore.Rags.Tests
         public bool Flag { get; set; }
         public IPEndPoint IpEndpoint { get; set; }
         public IPEndPoint[] IpEndpoints { get; set; }
+        public Dictionary<string, string> Properties { get; set; }
         public TestType()
         {
             Flag = false;
