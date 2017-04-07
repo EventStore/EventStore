@@ -14,6 +14,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
+using EventStore.Core.Services;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -238,6 +239,11 @@ namespace EventStore.Projections.Core.Services.Management
             var projection = GetProjection(message.Name);
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            if (IsSystemProjection(message.Name))
+            {
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("We currently don't allow for the deletion of System Projections. System projections are identified by the projection name starting with a `$`"));
+                return;
+            }
             else
             {
                 if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
@@ -249,6 +255,11 @@ namespace EventStore.Projections.Core.Services.Management
                     return;
                 }
             }
+        }
+
+        private bool IsSystemProjection(string name)
+        {
+            return SystemStreams.IsSystemStream(name);
         }
 
         public void Handle(ProjectionManagementMessage.Command.GetQuery message)
