@@ -56,7 +56,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (data == null) throw new ArgumentNullException("data");
-            if (partition == null) throw new ArgumentException("Root partition must be locked", "partition");
 
             _partitionStates[partition] = Tuple.Create(data, _zeroPosition);
             _cachedItemCount = _partitionStates.Count;
