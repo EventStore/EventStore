@@ -23,37 +23,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (!string.IsNullOrEmpty(serializedState))
             {
-                var reader = new JsonTextReader(new StringReader(serializedState));
-
-                if (!reader.Read())
-                    Error(reader, "StartArray or StartObject expected");
-
-                if (reader.TokenType == JsonToken.StartObject)
-                    // old state format
-                    state = JToken.ReadFrom(reader);
-                else
+                var deserialized = JsonConvert.DeserializeObject(serializedState);
+                var array = deserialized as JArray;
+                if (array != null)
                 {
-                    if (reader.TokenType != JsonToken.StartArray)
-                        Error(reader, "StartArray expected");
-                    if (!reader.Read() || (reader.TokenType != JsonToken.StartObject && reader.TokenType != JsonToken.EndArray))
-                        Error(reader, "StartObject or EndArray expected");
-                    if (reader.TokenType == JsonToken.StartObject)
+                    state = array[0] as JToken;
+                    if (array.Count == 2)
                     {
-                        state = JToken.ReadFrom(reader);
-                        if (!reader.Read())
-                            Error(reader, "StartObject or EndArray expected");
-                        if (reader.TokenType == JsonToken.StartObject)
-                        {
-                            result = JToken.ReadFrom(reader);
-                            if (!reader.Read())
-                                Error(reader, "EndArray expected");
-                        }
-                        if (reader.TokenType != JsonToken.EndArray)
-                            Error(reader, "EndArray expected");
+                        result = array[1] as JToken;
                     }
                 }
+                else
+                {
+                    state = deserialized as JObject;
+                }
             }
-            var stateJson = state != null ? state.ToCanonicalJson() :"";
+
+            var stateJson = state != null ? state.ToCanonicalJson() : "";
             var resultJson = result != null ? result.ToCanonicalJson() : null;
 
             return new PartitionState(stateJson, resultJson, causedBy);

@@ -48,6 +48,14 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
             }
 
             [Test]
+            public void array()
+            {
+                AssertCorrect(@"[]");
+                AssertCorrect(@"[""one"",""two""]");
+                AssertCorrect(@"[{""data"":{}}]");
+            }
+
+            [Test]
             public void null_deserialization()
             {
                 var deserialized = PartitionState.Deserialize(null, CheckpointTag.FromPosition(0, 100, 50));
