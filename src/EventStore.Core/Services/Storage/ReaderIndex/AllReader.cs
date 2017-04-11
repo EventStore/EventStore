@@ -212,7 +212,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     result = reader.TryReadPrev();
                                     if (!result.Success) // no more records in TF
                                         break;
-                                    
                                     // prepare with TransactionBegin could be scavenged already
                                     // so we could reach beyond the start of transaction. In that case we have to stop.
                                     if (result.LogRecord.LogPosition < commit.TransactionPosition)

@@ -23,7 +23,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The number of this event in the stream
         /// </summary>
-        public readonly long EventNumber;
+        public readonly int EventNumber;
 
         /// <summary>
         /// The type of event this is

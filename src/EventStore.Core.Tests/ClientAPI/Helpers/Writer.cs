@@ -7,9 +7,9 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
     {
         private readonly IEventStoreConnection _store;
         private readonly string _stream;
-        private readonly long _version;
+        private readonly int _version;
 
-        public StreamWriter(IEventStoreConnection store, string stream, long version)
+        public StreamWriter(IEventStoreConnection store, string stream, int version)
         {
             _store = store;
             _stream = stream;
@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             _stream = stream;
         }
 
-        public TailWriter Then(EventData @event, long expectedVersion)
+        public TailWriter Then(EventData @event, int expectedVersion)
         {
             _store.AppendToStreamAsync(_stream, expectedVersion, new[] {@event}).Wait();
             return this;
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             _stream = stream;
         }
 
-        public OngoingTransaction StartTransaction(long expectedVersion)
+        public OngoingTransaction StartTransaction(int expectedVersion)
         {
             return new OngoingTransaction(_store.StartTransactionAsync(_stream, expectedVersion).Result);
         }

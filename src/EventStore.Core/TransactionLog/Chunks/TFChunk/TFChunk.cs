@@ -746,11 +746,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (_inMem)
                     ResizeMemStream(workItem, mapSize);
                 WriteRawData(workItem, workItem.Buffer);
-
             }
 
             var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
-            
             //MD5
             workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0, ChunkFooter.Size - ChunkFooter.ChecksumSize);
             //FILE

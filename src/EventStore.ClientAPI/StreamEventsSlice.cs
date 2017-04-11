@@ -22,7 +22,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The starting point (represented as a sequence number) of the read operation.
         /// </summary>
-        public readonly long FromEventNumber;
+        public readonly int FromEventNumber;
 
         /// <summary>
         /// The direction of read request.
@@ -37,12 +37,12 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The next event number that can be read.
         /// </summary>
-        public readonly long NextEventNumber;
+        public readonly int NextEventNumber;
 
         /// <summary>
         /// The last event number in the stream.
         /// </summary>
-        public readonly long LastEventNumber;
+        public readonly int LastEventNumber;
 
         /// <summary>
         /// A boolean representing whether or not this is the end of the stream.
@@ -51,11 +51,11 @@ namespace EventStore.ClientAPI
 
         internal StreamEventsSlice(SliceReadStatus status, 
                                    string stream, 
-                                   long fromEventNumber, 
+                                   int fromEventNumber, 
                                    ReadDirection readDirection,
                                    ClientMessage.ResolvedIndexedEvent[] events,
-                                   long nextEventNumber,
-                                   long lastEventNumber,
+                                   int nextEventNumber,
+                                   int lastEventNumber,
                                    bool isEndOfStream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");

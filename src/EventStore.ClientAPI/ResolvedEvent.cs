@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The event number in the stream of the <see cref="OriginalEvent"/>.
         /// </summary>
-        public long OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
+        public int OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
 
         internal ResolvedEvent(ClientMessage.ResolvedEvent evnt)
         {

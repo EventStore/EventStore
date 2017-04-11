@@ -81,7 +81,7 @@ namespace EventStore.ClientAPI
                                                bool resolveLinkTos,
                                                UserCredentials userCredentials,
                                                long? lastCommitPosition,
-                                               long? lastEventNumber);
+                                               int? lastEventNumber);
         /// <summary>
         /// Try to process a single <see cref="ResolvedEvent"/>.
         /// </summary>
@@ -420,7 +420,7 @@ namespace EventStore.ClientAPI
         /// <param name="lastEventNumber">The event number to read until.</param>
         /// <returns></returns>
         protected override Task ReadEventsTillAsync(IEventStoreConnection connection, bool resolveLinkTos,
-                        UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
+                        UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             _completion = new TaskCompletionSource<bool>();
             ReadEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber);
@@ -428,7 +428,7 @@ namespace EventStore.ClientAPI
         }
 
         private void ReadEventsInternal(IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             try { 
                 connection.ReadAllEventsForwardAsync(_nextReadPosition, ReadBatchSize, resolveLinkTos, userCredentials)
@@ -444,7 +444,7 @@ namespace EventStore.ClientAPI
         }
 
         private void ReadEventsCallback(Task<AllEventsSlice> task, IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             try
             {
@@ -522,16 +522,16 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The last event number processed on the subscription.
         /// </summary>
-        public long LastProcessedEventNumber { get { return _lastProcessedEventNumber; } }
+        public int LastProcessedEventNumber { get { return _lastProcessedEventNumber; } }
 
-        private long _nextReadEventNumber;
-        private long _lastProcessedEventNumber;
+        private int _nextReadEventNumber;
+        private int _lastProcessedEventNumber;
         private TaskCompletionSource<bool> _completion;
 
         internal EventStoreStreamCatchUpSubscription(IEventStoreConnection connection,
                                                      ILogger log,
                                                      string streamId,
-                                                     long? fromEventNumberExclusive, /* if null -- from the very beginning */
+                                                     int? fromEventNumberExclusive, /* if null -- from the very beginning */
                                                      UserCredentials userCredentials,
                                                      Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
                                                      Action<EventStoreCatchUpSubscription> liveProcessingStarted,
@@ -556,7 +556,7 @@ namespace EventStore.ClientAPI
         /// <param name="lastEventNumber">The event number to read until.</param>
         /// <returns></returns>
         protected override Task ReadEventsTillAsync(IEventStoreConnection connection, bool resolveLinkTos, UserCredentials userCredentials,
-            long? lastCommitPosition, long? lastEventNumber)
+            long? lastCommitPosition, int? lastEventNumber)
         {
             _completion = new TaskCompletionSource<bool>();
             ReadEventsInternal(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber);
@@ -564,7 +564,7 @@ namespace EventStore.ClientAPI
         }
 
         private void ReadEventsInternal(IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             try {
                 connection.ReadStreamEventsForwardAsync(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos, userCredentials)
@@ -580,7 +580,7 @@ namespace EventStore.ClientAPI
         }
 
         private void ReadEventsCallback(Task<StreamEventsSlice> task, IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition, int? lastEventNumber)
         {
             try
             {
@@ -611,7 +611,7 @@ namespace EventStore.ClientAPI
             }
         }
 
-        private bool ProcessEvents(long? lastEventNumber, StreamEventsSlice slice)
+        private bool ProcessEvents(int? lastEventNumber, StreamEventsSlice slice)
         {
             bool done;
             switch (slice.Status)

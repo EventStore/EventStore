@@ -25,11 +25,11 @@ namespace EventStore.ClientAPI
         /// The last event number seen on the subscription (if this is a
         /// subscription to a single stream).
         /// </summary>
-        public readonly long? LastEventNumber;
+        public readonly int? LastEventNumber;
 
         private readonly string _streamId;
 
-        internal EventStoreSubscription(string streamId, long lastCommitPosition, long? lastEventNumber)
+        internal EventStoreSubscription(string streamId, long lastCommitPosition, int? lastEventNumber)
         {
             _streamId = streamId;
             LastCommitPosition = lastCommitPosition;

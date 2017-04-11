@@ -567,4 +567,5 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
     }
+
 }
