@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Index
     public class HashListMemTableTests : MemTableTestsFixture
     {
         public HashListMemTableTests()
-            : base(() => new HashListMemTable(PTableVersions.IndexV2, maxSize: 20))
+            : base(() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 20))
         {
 
         }

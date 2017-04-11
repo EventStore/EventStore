@@ -371,6 +371,19 @@ namespace EventStore.Core.Tests.Services.Storage
             return record;
         }
 
+        protected PrepareLogRecord WriteSingleEventWithLogVersion1(Guid id, string streamId, long position, long expectedVersion, PrepareFlags? flags = null)
+        {
+            if(!flags.HasValue) {
+                flags = PrepareFlags.SingleWrite;
+            }
+            long pos;
+            var record = new PrepareLogRecord(position, id, id, position, 0, streamId, expectedVersion, DateTime.UtcNow,
+                                              flags.Value, "type", new byte[10], new byte[0], LogRecordVersion.LogRecordV1);
+            Writer.Write(record, out pos);
+            Writer.Write(new CommitLogRecord(pos, id, position, DateTime.UtcNow, expectedVersion, LogRecordVersion.LogRecordV1), out pos);
+            return record;
+        }
+
         protected TFPos GetBackwardReadPos()
         {
             var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());

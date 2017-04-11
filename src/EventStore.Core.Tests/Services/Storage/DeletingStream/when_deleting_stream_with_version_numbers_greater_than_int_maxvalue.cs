@@ -13,12 +13,12 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
         protected override void WriteTestScenario()
         {
             // Guid id, string streamId, long position, long expectedVersion, PrepareFlags? flags = null
-            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), firstEventNumber);
-            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), firstEventNumber);
-            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), secondEventNumber);
-            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), secondEventNumber);
-            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), thirdEventNumber);
-            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), thirdEventNumber);
+            WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), firstEventNumber);
+            WriteSingleEventWithLogVersion1(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), firstEventNumber);
+            WriteSingleEventWithLogVersion1(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), secondEventNumber);
+            WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), secondEventNumber);
+            WriteSingleEventWithLogVersion1(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), thirdEventNumber);
+            WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), thirdEventNumber);
 
             WriteDelete("ES");
         }

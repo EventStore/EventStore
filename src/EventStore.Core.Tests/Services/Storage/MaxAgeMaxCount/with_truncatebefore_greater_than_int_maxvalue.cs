@@ -2,6 +2,7 @@ using System;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using NUnit.Framework;
+using EventStore.Core.TransactionLog.LogRecords;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
@@ -10,11 +11,11 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
     public class with_truncatebefore_greater_than_int_maxvalue : ReadIndexTestScenario
     {
         private EventRecord _r1;
-        private EventRecord _r2;
-        private EventRecord _r3;
-        private EventRecord _r4;
-        private EventRecord _r5;
-        private EventRecord _r6;
+        private PrepareLogRecord _r2;
+        private PrepareLogRecord _r3;
+        private PrepareLogRecord _r4;
+        private PrepareLogRecord _r5;
+        private PrepareLogRecord _r6;
 
         private const long first = (long)int.MaxValue + 1;
         private const long second = (long)int.MaxValue + 2;
@@ -28,12 +29,13 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 
             string metadata = @"{""$tb"":" + third + "}";
 
+// Guid id, string streamId, long position, long expectedVersion, PrepareFlags? flags = null
             _r1 = WriteStreamMetadata("ES", 0, metadata, now.AddSeconds(-100));
-            _r2 = WriteSingleEvent("ES", first, "bla1", now.AddSeconds(-50));
-            _r3 = WriteSingleEvent("ES", second, "bla1", now.AddSeconds(-20));
-            _r4 = WriteSingleEvent("ES", third, "bla1", now.AddSeconds(-11));
-            _r5 = WriteSingleEvent("ES", fourth, "bla1", now.AddSeconds(-5));
-            _r6 = WriteSingleEvent("ES", fifth, "bla1", now.AddSeconds(-1));
+            _r2 = WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), first);
+            _r3 = WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), second);
+            _r4 = WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), third);
+            _r5 = WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), fourth);
+            _r6 = WriteSingleEventWithLogVersion1(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), fifth);
         }
 
         [Test]
@@ -57,15 +59,15 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 
             result = ReadIndex.ReadEvent("ES", third);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
-            Assert.AreEqual(_r4, result.Record);
+            Assert.AreEqual(_r4.EventId, result.Record.EventId);
 
             result = ReadIndex.ReadEvent("ES", fourth);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
-            Assert.AreEqual(_r5, result.Record);
+            Assert.AreEqual(_r5.EventId, result.Record.EventId);
 
             result = ReadIndex.ReadEvent("ES", fifth);
             Assert.AreEqual(ReadEventResult.Success, result.Result);
-            Assert.AreEqual(_r6, result.Record);
+            Assert.AreEqual(_r6.EventId, result.Record.EventId);
         }
 
         [Test]
@@ -74,9 +76,9 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             var result = ReadIndex.ReadStreamEventsForward("ES", first, 100);
             Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(3, result.Records.Length);
-            Assert.AreEqual(_r4, result.Records[0]);
-            Assert.AreEqual(_r5, result.Records[1]);
-            Assert.AreEqual(_r6, result.Records[2]);
+            Assert.AreEqual(_r4.EventId, result.Records[0].EventId);
+            Assert.AreEqual(_r5.EventId, result.Records[1].EventId);
+            Assert.AreEqual(_r6.EventId, result.Records[2].EventId);
         }
 
         [Test]
@@ -85,9 +87,9 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
             var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
             Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(3, result.Records.Length);
-            Assert.AreEqual(_r6, result.Records[0]);
-            Assert.AreEqual(_r5, result.Records[1]);
-            Assert.AreEqual(_r4, result.Records[2]);
+            Assert.AreEqual(_r6.EventId, result.Records[0].EventId);
+            Assert.AreEqual(_r5.EventId, result.Records[1].EventId);
+            Assert.AreEqual(_r4.EventId, result.Records[2].EventId);
         }
 
         [Test]
@@ -95,12 +97,12 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
             Assert.AreEqual(6,   records.Count);
-            Assert.AreEqual(_r1, records[0].Event);
-            Assert.AreEqual(_r2, records[1].Event);
-            Assert.AreEqual(_r3, records[2].Event);
-            Assert.AreEqual(_r4, records[3].Event);
-            Assert.AreEqual(_r5, records[4].Event);
-            Assert.AreEqual(_r6, records[5].Event);
+            Assert.AreEqual(_r1.EventId, records[0].Event.EventId);
+            Assert.AreEqual(_r2.EventId, records[1].Event.EventId);
+            Assert.AreEqual(_r3.EventId, records[2].Event.EventId);
+            Assert.AreEqual(_r4.EventId, records[3].Event.EventId);
+            Assert.AreEqual(_r5.EventId, records[4].Event.EventId);
+            Assert.AreEqual(_r6.EventId, records[5].Event.EventId);
         }
 
         [Test]
@@ -108,12 +110,12 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
             Assert.AreEqual(6,   records.Count);
-            Assert.AreEqual(_r6, records[0].Event);
-            Assert.AreEqual(_r5, records[1].Event);
-            Assert.AreEqual(_r4, records[2].Event);
-            Assert.AreEqual(_r3, records[3].Event);
-            Assert.AreEqual(_r2, records[4].Event);
-            Assert.AreEqual(_r1, records[5].Event);
+            Assert.AreEqual(_r6.EventId, records[0].Event.EventId);
+            Assert.AreEqual(_r5.EventId, records[1].Event.EventId);
+            Assert.AreEqual(_r4.EventId, records[2].Event.EventId);
+            Assert.AreEqual(_r3.EventId, records[3].Event.EventId);
+            Assert.AreEqual(_r2.EventId, records[4].Event.EventId);
+            Assert.AreEqual(_r1.EventId, records[5].Event.EventId);
         }
     } 
 }
