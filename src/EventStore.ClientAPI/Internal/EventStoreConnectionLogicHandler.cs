@@ -20,7 +20,7 @@ namespace EventStore.ClientAPI.Internal
 
         private readonly IEventStoreConnection _esConnection;
         private readonly ConnectionSettings _settings;
-        private readonly byte ClientVersion = 1;
+        private readonly byte ClientVersion = 0;
 
         private readonly SimpleQueuedHandler _queue = new SimpleQueuedHandler();
         private readonly Timer _timer;
