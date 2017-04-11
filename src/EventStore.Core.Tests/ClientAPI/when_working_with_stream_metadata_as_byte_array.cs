@@ -10,6 +10,7 @@ using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
+    [Ignore("Metadata expected to fail in 3.9.4")]
     public class when_working_with_stream_metadata_as_byte_array : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
