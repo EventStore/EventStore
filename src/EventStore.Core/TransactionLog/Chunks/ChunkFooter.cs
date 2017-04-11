@@ -60,7 +60,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 else
                     writer.Write((int)LogicalDataSize);
                 writer.Write(MapSize);
-
+                
                 memStream.Position = Size - ChecksumSize;
                 writer.Write(MD5Hash);
             }
@@ -76,6 +76,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var physicalDataSize = reader.ReadInt32();
             var logicalDataSize = isMap12Bytes ? reader.ReadInt64() : reader.ReadInt32();
             var mapSize = reader.ReadInt32();
+
             stream.Seek(-ChecksumSize, SeekOrigin.End);
             var hash = reader.ReadBytes(ChecksumSize);
 
