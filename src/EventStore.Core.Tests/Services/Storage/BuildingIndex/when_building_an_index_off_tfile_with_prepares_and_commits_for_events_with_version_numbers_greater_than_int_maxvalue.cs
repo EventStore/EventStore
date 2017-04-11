@@ -25,13 +25,13 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
             _id3 = Guid.NewGuid();
             long pos1, pos2, pos3, pos4, pos5, pos6;
             Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "test1", firstEventNumber, DateTime.UtcNow,
-                                              PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+                                              PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], LogRecordVersion.LogRecordV1),
                          out pos1);
             Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "test2", secondEventNumber, DateTime.UtcNow,
-                                              PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+                                              PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], LogRecordVersion.LogRecordV1),
                          out pos2);
             Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "test2", thirdEventNumber, DateTime.UtcNow,
-                                              PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+                                              PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], LogRecordVersion.LogRecordV1),
                          out pos3);
             Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, firstEventNumber), out pos4);
             Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, secondEventNumber), out pos5);

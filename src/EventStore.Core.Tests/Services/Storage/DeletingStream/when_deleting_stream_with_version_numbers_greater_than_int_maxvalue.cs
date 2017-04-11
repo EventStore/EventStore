@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream
@@ -11,12 +12,13 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 
         protected override void WriteTestScenario()
         {
-            WriteSingleEvent("ES", firstEventNumber, new string('.', 3000));
-            WriteSingleEvent("KEEP", firstEventNumber, new string('.', 3000));
-            WriteSingleEvent("KEEP", secondEventNumber, new string('.', 3000));
-            WriteSingleEvent("ES", secondEventNumber, new string('.', 3000), retryOnFail: true);
-            WriteSingleEvent("KEEP", thirdEventNumber, new string('.', 3000));
-            WriteSingleEvent("ES", thirdEventNumber, new string('.', 3000));
+            // Guid id, string streamId, long position, long expectedVersion, PrepareFlags? flags = null
+            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), firstEventNumber);
+            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), firstEventNumber);
+            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), secondEventNumber);
+            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), secondEventNumber);
+            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "KEEP", WriterCheckpoint.ReadNonFlushed(), thirdEventNumber);
+            WriteSingleEventWithLogVersion0(Guid.NewGuid(), "ES", WriterCheckpoint.ReadNonFlushed(), thirdEventNumber);
 
             WriteDelete("ES");
         }
