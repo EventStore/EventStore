@@ -46,7 +46,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
     public class PrepareLogRecord: LogRecord, IEquatable<PrepareLogRecord>
     {
-        public const byte PrepareRecordVersion = 1;
+        public const byte PrepareRecordVersion = LogRecordVersion.LogRecordV0;
 
         public readonly PrepareFlags Flags;
         public readonly long TransactionPosition;

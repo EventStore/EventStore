@@ -7,7 +7,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 {
     public class CommitLogRecord: LogRecord, IEquatable<CommitLogRecord>
     {
-        public const byte CommitRecordVersion = 1;
+        public const byte CommitRecordVersion = LogRecordVersion.LogRecordV0;
 
         public readonly long TransactionPosition;
         public readonly long FirstEventNumber;
