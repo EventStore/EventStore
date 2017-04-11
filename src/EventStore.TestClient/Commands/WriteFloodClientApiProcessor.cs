@@ -74,7 +74,7 @@ namespace EventStore.TestClient.Commands
                 var client = EventStoreConnection.Create(settings, new Uri(string.Format("tcp://{0}:{1}", context.Client.TcpEndpoint.Address, context.Client.TcpEndpoint.Port)));
                 clients.Add(client);
 
-                threads.Add(new Thread(_ =>
+                threads.Add(new Thread(() =>
                 {
                     client.ErrorOccurred += (s, e) => context.Fail(e.Exception, "Error on connection");
                     client.ConnectAsync().Wait();
@@ -82,7 +82,7 @@ namespace EventStore.TestClient.Commands
                     for (int j = 0; j < count; ++j)
                     {
                         var task = client.AppendToStreamAsync(streams[rnd.Next(streamsCnt)],
-                                                              ExpectedVersion.Any,
+                                                              (int)ExpectedVersion.Any,
                                                               new EventData(Guid.NewGuid(),
                                                                             "TakeSomeSpaceEvent",
                                                                             false,

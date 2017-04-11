@@ -1226,8 +1226,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             _conn.CreatePersistentSubscriptionAsync("TestStream", "TestGroup", persistentSubscriptionSettings, userCredentials).Wait();
 
             const int count = 5000;
-            _conn.AppendToStreamAsync("TestStream", ExpectedVersion.Any, CreateEvent().Take(count)).Wait();
-
+            _conn.AppendToStreamAsync("TestStream", (int)ExpectedVersion.Any, CreateEvent().Take(count)).Wait();
 
             var received = 0;
             var manualResetEventSlim = new ManualResetEventSlim();
