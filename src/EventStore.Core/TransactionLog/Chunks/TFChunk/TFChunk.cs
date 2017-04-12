@@ -248,7 +248,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             SetAttributes();
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
-            if (_chunkHeader.Version != CurrentChunkVersion)
+            if (_chunkHeader.Version != (byte) ChunkVersions.Unaligned && _chunkHeader.Version != (byte) ChunkVersions.Aligned)
                 throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
 
