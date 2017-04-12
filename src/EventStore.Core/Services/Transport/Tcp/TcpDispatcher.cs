@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                 Func<Message, TcpPackage> wrapper;
                 if (_wrappers[version].TryGetValue(message.GetType(), out wrapper))
                     return wrapper(message);
-                if (_wrappers[_wrappers.Length - 1].TryGetValue(message.GetType(), out wrapper))
+                if (_wrappers[0].TryGetValue(message.GetType(), out wrapper))
                     return wrapper(message);
             }
             catch (Exception exc)
@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var unwrapper = _unwrappers[version][(byte)package.Command];
             if (unwrapper == null) 
             {
-                unwrapper = _unwrappers[_unwrappers.Length - 1][(byte)package.Command];
+                unwrapper = _unwrappers[0][(byte)package.Command];
             }
             if (unwrapper != null)
             {

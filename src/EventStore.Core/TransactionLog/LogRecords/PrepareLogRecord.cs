@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Helpers;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
@@ -134,9 +133,9 @@ namespace EventStore.Core.TransactionLog.LogRecords
             TransactionOffset = reader.ReadInt32();
             ExpectedVersion = version == LogRecordVersion.LogRecordV0 ? reader.ReadInt32() : reader.ReadInt64();
 
-            if (version == LogRecordVersion.LogRecordV0)
+            if (version == LogRecordVersion.LogRecordV1)
             {
-                ExpectedVersion = ExpectedVersion == int.MaxValue - 1 ? long.MaxValue - 1 : ExpectedVersion;
+                ExpectedVersion = ExpectedVersion == long.MaxValue - 1 ? int.MaxValue - 1 : ExpectedVersion;
             }
 
             EventStreamId = reader.ReadString();
@@ -160,14 +159,14 @@ namespace EventStore.Core.TransactionLog.LogRecords
             writer.Write((ushort) Flags);
             writer.Write(TransactionPosition);
             writer.Write(TransactionOffset);
-            if(Version == LogRecordVersion.LogRecordV0) 
+            if(Version == LogRecordVersion.LogRecordV1) 
             {
-                int expectedVersion = ExpectedVersion == long.MaxValue - 1 ? int.MaxValue - 1 : (int)ExpectedVersion;
+                long expectedVersion = ExpectedVersion == int.MaxValue - 1 ? long.MaxValue - 1 : ExpectedVersion;
                 writer.Write(expectedVersion);
             } 
             else 
             {
-                writer.Write(ExpectedVersion);
+                writer.Write((int)ExpectedVersion);
             }
             writer.Write(EventStreamId);
 

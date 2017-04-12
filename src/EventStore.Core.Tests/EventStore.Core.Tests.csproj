@@ -651,10 +651,9 @@
     <Compile Include="Services\Storage\Scavenge\when_scavenging_tfchunk_with_version0_log_records_and_deleted_records.cs" />
     <Compile Include="Services\Storage\Scavenge\when_scavenging_tfchunk_with_version0_log_records_using_transactions.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_and_temp_with_log_version_0_but_some_events_are_in_multiple_chunks.cs" />
-    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_with_version_numbers_greater_than_int_maxvalue.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_truncatebefore_greater_than_int_maxvalue.cs" />
     <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
-    <Compile Include="Services\Storage\DeletingStream\when_hard_deleting_stream_with_log_version_0.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_hard_deleting_stream_with_log_version_1.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -475,7 +475,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             try
             {
                 var metadata = StreamMetadata.FromJsonBytes(prepare.Data);
-                if(prepare.Version == LogRecordVersion.LogRecordV0 && metadata.TruncateBefore == int.MaxValue)
+                if(prepare.Version == LogRecordVersion.LogRecordV1 && metadata.TruncateBefore == long.MaxValue)
                 {
                     metadata = new StreamMetadata(metadata.MaxCount, metadata.MaxAge, EventNumber.DeletedStream,
                                                         metadata.TempStream, metadata.CacheControl, metadata.Acl);

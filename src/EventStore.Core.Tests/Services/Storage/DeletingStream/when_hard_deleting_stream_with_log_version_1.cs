@@ -9,7 +9,7 @@ using System.Linq;
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 {
     [TestFixture]
-    public class when_hard_deleting_stream_with_log_version_0 : ReadIndexTestScenario
+    public class when_hard_deleting_stream_with_log_version_1 : ReadIndexTestScenario
     {
 
         protected override void WriteTestScenario()
@@ -17,21 +17,21 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
             WriteSingleEvent("ES1", 0, new string('.', 3000));
             WriteSingleEvent("ES1", 1, new string('.', 3000));
 
-            WriteV0HardDelete("ES1");
+            WriteV1HardDelete("ES1");
         }
 
-        private void WriteV0HardDelete(string eventStreamId)
+        private void WriteV1HardDelete(string eventStreamId)
         {
             long pos;
             var logPosition = WriterCheckpoint.ReadNonFlushed();
             var prepare = new PrepareLogRecord(logPosition, Guid.NewGuid(), Guid.NewGuid(), logPosition, 0, eventStreamId, 
                                         int.MaxValue - 1, DateTime.UtcNow,
                                         PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                        SystemEventTypes.StreamDeleted, new byte[0], new byte[0], prepareRecordVersion: LogRecordVersion.LogRecordV0);
+                                        SystemEventTypes.StreamDeleted, new byte[0], new byte[0], prepareRecordVersion: LogRecordVersion.LogRecordV1);
             Writer.Write(prepare, out pos);
 
-            var commit = new CommitLogRecord(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition, DateTime.UtcNow, int.MaxValue,
-                                        commitRecordVersion: LogRecordVersion.LogRecordV0);
+            var commit = new CommitLogRecord(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition, DateTime.UtcNow, long.MaxValue,
+                                        commitRecordVersion: LogRecordVersion.LogRecordV1);
             Writer.Write(commit, out pos);
         }
 
@@ -46,8 +46,8 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
                 chunkRecords.Add(result.LogRecord);
                 result = chunk.TryReadClosestForward(result.NextPosition);
             }
-            Assert.That(chunkRecords.Any(x=>x.RecordType == LogRecordType.Commit && ((CommitLogRecord)x).FirstEventNumber == long.MaxValue));
-            Assert.That(chunkRecords.Any(x=>x.RecordType == LogRecordType.Prepare && ((PrepareLogRecord)x).ExpectedVersion == long.MaxValue - 1));
+            Assert.That(chunkRecords.Any(x=>x.RecordType == LogRecordType.Commit && ((CommitLogRecord)x).FirstEventNumber == int.MaxValue));
+            Assert.That(chunkRecords.Any(x=>x.RecordType == LogRecordType.Prepare && ((PrepareLogRecord)x).ExpectedVersion == int.MaxValue - 1));
         }
     }
 }

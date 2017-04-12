@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Helpers;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
@@ -43,9 +42,9 @@ namespace EventStore.Core.TransactionLog.LogRecords
             TransactionPosition = reader.ReadInt64();
             FirstEventNumber = version == LogRecordVersion.LogRecordV0 ? reader.ReadInt32() : reader.ReadInt64();
 
-            if (version == LogRecordVersion.LogRecordV0)
+            if (version == LogRecordVersion.LogRecordV1)
             {
-                FirstEventNumber = FirstEventNumber == int.MaxValue ? long.MaxValue : FirstEventNumber;
+                FirstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : FirstEventNumber;
             }
 
             SortKey = reader.ReadInt64();
@@ -58,14 +57,14 @@ namespace EventStore.Core.TransactionLog.LogRecords
             base.WriteTo(writer);
 
             writer.Write(TransactionPosition);
-            if(Version == LogRecordVersion.LogRecordV0) 
+            if(Version == LogRecordVersion.LogRecordV1) 
             {
-                int firstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
+                long firstEventNumber = FirstEventNumber == int.MaxValue ? long.MaxValue : FirstEventNumber;
                 writer.Write(firstEventNumber);
             } 
             else 
             {
-                writer.Write(FirstEventNumber);
+                writer.Write((int)FirstEventNumber);
             }
             writer.Write(SortKey);
             writer.Write(CorrelationId.ToByteArray());
