@@ -35,6 +35,10 @@ namespace EventStore.Core.Tests.Bus.Helpers
             if (typedMsg != null)
                 ((Action<DeferredExecutionTestMessage>) (deffered => deffered.Execute()))(typedMsg);
 
+            var executableTestMessage = message as ExecutableTestMessage;
+            if (executableTestMessage != null)
+                ((Action<ExecutableTestMessage>) (deffered => deffered.Execute()))(executableTestMessage);
+
             _countdownEvent.Signal();
         }
 
