@@ -116,39 +116,46 @@ namespace EventStore.Core.Bus
 
                         for (var i = 0; i < dequeueResult.DequeueCount; i++)
                         {
-                            msg = batch[i];
+                            try
+                            {
+                                msg = batch[i];
 
 
-                            _queueStats.EnterBusy();
+                                _queueStats.EnterBusy();
 #if DEBUG
-                            _queueStats.Dequeued(msg);
+                                _queueStats.Dequeued(msg);
 #endif
 
-                            _queueStats.ProcessingStarted(msg.GetType(), estimatedQueueCount);
+                                _queueStats.ProcessingStarted(msg.GetType(), estimatedQueueCount);
 
-                            if (_watchSlowMsg)
-                            {
-                                var start = DateTime.UtcNow;
-
-                                _consumer.Handle(msg);
-
-                                var elapsed = DateTime.UtcNow - start;
-                                if (elapsed > _slowMsgThreshold)
+                                if (_watchSlowMsg)
                                 {
-                                    Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
-                                        Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds,
-                                        estimatedQueueCount,
-                                        _queue.EstimageCurrentQueueCount());
-                                    if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
-                                        !(msg is SystemMessage.SystemInit))
-                                        Log.Error("---!!! VERY SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
+                                    var start = DateTime.UtcNow;
+
+                                    _consumer.Handle(msg);
+
+                                    var elapsed = DateTime.UtcNow - start;
+                                    if (elapsed > _slowMsgThreshold)
+                                    {
+                                        Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
                                             Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds,
-                                            estimatedQueueCount, _queue.EstimageCurrentQueueCount());
+                                            estimatedQueueCount,
+                                            _queue.EstimageCurrentQueueCount());
+                                        if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
+                                            !(msg is SystemMessage.SystemInit))
+                                            Log.Error("---!!! VERY SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
+                                                Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds,
+                                                estimatedQueueCount, _queue.EstimageCurrentQueueCount());
+                                    }
+                                }
+                                else
+                                {
+                                    _consumer.Handle(msg);
                                 }
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                _consumer.Handle(msg);
+                                Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, Name);
                             }
 
                             estimatedQueueCount -= 1;
