@@ -217,6 +217,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                    | (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
                                                    | (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
                     }
+                    var data = rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec);
+                    if(rec.Data != null) {
+                        data = rec.Data;
+                    }
                     return LogRecord.Prepare(logPos, 
                                                Guid.NewGuid(), 
                                                rec.Id, 
@@ -229,7 +233,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                | (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
                                                | (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
                                                rec.EventType,
-                                               rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
+                                               data,
                                                null,
                                                rec.TimeStamp);
                 }
@@ -379,8 +383,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public readonly StreamMetadata Metadata;
         public readonly PrepareFlags PrepareFlags;
         public readonly byte Version;
+        public readonly byte[] Data;
 
-        public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version, StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data)
+        public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version, StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data, byte[] data = null)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Nonnegative(transaction, "transaction");
@@ -394,6 +399,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             Version = version;
             Metadata = metadata;
             PrepareFlags = prepareFlags;
+            Data = data;
         }
 
         public static Rec Delete(int transaction, string stream, DateTime? timestamp = null, byte version = PrepareLogRecord.PrepareRecordVersion)
@@ -406,9 +412,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             return new Rec(RecType.TransStart, transaction, stream, null, timestamp, version);
         }
 
-        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null, StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data, byte version = PrepareLogRecord.PrepareRecordVersion)
+        public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null, StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data, byte version = PrepareLogRecord.PrepareRecordVersion, byte[] data = null)
         {
-            return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, metadata, prepareFlags);
+            return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, metadata, prepareFlags, data: data);
         }
 
         public static Rec TransEnd(int transaction, string stream, DateTime? timestamp = null, byte version = PrepareLogRecord.PrepareRecordVersion)
