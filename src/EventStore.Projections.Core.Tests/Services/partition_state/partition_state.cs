@@ -34,6 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
             [Test]
             public void simple_object()
             {
+                AssertCorrect(@"");
                 AssertCorrect(@"{""a"":""b""}");
                 AssertCorrect(@"{""a"":""b"",""c"":1}");
                 AssertCorrect(@"{""z"":null,""a"":""b"",""c"":1}");

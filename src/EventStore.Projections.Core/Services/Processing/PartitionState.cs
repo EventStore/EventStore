@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var deserialized = JsonConvert.DeserializeObject(serializedState);
                 var array = deserialized as JArray;
-                if (array != null)
+                if (array != null && array.Count > 0)
                 {
                     state = array[0] as JToken;
                     if (array.Count == 2)
