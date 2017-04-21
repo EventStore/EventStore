@@ -17,12 +17,12 @@ namespace EventStore.Core.Bus
             bool watchSlowMsg = true,
             TimeSpan? slowMsgThreshold = null, TimeSpan? threadStopWaitTimeout = null, string groupName = null)
         {
-            if (IntPtr.Size == 8)
-            {
-                // optimized path, using much faster multi producer single consumer queue
-                return new QueueHandlerUsingMpsc(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
-                    groupName);
-            }
+            //if (IntPtr.Size == 8)
+            //{
+            //    // optimized path, using much faster multi producer single consumer queue
+            //    return new QueueHandlerUsingMpsc(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
+            //        groupName);
+            //}
             return new QueuedHandler(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
         }
 
