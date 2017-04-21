@@ -1380,7 +1380,8 @@ namespace EventStore.Core.Messages
             {
                 Success,
                 InProgress,
-                Failed
+                Failed,
+                Warning
             }
         }
 
