@@ -20,7 +20,7 @@ namespace EventStore.Core.Bus
             if (IntPtr.Size == 8)
             {
                 // optimized path, using much faster multi producer single consumer queue
-                return new QueueHandlerUsingMpsc(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
+                return new QueuedHandlerAutoReset(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
                     groupName);
             }
             return new QueuedHandler(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
