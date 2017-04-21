@@ -95,11 +95,12 @@ namespace EventStore.Core
             _mainBus = new InMemoryBus("MainBus");
 
             var forwardingProxy = new MessageForwardingProxy();
-            //start watching jitter
-            HistogramService.StartJitterMonitor();
             if (vNodeSettings.EnableHistograms)
             {
                 HistogramService.CreateHistograms();
+                //start watching jitter
+                HistogramService.StartJitterMonitor();
+
             }
             // MISC WORKERS
             _workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>

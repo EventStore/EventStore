@@ -76,7 +76,8 @@ namespace EventStore.Core.Services.TimerService
                 if (processed == 0)
                 {
                     _queueStats.EnterIdle();
-                    Thread.Sleep(1);
+
+                    Thread.Sleep(10);
                 }
             }
 

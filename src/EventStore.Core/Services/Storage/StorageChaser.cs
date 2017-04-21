@@ -26,7 +26,11 @@ namespace EventStore.Core.Services.Storage
 
         private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2 * TicksPerMs;
+#if MONO
+        private readonly AutoResetEvent _flushSignal = new AutoResetEvent(false);
+#else
         private readonly ManualResetEventSlim _flushSignal = new ManualResetEventSlim();
+#endif
         private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(10);
 
         public string Name { get { return _queueStats.Name; } }
@@ -174,9 +178,12 @@ namespace EventStore.Core.Services.Storage
             if (!result.Success)
             {
                 _queueStats.EnterIdle();
-
                 var startwait = _watch.ElapsedTicks;
+#if MONO
+                _flushSignal.WaitOne(FlushWaitTimeout);
+#else
                 _flushSignal.Wait(FlushWaitTimeout);
+#endif
                 HistogramService.SetValue(_chaserWaitHistogram,
                     (long)((((double)_watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
             }
