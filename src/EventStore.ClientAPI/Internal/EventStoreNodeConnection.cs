@@ -261,10 +261,13 @@ namespace EventStore.ClientAPI.Internal
                                                                          Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                                                                          Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                                                                          UserCredentials userCredentials = null,
-                                                                         int readBatchSize = 500)
+                                                                         int readBatchSize = 500,
+                                                                         string connectionLogSubscriptionName = "")
         {
             var settings = new CatchUpSubscriptionSettings(Consts.CatchUpDefaultMaxPushQueueSize, readBatchSize,
-                                                                                    _settings.VerboseLogging, resolveLinkTos);
+                                                                                    _settings.VerboseLogging,
+                                                                                    resolveLinkTos,
+                                                                                    connectionLogSubscriptionName);
             return SubscribeToStreamFrom(stream, lastCheckpoint, settings, eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
         }
 
@@ -310,10 +313,11 @@ namespace EventStore.ClientAPI.Internal
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
             Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
-            int readBatchSize = 500)
+            int readBatchSize = 500,
+            string connectionLogSubscriptionName = "")
         {
             var settings = new CatchUpSubscriptionSettings(Consts.CatchUpDefaultMaxPushQueueSize, readBatchSize,
-                                                                                    _settings.VerboseLogging, resolveLinkTos);
+                                                                                    _settings.VerboseLogging, resolveLinkTos, connectionLogSubscriptionName);
             return SubscribeToAllFrom(lastCheckpoint, settings,eventAppeared, liveProcessingStarted, subscriptionDropped, userCredentials);
         }
 
