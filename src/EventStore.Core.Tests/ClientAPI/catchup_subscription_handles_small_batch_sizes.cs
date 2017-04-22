@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.AppendToStreamAsync(_streamName, ExpectedVersion.Any, CreateThousandEvents()).Wait();
             }
 
-            _settings = new CatchUpSubscriptionSettings(100, 1, false, true);
+            _settings = new CatchUpSubscriptionSettings(100, 1, false, true, String.Empty);
         }
 
         private EventData[] CreateThousandEvents()
