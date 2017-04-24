@@ -262,7 +262,7 @@ namespace EventStore.ClientAPI
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="readBatchSize">The batch size to use during the read phase</param>
-        /// <param name="connectionLogSubscriptionName">The name of subscription used in connection's verbose logging</param>
+        /// <param name="subscriptionName">The name of subscription</param>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         [Obsolete("This method will be obsoleted in the next major version please switch to the overload with a settings object")]
         EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
@@ -274,7 +274,7 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null,
                 int readBatchSize = 500,
-                string connectionLogSubscriptionName = "");
+                string subscriptionName = "");
 
         /// <summary>
         /// Subscribes to a single event stream. Existing events from
@@ -442,7 +442,7 @@ namespace EventStore.ClientAPI
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="readBatchSize">The batch size to use during the read phase</param>
-        /// <param name="connectionLogSubscriptionName">The name of subscription used in connection's verbose logging</param>
+        /// <param name="subscriptionName">The name of subscription</param>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         [Obsolete("This overload will be removed in the next major release please use the overload with a settings object")]
         EventStoreAllCatchUpSubscription SubscribeToAllFrom(
@@ -453,7 +453,7 @@ namespace EventStore.ClientAPI
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null,
                 int readBatchSize = 500,
-                string connectionLogSubscriptionName = "");
+                string subscriptionName = "");
 
         /// <summary>
         /// Subscribes to a all events. Existing events from lastCheckpoint

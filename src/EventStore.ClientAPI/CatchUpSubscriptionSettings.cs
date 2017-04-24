@@ -28,9 +28,9 @@ namespace EventStore.ClientAPI
         public readonly bool ResolveLinkTos;
 
         /// <summary>
-        /// Subscription name as a source of verbose logs.
+        /// The name of subscription.
         /// </summary>
-        public readonly string VerboseLoggingFor;
+        public readonly string SubscriptionName;
 
         ///<summary>
         /// Returns default settings
@@ -38,9 +38,9 @@ namespace EventStore.ClientAPI
         public static readonly CatchUpSubscriptionSettings Default = new CatchUpSubscriptionSettings(
             Consts.CatchUpDefaultMaxPushQueueSize,
             Consts.CatchUpDefaultReadBatchSize,
-            verboseLogging: false,            
+            verboseLogging: false,
             resolveLinkTos: true,
-            verboseLoggingFor: String.Empty
+            subscriptionName: String.Empty
             );
 
         /// <summary>
@@ -48,18 +48,18 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="maxLiveQueueSize">The maximum amount to buffer when processing from live subscription. Going above will drop subscription.</param>
         /// <param name="readBatchSize">The number of events to read per batch when reading history</param>
-        /// <param name="verboseLogging">Enables verbose logging on the subscription</param>        
+        /// <param name="verboseLogging">Enables verbose logging on the subscription</param>
         /// <param name="resolveLinkTos">Whether or not to resolve link events</param>
-        /// <param name="verboseLoggingFor">Subscription name used in verbose logging</param>
-        public CatchUpSubscriptionSettings(int maxLiveQueueSize, int readBatchSize, bool verboseLogging, bool resolveLinkTos, string verboseLoggingFor = "") {
+        /// <param name="subscriptionName">The name of subscription.</param>
+        public CatchUpSubscriptionSettings(int maxLiveQueueSize, int readBatchSize, bool verboseLogging, bool resolveLinkTos, string subscriptionName = "") {
             Ensure.Positive(readBatchSize, "readBatchSize");
             Ensure.Positive(maxLiveQueueSize, "maxLiveQueueSize");
             if (readBatchSize > Consts.MaxReadSize) throw new ArgumentException(string.Format("Read batch size should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
             MaxLiveQueueSize = maxLiveQueueSize;
             ReadBatchSize = readBatchSize;
-            VerboseLogging = verboseLogging;            
+            VerboseLogging = verboseLogging;
             ResolveLinkTos = resolveLinkTos;
-            VerboseLoggingFor = verboseLoggingFor;
+            SubscriptionName = subscriptionName;
         }
     }
 }
