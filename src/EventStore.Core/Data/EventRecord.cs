@@ -115,14 +115,14 @@ namespace EventStore.Core.Data
         {
             unchecked
             {
-                int hashCode = (int)(EventNumber >> 32);
+                int hashCode = EventNumber.GetHashCode();
                 hashCode = (hashCode*397) ^ LogPosition.GetHashCode();
                 hashCode = (hashCode*397) ^ CorrelationId.GetHashCode();
                 hashCode = (hashCode*397) ^ EventId.GetHashCode();
                 hashCode = (hashCode*397) ^ TransactionPosition.GetHashCode();
                 hashCode = (hashCode*397) ^ TransactionOffset;
                 hashCode = (hashCode*397) ^ EventStreamId.GetHashCode();
-                hashCode = (hashCode*397) ^ (int)(ExpectedVersion >> 32);
+                hashCode = (hashCode*397) ^ ExpectedVersion.GetHashCode();
                 hashCode = (hashCode*397) ^ TimeStamp.GetHashCode();
                 hashCode = (hashCode*397) ^ Flags.GetHashCode();
                 hashCode = (hashCode*397) ^ EventType.GetHashCode();
