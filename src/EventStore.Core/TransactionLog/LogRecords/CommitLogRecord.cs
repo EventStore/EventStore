@@ -98,7 +98,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             {
                 int result = LogPosition.GetHashCode();
                 result = (result * 397) ^ TransactionPosition.GetHashCode();
-                result = (result * 397) ^ (int)(FirstEventNumber.GetHashCode() >> 32);
+                result = (result * 397) ^ FirstEventNumber.GetHashCode();
                 result = (result * 397) ^ SortKey.GetHashCode();
                 result = (result * 397) ^ CorrelationId.GetHashCode();
                 result = (result * 397) ^ TimeStamp.GetHashCode();
