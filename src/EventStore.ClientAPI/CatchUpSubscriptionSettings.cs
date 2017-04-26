@@ -27,10 +27,21 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly bool ResolveLinkTos;
 
+        /// <summary>
+        /// The name of subscription.
+        /// </summary>
+        public readonly string SubscriptionName;
+
         ///<summary>
         /// Returns default settings
         ///</summary>
-        public static readonly CatchUpSubscriptionSettings Default = new CatchUpSubscriptionSettings(Consts.CatchUpDefaultMaxPushQueueSize, Consts.CatchUpDefaultReadBatchSize,  false, true);
+        public static readonly CatchUpSubscriptionSettings Default = new CatchUpSubscriptionSettings(
+            Consts.CatchUpDefaultMaxPushQueueSize,
+            Consts.CatchUpDefaultReadBatchSize,
+            verboseLogging: false,
+            resolveLinkTos: true,
+            subscriptionName: String.Empty
+            );
 
         /// <summary>
         /// Constructs a <see cref="CatchUpSubscriptionSettings"/> object
@@ -39,7 +50,8 @@ namespace EventStore.ClientAPI
         /// <param name="readBatchSize">The number of events to read per batch when reading history</param>
         /// <param name="verboseLogging">Enables verbose logging on the subscription</param>
         /// <param name="resolveLinkTos">Whether or not to resolve link events</param>
-        public CatchUpSubscriptionSettings(int maxLiveQueueSize, int readBatchSize, bool verboseLogging, bool resolveLinkTos) {
+        /// <param name="subscriptionName">The name of subscription.</param>
+        public CatchUpSubscriptionSettings(int maxLiveQueueSize, int readBatchSize, bool verboseLogging, bool resolveLinkTos, string subscriptionName = "") {
             Ensure.Positive(readBatchSize, "readBatchSize");
             Ensure.Positive(maxLiveQueueSize, "maxLiveQueueSize");
             if (readBatchSize > Consts.MaxReadSize) throw new ArgumentException(string.Format("Read batch size should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
@@ -47,6 +59,7 @@ namespace EventStore.ClientAPI
             ReadBatchSize = readBatchSize;
             VerboseLogging = verboseLogging;
             ResolveLinkTos = resolveLinkTos;
+            SubscriptionName = subscriptionName;
         }
     }
 }
