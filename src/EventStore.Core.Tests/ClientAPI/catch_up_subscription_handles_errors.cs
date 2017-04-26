@@ -553,7 +553,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream, long? lastCheckpoint, bool resolveLinkTos,
             Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-            UserCredentials userCredentials = null, int readBatchSize = 500, string connectionLogSubscriptionName = "")
+            UserCredentials userCredentials = null, int readBatchSize = 500, string subscriptionName = "")
         {
             throw new NotImplementedException();
         }
@@ -586,7 +586,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? lastCheckpoint, bool resolveLinkTos, Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null,
             int readBatchSize = 500,
-            string connectionLogSubscriptionName = "")
+            string subscriptionName = "")
         {
             throw new NotImplementedException();
         }
