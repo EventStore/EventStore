@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                         {
                             record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 
-                            streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV0 ? int.MaxValue : EventNumber.DeletedStream;
+                            streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV1 ? long.MaxValue : EventNumber.DeletedStream;
                             break;
                         }
 
@@ -212,7 +212,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                     {
                         return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
                                                  rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
-                                                 PrepareFlags.Data
+                                                 rec.PrepareFlags
                                                    | (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
                                                    | (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
                                                    | (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
