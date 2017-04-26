@@ -224,7 +224,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                transOffset,
                                                rec.StreamId,
                                                expectedVersion,
-                                                       PrepareFlags.Data
+                                               rec.PrepareFlags
                                                | (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
                                                | (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
                                                | (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
@@ -300,7 +300,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                     throw new ArgumentOutOfRangeException();
             }
         }
-
         private LogRecord CreateLogRecordV0(Rec rec, TransactionInfo transInfo, int transOffset, long logPos, long expectedVersion, byte[] data, PrepareFlags flags)
         {
             return new PrepareLogRecord(logPos, 
@@ -378,6 +377,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public readonly string EventType;
         public readonly DateTime TimeStamp;
         public readonly StreamMetadata Metadata;
+        public readonly PrepareFlags PrepareFlags;
         public readonly byte Version;
 
         public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version, StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data)
@@ -393,6 +393,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             TimeStamp = timestamp ?? DateTime.UtcNow;
             Version = version;
             Metadata = metadata;
+            PrepareFlags = prepareFlags;
         }
 
         public static Rec Delete(int transaction, string stream, DateTime? timestamp = null, byte version = PrepareLogRecord.PrepareRecordVersion)

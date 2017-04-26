@@ -22,7 +22,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DocumentationFile></DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -655,6 +656,10 @@
     <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_hard_deleting_stream_with_log_version_1.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
+    <Compile Include="Services\Storage\RepeatableDbTestScenario.cs" />
+    <Compile Include="Services\Storage\AllReader\when_a_single_write_is_after_transaction_end_but_before_commit_is_present.cs" />
+    <Compile Include="Services\Storage\AllReader\when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present.cs" />
+    <Compile Include="Services\Storage\AllReader\when_a_single_write_before_the_transaction_is_present.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
