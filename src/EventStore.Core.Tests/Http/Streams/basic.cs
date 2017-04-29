@@ -316,7 +316,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl(TestStream), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl(TestStream).AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -351,7 +351,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl(TestStream), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl(TestStream).AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -386,7 +386,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl(TestStream), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl(TestStream).AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -422,7 +422,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl("/streams/$all"), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl("/streams/$all").AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -458,7 +458,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl("/streams/$all").ToString(), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl("/streams/$all").AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -495,7 +495,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl(TestStream + "/metadata"), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl(TestStream + "/metadata").AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
@@ -532,7 +532,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_location_header_that_is_to_stream_without_slash()
             {
-                Assert.AreEqual(MakeUrl(TestStream + "/metadata"), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl(TestStream + "/metadata").AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 

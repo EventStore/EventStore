@@ -33,6 +33,7 @@ namespace EventStore.Transport.Http.EntityManagement
         private readonly ICodec _requestCodec;
         private readonly ICodec _responseCodec;
         private readonly Uri _requestedUrl;
+        private readonly string _originalRequestedUrlBase;
         private readonly bool _logHttpRequests;
         public readonly DateTime TimeStamp;
 
@@ -52,6 +53,7 @@ namespace EventStore.Transport.Http.EntityManagement
             _requestCodec = requestCodec;
             _responseCodec = responseCodec;
             _requestedUrl = httpEntity.RequestedUrl;
+            _originalRequestedUrlBase = httpEntity.OriginalRequestedUrlBase;
             _logHttpRequests = logHttpRequests;
 
             if (HttpEntity.Request != null && HttpEntity.Request.ContentLength64 == 0)
@@ -164,7 +166,13 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 foreach (var kvp in headers)
                 {
-                    HttpEntity.Response.AddHeader(kvp.Key, kvp.Value);
+                    if(kvp.Key.Equals("Location") && kvp.Value!=null && _originalRequestedUrlBase!=null && AbsoluteUriEqual(_originalRequestedUrlBase,kvp.Value)){
+                      //rewrite the "Location" header as a root-relative URL if the location base matches original requested URL base
+                      HttpEntity.Response.AddHeader(kvp.Key, new Uri(kvp.Value).AbsolutePath);
+                    }
+                    else{
+                      HttpEntity.Response.AddHeader(kvp.Key, kvp.Value);
+                    }
                 }
             }
             catch (ObjectDisposedException)
@@ -174,6 +182,22 @@ namespace EventStore.Transport.Http.EntityManagement
             catch (Exception e)
             {
                 Log.Debug("Failed to set additional response headers: {0}.", e.Message);
+            }
+        }
+
+        private bool AbsoluteUriEqual(string urlString1, string urlString2)
+        {
+            try
+            {
+                Uri url1 = new Uri(urlString1);
+                Uri url2 = new Uri(urlString2);
+                return url1.IsAbsoluteUri && url2.IsAbsoluteUri && url1.Scheme == url2.Scheme &&
+                       url1.Host == url2.Host && url1.Port == url2.Port;
+            }
+            catch (Exception e)
+            {
+                Log.Debug("Failed to compare Urls: {0}.", e.Message);
+                return false;
             }
         }
 
@@ -261,12 +285,12 @@ namespace EventStore.Transport.Http.EntityManagement
 
             if (Interlocked.CompareExchange(ref _processing, 1, 0) != 0)
                 return;
-            
+
             try
             {
                 HttpEntity.Response.StatusCode = (int)response.StatusCode;
                 HttpEntity.Response.StatusDescription = response.ReasonPhrase;
-                if(response.Content != null) 
+                if(response.Content != null)
                 {
                     if(response.Content.Headers.ContentType != null) {
                         HttpEntity.Response.ContentType = response.Content.Headers.ContentType.MediaType;
@@ -281,9 +305,9 @@ namespace EventStore.Transport.Http.EntityManagement
                         case "Content-Length": break;
                         case "Keep-Alive": break;
                         case "Transfer-Encoding": break;
-                        case "WWW-Authenticate": 
+                        case "WWW-Authenticate":
                             headerValue = header.Value.FirstOrDefault();
-                            HttpEntity.Response.AddHeader(header.Key, headerValue); 
+                            HttpEntity.Response.AddHeader(header.Key, headerValue);
                             break;
 
                         default:
@@ -298,8 +322,8 @@ namespace EventStore.Transport.Http.EntityManagement
                     response.Content.ReadAsStreamAsync()
                         .ContinueWith(task => {
                             new AsyncStreamCopier<HttpListenerResponse>(
-                                task.Result, 
-                                HttpEntity.Response.OutputStream, 
+                                task.Result,
+                                HttpEntity.Response.OutputStream,
                                 HttpEntity.Response,
                                 copier => {
                                     Helper.EatException(HttpEntity.Response.Close);

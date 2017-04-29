@@ -12,6 +12,7 @@ namespace EventStore.Transport.Http.EntityManagement
     {
         private readonly bool _logHttpRequests;
         public readonly Uri RequestedUrl;
+        public readonly string OriginalRequestedUrlBase;
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
@@ -24,6 +25,12 @@ namespace EventStore.Transport.Http.EntityManagement
 
             _logHttpRequests = logHttpRequests;
             RequestedUrl = BuildRequestedUrl(request.Url, request.Headers, advertiseAsAddress, advertiseAsPort);
+            if (request.Url != null && request.Url.Scheme != null && request.Url.Host != null) {
+              OriginalRequestedUrlBase = request.Url.Scheme + "://" + request.Url.Host + ":" + request.Url.Port;
+            } else {
+              OriginalRequestedUrlBase = "http://127.0.0.1:2113";
+            }
+
             Request = request;
             Response = response;
             User = user;
@@ -42,48 +49,69 @@ namespace EventStore.Transport.Http.EntityManagement
                 uriBuilder.Port = advertiseAsPort;
             }
 
-            var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
-            if (!string.IsNullOrEmpty(forwardedPortHeaderValue))
-            {
-                int requestPort;
-                if (Int32.TryParse(forwardedPortHeaderValue, out requestPort))
-                {
-                    uriBuilder.Port = requestPort;
-                }
-            }
-
-            var forwardedProtoHeaderValue = requestHeaders[ProxyHeaders.XForwardedProto];
-            if (!string.IsNullOrEmpty(forwardedProtoHeaderValue))
-            {
-                uriBuilder.Scheme = forwardedProtoHeaderValue;
-            }
-
+            //if a reverse proxy is being used, the headers X-Forwarded-Proto, X-Forwarded-Host, X-Forwarded-Port can be set to correctly build up the URL base for redirects
+            //However, this is no longer necessary since URLs will be rewritten as root-relative URLs before sending the response
             var forwardedHostHeaderValue = requestHeaders[ProxyHeaders.XForwardedHost];
+            var forwardedProtoHeaderValue = requestHeaders[ProxyHeaders.XForwardedProto];
+            var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
+
             if (!string.IsNullOrEmpty(forwardedHostHeaderValue))
             {
+                String parsedHost = null;
+                String parsedProto = null;
+                int parsedPort = -1;
+
+                //set host to X-Forwarded-Host, and assign the port if available
                 var host = forwardedHostHeaderValue.Split(new []{","}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                if(!string.IsNullOrEmpty(host)) 
+                if(!string.IsNullOrEmpty(host))
                 {
                     var parts = host.Split(new []{":"}, StringSplitOptions.RemoveEmptyEntries);
-                    uriBuilder.Host = parts.First();
+                    parsedHost = parts.First();
                     int port;
                     if(parts.Count() > 1 && int.TryParse(parts[1], out port)) {
-                        uriBuilder.Port = port;
+                        parsedPort = port;
                     }
+                }
+
+                if (parsedPort==-1 && !string.IsNullOrEmpty(forwardedPortHeaderValue))
+                {
+                    //set port to X-Forwarded-Port
+                    int requestPort;
+                    if (Int32.TryParse(forwardedPortHeaderValue, out requestPort))
+                    {
+                        parsedPort = requestPort;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(forwardedProtoHeaderValue))
+                {
+                    //set scheme to X-Forwarded-Proto
+                    parsedProto = forwardedProtoHeaderValue;
+                }
+
+                if (parsedHost != null && parsedPort != -1 && parsedProto != null)
+                {
+                    uriBuilder.Host = parsedHost;
+                    uriBuilder.Port = parsedPort;
+                    uriBuilder.Scheme = parsedProto;
                 }
             }
 
+            //if ES is mapped under a subfolder on a reverse proxy, X-Forwarded-Prefix MUST be set to rebuild the correct URL
             var forwardedPrefixHeaderValue = requestHeaders[ProxyHeaders.XForwardedPrefix];
             if (!string.IsNullOrEmpty(forwardedPrefixHeaderValue))
             {
+                //set path to X-Forwarded-Prefix
                 uriBuilder.Path = forwardedPrefixHeaderValue + uriBuilder.Path;
             }
+
             return uriBuilder.Uri;
         }
 
         private HttpEntity(IPrincipal user, bool logHttpRequests)
         {
             RequestedUrl = null;
+            OriginalRequestedUrlBase = null;
 
             Request = null;
             Response = null;
@@ -94,6 +122,7 @@ namespace EventStore.Transport.Http.EntityManagement
         private HttpEntity(HttpEntity httpEntity, IPrincipal user, bool logHttpRequests)
         {
             RequestedUrl = httpEntity.RequestedUrl;
+            OriginalRequestedUrlBase = httpEntity.OriginalRequestedUrlBase;
 
             Request = httpEntity.Request;
             Response = httpEntity.Response;

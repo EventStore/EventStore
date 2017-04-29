@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Http.Users
             public void returns_created_status_code_and_location()
             {
                 Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
-                Assert.AreEqual(MakeUrl("/users/test1"), _response.Headers[HttpResponseHeader.Location]);
+                Assert.AreEqual(MakeUrl("/users/test1").AbsolutePath, _response.Headers[HttpResponseHeader.Location]);
             }
         }
 
