@@ -29,8 +29,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected override void SubscribeCore(IHttpService service)
         {
             _clusterNodeWeb.RegisterControllerActions(service);
-            RegisterRedirectAction(service, "", "/web/index.html");
-            RegisterRedirectAction(service, "/web", "/web/index.html");
+            RegisterRedirectAction(service, "", "/web/index.html",true);
+            RegisterRedirectAction(service, "/web", "/web/index.html",true);
 
             service.RegisterAction(
                 new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.Json }),
@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 				);
         }
 
-        private static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl)
+		private static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl,bool isRelativeUrl=false)
         {
             service.RegisterAction(
                 new ControllerAction(
@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         new[]
                             {
                                 new KeyValuePair<string, string>(
-                                    "Location",   new Uri(http.HttpEntity.RequestedUrl, toUrl).AbsoluteUri)
+								"Location",   isRelativeUrl?new Uri(toUrl,UriKind.Relative).ToString():new Uri(http.HttpEntity.RequestedUrl, toUrl).AbsoluteUri)
                             }, Console.WriteLine));
         }
     }
