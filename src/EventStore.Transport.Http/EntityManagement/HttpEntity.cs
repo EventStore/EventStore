@@ -49,37 +49,60 @@ namespace EventStore.Transport.Http.EntityManagement
                 uriBuilder.Port = advertiseAsPort;
             }
 
-            //if a reverse proxy is being used, the four headers X-Forwarded-Proto, X-Forwarded-Host, X-Forwarded-Port and X-Forwarded-Prefix must be set to correctly build up URLs for redirects
-            var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
-            var forwardedProtoHeaderValue = requestHeaders[ProxyHeaders.XForwardedProto];
+            //if a reverse proxy is being used, the headers X-Forwarded-Proto, X-Forwarded-Host, X-Forwarded-Port can be set to correctly build up the URL base for redirects
+            //However, this is no longer necessary since URLs will be rewritten as root-relative URLs before sending the response
             var forwardedHostHeaderValue = requestHeaders[ProxyHeaders.XForwardedHost];
+            var forwardedProtoHeaderValue = requestHeaders[ProxyHeaders.XForwardedProto];
+            var forwardedPortHeaderValue = requestHeaders[ProxyHeaders.XForwardedPort];
+
+            if (!string.IsNullOrEmpty(forwardedHostHeaderValue))
+            {
+                String parsedHost = null;
+                String parsedProto = null;
+                int parsedPort = -1;
+
+                //set host to X-Forwarded-Host, and assign the port if available
+                var host = forwardedHostHeaderValue.Split(new []{","}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if(!string.IsNullOrEmpty(host))
+                {
+                    var parts = host.Split(new []{":"}, StringSplitOptions.RemoveEmptyEntries);
+                    parsedHost = parts.First();
+                    int port;
+                    if(parts.Count() > 1 && int.TryParse(parts[1], out port)) {
+                        parsedPort = port;
+                    }
+                }
+
+                if (parsedPort==-1 && !string.IsNullOrEmpty(forwardedPortHeaderValue))
+                {
+                    //set port to X-Forwarded-Port
+                    int requestPort;
+                    if (Int32.TryParse(forwardedPortHeaderValue, out requestPort))
+                    {
+                        parsedPort = requestPort;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(forwardedProtoHeaderValue))
+                {
+                    //set scheme to X-Forwarded-Proto
+                    parsedProto = forwardedProtoHeaderValue;
+                }
+
+                if (parsedHost != null && parsedPort != -1 && parsedProto != null)
+                {
+                    uriBuilder.Host = parsedHost;
+                    uriBuilder.Port = parsedPort;
+                    uriBuilder.Scheme = parsedProto;
+                }
+            }
+
+            //if ES is mapped under a subfolder on a reverse proxy, X-Forwarded-Prefix MUST be set to rebuild the correct URL
             var forwardedPrefixHeaderValue = requestHeaders[ProxyHeaders.XForwardedPrefix];
-
-            if(!string.IsNullOrEmpty(forwardedPortHeaderValue) && !string.IsNullOrEmpty(forwardedProtoHeaderValue) && !string.IsNullOrEmpty(forwardedHostHeaderValue) && !string.IsNullOrEmpty(forwardedPrefixHeaderValue)){
-              //set port to X-Forwarded-Port
-              int requestPort;
-              if (Int32.TryParse(forwardedPortHeaderValue, out requestPort))
-              {
-                  uriBuilder.Port = requestPort;
-              }
-
-              //set scheme to X-Forwarded-Proto
-              uriBuilder.Scheme = forwardedProtoHeaderValue;
-
-              //set host to X-Forwarded-Host
-              var host = forwardedHostHeaderValue.Split(new []{","}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-              if(!string.IsNullOrEmpty(host))
-              {
-                  var parts = host.Split(new []{":"}, StringSplitOptions.RemoveEmptyEntries);
-                  uriBuilder.Host = parts.First();
-                  int port;
-                  if(parts.Count() > 1 && int.TryParse(parts[1], out port)) {
-                      uriBuilder.Port = port;
-                  }
-              }
-
-              //set path to X-Forwarded-Prefix
-              uriBuilder.Path = forwardedPrefixHeaderValue + uriBuilder.Path;
+            if (!string.IsNullOrEmpty(forwardedPrefixHeaderValue))
+            {
+                //set path to X-Forwarded-Prefix
+                uriBuilder.Path = forwardedPrefixHeaderValue + uriBuilder.Path;
             }
 
             return uriBuilder.Uri;
