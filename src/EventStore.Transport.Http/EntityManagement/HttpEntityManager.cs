@@ -166,9 +166,9 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 foreach (var kvp in headers)
                 {
-                    if(kvp.Key.Equals("Location") && kvp.Value!=null && _requestedUrlBase!=null && kvp.Value.StartsWith(_requestedUrlBase)){
-                      //rewrite the "Location" header as a root-relative URL if it starts with the requested URL base
-                      HttpEntity.Response.AddHeader(kvp.Key, kvp.Value.Substring(_requestedUrlBase.Length));
+                    if(kvp.Key.Equals("Location") && kvp.Value!=null && _requestedUrlBase!=null && AbsoluteUriEqual(_requestedUrlBase,kvp.Value)){
+                      //rewrite the "Location" header as a root-relative URL if the location base matches requested URL base
+                      HttpEntity.Response.AddHeader(kvp.Key, new Uri(kvp.Value).AbsolutePath);
                     }
                     else{
                       HttpEntity.Response.AddHeader(kvp.Key, kvp.Value);
@@ -182,6 +182,22 @@ namespace EventStore.Transport.Http.EntityManagement
             catch (Exception e)
             {
                 Log.Debug("Failed to set additional response headers: {0}.", e.Message);
+            }
+        }
+
+        private bool AbsoluteUriEqual(string urlString1, string urlString2)
+        {
+            try
+            {
+                Uri url1 = new Uri(urlString1);
+                Uri url2 = new Uri(urlString2);
+                return url1.IsAbsoluteUri && url2.IsAbsoluteUri && url1.Scheme == url2.Scheme &&
+                       url1.Host == url2.Host && url1.Port == url2.Port;
+            }
+            catch (Exception e)
+            {
+                Log.Debug("Failed to compare Urls: {0}.", e.Message);
+                return false;
             }
         }
 
