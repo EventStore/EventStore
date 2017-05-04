@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
+using EventStore.BufferManagement;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -33,8 +35,13 @@ namespace EventStore.Transport.Http.EntityManagement
         private readonly ICodec _requestCodec;
         private readonly ICodec _responseCodec;
         private readonly Uri _requestedUrl;
+        private readonly string _responseContentEncoding;
+        private static readonly string[] SupportedCompressionAlgorithms = { CompressionAlgorithms.Gzip, CompressionAlgorithms.Deflate };
+        private static readonly BufferManager _compressionBufferManager = new BufferManager(20,50*1024); //create 20 50KB buffers (1MB total)
         private readonly bool _logHttpRequests;
+
         public readonly DateTime TimeStamp;
+
 
         internal HttpEntityManager(
             HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied, ICodec requestCodec,
@@ -52,6 +59,7 @@ namespace EventStore.Transport.Http.EntityManagement
             _requestCodec = requestCodec;
             _responseCodec = responseCodec;
             _requestedUrl = httpEntity.RequestedUrl;
+            _responseContentEncoding = GetRequestedContentEncoding(httpEntity);
             _logHttpRequests = logHttpRequests;
 
             if (HttpEntity.Request != null && HttpEntity.Request.ContentLength64 == 0)
@@ -158,6 +166,18 @@ namespace EventStore.Transport.Http.EntityManagement
             }
         }
 
+        private void SetContentEncodingHeader(String contentEncoding)
+        {
+            try
+            {
+                HttpEntity.Response.AddHeader("Content-Encoding", contentEncoding);
+            }
+            catch (Exception e)
+            {
+                Log.Debug("Failed to set Content-Encoding header: {0}.", e.Message);
+            }
+        }
+
         private void SetAdditionalHeaders(IEnumerable<KeyValuePair<string, string>> headers)
         {
             try
@@ -203,7 +223,11 @@ namespace EventStore.Transport.Http.EntityManagement
             SetResponseCode(code);
             SetResponseDescription(description);
             SetContentType(contentType, encoding);
+
             SetRequiredHeaders();
+            if (!string.IsNullOrEmpty(_responseContentEncoding))
+                SetContentEncodingHeader(_responseContentEncoding);
+
             SetAdditionalHeaders(headers.Safe());
             return true;
         }
@@ -247,6 +271,8 @@ namespace EventStore.Transport.Http.EntityManagement
             else
             {
                 LogResponse(response);
+                if (!string.IsNullOrEmpty(_responseContentEncoding))
+                    response = CompressResponse(response, _responseContentEncoding);
                 SetResponseLength(response.Length);
                 BeginWriteResponse();
                 ContinueWriteResponseAsync(response, () => { }, onError, () => { });
@@ -428,5 +454,70 @@ namespace EventStore.Transport.Http.EntityManagement
                 Log.Debug(logBuilder.ToString());
             }
         }
+
+        public static byte[] CompressResponse(byte[] response, string compressionAlgorithm)
+        {
+            if (string.IsNullOrEmpty(compressionAlgorithm) || !SupportedCompressionAlgorithms.Contains(compressionAlgorithm)) return response;
+
+            MemoryStream outputStream;
+            var useBufferManager = 10L * response.Length <= 9L * _compressionBufferManager.ChunkSize; //in some rare cases, compression can result in larger outputs. Added a 10% overhead just to be sure.
+            var bufferManagerArraySegment =  new ArraySegment<byte>();
+
+            if (useBufferManager)
+            {
+                //use buffer manager to handle responses less than ~50kb long to prevent excessive memory allocations
+                bufferManagerArraySegment = _compressionBufferManager.CheckOut();
+                outputStream = new MemoryStream(bufferManagerArraySegment.Array,bufferManagerArraySegment.Offset,bufferManagerArraySegment.Count);
+                outputStream.SetLength(0);
+            }
+            else
+            {
+                //since Gzip/Deflate compression ratio doesn't go below 20% in most cases, we can initialize the array to a quarter of the original response length
+                //this also limits memory stream growth operations to at most 2.
+                outputStream = new MemoryStream((response.Length+4-1)/4);
+            }
+
+            using (outputStream)
+            {
+                Stream compressedStream = null;
+                if (compressionAlgorithm.Equals(CompressionAlgorithms.Gzip))
+                    compressedStream = new GZipStream(outputStream, CompressionLevel.Fastest);
+                else if (compressionAlgorithm.Equals(CompressionAlgorithms.Deflate))
+                    compressedStream = new DeflateStream(outputStream, CompressionLevel.Fastest);
+
+                using (compressedStream)
+                using (var dataStream = new MemoryStream(response))
+                {
+                        dataStream.CopyTo(compressedStream);
+                }
+
+                var result = outputStream.ToArray();
+                if(useBufferManager) _compressionBufferManager.CheckIn(bufferManagerArraySegment);
+                return result;
+            }
+        }
+
+        private string GetRequestedContentEncoding(HttpEntity httpEntity)
+        {
+            if (httpEntity==null || httpEntity.Request == null) return null;
+
+            var httpEntityRequest = httpEntity.Request;
+            string contentEncoding = null;
+            var values = httpEntityRequest.Headers.GetValues("Accept-Encoding");
+            if (values != null)
+            {
+                foreach (string value in values)
+                {
+                    if (SupportedCompressionAlgorithms.Contains(value))
+                    {
+                        contentEncoding = value;
+                        break;
+                    }
+                }
+            }
+
+            return contentEncoding;
+        }
+
     }
 }
