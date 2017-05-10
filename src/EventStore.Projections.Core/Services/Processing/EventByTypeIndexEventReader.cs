@@ -212,6 +212,7 @@ namespace EventStore.Projections.Core.Services.Processing
             private readonly IPublisher _publisher;
 
             private readonly Dictionary<string, Guid> _pendingRequests;
+            private readonly object _lock = new object();
 
             public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, IPrincipal readAs)
                 : base(reader, readAs)
@@ -258,7 +259,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (!_validRequests.Contains(message.CorrelationId))
                     return;
 
-                if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+                lock (_lock)
+                {
+                    if (!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+                }
 
                 if (!_streamToEventType.ContainsKey(message.EventStreamId))
                     throw new InvalidOperationException(
@@ -290,7 +294,10 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if(_disposed) return;
                 if(_reader.Paused) return;
-                if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+                lock (_lock)
+                {
+                    if (!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+                }
 
                 if(message.StreamId == "$et"){
                     _indexCheckpointStreamRequested = false;
@@ -489,7 +496,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _indexCheckpointStreamRequested = true;
 
                 var pendingRequestCorrelationId = Guid.NewGuid();
-                _pendingRequests["$et"] = pendingRequestCorrelationId;
+                lock (_lock)
+                {
+                    _pendingRequests["$et"] = pendingRequestCorrelationId;
+                }
 
                 Message readRequest;
                 if (_lastKnownIndexCheckpointEventNumber == -1)
@@ -530,7 +540,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 var corrId = Guid.NewGuid();
                 _validRequests.Add(corrId);
 
-				_pendingRequests[stream] = corrId;
+                lock (_lock)
+                {
+                    _pendingRequests[stream] = corrId;
+                }
 
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                     corrId, corrId, new SendToThisEnvelope(this), stream,
