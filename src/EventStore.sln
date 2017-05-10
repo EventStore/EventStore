@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.BufferManagement", "EventStore.BufferManagement\EventStore.BufferManagement.csproj", "{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}"
 EndProject
@@ -24,8 +24,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI", "EventStore.ClientAPI\EventStore.ClientAPI.csproj", "{C7C0A3C2-A0EB-4FF4-A0CD-67EADF3F553F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Projections.Core.Tests", "EventStore.Projections.Core.Tests\EventStore.Projections.Core.Tests.csproj", "{B3792B44-423E-4937-B065-F2D61785017F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Padmin", "EventStore.Padmin\EventStore.Padmin.csproj", "{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "esquery", "esquery\esquery.csproj", "{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}"
 EndProject
@@ -85,10 +83,6 @@ Global
 		{B3792B44-423E-4937-B065-F2D61785017F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3792B44-423E-4937-B065-F2D61785017F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3792B44-423E-4937-B065-F2D61785017F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E4CDAFC5-CF95-4846-B3FC-FC97C2CC343F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}.Release|Any CPU.ActiveCfg = Release|Any CPU
