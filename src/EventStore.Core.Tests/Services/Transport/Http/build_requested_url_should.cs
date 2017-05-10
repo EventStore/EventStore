@@ -52,19 +52,19 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         }
 
         [Test]
-        public void with_port_forward_header_only_port_is_changed()
+        public void with_port_forward_header_only_nothing_is_changed()
         {
             var headers = new NameValueCollection { { "X-Forwarded-Port", "4321" } };
             var requestedUri =
                 HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
 
-            Assert.AreEqual(new Uri("http://www.example.com:4321/path/?key=value#anchor"), requestedUri);
+            Assert.AreEqual(new Uri("http://www.example.com:1234/path/?key=value#anchor"), requestedUri);
         }
 
         [Test]
         public void non_integer_port_forward_header_is_ignored()
         {
-            var headers = new NameValueCollection { { "X-Forwarded-Port", "abc" } };
+            var headers = new NameValueCollection { {"X-Forwarded-Proto", "http"}, {"X-Forwarded-Host","www.example.com"}, { "X-Forwarded-Port", "abc" }};
             var requestedUri =
                 HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
 
@@ -72,23 +72,23 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         }
 
         [Test]
-        public void with_proto_forward_header_only_scheme_is_changed()
+        public void with_proto_forward_header_only_nothing_is_changed()
         {
             var headers = new NameValueCollection { { "X-Forwarded-Proto", "https" } };
             var requestedUri =
                 HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
 
-            Assert.AreEqual(new Uri("https://www.example.com:1234/path/?key=value#anchor"), requestedUri);
+            Assert.AreEqual(new Uri("http://www.example.com:1234/path/?key=value#anchor"), requestedUri);
         }
 
         [Test]
-        public void with_proto_forward_host_only_host_is_changed()
+        public void with_proto_forward_host_only_nothing_is_changed()
         {
             string host = "www.my-host.com";
             var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
             var requestedUri = 
                 HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
-            Assert.AreEqual(new Uri("http://www.my-host.com:1234/path/?key=value#anchor"), requestedUri);
+            Assert.AreEqual(new Uri("http://www.example.com:1234/path/?key=value#anchor"), requestedUri);
         }
 
         [Test, Category("prefix")]
@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void with_proto_forward_host_and_advertised_ip_forwarded_host_is_used()
         {
             string host = "www.my-host.com";
-            var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
+            var headers = new NameValueCollection { { "X-Forwarded-Proto", "http" }, { "X-Forwarded-Host", host },{ "X-Forwarded-Port", "1234" } };
             var requestedUri = 
                 HttpEntity.BuildRequestedUrl(inputUri, headers, IPAddress.Parse("192.168.10.13"), 0);
             Assert.AreEqual(new Uri("http://www.my-host.com:1234/path/?key=value#anchor"), requestedUri);
@@ -126,8 +126,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void with_proto_forward_host_containing_comma_delimited_list_first_forwarded_host_is_used()
         {
-            string host = "www.my-first-host.com, www.my-second-host.com";
-            var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
+            string host = "www.my-first-host.com:1234, www.my-second-host.com:1234";
+            var headers = new NameValueCollection { { "X-Forwarded-Proto", "http" }, { "X-Forwarded-Host", host }};
             var requestedUri = 
                 HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
             Assert.AreEqual(new Uri("http://www.my-first-host.com:1234/path/?key=value#anchor"), requestedUri);
@@ -137,10 +137,31 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void with_proto_forward_host_containing_hosts_with_ports_host_and_port_is_used()
         {
             string host = "192.168.10.13:2231";
-            var headers = new NameValueCollection { { "X-Forwarded-Host", host } };
+            var headers = new NameValueCollection { { "X-Forwarded-Proto", "http" }, { "X-Forwarded-Host", host } };
             var requestedUri = 
                 HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
             Assert.AreEqual(new Uri("http://192.168.10.13:2231/path/?key=value#anchor"), requestedUri);
         }
+
+        [Test]
+        public void with_proto_host_and_port_forward_header_proto_host_and_port_is_changed()
+        {
+            var headers = new NameValueCollection { { "X-Forwarded-Proto", "https" },{ "X-Forwarded-Host", "www.my-test-host.com" },{ "X-Forwarded-Port", "1337" } };
+            var requestedUri =
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+
+            Assert.AreEqual(new Uri("https://www.my-test-host.com:1337/path/?key=value#anchor"), requestedUri);
+        }
+
+        [Test]
+        public void with_proto_and_host_including_port_forward_header_proto_host_and_port_is_changed()
+        {
+            var headers = new NameValueCollection { { "X-Forwarded-Proto", "https" },{ "X-Forwarded-Host", "www.my-test-host.com:1337" } };
+            var requestedUri =
+                HttpEntity.BuildRequestedUrl(inputUri, headers, null, 0);
+
+            Assert.AreEqual(new Uri("https://www.my-test-host.com:1337/path/?key=value#anchor"), requestedUri);
+        }
+
     }
 }

@@ -572,7 +572,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [Test]
             public void returns_a_feed_with_a_single_entry_referring_to_the_last_event()
             {
-                HelperExtensions.AssertJson(new {entries = new[] {new {Id = _lastEventLocation}}}, _feed);
+                Assert.AreEqual(MakeUrl(_feed["entries"][0]["id"].ToObject<String>()).AbsolutePath, _lastEventLocation);
             }
         }
 
