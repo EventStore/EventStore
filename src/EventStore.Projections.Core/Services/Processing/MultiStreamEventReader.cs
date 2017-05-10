@@ -39,6 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _lastPosition;
 
         private readonly Dictionary<string, Guid> _pendingRequests;
+        private readonly object _lock = new object();
 
         public MultiStreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
@@ -111,7 +112,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Read events has not been requested");
             if (Paused)
                 throw new InvalidOperationException("Paused");
-            if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+            lock (_lock)
+            {
+                if (!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+            }
 
             _lastPosition = message.TfLastCommitPosition;
             switch (message.Result)
@@ -170,7 +174,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if(_disposed) return;
             if(Paused) return;
-            if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+            lock (_lock)
+            {
+                if (!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+            }
 
             _eventsRequested.Remove(message.StreamId);
             PauseOrContinueProcessing(); 
@@ -259,7 +266,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested.Add(stream);
 
             var pendingRequestCorrelationId = Guid.NewGuid();
-            _pendingRequests[stream] = pendingRequestCorrelationId;
+            lock (_lock)
+            {
+                _pendingRequests[stream] = pendingRequestCorrelationId;
+            }
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 Guid.NewGuid(), pendingRequestCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
