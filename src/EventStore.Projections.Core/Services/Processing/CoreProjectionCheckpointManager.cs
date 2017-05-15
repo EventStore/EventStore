@@ -228,7 +228,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_stopping || _stopped)
                 return;
-            EnsureStarted();
             _lastProcessedEventProgress = progress;
         }
 
