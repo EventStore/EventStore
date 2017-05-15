@@ -346,7 +346,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
 
-                //
+            //
+            CompleteCheckpointSuggestedWorkItem();
             EnsureUnsubscribed();
             StopSlaveProjections(); 
             GoToState(State.Initial);
@@ -625,6 +626,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_tickPending)
                 return;
             // process messages in almost all states as we now ignore work items when processing
+            if (_state == State.LoadStateRequested)
+            {
+                _tickPending = false;
+                return;
+            }
 
             EnsureState(
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
