@@ -52,6 +52,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly SendToWeakThisEnvelope _weakThisEnvelope;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
+        private readonly int _connectionPendingSendBytesThreshold;
 
         private readonly IAuthenticationProvider _authProvider;
         private UserCredentials _defaultUser;
@@ -66,7 +67,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                     IAuthenticationProvider authProvider,
                                     TimeSpan heartbeatInterval,
                                     TimeSpan heartbeatTimeout,
-                                    Action<TcpConnectionManager, SocketError> onConnectionClosed)
+                                    Action<TcpConnectionManager, SocketError> onConnectionClosed,
+                                    int connectionPendingSendBytesThreshold)
         {
             Ensure.NotNull(dispatcher, "dispatcher");
             Ensure.NotNull(publisher, "publisher");
@@ -89,6 +91,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _weakThisEnvelope = new SendToWeakThisEnvelope(this);
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
+            _connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 
             _connectionClosed = onConnectionClosed;
 
@@ -387,10 +390,19 @@ namespace EventStore.Core.Services.Transport.Tcp
                 return;
 
             int queueSize;
-            if (checkQueueSize && (queueSize = _connection.SendQueueSize) > ConnectionQueueSizeThreshold)
+            int queueSendBytes;
+            if (checkQueueSize)
             {
-                SendBadRequestAndClose(Guid.Empty, string.Format("Connection queue size is too large: {0}.", queueSize));
-                return;
+                if ((queueSize = _connection.SendQueueSize) > ConnectionQueueSizeThreshold)
+                {
+                    SendBadRequestAndClose(Guid.Empty, string.Format("Connection queue size is too large: {0}.", queueSize));
+                    return;
+                }
+                if ((queueSendBytes = _connection.PendingSendBytes) > _connectionPendingSendBytesThreshold)
+                {
+                    SendBadRequestAndClose(Guid.Empty, string.Format("Connection pending send bytes is too large: {0}. The current threshold is {1} bytes", queueSendBytes, _connectionPendingSendBytesThreshold));
+                    return;
+                }
             }
 
             var data = package.AsArraySegment();

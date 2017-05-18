@@ -20,7 +20,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void ReplyWith<T>(T message) where T : Message
         {
-            _networkSendQueue.Publish(new TcpMessage.TcpSend(_manager, message));
+            if (_manager != null && !_manager.IsClosed)
+            {
+                _networkSendQueue.Publish(new TcpMessage.TcpSend(_manager, message));
+            }
         }
     }
 }

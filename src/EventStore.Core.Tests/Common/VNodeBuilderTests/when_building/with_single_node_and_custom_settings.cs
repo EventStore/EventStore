@@ -799,4 +799,20 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
             Assert.AreEqual(true, _settings.AlwaysKeepScavenged);
         }
     }
+
+    public class with_connection_pending_send_bytes_threshold : SingleNodeScenario
+    {
+        private int _threshold = 40 * 1024;
+        
+        public override void Given()
+        {
+            _builder.WithConnectionPendingSendBytesThreshold(_threshold);
+        }
+
+        [Test]
+        public void should_set_connection_pending_send_bytes_threshold() 
+        {
+            Assert.AreEqual(_threshold, _settings.ConnectionPendingSendBytesThreshold);
+        }
+    }
 }
