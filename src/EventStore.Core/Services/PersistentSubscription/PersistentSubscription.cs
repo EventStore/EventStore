@@ -294,7 +294,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 //TODO? COMPETING better to make -1? as of now we are inclusive of checkpoint.
                 var lowestBufferedRetry = _streamBuffer.GetLowestRetry();
                 lowest = Math.Min(lowest, lowestBufferedRetry);
-                if (lowest == long.MinValue) lowest = _lastKnownMessage;
+                if (lowest == long.MaxValue) lowest = _lastKnownMessage;
                 if (lowest == 0) return;
                 //no outstanding messages. in this case we can say that the last known
                 //event would be our checkpoint place (we have already completed it)

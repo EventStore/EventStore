@@ -671,6 +671,61 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             sub.NotifyClockTick(DateTime.UtcNow);
             Assert.AreEqual(1, cp);
         }
+
+        [Test]
+        public void subscription_writes_correct_checkpoint_when_outstanding_messages_is_empty_and_retry_buffer_is_non_empty()
+        {
+            long cp = -1;
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
+                    .StartFromBeginning()
+                    .MinimumToCheckPoint(1)
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+
+            var eventId1 = Guid.NewGuid();
+            var eventId2 = Guid.NewGuid();
+            var eventId3 = Guid.NewGuid();
+
+            var clientConnectionId = Guid.NewGuid();
+            var clientCorrelationId = Guid.NewGuid();
+            sub.AddClient(clientCorrelationId, clientConnectionId, new FakeEnvelope(), 10, "foo", "bar");
+
+            //send events 1-3, ACK event 1 only and Mark checkpoint
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(eventId1, "type", "streamName", 1),
+                Helper.BuildFakeEvent(eventId2, "type", "streamName", 2),
+                Helper.BuildFakeEvent(eventId3, "type", "streamName", 3)
+            }, 1, false);
+            sub.GetNextNOrLessMessages(3).ToArray();
+            sub.AcknowledgeMessagesProcessed(clientCorrelationId, new [] {eventId1});
+            sub.TryMarkCheckpoint(false);
+
+            //checkpoint should be at event 2
+            Assert.AreEqual(2, cp);
+
+            //events 2 & 3 should still be in _outstandingMessages buffer
+            Assert.AreEqual(sub.OutstandingMessageCount,2);
+            //retry queue should be empty
+            Assert.AreEqual(sub._streamBuffer.RetryBufferCount, 0);
+
+            //Disconnect the client
+            sub.RemoveClientByConnectionId(clientConnectionId);
+
+            //this should empty the _outstandingMessages buffer and move events 2 & 3 to the retry queue
+            Assert.AreEqual(sub.OutstandingMessageCount,0);
+            Assert.AreEqual(sub._streamBuffer.RetryBufferCount, 2);
+
+            //mark the checkpoint which should still be at event 2 although the _lastKnownMessage value is 3.
+            sub.TryMarkCheckpoint(false);
+            Assert.AreEqual(2, cp);
+        }
     }
 
     [TestFixture]
