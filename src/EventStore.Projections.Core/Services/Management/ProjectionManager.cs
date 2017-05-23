@@ -241,7 +241,7 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             if (IsSystemProjection(message.Name))
             {
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("We currently don't allow for the deletion of System Projections. System projections are identified by the projection name starting with a `$`"));
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("We currently don't allow for the deletion of System Projections."));
                 return;
             }
             else
@@ -259,7 +259,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private bool IsSystemProjection(string name)
         {
-            return SystemStreams.IsSystemStream(name);
+            return name == ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection ||
+                   name == ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection ||
+                   name == ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection ||
+                   name == ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection;
         }
 
         public void Handle(ProjectionManagementMessage.Command.GetQuery message)
