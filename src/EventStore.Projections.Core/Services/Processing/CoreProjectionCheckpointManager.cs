@@ -82,8 +82,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public virtual void Initialize()
         {
-            if (_currentCheckpoint != null) _currentCheckpoint.Dispose();
-            if (_closingCheckpoint != null) _closingCheckpoint.Dispose();
+            _currentCheckpoint?.Dispose();
+            _closingCheckpoint?.Dispose();
             _currentCheckpoint = null;
             _closingCheckpoint = null;
             _requestedCheckpointPosition = null;
@@ -135,21 +135,15 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             info.Position = (_lastProcessedEventPosition.LastTag ?? (object)"").ToString();
             info.Progress = _lastProcessedEventProgress;
-            info.LastCheckpoint = _lastCompletedCheckpointPosition != null
-                                      ? _lastCompletedCheckpointPosition.ToString()
-                                      : "";
+            info.LastCheckpoint = _lastCompletedCheckpointPosition?.ToString() ?? "";
             info.EventsProcessedAfterRestart = _eventsProcessedAfterRestart;
-            info.WritePendingEventsBeforeCheckpoint = _closingCheckpoint != null
-                                                          ? _closingCheckpoint.GetWritePendingEvents()
-                                                          : 0;
-            info.WritePendingEventsAfterCheckpoint = (_currentCheckpoint != null
-                                                          ? _currentCheckpoint.GetWritePendingEvents()
-                                                          : 0);
+            info.WritePendingEventsBeforeCheckpoint = _closingCheckpoint?.GetWritePendingEvents() ?? 0;
+            info.WritePendingEventsAfterCheckpoint = _currentCheckpoint?.GetWritePendingEvents() ?? 0;
             info.ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/
-                + + (_closingCheckpoint != null ? _closingCheckpoint.GetReadsInProgress() : 0)
-                + (_currentCheckpoint != null ? _currentCheckpoint.GetReadsInProgress() : 0);
-            info.WritesInProgress = (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
-                                    + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0);
+                + + (_closingCheckpoint?.GetReadsInProgress() ?? 0)
+                + (_currentCheckpoint?.GetReadsInProgress() ?? 0);
+            info.WritesInProgress = (_closingCheckpoint?.GetWritesInProgress() ?? 0)
+                                    + (_currentCheckpoint?.GetWritesInProgress() ?? 0);
             info.CheckpointStatus = _inCheckpoint ? "Requested" : "";
 
         }

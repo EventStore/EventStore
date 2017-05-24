@@ -6,9 +6,9 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services
 {
-    public class PublishSubscribeDispatcher<TGuid, TSubscribeRequest, TControlMessageBase, TResponseBase> 
-        where TSubscribeRequest : Message 
-        where TControlMessageBase: Message
+    public class PublishSubscribeDispatcher<TGuid, TSubscribeRequest, TControlMessageBase, TResponseBase>
+        where TSubscribeRequest : Message
+        where TControlMessageBase : Message
         where TResponseBase : Message
     {
         //NOTE: this class is not intended to be used from multiple threads, 
@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services
 
         public TGuid PublishSubscribe(IPublisher publisher, TSubscribeRequest request, object subscriber)
         {
-//TODO: expiration?
+            //TODO: expiration?
             TGuid requestCorrelationId;
             lock (_map)
             {
@@ -100,8 +100,7 @@ namespace EventStore.Projections.Core.Services
                 if (_map.TryGetValue(correlationId, out subscriber))
                 {
                     var h = subscriber as IHandle<T>;
-                    if (h != null)
-                        h.Handle(message);
+                    h?.Handle(message);
                     return true;
                 }
             }

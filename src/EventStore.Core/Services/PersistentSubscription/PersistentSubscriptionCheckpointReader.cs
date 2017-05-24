@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     if (checkpoint != null)
                     {
                         long lastEvent = checkpoint.Data.ParseJson<long>();
-                        _onStateLoaded(lastEvent);
+                        _onStateLoaded?.Invoke(lastEvent);
                         return;
                     }
                 }

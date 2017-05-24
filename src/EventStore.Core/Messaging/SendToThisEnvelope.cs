@@ -15,8 +15,7 @@ namespace EventStore.Core.Messaging
         public void ReplyWith<T>(T message) where T : Message
         {
             var x = _receiver as IHandle<T>;
-            if (x != null)
-                x.Handle(message);
+            x?.Handle(message);
         }
     }
 }

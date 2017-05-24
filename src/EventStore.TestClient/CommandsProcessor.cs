@@ -46,8 +46,7 @@ namespace EventStore.TestClient
             if (!_processors.TryGetValue(commandName, out commandProcessor))
             {
                 _log.Info("Unknown command: {0}.", commandName);
-                if (_regCommandsProcessor != null)
-                    _regCommandsProcessor.Execute(context, new string[0]);
+                _regCommandsProcessor?.Execute(context, new string[0]);
                 exitCode = 1;
                 return false;
             }
@@ -92,7 +91,7 @@ namespace EventStore.TestClient
                 BuildFullException(context.Error, details);
                 _log.Error("Details: {0}", details.ToString());
             }
-            
+
             exitCode = exitC == 0 ? context.ExitCode : exitC;
             return true;
         }
@@ -112,7 +111,7 @@ namespace EventStore.TestClient
                 details.AppendFormat("\n{0}-->{1}", new string(' ', level * 2), ex.Message);
 
                 var aggregated = ex as AggregateException;
-                if (aggregated != null && aggregated.InnerExceptions != null)
+                if (aggregated?.InnerExceptions != null)
                 {
                     if (level > maxLevel)
                         break;

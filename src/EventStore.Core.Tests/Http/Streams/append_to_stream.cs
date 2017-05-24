@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Http.Streams
             public List<JToken> GetTestStream()
             {
                 var stream = GetJson<JObject>(TestStream + "/0/forward/10", accept: ContentType.Json);
-                return stream != null ? stream["entries"].ToList() : new List<JToken>();
+                return stream?["entries"].ToList() ?? new List<JToken>();
             }
         }
 

@@ -41,10 +41,7 @@ namespace EventStore.Core.Tests.Services.Storage
 
         public void CreateDb(params Rec[] records)
         {
-            if (DbRes != null)
-            {
-                DbRes.Db.Close();
-            }
+            DbRes?.Db.Close();
 
             var dbConfig = new TFChunkDbConfig(PathName,
                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),

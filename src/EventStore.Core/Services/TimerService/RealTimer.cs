@@ -13,11 +13,7 @@ namespace EventStore.Core.Services.TimerService
             _timer = new Timer(InvokeCallback, null, Timeout.Infinite, Timeout.Infinite);
         }
 
-        private void InvokeCallback(object state)
-        {
-            if (_callback != null)
-                _callback();
-        }
+        private void InvokeCallback(object state) => _callback?.Invoke();
 
         public void FireIn(int milliseconds, Action callback)
         {

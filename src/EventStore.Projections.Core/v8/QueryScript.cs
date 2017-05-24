@@ -173,7 +173,7 @@ namespace EventStore.Projections.Core.v8
             IntPtr result2JsonPtr;
             IntPtr memoryHandle;
             bool success = Js1.ExecuteCommandHandler(
-                _script.GetHandle(), commandHandlerHandle, json, other, other != null ? other.Length : 0,
+                _script.GetHandle(), commandHandlerHandle, json, other, other?.Length ?? 0,
                 out resultJsonPtr, out result2JsonPtr, out memoryHandle);
 
             var terminated = _prelude.CancelTerminateExecution();
@@ -192,11 +192,7 @@ namespace EventStore.Projections.Core.v8
             return resultJson;
         }
 
-        private void OnEmit(string obj)
-        {
-            Action<string> handler = Emit;
-            if (handler != null) handler(obj);
-        }
+        private void OnEmit(string obj) => Emit?.Invoke(obj);
 
         public void Dispose()
         {
@@ -213,17 +209,9 @@ namespace EventStore.Projections.Core.v8
             InitializeScriptShared();
         }
 
-        private void InitializeScript()
-        {
-            if (_initialize != null)
-                _initialize();
-        }
+        private void InitializeScript() => _initialize?.Invoke();
 
-        private void InitializeScriptShared()
-        {
-            if (_initialize_shared != null)
-                _initialize_shared();
-        }
+        private void InitializeScriptShared() => _initialize_shared?.Invoke();
 
         public string GetPartition(string json, string[] other)
         {

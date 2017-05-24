@@ -16,7 +16,7 @@ namespace EventStore.Transport.Tcp.Framing
         private static readonly ILogger Log = LogManager.GetLoggerFor<LengthPrefixMessageFramer>();
 
         public const int HeaderLength = sizeof(Int32);
-        
+
         private byte[] _messageBuffer;
         private int _bufferIndex = 0;
         private Action<ArraySegment<byte>> _receivedHandler;
@@ -28,7 +28,7 @@ namespace EventStore.Transport.Tcp.Framing
         /// <summary>
         /// Initializes a new instance of the <see cref="LengthPrefixMessageFramer"/> class.
         /// </summary>
-        public LengthPrefixMessageFramer(int maxPackageSize = 64*1024*1024)
+        public LengthPrefixMessageFramer(int maxPackageSize = 64 * 1024 * 1024)
         {
             Ensure.Positive(maxPackageSize, "maxPackageSize");
             _maxPackageSize = maxPackageSize;
@@ -44,7 +44,7 @@ namespace EventStore.Transport.Tcp.Framing
 
         public void UnFrameData(IEnumerable<ArraySegment<byte>> data)
         {
-            if (data == null) 
+            if (data == null)
                 throw new ArgumentNullException("data");
 
             foreach (ArraySegment<byte> buffer in data)
@@ -71,7 +71,7 @@ namespace EventStore.Transport.Tcp.Framing
             {
                 if (_headerBytes < HeaderLength)
                 {
-                    _packageLength |= (data[i] << (_headerBytes*8)); // little-endian order
+                    _packageLength |= (data[i] << (_headerBytes * 8)); // little-endian order
                     ++_headerBytes;
                     if (_headerBytes == HeaderLength)
                     {
@@ -85,7 +85,7 @@ namespace EventStore.Transport.Tcp.Framing
 
                         _messageBuffer = new byte[_packageLength];
                     }
-                } 
+                }
                 else
                 {
                     int copyCnt = Math.Min(bytes.Count + bytes.Offset - i, _packageLength - _bufferIndex);
@@ -95,8 +95,7 @@ namespace EventStore.Transport.Tcp.Framing
 
                     if (_bufferIndex == _packageLength)
                     {
-                        if (_receivedHandler != null)
-                            _receivedHandler(new ArraySegment<byte>(_messageBuffer, 0, _bufferIndex));
+                        _receivedHandler?.Invoke(new ArraySegment<byte>(_messageBuffer, 0, _bufferIndex));
                         _messageBuffer = null;
                         _headerBytes = 0;
                         _packageLength = 0;
@@ -111,13 +110,13 @@ namespace EventStore.Transport.Tcp.Framing
             var length = data.Count;
 
             yield return new ArraySegment<byte>(
-                new[] { (byte) length, (byte) (length >> 8), (byte) (length >> 16), (byte) (length >> 24) });
+                new[] { (byte)length, (byte)(length >> 8), (byte)(length >> 16), (byte)(length >> 24) });
             yield return data;
         }
 
         public void RegisterMessageArrivedCallback(Action<ArraySegment<byte>> handler)
         {
-            if (handler == null) 
+            if (handler == null)
                 throw new ArgumentNullException("handler");
 
             _receivedHandler = handler;

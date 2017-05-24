@@ -117,7 +117,7 @@ namespace EventStore.ClientAPI.Internal
 
             _connectingPhase = ConnectingPhase.EndPointDiscovery;
 
-            _endPointDiscoverer.DiscoverAsync(_connection != null ? _connection.RemoteEndPoint : null).ContinueWith(t =>
+            _endPointDiscoverer.DiscoverAsync(_connection?.RemoteEndPoint).ContinueWith(t =>
             {
                 if (t.IsFaulted)
                 {

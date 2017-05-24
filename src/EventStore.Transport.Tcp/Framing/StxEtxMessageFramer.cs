@@ -77,8 +77,7 @@ namespace EventStore.Transport.Tcp.Framing
                 else if (data[i] == ETX && _currentState == ParserState.AwaitingEtx)
                 {
                     _currentState = ParserState.AwaitingStx;
-                    if (_receivedHandler != null)
-                        _receivedHandler(new ArraySegment<byte>(_messageBuffer, 0, _bufferIndex));
+                    _receivedHandler?.Invoke(new ArraySegment<byte>(_messageBuffer, 0, _bufferIndex));
                     _bufferIndex = 0;
                 }
             }

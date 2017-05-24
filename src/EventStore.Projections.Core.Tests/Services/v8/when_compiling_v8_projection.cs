@@ -24,12 +24,11 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         {
             for (var i = 0; i < 10000000; i++)
             {
-                if (_stateHandler != null)
-                    _stateHandler.Dispose();
+                _stateHandler?.Dispose();
                 _stateHandler = null;
-/*
-                _state = null;
-*/
+                /*
+                                _state = null;
+                */
                 _projection = null;
                 _projection = @"
                 fromAll();
@@ -46,12 +45,12 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                             if (!s.StartsWith("P:")) _logged.Add(s);
                             else _logDelegate(s);
                         }); // skip prelude debug output
-/*
-                if (_state != null)
-                    _stateHandler.Load(_state);
-                else
-                    _stateHandler.Initialize();
-*/
+                            /*
+                                            if (_state != null)
+                                                _stateHandler.Load(_state);
+                                            else
+                                                _stateHandler.Initialize();
+                            */
                 Console.Write(".");
             }
         }

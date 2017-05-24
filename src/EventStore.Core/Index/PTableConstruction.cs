@@ -320,10 +320,7 @@ namespace EventStore.Core.Index
 
             public void Dispose()
             {
-                if (_ptableEnumerator != null)
-                {
-                    _ptableEnumerator.Dispose();
-                }
+                _ptableEnumerator?.Dispose();
                 _enumerator.Dispose();
             }
 

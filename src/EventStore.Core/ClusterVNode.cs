@@ -75,8 +75,7 @@ namespace EventStore.Core
 
         protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e)
         {
-            EventHandler<VNodeStatusChangeArgs> handler = NodeStatusChanged;
-            if (handler != null) handler(this, e);
+            NodeStatusChanged?.Invoke(this, e);
         }
 
 

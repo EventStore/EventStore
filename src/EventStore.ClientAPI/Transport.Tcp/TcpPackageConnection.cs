@@ -67,15 +67,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 {
                     connectionCreated.Wait();
                     log.Debug("TcpPackageConnection: connected to [{0}, L{1}, {2:B}].", tcpConnection.RemoteEndPoint, tcpConnection.LocalEndPoint, connectionId);
-                    if (connectionEstablished != null)
-                        connectionEstablished(this);
+                    connectionEstablished?.Invoke(this);
                 },
                 (conn, error) =>
                 {
                     connectionCreated.Wait();
                     log.Debug("TcpPackageConnection: connection to [{0}, L{1}, {2:B}] failed. Error: {3}.", conn.RemoteEndPoint, conn.LocalEndPoint, connectionId, error);
-                    if (connectionClosed != null)
-                        connectionClosed(this, error);
+                    connectionClosed?.Invoke(this, error);
                 },
                 (conn, error) =>
                 {
@@ -83,8 +81,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     log.Debug("TcpPackageConnection: connection [{0}, L{1}, {2:B}] was closed {3}", conn.RemoteEndPoint, conn.LocalEndPoint,
                               ConnectionId, error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
 
-                    if (connectionClosed != null)
-                        connectionClosed(this, error);
+                    connectionClosed?.Invoke(this, error);
                 });
 // ReSharper restore ImplicitlyCapturedClosure
 
@@ -126,8 +123,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 var message = string.Format("TcpPackageConnection: [{0}, L{1}, {2}] ERROR for {3}. Connection will be closed.",
                                             RemoteEndPoint, LocalEndPoint, ConnectionId,
                                             valid ? package.Command.ToString() : "<invalid package>");
-                if (_onError != null)
-                    _onError(this, e);
+                _onError?.Invoke(this, e);
                 _log.Debug(e, message);
             }
         }

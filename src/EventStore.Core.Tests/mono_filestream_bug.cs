@@ -13,10 +13,9 @@ namespace EventStore.Core.Tests
             var uri = new Uri("http://127.0.0.1/streams/$all");
             var baseaddress = new Uri("http://127.0.0.1");
             Assert.IsTrue(template.Match(baseaddress, uri) != null);
-        }        
+        }
     }
-    
-    
+
     [TestFixture, Ignore("Known bug in Mono, waiting for fix.")]
     public class mono_filestream_bug
     {

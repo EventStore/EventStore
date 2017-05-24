@@ -173,11 +173,8 @@ namespace EventStore.Core.Services.RequestManager
             if (_currentRequests.TryGetValue(correlationId, out manager))
             {
                 var x = manager as IHandle<T>;
-                if (x != null)
-                {
-                    // message received for a dead request?
-                    x.Handle(message);
-                }
+                // message received for a dead request?
+                x?.Handle(message);
             }
         }
     }

@@ -85,28 +85,28 @@ namespace EventStore.Projections.Core.Services
         {
             unchecked
             {
-                int hashCode = (Status != null ? Status.GetHashCode() : 0);
+                int hashCode = (Status?.GetHashCode() ?? 0);
                 hashCode = (hashCode*397) ^ Enabled.GetHashCode();
                 hashCode = (hashCode*397) ^ (int) MasterStatus;
-                hashCode = (hashCode*397) ^ (StateReason != null ? StateReason.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (Name != null ? Name.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (StateReason?.GetHashCode() ?? 0);
+                hashCode = (hashCode*397) ^ (Name?.GetHashCode() ?? 0);
                 hashCode = (hashCode*397) ^ ProjectionId.GetHashCode();
                 hashCode = (hashCode*397) ^ Epoch.GetHashCode();
                 hashCode = (hashCode*397) ^ Version.GetHashCode();
                 hashCode = (hashCode*397) ^ (int) Mode;
-                hashCode = (hashCode*397) ^ (Position != null ? Position.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (Position?.GetHashCode() ?? 0);
                 hashCode = (hashCode*397) ^ Progress.GetHashCode();
-                hashCode = (hashCode*397) ^ (LastCheckpoint != null ? LastCheckpoint.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (LastCheckpoint?.GetHashCode() ?? 0);
                 hashCode = (hashCode*397) ^ EventsProcessedAfterRestart;
                 hashCode = (hashCode*397) ^ BufferedEvents;
-                hashCode = (hashCode*397) ^ (CheckpointStatus != null ? CheckpointStatus.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (CheckpointStatus?.GetHashCode() ?? 0);
                 hashCode = (hashCode*397) ^ WritePendingEventsBeforeCheckpoint;
                 hashCode = (hashCode*397) ^ WritePendingEventsAfterCheckpoint;
                 hashCode = (hashCode*397) ^ PartitionsCached;
                 hashCode = (hashCode*397) ^ ReadsInProgress;
                 hashCode = (hashCode*397) ^ WritesInProgress;
-                hashCode = (hashCode*397) ^ (EffectiveName != null ? EffectiveName.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (ResultStreamName != null ? ResultStreamName.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (EffectiveName?.GetHashCode() ?? 0);
+                hashCode = (hashCode*397) ^ (ResultStreamName?.GetHashCode() ?? 0);
                 hashCode = (hashCode*397) ^ CoreProcessingTime.GetHashCode();
                 return hashCode;
             }

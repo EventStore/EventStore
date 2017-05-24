@@ -77,8 +77,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
                     if (_bufferIndex == _packageLength)
                     {
-                        if (_receivedHandler != null)
-                            _receivedHandler(new ArraySegment<byte>(_messageBuffer, 0, _bufferIndex));
+                        _receivedHandler?.Invoke(new ArraySegment<byte>(_messageBuffer, 0, _bufferIndex));
                         _messageBuffer = null;
                         _headerBytes = 0;
                         _packageLength = 0;

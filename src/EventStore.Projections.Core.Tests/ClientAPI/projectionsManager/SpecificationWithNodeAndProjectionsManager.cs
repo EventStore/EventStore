@@ -59,19 +59,19 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
             {
                 if (createdMiniNode)
                 {
-                    if (_connection != null)
+                    try
                     {
-                        try {
-                            _connection.Close();
-                        } catch { 
-                        }
+                        _connection?.Close();
                     }
-                    if (_node != null)
+                    catch
                     {
-                        try { 
-                        	_node.Shutdown();
-                        } catch {
-                        }
+                    }
+                    try
+                    {
+                        _node?.Shutdown();
+                    }
+                    catch
+                    {
                     }
                 }
                 throw;
@@ -121,7 +121,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
             _projManager.CreateContinuousAsync(projectionName, query, _credentials).Wait();
         }
 
-        protected string CreateStandardQuery(string stream) {
+        protected string CreateStandardQuery(string stream)
+        {
             return @"fromStream(""" + stream + @""")
                 .when({
                     ""$any"":function(s,e) {

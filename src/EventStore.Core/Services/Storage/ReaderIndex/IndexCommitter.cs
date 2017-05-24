@@ -366,7 +366,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     int prepareIndex = (int)(indexEntry.Version - indexEntries[0].Version);
                     var prepare = prepares[prepareIndex];
                     PrepareLogRecord indexedPrepare = GetPrepare(reader, indexEntry.Position);
-                    if (indexedPrepare != null && indexedPrepare.EventStreamId == prepare.EventStreamId)
+                    if (indexedPrepare?.EventStreamId == prepare.EventStreamId)
                     {
                         if (Debugger.IsAttached)
                             Debugger.Break();

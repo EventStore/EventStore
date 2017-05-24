@@ -27,16 +27,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                   {
                                       if (connection.InitSocket(socket))
                                       {
-                                          if (onConnectionEstablished != null)
-                                              onConnectionEstablished(connection);
+                                          onConnectionEstablished?.Invoke(connection);
                                           connection.StartReceive();
                                           connection.TrySend();
                                       }
                                   },
                                   (_, socketError) =>
                                   {
-                                      if (onConnectionFailed != null)
-                                          onConnectionFailed(connection, socketError);
+                                      onConnectionFailed?.Invoke(connection, socketError);
                                   }, connection, connectionTimeout);
 // ReSharper restore ImplicitlyCapturedClosure
             return connection;
@@ -305,8 +303,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             CloseSocket();
             if (Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
                 ReturnSendingSocketArgs();
-            if (_onConnectionClosed != null)
-                _onConnectionClosed(this, socketError);
+            _onConnectionClosed?.Invoke(this, socketError);
         }
 
         private void CloseSocket()

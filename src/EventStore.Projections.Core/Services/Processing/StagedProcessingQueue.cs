@@ -209,8 +209,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
                 EnqueueForStage(entry, readyForStage);
-            if (EnsureTickPending != null)
-                EnsureTickPending();
+            EnsureTickPending?.Invoke();
         }
 
         private void EnqueueForStage(TaskEntry entry, int readyForStage)

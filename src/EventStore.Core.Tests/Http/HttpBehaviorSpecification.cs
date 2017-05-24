@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Http
         protected string _lastResponseBody;
         protected byte[] _lastResponseBytes;
         protected JsonException _lastJsonException;
-//MONOCHECK Does this work now?
+        //MONOCHECK Does this work now?
 #if !MONO
         private Func<HttpWebResponse, byte[]> _dumpResponse;
         private Func<HttpWebResponse, int> _dumpResponse2;
@@ -82,36 +82,37 @@ namespace EventStore.Core.Tests.Http
             {
                 if (_createdMiniNode)
                 {
-                    if (_connection != null)
-                        try
-                        {
-                            _connection.Close();
-                        }
-                        catch
-                        {
-                        }
-                    if (_node != null)
-                        try
-                        {
-                            _node.Shutdown();
-                        }
-                        catch
-                        {
-                        }
+                    try
+                    {
+                        _connection?.Close();
+                    }
+                    catch
+                    {
+                    }
+                    try
+                    {
+                        _node?.Shutdown();
+                    }
+                    catch
+                    {
+                    }
                 }
                 throw;
             }
         }
 
-        public string TestStream {
+        public string TestStream
+        {
             get { return "/streams/test" + Tag; }
         }
 
-        public string TestStreamName {
+        public string TestStreamName
+        {
             get { return "test" + Tag; }
         }
 
-        public string TestMetadataStream {
+        public string TestMetadataStream
+        {
             get { return "/streams/$$test" + Tag; }
         }
 
@@ -132,13 +133,13 @@ namespace EventStore.Core.Tests.Http
 
         public override void TestFixtureTearDown()
         {
-            if(_createdMiniNode)
+            if (_createdMiniNode)
             {
                 _connection.Close();
                 _node.Shutdown();
             }
             base.TestFixtureTearDown();
-            if(_lastResponse != null) 
+            if (_lastResponse != null)
             {
                 _lastResponse.Close();
             }
@@ -147,10 +148,11 @@ namespace EventStore.Core.Tests.Http
         protected HttpWebRequest CreateRequest(
             string path, string extra, string method, string contentType, ICredentials credentials = null, NameValueCollection headers = null)
         {
-			var uri = MakeUrl (path, extra);
-			var request = WebRequest.Create (uri);
+            var uri = MakeUrl(path, extra);
+            var request = WebRequest.Create(uri);
             var httpWebRequest = (HttpWebRequest)request;
-            if(headers != null) {
+            if (headers != null)
+            {
                 httpWebRequest.Headers.Add(headers);
             }
             httpWebRequest.ConnectionGroupName = TestStream;
@@ -160,20 +162,20 @@ namespace EventStore.Core.Tests.Http
             if (credentials != null)
             {
                 httpWebRequest.Credentials = credentials;
-				httpWebRequest.PreAuthenticate = true;
+                httpWebRequest.PreAuthenticate = true;
             }
             return httpWebRequest;
         }
 
         protected HttpWebRequest CreateRequest(string path, string method, ICredentials credentials = null)
         {
-            var httpWebRequest = (HttpWebRequest) WebRequest.Create(MakeUrl(path));
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(MakeUrl(path));
             httpWebRequest.Method = method;
             httpWebRequest.UseDefaultCredentials = false;
             if (credentials != null)
             {
                 httpWebRequest.Credentials = credentials;
-				httpWebRequest.PreAuthenticate = true;
+                httpWebRequest.PreAuthenticate = true;
             }
             return httpWebRequest;
         }
@@ -187,9 +189,9 @@ namespace EventStore.Core.Tests.Http
                 return supplied;
 
             var httpEndPoint = _node.ExtHttpEndPoint;
-            var x =  new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path);
+            var x = new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path);
             x.Query = extra;
-	    Console.WriteLine(new string('*', 50) + Environment.NewLine + path + Environment.NewLine + extra + Environment.NewLine + x.Uri + Environment.NewLine + new string('*', 50));
+            Console.WriteLine(new string('*', 50) + Environment.NewLine + path + Environment.NewLine + extra + Environment.NewLine + x.Uri + Environment.NewLine + new string('*', 50));
 
             return x.Uri;
         }
@@ -209,7 +211,8 @@ namespace EventStore.Core.Tests.Http
             return httpWebResponse;
         }
 
-        protected HttpWebResponse MakeArrayEventsPost<T>(string path, T body, ICredentials credentials=null) {
+        protected HttpWebResponse MakeArrayEventsPost<T>(string path, T body, ICredentials credentials = null)
+        {
             var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
             var response = GetRequestResponse(request);
             return response;
@@ -288,7 +291,7 @@ namespace EventStore.Core.Tests.Http
             var httpWebResponse = GetRequestResponse(request);
             return httpWebResponse;
         }
-        
+
         protected XDocument GetAtomXml(Uri uri, ICredentials credentials = null)
         {
             Get(uri.ToString(), "", ContentType.Atom, credentials);
@@ -347,13 +350,14 @@ namespace EventStore.Core.Tests.Http
                 return default(T);
             }
         }
-			
-		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null, bool setAcceptHeader = true, NameValueCollection headers = null)
+
+        protected void Get(string path, string extra, string accept = null, ICredentials credentials = null, bool setAcceptHeader = true, NameValueCollection headers = null)
         {
             var request = CreateRequest(path, extra, "GET", null, credentials, headers);
-			if (setAcceptHeader) {
-				request.Accept = accept ?? "application/json";
-			}
+            if (setAcceptHeader)
+            {
+                request.Accept = accept ?? "application/json";
+            }
             _lastResponse = GetRequestResponse(request);
             var memoryStream = new MemoryStream();
             _lastResponse.GetResponseStream().CopyTo(memoryStream);
@@ -367,11 +371,11 @@ namespace EventStore.Core.Tests.Http
             HttpWebResponse response;
             try
             {
-                response = (HttpWebResponse) request.GetResponse();
+                response = (HttpWebResponse)request.GetResponse();
             }
             catch (WebException ex)
             {
-                response = (HttpWebResponse) ex.Response;
+                response = (HttpWebResponse)ex.Response;
             }
 #if !MONO
             if (_dumpRequest != null)
@@ -432,15 +436,15 @@ namespace EventStore.Core.Tests.Http
 
         private static Func<HttpWebResponse, byte[]> CreateDumpResponse()
         {
-            var r = Expression.Parameter(typeof (HttpWebResponse), "r");
-            var piCoreResponseData = typeof (HttpWebResponse).GetProperty(
+            var r = Expression.Parameter(typeof(HttpWebResponse), "r");
+            var piCoreResponseData = typeof(HttpWebResponse).GetProperty(
                 "CoreResponseData",
-                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var fim_ConnectStream = piCoreResponseData.PropertyType.GetField("m_ConnectStream",
-                                                                             BindingFlags.GetField| BindingFlags.Public | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+                                                                             BindingFlags.GetField | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var connectStreamType = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("System.Net.ConnectStream")).Where(t => t != null).FirstOrDefault();
             var fim_ReadBuffer = connectStreamType.GetField("m_ReadBuffer",
-                                                            BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+                                                            BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var body = Expression.Field(Expression.Convert(Expression.Field(Expression.Property(r, piCoreResponseData), fim_ConnectStream), connectStreamType), fim_ReadBuffer);
             var debugExpression = Expression.Lambda<Func<HttpWebResponse, byte[]>>(body, r);
             return debugExpression.Compile();
@@ -448,17 +452,17 @@ namespace EventStore.Core.Tests.Http
 
         private static Func<HttpWebResponse, int> CreateDumpResponse2()
         {
-            var r = Expression.Parameter(typeof (HttpWebResponse), "r");
-            var piCoreResponseData = typeof (HttpWebResponse).GetProperty(
+            var r = Expression.Parameter(typeof(HttpWebResponse), "r");
+            var piCoreResponseData = typeof(HttpWebResponse).GetProperty(
                 "CoreResponseData",
-                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+                BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var fim_ConnectStream = piCoreResponseData.PropertyType.GetField("m_ConnectStream",
-                                                                             BindingFlags.GetField| BindingFlags.Public | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+                                                                             BindingFlags.GetField | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var connectStreamType = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("System.Net.ConnectStream")).Where(t => t != null).FirstOrDefault();
             var fim_ReadOffset = connectStreamType.GetField("m_ReadOffset",
-                                                            BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+                                                            BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var fim_ReadBufferSize = connectStreamType.GetField("m_ReadBufferSize",
-                                                            BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+                                                            BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var stream = Expression.Convert(Expression.Field(Expression.Property(r, piCoreResponseData), fim_ConnectStream), connectStreamType);
             var body = Expression.Add(Expression.Field(stream, fim_ReadOffset), Expression.Field(stream, fim_ReadBufferSize));
             var debugExpression = Expression.Lambda<Func<HttpWebResponse, int>>(body, r);
@@ -467,9 +471,9 @@ namespace EventStore.Core.Tests.Http
 
         private static Func<HttpWebRequest, byte[]> CreateDumpRequest()
         {
-            var r = Expression.Parameter(typeof (HttpWebRequest), "r");
-            var fi_WriteBuffer = typeof (HttpWebRequest).GetField("_WriteBuffer",
-                                                                  BindingFlags.GetField| BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy| BindingFlags.Instance);
+            var r = Expression.Parameter(typeof(HttpWebRequest), "r");
+            var fi_WriteBuffer = typeof(HttpWebRequest).GetField("_WriteBuffer",
+                                                                  BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
             var body = Expression.Field(r, fi_WriteBuffer);
             var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
             return debugExpression.Compile();
@@ -477,8 +481,8 @@ namespace EventStore.Core.Tests.Http
 
         private static Func<HttpWebRequest, byte[]> CreateDumpRequest2()
         {
-            var r = Expression.Parameter(typeof (HttpWebRequest), "r");
-            var fi_SubmitWriteStream = typeof (HttpWebRequest).GetField(
+            var r = Expression.Parameter(typeof(HttpWebRequest), "r");
+            var fi_SubmitWriteStream = typeof(HttpWebRequest).GetField(
                 "_SubmitWriteStream",
                 BindingFlags.GetField | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy
                 | BindingFlags.Instance);

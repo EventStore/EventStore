@@ -62,7 +62,7 @@ namespace EventStore.Transport.Http.EntityManagement
             _responseContentEncoding = GetRequestedContentEncoding(httpEntity);
             _logHttpRequests = logHttpRequests;
 
-            if (HttpEntity.Request != null && HttpEntity.Request.ContentLength64 == 0)
+            if (HttpEntity.Request?.ContentLength64 == 0)
             {
                 LogRequest(new byte[0]);
             }
@@ -430,9 +430,9 @@ namespace EventStore.Transport.Http.EntityManagement
                 logBuilder.AppendFormat("From: {0}\n", HttpEntity.Request.RemoteEndPoint.ToString());
                 logBuilder.AppendFormat("{0} {1}\n", HttpEntity.Request.HttpMethod, HttpEntity.Request.Url);
                 logBuilder.AppendLine(CreateHeaderLog(HttpEntity.Request.Headers));
-                if (body != null && body.Length > 0)
+                if (body?.Length > 0)
                 {
-                    logBuilder.AppendLine(System.Text.Encoding.Default.GetString(body));
+                    logBuilder.AppendLine(Encoding.Default.GetString(body));
                 }
                 Log.Debug(logBuilder.ToString());
             }
@@ -447,7 +447,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 logBuilder.AppendFormat("{0}\n", DateTime.Now);
                 logBuilder.AppendFormat("{0} {1}\n", HttpEntity.Response.StatusCode, HttpEntity.Response.StatusDescription);
                 logBuilder.AppendLine(CreateHeaderLog(HttpEntity.Response.Headers));
-                if (body != null && body.Length > 0)
+                if (body?.Length > 0)
                 {
                     logBuilder.AppendLine(System.Text.Encoding.Default.GetString(body));
                 }

@@ -84,8 +84,7 @@ namespace EventStore.Transport.Http
                         else
                         {
                             Dispose();
-                            if (item.OnCompletion != null) 
-                                item.OnCompletion(null);
+                            item.OnCompletion?.Invoke(null);
                         }
                     }
                     catch (Exception ex)
@@ -126,8 +125,7 @@ namespace EventStore.Transport.Http
         {
             try
             {
-                if (item.OnCompletion != null)
-                    item.OnCompletion(_error);
+                item.OnCompletion?.Invoke(_error);
             }
             catch (Exception ex)
             {
@@ -139,8 +137,7 @@ namespace EventStore.Transport.Http
         {
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
                 return;
-            if (_onDispose != null)
-                _onDispose();
+            _onDispose?.Invoke();
         }
     }
 }

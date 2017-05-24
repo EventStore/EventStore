@@ -206,10 +206,7 @@ namespace EventStore.Projections.Core.Tests.Other
                 return Equals((TestData) obj);
             }
 
-            public override int GetHashCode()
-            {
-                return (Data != null ? Data.GetHashCode() : 0);
-            }
+            public override int GetHashCode() => Data?.GetHashCode() ?? 0;
 
             public override string ToString()
             {

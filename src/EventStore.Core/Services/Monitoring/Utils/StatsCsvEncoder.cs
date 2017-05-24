@@ -44,10 +44,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
                 return string.Empty;
 
             var convertible = obj as IConvertible;
-            if (convertible != null)
-                return convertible.ToString(CultureInfo.InvariantCulture);
-
-            return obj.ToString();
+            return convertible?.ToString(CultureInfo.InvariantCulture) ?? obj.ToString();
         }
     }
 }

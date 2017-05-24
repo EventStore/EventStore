@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
-    public class TFChunkManager: IDisposable
+    public class TFChunkManager : IDisposable
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkManager>();
 
@@ -19,7 +19,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly TFChunk.TFChunk[] _chunks = new TFChunk.TFChunk[MaxChunksCount];
         private volatile int _chunksCount;
         private volatile bool _cachingEnabled;
-        
+
         private readonly object _chunksLocker = new object();
         private int _backgroundPassesRemaining;
         private int _backgroundRunning;
@@ -51,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     CacheUncacheReadOnlyChunks();
                 } while (Interlocked.Decrement(ref _backgroundPassesRemaining) > 0);
                 Interlocked.Exchange(ref _backgroundRunning, 0);
-            } while (Interlocked.CompareExchange(ref _backgroundPassesRemaining, 0, 0) > 0 
+            } while (Interlocked.CompareExchange(ref _backgroundPassesRemaining, 0, 0) > 0
                      && Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0);
         }
 
@@ -88,7 +88,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
             }
 
-            for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount; )
+            for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount;)
             {
                 var chunk = _chunks[chunkNum];
                 if (chunk.IsReadOnly)
@@ -100,9 +100,9 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk.TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
         {
             var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
-            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, 
-                                                    chunkHeader, 
-                                                    fileSize, 
+            return TFChunk.TFChunk.CreateWithHeader(chunkFileName,
+                                                    chunkHeader,
+                                                    fileSize,
                                                     _config.InMemDb,
                                                     _config.Unbuffered,
                                                     _config.WriteThrough);
@@ -114,11 +114,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 var chunkNumber = _chunksCount;
                 var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-                var chunk = TFChunk.TFChunk.CreateNew(chunkName, 
-                                                      _config.ChunkSize, 
-                                                      chunkNumber, 
-                                                      chunkNumber, 
-                                                      isScavenged: false, 
+                var chunk = TFChunk.TFChunk.CreateNew(chunkName,
+                                                      _config.ChunkSize,
+                                                      chunkNumber,
+                                                      chunkNumber,
+                                                      isScavenged: false,
                                                       inMem: _config.InMemDb,
                                                       unbuffered: _config.Unbuffered,
                                                       writethrough: _config.WriteThrough);
@@ -139,9 +139,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                       chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
 
                 var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
-                var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName, 
-                                                             chunkHeader, 
-                                                             fileSize, 
+                var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName,
+                                                             chunkHeader,
+                                                             fileSize,
                                                              _config.InMemDb,
                                                              unbuffered: _config.Unbuffered,
                                                              writethrough: _config.WriteThrough);
@@ -210,7 +210,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     var oldChunksCount = _chunksCount;
                     _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
-                    RemoveChunks(chunkHeader.ChunkEndNumber + 1, oldChunksCount-1, "Excessive");
+                    RemoveChunks(chunkHeader.ChunkEndNumber + 1, oldChunksCount - 1, "Excessive");
                     if (_chunks[_chunksCount] != null)
                         throw new Exception(string.Format("Excessive chunk #{0} found after raw replication switch.", _chunksCount));
                 }
@@ -308,10 +308,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
-        public TFChunk.TFChunk GetChunkForOrDefault(string path)
-        {
-            return _chunks != null ? _chunks.FirstOrDefault(c => c != null && c.FileName == path) : null;
-        }
+        public TFChunk.TFChunk GetChunkForOrDefault(string path) => _chunks?.FirstOrDefault(c => c != null && c.FileName == path);
 
         public void Dispose()
         {
@@ -319,8 +316,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 for (int i = 0; i < _chunksCount; ++i)
                 {
-                    if (_chunks[i] != null)
-                        _chunks[i].Dispose();
+                    _chunks[i]?.Dispose();
                 }
             }
         }

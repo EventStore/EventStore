@@ -17,8 +17,7 @@ namespace EventStore.Transport.Http
             {
                 try
                 {
-                    if (stream != null)
-                        stream.Dispose();
+                    stream?.Dispose();
                 }
                 catch (Exception e)
                 {

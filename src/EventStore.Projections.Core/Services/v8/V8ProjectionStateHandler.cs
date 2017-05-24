@@ -47,15 +47,20 @@ namespace EventStore.Projections.Core.Services.v8
         public class EmittedEventJsonContract
         {
 
-            [DataMember] public string streamId;
+            [DataMember]
+            public string streamId;
 
-            [DataMember] public string eventName;
+            [DataMember]
+            public string eventName;
 
-            [DataMember] public bool isJson;
+            [DataMember]
+            public bool isJson;
 
-            [DataMember] public string body;
+            [DataMember]
+            public string body;
 
-            [DataMember] public Dictionary<string, JRaw> metadata;
+            [DataMember]
+            public Dictionary<string, JRaw> metadata;
 
             public ExtraMetaData GetExtraMetadata()
             {
@@ -134,7 +139,7 @@ namespace EventStore.Projections.Core.Services.v8
                 });
             if (partition == "")
                 return null;
-            else 
+            else
                 return partition;
         }
 
@@ -161,11 +166,14 @@ namespace EventStore.Projections.Core.Services.v8
             _eventPosition = eventPosition;
             _emittedEvents = null;
             Tuple<string, string> newStates = null;
-            if(data == null || data.Data == null){
+            if (data == null || data.Data == null)
+            {
                 newStates = _query.Push(
                 "",
-                new string[]{});
-            }else{
+                new string[] { });
+            }
+            else
+            {
                 newStates = _query.Push(
                 data.Data.Trim(), // trimming data passed to a JS 
                 new[]
@@ -177,22 +185,22 @@ namespace EventStore.Projections.Core.Services.v8
             }
             newState = newStates.Item1;
             newSharedState = newStates.Item2;
-/*            try
-            {
-                if (!string.IsNullOrEmpty(newState))
-                {
-                    var jo = newState.ParseJson<JObject>();
-                }
+            /*            try
+                        {
+                            if (!string.IsNullOrEmpty(newState))
+                            {
+                                var jo = newState.ParseJson<JObject>();
+                            }
 
-            }
-            catch (InvalidCastException)
-            {
-                Console.Error.WriteLine(newState);
-            }
-            catch (JsonException)
-            {
-                Console.Error.WriteLine(newState);
-            }*/
+                        }
+                        catch (InvalidCastException)
+                        {
+                            Console.Error.WriteLine(newState);
+                        }
+                        catch (JsonException)
+                        {
+                            Console.Error.WriteLine(newState);
+                        }*/
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }
@@ -202,7 +210,8 @@ namespace EventStore.Projections.Core.Services.v8
             CheckDisposed();
             _eventPosition = createPosition;
             _emittedEvents = null;
-            if(data == null || data.Data == null){
+            if (data == null || data.Data == null)
+            {
                 emittedEvents = null;
                 return true;
             }
@@ -249,10 +258,8 @@ namespace EventStore.Projections.Core.Services.v8
         public void Dispose()
         {
             _disposed = true;
-            if (_query != null)
-                _query.Dispose();
-            if (_prelude != null)
-                _prelude.Dispose();
+            _query?.Dispose();
+            _prelude?.Dispose();
         }
 
         public IQuerySources GetSourceDefinition()

@@ -80,10 +80,6 @@ namespace EventStore.Transport.Http
             }
         }
 
-        private void OnCompleted()
-        {
-            if (_onCompleted != null)
-                _onCompleted(this);
-        }
+        private void OnCompleted() => _onCompleted?.Invoke(this);
     }
 }

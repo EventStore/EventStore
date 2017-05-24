@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
                 publisher,
-                inputQueue, 
+                inputQueue,
                 projectionCorrelationId,
                 partitionStateCache,
                 UpdateStatistics,
@@ -152,7 +152,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionProcessingPhase.SetProjectionState(PhaseState.Starting);
             _checkpointManager = processingPhase.CheckpointManager;
 
-             _projectionProcessingPhase.InitializeFromCheckpoint(startFrom);
+            _projectionProcessingPhase.InitializeFromCheckpoint(startFrom);
             _checkpointManager.Start(startFrom);
         }
 
@@ -221,18 +221,18 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 info.Progress = -2.0f;
             }
-            info.Status = _state.EnumValueName() + info.Status; 
+            info.Status = _state.EnumValueName() + info.Status;
             info.Name = _name;
             info.EffectiveName = _name;
             info.ProjectionId = _version.ProjectionId;
             info.Epoch = _version.Epoch;
             info.Version = _version.Version;
             info.StateReason = "";
-            info.BufferedEvents = 0; 
+            info.BufferedEvents = 0;
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
             _enrichStatistics(info);
-            if (_projectionProcessingPhase != null)
-                _projectionProcessingPhase.GetStatistics(info);
+
+            _projectionProcessingPhase?.GetStatistics(info);
         }
 
         public void CompletePhase()
@@ -349,10 +349,10 @@ namespace EventStore.Projections.Core.Services.Processing
             //
             CompleteCheckpointSuggestedWorkItem();
             EnsureUnsubscribed();
-            StopSlaveProjections(); 
+            StopSlaveProjections();
             GoToState(State.Initial);
             Start();
-            
+
         }
 
         public void Handle(CoreProjectionProcessingMessage.Failed message)
@@ -360,17 +360,12 @@ namespace EventStore.Projections.Core.Services.Processing
             SetFaulted(message.Reason);
         }
 
-        public void EnsureUnsubscribed()
-        {
-            if (_projectionProcessingPhase != null)
-                _projectionProcessingPhase.EnsureUnsubscribed();
-        }
-
+        public void EnsureUnsubscribed() => _projectionProcessingPhase?.EnsureUnsubscribed();
 
         private void StopSlaveProjections()
         {
-            if (_masterProjectionResponseReader != null)
-                _masterProjectionResponseReader.Stop();
+            _masterProjectionResponseReader?.Stop();
+
             //TODO: encapsulate into StopSlaveProjections message?
             var slaveProjections = _slaveProjections;
             if (slaveProjections != null)
@@ -393,7 +388,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void GoToState(State state)
         {
-//            _logger.Trace("CP: {0} {1} => {2}", _name, _state, state);
+            //            _logger.Trace("CP: {0} {1} => {2}", _name, _state, state);
             var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
             var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
                               || _state == State.CompletingPhase;
@@ -572,7 +567,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterStopped()
         {
             EnsureUnsubscribed();
-            StopSlaveProjections(); 
+            StopSlaveProjections();
             _publisher.Publish(new CoreProjectionStatusMessage.Stopped(_projectionCorrelationId, _name, _completed));
         }
 
@@ -584,7 +579,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterFaulted()
         {
             EnsureUnsubscribed();
-            StopSlaveProjections(); 
+            StopSlaveProjections();
             _publisher.Publish(
                 new CoreProjectionStatusMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
@@ -653,8 +648,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _disposed = true;
             EnsureUnsubscribed();
             StopSlaveProjections();
-            if (_projectionProcessingPhase != null)
-                _projectionProcessingPhase.Dispose();
+            _projectionProcessingPhase?.Dispose();
         }
 
         public void EnsureTickPending()
@@ -725,7 +719,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var workItem = _checkpointSuggestedWorkItem;
             if (workItem != null)
             {
-                _checkpointSuggestedWorkItem = null; 
+                _checkpointSuggestedWorkItem = null;
                 workItem.CheckpointCompleted();
                 EnsureTickPending();
             }

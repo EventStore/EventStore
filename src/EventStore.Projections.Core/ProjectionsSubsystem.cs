@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core
 
             CreateAwakerService(standardComponents);
             _coreQueues = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
-            _queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher) v.Value);
+            _queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher)v.Value);
 
             ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap);
             projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
@@ -70,10 +70,9 @@ namespace EventStore.Projections.Core
 
         public void Start()
         {
-            if(_subsystemStarted == false)
+            if (_subsystemStarted == false)
             {
-                if (_masterInputQueue != null)
-                    _masterInputQueue.Start();
+                _masterInputQueue?.Start();
                 foreach (var queue in _coreQueues)
                     queue.Value.Start();
             }
@@ -82,10 +81,9 @@ namespace EventStore.Projections.Core
 
         public void Stop()
         {
-            if(_subsystemStarted)
+            if (_subsystemStarted)
             {
-                if (_masterInputQueue != null)
-                    _masterInputQueue.Stop();
+                _masterInputQueue?.Stop();
                 foreach (var queue in _coreQueues)
                     queue.Value.Stop();
             }

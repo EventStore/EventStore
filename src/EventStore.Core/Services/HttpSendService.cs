@@ -50,7 +50,7 @@ namespace EventStore.Core.Services
                 case VNodeState.CatchingUp:
                 case VNodeState.Clone:
                 case VNodeState.Slave:
-                    _masterInfo = ((SystemMessage.ReplicaStateMessage) message).Master;
+                    _masterInfo = ((SystemMessage.ReplicaStateMessage)message).Master;
                     break;
                 case VNodeState.Initializing:
                 case VNodeState.Unknown:
@@ -68,9 +68,12 @@ namespace EventStore.Core.Services
 
         public void Handle(HttpMessage.SendOverHttp message)
         {
-            if(message.LiveUntil > DateTime.Now) {
+            if (message.LiveUntil > DateTime.Now)
+            {
                 _httpPipe.Push(message.Message, message.EndPoint);
-            } else {
+            }
+            else
+            {
                 Log.Debug("Dropping HTTP send message due to TTL being over. {1} To : {0}", message.EndPoint, message.Message.GetType().Name.ToString());
             }
         }
@@ -102,7 +105,7 @@ namespace EventStore.Core.Services
                 var response = message.Data;
                 var config = message.Configuration;
                 var start = _watch.ElapsedTicks;
-                if(response is byte[])
+                if (response is byte[])
                 {
                     message.HttpEntityManager.ReplyContent(
                         response as byte[],
@@ -133,8 +136,7 @@ namespace EventStore.Core.Services
             var config = message.Configuration;
 
             message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Encoding, config.Headers);
-            if (message.Envelope != null)
-                message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
+            message.Envelope?.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
         }
 
         public void Handle(HttpMessage.HttpSendPart message)
@@ -145,8 +147,7 @@ namespace EventStore.Core.Services
                 exc => Log.Debug("Error occurred while replying to HTTP with message {0}: {1}.", message, exc.Message),
                 () =>
                 {
-                    if (message.Envelope != null)
-                        message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
+                    message.Envelope?.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
                 });
         }
 
@@ -184,19 +185,19 @@ namespace EventStore.Core.Services
             {
                 switch (headerKey.ToLower())
                 {
-                    case "accept":            request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]); break;
-                    case "connection":        break;
-                    case "content-type":      break;
-                    case "content-length":    break;
-                    case "date":              request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "expect":            break;
-                    case "host":              request.Headers.Host = forwardUri.Host; break;
+                    case "accept": request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]); break;
+                    case "connection": break;
+                    case "content-type": break;
+                    case "content-length": break;
+                    case "date": request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                    case "expect": break;
+                    case "host": request.Headers.Host = forwardUri.Host; break;
                     case "if-modified-since": request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "proxy-connection":  break;
-                    case "range":             break;
-                    case "referer":           request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]); break;
+                    case "proxy-connection": break;
+                    case "range": break;
+                    case "referer": request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]); break;
                     case "transfer-encoding": request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]); break;
-                    case "user-agent":        request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]); break;
+                    case "user-agent": request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]); break;
 
                     default:
                         request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
@@ -204,8 +205,9 @@ namespace EventStore.Core.Services
                 }
             }
 
-            if(!request.Headers.Contains(ProxyHeaders.XForwardedHost)) {
-                request.Headers.Add(ProxyHeaders.XForwardedHost, string.Format("{0}:{1}", 
+            if (!request.Headers.Contains(ProxyHeaders.XForwardedHost))
+            {
+                request.Headers.Add(ProxyHeaders.XForwardedHost, string.Format("{0}:{1}",
                     manager.RequestedUrl.Host, manager.RequestedUrl.Port));
             }
 
@@ -234,11 +236,11 @@ namespace EventStore.Core.Services
                 .ContinueWith(t =>
                 {
                     HttpResponseMessage response;
-                    try 
+                    try
                     {
                         response = t.Result;
                     }
-                    catch(Exception ex) 
+                    catch (Exception ex)
                     {
                         Log.Debug("Error in SendAsync for forwarded request for '{0}': {1}.",
                                   manager.RequestedUrl, ex.InnerException.Message);

@@ -1049,7 +1049,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (message.Result == OperationResult.Success)
             {
-                if (completed != null) completed(message.FirstEventNumber);
+                completed?.Invoke(message.FirstEventNumber);
                 return;
             }
             _logger.Info(

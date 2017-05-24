@@ -36,8 +36,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [TearDown]
         public override void TearDown()
         {
-            if (_ptable != null)
-                _ptable.MarkForDestruction();
+            _ptable?.MarkForDestruction();
             base.TearDown();
         }
 

@@ -37,73 +37,31 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public QuerySourceOptions Options { get; set; }
 
-        bool IQuerySources.DefinesStateTransform
-        {
-            get { return Options != null && Options.DefinesStateTransform; }
-        }
+        bool IQuerySources.DefinesStateTransform => Options?.DefinesStateTransform == true;
 
-        bool IQuerySources.DefinesCatalogTransform
-        {
-            get { return Options != null && Options.DefinesCatalogTransform; }
-        }
+        bool IQuerySources.DefinesCatalogTransform => Options?.DefinesCatalogTransform == true;
 
-        bool IQuerySources.ProducesResults
-        {
-            get { return Options != null && Options.ProducesResults; }
-        }
+        bool IQuerySources.ProducesResults => Options?.ProducesResults == true;
 
-        bool IQuerySources.DefinesFold
-        {
-            get { return Options != null && Options.DefinesFold; }
-        }
+        bool IQuerySources.DefinesFold => Options?.DefinesFold == true;
 
-        bool IQuerySources.HandlesDeletedNotifications
-        {
-            get { return Options != null && Options.HandlesDeletedNotifications; }
-        }
+        bool IQuerySources.HandlesDeletedNotifications => Options?.HandlesDeletedNotifications == true;
 
-        bool IQuerySources.IncludeLinksOption
-        {
-            get { return Options != null && Options.IncludeLinks; }
-        }
+        bool IQuerySources.IncludeLinksOption => Options?.IncludeLinks == true;
 
-        bool IQuerySources.DisableParallelismOption
-        {
-            get { return Options != null && Options.DisableParallelism; }
-        }
+        bool IQuerySources.DisableParallelismOption => Options?.DisableParallelism == true;
 
-        string IQuerySources.ResultStreamNameOption
-        {
-            get { return Options != null ? Options.ResultStreamName : null; }
-        }
+        string IQuerySources.ResultStreamNameOption => Options?.ResultStreamName;
 
-        string IQuerySources.PartitionResultStreamNamePatternOption
-        {
-            get { return Options != null ? Options.PartitionResultStreamNamePattern : null; }
-        }
+        string IQuerySources.PartitionResultStreamNamePatternOption => Options?.PartitionResultStreamNamePattern;
 
-        bool IQuerySources.ReorderEventsOption
-        {
-            get
-            {
-                return Options != null && Options.ReorderEvents;
-            }
-        }
+        bool IQuerySources.ReorderEventsOption => Options?.ReorderEvents == true;
 
-        int? IQuerySources.ProcessingLagOption
-        {
-            get { return Options != null ? Options.ProcessingLag : (int?) null; }
-        }
+        int? IQuerySources.ProcessingLagOption => Options?.ProcessingLag;
 
-        bool IQuerySources.IsBiState 
-        {
-            get { return Options != null ? Options.IsBiState : false; }
-        }
+        bool IQuerySources.IsBiState => Options?.IsBiState == true;
 
-        bool IQuerySources.ByStreams
-        {
-            get { return ByStream; }
-        }
+        bool IQuerySources.ByStreams => ByStream;
 
         public static ProjectionSourceDefinition From(IQuerySources sources)
         {
@@ -174,9 +132,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 hashCode = (hashCode*397) ^ AllStreams.GetHashCode();
                 hashCode = (hashCode*397) ^ ByStream.GetHashCode();
                 hashCode = (hashCode*397) ^ ByCustomPartitions.GetHashCode();
-                hashCode = (hashCode*397) ^ (CatalogStream != null ? CatalogStream.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (CatalogStream?.GetHashCode() ?? 0);
                 hashCode = (hashCode*397) ^ LimitingCommitPosition.GetHashCode();
-                hashCode = (hashCode*397) ^ (Options != null ? Options.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (Options?.GetHashCode() ?? 0);
                 return hashCode;
             }
         }

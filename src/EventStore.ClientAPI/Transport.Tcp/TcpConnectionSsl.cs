@@ -424,8 +424,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             if (_sslStream != null)
                 Helper.EatException(() => _sslStream.Close());
 
-            if (_onConnectionClosed != null)
-                _onConnectionClosed(this, socketError);
+            _onConnectionClosed?.Invoke(this, socketError);
         }
 
         public override string ToString()

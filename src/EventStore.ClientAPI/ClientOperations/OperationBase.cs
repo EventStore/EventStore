@@ -44,8 +44,8 @@ namespace EventStore.ClientAPI.ClientOperations
             return new TcpPackage(_requestCommand,
                                   UserCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
                                   correlationId,
-                                  UserCredentials != null ? UserCredentials.Username : null,
-                                  UserCredentials != null ? UserCredentials.Password : null,
+                                  UserCredentials?.Username,
+                                  UserCredentials?.Password,
                                   CreateRequestDto().Serialize());
         }
 

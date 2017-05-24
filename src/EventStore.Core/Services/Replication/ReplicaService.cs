@@ -97,23 +97,23 @@ namespace EventStore.Core.Services.Replication
                 case VNodeState.Master:
                 case VNodeState.ShuttingDown:
                 case VNodeState.Shutdown:
-                {
-                    Disconnect();
-                    break;
-                }
+                    {
+                        Disconnect();
+                        break;
+                    }
                 case VNodeState.PreReplica:
-                {
-                    var m = (SystemMessage.BecomePreReplica) message;
-                    ConnectToMaster(m.Master);
-                    break;
-                }
+                    {
+                        var m = (SystemMessage.BecomePreReplica)message;
+                        ConnectToMaster(m.Master);
+                        break;
+                    }
                 case VNodeState.CatchingUp:
                 case VNodeState.Clone:
                 case VNodeState.Slave:
-                {
-                    // nothing changed, essentially
-                    break;
-                }
+                    {
+                        // nothing changed, essentially
+                        break;
+                    }
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -140,7 +140,7 @@ namespace EventStore.Core.Services.Replication
 
         public void Handle(ReplicationMessage.ReconnectToMaster message)
         {
-            ConnectToMaster(message.Master);   
+            ConnectToMaster(message.Master);
         }
 
         private void ConnectToMaster(VNodeInfo master)
@@ -149,9 +149,8 @@ namespace EventStore.Core.Services.Replication
 
             var masterEndPoint = GetMasterEndPoint(master, _useSsl);
 
-            if (_connection != null)
-                _connection.Stop(string.Format("Reconnecting from old master [{0}] to new master: [{1}].",
-                                               _connection.RemoteEndPoint, masterEndPoint));
+            _connection?.Stop(string.Format("Reconnecting from old master [{0}] to new master: [{1}].",
+                                           _connection.RemoteEndPoint, masterEndPoint));
 
             _connection = new TcpConnectionManager(_useSsl ? "master-secure" : "master-normal",
                                                    Guid.NewGuid(),
@@ -186,7 +185,7 @@ namespace EventStore.Core.Services.Replication
 
             var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
             var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
-            
+
             Log.Info("Subscribing at LogPosition: {0} (0x{0:X}) to MASTER [{1}, {2:B}] as replica with SubscriptionId: {3:B}, "
                      + "ConnectionId: {4:B}, LocalEndPoint: [{5}], Epochs:\n{6}...\n.",
                       logPosition, _connection.RemoteEndPoint, message.MasterId, message.SubscriptionId,
@@ -194,7 +193,7 @@ namespace EventStore.Core.Services.Replication
 
             var chunk = _db.Manager.GetChunkFor(logPosition);
             if (chunk == null) throw new Exception(string.Format("Chunk was null during subscribing at {0} (0x{0:X}).", logPosition));
-            SendTcpMessage(_connection, 
+            SendTcpMessage(_connection,
                            new ReplicationMessage.SubscribeReplica(
                                    logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp,
                                    message.MasterId, message.SubscriptionId, isPromotable: true));
@@ -230,20 +229,20 @@ namespace EventStore.Core.Services.Replication
             switch (_state)
             {
                 case VNodeState.PreReplica:
-                {
-                    if (_connection != null)
-                        SendTcpMessage(_connection, message.Message);
-                    break;
-                }
+                    {
+                        if (_connection != null)
+                            SendTcpMessage(_connection, message.Message);
+                        break;
+                    }
 
                 case VNodeState.CatchingUp:
                 case VNodeState.Clone:
                 case VNodeState.Slave:
-                {
-                    Debug.Assert(_connection != null, "Connection manager is null in slave/clone/catching up state");
-                    SendTcpMessage(_connection, message.Message);
-                    break;
-                }
+                    {
+                        Debug.Assert(_connection != null, "Connection manager is null in slave/clone/catching up state");
+                        SendTcpMessage(_connection, message.Message);
+                        break;
+                    }
 
                 default:
                     throw new Exception(string.Format("Unexpected state: {0}", _state));

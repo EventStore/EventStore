@@ -290,12 +290,7 @@ namespace EventStore.Core.Services.Transport.Http
             return string.Format("{0}{1}{2}", position, AtomController.ETagSeparator, contentType.GetHashCode());
         }
 
-        private static int? GetCacheSeconds(StreamMetadata metadata)
-        {
-            return metadata != null && metadata.CacheControl.HasValue
-                           ? (int) metadata.CacheControl.Value.TotalSeconds
-                           : (int?) null;
-        }
+        private static int? GetCacheSeconds(StreamMetadata metadata) => (int?)metadata?.CacheControl?.TotalSeconds;
 
         public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
         {

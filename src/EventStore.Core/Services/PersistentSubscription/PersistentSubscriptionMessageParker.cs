@@ -35,11 +35,8 @@ namespace EventStore.Core.Services.PersistentSubscription
             return new Event(eventId, SystemEventTypes.StreamMetadata, isJson: true, data: dataBytes, metadata: null);
         }
 
-        private void WriteStateCompleted(Action<ResolvedEvent, OperationResult> completed, ResolvedEvent ev, ClientMessage.WriteEventsCompleted msg)
-        {
-            if(completed != null)
-                completed(ev, msg.Result);
-        }
+        private void WriteStateCompleted(Action<ResolvedEvent, OperationResult> completed, ResolvedEvent ev, ClientMessage.WriteEventsCompleted msg) =>
+            completed?.Invoke(ev, msg.Result);
 
         public void BeginParkMessage(ResolvedEvent ev,string reason, Action<ResolvedEvent, OperationResult> completed)
         {

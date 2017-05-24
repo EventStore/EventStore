@@ -30,7 +30,8 @@ namespace EventStore.ClusterNode
 
         public static void Main(string[] args)
         {
-            Console.CancelKeyPress += delegate {
+            Console.CancelKeyPress += delegate
+            {
                 Environment.Exit((int)ExitCode.Success);
             };
             var p = new Program();
@@ -51,13 +52,16 @@ namespace EventStore.ClusterNode
         {
             base.PreInit(options);
 
-            if (options.Db.StartsWith("~") && !options.Force){
+            if (options.Db.StartsWith("~") && !options.Force)
+            {
                 throw new ApplicationInitializationException("The given database path starts with a '~'. We don't expand '~'. You can use --force to override this error.");
             }
-            if (options.Log.StartsWith("~") && !options.Force){
+            if (options.Log.StartsWith("~") && !options.Force)
+            {
                 throw new ApplicationInitializationException("The given log path starts with a '~'. We don't expand '~'. You can use --force to override this error.");
             }
-            if (options.GossipSeed.Length > 1 && options.ClusterSize == 1){
+            if (options.GossipSeed.Length > 1 && options.ClusterSize == 1)
+            {
                 throw new ApplicationInitializationException("The given ClusterSize is set to 1 but GossipSeeds are multiple. We will never be able to sync up with this configuration.");
             }
 
@@ -115,10 +119,7 @@ namespace EventStore.ClusterNode
 
         private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterNodeOptions options)
         {
-            if (_node.InternalHttpService != null)
-            {
-                _node.InternalHttpService.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
-            }
+            _node.InternalHttpService?.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
             if (options.AdminOnExt)
             {
                 _node.ExternalHttpService.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
@@ -145,12 +146,14 @@ namespace EventStore.ClusterNode
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
             Log.Info("Quorum size set to " + prepareCount);
-            if(options.DisableInsecureTCP)
+            if (options.DisableInsecureTCP)
             {
-                if (!options.UseInternalSsl) {
+                if (!options.UseInternalSsl)
+                {
                     throw new Exception("You have chosen to disable the insecure TCP ports and haven't set 'UseInternalSsl'. The nodes in the cluster will not be able to communicate properly.");
                 }
-                if(extSecTcp == null || intSecTcp == null){
+                if (extSecTcp == null || intSecTcp == null)
+                {
                     throw new Exception("You have chosen to disable the insecure TCP ports and haven't setup the External or Internal Secure TCP Ports.");
                 }
             }
@@ -161,14 +164,20 @@ namespace EventStore.ClusterNode
             }
 
             VNodeBuilder builder;
-            if(options.ClusterSize > 1) {
+            if (options.ClusterSize > 1)
+            {
                 builder = ClusterVNodeBuilder.AsClusterMember(options.ClusterSize);
-            } else {
+            }
+            else
+            {
                 builder = ClusterVNodeBuilder.AsSingleNode();
             }
-            if(options.MemDb) {
+            if (options.MemDb)
+            {
                 builder = builder.RunInMemory();
-            } else {
+            }
+            else
+            {
                 builder = builder.RunOnDisk(options.Db);
             }
 
@@ -214,74 +223,77 @@ namespace EventStore.ClusterNode
                         .AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs)
                         .HavingReaderThreads(options.ReaderThreadsCount);
 
-            if(options.GossipSeed.Length > 0)
+            if (options.GossipSeed.Length > 0)
                 builder.WithGossipSeeds(options.GossipSeed);
 
-            if(options.DiscoverViaDns)
+            if (options.DiscoverViaDns)
                 builder.WithClusterDnsName(options.ClusterDns);
             else
                 builder.DisableDnsDiscovery();
 
-            if (!options.AddInterfacePrefixes){
+            if (!options.AddInterfacePrefixes)
+            {
                 builder.DontAddInterfacePrefixes();
             }
             if (options.GossipOnSingleNode)
             {
                 builder.GossipAsSingleNode();
             }
-            foreach(var prefix in options.IntHttpPrefixes) {
+            foreach (var prefix in options.IntHttpPrefixes)
+            {
                 builder.AddInternalHttpPrefix(prefix);
             }
-            foreach(var prefix in options.ExtHttpPrefixes) {
+            foreach (var prefix in options.ExtHttpPrefixes)
+            {
                 builder.AddExternalHttpPrefix(prefix);
             }
-            
-            if(options.EnableTrustedAuth)
+
+            if (options.EnableTrustedAuth)
                 builder.EnableTrustedAuth();
-            if(options.StartStandardProjections)
+            if (options.StartStandardProjections)
                 builder.StartStandardProjections();
-            if(options.DisableHTTPCaching)
+            if (options.DisableHTTPCaching)
                 builder.DisableHTTPCaching();
-            if(options.DisableScavengeMerging)
+            if (options.DisableScavengeMerging)
                 builder.DisableScavengeMerging();
-            if(options.LogHttpRequests)
+            if (options.LogHttpRequests)
                 builder.EnableLoggingOfHttpRequests();
-            if(options.EnableHistograms)
+            if (options.EnableHistograms)
                 builder.EnableHistograms();
-            if(options.UnsafeIgnoreHardDelete)
+            if (options.UnsafeIgnoreHardDelete)
                 builder.WithUnsafeIgnoreHardDelete();
-            if(options.UnsafeDisableFlushToDisk)
+            if (options.UnsafeDisableFlushToDisk)
                 builder.WithUnsafeDisableFlushToDisk();
-            if(options.BetterOrdering)
+            if (options.BetterOrdering)
                 builder.WithBetterOrdering();
-            if(options.SslValidateServer)
+            if (options.SslValidateServer)
                 builder.ValidateSslServer();
-            if(options.UseInternalSsl)
+            if (options.UseInternalSsl)
                 builder.EnableSsl();
-            if(options.DisableInsecureTCP)
+            if (options.DisableInsecureTCP)
                 builder.DisableInsecureTCP();
-            if(!options.AdminOnExt)
+            if (!options.AdminOnExt)
                 builder.NoAdminOnPublicInterface();
-            if(!options.StatsOnExt)
+            if (!options.StatsOnExt)
                 builder.NoStatsOnPublicInterface();
-            if(!options.GossipOnExt)
+            if (!options.GossipOnExt)
                 builder.NoGossipOnPublicInterface();
-            if(options.SkipDbVerify)
+            if (options.SkipDbVerify)
                 builder.DoNotVerifyDbHashes();
-            if(options.AlwaysKeepScavenged)
+            if (options.AlwaysKeepScavenged)
                 builder.AlwaysKeepScavenged();
-            if(options.Unbuffered)
+            if (options.Unbuffered)
                 builder.EnableUnbuffered();
-            if(options.WriteThrough)
+            if (options.WriteThrough)
                 builder.EnableWriteThrough();
-                
+
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation))
                 {
                     var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
                     var name = GetCertificateStoreName(options.CertificateStoreName);
-                    builder.WithServerCertificateFromStore(location,name, options.CertificateSubjectName, options.CertificateThumbprint);
+                    builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName, options.CertificateThumbprint);
                 }
                 else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName))
                 {
@@ -301,7 +313,7 @@ namespace EventStore.ClusterNode
             var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
             var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
             builder.WithAuthenticationProvider(authenticationProviderFactory);
-            
+
             return builder.Build(options, consumerStrategyFactories);
         }
 
@@ -366,7 +378,7 @@ namespace EventStore.ClusterNode
         {
             var catalog = new AggregateCatalog();
 
-            catalog.Catalogs.Add(new AssemblyCatalog(typeof (Program).Assembly));
+            catalog.Catalogs.Add(new AssemblyCatalog(typeof(Program).Assembly));
 
             if (Directory.Exists(Locations.PluginsDirectory))
             {

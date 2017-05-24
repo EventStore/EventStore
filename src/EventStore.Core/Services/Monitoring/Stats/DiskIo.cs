@@ -89,8 +89,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             finally
             {
-                if (proc != null)
-                    proc.Dispose();
+                proc?.Dispose();
             }
             return new DiskIo(counters.ReadTransferCount, counters.WriteTransferCount,
                               counters.ReadOperationCount, counters.WriteOperationCount);

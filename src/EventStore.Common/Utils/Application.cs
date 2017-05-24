@@ -66,9 +66,7 @@ namespace EventStore.Common.Utils
                     Log.Info(message);
             }
 
-            var exit = _exit;
-            if (exit != null)
-                exit(exitCode);
+            _exit?.Invoke(exitCode);
         }
 
         public static void AddDefines(IEnumerable<string> defines)

@@ -5,7 +5,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public sealed class SourceDefinitionBuilder: IQuerySources // name it!!
+    public sealed class SourceDefinitionBuilder : IQuerySources // name it!!
     {
         private readonly QuerySourceOptions _options = new QuerySourceOptions();
         private bool _allStreams;
@@ -130,113 +130,44 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _allStreams; }
         }
 
-        public string[] Categories
-        {
-            get { return _categories != null ? _categories.ToArray() : null; }
-        }
+        public string[] Categories => _categories?.ToArray();
 
-        public string[] Streams
-        {
-            get { return _streams != null ? _streams.ToArray() : null; }
-        }
+        public string[] Streams => _streams?.ToArray();
 
-        public string CatalogStream
-        {
-            get { return _catalogStream; }
-        }
+        public string CatalogStream => _catalogStream;
 
-        bool IQuerySources.AllEvents
-        {
-            get
-            {
-                return _allEvents;
-            }
-        }
+        bool IQuerySources.AllEvents => _allEvents;
 
-        public string[] Events
-        {
-            get
-            {
-                return _events != null ? _events.ToArray() : null; }
-        }
+        public string[] Events => _events?.ToArray();
 
-        public bool ByStreams
-        {
-            get { return _byStream; }
-        }
+        public bool ByStreams => _byStream;
 
-        public bool ByCustomPartitions
-        {
-            get { return _byCustomPartitions; }
-        }
+        public bool ByCustomPartitions => _byCustomPartitions;
 
-        public long? LimitingCommitPosition
-        {
-            get { return _limitingCommitPosotion; }
-        }
+        public long? LimitingCommitPosition => _limitingCommitPosotion;
 
-        public bool DefinesStateTransform
-        {
-            get { return _options.DefinesStateTransform; }
-        }
+        public bool DefinesStateTransform => _options.DefinesStateTransform;
 
-        public bool DefinesCatalogTransform
-        {
-            get { return _options.DefinesCatalogTransform; }
-        }
+        public bool DefinesCatalogTransform => _options.DefinesCatalogTransform;
 
-        public bool ProducesResults
-        {
-            get { return _options.ProducesResults; }
-        }
+        public bool ProducesResults => _options.ProducesResults;
 
-        public bool DefinesFold
-        {
-            get { return _options.DefinesFold; }
-        }
+        public bool DefinesFold => _options.DefinesFold;
 
-        public bool HandlesDeletedNotifications
-        {
-            get { return _options.HandlesDeletedNotifications; }
-        }
+        public bool HandlesDeletedNotifications => _options.HandlesDeletedNotifications;
 
-        public bool IncludeLinksOption
-        {
-            get { return _options.IncludeLinks; }
-        }
+        public bool IncludeLinksOption => _options.IncludeLinks;
 
-        public bool DisableParallelismOption
-        {
-            get { return _options.DisableParallelism; }
-        }
+        public bool DisableParallelismOption => _options.DisableParallelism;
 
-        public string ResultStreamNameOption
-        {
-            get
-            {
-                return _options.ResultStreamName;
-            }
-        }
+        public string ResultStreamNameOption => _options.ResultStreamName;
 
-        public string PartitionResultStreamNamePatternOption
-        {
-            get { return _options.PartitionResultStreamNamePattern; }
-        }
+        public string PartitionResultStreamNamePatternOption => _options.PartitionResultStreamNamePattern;
 
-        public bool ReorderEventsOption
-        {
-            get { return _options.ReorderEvents; }
-        }
+        public bool ReorderEventsOption => _options.ReorderEvents;
+        public int? ProcessingLagOption => _options.ProcessingLag;
 
-        public int? ProcessingLagOption
-        {
-            get { return _options.ProcessingLag; }
-        }
-
-        public bool IsBiState 
-        {
-            get { return _options.IsBiState; }
-        }
+        public bool IsBiState => _options.IsBiState;
 
         public static IQuerySources From(Action<SourceDefinitionBuilder> configure)
         {
@@ -312,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((QuerySourceOptions) obj);
+            return Equals((QuerySourceOptions)obj);
         }
 
         public override int GetHashCode()
@@ -320,16 +251,16 @@ namespace EventStore.Projections.Core.Services.Processing
             unchecked
             {
                 int hashCode = (ResultStreamName != null ? ResultStreamName.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (PartitionResultStreamNamePattern != null ? PartitionResultStreamNamePattern.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ ReorderEvents.GetHashCode();
-                hashCode = (hashCode*397) ^ ProcessingLag;
-                hashCode = (hashCode*397) ^ IsBiState.GetHashCode();
-                hashCode = (hashCode*397) ^ DefinesStateTransform.GetHashCode();
-                hashCode = (hashCode*397) ^ DefinesCatalogTransform.GetHashCode();
-                hashCode = (hashCode*397) ^ ProducesResults.GetHashCode();
-                hashCode = (hashCode*397) ^ DefinesFold.GetHashCode();
-                hashCode = (hashCode*397) ^ HandlesDeletedNotifications.GetHashCode();
-                hashCode = (hashCode*397) ^ IncludeLinks.GetHashCode();
+                hashCode = (hashCode * 397) ^ (PartitionResultStreamNamePattern != null ? PartitionResultStreamNamePattern.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ ReorderEvents.GetHashCode();
+                hashCode = (hashCode * 397) ^ ProcessingLag;
+                hashCode = (hashCode * 397) ^ IsBiState.GetHashCode();
+                hashCode = (hashCode * 397) ^ DefinesStateTransform.GetHashCode();
+                hashCode = (hashCode * 397) ^ DefinesCatalogTransform.GetHashCode();
+                hashCode = (hashCode * 397) ^ ProducesResults.GetHashCode();
+                hashCode = (hashCode * 397) ^ DefinesFold.GetHashCode();
+                hashCode = (hashCode * 397) ^ HandlesDeletedNotifications.GetHashCode();
+                hashCode = (hashCode * 397) ^ IncludeLinks.GetHashCode();
                 return hashCode;
             }
         }

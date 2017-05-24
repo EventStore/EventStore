@@ -140,7 +140,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             var allMessagesFeedLink = String.Format("{0}/{1}", _subscriptionEndpoint, _numberOfEvents);
             _feed = GetJson<JObject>(allMessagesFeedLink, ContentType.CompetingJson);
-            _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+            _entries = _feed?["entries"].ToList() ?? new List<JToken>();
         }
 
         [Test]
@@ -192,7 +192,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected override void When()
         {
             _feed = GetJson<JObject>(_previous, ContentType.CompetingJson);
-            _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+            _entries = _feed?["entries"].ToList() ?? new List<JToken>();
         }
 
         [Test]

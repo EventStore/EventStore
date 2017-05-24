@@ -163,14 +163,13 @@ namespace EventStore.Core.Tests.ClientAPI.Security
             }
             catch
             {
-                if (_node != null)
-                    try
-                    {
-                        _node.Shutdown();
-                    }
-                    catch
-                    {
-                    }
+                try
+                {
+                    _node?.Shutdown();
+                }
+                catch
+                {
+                }
                 throw;
             }
         }

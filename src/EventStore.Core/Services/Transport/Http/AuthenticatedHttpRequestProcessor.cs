@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.Transport.Http
 
                 ICodec requestCodec = null;
                 var supportedRequestCodecs = match.ControllerAction.SupportedRequestCodecs;
-                if (supportedRequestCodecs != null && supportedRequestCodecs.Length > 0)
+                if (supportedRequestCodecs?.Length > 0)
                 {
                     requestCodec = SelectRequestCodec(request.HttpMethod, request.ContentType, supportedRequestCodecs);
                     if (requestCodec == null)
@@ -188,7 +188,7 @@ namespace EventStore.Core.Services.Transport.Http
         private ICodec SelectRequestCodec(string method, string contentType, ICodec[] supportedCodecs)
         {
             if (string.IsNullOrEmpty(contentType))
-                return supportedCodecs != null && supportedCodecs.Length > 0 ? null : Codec.NoCodec;
+                return supportedCodecs?.Length > 0 ? null : Codec.NoCodec;
             switch (method.ToUpper())
             {
                 case HttpMethod.Post:
@@ -219,7 +219,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private string GetFormatOrDefault(NameValueCollection query)
         {
-            var format = (query != null && query.Count > 0) ? query.Get("format") : null;
+            var format = (query?.Count > 0) ? query.Get("format") : null;
             if (format == null)
                 return null;
             switch (format.ToLower())

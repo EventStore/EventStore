@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Helpers
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private bool _readAllEnabled;
         private bool _noOtherStreams;
-        private static readonly char[] _linkToSeparator = new []{'@'};
+        private static readonly char[] _linkToSeparator = new[] { '@' };
 
         protected TFPos ExistingStreamMetadata(string streamId, string metadata)
         {
@@ -156,7 +156,7 @@ namespace EventStore.Core.Tests.Helpers
             var message = _writesQueue.Dequeue();
             ProcessWrite(
                 message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion, message.Events,
-                (firstEventNumber, lastEventNumber) => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber, -1,-1),
+                (firstEventNumber, lastEventNumber) => new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber, -1, -1),
                 new ClientMessage.WriteEventsCompleted(
                     message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
         }
@@ -222,11 +222,11 @@ namespace EventStore.Core.Tests.Helpers
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
                         ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, EventNumber.DeletedStream, true, _fakePosition));
-                            
+
             }
             else if (_streams.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)
             {
-                if (list != null && list.Count > 0 && (list.Last().EventNumber >= message.FromEventNumber)
+                if (list?.Count > 0 && (list.Last().EventNumber >= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
                 {
                     ResolvedEvent[] records =
@@ -256,23 +256,23 @@ namespace EventStore.Core.Tests.Helpers
                             new ClientMessage.ReadStreamEventsBackwardCompleted(
                                 message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
                                 ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", nextEventNumber: -1, lastEventNumber: -1,
-                                isEndOfStream: true, 
+                                isEndOfStream: true,
                                 tfLastCommitPosition: _fakePosition));
                         return;
                     }
                     throw new NotImplementedException();
-/*
-                    message.Envelope.ReplyWith(
-                            new ClientMessage.ReadStreamEventsBackwardCompleted(
-                                    message.CorrelationId,
-                                    message.EventStreamId,
-                                    new EventLinkPair[0],
-                                    ReadStreamResult.Success,
-                                    nextEventNumber: -1,
-                                    lastEventNumber: list.Safe().Last().EventNumber,
-                                    isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
-                                    lastCommitPosition: _lastPosition));
-*/
+                    /*
+                                        message.Envelope.ReplyWith(
+                                                new ClientMessage.ReadStreamEventsBackwardCompleted(
+                                                        message.CorrelationId,
+                                                        message.EventStreamId,
+                                                        new EventLinkPair[0],
+                                                        ReadStreamResult.Success,
+                                                        nextEventNumber: -1,
+                                                        lastEventNumber: list.Safe().Last().EventNumber,
+                                                        isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
+                                                        lastCommitPosition: _lastPosition));
+                    */
                 }
             }
         }
@@ -287,11 +287,11 @@ namespace EventStore.Core.Tests.Helpers
                     new ClientMessage.ReadStreamEventsBackwardCompleted(
                         message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
                         ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1, EventNumber.DeletedStream, true, _fakePosition));
-                            
+
             }
             else if (_streams.TryGetValue(message.EventStreamId, out list) || _noOtherStreams)
             {
-                if (list != null && list.Count > 0 && message.FromEventNumber >= 0)
+                if (list?.Count > 0 && message.FromEventNumber >= 0)
                 {
                     ResolvedEvent[] records =
                         list.Safe()
@@ -318,23 +318,23 @@ namespace EventStore.Core.Tests.Helpers
                             new ClientMessage.ReadStreamEventsForwardCompleted(
                                 message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
                                 ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", nextEventNumber: -1, lastEventNumber: -1,
-                                isEndOfStream: true, 
+                                isEndOfStream: true,
                                 tfLastCommitPosition: _fakePosition));
                         return;
                     }
                     throw new NotImplementedException();
-/*
-                    message.Envelope.ReplyWith(
-                            new ClientMessage.ReadStreamEventsBackwardCompleted(
-                                    message.CorrelationId,
-                                    message.EventStreamId,
-                                    new EventLinkPair[0],
-                                    ReadStreamResult.Success,
-                                    nextEventNumber: -1,
-                                    lastEventNumber: list.Safe().Last().EventNumber,
-                                    isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
-                                    lastCommitPosition: _lastPosition));
-*/
+                    /*
+                                        message.Envelope.ReplyWith(
+                                                new ClientMessage.ReadStreamEventsBackwardCompleted(
+                                                        message.CorrelationId,
+                                                        message.EventStreamId,
+                                                        new EventLinkPair[0],
+                                                        ReadStreamResult.Success,
+                                                        nextEventNumber: -1,
+                                                        lastEventNumber: list.Safe().Last().EventNumber,
+                                                        isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
+                                                        lastCommitPosition: _lastPosition));
+                    */
                 }
             }
         }
@@ -412,22 +412,22 @@ namespace EventStore.Core.Tests.Helpers
                     return;
                 }
             }
-            var eventRecords = (from ep in events.Zip(positions, (@event, position) => new {@event, position})
+            var eventRecords = (from ep in events.Zip(positions, (@event, position) => new { @event, position })
                                 let e = ep.@event
                                 let eventNumber = list.Count
                                 //NOTE: ASSUMES STAYS ENUMERABLE
                                 let tfPosition = ep.position
                                 select
                                     new
-                                        {
-                                            position = tfPosition,
-                                            record =
+                                    {
+                                        position = tfPosition,
+                                        record =
                                     new EventRecord(
                                     eventNumber, tfPosition, correlationId, e.EventId, tfPosition, 0, streamId,
                                     ExpectedVersion.Any, _timeProvider.Now,
                                     PrepareFlags.SingleWrite | (e.IsJson ? PrepareFlags.IsJson : PrepareFlags.None),
                                     e.EventType, e.Data, e.Metadata)
-                                        }); //NOTE: DO NOT MAKE ARRAY 
+                                    }); //NOTE: DO NOT MAKE ARRAY 
             foreach (var eventRecord in eventRecords)
             {
                 list.Add(eventRecord.record);
@@ -438,8 +438,7 @@ namespace EventStore.Core.Tests.Helpers
             _bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
 
             var firstEventNumber = list.Count - events.Length;
-            if (envelope != null)
-                envelope.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
+            envelope?.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
         }
 
         public void Handle(ClientMessage.DeleteStream message)
@@ -452,7 +451,7 @@ namespace EventStore.Core.Tests.Helpers
             }
             if (!_streams.TryGetValue(message.EventStreamId, out list) || list == null)
             {
-                if(message.ExpectedVersion == ExpectedVersion.Any)
+                if (message.ExpectedVersion == ExpectedVersion.Any)
                 {
                     message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId, OperationResult.StreamDeleted, string.Empty, -1, -1));
                     _deletedStreams.Add(message.EventStreamId);
@@ -550,7 +549,7 @@ namespace EventStore.Core.Tests.Helpers
             events = events.Take(events.Count - skip).ToList();
             Assert.IsNotEmpty(events, message + "The stream is empty.");
             var last = events[events.Count - 1];
-            Assert.AreEqual(data,Encoding.UTF8.GetString(last.Data));
+            Assert.AreEqual(data, Encoding.UTF8.GetString(last.Data));
         }
 
         public void AssertLastEventJson<T>(string streamId, T json, string message = null, int skip = 0)
@@ -599,7 +598,7 @@ namespace EventStore.Core.Tests.Helpers
             Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
             var eventsText =
                 events.Skip(events.Count - data.Length)
-                    .Select(v => new {Text = Encoding.UTF8.GetString(v.Data), EventType = v.EventType})
+                    .Select(v => new { Text = Encoding.UTF8.GetString(v.Data), EventType = v.EventType })
                     .Select(
                         v =>
                             v.EventType == SystemEventTypes.LinkTo

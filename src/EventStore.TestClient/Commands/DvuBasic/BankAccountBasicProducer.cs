@@ -142,10 +142,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             return string.Equals(AccountNumber, other.AccountNumber);
         }
 
-        public override int GetHashCode()
-        {
-            return (AccountNumber != null ? AccountNumber.GetHashCode() : 0);
-        }
+        public override int GetHashCode() => AccountNumber?.GetHashCode() ?? 0;
 
         public override string ToString()
         {

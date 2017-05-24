@@ -163,11 +163,7 @@ namespace EventStore.Projections.Core.Services.Processing
             UpdateStatistics();
         }
 
-        private void UpdateStatistics()
-        {
-            if (_updateStatistics != null)
-                _updateStatistics();
-        }
+        private void UpdateStatistics() => _updateStatistics?.Invoke();
 
         public void Handle(EventReaderSubscriptionMessage.ProgressChanged message)
         {
@@ -403,7 +399,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_projectionConfig.EmitEventEnabled)
             {
-                if (emittedEvents != null && emittedEvents.Length > 0)
+                if (emittedEvents?.Length > 0)
                 {
                     SetFaulting("'emit' is not allowed by the projection/configuration/mode");
                     return false;

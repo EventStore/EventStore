@@ -9,7 +9,7 @@ namespace EventStore.ClientAPI.Transport.Http
             return string.Format("http://{0}:{1}/{2}",
                                  endPoint.Address,
                                  endPoint.Port,
-                                 rawUrl != null ? rawUrl.TrimStart('/') : string.Empty);
+                                 rawUrl?.TrimStart('/') ?? string.Empty);
         }
 
         public static string ToHttpUrl(this IPEndPoint endPoint, string formatString, params object[] args)

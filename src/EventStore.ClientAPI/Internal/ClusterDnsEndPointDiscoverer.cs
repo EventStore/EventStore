@@ -102,7 +102,7 @@ namespace EventStore.ClientAPI.Internal
         {
             //_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
             GossipSeed[] endpoints;
-            if(_gossipSeeds != null && _gossipSeeds.Length > 0)
+            if(_gossipSeeds?.Length > 0)
             {
                 endpoints = _gossipSeeds;
             } 

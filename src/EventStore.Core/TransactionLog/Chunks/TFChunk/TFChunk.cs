@@ -701,9 +701,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
                 _readSide.Cache();
 
-                var writerWorkItem = _writerWorkItem;
-                if (writerWorkItem != null)
-                    writerWorkItem.DisposeMemStream();
+                _writerWorkItem?.DisposeMemStream();
 
                 TryDestructMemStreams();
 
@@ -1005,9 +1003,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private bool TryDestructMemStreams()
         {
-            var writerWorkItem = _writerWorkItem;
-            if (writerWorkItem != null)
-                writerWorkItem.DisposeMemStream();
+            _writerWorkItem?.DisposeMemStream();
 
             int memStreamCount = int.MaxValue;
 

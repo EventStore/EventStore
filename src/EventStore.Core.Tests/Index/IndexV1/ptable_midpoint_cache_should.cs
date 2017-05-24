@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    public class ptable_midpoint_cache_should: SpecificationWithDirectory
+    public class ptable_midpoint_cache_should : SpecificationWithDirectory
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ptable_midpoint_cache_should>();
         protected byte _ptableVersion = PTableVersions.IndexV1;
@@ -29,8 +29,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 }
                 finally
                 {
-                    if (ptable != null)
-                        ptable.MarkForDestruction();
+                    ptable?.MarkForDestruction();
                 }
             }
         }
@@ -40,7 +39,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var memTable = new HashListMemTable(_ptableVersion, 20000);
             for (int i = 0; i < count; ++i)
             {
-                memTable.Add((uint)rnd.Next(), rnd.Next(0, 1<<20), Math.Abs(rnd.Next() * rnd.Next()));
+                memTable.Add((uint)rnd.Next(), rnd.Next(0, 1 << 20), Math.Abs(rnd.Next() * rnd.Next()));
             }
 
             var ptable = PTable.FromMemtable(memTable, file, 0);
@@ -65,15 +64,15 @@ namespace EventStore.Core.Tests.Index.IndexV1
             }
 
             Assert.IsNotNull(cache);
-            Assert.AreEqual(Math.Min(count, 1<<depth), cache.Length);
+            Assert.AreEqual(Math.Min(count, 1 << depth), cache.Length);
 
             Assert.AreEqual(0, cache[0].ItemIndex);
             for (int i = 1; i < cache.Length; ++i)
             {
                 Assert.IsTrue(cache[i - 1].Key.GreaterEqualsThan(cache[i].Key), "Expected {0} to be >= {1}", cache[i - 1].Key, cache[i].Key);
-                Assert.Less(cache[i-1].ItemIndex, cache[i].ItemIndex);
+                Assert.Less(cache[i - 1].ItemIndex, cache[i].ItemIndex);
             }
-            Assert.AreEqual(count-1, cache[cache.Length-1].ItemIndex);
+            Assert.AreEqual(count - 1, cache[cache.Length - 1].ItemIndex);
         }
     }
 }

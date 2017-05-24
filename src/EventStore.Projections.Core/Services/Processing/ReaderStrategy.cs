@@ -137,11 +137,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _tag = tag;
             _phase = phase;
             _allStreams = allStreams;
-            _categories = categories != null && categories.Length > 0 ? new HashSet<string>(categories) : null;
-            _streams = streams != null && streams.Length > 0 ? new HashSet<string>(streams) : null;
+            _categories = categories?.Length > 0 ? new HashSet<string>(categories) : null;
+            _streams = streams?.Length > 0 ? new HashSet<string>(streams) : null;
             _allEvents = allEvents;
             _includeLinks = includeLinks;
-            _events = events != null && events.Length > 0 ? new HashSet<string>(events) : null;
+            _events = events?.Length > 0 ? new HashSet<string>(events) : null;
             _includeStreamDeletedNotification = includeStreamDeletedNotification;
             _catalogStream = catalogStream;
             _processingLag = processingLag.GetValueOrDefault();
@@ -156,7 +156,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool IsReadingOrderRepeatable {
             get
             {
-                return !(_streams != null && _streams.Count > 1);
+                return !(_streams?.Count > 1);
             }
         }
 
@@ -208,7 +208,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public IEventReader CreatePausedEventReader(
             Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents)
         {
-            if (_allStreams && _events != null && _events.Count >= 1)
+            if (_allStreams && _events?.Count >= 1)
             {
                 //IEnumerable<string> streams = GetEventIndexStreams();
                 return CreatePausedEventIndexEventReader(
@@ -222,7 +222,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false);
                 return eventReader;
             }
-            if (_streams != null && _streams.Count == 1)
+            if (_streams?.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 //TODO: handle if not the same
@@ -230,14 +230,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true,
                     stopAfterNEvents: stopAfterNEvents, produceStreamDeletes: _includeStreamDeletedNotification);
             }
-            if (_categories != null && _categories.Count == 1)
+            if (_categories?.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 return CreatePausedStreamEventReader(
                     eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true,
                     stopAfterNEvents: stopAfterNEvents, produceStreamDeletes: _includeStreamDeletedNotification);
             }
-            if (_streams != null && _streams.Count > 1)
+            if (_streams?.Count > 1)
             {
                 return CreatePausedMultiStreamEventReader(
                     eventReaderId, ioDispatcher, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _streams);
@@ -255,7 +255,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private EventFilter CreateEventFilter()
         {
-            if (_allStreams && _events != null && _events.Count >= 1)
+            if (_allStreams && _events?.Count >= 1)
                 return new EventByTypeIndexEventFilter(_events);
             if (_allStreams)
                 //NOTE: a projection cannot handle both stream deleted notifications 
@@ -263,13 +263,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 // and thus processing cannot be correctly checkpointed
                 return new TransactionFileEventFilter(
                     _allEvents, !_includeStreamDeletedNotification, _events, includeLinks: _includeLinks);
-            if (_categories != null && _categories.Count == 1)
+            if (_categories?.Count == 1)
                 return new CategoryEventFilter(_categories.First(), _allEvents, _events);
             if (_categories != null)
                 throw new NotSupportedException();
-            if (_streams != null && _streams.Count == 1)
+            if (_streams?.Count == 1)
                 return new StreamEventFilter(_streams.First(), _allEvents, _events);
-            if (_streams != null && _streams.Count > 1)
+            if (_streams?.Count > 1)
                 return new MultiStreamEventFilter(_streams, _allEvents, _events);
             if (!string.IsNullOrEmpty(_catalogStream))
                 return new BypassingEventFilter();
@@ -278,20 +278,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private PositionTagger CreatePositionTagger()
         {
-            if (_allStreams && _events != null && _events.Count >= 1)
+            if (_allStreams && _events?.Count >= 1)
                 return new EventByTypeIndexPositionTagger(_phase, _events.ToArray(), _includeStreamDeletedNotification);
             if (_allStreams && _reorderEvents)
                 return new PreparePositionTagger(_phase);
             if (_allStreams)
                 return new TransactionFilePositionTagger(_phase);
-            if (_categories != null && _categories.Count == 1)
+            if (_categories?.Count == 1)
                 //TODO: '-' is a hardcoded separator
                 return new StreamPositionTagger(_phase, "$ce-" + _categories.First());
             if (_categories != null)
                 throw new NotSupportedException();
-            if (_streams != null && _streams.Count == 1)
+            if (_streams?.Count == 1)
                 return new StreamPositionTagger(_phase, _streams.First());
-            if (_streams != null && _streams.Count > 1)
+            if (_streams?.Count > 1)
                 return new MultiStreamPositionTagger(_phase, _streams.ToArray());
             if (!string.IsNullOrEmpty(_catalogStream))
                 return new PreTaggedPositionTagger(

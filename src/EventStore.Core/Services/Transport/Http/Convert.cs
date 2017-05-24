@@ -158,7 +158,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null ? msg.Events[msg.Events.Length - 1].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
 
-            if (msg.Events != null && msg.Events.Length > 0)
+            if (msg.Events?.Length > 0)
             {
                 var ackAllQueryString = String.Format("?ids={0}", String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
                 var ackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack", escapedStreamId, escapedGroupName) + ackAllQueryString;

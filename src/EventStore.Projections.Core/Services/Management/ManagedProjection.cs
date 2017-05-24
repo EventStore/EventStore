@@ -258,14 +258,14 @@ namespace EventStore.Projections.Core.Services.Management
             if (_lastReceivedStatistics == null)
             {
                 status = new ProjectionStatistics
-                    {
-                        Name = _name,
-                        Epoch = -1,
-                        Version = -1,
-                        Mode = Mode,
-                        Status = _state.EnumValueName(),
-                        MasterStatus = _state
-                    };
+                {
+                    Name = _name,
+                    Epoch = -1,
+                    Version = -1,
+                    Mode = Mode,
+                    Status = _state.EnumValueName(),
+                    MasterStatus = _state
+                };
             }
             else
             {
@@ -444,13 +444,13 @@ namespace EventStore.Projections.Core.Services.Management
                 if (_emittedStreamsDeleter == null)
                 {
                     _emittedStreamsDeleter = new EmittedStreamsDeleter(
-                        _ioDispatcher, 
-                        projectionNamesBuilder.GetEmittedStreamsName(), 
+                        _ioDispatcher,
+                        projectionNamesBuilder.GetEmittedStreamsName(),
                         projectionNamesBuilder.GetEmittedStreamsCheckpointName());
                 }
                 _emittedStreamsDeleter.DeleteEmittedStreams(DeleteIfConditionsAreMet);
             }
-            if(!PersistedProjectionState.DeleteCheckpointStream &&
+            if (!PersistedProjectionState.DeleteCheckpointStream &&
                !PersistedProjectionState.DeleteEmittedStreams)
             {
                 DeleteIfConditionsAreMet();
@@ -460,7 +460,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void DeleteIfConditionsAreMet()
         {
             Interlocked.Decrement(ref PersistedProjectionState.NumberOfPrequisitesMetForDeletion);
-            if(PersistedProjectionState.NumberOfPrequisitesMetForDeletion <= 0)
+            if (PersistedProjectionState.NumberOfPrequisitesMetForDeletion <= 0)
             {
                 Deleted = true;
                 Deleting = false;
@@ -520,7 +520,7 @@ namespace EventStore.Projections.Core.Services.Management
             _stateHandler.Faulted(message);
             Reply();
         }
-         
+
         public void Handle(CoreProjectionStatusMessage.Prepared message)
         {
             _stateHandler.Prepared(message);
@@ -542,9 +542,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void SetLastReplyEnvelope(IEnvelope envelope)
         {
-            if (_lastReplyEnvelope != null)
-                _lastReplyEnvelope.ReplyWith(
-                    new ProjectionManagementMessage.OperationFailed("Aborted by subsequent operation"));
+            _lastReplyEnvelope?.ReplyWith(
+                new ProjectionManagementMessage.OperationFailed("Aborted by subsequent operation"));
             _lastReplyEnvelope = envelope;
         }
 
@@ -579,8 +578,8 @@ namespace EventStore.Projections.Core.Services.Management
             var corrId = Guid.NewGuid();
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    corrId, corrId, _readDispatcher.Envelope, "$projections-" + name, -1, 1, 
-                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal), 
+                    corrId, corrId, _readDispatcher.Envelope, "$projections-" + name, -1, 1,
+                    resolveLinkTos: false, requireMaster: false, validationStreamVersion: null, user: SystemAccount.Principal),
                 PersistedStateReadCompleted);
         }
 
@@ -634,7 +633,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void FixupOldProjectionModes(PersistedState persistedState)
         {
-            switch ((int) persistedState.Mode)
+            switch ((int)persistedState.Mode)
             {
                 case 2: // old continuous
                     persistedState.Mode = ProjectionMode.Continuous;
@@ -717,7 +716,7 @@ namespace EventStore.Projections.Core.Services.Management
                 "Projection '{0}' source has not been written to {1}. Error: {2}",
                 _name,
                 eventStreamId,
-                Enum.GetName(typeof (OperationResult), message.Result));
+                Enum.GetName(typeof(OperationResult), message.Result));
             if (message.Result == OperationResult.CommitTimeout || message.Result == OperationResult.ForwardTimeout
                 || message.Result == OperationResult.PrepareTimeout
                 || message.Result == OperationResult.WrongExpectedVersion)
@@ -755,7 +754,7 @@ namespace EventStore.Projections.Core.Services.Management
             _logger.Info(
                 "PROJECTIONS: Projection stream '{0}' could not be deleted. Error: {1}",
                 streamId,
-                Enum.GetName(typeof (OperationResult), message.Result));
+                Enum.GetName(typeof(OperationResult), message.Result));
             if (message.Result == OperationResult.CommitTimeout ||
                 message.Result == OperationResult.ForwardTimeout)
             {
@@ -869,7 +868,7 @@ namespace EventStore.Projections.Core.Services.Management
                     throw new InvalidOperationException(
                         string.Format(
                             "Cannot stop a projection in the '{0}' state",
-                            Enum.GetName(typeof (ManagedProjectionState), _state)));
+                            Enum.GetName(typeof(ManagedProjectionState), _state)));
                 case ManagedProjectionState.Stopping:
                 case ManagedProjectionState.Aborting:
                     return;
@@ -899,7 +898,7 @@ namespace EventStore.Projections.Core.Services.Management
                     throw new InvalidOperationException(
                         string.Format(
                             "Cannot stop a projection in the '{0}' state",
-                            Enum.GetName(typeof (ManagedProjectionState), _state)));
+                            Enum.GetName(typeof(ManagedProjectionState), _state)));
                 case ManagedProjectionState.Stopping:
                     SetState(ManagedProjectionState.Aborting);
                     _output.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
@@ -928,7 +927,7 @@ namespace EventStore.Projections.Core.Services.Management
             var checkpointsEnabled = PersistedProjectionState.CheckpointsDisabled != true;
             var trackEmittedStreams = PersistedProjectionState.TrackEmittedStreams == true;
             var checkpointHandledThreshold = checkpointsEnabled ? 4000 : 0;
-            var checkpointUnhandledBytesThreshold = checkpointsEnabled ? 10*1000*1000 : 0;
+            var checkpointUnhandledBytesThreshold = checkpointsEnabled ? 10 * 1000 * 1000 : 0;
             var pendingEventsThreshold = 5000;
             var maxWriteBatchLength = 500;
             var emitEventEnabled = PersistedProjectionState.EmitEnabled == true;
@@ -1069,13 +1068,13 @@ namespace EventStore.Projections.Core.Services.Management
             if (runAs.Principal == null)
                 return null; // anonymous
             if (runAs.Principal == SystemAccount.Principal)
-                return new SerializedRunAs {Name = "$system"};
+                return new SerializedRunAs { Name = "$system" };
 
             var genericPrincipal = runAs.Principal as OpenGenericPrincipal;
             if (genericPrincipal == null)
                 throw new ArgumentException(
                     "OpenGenericPrincipal is the only supported principal type in projections", "runAs");
-            return new SerializedRunAs {Name = runAs.Principal.Identity.Name, Roles = genericPrincipal.Roles};
+            return new SerializedRunAs { Name = runAs.Principal.Identity.Name, Roles = genericPrincipal.Roles };
         }
 
         public static IPrincipal DeserializePrincipal(SerializedRunAs runAs)

@@ -50,10 +50,7 @@ namespace EventStore.Transport.Tcp
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
         {
             connection.ConnectionClosed -= OnConnectionClosed;
-
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, socketError);
+            ConnectionClosed?.Invoke(this, socketError);
         }
 
         public void EnqueueSend(T message)

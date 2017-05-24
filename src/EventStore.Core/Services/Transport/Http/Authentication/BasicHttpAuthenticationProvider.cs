@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
         {
             //NOTE: this method can be invoked on multiple threads - needs to be thread safe
             var entity = message.Entity;
-            var basicIdentity = entity.User != null ? entity.User.Identity as HttpListenerBasicIdentity : null;
+            var basicIdentity = entity.User?.Identity as HttpListenerBasicIdentity;
             if (basicIdentity != null)
             {
                 string name = basicIdentity.Name;

@@ -9,7 +9,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 public class EventByTypeIndexEventReaderTestFixture : TestFixtureWithExistingEvents
 {
     public Guid CompleteForwardStreamRead(string streamId, Guid corrId, params ResolvedEvent[] events){
-        var lastEventNumber = events != null && events.Length > 0 ? events.Last().Event.EventNumber : 0;
+        var lastEventNumber = events?.Length > 0 ? events.Last().Event.EventNumber : 0;
         var message = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == streamId);
         message.Envelope.ReplyWith(
             new ClientMessage.ReadStreamEventsForwardCompleted(
@@ -28,7 +28,7 @@ public class EventByTypeIndexEventReaderTestFixture : TestFixtureWithExistingEve
     }
 
     public Guid CompleteBackwardStreamRead(string streamId, Guid corrId, params ResolvedEvent[] events){
-        var lastEventNumber = events != null && events.Length > 0 ? events.Last().Event.EventNumber : 0;
+        var lastEventNumber = events?.Length > 0 ? events.Last().Event.EventNumber : 0;
         var message = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Last(x => x.EventStreamId == streamId);
         message.Envelope.ReplyWith(
             new ClientMessage.ReadStreamEventsBackwardCompleted(

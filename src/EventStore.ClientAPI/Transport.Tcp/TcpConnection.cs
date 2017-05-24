@@ -320,8 +320,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     ReturnSendingSocketArgs();
             }
 
-            if (_onConnectionClosed != null)
-                _onConnectionClosed(this, socketError);
+            _onConnectionClosed?.Invoke(this, socketError);
         }
 
         private void ReturnSendingSocketArgs()

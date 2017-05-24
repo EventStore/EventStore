@@ -65,16 +65,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
             {
                 try
                 {
-                    if (_conn != null)
-                        _conn.Close();
+                    _conn?.Close();
                 }
                 catch
                 {
                 }
                 try
                 {
-                    if (_node != null)
-                        _node.Shutdown();
+                    _node?.Shutdown();
                 }
                 catch
                 {
@@ -215,7 +213,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                                 DumpFailed("Invalid event type", streamId, events, resultEventsReversed);
                             else
                                 if (resultEventsReversed[index].Event.DebugDataView != eventData)
-                                    DumpFailed("Invalid event body", streamId, events, resultEventsReversed);
+                                DumpFailed("Invalid event body", streamId, events, resultEventsReversed);
                         }
                     }
                     break;

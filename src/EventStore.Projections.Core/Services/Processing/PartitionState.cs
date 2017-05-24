@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var deserialized = JsonConvert.DeserializeObject(serializedState);
                 var array = deserialized as JArray;
-                if (array != null && array.Count > 0)
+                if (array?.Count > 0)
                 {
                     state = array[0] as JToken;
                     if (array.Count == 2)
@@ -39,8 +39,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
             }
 
-            var stateJson = state != null ? state.ToCanonicalJson() : "";
-            var resultJson = result != null ? result.ToCanonicalJson() : null;
+            var stateJson = state?.ToCanonicalJson() ?? "";
+            var resultJson = result?.ToCanonicalJson();
 
             return new PartitionState(stateJson, resultJson, causedBy);
         }

@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
             ChaserCheckpoint.Write(WriterCheckpoint.Read());
             ChaserCheckpoint.Flush();
             Db.Close();
-            
+
             // start node with our created DB
             Node = new MiniNode(PathName, inMemDb: false, dbPath: dbPath);
             Node.Start();
@@ -104,9 +104,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
         [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
-            if(_store != null) {
-                _store.Dispose();
-            }
+            _store?.Dispose();
             Node.Shutdown();
             base.TestFixtureTearDown();
         }

@@ -9,7 +9,7 @@ using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
-    public class TFChunkDb: IDisposable
+    public class TFChunkDb : IDisposable
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkDb>();
 
@@ -35,10 +35,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return;
             }
 
-            var lastChunkNum = (int) (checkpoint/Config.ChunkSize);
+            var lastChunkNum = (int)(checkpoint / Config.ChunkSize);
             var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
 
-            for (int chunkNum = 0; chunkNum < lastChunkNum; )
+            for (int chunkNum = 0; chunkNum < lastChunkNum;)
             {
                 var versions = Config.FileNamingStrategy.GetAllVersionsFor(chunkNum);
                 if (versions.Length == 0)
@@ -52,10 +52,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                     // but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
                     var footer = ReadChunkFooter(versions[0]);
                     if (footer.IsCompleted)
-                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:Config.Unbuffered);
+                        chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead: Config.Unbuffered);
                     else
                     {
-                        chunk = TFChunk.TFChunk.FromOngoingFile(versions[0], Config.ChunkSize, checkSize: false, unbuffered:Config.Unbuffered, writethrough:Config.WriteThrough);
+                        chunk = TFChunk.TFChunk.FromOngoingFile(versions[0], Config.ChunkSize, checkSize: false, unbuffered: Config.Unbuffered, writethrough: Config.WriteThrough);
                         // chunk is full with data, we should complete it right here
                         if (!readOnly)
                             chunk.Complete();
@@ -63,7 +63,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else
                 {
-                    chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead:Config.Unbuffered);
+                    chunk = TFChunk.TFChunk.FromCompletedFile(versions[0], verifyHash: false, unbufferedRead: Config.Unbuffered);
                 }
                 Manager.AddChunk(chunk);
                 chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
@@ -84,7 +84,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var chunkLocalPos = chunkHeader.GetLocalLogPosition(checkpoint);
                 if (chunkHeader.IsScavenged)
                 {
-                    var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false, unbufferedRead:Config.Unbuffered);
+                    var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false, unbufferedRead: Config.Unbuffered);
                     if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos)
                     {
                         lastChunk.Dispose();
@@ -106,7 +106,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else
                 {
-                    var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false, unbuffered:Config.Unbuffered, writethrough:Config.WriteThrough);
+                    var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false, unbuffered: Config.Unbuffered, writethrough: Config.WriteThrough);
                     Manager.AddChunk(lastChunk);
                 }
             }
@@ -125,7 +125,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber - 1;
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
-                    for (int chunkNum = lastBgChunkNum; chunkNum >= 0; )
+                    for (int chunkNum = lastBgChunkNum; chunkNum >= 0;)
                     {
                         var chunk = Manager.GetChunk(chunkNum);
                         try
@@ -218,7 +218,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private void RemoveOldChunksVersions(int lastChunkNum)
         {
-            for (int chunkNum = 0; chunkNum <= lastChunkNum; )
+            for (int chunkNum = 0; chunkNum <= lastChunkNum;)
             {
                 var chunk = Manager.GetChunk(chunkNum);
                 for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i)
@@ -263,8 +263,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void Close()
         {
-            if (Manager != null)
-                Manager.Dispose();
+            Manager?.Dispose();
             Config.WriterCheckpoint.Close();
             Config.ChaserCheckpoint.Close();
             Config.EpochCheckpoint.Close();

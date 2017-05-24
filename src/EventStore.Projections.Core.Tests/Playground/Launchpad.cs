@@ -48,10 +48,10 @@ namespace EventStore.Projections.Core.Tests.Playground
         [TearDown]
         public void Teardown()
         {
-            if (_managerProcess != null) _managerProcess.Dispose();
-            if (_vnodeProcess != null) _vnodeProcess.Dispose();
-            if (_clientProcess != null) _clientProcess.Dispose();
-            if (_projectionsProcess != null) _projectionsProcess.Dispose();
+            _managerProcess?.Dispose();
+            _vnodeProcess?.Dispose();
+            _clientProcess?.Dispose();
+            _projectionsProcess?.Dispose();
         }
 
         public void LaunchFlood()

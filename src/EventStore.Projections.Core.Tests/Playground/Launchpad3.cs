@@ -44,8 +44,8 @@ namespace EventStore.Projections.Core.Tests.Playground
         [TearDown]
         public void Teardown()
         {
-            if (_vnodeProcess != null) _vnodeProcess.Dispose();
-            if (_clientProcess != null) _clientProcess.Dispose();
+            _vnodeProcess?.Dispose();
+            _clientProcess?.Dispose();
         }
 
         [Test, Explicit]

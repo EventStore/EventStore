@@ -24,10 +24,7 @@ namespace EventStore.Core.Tests.Http.Streams
             [OneTimeTearDown]
             public override void TestFixtureTearDown()
             {
-                if(_response != null)
-                {
-                    _response.Close();
-                }
+                _response?.Close();
                 base.TestFixtureTearDown();
             }
 

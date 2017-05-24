@@ -34,8 +34,8 @@ namespace EventStore.Core.Services.Replication
         public const int SlaveLagThreshold = 256 * 1024;
         public const int LagOccurencesThreshold = 2;
         public const int BulkSize = 8192;
-        public const int ReplicaSendWindow = 16*1024*1024;
-        public const int ReplicaAckWindow = 512*1024;
+        public const int ReplicaSendWindow = 16 * 1024 * 1024;
+        public const int ReplicaAckWindow = 512 * 1024;
         public static readonly TimeSpan RoleAssignmentsInterval = TimeSpan.FromMilliseconds(1000);
         public static readonly TimeSpan NoQuorumTimeout = TimeSpan.FromMilliseconds(3000);
 
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Replication
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Master Replication Service");
 
         private readonly ConcurrentDictionary<Guid, ReplicaSubscription> _subscriptions = new ConcurrentDictionary<Guid, ReplicaSubscription>();
-        
+
         private volatile VNodeState _state = VNodeState.Initializing;
 
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
@@ -64,12 +64,12 @@ namespace EventStore.Core.Services.Replication
         private TimeSpan _noQuorumTimestamp = TimeSpan.Zero;
         private bool _noQuorumNotified;
         private ManualResetEventSlim _flushSignal = new ManualResetEventSlim();
-        
-        public MasterReplicationService(IPublisher publisher, 
-                                        Guid instanceId, 
-                                        TFChunkDb db, 
+
+        public MasterReplicationService(IPublisher publisher,
+                                        Guid instanceId,
+                                        TFChunkDb db,
                                         IPublisher tcpSendPublisher,
-                                        IEpochManager epochManager, 
+                                        IEpochManager epochManager,
                                         int clusterSize)
         {
             Ensure.NotNull(publisher, "publisher");
@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.Replication
             _clusterSize = clusterSize;
 
             _lastRolesAssignmentTimestamp = _stopwatch.Elapsed;
-            _mainLoopThread = new Thread(MainLoop) {Name = _queueStats.Name, IsBackground = true};
+            _mainLoopThread = new Thread(MainLoop) { Name = _queueStats.Name, IsBackground = true };
         }
 
         public void Handle(SystemMessage.SystemStart message)
@@ -176,10 +176,10 @@ namespace EventStore.Core.Services.Replication
                 var epochs = lastEpochs ?? new Epoch[0];
                 Log.Info("SUBSCRIBE REQUEST from [{0},C:{1:B},S:{2:B},{3}(0x{3:X}),{4}]...",
                          replica.ReplicaEndPoint, replica.ConnectionId, replica.SubscriptionId, logPosition,
-                         string.Join(", ", epochs.Select(x => EpochRecordExtensions.AsString((Epoch) x))));
+                         string.Join(", ", epochs.Select(x => EpochRecordExtensions.AsString((Epoch)x))));
 
                 var epochCorrectedLogPos = GetValidLogPosition(logPosition, epochs, replica.ReplicaEndPoint, replica.SubscriptionId);
-                var subscriptionPos = SetSubscriptionPosition(replica, epochCorrectedLogPos, chunkId, 
+                var subscriptionPos = SetSubscriptionPosition(replica, epochCorrectedLogPos, chunkId,
                                                               replicationStart: true, verbose: true, trial: 0);
                 Interlocked.Exchange(ref replica.AckedLogPosition, subscriptionPos);
                 return true;
@@ -239,7 +239,8 @@ namespace EventStore.Core.Services.Replication
                 return Math.Min(replicaPosition, masterCheckpoint);
 
             var nextEpoch = _epochManager.GetEpoch(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
-            if(nextEpoch == null){
+            if (nextEpoch == null)
+            {
                 nextEpoch = _epochManager.GetEpochWithAllEpochs(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
             }
             if (nextEpoch == null)
@@ -259,17 +260,17 @@ namespace EventStore.Core.Services.Replication
             return Math.Min(replicaPosition, nextEpoch.EpochPosition);
         }
 
-        private long SetSubscriptionPosition(ReplicaSubscription sub, 
-                                             long logPosition, 
+        private long SetSubscriptionPosition(ReplicaSubscription sub,
+                                             long logPosition,
                                              Guid chunkId,
-                                             bool replicationStart, 
-                                             bool verbose, 
+                                             bool replicationStart,
+                                             bool verbose,
                                              int trial)
         {
             if (trial >= 10)
                 throw new Exception("Too many retrials to acquire reader for subscriber.");
 
-            try 
+            try
             {
                 var chunk = _db.Manager.GetChunkFor(logPosition);
                 Debug.Assert(chunk != null, string.Format("Chunk for LogPosition {0} (0x{0:X}) is null in MasterReplicationService! Replica: [{1},C:{2},S:{3}]",
@@ -280,7 +281,7 @@ namespace EventStore.Core.Services.Replication
                     var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
                     if (verbose)
                     {
-                        Log.Info("Subscribed replica [{0}, S:{1}] for raw send at {2} (0x{2:X}) (requested {3} (0x{3:X})).", 
+                        Log.Info("Subscribed replica [{0}, S:{1}] for raw send at {2} (0x{2:X}) (requested {3} (0x{3:X})).",
                                  sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, logPosition);
                         if (chunkStartPos != logPosition)
                         {
@@ -314,8 +315,7 @@ namespace EventStore.Core.Services.Replication
 
                 sub.EOFSent = false;
                 var oldBulkReader = Interlocked.Exchange(ref sub.BulkReader, bulkReader);
-                if (oldBulkReader != null)
-                    oldBulkReader.Release();
+                oldBulkReader?.Release();
                 return sub.LogPosition;
             }
             catch (FileBeingDeletedException)
@@ -335,7 +335,7 @@ namespace EventStore.Core.Services.Replication
             {
                 try
                 {
-                    
+
                     _queueStats.EnterBusy();
 
                     _queueStats.ProcessingStarted(typeof(SendReplicationData), _subscriptions.Count);
@@ -371,7 +371,7 @@ namespace EventStore.Core.Services.Replication
             _db.Config.WriterCheckpoint.Flushed -= OnWriterFlushed;
 
             _publisher.Publish(new SystemMessage.ServiceShutdown(Name));
-            
+
             _queueStats.Stop();
             QueueMonitor.Default.Unregister(this);
         }
@@ -439,7 +439,7 @@ namespace EventStore.Core.Services.Replication
 
             var bulkReader = subscription.BulkReader;
             var chunkHeader = bulkReader.Chunk.ChunkHeader;
-            
+
             BulkReadResult bulkResult;
             if (subscription.RawSend)
             {
@@ -447,7 +447,7 @@ namespace EventStore.Core.Services.Replication
             }
             else
             {
-                var bytesToRead = (int) Math.Min(subscription.DataBuffer.Length, masterCheckpoint - subscription.LogPosition);
+                var bytesToRead = (int)Math.Min(subscription.DataBuffer.Length, masterCheckpoint - subscription.LogPosition);
                 bulkResult = bulkReader.ReadNextDataBytes(bytesToRead, subscription.DataBuffer);
             }
 
@@ -500,7 +500,7 @@ namespace EventStore.Core.Services.Replication
             if (_state == VNodeState.Master)
             {
                 var now = _stopwatch.Elapsed;
-                if (_subscriptions.Count >= _clusterSize/2) // everything is ok
+                if (_subscriptions.Count >= _clusterSize / 2) // everything is ok
                     _noQuorumTimestamp = TimeSpan.Zero;
                 else
                 {
@@ -623,7 +623,7 @@ namespace EventStore.Core.Services.Replication
 
         }
 
-        private class ReplicaSubscription: IDisposable
+        private class ReplicaSubscription : IDisposable
         {
             public readonly byte[] DataBuffer = new byte[BulkSize];
 
@@ -690,8 +690,7 @@ namespace EventStore.Core.Services.Replication
             public void Dispose()
             {
                 var bulkReader = Interlocked.Exchange(ref BulkReader, null);
-                if (bulkReader != null)
-                    bulkReader.Release();
+                bulkReader?.Release();
             }
 
         }

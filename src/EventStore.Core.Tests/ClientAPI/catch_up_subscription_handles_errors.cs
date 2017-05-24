@@ -652,41 +652,17 @@ namespace EventStore.Core.Tests.ClientAPI
         public event EventHandler<ClientErrorEventArgs> ErrorOccurred;
         public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed;
 
-        protected virtual void OnErrorOccurred(ClientErrorEventArgs e)
-        {
-            var handler = ErrorOccurred;
-            if (handler != null) handler(this, e);
-        }
+        protected virtual void OnErrorOccurred(ClientErrorEventArgs e) => ErrorOccurred?.Invoke(this, e);
 
-        protected virtual void OnAuthenticationFailed(ClientAuthenticationFailedEventArgs e)
-        {
-            var handler = AuthenticationFailed;
-            if (handler != null) handler(this, e);
-        }
+        protected virtual void OnAuthenticationFailed(ClientAuthenticationFailedEventArgs e) => AuthenticationFailed(this, e);
 
-        protected virtual void OnClosed(ClientClosedEventArgs e)
-        {
-            var handler = Closed;
-            if (handler != null) handler(this, e);
-        }
+        protected virtual void OnClosed(ClientClosedEventArgs e) => Closed?.Invoke(this, e);
 
-        protected virtual void OnReconnecting(ClientReconnectingEventArgs e)
-        {
-            var handler = Reconnecting;
-            if (handler != null) handler(this, e);
-        }
+        protected virtual void OnReconnecting(ClientReconnectingEventArgs e) => Reconnecting?.Invoke(this, e);
 
-        protected virtual void OnDisconnected(ClientConnectionEventArgs e)
-        {
-            var handler = Disconnected;
-            if (handler != null) handler(this, e);
-        }
+        protected virtual void OnDisconnected(ClientConnectionEventArgs e) => Disconnected?.Invoke(this, e);
 
-        public void OnConnected(ClientConnectionEventArgs e)
-        {
-            var handler = Connected;
-            if (handler != null) handler(this, e);
-        }
+        public void OnConnected(ClientConnectionEventArgs e) => Connected?.Invoke(this, e);
 
         public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
         {

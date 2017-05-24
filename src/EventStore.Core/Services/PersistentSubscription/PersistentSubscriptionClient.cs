@@ -81,8 +81,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             bool removedAny = false;
             foreach (var processedEventId in processedEventIds)
             {
-                if (_extraStatistics != null)
-                    _extraStatistics.EndOperation(processedEventId);
+                _extraStatistics?.EndOperation(processedEventId);
                 ResolvedEvent ev;
                 if (!_unconfirmedEvents.TryGetValue(processedEventId, out ev)) continue;
                 _unconfirmedEvents.Remove(processedEventId);
@@ -102,7 +101,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 _extraStatistics.StartOperation(evnt.OriginalEvent.EventId);
 
             _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt));
-            if(!_unconfirmedEvents.ContainsKey(evnt.OriginalEvent.EventId)) {
+            if (!_unconfirmedEvents.ContainsKey(evnt.OriginalEvent.EventId))
+            {
                 _unconfirmedEvents.Add(evnt.OriginalEvent.EventId, evnt);
             }
             return true;
@@ -128,10 +128,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             return AvailableSlots > 0;
         }
 
-        private void OnEventConfirmed(ResolvedEvent ev)
-        {
-            var handler = EventConfirmed;
-            if (handler != null) handler(this, ev);
-        }
+        private void OnEventConfirmed(ResolvedEvent ev) => EventConfirmed?.Invoke(this, ev);
     }
 }

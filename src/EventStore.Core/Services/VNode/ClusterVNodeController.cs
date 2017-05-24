@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.VNode
                 _serviceShutdownsToExpect = 4;
             }
 
-            _subSystemInitsToExpect = _subSystems != null ? subSystems.Length : 0;
+            _subSystemInitsToExpect = _subSystems?.Length ?? 0;
 
             _forwardingProxy = forwardingProxy;
             _forwardingTimeout = vnodeSettings.PrepareTimeout + vnodeSettings.CommitTimeout + TimeSpan.FromMilliseconds(300);
@@ -419,7 +419,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ElectionMessage.ElectionsDone message)
         {
-            if (_master != null && _master.InstanceId == message.Master.InstanceId)
+            if (_master?.InstanceId == message.Master.InstanceId)
             {
                 if (_master.InstanceId == _nodeInfo.InstanceId)
                     _fsm.Handle(new SystemMessage.WriteEpoch());

@@ -202,7 +202,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
-                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed?["entries"].ToList() ?? new List<JToken>();
             }
 
             [Test]
@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
-                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed?["entries"].ToList() ?? new List<JToken>();
             }
 
             [Test]
@@ -316,7 +316,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
-                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed?["entries"].ToList() ?? new List<JToken>();
             }
 
             [Test]
@@ -369,7 +369,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
-                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed?["entries"].ToList() ?? new List<JToken>();
             }
 
             [Test]
@@ -387,7 +387,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10?embed=rich", accept: ContentType.Json); 
-                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed["entries"]?.ToList() ?? new List<JToken>();
             }
 
             [Test]
@@ -441,7 +441,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var uri = MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content");
                 _feed = GetJson<JObject>(uri.ToString(), accept: ContentType.Json);
-                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed?["entries"].ToList() ?? new List<JToken>();
             }
 
             [Test]
@@ -476,7 +476,7 @@ namespace EventStore.Core.Tests.Http.Streams
             protected override void When()
             {
                 _feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/backward/1", accept: ContentType.Json);
-                _entries = _feed != null? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed?["entries"].ToList() ?? new List<JToken>();
             }
 
             [Test]
@@ -512,7 +512,7 @@ namespace EventStore.Core.Tests.Http.Streams
             {
                 var uri = MakeUrl("/streams/" + LinkedStreamName + "/0/backward/1", "embed=content");
                 _feed = GetJson<JObject>(uri.ToString(), accept: ContentType.Json);
-                _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+                _entries = _feed?["entries"].ToList() ?? new List<JToken>();
             }
 
             [Test]

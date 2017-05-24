@@ -178,8 +178,7 @@ namespace EventStore.TestClient
                                                 conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId, error);
                     Log.Error(message);
 
-                    if (connectionClosed != null)
-                        connectionClosed(null, error);
+                    connectionClosed?.Invoke(null, error);
 
                     if (failContextOnError)
                         context.Fail(reason: string.Format("Socket connection failed with error {0}.", error));

@@ -475,11 +475,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.CoreProcessingTime = _stopwatch.ElapsedMilliseconds;
         }
 
-        public override void Dispose()
-        {
-            if (_projectionStateHandler != null)
-                _projectionStateHandler.Dispose();
-        }
+        public override void Dispose() => _projectionStateHandler?.Dispose();
 
         public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message)
         {

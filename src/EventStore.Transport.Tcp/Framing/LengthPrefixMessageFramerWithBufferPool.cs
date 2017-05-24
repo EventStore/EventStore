@@ -23,7 +23,7 @@ namespace EventStore.Transport.Tcp.Framing
         /// <summary>
         /// Initializes a new instance of the <see cref="LengthPrefixMessageFramerWithBufferPool"/> class.
         /// </summary>
-        public LengthPrefixMessageFramerWithBufferPool(BufferManager bufferManager, int maxPackageSize = 16*1024*1024)
+        public LengthPrefixMessageFramerWithBufferPool(BufferManager bufferManager, int maxPackageSize = 16 * 1024 * 1024)
         {
             Ensure.NotNull(bufferManager, "bufferManager");
             Ensure.Positive(maxPackageSize, "maxPackageSize");
@@ -61,7 +61,7 @@ namespace EventStore.Transport.Tcp.Framing
         private void Parse(ArraySegment<byte> bytes)
         {
             byte[] data = bytes.Array;
-            for (int i = bytes.Offset; i < bytes.Offset + bytes.Count; )
+            for (int i = bytes.Offset; i < bytes.Offset + bytes.Count;)
             {
                 if (_headerBytes < PrefixLength)
                 {
@@ -89,8 +89,7 @@ namespace EventStore.Transport.Tcp.Framing
 
                     if (_messageBuffer.Length == _packageLength)
                     {
-                        if (_receivedHandler != null)
-                            _receivedHandler(_messageBuffer);
+                        _receivedHandler?.Invoke(_messageBuffer);
                         _messageBuffer = null;
                         _headerBytes = 0;
                         _packageLength = 0;

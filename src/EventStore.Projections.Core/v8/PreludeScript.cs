@@ -127,10 +127,7 @@ namespace EventStore.Projections.Core.v8
             _script.Dispose();
         }
 
-        public IntPtr GetHandle()
-        {
-            return _script != null ? _script.GetHandle() : IntPtr.Zero;
-        }
+        public IntPtr GetHandle() => _script?.GetHandle() ?? IntPtr.Zero;
 
         private const int NonScheduled = 0;
         private const int Scheduled = -2;

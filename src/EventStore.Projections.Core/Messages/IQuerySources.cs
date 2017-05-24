@@ -47,22 +47,10 @@ namespace EventStore.Projections.Core.Messages
 
     public static class QuerySourcesExtensions
     {
-        public static bool HasStreams(this IQuerySources sources)
-        {
-            var streams = sources.Streams;
-            return streams != null && streams.Length > 0;
-        }
+        public static bool HasStreams(this IQuerySources sources) => sources.Streams?.Length > 0;
 
-        public static bool HasCategories(this IQuerySources sources)
-        {
-            var categories = sources.Categories;
-            return categories != null && categories.Length > 0;
-        }
+        public static bool HasCategories(this IQuerySources sources) => sources.Categories?.Length > 0;
 
-        public static bool HasEvents(this IQuerySources sources)
-        {
-            var events = sources.Events;
-            return events != null && events.Length > 0;
-        }
+        public static bool HasEvents(this IQuerySources sources) => sources.Events?.Length > 0;
     }
 }

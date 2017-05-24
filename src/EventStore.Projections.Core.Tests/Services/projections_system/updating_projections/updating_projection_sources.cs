@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
                         Envelope, _projectionName, ProjectionManagementMessage.RunAs.Anonymous);
 
                 _allStatistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().LastOrDefault();
-                _statistics = _allStatistics != null ? _allStatistics.Projections.SingleOrDefault() : null;
+                _statistics = _allStatistics?.Projections.SingleOrDefault();
 
                 _state = HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().LastOrDefault();
                 _stateData = _state != null ? EatException(() => _state.State.ParseJson<JObject>()) : null;

@@ -106,10 +106,7 @@ namespace EventStore.Core.Tests.Helpers
             foreach (var step in steps)
             {
                 _timeProvider.AddTime(TimeSpan.FromMilliseconds(10));
-                if (step.Action != null)
-                {
-                    step.Action();
-                }
+                step.Action?.Invoke();
                 foreach (var message in step)
                 {
                     if (message != null)

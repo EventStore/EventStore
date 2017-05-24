@@ -31,35 +31,16 @@ namespace EventStore.Core.TransactionLog
             Reader = reader;
         }
 
-        void IDisposable.Dispose()
-        {
-            if (_pool != null)
-                _pool.Return(Reader);
-        }
+        void IDisposable.Dispose() => _pool?.Return(Reader);
 
-        public void Reposition(long position)
-        {
-            Reader.Reposition(position);
-        }
+        public void Reposition(long position) => Reader.Reposition(position);
 
-        public SeqReadResult TryReadNext()
-        {
-            return Reader.TryReadNext();
-        }
+        public SeqReadResult TryReadNext() => Reader.TryReadNext();
 
-        public SeqReadResult TryReadPrev()
-        {
-            return Reader.TryReadPrev();
-        }
+        public SeqReadResult TryReadPrev() => Reader.TryReadPrev();
 
-        public bool ExistsAt(long position)
-        {
-            return Reader.ExistsAt(position);
-        }
+        public bool ExistsAt(long position) => Reader.ExistsAt(position);
 
-        public RecordReadResult TryReadAt(long position)
-        {
-            return Reader.TryReadAt(position);
-        }
+        public RecordReadResult TryReadAt(long position) => Reader.TryReadAt(position);
     }
 }

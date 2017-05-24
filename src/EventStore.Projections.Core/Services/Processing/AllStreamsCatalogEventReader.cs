@@ -395,7 +395,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
 
             var resolvedLinkTo = true;
-            byte[] streamMetadataData = streamMetadata != null ? streamMetadata.Data : null;
+            byte[] streamMetadataData = streamMetadata?.Data;
 
             byte[] positionMetadataData = link.Metadata;
 

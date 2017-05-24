@@ -88,71 +88,48 @@ namespace EventStore.Core.Services.Monitoring.Utils
             }
         }
 
-        public float GetTotalCpuUsage()
-        {
-            return _totalCpuCounter != null ? _totalCpuCounter.NextValue() : InvalidCounterResult;
-        }
-
-        public long GetFreeMemory()
-        {
-            return _totalMemCounter != null ? _totalMemCounter.NextSample().RawValue : InvalidCounterResult;
-        }
-
-        public float GetProcCpuUsage()
-        {
-            return _procCpuCounter != null ? _procCpuCounter.NextValue() : InvalidCounterResult;
-        }
-
-        public int GetProcThreadsCount()
-        {
-            return _procThreadsCounter != null ? (int) _procThreadsCounter.NextValue() : InvalidCounterResult;
-        }
-
-        public float GetThrownExceptionsRate()
-        {
-            return _thrownExceptionsRateCounter != null ? _thrownExceptionsRateCounter.NextValue() : InvalidCounterResult;
-        }
-
-        public float GetContentionsRateCount()
-        {
-            return _contentionsRateCounter != null ? _contentionsRateCounter.NextValue() : InvalidCounterResult;
-        }
+        public float GetTotalCpuUsage() => _totalCpuCounter?.NextValue() ?? InvalidCounterResult;
+        public long GetFreeMemory() => _totalMemCounter?.NextSample().RawValue ?? InvalidCounterResult;
+        public float GetProcCpuUsage() => _procCpuCounter?.NextValue() ?? InvalidCounterResult;
+        public int GetProcThreadsCount() => (int?)_procThreadsCounter?.NextValue() ?? InvalidCounterResult;
+        public float GetThrownExceptionsRate() => _thrownExceptionsRateCounter?.NextValue() ?? InvalidCounterResult;
+        public float GetContentionsRateCount() => _contentionsRateCounter?.NextValue() ?? InvalidCounterResult;
 
         public GcStats GetGcStats()
         {
             return new GcStats(
-                gcGen0Items: _gcGen0ItemsCounter != null ? _gcGen0ItemsCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen1Items: _gcGen1ItemsCounter != null ? _gcGen1ItemsCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen2Items: _gcGen2ItemsCounter != null ? _gcGen2ItemsCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen0Size: _gcGen0SizeCounter != null ? _gcGen0SizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen1Size: _gcGen1SizeCounter != null ? _gcGen1SizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen2Size: _gcGen2SizeCounter != null ? _gcGen2SizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcLargeHeapSize: _gcLargeHeapSizeCounter != null ? _gcLargeHeapSizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcAllocationSpeed: _gcAllocationSpeedCounter != null ? _gcAllocationSpeedCounter.NextValue() : InvalidCounterResult,
-                gcTimeInGc: _gcTimeInGcCounter != null ? _gcTimeInGcCounter.NextValue() : InvalidCounterResult,
-                gcTotalBytesInHeaps: _gcTotalBytesInHeapsCounter != null ? _gcTotalBytesInHeapsCounter.NextSample().RawValue : InvalidCounterResult);
+                gcGen0Items:            _gcGen0ItemsCounter?.NextSample().RawValue          ?? InvalidCounterResult,
+                gcGen1Items:            _gcGen1ItemsCounter?.NextSample().RawValue          ?? InvalidCounterResult,
+                gcGen2Items:            _gcGen2ItemsCounter?.NextSample().RawValue          ?? InvalidCounterResult,
+                gcGen0Size:             _gcGen0SizeCounter?.NextSample().RawValue           ?? InvalidCounterResult,
+                gcGen1Size:             _gcGen1SizeCounter?.NextSample().RawValue           ?? InvalidCounterResult,
+                gcGen2Size:             _gcGen2SizeCounter?.NextSample().RawValue           ?? InvalidCounterResult,
+                gcLargeHeapSize:        _gcLargeHeapSizeCounter?.NextSample().RawValue      ?? InvalidCounterResult,
+                gcAllocationSpeed:      _gcAllocationSpeedCounter?.NextValue()              ?? InvalidCounterResult,
+                gcTimeInGc:             _gcTimeInGcCounter?.NextValue()                     ?? InvalidCounterResult,
+                gcTotalBytesInHeaps:    _gcTotalBytesInHeapsCounter?.NextSample().RawValue  ?? InvalidCounterResult);
         }
 
         public void Dispose()
         {
-            if (_totalCpuCounter != null) _totalCpuCounter.Dispose();
-            if (_totalMemCounter != null) _totalMemCounter.Dispose();
-            if (_procCpuCounter != null) _procCpuCounter.Dispose();
-            if (_procThreadsCounter != null) _procThreadsCounter.Dispose();
+            _totalCpuCounter?.Dispose();
+            _totalMemCounter?.Dispose();
+            _procCpuCounter?.Dispose();
+            _procThreadsCounter?.Dispose();
 
-            if (_thrownExceptionsRateCounter != null) _thrownExceptionsRateCounter.Dispose();
-            if (_contentionsRateCounter != null) _contentionsRateCounter.Dispose();
+            _thrownExceptionsRateCounter?.Dispose();
+            _contentionsRateCounter?.Dispose();
 
-            if (_gcGen0ItemsCounter != null) _gcGen0ItemsCounter.Dispose();
-            if (_gcGen1ItemsCounter != null) _gcGen1ItemsCounter.Dispose();
-            if (_gcGen2ItemsCounter != null) _gcGen2ItemsCounter.Dispose();
-            if (_gcGen0SizeCounter != null) _gcGen0SizeCounter.Dispose();
-            if (_gcGen1SizeCounter != null) _gcGen1SizeCounter.Dispose();
-            if (_gcGen2SizeCounter != null) _gcGen2SizeCounter.Dispose();
-            if (_gcLargeHeapSizeCounter != null) _gcLargeHeapSizeCounter.Dispose();
-            if (_gcAllocationSpeedCounter != null) _gcAllocationSpeedCounter.Dispose();
-            if (_gcTimeInGcCounter != null) _gcTimeInGcCounter.Dispose();
-            if (_gcTotalBytesInHeapsCounter != null) _gcTotalBytesInHeapsCounter.Dispose();
+            _gcGen0ItemsCounter?.Dispose();
+            _gcGen1ItemsCounter?.Dispose();
+            _gcGen2ItemsCounter?.Dispose();
+            _gcGen0SizeCounter?.Dispose();
+            _gcGen1SizeCounter?.Dispose();
+            _gcGen2SizeCounter?.Dispose();
+            _gcLargeHeapSizeCounter?.Dispose();
+            _gcAllocationSpeedCounter?.Dispose();
+            _gcTimeInGcCounter?.Dispose();
+            _gcTotalBytesInHeapsCounter?.Dispose();
         }
     }
 }

@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                ContentType.CompetingJson,
                _admin);
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-            _entries = json != null ? json["entries"].ToList() : new List<JToken>();
+            _entries = json?["entries"].ToList() ?? new List<JToken>();
             _nackLink = _entries[0]["links"][3]["uri"].ToString() + "?action=park";
             _eventIdToPark = Guid.Parse(_entries[0]["eventId"].ToString());
         }
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
             Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 
-            var _entries = json != null ? json["entries"].ToList() : new List<JToken>();
+            var _entries = json?["entries"].ToList() ?? new List<JToken>();
             _nackLink = _entries[0]["links"][3]["uri"].ToString() + "?action=park";
             _eventIdToPark = Guid.Parse(_entries[0]["eventId"].ToString());
 

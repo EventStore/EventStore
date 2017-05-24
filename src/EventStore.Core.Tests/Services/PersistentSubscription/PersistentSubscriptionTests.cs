@@ -1408,15 +1408,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
         public long MarkedAsProcessed { get; private set; }
 
-        public void ReadEndSequenceCompleted(int sequence)
-        {
-            if (_readEndSequenceCompleted != null) _readEndSequenceCompleted(sequence);
-        }
+        public void ReadEndSequenceCompleted(int sequence) => _readEndSequenceCompleted?.Invoke(sequence);
 
-        public void ParkMessageCompleted(int idx, OperationResult result)
-        {
-            if (_parkMessageCompleted != null) _parkMessageCompleted(ParkedEvents[idx], result);
-        }
+        public void ParkMessageCompleted(int idx, OperationResult result) => _parkMessageCompleted?.Invoke(ParkedEvents[idx], result);
 
         public void BeginParkMessage(ResolvedEvent ev, string reason, Action<ResolvedEvent, OperationResult> completed)
         {
@@ -1433,13 +1427,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         {
             MarkedAsProcessed = sequence;
         }
-        public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed)
-        {
-            if (_deleteAction != null)
-            {
-                _deleteAction();
-            }
-        }
+        public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed) => _deleteAction?.Invoke();
     }
 
 
@@ -1459,12 +1447,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             _action(state);
         }
 
-        public void BeginDelete(Action<IPersistentSubscriptionCheckpointWriter> completed)
-        {
-            if (_deleteAction != null)
-            {
-                _deleteAction();
-            }
-        }
+        public void BeginDelete(Action<IPersistentSubscriptionCheckpointWriter> completed) => _deleteAction?.Invoke();
     }
 }

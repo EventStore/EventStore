@@ -39,28 +39,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         public void AppendData(byte[] buf, int offset, int len)
         {
             // as we are always append-only, stream's position should be right here
-            if (_fileStream != null)
-                _fileStream.Write(buf, 0, len); 
+            _fileStream?.Write(buf, 0, len);
             //MEMORY
-            var memStream = _memStream;
-            if (memStream != null)
-                memStream.Write(buf, 0, len);
+            _memStream?.Write(buf, 0, len);
         }
 
         public void ResizeStream(int fileSize)
         {
-            if (_fileStream != null)
-                _fileStream.SetLength(fileSize);
-            var memStream = _memStream;
-            if (memStream != null)
-                memStream.SetLength(fileSize);
+            _fileStream?.SetLength(fileSize);
+            _memStream?.SetLength(fileSize);
         }
 
         public void Dispose()
         {
-            if (_fileStream != null)
-                _fileStream.Dispose();
-
+            _fileStream?.Dispose();
             DisposeMemStream();
         }
 

@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             base.Initialize();
             _lastOrderCheckpointTag = null;
-            if (_orderStream != null) _orderStream.Dispose();
+            _orderStream?.Dispose();
             _orderStream = null;
         }
 

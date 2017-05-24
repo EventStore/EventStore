@@ -123,12 +123,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         
         public event Action<long> Flushed;
 
-        protected virtual void OnFlushed(long obj)
-        {
-            var onFlushed = Flushed;
-            if (onFlushed != null)
-                onFlushed.Invoke(obj);
-        }
+        protected virtual void OnFlushed(long obj) => Flushed?.Invoke(obj);
 
         public void Dispose()
         {

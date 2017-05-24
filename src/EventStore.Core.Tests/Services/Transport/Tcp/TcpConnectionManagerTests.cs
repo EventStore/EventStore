@@ -126,12 +126,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
         private string _clientConnectionName;
 
-        public void Close(string reason)
-        {
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, SocketError.Shutdown);
-        }
+        public void Close(string reason) => ConnectionClosed?.Invoke(this, SocketError.Shutdown);
 
         public IEnumerable<ArraySegment<byte>> ReceivedData;
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)

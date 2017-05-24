@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 
         public void Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
         {
-            if(message.Data != null && message.Data.PositionStreamId == "throws")
+            if(message.Data?.PositionStreamId == "throws")
             {
                 throw new Exception("Bad Handler");
             }

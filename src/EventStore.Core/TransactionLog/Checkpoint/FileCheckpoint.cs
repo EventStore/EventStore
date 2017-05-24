@@ -103,12 +103,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             Close();
         }
 
-        protected virtual void OnFlushed(long obj)
-        {
-            var onFlushed = Flushed;
-            if (onFlushed != null)
-                onFlushed.Invoke(obj);
-        }
-
+        protected virtual void OnFlushed(long obj) => Flushed?.Invoke(obj);
     }
 }

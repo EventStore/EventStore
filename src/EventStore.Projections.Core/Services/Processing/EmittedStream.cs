@@ -227,12 +227,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 OnWriteCompleted();
                 return;
             }
-            if (_logger != null)
-            {
-                _logger.Info("Failed to write events to stream {0}. Error: {1}",
-                             _streamId,
-                             Enum.GetName(typeof (OperationResult), message.Result));
-            }
+            _logger?.Info("Failed to write events to stream {0}. Error: {1}",
+                         _streamId,
+                         Enum.GetName(typeof(OperationResult), message.Result));
             switch (message.Result)
             {
                 case OperationResult.WrongExpectedVersion:
@@ -241,7 +238,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 case OperationResult.PrepareTimeout:
                 case OperationResult.ForwardTimeout:
                 case OperationResult.CommitTimeout:
-                    if(retryCount > 0)
+                    if (retryCount > 0)
                     {
                         if (_logger != null) _logger.Info("Retrying write to {0} (Retry {1} of {2}). Checkpoint: {3}.", _streamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount, _fromCheckpointPosition);
                         PublishWriteEvents(--retryCount);
@@ -285,7 +282,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (!newPhysicalStream && message.Events.Length > 0)
                 {
                     parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
-                    if(parsed.Tag == null){
+                    if (parsed.Tag == null)
+                    {
                         Failed(string.Format("The '{0}' stream managed by projection {1} has been written to from the outside.", _streamId, _projectionVersion.ProjectionId));
                         return;
                     }
@@ -302,7 +300,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     || (_projectionVersion.ProjectionId != parsed.Version.ProjectionId || _projectionVersion.Epoch > parsed.Version.Version);
 
                 _lastKnownEventNumber = newPhysicalStream ? ExpectedVersion.NoStream : message.LastEventNumber;
-                
+
                 if (newLogicalStream)
                 {
                     _lastCommittedOrSubmittedEventPosition = _zeroPosition;
@@ -315,7 +313,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         _lastCommittedOrSubmittedEventPosition = parsed.AdjustBy(_positionTagger, _projectionVersion);
                         _metadataStreamCreated = true; // should exist or no need to create
-                    }catch(NotSupportedException ex) {
+                    }
+                    catch (NotSupportedException ex)
+                    {
                         Failed(ex.Message);
                     }
                 }
@@ -367,7 +367,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     doStop = adjustedTag <= lastCheckpointPosition;
                 }
                 if (doStop)
-                    // ignore any events prior to the requested lastCheckpointPosition (== first emitted event position)
+                // ignore any events prior to the requested lastCheckpointPosition (== first emitted event position)
                 {
                     stop = true;
                     break;
@@ -418,7 +418,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var streamMetadata = new StreamMetadata(
                 _writerConfiguration.MaxCount, _writerConfiguration.MaxAge, acl: streamAcl,
-                truncateBefore: _retrievedNextEventNumber == 0 ? (long?) null : _retrievedNextEventNumber);
+                truncateBefore: _retrievedNextEventNumber == 0 ? (long?)null : _retrievedNextEventNumber);
 
             _submittedWriteMetaStreamEvent = new Event(
                 Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, streamMetadata.ToJsonBytes(), null);
@@ -598,7 +598,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds), 
+                _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
                     () => _ioDispatcher.WriteEvents(
                         _streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
                         m => HandleWriteEventsCompleted(m, retryCount)));
@@ -664,7 +664,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (topAlreadyCommitted == null)
                     continue; // means skipped one already comitted item due to deleted stream handling
                 anyFound = true;
-                NotifyEventCommitted(eventToWrite, topAlreadyCommitted.Item3); 
+                NotifyEventCommitted(eventToWrite, topAlreadyCommitted.Item3);
                 _pendingWrites.Dequeue(); // drop already committed event
             }
             OnWriteCompleted();
@@ -696,11 +696,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 NotifyEventCommitted(e, sequenceNumber++);
         }
 
-        private static void NotifyEventCommitted(EmittedEvent @event, long eventNumber)
-        {
-            if (@event.OnCommitted != null)
-                @event.OnCommitted(eventNumber);
-        }
+        private static void NotifyEventCommitted(EmittedEvent @event, long eventNumber) => @event.OnCommitted?.Invoke(eventNumber);
 
         public void Dispose()
         {

@@ -38,14 +38,14 @@ namespace EventStore.ClientAPI
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly int _bufferSize;
 
-        internal EventStorePersistentSubscriptionBase(string subscriptionId, 
+        internal EventStorePersistentSubscriptionBase(string subscriptionId,
             string streamId,
-            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, 
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials,
             ILogger log,
             bool verboseLogging,
-            ConnectionSettings settings, 
+            ConnectionSettings settings,
             int bufferSize = 10,
             bool autoAck = true)
         {
@@ -99,7 +99,7 @@ namespace EventStore.ClientAPI
         public void Acknowledge(IEnumerable<ResolvedEvent> events)
         {
             var ids = events.Select(x => x.OriginalEvent.EventId).ToArray();
-            if(ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
+            if (ids.Length > 2000) throw new ArgumentOutOfRangeException("events", "events is limited to 2000 to ack at a time");
             _subscription.NotifyEventsProcessed(ids);
         }
 
@@ -132,7 +132,7 @@ namespace EventStore.ClientAPI
         /// <param name="reason">A string with a message as to why the failure is occurring</param>
         public void Fail(ResolvedEvent @event, PersistentSubscriptionNakEventAction action, string reason)
         {
-            _subscription.NotifyEventsFailed(new [] {@event.OriginalEvent.EventId}, action, reason);
+            _subscription.NotifyEventsFailed(new[] { @event.OriginalEvent.EventId }, action, reason);
         }
 
         /// <summary>
@@ -200,7 +200,7 @@ namespace EventStore.ClientAPI
                     Thread.Sleep(1);
                 }
                 else
-                { 
+                {
                     ResolvedEvent e;
                     while (_queue.TryDequeue(out e))
                     {
@@ -237,7 +237,7 @@ namespace EventStore.ClientAPI
             } while (_queue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
         }
 
-        
+
         private void DropSubscription(SubscriptionDropReason reason, Exception error)
         {
             if (Interlocked.CompareExchange(ref _isDropped, 1, 0) == 0)
@@ -246,10 +246,8 @@ namespace EventStore.ClientAPI
                     _log.Debug("Persistent Subscription to {0}: dropping subscription, reason: {1} {2}.",
                               _streamId, reason, error == null ? string.Empty : error.ToString());
 
-                if (_subscription != null)
-                    _subscription.Unsubscribe();
-                if (_subscriptionDropped != null)
-                    _subscriptionDropped(this, reason, error);
+                _subscription?.Unsubscribe();
+                _subscriptionDropped?.Invoke(this, reason, error);
                 _stopped.Set();
             }
         }

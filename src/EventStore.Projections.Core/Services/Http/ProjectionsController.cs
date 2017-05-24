@@ -403,21 +403,9 @@ namespace EventStore.Projections.Core.Services.Http
             return Configure.Ok("application/json", Helper.UTF8NoBom, null, null, false);
         }
 
-        private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
-        {
-            if (state.Exception != null)
-                return state.Exception.ToString();
-            else
-                return state.State;
-        }
+        private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state) => state.Exception?.ToString() ?? state.State;
 
-        private string ResultFormatter(ICodec codec, ProjectionManagementMessage.ProjectionResult state)
-        {
-            if (state.Exception != null)
-                return state.Exception.ToString();
-            else
-                return state.Result;
-        }
+        private string ResultFormatter(ICodec codec, ProjectionManagementMessage.ProjectionResult state) => state.Exception?.ToString() ?? state.Result;
 
         private string FeedPageFormatter(ICodec codec, FeedReaderMessage.FeedPage page)
         {

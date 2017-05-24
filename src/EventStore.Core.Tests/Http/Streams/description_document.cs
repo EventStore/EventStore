@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Http.Streams
         public void returns_a_description_document()
         {
             Assert.IsNotNull(_descriptionDocument);
-            _links = _descriptionDocument != null ? _descriptionDocument["_links"].ToList() : new List<JToken>();
+            _links = _descriptionDocument?["_links"].ToList() ?? new List<JToken>();
             Assert.IsNotNull(_links, "Expected there to be links in the description but _links is null");
         }
     }
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Http.Streams
         public void returns_a_description_document()
         {
             Assert.IsNotNull(_descriptionDocument);
-            _links = _descriptionDocument != null ? _descriptionDocument["_links"].ToList() : new List<JToken>();
+            _links = _descriptionDocument?["_links"].ToList() ?? new List<JToken>();
             Assert.IsNotNull(_links, "Expected there to be links in the description but _links is null");
         }
     }
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Http.Streams
         protected override void When()
         {
             _descriptionDocument = GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
-            _links = _descriptionDocument != null ? _descriptionDocument["_links"].ToList() : new List<JToken>();
+            _links = _descriptionDocument?["_links"].ToList() ?? new List<JToken>();
         }
 
         [Test]
@@ -146,7 +146,7 @@ namespace EventStore.Core.Tests.Http.Streams
         protected override void When()
         {
             _descriptionDocument = GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
-            _links = _descriptionDocument != null ? _descriptionDocument["_links"].ToList() : new List<JToken>();
+            _links = _descriptionDocument?["_links"].ToList() ?? new List<JToken>();
             _subscriptions = _descriptionDocument["_links"]["streamSubscription"].Values<JToken>().ToArray();
         }
 

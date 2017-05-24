@@ -59,10 +59,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException();
             if (operationResult == OperationResult.Success)
             {
-                if (_logger != null)
-                    _logger.Trace(
-                        "Checkpoint has been written for projection {0} at sequence number {1} (current)", _name,
-                        firstWrittenEventNumber);
+                _logger?.Trace(
+                    "Checkpoint has been written for projection {0} at sequence number {1} (current)", _name,
+                    firstWrittenEventNumber);
+
                 _lastWrittenCheckpointEventNumber = firstWrittenEventNumber;
 
                 _inCheckpointWriteAttempt = 0;
@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     _logger.Info(
                         "Failed to write projection checkpoint to stream {0}. Error: {1}", eventStreamId,
-                        Enum.GetName(typeof (OperationResult), operationResult));
+                        Enum.GetName(typeof(OperationResult), operationResult));
                 }
                 switch (operationResult)
                 {
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             _inCheckpointWriteAttempt = 0;
                             return;
                         }
-                        if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", eventStreamId);
+                        _logger?.Info("Retrying write checkpoint to {0}", eventStreamId);
                         _inCheckpointWriteAttempt++;
                         PublishWriteStreamMetadataAndCheckpointEvent();
                         break;
@@ -103,9 +103,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void PublishWriteStreamMetadataAndCheckpointEvent()
         {
-            if (_logger != null)
-                _logger.Trace(
-                    "Writing checkpoint for {0} at {1} with expected version number {2}", _name, _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
+            _logger?.Trace(
+                "Writing checkpoint for {0} at {1} with expected version number {2}", _name, _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
             if (_lastWrittenCheckpointEventNumber == ExpectedVersion.NoStream)
                 PublishWriteStreamMetadata();
             else

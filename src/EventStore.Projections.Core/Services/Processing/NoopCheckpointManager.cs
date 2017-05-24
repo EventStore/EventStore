@@ -91,9 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             info.Position = (_lastProcessedEventPosition.LastTag ?? (object)"").ToString();
             info.Progress = _lastProcessedEventProgress;
-            info.LastCheckpoint = _lastCompletedCheckpointPosition != null
-                ? _lastCompletedCheckpointPosition.ToString()
-                : "";
+            info.LastCheckpoint = _lastCompletedCheckpointPosition?.ToString() ?? "";
             info.EventsProcessedAfterRestart = _eventsProcessedAfterRestart;
             info.WritePendingEventsBeforeCheckpoint = 0;
             info.WritePendingEventsAfterCheckpoint = 0;

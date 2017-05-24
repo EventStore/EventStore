@@ -628,9 +628,6 @@ namespace EventStore.Core.Services.UserManagement
                 });
         }
 
-        private bool IsAdmin(IPrincipal principal)
-        {
-            return principal != null && principal.IsInRole(SystemRoles.Admins);
-        }
+        private bool IsAdmin(IPrincipal principal) => principal?.IsInRole(SystemRoles.Admins) == true;
     }
 }

@@ -40,8 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             else
                 _stateHandler.Initialize();
 
-            if (_sharedState != null)
-                _stateHandler.LoadShared(_sharedState);
+            _stateHandler?.LoadShared(_sharedState);
             When();
         }
 
@@ -54,8 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [TearDown]
         public void Teardown()
         {
-            if (_stateHandler != null)
-                _stateHandler.Dispose();
+            _stateHandler?.Dispose();
             _stateHandler = null;
             GC.Collect(2, GCCollectionMode.Forced);
             GC.WaitForPendingFinalizers();

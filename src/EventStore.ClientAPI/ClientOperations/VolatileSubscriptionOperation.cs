@@ -19,8 +19,7 @@ namespace EventStore.ClientAPI.ClientOperations
             var dto = new ClientMessage.SubscribeToStream(_streamId, _resolveLinkTos);
             return new TcpPackage(
                 TcpCommand.SubscribeToStream, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-                _correlationId, _userCredentials != null ? _userCredentials.Username : null,
-                _userCredentials != null ? _userCredentials.Password : null, dto.Serialize());
+                _correlationId, _userCredentials?.Username, _userCredentials?.Password, dto.Serialize());
         }
 
         protected override bool InspectPackage(TcpPackage package, out InspectionResult result)

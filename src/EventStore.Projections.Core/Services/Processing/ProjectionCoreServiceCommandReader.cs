@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (readResultForward.Result != ReadStreamResult.Success
                         && readResultForward.Result != ReadStreamResult.NoStream)
                         throw new Exception("Control reader failed. Read result: " + readResultForward.Result);
-                    if (readResultForward.Events != null && readResultForward.Events.Length > 0)
+                    if (readResultForward.Events?.Length > 0)
                     {
                         doWriteRegistration =
                             readResultForward.Events.Any(v => v.Event.EventType == "$response-reader-started");

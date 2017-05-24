@@ -17,37 +17,35 @@ namespace EventStore.Transport.Tcp
         internal static readonly BufferManager BufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionLockless>();
-        private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
-                                                                                   TcpConfiguration.SendReceivePoolSize, 
+        private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool",
+                                                                                   TcpConfiguration.SendReceivePoolSize,
                                                                                    () => new SocketAsyncEventArgs());
 
-        public static ITcpConnection CreateConnectingTcpConnection(Guid connectionId, 
-                                                                   IPEndPoint remoteEndPoint, 
-                                                                   TcpClientConnector connector, 
+        public static ITcpConnection CreateConnectingTcpConnection(Guid connectionId,
+                                                                   IPEndPoint remoteEndPoint,
+                                                                   TcpClientConnector connector,
                                                                    TimeSpan connectionTimeout,
-                                                                   Action<ITcpConnection> onConnectionEstablished, 
+                                                                   Action<ITcpConnection> onConnectionEstablished,
                                                                    Action<ITcpConnection, SocketError> onConnectionFailed,
                                                                    bool verbose)
         {
             var connection = new TcpConnectionLockless(connectionId, remoteEndPoint, verbose);
-// ReSharper disable ImplicitlyCapturedClosure
+            // ReSharper disable ImplicitlyCapturedClosure
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
                                       if (connection.InitSocket(socket))
                                       {
-                                          if (onConnectionEstablished != null)
-                                              onConnectionEstablished(connection);
+                                          onConnectionEstablished?.Invoke(connection);
                                           connection.StartReceive();
                                           connection.TrySend();
                                       }
                                   },
                                   (_, socketError) =>
                                   {
-                                      if (onConnectionFailed != null)
-                                          onConnectionFailed(connection, socketError);
+                                      onConnectionFailed?.Invoke(connection, socketError);
                                   }, connection, connectionTimeout);
-// ReSharper restore ImplicitlyCapturedClosure
+            // ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }
 
@@ -85,7 +83,7 @@ namespace EventStore.Transport.Tcp
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
-        private TcpConnectionLockless(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose): base(remoteEndPoint)
+        private TcpConnectionLockless(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose) : base(remoteEndPoint)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
 
@@ -264,9 +262,9 @@ namespace EventStore.Transport.Tcp
                 CloseInternal(socketArgs.SocketError, socketArgs.SocketError != SocketError.Success ? "Socket receive error" : "Socket closed");
                 return;
             }
-            
+
             NotifyReceiveCompleted(socketArgs.BytesTransferred);
-            
+
             var buf = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
             _receiveQueue.Enqueue(new ReceivedData(buf, socketArgs.BytesTransferred));
             socketArgs.SetBuffer(null, 0, 0);
@@ -343,9 +341,7 @@ namespace EventStore.Transport.Tcp
             CloseSocket();
             if (Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
                 ReturnSendingSocketArgs();
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, socketError);
+            ConnectionClosed?.Invoke(this, socketError);
         }
 
         private void CloseSocket()
@@ -386,17 +382,17 @@ namespace EventStore.Transport.Tcp
                 SocketArgsPool.Return(socketArgs);
             }
         }
-        
+
         public void SetClientConnectionName(string clientConnectionName)
         {
             _clientConnectionName = clientConnectionName;
         }
-        
+
         public override string ToString()
         {
             return RemoteEndPoint.ToString();
         }
-    
+
         private struct ReceivedData
         {
             public readonly ArraySegment<byte> Buf;

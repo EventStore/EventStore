@@ -18,13 +18,13 @@ namespace EventStore.Transport.Tcp
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionSsl>();
 
-        public static ITcpConnection CreateConnectingConnection(Guid connectionId, 
-                                                                IPEndPoint remoteEndPoint, 
+        public static ITcpConnection CreateConnectingConnection(Guid connectionId,
+                                                                IPEndPoint remoteEndPoint,
                                                                 string targetHost,
                                                                 bool validateServer,
-                                                                TcpClientConnector connector, 
+                                                                TcpClientConnector connector,
                                                                 TimeSpan connectionTimeout,
-                                                                Action<ITcpConnection> onConnectionEstablished, 
+                                                                Action<ITcpConnection> onConnectionEstablished,
                                                                 Action<ITcpConnection, SocketError> onConnectionFailed,
                                                                 bool verbose)
         {
@@ -34,21 +34,19 @@ namespace EventStore.Transport.Tcp
                                   (_, socket) =>
                                   {
                                       connection.InitClientSocket(socket, targetHost, validateServer, verbose);
-                                      if (onConnectionEstablished != null)
-                                          onConnectionEstablished(connection);
+                                      onConnectionEstablished?.Invoke(connection);
                                   },
                                   (_, socketError) =>
                                   {
-                                      if (onConnectionFailed != null)
-                                          onConnectionFailed(connection, socketError);
+                                      onConnectionFailed?.Invoke(connection, socketError);
                                   }, connection, connectionTimeout);
             // ReSharper restore ImplicitlyCapturedClosure
             return connection;
         }
 
-        public static ITcpConnection CreateClientFromSocket(Guid connectionId, 
-                                                            IPEndPoint remoteEndPoint, 
-                                                            Socket socket, 
+        public static ITcpConnection CreateClientFromSocket(Guid connectionId,
+                                                            IPEndPoint remoteEndPoint,
+                                                            Socket socket,
                                                             string targetHost,
                                                             bool validateServer,
                                                             bool verbose)
@@ -96,7 +94,7 @@ namespace EventStore.Transport.Tcp
         private bool _validateServer;
         private readonly byte[] _receiveBuffer = new byte[TcpConnection.BufferManager.ChunkSize];
 
-        private TcpConnectionSsl(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose): base(remoteEndPoint)
+        private TcpConnectionSsl(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose) : base(remoteEndPoint)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
 
@@ -152,7 +150,7 @@ namespace EventStore.Transport.Tcp
             {
                 lock (_streamLock)
                 {
-                    var sslStream = (SslStream) ar.AsyncState;
+                    var sslStream = (SslStream)ar.AsyncState;
                     sslStream.EndAuthenticateAsServer(ar);
                     if (_verbose)
                         DisplaySslStreamInfo(sslStream);
@@ -226,7 +224,7 @@ namespace EventStore.Transport.Tcp
             {
                 lock (_streamLock)
                 {
-                    var sslStream = (SslStream) ar.AsyncState;
+                    var sslStream = (SslStream)ar.AsyncState;
                     sslStream.EndAuthenticateAsClient(ar);
                     if (_verbose)
                         DisplaySslStreamInfo(sslStream);
@@ -327,7 +325,7 @@ namespace EventStore.Transport.Tcp
                 if (_memoryStream.Length >= TcpConnection.MaxSendPacketSize)
                     break;
             }
-            _sendingBytes = (int) _memoryStream.Length;
+            _sendingBytes = (int)_memoryStream.Length;
 
             try
             {
@@ -388,7 +386,7 @@ namespace EventStore.Transport.Tcp
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
             {
-                Log.Fatal("ReceiveAsync called again while previous call wasn't fulfilled"); 
+                Log.Fatal("ReceiveAsync called again while previous call wasn't fulfilled");
                 throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
             }
             TryDequeueReceivedData();
@@ -539,9 +537,7 @@ namespace EventStore.Transport.Tcp
             if (_sslStream != null)
                 Helper.EatException(() => _sslStream.Close());
 
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, socketError);
+            ConnectionClosed?.Invoke(this, socketError);
         }
 
         public void SetClientConnectionName(string clientConnectionName)

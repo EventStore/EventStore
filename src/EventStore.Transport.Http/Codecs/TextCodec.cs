@@ -28,9 +28,6 @@ namespace EventStore.Transport.Http.Codecs
             throw new NotSupportedException();
         }
 
-        public string To<T>(T value)
-        {
-            return ((object) value) != null ? value.ToString() : null;
-        }
+        public string To<T>(T value) => value?.ToString();
     }
 }

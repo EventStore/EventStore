@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI.UserManagement
                     {
                         if (x.IsFaulted) throw x.Exception;
                         var r = JObject.Parse(x.Result);
-                        return r["data"] != null ? r["data"].ToObject<List<UserDetails>>() : null;
+                        return r["data"]?.ToObject<List<UserDetails>>();
                     });
         }
 
@@ -56,7 +56,7 @@ namespace EventStore.ClientAPI.UserManagement
                 {
                     if (x.IsFaulted) throw x.Exception;
                     var r = JObject.Parse(x.Result);
-                    return r["data"] != null ? r["data"].ToObject<UserDetails>() : null;
+                    return r["data"]?.ToObject<UserDetails>();
                 });
         }
 
@@ -67,7 +67,7 @@ namespace EventStore.ClientAPI.UserManagement
                 {
                     if (x.IsFaulted) throw x.Exception;
                     var r = JObject.Parse(x.Result);
-                    return r["data"] != null ? r["data"].ToObject<UserDetails>() : null;
+                    return r["data"]?.ToObject<UserDetails>();
                 });
         }
 

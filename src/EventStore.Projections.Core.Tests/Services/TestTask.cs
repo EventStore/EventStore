@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services
 
         public void Complete()
         {
-            var correlationId = _stageCorrelations != null ? _stageCorrelations[_startedOnStage] : InitialCorrelationId;
+            var correlationId = _stageCorrelations?[_startedOnStage] ?? InitialCorrelationId;
             _readyForStage(_startedOnStage == _steps - 1 ? -1 : _startedOnStage + 1, correlationId);
         }
     }
