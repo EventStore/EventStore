@@ -51,19 +51,20 @@ extern "C"
 	{
 		js1::PreludeScript *prelude_script;
 		v8::Isolate *isolate = js1::V8Wrapper::Instance().create_isolate();
-		prelude_script = new js1::PreludeScript(isolate, load_module_callback, enter_cancellable_region_callback, exit_cancellable_region_callback, log_callback);
+		{
+			prelude_script = new js1::PreludeScript(isolate, load_module_callback, enter_cancellable_region_callback, exit_cancellable_region_callback, log_callback);
 
-		v8::HandleScope handle_scope(isolate);
+			v8::HandleScope handle_scope(isolate);
 
-		js1::Status status;
-		if ((status = prelude_script->compile_script(prelude, file_name)) == js1::S_OK){
-			status = prelude_script->try_run();
+			js1::Status status;
+			if ((status = prelude_script->compile_script(prelude, file_name)) == js1::S_OK) {
+				status = prelude_script->try_run();
+			}
+
+			if (status != js1::S_TERMINATED) {
+				return prelude_script;
+			}
 		}
-
-		if (status != js1::S_TERMINATED){
-			return prelude_script;
-		}
-
 		delete prelude_script;
 		return NULL;
 	};
