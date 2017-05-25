@@ -6,13 +6,32 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common.Utils;
+using System.Collections;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
-    [TestFixture]
+    public class SystemProjectionNames : IEnumerable
+    {
+        public IEnumerator GetEnumerator()
+        {
+            return typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
+                System.Reflection.BindingFlags.Public | 
+                System.Reflection.BindingFlags.Static | 
+                System.Reflection.BindingFlags.FlattenHierarchy)
+                .Where(x => x.IsLiteral && !x.IsInitOnly)
+                .Select(x => x.GetRawConstantValue()).
+                GetEnumerator();
+        }
+    }
+    [TestFixture, TestFixtureSource(typeof(SystemProjectionNames))]
     public class when_deleting_a_system_projection : TestFixtureWithProjectionCoreAndManagementServices
     {
         private string _systemProjectionName;
+        public when_deleting_a_system_projection(string projectionName)
+        {
+            _systemProjectionName = projectionName;
+        }
 
         protected override bool GivenInitializeSystemProjections()
         {
@@ -21,7 +40,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected override void Given()
         {
-            _systemProjectionName = "$system_projection"; //identified by the $ prefix
             AllWritesSucceed();
             NoOtherStreams();
         }
