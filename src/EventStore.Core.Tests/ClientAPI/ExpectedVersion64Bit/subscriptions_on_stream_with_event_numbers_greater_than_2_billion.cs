@@ -4,6 +4,7 @@ using EventStore.ClientAPI;
 using NUnit.Framework;
 using EventStore.Core.Data;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
 {
@@ -49,6 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
             _store.SubscribeToStreamAsync(_volatileStreamOne, true, (s,e) => {
                 receivedEvent = e;
                 mre.Set();
+                return Task.CompletedTask;
             }).Wait();
 
             _store.AppendToStreamAsync(_volatileStreamOne, intMaxValue + 2, evnt).Wait();
@@ -66,6 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
             _store.SubscribeToAllAsync(true, (s,e) => {
                 receivedEvent = e;
                 mre.Set();
+                return Task.CompletedTask;
             }, userCredentials: DefaultData.AdminCredentials).Wait();
 
             _store.AppendToStreamAsync(_volatileStreamTwo, intMaxValue + 2, evnt).Wait();
@@ -84,6 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
             _store.SubscribeToStreamFrom(_catchupStreamOne, 0, CatchUpSubscriptionSettings.Default, (s,e) => {
                 receivedEvents.Add(e);
                 countdown.Signal();
+                return Task.CompletedTask;
             });
 
             _store.AppendToStreamAsync(_catchupStreamOne, intMaxValue + 2, evnt).Wait();

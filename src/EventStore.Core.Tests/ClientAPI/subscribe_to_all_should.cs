@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
@@ -54,8 +55,16 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                using (store.SubscribeToAllAsync(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
-                using (store.SubscribeToAllAsync(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToAllAsync(false, (s, x) =>
+                {
+                    appeared.Signal();
+                    return Task.CompletedTask;
+                }, (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToAllAsync(false, (s, x) =>
+                {
+                    appeared.Signal();
+                    return Task.CompletedTask;
+                }, (s, r, e) => dropped.Signal()).Result)
                 {
                     var create = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
                     Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
@@ -75,7 +84,12 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                using (store.SubscribeToAllAsync(false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToAllAsync(false, (s, x) =>
+                {
+                    appeared.Signal();
+                    return Task.CompletedTask;
+                },
+                (s, r, e) => dropped.Signal()).Result)
                 {
                     var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
                     Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");

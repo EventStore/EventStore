@@ -2,6 +2,7 @@
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.Users.users;
@@ -90,7 +91,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
 
         private void SetupSubscription()
         {
-            _connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => { },
+            _connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => Task.CompletedTask,
                 (sub, reason, ex) =>
                 {
                     _droppedReason = reason;

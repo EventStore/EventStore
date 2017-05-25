@@ -79,7 +79,7 @@ namespace EventStore.ClientAPI.Embedded
             subscription.ConfirmSubscription(lastCommitPosition, lastEventNumber);
         }
 
-        public void StartSubscription(Guid correlationId, TaskCompletionSource<EventStoreSubscription> source, string stream, UserCredentials userCredentials, bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
+        public void StartSubscription(Guid correlationId, TaskCompletionSource<EventStoreSubscription> source, string stream, UserCredentials userCredentials, bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
         {
             var subscription = new EmbeddedSubscription(
                 _log, _publisher, _connectionId, source, stream, userCredentials, _authenticationProvider,
@@ -89,7 +89,7 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptions.StartSubscription(correlationId, subscription);
         }
 
-        public void StartPersistentSubscription(Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, UserCredentials userCredentials, int bufferSize, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan operationTimeout)
+        public void StartPersistentSubscription(Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, UserCredentials userCredentials, int bufferSize, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan operationTimeout)
         {
             var subscription = new EmbeddedPersistentSubscription(_log, _publisher, _connectionId, source,
                 subscriptionId, streamId, userCredentials, _authenticationProvider, bufferSize, eventAppeared,

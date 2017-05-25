@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
@@ -51,7 +52,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
             _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials).Wait();
-            _conn.ConnectToPersistentSubscription(_stream, "existing" , (x, y) => { },
+            _conn.ConnectToPersistentSubscription(_stream, "existing" , (x, y) => Task.CompletedTask,
                 (sub, reason, ex) =>
                 {
                     _dropped.Set();

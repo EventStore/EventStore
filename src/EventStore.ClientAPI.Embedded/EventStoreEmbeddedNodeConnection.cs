@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Reflection;
-using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
@@ -12,8 +11,6 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.UserManagement;
-using Message = EventStore.Core.Messaging.Message;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -352,7 +349,7 @@ namespace EventStore.ClientAPI.Embedded
         public Task<EventStoreSubscription> SubscribeToStreamAsync(
             string stream,
             bool resolveLinkTos,
-            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
         {
@@ -371,7 +368,7 @@ namespace EventStore.ClientAPI.Embedded
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
                                                                          long? lastCheckpoint,
                                                                          bool resolveLinkTos,
-                                                                         Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                                                                         Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
                                                                          Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                                                                          Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                                                                          UserCredentials userCredentials = null,
@@ -387,7 +384,7 @@ namespace EventStore.ClientAPI.Embedded
             string stream,
             long? lastCheckpoint,
             CatchUpSubscriptionSettings settings,
-            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
             Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
@@ -399,13 +396,13 @@ namespace EventStore.ClientAPI.Embedded
                     new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint,
                                                             userCredentials, eventAppeared, liveProcessingStarted,
                                                             subscriptionDropped, settings);
-            catchUpSubscription.Start();
+            catchUpSubscription.StartAsync();
             return catchUpSubscription;
         }
 
         public Task<EventStoreSubscription> SubscribeToAllAsync(
             bool resolveLinkTos,
-            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
         {
@@ -422,7 +419,8 @@ namespace EventStore.ClientAPI.Embedded
 
 
         public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
-            string stream, string groupName, Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            string stream, string groupName,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
@@ -441,7 +439,8 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(
-            string stream, string groupName, Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            string stream, string groupName,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
         {
@@ -455,7 +454,7 @@ namespace EventStore.ClientAPI.Embedded
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
             Position? lastCheckpoint,
             bool resolveLinkTos,
-            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
             Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
@@ -470,7 +469,7 @@ namespace EventStore.ClientAPI.Embedded
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
             Position? lastCheckpoint,
             CatchUpSubscriptionSettings settings,
-            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
             Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
@@ -481,12 +480,12 @@ namespace EventStore.ClientAPI.Embedded
                     new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint,
                                                          userCredentials, eventAppeared, liveProcessingStarted,
                                                          subscriptionDropped, settings);
-            catchUpSubscription.Start();
+            catchUpSubscription.StartAsync();
             return catchUpSubscription;
         }
 
         public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
-            UserCredentials userCredentials)
+            UserCredentials credentials)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
@@ -499,7 +498,7 @@ namespace EventStore.ClientAPI.Embedded
             var corrId = Guid.NewGuid();
 
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.CreatePersistentSubscription(
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, credentials), source.SetException, user => new ClientMessage.CreatePersistentSubscription(
                 corrId,
                 corrId,
                 envelope,
@@ -519,14 +518,14 @@ namespace EventStore.ClientAPI.Embedded
                 settings.MaxSubscriberCount,
                 settings.NamedConsumerStrategy,
                 user,
-                userCredentials == null ? null : userCredentials.Username,
-                userCredentials == null ? null : userCredentials.Password));
+                credentials == null ? null : credentials.Username,
+                credentials == null ? null : credentials.Password));
 
             return source.Task;
         }
 
         public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
-            UserCredentials userCredentials)
+            UserCredentials credentials)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
@@ -537,7 +536,7 @@ namespace EventStore.ClientAPI.Embedded
 
             var corrId = Guid.NewGuid();
 
-            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException, user => new ClientMessage.UpdatePersistentSubscription(
+            _publisher.PublishWithAuthentication(_authenticationProvider, GetUserCredentials(_settings, credentials), source.SetException, user => new ClientMessage.UpdatePersistentSubscription(
                 corrId,
                 corrId,
                 envelope,
@@ -557,8 +556,8 @@ namespace EventStore.ClientAPI.Embedded
                 settings.MaxSubscriberCount,
                 settings.NamedConsumerStrategy,
                 user,
-                userCredentials == null ? null : userCredentials.Username,
-                userCredentials == null ? null : userCredentials.Password));
+                credentials == null ? null : credentials.Username,
+                credentials == null ? null : credentials.Password));
 
             return source.Task;
         }

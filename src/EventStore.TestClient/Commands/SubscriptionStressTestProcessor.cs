@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 
 namespace EventStore.TestClient.Commands
@@ -46,6 +47,7 @@ namespace EventStore.TestClient.Commands
                             context.Log.Trace("Received total {0} events ({1} per sec)...", c, 100000.0/sw.Elapsed.TotalSeconds);
                             sw.Restart();
                         }
+                        return Task.CompletedTask;
                     }).Wait();
             }
             context.Log.Info("Subscribed to {0} streams...", subscriptionCount);

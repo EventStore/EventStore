@@ -286,7 +286,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             var actualMeta = resultEvents.Aggregate(
                 "", (a, v) => a + "\r\n" + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugMetadataView);
 
-
             Debug.WriteLine(
                 "Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n \r\nActual metas:{3}", streamId,
                 message, actual, actualMeta);
