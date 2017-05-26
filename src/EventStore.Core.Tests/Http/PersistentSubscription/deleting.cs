@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.Http.Users.users;
 using NUnit.Framework;
@@ -104,7 +105,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                 {
                     ResolveLinkTos = true
                 }, _admin);
-            _connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => { },
+            _connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => Task.CompletedTask,
                 (sub, reason, e) =>
                 {
                     _dropped.Set();

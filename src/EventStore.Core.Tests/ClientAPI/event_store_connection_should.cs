@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
@@ -104,10 +105,10 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.That(() => connection.StartTransactionAsync(s, 0).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.That(() => connection.SubscribeToStreamAsync(s, false, (_, __) => { }, (_, __, ___) => { }).Wait(),
+            Assert.That(() => connection.SubscribeToStreamAsync(s, false, (_, __) => Task.CompletedTask, (_, __, ___) => { }).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
 
-            Assert.That(() => connection.SubscribeToAllAsync(false, (_, __) => { }, (_, __, ___) => { }).Wait(),
+            Assert.That(() => connection.SubscribeToAllAsync(false, (_, __) => Task.CompletedTask, (_, __, ___) => { }).Wait(),
                         Throws.Exception.InstanceOf<AggregateException>().With.InnerException.InstanceOf<InvalidOperationException>());
         }
     }

@@ -15,7 +15,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _bufferSize;
         private string _subscriptionId;
 
-        public ConnectToPersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string groupName, int bufferSize, string streamId, UserCredentials userCredentials, Action<PersistentEventStoreSubscription, ResolvedEvent> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
+        public ConnectToPersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string groupName, int bufferSize, string streamId, UserCredentials userCredentials, Func<PersistentEventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
             : base(log, source, streamId, false, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
         {
             _groupName = groupName;

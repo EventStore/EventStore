@@ -6,7 +6,6 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.ClientAPI.Embedded
 {
@@ -22,7 +21,7 @@ namespace EventStore.ClientAPI.Embedded
             ILogger log, IPublisher publisher, Guid connectionId,
             TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId,
             UserCredentials userCredentials, IAuthenticationProvider authenticationProvider, int bufferSize,
-            Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries,
             TimeSpan operationTimeout)
             : base(log, publisher, connectionId, source, streamId, eventAppeared, subscriptionDropped)

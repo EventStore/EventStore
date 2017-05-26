@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -20,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("ClientAPI"), Category("LongRunning")]
     public class catch_up_subscription_handles_errors
     {
-        private static int TimeoutMs = 2000;
+        private static readonly int TimeoutMs = Debugger.IsAttached ? Timeout.Infinite : 2000;
         private FakeEventStoreConnection _connection;
         private IList<ResolvedEvent> _raisedEvents;
         private bool _liveProcessingStarted;
@@ -50,6 +51,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 {
                     _raisedEvents.Add(ev);
                     _raisedEventEvent.Set();
+                    return Task.CompletedTask;
                 },
                 subscription =>
                 {
@@ -84,7 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private void AssertStartFailsAndDropsSubscriptionWithException(ApplicationException expectedException)
         {
-            Assert.That(() => _subscription.Start().Wait(TimeoutMs), Throws.TypeOf<AggregateException>());
+            Assert.That(() => _subscription.StartAsync().Wait(TimeoutMs), Throws.TypeOf<AggregateException>());
             Assert.That(_isDropped);
             Assert.That(_dropReason, Is.EqualTo(SubscriptionDropReason.CatchUpError));
             Assert.That(_dropException, Is.SameAs(expectedException));
@@ -158,7 +160,6 @@ namespace EventStore.Core.Tests.ClientAPI
                     var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
                     taskCompletionSource.SetResult(CreateStreamEventsSlice());
                     return taskCompletionSource.Task;
-
                 }
                 else
                 {
@@ -290,32 +291,29 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var finalEvent = new ManualResetEventSlim();
             int callCount = 0;
-            _connection.HandleReadStreamEventsForwardAsync((stream, start, max) =>
+            _connection.HandleReadStreamEventsForwardAsync((stream, start, max) => Task.Run(() =>
             {
                 callCount++;
 
-                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
                 if (callCount == 1)
                 {
-                    taskCompletionSource.SetResult(CreateStreamEventsSlice(isEnd: true));
+                    return Task.FromResult(CreateStreamEventsSlice(isEnd: true));
                 }
                 else if (callCount == 2)
                 {
-                    taskCompletionSource.SetResult(CreateStreamEventsSlice(fromEvent:1, isEnd: true));
+                    var result = Task.FromResult(CreateStreamEventsSlice(fromEvent:1, isEnd: true));
                     Assert.That(finalEvent.Wait(TimeoutMs));
+                    return result;
                 }
+                else
+                {
+                    throw new InvalidOperationException("Should not get a third call");
+                }
+            }));
 
-                return taskCompletionSource.Task;
-            });
+            _connection.HandleSubscribeToStreamAsync((stream, raise, drop) => Task.FromResult<EventStoreSubscription>(CreateVolatileSubscription(raise, drop, 1)));
 
-            _connection.HandleSubscribeToStreamAsync((stream, raise, drop) =>
-            {
-                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
-                taskCompletionSource.SetResult(CreateVolatileSubscription(raise, drop, 1));
-                return taskCompletionSource.Task;
-            });
-
-            var task = _subscription.Start();
+            var task = _subscription.StartAsync();
 
             Assert.That(task.Status, Is.Not.EqualTo(TaskStatus.RanToCompletion));
 
@@ -356,7 +354,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 return taskCompletionSource.Task;
             });
 
-            Assert.That(_subscription.Start().Wait(TimeoutMs));
+            Assert.That(_subscription.StartAsync().Wait(TimeoutMs));
             Assert.That(_raisedEvents.Count, Is.EqualTo(0));
 
             Assert.That(innerSubscriptionDrop, Is.Not.Null);
@@ -417,7 +415,7 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.That(reconnectTask.Wait(TimeoutMs));
         }
 
-        private static VolatileEventStoreSubscription CreateVolatileSubscription(Action<EventStoreSubscription, ResolvedEvent> raise, Action<EventStoreSubscription, SubscriptionDropReason, Exception> drop, int? lastEventNumber)
+        private static VolatileEventStoreSubscription CreateVolatileSubscription(Func<EventStoreSubscription, ResolvedEvent, Task> raise, Action<EventStoreSubscription, SubscriptionDropReason, Exception> drop, int? lastEventNumber)
         {
             return new VolatileEventStoreSubscription(new VolatileSubscriptionOperation(new NoopLogger(), new TaskCompletionSource<EventStoreSubscription>(), StreamId, false, null, raise, drop, false, () => null), StreamId, -1, lastEventNumber);
         }
@@ -440,14 +438,14 @@ namespace EventStore.Core.Tests.ClientAPI
     {
         private Func<Position, int, bool, UserCredentials, Task<AllEventsSlice>> _readAllEventsForwardAsync;
         private Func<string, long, int, Task<StreamEventsSlice>> _readStreamEventsForwardAsync;
-        private Func<string, Action<EventStoreSubscription, ResolvedEvent>, Action<EventStoreSubscription, SubscriptionDropReason, Exception>, Task<EventStoreSubscription>> _subscribeToStreamAsync;
+        private Func<string, Func<EventStoreSubscription, ResolvedEvent, Task>, Action<EventStoreSubscription, SubscriptionDropReason, Exception>, Task<EventStoreSubscription>> _subscribeToStreamAsync;
 
         public void Dispose()
         {
             throw new NotImplementedException();
         }
 
-        public string ConnectionName { get; private set; }
+        public string ConnectionName { get; }
         public ConnectionSettings Settings { get { return null; } }
 
         public Task ConnectAsync()
@@ -540,19 +538,19 @@ namespace EventStore.Core.Tests.ClientAPI
             throw new NotImplementedException();
         }
 
-        public void HandleSubscribeToStreamAsync(Func<string, Action<EventStoreSubscription, ResolvedEvent>, Action<EventStoreSubscription, SubscriptionDropReason, Exception>, Task<EventStoreSubscription>> callback)
+        public void HandleSubscribeToStreamAsync(Func<string, Func<EventStoreSubscription, ResolvedEvent, Task>, Action<EventStoreSubscription, SubscriptionDropReason, Exception>, Task<EventStoreSubscription>> callback)
         {
             _subscribeToStreamAsync = callback;
         }
 
-        public Task<EventStoreSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+        public Task<EventStoreSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
         {
             return _subscribeToStreamAsync(stream, eventAppeared, subscriptionDropped);
         }
 
         public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream, long? lastCheckpoint, bool resolveLinkTos,
-            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+            Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, int readBatchSize = 500, string subscriptionName = "")
         {
             throw new NotImplementedException();
@@ -562,7 +560,7 @@ namespace EventStore.Core.Tests.ClientAPI
             string stream,
             long? lastCheckpoint,
             CatchUpSubscriptionSettings settings,
-            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
             Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
@@ -570,20 +568,21 @@ namespace EventStore.Core.Tests.ClientAPI
             throw new NotImplementedException();
         }
 
-        public Task<EventStoreSubscription> SubscribeToAllAsync(bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+        public Task<EventStoreSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
         {
             throw new NotImplementedException();
         }
 
         public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(string stream, string groupName,
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
         {
             throw new NotImplementedException();
         }
 
-        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? lastCheckpoint, bool resolveLinkTos, Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? lastCheckpoint, bool resolveLinkTos,
+            Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null,
             int readBatchSize = 500,
             string subscriptionName = "")
@@ -594,7 +593,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
             Position? lastCheckpoint,
             CatchUpSubscriptionSettings settings,
-            Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+            Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
             Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null)
@@ -689,7 +688,7 @@ namespace EventStore.Core.Tests.ClientAPI
             if (handler != null) handler(this, e);
         }
 
-        public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
+        public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
         {
             throw new NotImplementedException();
         }

@@ -1,9 +1,5 @@
 using System;
-using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
@@ -22,7 +18,7 @@ namespace EventStore.ClientAPI.Embedded
         public EmbeddedSubscription(
             ILogger log, IPublisher publisher, Guid connectionId, TaskCompletionSource<EventStoreSubscription> source,
             string streamId, UserCredentials userCredentials, IAuthenticationProvider authenticationProvider,
-            bool resolveLinkTos, Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+            bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
             : base(log, publisher, connectionId, source, streamId, eventAppeared, subscriptionDropped)
         {

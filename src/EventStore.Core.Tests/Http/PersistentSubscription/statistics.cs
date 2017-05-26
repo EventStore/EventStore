@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Xml.Linq;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
@@ -227,14 +228,26 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
                         DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine());
             _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
             _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
 
@@ -366,14 +379,26 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
                         DefaultData.AdminCredentials).Wait();
             _sub3 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine());
             _sub4 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
             _sub5 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
 
@@ -481,10 +506,18 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
                     DefaultData.AdminCredentials).Wait();
             _sub1 = _conn.ConnectToPersistentSubscription(_streamName, _groupName,
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine());
             _sub2 = _conn.ConnectToPersistentSubscription(_streamName, _groupName,
-                        (subscription, @event) => Console.WriteLine(),
+                        (subscription, @event) =>
+                        {
+                            Console.WriteLine();
+                            return Task.CompletedTask;
+                        },
                         (subscription, reason, arg3) => Console.WriteLine(),
                         DefaultData.AdminCredentials);
 

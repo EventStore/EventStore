@@ -1,4 +1,5 @@
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
@@ -43,7 +44,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) =>
+                {
+                    appeared.Signal();
+                    return Task.CompletedTask;
+                }, (s, r, e) => dropped.Signal()).Result)
                 {
                     store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
                     Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
@@ -61,8 +66,16 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
-                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) =>
+                {
+                    appeared.Signal();
+                    return Task.CompletedTask;
+                }, (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) =>
+                {
+                    appeared.Signal();
+                    return Task.CompletedTask;
+                }, (s, r, e) => dropped.Signal()).Result)
                 {
                     store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
                     Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
@@ -79,7 +92,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
 
                 var dropped = new CountdownEvent(1);
-                using (var subscription = store.SubscribeToStreamAsync(stream, false, (s, x) => { }, (s, r, e) => dropped.Signal()).Result)
+                using (var subscription = store.SubscribeToStreamAsync(stream, false, (s, x) => Task.CompletedTask, (s, r, e) => dropped.Signal()).Result)
                 {
                     subscription.Unsubscribe();
                 }
@@ -97,7 +110,12 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
-                using (store.SubscribeToStreamAsync(stream, false, (s, x) => appeared.Signal(), (s, r, e) => dropped.Signal()).Result)
+                using (store.SubscribeToStreamAsync(stream, false, (s, x) =>
+                {
+                    appeared.Signal();
+                    return Task.CompletedTask;
+                },
+                (s, r, e) => dropped.Signal()).Result)
                 {
                     store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
                     Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");

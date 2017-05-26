@@ -12,7 +12,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 using ILogger = EventStore.Common.Log.ILogger;
-
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge
 {
@@ -55,7 +55,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 					(x, y) => {
 						_result.Add(y);
 						countdown.Signal();
-					},
+                        return Task.CompletedTask;
+                    },
 					_ => Log.Info("Processing events started."),
 					(x, y, z) =>
 					{
