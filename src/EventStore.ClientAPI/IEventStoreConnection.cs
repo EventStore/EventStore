@@ -221,14 +221,14 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="stream">The stream to subscribe to</param>
         /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
-        /// <param name="eventAppeared">An action invoked when a new event is received over the subscription</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         Task<EventStoreSubscription> SubscribeToStreamAsync(
                 string stream,
                 bool resolveLinkTos,
-                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
@@ -257,7 +257,7 @@ namespace EventStore.ClientAPI
         /// NOTE: Using <see cref="StreamPosition.Start" /> here will result in missing
         /// the first event in the stream.</param>
         /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
-        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
@@ -269,7 +269,7 @@ namespace EventStore.ClientAPI
                 string stream,
                 long? lastCheckpoint,
                 bool resolveLinkTos,
-                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null,
@@ -300,7 +300,7 @@ namespace EventStore.ClientAPI
         ///
         /// NOTE: Using <see cref="StreamPosition.Start" /> here will result in missing
         /// the first event in the stream.</param>
-        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
@@ -310,7 +310,7 @@ namespace EventStore.ClientAPI
                 string stream,
                 long? lastCheckpoint,
                 CatchUpSubscriptionSettings settings,
-                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
@@ -323,13 +323,13 @@ namespace EventStore.ClientAPI
         /// will be pushed to the client.
         /// </summary>
         /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
-        /// <param name="eventAppeared">An action invoked when a new event is received over the subscription</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
         Task<EventStoreSubscription> SubscribeToAllAsync(
                 bool resolveLinkTos,
-                Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
                 Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);
 
@@ -338,7 +338,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="groupName">The subscription group to connect to</param>
         /// <param name="stream">The stream to subscribe to</param>
-        /// <param name="eventAppeared">An action invoked when an event appears</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="bufferSize">The buffer size to use for the persistent subscription</param>
@@ -354,7 +354,7 @@ namespace EventStore.ClientAPI
         EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
             string stream,
             string groupName,
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
             int bufferSize = 10,
@@ -365,7 +365,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="groupName">The subscription group to connect to</param>
         /// <param name="stream">The stream to subscribe to</param>
-        /// <param name="eventAppeared">An action invoked when an event appears</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="bufferSize">The buffer size to use for the persistent subscription</param>
@@ -381,7 +381,7 @@ namespace EventStore.ClientAPI
         Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(
             string stream,
             string groupName,
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
             int bufferSize = 10,
@@ -392,7 +392,7 @@ namespace EventStore.ClientAPI
         /// Subscribes a persistent subscription (competing consumer) to all events in the event store
         /// </summary>
         /// <param name="groupName">The subscription group to connect to</param>
-        /// <param name="eventAppeared">An action invoked when an event appears</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
         /// <param name="bufferSize">The buffer size to use for the persistent subscription</param>
@@ -437,7 +437,7 @@ namespace EventStore.ClientAPI
         /// NOTE: Using <see cref="Position.Start" /> here will result in missing
         /// the first event in the stream.</param>
         /// <param name="resolveLinkTos">Whether to resolve Link events automatically</param>
-        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
@@ -448,7 +448,7 @@ namespace EventStore.ClientAPI
         EventStoreAllCatchUpSubscription SubscribeToAllFrom(
                 Position? lastCheckpoint,
                 bool resolveLinkTos,
-                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null,
@@ -477,7 +477,7 @@ namespace EventStore.ClientAPI
         ///
         /// NOTE: Using <see cref="Position.Start" /> here will result in missing
         /// the first event in the stream.</param>
-        /// <param name="eventAppeared">An action invoked when an event is received over the subscription</param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription</param>
         /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events</param>
         /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
         /// <param name="userCredentials">User credentials to use for the operation</param>
@@ -486,7 +486,7 @@ namespace EventStore.ClientAPI
         EventStoreAllCatchUpSubscription SubscribeToAllFrom(
                 Position? lastCheckpoint,
                 CatchUpSubscriptionSettings settings,
-                Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
                 Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
                 Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
                 UserCredentials userCredentials = null);

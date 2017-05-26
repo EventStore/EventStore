@@ -11,11 +11,11 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// True if this subscription is to all streams.
         /// </summary>
-        public bool IsSubscribedToAll { get { return _streamId == string.Empty; } }
+        public bool IsSubscribedToAll { get { return StreamId == string.Empty; } }
         /// <summary>
         /// The name of the stream to which the subscription is subscribed.
         /// </summary>
-        public string StreamId { get { return _streamId; } }
+        public string StreamId { get; }
         /// <summary>
         /// The last commit position seen on the subscription (if this is
         /// a subscription to all events).
@@ -27,11 +27,9 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly long? LastEventNumber;
 
-        private readonly string _streamId;
-
         internal EventStoreSubscription(string streamId, long lastCommitPosition, long? lastEventNumber)
         {
-            _streamId = streamId;
+            StreamId = streamId;
             LastCommitPosition = lastCommitPosition;
             LastEventNumber = lastEventNumber;
         }

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
@@ -22,7 +21,7 @@ namespace EventStore.ClientAPI
 
         private readonly string _subscriptionId;
         private readonly string _streamId;
-        private readonly Action<EventStorePersistentSubscriptionBase, ResolvedEvent> _eventAppeared;
+        private readonly Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> _eventAppeared;
         private readonly Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly UserCredentials _userCredentials;
         private readonly ILogger _log;
@@ -40,8 +39,8 @@ namespace EventStore.ClientAPI
         private readonly int _bufferSize;
 
         internal EventStorePersistentSubscriptionBase(string subscriptionId, 
-            string streamId, 
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared, 
+            string streamId,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, 
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials,
             ILogger log,
@@ -78,7 +77,7 @@ namespace EventStore.ClientAPI
 
         internal abstract Task<PersistentEventStoreSubscription> StartSubscription(
             string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials,
-            Action<EventStoreSubscription, ResolvedEvent> onEventAppeared,
+            Func<EventStoreSubscription, ResolvedEvent, Task> onEventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped,
             ConnectionSettings settings);
 
@@ -178,9 +177,10 @@ namespace EventStore.ClientAPI
             EnqueueSubscriptionDropNotification(reason, exception);
         }
 
-        private void OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
+        private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
         {
             Enqueue(resolvedEvent);
+            return Task.CompletedTask;
         }
 
         private void Enqueue(ResolvedEvent resolvedEvent)

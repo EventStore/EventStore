@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.Helpers;
@@ -43,7 +44,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", _settings,
     DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(_stream, "groupname123",
-                (s, e) => { },
+                (s, e) => Task.CompletedTask,
                 (s, r, e) => _called.Set());
         }
 
