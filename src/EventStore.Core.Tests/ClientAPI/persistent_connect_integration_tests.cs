@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using NUnit.Framework;
@@ -44,6 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                         _eventsReceived.Set();
                     }
+                    return Task.CompletedTask;
                 },
                 (sub, reason, exception) =>
                     Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
@@ -96,6 +98,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                         _eventsReceived.Set();
                     }
+                    return Task.CompletedTask;
                 },
                 (sub, reason, exception) =>
                     Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
@@ -155,6 +158,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                         _eventsReceived.Set();
                     }
+                    return Task.CompletedTask;
                 },
                 (sub, reason, exception) =>
                 {
@@ -211,6 +215,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                         _eventsReceived.Set();
                     }
+                    return Task.CompletedTask;
                 },
                 (sub, reason, exception) =>
                     Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
@@ -265,6 +270,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                         _eventsReceived.Set();
                     }
+                    return Task.CompletedTask;
                 },
                 (sub, reason, exception) =>
                     Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
@@ -324,6 +330,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                         _eventsReceived.Set();
                     }
+                    return Task.CompletedTask;
                 },
                 (sub, reason, exception) =>
                     Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
@@ -381,6 +388,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     {
                         _eventsReceived.Set();
                     }
+                    return Task.CompletedTask;
                 },
                 (sub, reason, exception) =>
                     Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),

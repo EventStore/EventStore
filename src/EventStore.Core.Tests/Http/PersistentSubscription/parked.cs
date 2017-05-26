@@ -12,6 +12,7 @@ using EventStore.Transport.Http;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.Core.Data;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
@@ -44,6 +45,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             {
                 _parkedEventId = y.Event.EventId;
                 _eventParked.Set();
+                return Task.CompletedTask;
             }, 
             (x,y,z)=> { }, 
             DefaultData.AdminCredentials).Wait();
@@ -93,6 +95,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             {
                 replayedParkedEvent = y;
                 _eventParked.Set();
+                return Task.CompletedTask;
             },
             (x, y, z) => { },
             DefaultData.AdminCredentials).Wait();

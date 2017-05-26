@@ -5,6 +5,7 @@ using NUnit.Framework;
 using System;
 using System.Threading;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
 {
@@ -41,10 +42,11 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
                         ), null)).Wait();
         }
 
-        private void HandleEvent(EventStoreSubscription sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStoreSubscription sub, ResolvedEvent resolvedEvent)
         {
             _receivedEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]

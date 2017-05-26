@@ -73,6 +73,7 @@
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
     <Compile Include="Exceptions\UserCommandFailedException.cs" />
     <Compile Include="IConnectToPersistentSubscriptions.cs" />
+    <Compile Include="IEventStoreConnectionExtensions.cs" />
     <Compile Include="Internal\Consts.cs" />
     <Compile Include="Internal\Empty.cs" />
     <Compile Include="Internal\EventStoreNodeConnection.cs" />

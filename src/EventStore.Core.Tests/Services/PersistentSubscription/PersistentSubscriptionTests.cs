@@ -15,6 +15,7 @@ using NUnit.Framework;
 using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription
 {
@@ -1269,6 +1270,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 {
                     manualResetEventSlim.Set();
                 }
+                return Task.CompletedTask;
             },
                 (sub, reason, ex) => { });
             Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(30)), "Failed to receive all events in 2 minutes. Assume event store is deadlocked.");
@@ -1285,7 +1287,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
     }
 
-    public class Helper
+    public static class Helper
     {
         public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version)
         {

@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI.Embedded
 
         internal EmbeddedEventStorePersistentSubscription(
             string subscriptionId, string streamId,
-            Action<EventStorePersistentSubscriptionBase, ResolvedEvent> eventAppeared,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials, ILogger log, bool verboseLogging, ConnectionSettings settings,
             EmbeddedSubscriber subscriptions,
@@ -24,7 +24,7 @@ namespace EventStore.ClientAPI.Embedded
 
         internal override Task<PersistentEventStoreSubscription> StartSubscription(
             string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials,
-            Action<EventStoreSubscription, ResolvedEvent> onEventAppeared,
+            Func<EventStoreSubscription, ResolvedEvent, Task> onEventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped,
             ConnectionSettings settings)
         {

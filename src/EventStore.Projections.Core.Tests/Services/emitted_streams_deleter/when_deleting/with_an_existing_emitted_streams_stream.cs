@@ -4,6 +4,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.when_deleting
 {
@@ -27,6 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
             base.Given();
             var sub = _conn.SubscribeToStreamAsync(_projectionNamesBuilder.GetEmittedStreamsName(), true, (s, evnt) => {
                 _eventAppeared.Set();
+                return Task.CompletedTask;
             }, userCredentials: _credentials).Result;
 
             _emittedStreamsTracker.TrackEmittedStream(new EmittedEvent[]

@@ -4,6 +4,7 @@ using EventStore.ClientAPI;
 using NUnit.Framework;
 using EventStore.Core.Data;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
 {
@@ -43,6 +44,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
                     receivedEvents.Add(e);
                     countdown.Signal();
                 }
+                return Task.CompletedTask;
             }, userCredentials: DefaultData.AdminCredentials);
 
             _store.AppendToStreamAsync(_streamId, intMaxValue + 2, evnt).Wait();
