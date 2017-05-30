@@ -213,7 +213,7 @@ namespace EventStore.Core.Index
             }
             Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
                       watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
-            return new PTable(outputFile, Guid.NewGuid(), version, depth: cacheDepth);
+            return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
         }
 
         private static long GetFileSize(IList<PTable> tables, int indexEntrySize)
