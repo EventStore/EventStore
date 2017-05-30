@@ -191,7 +191,7 @@ namespace EventStore.ClientAPI
         }
 
 
-        private void ProcessQueue()
+        private async void ProcessQueue()
         {
             do
             {
@@ -217,7 +217,7 @@ namespace EventStore.ClientAPI
                         }
                         try
                         {
-                            _eventAppeared(this, e);
+                            await _eventAppeared(this, e);
                             if (_autoAck)
                                 _subscription.NotifyEventsProcessed(new[] { e.OriginalEvent.EventId });
                             if (_verbose)
