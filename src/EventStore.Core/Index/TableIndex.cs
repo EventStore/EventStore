@@ -116,7 +116,7 @@ namespace EventStore.Core.Index
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
-                    throw new CorruptIndexException("IndexMap's CommitCheckpoint is greater than WriterCheckpoint.");
+                    throw new CorruptIndexException(String.Format("IndexMap's CommitCheckpoint ({0}) is greater than ChaserCheckpoint ({1}).", _indexMap.CommitCheckpoint, chaserCheckpoint));
                 }
             }
             catch (CorruptIndexException exc)
