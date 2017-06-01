@@ -46,23 +46,23 @@ namespace EventStore.ClientAPI.Projections
         {
             return await Task.Run(async () =>
             {
-                await _projectionsManager.CreateTransientAsync(name, query, userCredentials);
-                await WaitForCompletedAsync(name, initialPollingDelay, maximumPollingDelay, userCredentials);
-                return await _projectionsManager.GetStateAsync(name, userCredentials);
+                await _projectionsManager.CreateTransientAsync(name, query, userCredentials).ConfigureAwait(false);
+                await WaitForCompletedAsync(name, initialPollingDelay, maximumPollingDelay, userCredentials).ConfigureAwait(false);
+                return await _projectionsManager.GetStateAsync(name, userCredentials).ConfigureAwait(false);
             }).WithTimeout(_queryTimeout).ConfigureAwait(false);
         }
 
         private async Task WaitForCompletedAsync(string name, TimeSpan initialPollingDelay, TimeSpan maximumPollingDelay, UserCredentials userCredentials)
         {
             var attempts = 0;
-            var status = await GetStatusAsync(name, userCredentials);
+            var status = await GetStatusAsync(name, userCredentials).ConfigureAwait(false);
 
             while (!status.Contains("Completed"))
             {
                 attempts++;
 
-                await DelayPollingAsync(attempts, initialPollingDelay, maximumPollingDelay);
-                status = await GetStatusAsync(name, userCredentials);
+                await DelayPollingAsync(attempts, initialPollingDelay, maximumPollingDelay).ConfigureAwait(false);
+                status = await GetStatusAsync(name, userCredentials).ConfigureAwait(false);
             }
         }
 
@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI.Projections
 
         private async Task<string> GetStatusAsync(string name, UserCredentials userCredentials)
         {
-            var projectionStatus = await _projectionsManager.GetStatusAsync(name, userCredentials);
+            var projectionStatus = await _projectionsManager.GetStatusAsync(name, userCredentials).ConfigureAwait(false);
             return projectionStatus.ParseJson<JObject>()["status"].ToString();
         }
     }
