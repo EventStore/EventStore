@@ -114,6 +114,7 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(projectionManager);
             mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(projectionManager);
+            mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(projectionManager);
 
             mainBus.Subscribe(ioDispatcher.Awaker);
             mainBus.Subscribe(ioDispatcher.BackwardReader);

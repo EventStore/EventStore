@@ -5,6 +5,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
+using EventStore.Projections.Core.Common;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -15,9 +17,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             NoStream("$projections-test-projection-order");
-            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "test-projection");
+            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, EventTypes.ProjectionCreated, null, "test-projection");
             ExistingEvent(
-                "$projections-test-projection", "$ProjectionUpdated", null,
+                "$projections-test-projection", EventTypes.ProjectionUpdated, null,
                 @"{""Query"":""fromCategory('test').foreachStream().when({'e': function(s,e){}})"", 
                     ""Mode"":""3"", ""Enabled"":false, ""HandlerType"":""JS"",
                     ""SourceDefinition"":{
