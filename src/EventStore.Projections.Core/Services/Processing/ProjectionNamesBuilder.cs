@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Processing
                    ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix;
         }
 
-        private const string ProjectionsStreamPrefix = "$projections-";
+        public const string ProjectionsStreamPrefix = "$projections-";
         private const string ProjectionsControlStreamPrefix = "$projections-$";
         private const string ProjectionsStateStreamSuffix = "-result";
         private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
@@ -85,6 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private const string CategoryCatalogStreamNamePrefix = "$category-";
         public const string _projectionsControlStream = "$projections-$control";
         public const string _projectionsMasterStream = "$projections-$master";
+        public const string ProjectionsRegistrationStream = "$projections-$all";
 
         public string GetPartitionCatalogStreamName()
         {

@@ -127,6 +127,8 @@
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_live_event_and_throws.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_system_projection.cs" />
     <Compile Include="Services\projections_manager\when_posting_a_persistent_projection_and_registration_write_fails.cs" />
+    <Compile Include="Services\projections_manager\when_reading_registered_projections\with_no_stream_and_intialize_system_projections.cs" />
+    <Compile Include="Services\projections_manager\when_reading_registered_projections\with_no_stream.cs" />
     <Compile Include="Services\SpecificationWithEmittedStreamsTrackerAndDeleter.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\with_multiple_tracked_streams.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\with_an_existing_emitted_streams_stream.cs" />
@@ -476,7 +478,7 @@
     <Compile Include="Services\projections_manager\when_posting_an_onetime_projection.cs" />
     <Compile Include="Services\projections_manager\when_posting_a_persistent_projection.cs" />
     <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_existing_projection.cs" />
-    <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_existing_projections.cs" />
+    <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_existing_partially_created_projection.cs" />
     <Compile Include="Services\projections_manager\when_updating_an_onetime_projection_query_text.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_query_text.cs" />
     <Compile Include="Services\v8\when_v8_projection_loading_state.cs" />

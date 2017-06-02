@@ -122,6 +122,7 @@
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\EventTypes.cs" />
     <Compile Include="EventReaders\Feeds\FeedReader.cs" />
     <Compile Include="EventReaders\Feeds\FeedReaderService.cs" />
     <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
