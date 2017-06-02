@@ -217,7 +217,7 @@ namespace EventStore.ClientAPI
                         }
                         try
                         {
-                            await _eventAppeared(this, e);
+                            await _eventAppeared(this, e).ConfigureAwait(false);
                             if (_autoAck)
                                 _subscription.NotifyEventsProcessed(new[] { e.OriginalEvent.EventId });
                             if (_verbose)
