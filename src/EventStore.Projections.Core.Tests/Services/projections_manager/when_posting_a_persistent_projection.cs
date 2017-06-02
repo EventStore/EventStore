@@ -9,6 +9,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
+using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -51,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void a_projection_created_event_is_written()
         {
             Assert.AreEqual(
-                "$ProjectionCreated",
+                EventTypes.ProjectionCreated,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].EventType);
             Assert.AreEqual(
                 _projectionName,

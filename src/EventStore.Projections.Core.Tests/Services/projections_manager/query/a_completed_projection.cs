@@ -6,6 +6,7 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
 {
@@ -18,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             protected override void Given()
             {
                 base.Given();
-                AllWritesToSucceed("$projections-" + _projectionName + "-result");
+                AllWritesToSucceed(ProjectionNamesBuilder.ProjectionsStreamPrefix + _projectionName + "-result");
                 AllWritesToSucceed("$$$projections-" + _projectionName + "-result");
                 NoOtherStreams();
             }

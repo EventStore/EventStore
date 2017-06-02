@@ -7,6 +7,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -40,12 +41,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void retries_creating_the_projection_only_the_specified_number_of_times()
         {
             int retryCount = 0;
-            var projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == "$projections-$all").Last();
+            var projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream).Last();
             while (projectionRegistrationWrite != null)
             {
                 projectionRegistrationWrite.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(projectionRegistrationWrite.CorrelationId, OperationResult.CommitTimeout, "Commit Timeout"));
                 _queue.Process();
-                projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == "$projections-$all").LastOrDefault();
+                projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream).LastOrDefault();
                 if(projectionRegistrationWrite != null)
                 {
                     retryCount++;

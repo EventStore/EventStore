@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _initializeSystemProjections = GivenInitializeSystemProjections();
             if (!_initializeSystemProjections)
             {
-                ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
+                ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, "$ProjectionsInitialized", "", "");
             }
         }
 
@@ -99,6 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.Command.Reset>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
+            _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.DeleteStreamCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);

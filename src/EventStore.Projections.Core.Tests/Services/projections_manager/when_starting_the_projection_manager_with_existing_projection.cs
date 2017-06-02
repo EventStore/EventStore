@@ -7,11 +7,12 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
-using EventStore.Core.Util;
+using EventStore.Projections.Core.Common;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -25,9 +26,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             _workerId = Guid.NewGuid();
-            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "projection1");
+            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, EventTypes.ProjectionCreated, null, "projection1");
             ExistingEvent(
-                "$projections-projection1", "$ProjectionUpdated", null,
+                "$projections-projection1", EventTypes.ProjectionUpdated, null,
                 @"{""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", ""Mode"":""3"", ""Enabled"":true, ""HandlerType"":""JS""}");
         }
 
@@ -46,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _ioDispatcher);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
+            _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
             _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
             _manager.Handle(new ProjectionManagementMessage.ReaderReady());
         }
