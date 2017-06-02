@@ -210,6 +210,14 @@ function scope($on, $notify) {
         };
     }
 
+    function fromCategories(categories) {
+        var arr = Array.isArray(categories) ? categories : Array.prototype.slice.call(arguments);
+        arr = arr.map(function (x) {
+            return '$ce-' + x;
+        });
+        return fromStreams(arr);
+    }
+
     function emit(streamId, eventName, eventBody, metadata) {
         var message = { streamId: streamId, eventName: eventName , body: JSON.stringify(eventBody), metadata: metadata, isJson: true };
         eventProcessor.emit(message);
@@ -257,6 +265,7 @@ function scope($on, $notify) {
         fromCategory: fromCategory,
         fromStream: fromStream,
         fromStreams: fromStreams,
+        fromCategories: fromCategories,
         fromStreamCatalog: fromStreamCatalog,
         fromStreamsMatching: fromStreamsMatching,
 
