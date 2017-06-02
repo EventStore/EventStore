@@ -22,7 +22,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _verboseLogging;
         protected readonly Func<TcpPackageConnection> _getConnection;
         private readonly int _maxQueueSize = 2000;
-        private readonly ConcurrentQueue<Action> _actionQueue = new ConcurrentQueue<Action>();
+        private readonly ConcurrentQueue<Func<Task>> _actionQueue = new ConcurrentQueue<Func<Task>>();
         private int _actionExecuting;
         private T _subscription;
         private int _unsubscribed;
@@ -216,7 +216,11 @@ namespace EventStore.ClientAPI.ClientOperations
                     connection.EnqueueSend(CreateUnsubscriptionPackage());
 
                 if (_subscription != null)
-                    ExecuteActionAsync(() => _subscriptionDropped(_subscription, reason, exc));
+                    ExecuteActionAsync(() =>
+                    {
+                        _subscriptionDropped(_subscription, reason, exc);
+                        return Task.CompletedTask;
+                    });
             }
         }
 
@@ -251,7 +255,7 @@ namespace EventStore.ClientAPI.ClientOperations
             ExecuteActionAsync(() => _eventAppeared(_subscription, e));
         }
 
-        private void ExecuteActionAsync(Action action)
+        private void ExecuteActionAsync(Func<Task> action)
         {
             _actionQueue.Enqueue(action);
             if (_actionQueue.Count > _maxQueueSize) DropSubscription(SubscriptionDropReason.UserInitiated, new Exception("client buffer too big"));
@@ -259,16 +263,16 @@ namespace EventStore.ClientAPI.ClientOperations
                 ThreadPool.QueueUserWorkItem(ExecuteActions);
         }
 
-        private void ExecuteActions(object state)
+        private async void ExecuteActions(object state)
         {
             do
             {
-                Action action;
+                Func<Task> action;
                 while (_actionQueue.TryDequeue(out action))
                 {
                     try
                     {
-                        action();
+                        await action().ConfigureAwait(false);
                     }
                     catch (Exception exc)
                     {
