@@ -29,13 +29,13 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             _stream = new EmittedStream(
                 "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, _readyHandler);
-            _stream.Start();
             _stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
                         "test", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 10, 5), null)
                 });
+            _stream.ProcessQueue();
             var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
             _bus.Publish(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, 0, 0, -1, -1));
             _stream.Checkpoint();

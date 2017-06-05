@@ -29,7 +29,6 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoc
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
                 new ProjectionVersion(1, 2, 2), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
                 _ioDispatcher, _readyHandler);
-            _stream.Start();
         }
 
         [Test]
@@ -41,6 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoc
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), CheckpointTag.FromPosition(0, 40, 20))
                 });
+            _stream.ProcessQueue();
             Assert.AreEqual(
                 0,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
@@ -58,6 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoc
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 40, 20), null)
                 });
+            _stream.ProcessQueue();
             Assert.AreEqual(
                 1,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
@@ -74,6 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoc
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), CheckpointTag.FromPosition(0, 100, 50))
                 });
+            _stream.ProcessQueue();
             Assert.AreEqual(
                 0,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
@@ -91,6 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoc
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
+            _stream.ProcessQueue();
             var metaData =
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
                     .OfEventType("type")

@@ -121,8 +121,9 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_the_projection_checkpoint_emits_more_events_than_the_configured_batch_size.cs" />
     <Compile Include="Services\core_service\when_a_subscribed_projection_handler_throws.cs" />
-    <Compile Include="Services\emitted_stream\when_handling_a_timeout.cs" />
+    <Compile Include="Services\emitted_stream\another_epoch\when_handling_a_timeout.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_cached_event_and_throws.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_live_event_and_throws.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_system_projection.cs" />
@@ -194,7 +195,6 @@
     <Compile Include="Services\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
     <Compile Include="Services\emitted_stream\when_handling_an_emit_with_committed_callback.cs" />
     <Compile Include="Services\emitted_stream\when_handling_an_emit_with_extra_metadata.cs" />
-    <Compile Include="Services\emitted_stream\when_handling_an_emit_with_not_ready_event.cs" />
     <Compile Include="Services\emitted_stream\when_handling_emits_in_invalid_order.cs" />
     <Compile Include="Services\emitted_stream\when_handling_emits_with_previously_written_events.cs" />
     <Compile Include="Services\emitted_stream\when_handling_emits_with_previously_written_events_at_the_same_position.cs" />
@@ -207,7 +207,6 @@
     <Compile Include="Services\core_projection\parallel_query\when_handling_committed_event_received_messages.cs" />
     <Compile Include="Services\core_projection\parallel_query\when_handling_partition_processing_result_messages.cs" />
     <Compile Include="Services\core_projection\parallel_query\when_handling_reordered_partition_processing_result_messages.cs" />
-    <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
     <Compile Include="Services\core_projection\query_by_stream\specification_with_from_catalog_query.cs" />
     <Compile Include="Services\core_projection\slave_projection\specification_with_slave_core_projection.cs" />
     <Compile Include="Services\core_projection\query_by_stream\when_handling_multiple_empty_streams.cs" />
@@ -483,14 +482,11 @@
     <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_query_text.cs" />
     <Compile Include="Services\v8\when_v8_projection_loading_state.cs" />
     <Compile Include="Services\not_started_event_distribution_point_should.cs" />
-    <Compile Include="Services\emitted_stream\a_checkpoint_requested_on_a_non_started_stream.cs" />
     <Compile Include="Services\emitted_stream\when_checkpoint_requested.cs" />
     <Compile Include="Services\emitted_stream\when_checkpoint_requested_with_all_writes_already_completed.cs" />
     <Compile Include="Services\emitted_stream\when_checkpoint_requested_with_pending_writes.cs" />
     <Compile Include="Services\emitted_stream\when_creating_an_emitted_stream.cs" />
     <Compile Include="Services\emitted_stream\when_handling_an_emit_the_started_in_recovery_stream.cs" />
-    <Compile Include="Services\emitted_stream\when_handling_an_emit_the_not_started_stream.cs" />
-    <Compile Include="Services\emitted_stream\when_the_stream_is_started.cs" />
     <Compile Include="Services\emitted_stream\when_the_stream_is_started_with_already_emitted_events.cs" />
     <Compile Include="Services\core_projection\FakeProjectionHandler.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\the_non_started_checkpoint.cs" />

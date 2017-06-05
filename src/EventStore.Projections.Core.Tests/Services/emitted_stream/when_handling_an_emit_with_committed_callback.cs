@@ -25,7 +25,6 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
                 new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1),
                 _ioDispatcher, _readyHandler);
-            _stream.Start();
         }
 
         [Test]
@@ -39,6 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                         (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
                         (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 100, 50), (CheckpointTag) null, v => invoked = true)
                 });
+            _stream.ProcessQueue();
             Assert.IsTrue(invoked);
         }
 
@@ -53,6 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                         (string) "test_stream", Guid.NewGuid(), (string) "type", (bool) true,
                         (string) "data", (ExtraMetaData) null, CheckpointTag.FromPosition(0, 200, 150), (CheckpointTag) null, v => invoked = true)
                 });
+            _stream.ProcessQueue();
             Assert.IsTrue(invoked);
         }
     }
