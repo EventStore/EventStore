@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
 
 namespace EventStore.BufferManagement
 {
@@ -36,7 +35,6 @@ namespace EventStore.BufferManagement
 
         private readonly List<byte[]> _segments;
         private readonly object _creatingNewSegmentLock = new object();
-        private static readonly ILogger Log = LogManager.GetLoggerFor<BufferManager>();
 
         /// <summary>
         /// Gets the default buffer manager
@@ -163,7 +161,7 @@ namespace EventStore.BufferManagement
                     _buffers.Push(chunk);
                 }
 
-                Log.Debug("Segments count: {0}, buffers count: {1}, should be when full: {2}",
+                Console.WriteLine("Segments count: {0}, buffers count: {1}, should be when full: {2}",
                                   _segments.Count,
                                   _buffers.Count,
                                   _segments.Count * _segmentChunks);
