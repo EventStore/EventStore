@@ -81,7 +81,8 @@ namespace EventStore.Core.Services.PersistentSubscription
                 else
                     Live = false;
             }
-            _liveBuffer.Enqueue(ev);
+            if(!Live)
+                _liveBuffer.Enqueue(ev);
         }
 
         public void AddReadMessage(OutstandingMessage ev)
