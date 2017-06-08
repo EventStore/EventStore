@@ -30,13 +30,13 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             _stream = new EmittedStream(
                 "test_stream", _writerConfiguration, new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0),
                 CheckpointTag.FromPosition(0, 40, 30), _ioDispatcher, _readyHandler);
-            _stream.Start();
             _stream.EmitEvents(
                 new[]
                 {
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
+            _stream.ProcessQueue();
         }
 
         [Test]
