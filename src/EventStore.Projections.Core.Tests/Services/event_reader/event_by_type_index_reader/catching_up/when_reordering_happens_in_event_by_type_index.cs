@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                     runAs: null);
 
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
-                    checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: false,
+                    checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, checkpointAfterMs: 10000,  stopOnEof: false,
                     stopAfterNEvents: null);
             }
 

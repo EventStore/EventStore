@@ -28,6 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected Action<SourceDefinitionBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;
         protected int _checkpointProcessedEventsThreshold;
+        protected int _checkpointAfterMs;
         protected IReaderStrategy _readerStrategy;
 
         [SetUp]
@@ -35,9 +36,10 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         {
             _checkpointUnhandledBytesThreshold = 1000;
             _checkpointProcessedEventsThreshold = 2000;
+            _checkpointAfterMs = 10000;
+            _timeProvider = new RealTimeProvider();
             Given();
             _bus = new InMemoryBus("bus");
-            _timeProvider = new RealTimeProvider();
             _projectionCorrelationId = Guid.NewGuid();
             _eventHandler = new TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived>();
             _checkpointHandler = new TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested>();
@@ -72,7 +74,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 _readerStrategy,
                 _timeProvider,
                 _checkpointUnhandledBytesThreshold,
-                _checkpointProcessedEventsThreshold);
+                _checkpointProcessedEventsThreshold,
+                _checkpointAfterMs);
         }
 
         protected virtual void Given()
@@ -95,12 +98,11 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             }
             var config = ProjectionConfig.GetTest();
             IQuerySources sources = readerBuilder.Build();
-            ITimeProvider timeProvider = new RealTimeProvider();
             var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(
                 "test",
                 0,
                 sources,
-                timeProvider,
+                _timeProvider,
                 stopOnEof: false,
                 runAs: config.RunAs);
             return readerStrategy;

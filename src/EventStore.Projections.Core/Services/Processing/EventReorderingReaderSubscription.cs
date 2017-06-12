@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ITimeProvider timeProvider,
             long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold,
+            int checkpointAfterMs,
             int processingLagMs,
             bool stopOnEof = false,
             int? stopAfterNEvents = null)
@@ -33,6 +34,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 timeProvider,
                 checkpointUnhandledBytesThreshold,
                 checkpointProcessedEventsThreshold,
+                checkpointAfterMs,
                 stopOnEof,
                 stopAfterNEvents)
         {

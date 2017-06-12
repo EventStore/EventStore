@@ -47,7 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.slave_p
                         false,
                         true,
                         true,
-                        true),
+                        true,
+                        10000),
                     _masterWorkerId,
                     _coreProjectionCorrelationId,
                     //(handlerType, query) => new FakeProjectionStateHandler(

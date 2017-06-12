@@ -21,7 +21,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 CreateReaderStrategy(),
                 new FakeTimeProvider(),
                 1000,
-                2000);
+                2000,
+                10000);
         }
 
         [Test]
@@ -36,7 +37,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 CreateReaderStrategy(),
                 new FakeTimeProvider(),
                 1000,
-                2000);
+                2000,
+                10000);
             });
         }
 
@@ -52,7 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 null,
                 new FakeTimeProvider(),
                 1000,
-                2000);
+                2000,
+                10000);
             });
         }
 
@@ -68,7 +71,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 CreateReaderStrategy(),
                 null,
                 1000,
-                2000);
+                2000,
+                10000);
             });
         }
 

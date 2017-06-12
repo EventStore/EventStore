@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.externally_fed
                     limitingCommitPosition: 10000);
 
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
-                    checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: true,
+                    checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, checkpointAfterMs: 10000,  stopOnEof: true,
                     stopAfterNEvents: null);
             }
 
