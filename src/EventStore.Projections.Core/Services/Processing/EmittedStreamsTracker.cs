@@ -89,7 +89,6 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (retryCount > 0)
                 {
-                    Log.Error("PROJECTIONS: Failed to write a tracked stream id of {0} to the {1} stream. Retrying {2}/{3}. Reason: {4}", streamId, _projectionNamesBuilder.GetEmittedStreamsName(), (MaxRetryCount - retryCount) + 1, MaxRetryCount, completed.Result);
                     WriteEvent(evnt, retryCount - 1);
                 }
                 else
