@@ -319,7 +319,6 @@ namespace EventStore.Core.TransactionLog.Chunks
         private void WriteScavengeChunkCompletedEventCompleted(ClientMessage.WriteEventsCompleted msg, string streamId, Event eventToWrite, int retryCount){
             if(msg.Result != OperationResult.Success){
                 if(retryCount > 0){
-                    Log.Error("Failed to write an event to the {0} stream. Retrying {1}/{2}. Reason: {3}", streamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount, msg.Result);
                     WriteScavengeChunkCompletedEvent(streamId, eventToWrite, --retryCount);
                 }else{
                     Log.Error("Failed to write an event to the {0} stream. Retry limit of {1} reached. Reason: {2}", streamId, MaxRetryCount, msg.Result);
