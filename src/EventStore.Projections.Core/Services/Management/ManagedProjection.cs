@@ -929,6 +929,7 @@ namespace EventStore.Projections.Core.Services.Management
             var checkpointsEnabled = PersistedProjectionState.CheckpointsDisabled != true;
             var trackEmittedStreams = PersistedProjectionState.TrackEmittedStreams == true;
             var checkpointHandledThreshold = checkpointsEnabled ? 4000 : 0;
+            var checkpointAfterMs = checkpointsEnabled ? 10000 : 0;
             var checkpointUnhandledBytesThreshold = checkpointsEnabled ? 10*1000*1000 : 0;
             var pendingEventsThreshold = 5000;
             var maxWriteBatchLength = 500;
@@ -947,7 +948,8 @@ namespace EventStore.Projections.Core.Services.Management
                 createTempStreams,
                 stopOnEof,
                 false,
-                trackEmittedStreams);
+                trackEmittedStreams,
+                checkpointAfterMs);
             return projectionConfig;
         }
 

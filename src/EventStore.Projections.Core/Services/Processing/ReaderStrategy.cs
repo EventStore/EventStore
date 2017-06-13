@@ -188,6 +188,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _timeProvider,
                     readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
                     readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                    readerSubscriptionOptions.CheckpointAfterMs,
                     _processingLag,
                     readerSubscriptionOptions.StopOnEof,
                     readerSubscriptionOptions.StopAfterNEvents);
@@ -201,6 +202,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _timeProvider, 
                     readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
                     readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                    readerSubscriptionOptions.CheckpointAfterMs,
                     readerSubscriptionOptions.StopOnEof,
                     readerSubscriptionOptions.StopAfterNEvents);
         }

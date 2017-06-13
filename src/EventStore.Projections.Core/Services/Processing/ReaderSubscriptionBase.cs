@@ -26,6 +26,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _eofReached;
         protected string _tag;
         private DateTime _lastProgressPublished;
+        private TimeSpan _checkpointAfter;
+        private DateTime _lastCheckpointTime = DateTime.MinValue;
 
         protected ReaderSubscriptionBase(
             IPublisher publisher,
@@ -35,6 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ITimeProvider timeProvider,
             long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold,
+            int checkpointAfterMs,
             bool stopOnEof,
             int? stopAfterNEvents)
         {
@@ -49,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _timeProvider = timeProvider;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
+            _checkpointAfter = TimeSpan.FromMilliseconds(checkpointAfterMs);
             _stopOnEof = stopOnEof;
             _stopAfterNEvents = stopAfterNEvents;
             _subscriptionId = subscriptionId;
@@ -110,6 +114,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
             _positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
+            var now = _timeProvider.Now;
+            var timeDifference = now - _lastCheckpointTime;
             if (_eventFilter.Passes(
                 message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType,
                 message.Data.IsStreamDeletedEvent))
@@ -122,19 +128,23 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(convertedMessage);
                 _eventsSinceLastCheckpointSuggestedOrStart++;
                 if (_checkpointProcessedEventsThreshold > 0
+                    && timeDifference > _checkpointAfter
                     && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold)
                     SuggestCheckpoint(message);
                 if (_stopAfterNEvents > 0 && _eventsSinceLastCheckpointSuggestedOrStart >= _stopAfterNEvents)
                     NEventsReached();
             }
             else
+            {
                 if (_checkpointUnhandledBytesThreshold > 0
-                    && (_lastPassedOrCheckpointedEventPosition != null
-                        && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
-                        > _checkpointUnhandledBytesThreshold))
+                   && timeDifference > _checkpointAfter
+                   && (_lastPassedOrCheckpointedEventPosition != null
+                       && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
+                       > _checkpointUnhandledBytesThreshold))
                     SuggestCheckpoint(message);
                 else if (progressChanged)
                     PublishProgress(roundedProgress);
+            }
             // initialize checkpointing based on first message 
             if (_lastPassedOrCheckpointedEventPosition == null)
                 _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
@@ -184,6 +194,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _subscriptionId, _positionTracker.LastTag, message.Progress,
                     _subscriptionMessageSequenceNumber++));
             _eventsSinceLastCheckpointSuggestedOrStart = 0;
+            _lastCheckpointTime = _timeProvider.Now;
         }
 
         public IEventReader CreatePausedEventReader(IPublisher publisher, IODispatcher ioDispatcher, Guid eventReaderId)

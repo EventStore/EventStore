@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-            null, 5, 10, 1000, 250, true, true, true, true, false, true);
+            null, 5, 10, 1000, 250, true, true, true, true, false, true, 10000);
 
         private IODispatcher _ioDispatcher;
 
@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.Throws<ArgumentException>(() => {
                 IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
                 var version = new ProjectionVersion(1, 0, 0);
-                var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false, false, true);
+                var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false, false, true, 10000);
                 new ContinuousProjectionProcessingStrategy(
                     "projection",
                     version,
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
                 var version = new ProjectionVersion(1, 0, 0);
-                var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false, false, true);
+                var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false, false, true, 10000);
                 new ContinuousProjectionProcessingStrategy(
                     "projection",
                     version,
@@ -264,7 +264,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
                 var version = new ProjectionVersion(1, 0, 0);
-                var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false, false, true);
+                var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false, false, true, 10000);
                 new ContinuousProjectionProcessingStrategy(
                     "projection",
                     version,

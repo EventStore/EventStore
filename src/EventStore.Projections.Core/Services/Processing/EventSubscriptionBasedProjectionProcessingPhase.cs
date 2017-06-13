@@ -321,6 +321,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ReaderSubscriptionOptions(
                 _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
+                _projectionConfig.CheckpointAfterMs,
                 _stopOnEof, stopAfterNEvents: null);
         }
 
