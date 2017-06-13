@@ -30,12 +30,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 
         protected override IReaderSubscription CreateProjectionSubscription()
         {
-            return new EventReorderingReaderSubscription(_bus, 
+            return new EventReorderingReaderSubscription(_bus,
                 _projectionCorrelationId, 
                 CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"a", ExpectedVersion.NoStream}, {"b", ExpectedVersion.NoStream}}),
                 _readerStrategy,
                 _timeProvider,
-                _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold, _processingLagMs);
+                _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold, _checkpointAfterMs, _processingLagMs);
         }
     }
 }

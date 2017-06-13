@@ -21,6 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 new FakeTimeProvider(),
                 1000,
                 2000,
+                10000,
                 500);
         }
 
@@ -36,6 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 new FakeTimeProvider(),
                 1000,
                 2000,
+                10000,
                 500);
             });
         }
@@ -52,6 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 new FakeTimeProvider(),
                 1000,
                 2000,
+                10000,
                 500);
             });
         }
@@ -68,6 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                 null,
                 1000,
                 2000,
+                10000,
                 500);
             });
         }

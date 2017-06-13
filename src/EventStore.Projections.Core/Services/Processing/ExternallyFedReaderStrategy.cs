@@ -55,6 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _timeProvider, 
                 readerSubscriptionOptions.CheckpointUnhandledBytesThreshold,
                 readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
+                readerSubscriptionOptions.CheckpointAfterMs,
                 readerSubscriptionOptions.StopOnEof,
                 readerSubscriptionOptions.StopAfterNEvents);
         }

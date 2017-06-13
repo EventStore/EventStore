@@ -85,6 +85,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds
             //TODO: make reader mode explicit
             var readerOptions = new ReaderSubscriptionOptions(
                 1024*1024,
+                checkpointAfterMs: 10000,
                 checkpointProcessedEventsThreshold: null,
                 stopOnEof: true,
                 stopAfterNEvents: _maxEvents);
