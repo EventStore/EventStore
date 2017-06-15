@@ -34,6 +34,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
+            service.RegisterAction(new ControllerAction("/elections/force", HttpMethod.Get, SupportedCodecs, SupportedCodecs), ForceElection);
             service.RegisterAction(new ControllerAction("/elections/viewchange", HttpMethod.Post, SupportedCodecs, SupportedCodecs), OnPostViewChange);
             service.RegisterAction(new ControllerAction("/elections/viewchangeproof", HttpMethod.Post, SupportedCodecs, SupportedCodecs), OnPostViewChangeProof);
             service.RegisterAction(new ControllerAction("/elections/prepare", HttpMethod.Post, SupportedCodecs, SupportedCodecs), OnPostPrepare);
@@ -148,6 +149,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
             else
                 SendBadRequest(manager, string.Format("Invalid request. Body contains badly formatted object"));
+        }
+
+        private void ForceElection(HttpEntityManager manager, UriTemplateMatch match)
+        {
+            if (manager.User != null && (manager.User.IsInRole(SystemRoles.Admins) || manager.User.IsInRole(SystemRoles.Operations)))
+            {
+                Log.Info("User forced election");
+                Publish(new ElectionMessage.StartElections());
+                manager.ReplyStatus(EventStore.Transport.Http.HttpStatusCode.OK, "Election Forced", (exc) =>
+                {
+                    Log.Debug("Error while closing HTTP connection (election controller): {0}.", exc.Message);
+                });
+            }
+            else
+            {
+                manager.ReplyStatus(EventStore.Transport.Http.HttpStatusCode.Unauthorized, "Unauthorized",  (exc) =>
+                {
+                    Log.Debug("Error while closing HTTP connection (election controller): {0}.", exc.Message);
+                });
+            }
         }
 
         private void OnPostViewChange(HttpEntityManager manager, UriTemplateMatch match)
