@@ -103,14 +103,16 @@ namespace EventStore.Core.Helpers
             int maxCount,
             bool resolveLinks,
             IPrincipal principal,
-            Action<ClientMessage.ReadStreamEventsForwardCompleted> action)
+            Action<ClientMessage.ReadStreamEventsForwardCompleted> action,
+            Guid? corrId = null)
         {
-            var corrId = Guid.NewGuid();
+            if (!corrId.HasValue)
+                corrId = Guid.NewGuid();
             return
                 ForwardReader.Publish(
                     new ClientMessage.ReadStreamEventsForward(
-                        corrId,
-                        corrId,
+                        corrId.Value,
+                        corrId.Value,
                         ForwardReader.Envelope,
                         streamId,
                         fromEventNumber,
